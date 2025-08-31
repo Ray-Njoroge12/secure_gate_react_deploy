@@ -1,23 +1,46 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import PrivateRoute from "./components/PrivateRoute";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import LoginPage from "./pages/Login";
+import RegistrationPage from "./pages/Register";
+import ResidentDashboard from "./pages/resident/ResidentDashboard";
+import GuardDashboard from "./pages/guard/GuardDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
+
         <Route
-          path="/dashboard/:role"
+          path="/dashboard/resident"
           element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
+            <ProtectedRoute role="resident">
+              <ResidentDashboard />
+            </ProtectedRoute>
           }
         />
+        <Route
+          path="/dashboard/guard"
+          element={
+            <ProtectedRoute role="security">
+              <GuardDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin"
+          element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<LoginPage />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 
