@@ -11,7 +11,7 @@ export default function Sidebar({ role }) {
       <div className="sidebar">
         <h2>Resident Menu</h2>
         <ul>
-          <li className={isActive("/dashboard/resident")}>
+          <li className={isActive("/pages/resident")}>
             <Link to="/pages/resident">Dashboard</Link>
           </li>
           <li className={isActive("/pages/resident/AddVisitor")}>
