@@ -16,10 +16,10 @@ export default function Sidebar({ role }) {
       {role === "resident" && (
         <>
           <div className="group-title">Resident</div>
-          <Link to="/resident/dashboard">Dashboard</Link>
-          <Link to="/resident/add-visitor">Add Visitor</Link>
-          <Link to="/resident/generate-pass">Generate Pass</Link>
-          <Link to="/resident/history">Visitor History</Link>
+          <Link to="/pages/resident/ResidentDashboard">Dashboard</Link>
+          <Link to="/pages/resident/AddVisitor">Add Visitor</Link>
+          <Link to="/pages/resident/GeneratePass">Generate Pass</Link>
+          <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
         </>
       )}
 

@@ -12,16 +12,16 @@ export default function Sidebar({ role }) {
         <h2>Resident Menu</h2>
         <ul>
           <li className={isActive("/dashboard/resident")}>
-            <Link to="/dashboard/resident">Dashboard</Link>
+            <Link to="/pages/resident">Dashboard</Link>
           </li>
-          <li className={isActive("/dashboard/resident/add-visitor")}>
-            <Link to="/dashboard/resident/add-visitor">Add Visitor</Link>
+          <li className={isActive("/pages/resident/AddVisitor")}>
+            <Link to="/pages/resident/AddVisitor">Add Visitor</Link>
           </li>
-          <li className={isActive("/dashboard/resident/generate-pass")}>
-            <Link to="/dashboard/resident/generate-pass">Generate Pass</Link>
+          <li className={isActive("/pages/resident/GeneratePass")}>
+            <Link to="/pages/resident/GeneratePass">Generate Pass</Link>
           </li>
-          <li className={isActive("/dashboard/resident/history")}>
-            <Link to="/dashboard/resident/history">Visitor History</Link>
+          <li className={isActive("/pages/resident/VisitorHistory")}>
+            <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
           </li>
         </ul>
       </div>
