@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/Login";
 import RegistrationPage from "./pages/Register";
 import ResidentDashboard from "./pages/resident/ResidentDashboard";
@@ -14,6 +14,8 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
@@ -28,7 +30,7 @@ function App() {
           }
         />
         <Route
-          path="/pages/resident/AddVisitor"
+          path="/dashboard/resident/add-visitor"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
               <AddVisitor />
@@ -36,7 +38,7 @@ function App() {
           }
         />
         <Route
-          path="/pages/resident/GeneratePass"
+          path="/dashboard/resident/generate-pass"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
               <GeneratePass />
@@ -44,7 +46,7 @@ function App() {
           }
         />
         <Route
-          path="/pages/resident/VisitorHistory"
+          path="/dashboard/resident/visitor-history"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
               <VisitorHistory />

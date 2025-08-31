@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
@@ -14,7 +15,10 @@ export default function ResidentDashboard() {
       <div>
         <Topbar title="Resident Dashboard" onLogout={onLogout} />
         <main className="main">
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+          <div className="dashboard-links">
+            <Link to="/dashboard/resident/add-visitor" className="btn">Add Visitor</Link>
+            <Link to="/dashboard/resident/generate-pass" className="btn">Generate Pass</Link>
+            <Link to="/dashboard/resident/visitor-history" className="btn">Visitor History</Link>
           </div>
         </main>
       </div>
