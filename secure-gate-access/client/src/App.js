@@ -2,13 +2,16 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/Login";
 import RegistrationPage from "./pages/Register";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import BulkInvite from "./pages/resident/BulkInvite";
+import Settings from "./pages/resident/Settings";
 import ResidentDashboard from "./pages/resident/ResidentDashboard";
 import AddVisitor from "./pages/resident/AddVisitor";
 import GeneratePass from "./pages/resident/GeneratePass";
 import VisitorHistory from "./pages/resident/VisitorHistory";
 import GuardDashboard from "./pages/guard/GuardDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import ProtectedRoute from "./routes/ProtectedRoute";
+
 
 function App() {
   return (
@@ -31,7 +34,7 @@ function App() {
           path="/pages/resident/AddVisitor"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <AddVisitor />
+              <ResidentDashboard />
             </ProtectedRoute>
           }
         />
@@ -39,7 +42,7 @@ function App() {
           path="/pages/resident/GeneratePass"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <GeneratePass />
+              <ResidentDashboard />
             </ProtectedRoute>
           }
         />
@@ -47,10 +50,27 @@ function App() {
           path="/pages/resident/VisitorHistory"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <VisitorHistory />
+              <ResidentDashboard />
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/pages/resident/BulkInvite"
+          element={
+            <ProtectedRoute allowedRoles={["resident"]}>
+              <ResidentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pages/resident/Settings"
+          element={
+            <ProtectedRoute allowedRoles={["resident"]}>
+              <ResidentDashboard />
+            </ProtectedRoute>
+          }
+        />
+  {/* BulkInvite and Settings will be rendered as panels inside ResidentDashboard, not as separate routes */}
 
         {/* Guard routes */}
         <Route

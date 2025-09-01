@@ -1,16 +1,14 @@
 // client/src/pages/resident/Settings.jsx
 import React, { useState, useEffect } from "react";
-import "../styles.css";
+import "../../styles.css";
 
 export default function Settings() {
-  const [profile, setProfile] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    area: "",
-    house: "",
-  });
+  const [activeTab, setActiveTab] = useState("profile");
+  const [profile, setProfile] = useState({ name: "", phone: "", email: "", area: "", house: "" });
   const [passwords, setPasswords] = useState({ old: "", new: "" });
+  const [notifications, setNotifications] = useState({ visitorInvites: true, smsAlerts: true, emailAlerts: true, dailySummary: false });
+  const [security, setSecurity] = useState({ twoFA: false, showLoginHistory: true });
+  const [visitorPrefs, setVisitorPrefs] = useState({ defaultDuration: "1 hour", maxVisitors: 5 });
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -19,77 +17,135 @@ export default function Settings() {
     document.body.classList.toggle("dark-mode", savedMode);
   }, []);
 
-  const handleProfileUpdate = async () => {
-    // send /api/update-profile
-    alert("Profile updated!");
-  };
-
-  const handlePasswordChange = async () => {
-    // send /api/change-password
-    alert("Password changed!");
-  };
-
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     localStorage.setItem("darkMode", !darkMode);
     document.body.classList.toggle("dark-mode", !darkMode);
   };
 
+  const handleUpdate = (type, e) => {
+    e.preventDefault();
+    alert(`${type} updated!`);
+  };
+
+  const tabs = [
+    { key: "profile", label: "Profile" },
+    { key: "password", label: "Change Password" },
+    { key: "notifications", label: "Notifications" },
+    { key: "security", label: "Security" },
+    { key: "visitorPrefs", label: "Visitor Preferences" },
+    { key: "preferences", label: "Preferences" },
+  ];
+
+  const inputClass = "input"; // use your CSS class
+  const btnClass = "btn primary"; // use your CSS button class
+
   return (
-    <div className="dashboard-panel">
-      <h2>Settings</h2>
+    <div className="flex justify-center mt-10 px-4">
+      <div className="w-full max-w-2xl bg-panel rounded-3xl shadow-lg p-6">
+        {/* Tabs */}
+        <div className="flex border-b mb-6 space-x-2 overflow-x-auto tabs-scroll">
+          {tabs.map((tab) => (
+            <div
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-3 py-2 rounded-t-xl font-semibold cursor-pointer whitespace-nowrap text-sm ${
+                activeTab === tab.key ? "bg-accent text-black" : "text-muted hover:bg-line"
+              }`}
+            >
+              {tab.label}
+            </div>
+          ))}
+        </div>
 
-      <div className="form-group">
-        <h3>Profile</h3>
-        <input
-          type="text"
-          placeholder="Name"
-          value={profile.name}
-          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Phone"
-          value={profile.phone}
-          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Area"
-          value={profile.area}
-          onChange={(e) => setProfile({ ...profile, area: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="House Number"
-          value={profile.house}
-          onChange={(e) => setProfile({ ...profile, house: e.target.value })}
-        />
-        <button className="btn primary" onClick={handleProfileUpdate}>Update Profile</button>
-      </div>
+        {/* Tab Content */}
+        {activeTab === "profile" && (
+          <form onSubmit={(e) => handleUpdate("Profile", e)} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
+            <h2 className="text-lg font-semibold">Profile</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input type="text" placeholder="Name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={inputClass} />
+              <input type="text" placeholder="Phone" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={inputClass} />
+              <input type="email" placeholder="Email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={inputClass + " md:col-span-2"} />
+              <input type="text" placeholder="Area" value={profile.area} onChange={(e) => setProfile({ ...profile, area: e.target.value })} className={inputClass} />
+              <input type="text" placeholder="House Number" value={profile.house} onChange={(e) => setProfile({ ...profile, house: e.target.value })} className={inputClass} />
+            </div>
+            <button type="submit" className={btnClass}>Update Profile</button>
+          </form>
+        )}
 
-      <div className="form-group">
-        <h3>Change Password</h3>
-        <input
-          type="password"
-          placeholder="Old Password"
-          value={passwords.old}
-          onChange={(e) => setPasswords({ ...passwords, old: e.target.value })}
-        />
-        <input
-          type="password"
-          placeholder="New Password"
-          value={passwords.new}
-          onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-        />
-        <button className="btn primary" onClick={handlePasswordChange}>Change Password</button>
-      </div>
+        {activeTab === "password" && (
+          <form onSubmit={(e) => handleUpdate("Password", e)} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
+            <h2 className="text-lg font-semibold">Change Password</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input type="password" placeholder="Old Password" value={passwords.old} onChange={(e) => setPasswords({ ...passwords, old: e.target.value })} className={inputClass} />
+              <input type="password" placeholder="New Password" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} className={inputClass} />
+            </div>
+            <button type="submit" className={btnClass}>Change Password</button>
+          </form>
+        )}
 
-      <div className="form-group">
-        <h3>Preferences</h3>
-        <label>
-          <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} /> Dark Mode
-        </label>
+        {activeTab === "notifications" && (
+          <form onSubmit={(e) => handleUpdate("Notifications", e)} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
+            <h2 className="text-lg font-semibold">Notifications</h2>
+            {Object.keys(notifications).map((key) => (
+              <label key={key} className="flex items-center space-x-2 text-sm">
+                <input type="checkbox" checked={notifications[key]} onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })} className="w-4 h-4" />
+                <span>
+                  {key === "visitorInvites" && "Visitor Invites"}
+                  {key === "smsAlerts" && "SMS Alerts"}
+                  {key === "emailAlerts" && "Email Alerts"}
+                  {key === "dailySummary" && "Daily Summary"}
+                </span>
+              </label>
+            ))}
+            <button type="submit" className={btnClass}>Save Notifications</button>
+          </form>
+        )}
+
+        {activeTab === "security" && (
+          <form onSubmit={(e) => handleUpdate("Security", e)} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
+            <h2 className="text-lg font-semibold">Security</h2>
+            <label className="flex items-center space-x-2 text-sm">
+              <input type="checkbox" checked={security.twoFA} onChange={(e) => setSecurity({ ...security, twoFA: e.target.checked })} className="w-4 h-4" />
+              <span>Enable Two-Factor Authentication</span>
+            </label>
+            <label className="flex items-center space-x-2 text-sm">
+              <input type="checkbox" checked={security.showLoginHistory} onChange={(e) => setSecurity({ ...security, showLoginHistory: e.target.checked })} className="w-4 h-4" />
+              <span>Show Login History</span>
+            </label>
+            <button type="submit" className={btnClass}>Save Security</button>
+          </form>
+        )}
+
+        {activeTab === "visitorPrefs" && (
+          <form onSubmit={(e) => handleUpdate("Visitor Preferences", e)} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
+            <h2 className="text-lg font-semibold">Visitor Preferences</h2>
+            <label className="block text-sm">
+              Default Invite Duration
+              <select value={visitorPrefs.defaultDuration} onChange={(e) => setVisitorPrefs({ ...visitorPrefs, defaultDuration: e.target.value })} className={inputClass + " mt-1"}>
+                <option>1 hour</option>
+                <option>3 hours</option>
+                <option>6 hours</option>
+                <option>1 day</option>
+              </select>
+            </label>
+            <label className="block text-sm">
+              Max Visitors
+              <input type="number" value={visitorPrefs.maxVisitors} onChange={(e) => setVisitorPrefs({ ...visitorPrefs, maxVisitors: e.target.value })} className={inputClass + " mt-1"} min="1" />
+            </label>
+            <button type="submit" className={btnClass}>Save Visitor Preferences</button>
+          </form>
+        )}
+
+        {activeTab === "preferences" && (
+          <form onSubmit={(e) => handleUpdate("Preferences", e)} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
+            <h2 className="text-lg font-semibold">Preferences</h2>
+            <label className="flex items-center space-x-2 text-sm">
+              <input type="checkbox" checked={darkMode} onChange={toggleDarkMode} className="w-4 h-4" />
+              <span>Dark Mode</span>
+            </label>
+          </form>
+        )}
       </div>
     </div>
   );

@@ -20,6 +20,8 @@ export default function Sidebar({ role }) {
           <Link to="/pages/resident/AddVisitor">Add Visitor</Link>
           <Link to="/pages/resident/GeneratePass">Generate Pass</Link>
           <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
+          <Link to="/pages/resident/BulkInvite">Bulk Invite</Link>
+          <Link to="/pages/resident/Settings">Settings</Link>
         </>
       )}
 
