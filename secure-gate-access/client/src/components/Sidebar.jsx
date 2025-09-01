@@ -16,17 +16,18 @@ export default function Sidebar({ role }) {
       {role === "resident" && (
         <>
           <div className="group-title">Resident</div>
-          <Link to="/pages/resident/ResidentDashboard">Dashboard</Link>
-          <Link to="/pages/resident/AddVisitor">Add Visitor</Link>
-          <Link to="/pages/resident/GeneratePass">Generate Pass</Link>
-          <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
+          <Link to="/dashboard/resident">Dashboard</Link>
+          <Link to="/resident/add-visitor">Add Visitor</Link>
+          <Link to="/resident/generate-pass">Generate Pass</Link>
+          <Link to="/resident/visitor-history">Visitor History</Link>
+          <Link to="/resident/bulk-invite">Bulk Invite</Link>
         </>
       )}
 
       {role === "guard" && (
         <>
           <div className="group-title">Security</div>
-          <Link to="/guard/dashboard">Dashboard</Link>
+          <Link to="/dashboard/guard">Dashboard</Link>
           <Link to="/guard/scan-qr">Scan QR</Link>
           <Link to="/guard/manual-check">Manual Check</Link>
           <Link to="/visitor-history">Visitor History</Link>
@@ -36,7 +37,7 @@ export default function Sidebar({ role }) {
       {role === "admin" && (
         <>
           <div className="group-title">Admin</div>
-          <Link to="/admin/dashboard">Dashboard</Link>
+          <Link to="/dashboard/admin">Dashboard</Link>
           <Link to="/admin/manage-residents">Residents</Link>
           <Link to="/admin/visitor-log">Visitors Log</Link>
           <Link to="/admin/manage-staff">Staff</Link>

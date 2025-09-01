@@ -10,9 +10,22 @@ CREATE TABLE visitors (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     phone VARCHAR(20),
+    email VARCHAR(100),
+    id_number VARCHAR(50),
+    vehicle_plate VARCHAR(20),
     purpose TEXT,
+    estimated_time TIMESTAMP,
     check_in TIMESTAMP DEFAULT NOW(),
     check_out TIMESTAMP
+);
+
+CREATE TABLE passes (
+    id SERIAL PRIMARY KEY,
+    pass_id VARCHAR(100) UNIQUE NOT NULL,
+    visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
+    expires_at TIMESTAMP NOT NULL,
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE access_logs (
