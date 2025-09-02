@@ -141,3 +141,18 @@ router.post("/api/login", (req, res) => {
   res.json({ token, role: user.role });
 });
 
+// Update user profile
+router.put("/api/user/profile", (req, res) => {
+  const { email, name, phone, profilePic } = req.body;
+  const user = users.find(u => u.email === email);
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+  user.username = name;
+  user.phone = phone;
+  user.profilePic = profilePic;
+  res.json({ success: true, user });
+});
+
+export default router;
+

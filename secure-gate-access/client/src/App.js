@@ -51,7 +51,7 @@ function App() {
           path="/pages/resident/VisitorHistory"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <ResidentDashboard />
+              <VisitorHistory />
             </ProtectedRoute>
           }
         />
@@ -109,7 +109,7 @@ function App() {
           path="/dashboard/guard/VisitorHistory"
           element={
             <ProtectedRoute allowedRoles={["security"]}>
-              <GuardDashboard />
+              <VisitorHistory />
             </ProtectedRoute>
           }
         />
