@@ -8,43 +8,43 @@ const Link = ({ to, children }) => (
   </NavLink>
 );
 
-export default function Sidebar({ role }) {
+export default function Sidebar({ role, onLogout }) {
   return (
-    <aside className="sidebar">
-      <h2>SecureGate</h2>
-
-      {role === "resident" && (
-        <>
-          <div className="group-title">Resident</div>
-          <Link to="/pages/resident/ResidentDashboard">Dashboard</Link>
-          <Link to="/pages/resident/AddVisitor">Add Visitor</Link>
-          <Link to="/pages/resident/GeneratePass">Generate Pass</Link>
-          <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
-          <Link to="/pages/resident/BulkInvite">Bulk Invite</Link>
-          <Link to="/pages/resident/Settings">Settings</Link>
-        </>
-      )}
-
-      {role === "guard" && (
-        <>
-          <div className="group-title">Security</div>
-          <Link to="/guard/dashboard">Dashboard</Link>
-          <Link to="/guard/scan-qr">Scan QR</Link>
-          <Link to="/guard/manual-check">Manual Check</Link>
-          <Link to="/visitor-history">Visitor History</Link>
-        </>
-      )}
-
-      {role === "admin" && (
-        <>
-          <div className="group-title">Admin</div>
-          <Link to="/admin/dashboard">Dashboard</Link>
-          <Link to="/admin/manage-residents">Residents</Link>
-          <Link to="/admin/visitor-log">Visitors Log</Link>
-          <Link to="/admin/manage-staff">Staff</Link>
-          <Link to="/admin/reports">Reports</Link>
-        </>
-      )}
+    <aside className="sidebar" style={{display:'flex', flexDirection:'column', height:'100%'}}>
+      <div>
+        <h2>SecureGate</h2>
+        {role === "resident" && (
+          <>
+            <div className="group-title">Resident</div>
+            <Link to="/pages/resident/ResidentDashboard">Dashboard</Link>
+            <Link to="/pages/resident/AddVisitor">Add Visitor</Link>
+            <Link to="/pages/resident/GeneratePass">Generate Pass</Link>
+            <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
+            <Link to="/pages/resident/BulkInvite">Bulk Invite</Link>
+            <Link to="/pages/resident/Settings">Settings</Link>
+          </>
+        )}
+        {role === "guard" && (
+          <>
+            <div className="group-title">Security</div>
+            <Link to="/dashboard/guard">Dashboard</Link>
+            <Link to="/dashboard/guard/VisitorHistory">Visitor History</Link>
+            <Link to="/dashboard/guard/Settings">Settings</Link>
+          </>
+        )}
+        {role === "admin" && (
+          <>
+            <div className="group-title">Admin</div>
+            <Link to="/dashboard/admin">Dashboard</Link>
+            <Link to="/dashboard/admin/users">Residents</Link>
+            <Link to="/dashboard/admin/visitors">Visitors Log</Link>
+            <Link to="/dashboard/admin/manage-staff">Staff</Link>
+            <Link to="/dashboard/admin/reports">Reports</Link>
+            <Link to="/dashboard/admin/settings">Settings</Link>
+          </>
+        )}
+      </div>
+      <button className="btn" style={{marginTop:'auto', width:'100%'}} onClick={onLogout}>Logout</button>
     </aside>
   );
 }

@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/Login";
 import RegistrationPage from "./pages/Register";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -10,8 +10,9 @@ import AddVisitor from "./pages/resident/AddVisitor";
 import GeneratePass from "./pages/resident/GeneratePass";
 import VisitorHistory from "./pages/resident/VisitorHistory";
 import GuardDashboard from "./pages/guard/GuardDashboard";
+import ManualCheck from "./pages/guard/ManualCheck";
+import ScanQR from "./pages/guard/ScanQR";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-
 
 function App() {
   return (
@@ -70,7 +71,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-  {/* BulkInvite and Settings will be rendered as panels inside ResidentDashboard, not as separate routes */}
 
         {/* Guard routes */}
         <Route
@@ -81,8 +81,40 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/dashboard/guard/ManualCheck"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <GuardDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/guard/ScanQR"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <GuardDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/guard/Settings"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <GuardDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/guard/VisitorHistory"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <GuardDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Admin routes */}
+        {/* Admin routes (blank for now) */}
         <Route
           path="/dashboard/admin"
           element={
@@ -91,6 +123,49 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/dashboard/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/visitors"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/manage-staff"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/reports"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/settings"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Default/fallback */}
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
   );

@@ -9,23 +9,48 @@ const users = []; // temp store, replace with DB
 
 // Register
 router.post("/register", async (req, res) => {
-  const { username, password } = req.body;
-  const hashed = await bcrypt.hash(password, 10);
-  users.push({ username, password: hashed });
-  res.json({ message: "User registered" });
+  try {
+    const { username, email, role, area, phone, house, password } = req.body;
+
+    if (users.find((u) => u.email === email)) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const newUser = {
+      username,
+      email,
+      role,      // "resident" or "security"
+      area,
+      phone,
+      house,
+      password: hashed,
+      verified: true, // skip email verification for now
+    };
+
+    users.push(newUser);
+
+    res.json({ message: "User registered successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 // Login
 router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find((u) => u.username === username);
-  if (!user) return res.status(400).json({ error: "User not found" });
+  const { email, password } = req.body;
+  const user = users.find((u) => u.email === email);
+
+  if (!user) return res.status(400).json({ message: "User not found" });
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(400).json({ error: "Invalid password" });
+  if (!valid) return res.status(400).json({ message: "Invalid password" });
 
-  const token = jwt.sign({ username }, SECRET, { expiresIn: "1h" });
-  res.json({ token });
+  const token = jwt.sign({ email: user.email, role: user.role }, SECRET, { expiresIn: "1h" });
+
+  res.json({ token, role: user.role });
 });
 
 // Protected test
