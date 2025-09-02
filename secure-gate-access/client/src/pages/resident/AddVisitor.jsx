@@ -6,21 +6,19 @@ import { createVisitor, createPass } from "../../services/passService";
 
 export default function AddVisitor() {
   const onLogout = ()=> { localStorage.removeItem("role"); window.location.href = "/"; };
-  const [form, setForm] = useState({ 
-    name:"", 
-    phone:"", 
+  const [form, setForm] = useState({
+    name:"",
+    phone:"",
     email:"",
-    idNumber:"", 
-    vehiclePlate:"", 
-    estimatedTime:"", 
-    purpose:"" 
+    idNumber:"",
+    vehiclePlate:"",
+    estimatedTime:"",
+    purpose:""
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
-  const [generatePassImmediately, setGeneratePassImmediately] = useState(true);
-
-  const validateForm = () => {
+  const [generatePassImmediately, setGeneratePassImmediately] = useState(true);  const validateForm = () => {
     if (!form.name.trim()) return 'Name is required';
     if (!form.phone.trim()) return 'Phone is required';
     if (!form.email.trim()) return 'Email is required';
@@ -126,7 +124,7 @@ export default function AddVisitor() {
         <main className="main">
           <div className="panel">
             <h3 style={{marginTop:0}}>Register Visitor</h3>
-            
+
             {error && (
               <div style={{color: 'red', marginBottom: 16, padding: 12, backgroundColor: '#ffeaea', borderRadius: 4}}>
                 {error}
@@ -144,73 +142,73 @@ export default function AddVisitor() {
                 </div>
               </div>
             )}
-            
+
             <form onSubmit={submit} style={{display:"grid", gap:12, marginTop:12}}>
-              <input 
-                className="input" 
-                placeholder="Full name *" 
-                value={form.name} 
+              <input
+                className="input"
+                placeholder="Full name *"
+                value={form.name}
                 onChange={e=>setForm({...form,name:e.target.value})}
                 disabled={loading}
                 required
               />
-              <input 
-                className="input" 
-                placeholder="Phone (0xxxxxxxxx) *" 
-                value={form.phone} 
+              <input
+                className="input"
+                placeholder="Phone (0xxxxxxxxx) *"
+                value={form.phone}
                 onChange={e=>setForm({...form,phone:e.target.value})}
                 disabled={loading}
                 required
               />
-              <input 
-                className="input" 
+              <input
+                className="input"
                 type="email"
-                placeholder="Email address *" 
-                value={form.email} 
+                placeholder="Email address *"
+                value={form.email}
                 onChange={e=>setForm({...form,email:e.target.value})}
                 disabled={loading}
                 required
               />
-              <input 
-                className="input" 
-                placeholder="ID/Passport number" 
-                value={form.idNumber} 
+              <input
+                className="input"
+                placeholder="ID/Passport number"
+                value={form.idNumber}
                 onChange={e=>setForm({...form,idNumber:e.target.value})}
                 disabled={loading}
               />
-              <input 
-                className="input" 
-                placeholder="Vehicle registration (optional)" 
-                value={form.vehiclePlate} 
+              <input
+                className="input"
+                placeholder="Vehicle registration (optional)"
+                value={form.vehiclePlate}
                 onChange={e=>setForm({...form,vehiclePlate:e.target.value})}
                 disabled={loading}
               />
-              <input 
-                className="input" 
-                placeholder="Estimated duration (e.g., 2 hours, 30 minutes)" 
-                value={form.estimatedTime} 
+              <input
+                className="input"
+                placeholder="Estimated duration (e.g., 2 hours, 30 minutes)"
+                value={form.estimatedTime}
                 onChange={e=>setForm({...form,estimatedTime:e.target.value})}
                 disabled={loading}
               />
-              <input 
-                className="input" 
-                placeholder="Purpose (e.g., visit, delivery, meeting) *" 
-                value={form.purpose} 
+              <input
+                className="input"
+                placeholder="Purpose (e.g., visit, delivery, meeting) *"
+                value={form.purpose}
                 onChange={e=>setForm({...form,purpose:e.target.value})}
                 disabled={loading}
                 required
               />
-              
+
               <label style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: '14px'}}>
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={generatePassImmediately}
                   onChange={e => setGeneratePassImmediately(e.target.checked)}
                   disabled={loading}
                 />
                 Generate QR pass immediately (auto-approve)
               </label>
-              
+
               <div style={{display:"flex", gap:10}}>
                 <button type="button" className="btn" onClick={clearForm} disabled={loading}>
                   Clear

@@ -2,14 +2,16 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/Login";
 import RegistrationPage from "./pages/Register";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import BulkInvite from "./pages/resident/BulkInvite";
+import Settings from "./pages/resident/Settings";
 import ResidentDashboard from "./pages/resident/ResidentDashboard";
 import AddVisitor from "./pages/resident/AddVisitor";
 import GeneratePass from "./pages/resident/GeneratePass";
 import VisitorHistory from "./pages/resident/VisitorHistory";
-import BulkInvite from "./pages/resident/BulkInvite";
 import GuardDashboard from "./pages/guard/GuardDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import ProtectedRoute from "./routes/ProtectedRoute";
+
 
 function App() {
   return (
@@ -35,7 +37,7 @@ function App() {
           path="/resident/add-visitor"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <AddVisitor />
+              <ResidentDashboard />
             </ProtectedRoute>
           }
         />
@@ -43,7 +45,7 @@ function App() {
           path="/resident/generate-pass"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <GeneratePass />
+              <ResidentDashboard />
             </ProtectedRoute>
           }
         />
@@ -51,7 +53,7 @@ function App() {
           path="/resident/visitor-history"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <VisitorHistory />
+              <ResidentDashboard />
             </ProtectedRoute>
           }
         />

@@ -23,6 +23,12 @@ export default function Sidebar({ role }) {
           <li className={isActive("/pages/resident/VisitorHistory")}>
             <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
           </li>
+          <li className={isActive("/pages/resident/BulkInvite")}>
+            <Link to="/pages/resident/BulkInvite">Bulk Invite</Link>
+          </li>
+          <li className={isActive("/pages/resident/Settings")}>
+            <Link to="/pages/resident/Settings">Settings</Link>
+          </li>
         </ul>
       </div>
     );
