@@ -28,6 +28,18 @@ CREATE TABLE passes (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE bulk_invites (
+    id SERIAL PRIMARY KEY,
+    event_name VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    time TIME NOT NULL,
+    num_guests INT NOT NULL,
+    invite_code VARCHAR(100) UNIQUE NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_by VARCHAR(100), -- resident email
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE access_logs (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,

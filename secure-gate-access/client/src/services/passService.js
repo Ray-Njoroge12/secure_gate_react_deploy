@@ -43,6 +43,9 @@ export function checkIn(token){
 export function checkOut(token){
   return api('POST','/api/passes/check-out',{ token });
 }
-export function bulkInvite(guests){
-  return api('POST','/api/bulk-invite', { guests });
+export function bulkInvite(eventDetails){
+  return api('POST','/api/visitors/bulk-invite', eventDetails);
+}
+export function getBulkInvite(inviteCode){
+  return api('GET', `/api/visitors/bulk-invite/${inviteCode}`);
 }

@@ -23,6 +23,8 @@ function App() {
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/register/:inviteCode" element={<RegistrationPage />} />
+        <Route path="/bulk-register/:inviteCode" element={<RegistrationPage />} />
 
         {/* Resident routes */}
         <Route
@@ -37,7 +39,7 @@ function App() {
           path="/resident/add-visitor"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <ResidentDashboard />
+              <AddVisitor />
             </ProtectedRoute>
           }
         />
@@ -45,7 +47,7 @@ function App() {
           path="/resident/generate-pass"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <ResidentDashboard />
+              <GeneratePass />
             </ProtectedRoute>
           }
         />
@@ -53,7 +55,7 @@ function App() {
           path="/resident/visitor-history"
           element={
             <ProtectedRoute allowedRoles={["resident"]}>
-              <ResidentDashboard />
+              <VisitorHistory />
             </ProtectedRoute>
           }
         />

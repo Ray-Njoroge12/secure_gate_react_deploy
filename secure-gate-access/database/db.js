@@ -3,7 +3,7 @@ import { open } from "sqlite";
 
 // Create SQLite database connection
 const dbPromise = open({
-  filename: "./secure_gate.db",
+  filename: "../secure_gate.db",
   driver: sqlite3.Database,
 });
 
@@ -21,10 +21,9 @@ const initializeDatabase = async () => {
         name TEXT NOT NULL,
         phone TEXT,
         email TEXT,
-        id_number TEXT,
-        vehicle_plate TEXT,
         purpose TEXT,
-        estimated_time TEXT,
+        date_of_visit TEXT,
+        time_of_visit TEXT,
         check_in DATETIME DEFAULT CURRENT_TIMESTAMP,
         check_out DATETIME
       )
@@ -56,6 +55,22 @@ const initializeDatabase = async () => {
       )
     `);
     console.log("Users table created");
+
+    // Create bulk_invites table
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS bulk_invites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_name TEXT NOT NULL,
+        date TEXT NOT NULL,
+        time TEXT NOT NULL,
+        num_guests INTEGER NOT NULL,
+        invite_code TEXT UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        created_by TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("Bulk invites table created");
 
     console.log("Database initialization completed");
     return db;

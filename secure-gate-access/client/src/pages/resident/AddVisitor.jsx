@@ -10,30 +10,29 @@ export default function AddVisitor() {
     name:"",
     phone:"",
     email:"",
-    idNumber:"",
-    vehiclePlate:"",
-    estimatedTime:"",
+    dateOfVisit:"",
+    time:"",
     purpose:""
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
-  const [generatePassImmediately, setGeneratePassImmediately] = useState(true);  const validateForm = () => {
+  const [generatePassImmediately, setGeneratePassImmediately] = useState(true);
+  const validateForm = () => {
     if (!form.name.trim()) return 'Name is required';
     if (!form.phone.trim()) return 'Phone is required';
-    if (!form.email.trim()) return 'Email is required';
     if (!form.purpose.trim()) return 'Purpose is required';
-    
+
     // Validate phone format (basic)
     if (!/^0\d{9}$/.test(form.phone.trim())) {
       return 'Phone must be in format 0xxxxxxxxx (10 digits starting with 0)';
     }
-    
-    // Validate email format (basic)
-    if (!/\S+@\S+\.\S+/.test(form.email.trim())) {
+
+    // Validate email format if provided (optional)
+    if (form.email.trim() && !/\S+@\S+\.\S+/.test(form.email.trim())) {
       return 'Please enter a valid email address';
     }
-    
+
     return null;
   };
 
@@ -56,10 +55,9 @@ export default function AddVisitor() {
         name: form.name.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
-        idNumber: form.idNumber.trim(),
-        vehiclePlate: form.vehiclePlate.trim(),
-        purpose: form.purpose.trim(),
-        estimatedTime: form.estimatedTime.trim() || '1 hour'
+        dateOfVisit: form.dateOfVisit.trim(),
+        time: form.time.trim(),
+        purpose: form.purpose.trim()
       };
 
       const visitorResponse = await createVisitor(visitorData);
@@ -84,14 +82,13 @@ export default function AddVisitor() {
       });
 
       // Clear form
-      setForm({ 
-        name:"", 
-        phone:"", 
+      setForm({
+        name:"",
+        phone:"",
         email:"",
-        idNumber:"", 
-        vehiclePlate:"", 
-        estimatedTime:"", 
-        purpose:"" 
+        dateOfVisit:"",
+        time:"",
+        purpose:""
       });
 
     } catch (err) {
@@ -103,14 +100,13 @@ export default function AddVisitor() {
   };
 
   const clearForm = () => {
-    setForm({ 
-      name:"", 
-      phone:"", 
+    setForm({
+      name:"",
+      phone:"",
       email:"",
-      idNumber:"", 
-      vehiclePlate:"", 
-      estimatedTime:"", 
-      purpose:"" 
+      dateOfVisit:"",
+      time:"",
+      purpose:""
     });
     setError('');
     setSuccess(null);
@@ -163,32 +159,28 @@ export default function AddVisitor() {
               <input
                 className="input"
                 type="email"
-                placeholder="Email address *"
+                placeholder="Email address (optional)"
                 value={form.email}
                 onChange={e=>setForm({...form,email:e.target.value})}
+                disabled={loading}
+              />
+              <input
+                className="input"
+                type="date"
+                placeholder="Date of Visit *"
+                value={form.dateOfVisit}
+                onChange={e=>setForm({...form,dateOfVisit:e.target.value})}
                 disabled={loading}
                 required
               />
               <input
                 className="input"
-                placeholder="ID/Passport number"
-                value={form.idNumber}
-                onChange={e=>setForm({...form,idNumber:e.target.value})}
+                type="time"
+                placeholder="Time of Visit *"
+                value={form.time}
+                onChange={e=>setForm({...form,time:e.target.value})}
                 disabled={loading}
-              />
-              <input
-                className="input"
-                placeholder="Vehicle registration (optional)"
-                value={form.vehiclePlate}
-                onChange={e=>setForm({...form,vehiclePlate:e.target.value})}
-                disabled={loading}
-              />
-              <input
-                className="input"
-                placeholder="Estimated duration (e.g., 2 hours, 30 minutes)"
-                value={form.estimatedTime}
-                onChange={e=>setForm({...form,estimatedTime:e.target.value})}
-                disabled={loading}
+                required
               />
               <input
                 className="input"
