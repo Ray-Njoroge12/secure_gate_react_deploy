@@ -18,14 +18,23 @@ const initializeDatabase = async () => {
     await db.exec(`
       CREATE TABLE IF NOT EXISTS visitors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        name TEXT,
         phone TEXT,
         email TEXT,
         purpose TEXT,
         date_of_visit TEXT,
         time_of_visit TEXT,
+        id_number TEXT,
+        vehicle_plate TEXT,
+        invite_code TEXT UNIQUE,
+        status TEXT DEFAULT 'PENDING',
+        expected_time TEXT,
+        otp TEXT,
+        qr_code TEXT,
+        bulk_invite_id INTEGER,
         check_in DATETIME DEFAULT CURRENT_TIMESTAMP,
-        check_out DATETIME
+        check_out DATETIME,
+        FOREIGN KEY (bulk_invite_id) REFERENCES bulk_invites(id)
       )
     `);
     console.log("Visitors table created");

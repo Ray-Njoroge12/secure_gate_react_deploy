@@ -1,7 +1,7 @@
 // Unified registration page supporting normal user registration and event (bulk invite) visitor self-registration
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { createVisitor, getBulkInvite } from "../services/passService";
+import { completeInvite, getBulkInvite } from "../services/passService";
 import "../styles.css";
 
 export default function RegistrationPage() {
@@ -92,8 +92,8 @@ export default function RegistrationPage() {
   const handleBulkRegister = async (e) => {
     e.preventDefault();
 
-    if (!name.trim() || !visitorPhone.trim() || !visitorEmail.trim() || !purpose.trim()) {
-      setError("Name, phone, email, and purpose are required");
+    if (!name.trim() || !visitorPhone.trim() || !visitorEmail.trim()) {
+      setError("Name, phone, and email are required");
       return;
     }
 
@@ -113,19 +113,18 @@ export default function RegistrationPage() {
     setError("");
 
     try {
-      const visitorData = {
+      const guestData = {
         name: name.trim(),
         phone: visitorPhone.trim(),
         email: visitorEmail.trim(),
-        idNumber: idNumber.trim(),
-        vehiclePlate: vehiclePlate.trim(),
-        purpose: purpose.trim(),
-        estimatedTime: "2 hours"
+        idNumber: idNumber.trim() || null,
+        vehiclePlate: vehiclePlate.trim() || null,
+        expectedTime: "2 hours"
       };
 
-      const response = await createVisitor(visitorData);
+      const response = await completeInvite(inviteCode, guestData);
 
-      setSuccess("Registration successful! Your visitor pass has been created.");
+      setSuccess("Registration successful! Your QR code and OTP have been generated.");
       setTimeout(() => navigate("/"), 3000);
     } catch (err) {
       console.error('Bulk registration failed:', err);

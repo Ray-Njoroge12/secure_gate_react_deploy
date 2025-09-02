@@ -1,5 +1,5 @@
 import express from "express";
-import { createVisitor, getMyVisitors, createPass, bulkInvite, getBulkInvite } from "../controllers/visitorController.js";
+import { createVisitor, getMyVisitors, createPass, bulkInvite, getBulkInvite, completeInvite } from "../controllers/visitorController.js";
 
 const router = express.Router();
 
@@ -17,5 +17,8 @@ router.post("/bulk-invite", bulkInvite);
 
 // GET /api/visitors/bulk-invite/:inviteCode - Get bulk invitation details
 router.get("/bulk-invite/:inviteCode", getBulkInvite);
+
+// POST /api/visitors/complete/:inviteCode - Complete guest self-registration
+router.post("/complete/:inviteCode", completeInvite);
 
 export default router;

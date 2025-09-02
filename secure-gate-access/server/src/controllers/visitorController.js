@@ -5,33 +5,25 @@ const createVisitor = async (req, res) => {
   try {
     const { name, phone, email, dateOfVisit, time, purpose } = req.body;
 
-    if (!name || !phone || !purpose) {
-      return res.status(400).json({ message: "Name, phone, and purpose are required" });
-    }
-
-    // Validate phone format
-    if (!/^0\d{9}$/.test(phone)) {
-      return res.status(422).json({ message: "Phone must be in format 0xxxxxxxxx (10 digits starting with 0)" });
-    }
-
-    // Validate email format if provided
-    if (email && !/\S+@\S+\.\S+/.test(email)) {
-      return res.status(422).json({ message: "Valid email address is required" });
-    }
+    // Generate unique invite code
+    const inviteCode = `INVITE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     const db = await dbPromise;
     const result = await db.run(
-      `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, phone, email || null, purpose, dateOfVisit, time]
+      `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING']
     );
 
     // Get the inserted visitor
     const visitor = await db.get(
-      `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, check_in
+      `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, check_in
        FROM visitors WHERE id = ?`,
       [result.lastID]
     );
+
+    // Generate invite link
+    const inviteLink = `${req.protocol}://${req.get('host')}/invite/${inviteCode}`;
 
     res.status(201).json({
       id: visitor.id,
@@ -41,7 +33,9 @@ const createVisitor = async (req, res) => {
       purpose: visitor.purpose,
       dateOfVisit: visitor.date_of_visit,
       time: visitor.time_of_visit,
-      status: "approved",
+      inviteCode: visitor.invite_code,
+      inviteLink: inviteLink,
+      status: visitor.status,
       checkIn: visitor.check_in
     });
   } catch (error) {
@@ -207,4 +201,88 @@ const getBulkInvite = async (req, res) => {
   }
 };
 
-export { createVisitor, getMyVisitors, createPass, bulkInvite, getBulkInvite };
+const completeInvite = async (req, res) => {
+  try {
+    const { inviteCode } = req.params;
+    const { name, phone, email, idNumber, vehiclePlate, expectedTime } = req.body;
+
+    if (!name || !phone) {
+      return res.status(400).json({ message: "Name and phone are required" });
+    }
+
+    // Validate phone format
+    if (!/^0\d{9}$/.test(phone)) {
+      return res.status(422).json({ message: "Phone must be in format 0xxxxxxxxx (10 digits starting with 0)" });
+    }
+
+    // Validate email format if provided
+    if (email && !/\S+@\S+\.\S+/.test(email)) {
+      return res.status(422).json({ message: "Valid email address is required" });
+    }
+
+    const db = await dbPromise;
+
+    // Find visitor by invite code
+    const visitor = await db.get(
+      `SELECT id, status FROM visitors WHERE invite_code = ?`,
+      [inviteCode]
+    );
+
+    if (!visitor) {
+      return res.status(404).json({ message: "Invitation not found" });
+    }
+
+    if (visitor.status !== 'PENDING') {
+      return res.status(422).json({ message: "Invitation has already been completed" });
+    }
+
+    // Generate OTP and QR code
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    const passId = `PASS-${visitor.id}-${Date.now()}`;
+    const qrCodeData = await qrcode.toDataURL(passId);
+
+    // Update visitor with guest details
+    await db.run(
+      `UPDATE visitors SET
+        name = ?,
+        phone = ?,
+        email = ?,
+        id_number = ?,
+        vehicle_plate = ?,
+        expected_time = ?,
+        otp = ?,
+        qr_code = ?,
+        status = 'CONFIRMED'
+       WHERE id = ?`,
+      [name, phone, email || null, idNumber || null, vehiclePlate || null, expectedTime || null, otp, qrCodeData, visitor.id]
+    );
+
+    // Get updated visitor
+    const updatedVisitor = await db.get(
+      `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, id_number, vehicle_plate, expected_time, otp, qr_code, status
+       FROM visitors WHERE id = ?`,
+      [visitor.id]
+    );
+
+    res.status(200).json({
+      id: updatedVisitor.id,
+      name: updatedVisitor.name,
+      phone: updatedVisitor.phone,
+      email: updatedVisitor.email,
+      purpose: updatedVisitor.purpose,
+      dateOfVisit: updatedVisitor.date_of_visit,
+      time: updatedVisitor.time_of_visit,
+      idNumber: updatedVisitor.id_number,
+      vehiclePlate: updatedVisitor.vehicle_plate,
+      expectedTime: updatedVisitor.expected_time,
+      otp: updatedVisitor.otp,
+      qrCode: updatedVisitor.qr_code,
+      status: updatedVisitor.status
+    });
+  } catch (error) {
+    console.error("Error completing invite:", error);
+    res.status(500).json({ message: "Failed to complete invitation" });
+  }
+};
+
+export { createVisitor, getMyVisitors, createPass, bulkInvite, getBulkInvite, completeInvite };

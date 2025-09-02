@@ -49,3 +49,6 @@ export function bulkInvite(eventDetails){
 export function getBulkInvite(inviteCode){
   return api('GET', `/api/visitors/bulk-invite/${inviteCode}`);
 }
+export function completeInvite(inviteCode, guestDetails){
+  return api('POST', `/api/visitors/complete/${inviteCode}`, guestDetails);
+}

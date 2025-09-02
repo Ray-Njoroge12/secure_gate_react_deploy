@@ -75,10 +75,8 @@ export default function AddVisitor() {
 
       setSuccess({
         visitor: visitorResponse,
-        pass: passResponse,
-        message: passResponse 
-          ? 'Visitor created and pass generated successfully!' 
-          : 'Visitor created successfully! Use Generate Pass to create QR code.'
+        inviteLink: visitorResponse.inviteLink,
+        message: 'Invitation created successfully! Share the link with the guest to complete registration.'
       });
 
       // Clear form
@@ -132,6 +130,14 @@ export default function AddVisitor() {
                 <div style={{fontWeight: 'bold'}}>{success.message}</div>
                 <div style={{marginTop: 8, fontSize: '14px'}}>
                   Visitor ID: {success.visitor.id} | Status: {success.visitor.status}
+                  {success.inviteLink && (
+                    <div style={{marginTop: 8}}>
+                      <strong>Invite Link:</strong>
+                      <div style={{wordBreak: 'break-all', backgroundColor: '#f0f0f0', padding: 8, borderRadius: 4, marginTop: 4}}>
+                        {success.inviteLink}
+                      </div>
+                    </div>
+                  )}
                   {success.pass && (
                     <div>Pass ID: {success.pass.passId} | Expires: {new Date(success.pass.expiresAt).toLocaleString()}</div>
                   )}
