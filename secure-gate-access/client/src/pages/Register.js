@@ -1,4 +1,4 @@
-// client/src/pages/Registration.jsx
+// Unified registration page supporting normal user registration and event (bulk invite) visitor self-registration
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { createVisitor, getBulkInvite } from "../services/passService";
@@ -68,10 +68,10 @@ export default function RegistrationPage() {
           username,
           email,
           role,
-          area: residentialArea,  // matches backend field
+          area: residentialArea,
           phone,
-          house: houseNumber,     // matches backend field
-          password
+          house: role === "resident" ? houseNumber : "", // only send house number for residents
+          password,
         }),
       });
 
@@ -83,7 +83,6 @@ export default function RegistrationPage() {
       }
 
       setSuccess("Registration successful! Please check your email to verify.");
-      // Optionally navigate to login after a delay
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
       setError("Server error. Try again later.");
@@ -320,7 +319,7 @@ export default function RegistrationPage() {
             onChange={(e) => setRole(e.target.value)}
           >
             <option value="resident">Resident</option>
-            <option value="guard">Guard</option>
+            <option value="security">Guard</option>
           </select>
 
           <label>Residential Area</label>
@@ -333,15 +332,20 @@ export default function RegistrationPage() {
             required
           />
 
-          <label>House Number</label>
-          <input
-            type="text"
-            placeholder="House Number"
-            className="input"
-            value={houseNumber}
-            onChange={(e) => setHouseNumber(e.target.value)}
-            required
-          />
+          {/* Show house number only for residents */}
+          {role === "resident" && (
+            <>
+              <label>House Number</label>
+              <input
+                type="text"
+                placeholder="House Number"
+                className="input"
+                value={houseNumber}
+                onChange={(e) => setHouseNumber(e.target.value)}
+                required
+              />
+            </>
+          )}
 
           <label>Phone Number</label>
           <input

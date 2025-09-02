@@ -35,16 +35,41 @@ export default function Sidebar({ role }) {
   }
 
   // Keep existing logic for guard/admin
-  if (role === "security") {
-    return (
-      <div className="sidebar">
-        <h2>Guard Menu</h2>
-        <ul>
-          <li><Link to="/dashboard/guard">Guard Dashboard</Link></li>
-        </ul>
-      </div>
-    );
-  }
+  if (role === "guard") {
+  return (
+    <div className="sidebar">
+      <h2>Guard Menu</h2>
+      <ul>
+        <li className={isActive("/dashboard/guard")}>
+          <Link to="/dashboard/guard">Dashboard</Link>
+        </li>
+        <li className={isActive("/dashboard/guard/scanner")}>
+          <Link to="/dashboard/guard/scanner">Open Scanner</Link>
+        </li>
+        <li className={isActive("/dashboard/guard/manual-check")}>
+          <Link to="/dashboard/guard/manual-check">Manual Check</Link>
+        </li>
+        <li className={isActive("/pages/guard/VisitorHistory")}>
+          <Link to="/pages/guard/VisitorHistory">Visitor History</Link>
+        </li>
+        <li className={isActive("/pages/guard/Settings")}>
+          <Link to="/pages/guard/Settings">Settings</Link>
+        </li>
+        <li>
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.href = "/login";
+            }}
+            className="btn"
+          >
+            Logout
+          </button>
+        </li>
+      </ul>
+    </div>
+  );
+}
 
   if (role === "admin") {
     return (

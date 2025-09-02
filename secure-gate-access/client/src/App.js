@@ -10,8 +10,9 @@ import AddVisitor from "./pages/resident/AddVisitor";
 import GeneratePass from "./pages/resident/GeneratePass";
 import VisitorHistory from "./pages/resident/VisitorHistory";
 import GuardDashboard from "./pages/guard/GuardDashboard";
+import ManualCheck from "./pages/guard/ManualCheck";
+import ScanQR from "./pages/guard/ScanQR";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-
 
 function App() {
   return (
@@ -67,8 +68,16 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Legacy routes for backward compatibility */}
+        {/* Optional resident settings (using existing dashboard placeholder) */}
+        <Route
+          path="/resident/settings"
+          element={
+            <ProtectedRoute allowedRoles={["resident"]}>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+        {/* Legacy redirects for backward compatibility */}
         <Route path="/pages/resident/AddVisitor" element={<Navigate to="/resident/add-visitor" replace />} />
         <Route path="/pages/resident/GeneratePass" element={<Navigate to="/resident/generate-pass" replace />} />
         <Route path="/pages/resident/VisitorHistory" element={<Navigate to="/resident/visitor-history" replace />} />
@@ -82,19 +91,23 @@ function App() {
             </ProtectedRoute>
           }
         />
+  {/* Guard auxiliary routes (reuse GuardDashboard until specialized components exist) */}
+  <Route path="/dashboard/guard/manual-check" element={<ProtectedRoute allowedRoles={["security"]}><ManualCheck /></ProtectedRoute>} />
+  <Route path="/dashboard/guard/scan-qr" element={<ProtectedRoute allowedRoles={["security"]}><ScanQR /></ProtectedRoute>} />
+  <Route path="/dashboard/guard/visitor-history" element={<ProtectedRoute allowedRoles={["security"]}><GuardDashboard /></ProtectedRoute>} />
+  <Route path="/dashboard/guard/settings" element={<ProtectedRoute allowedRoles={["security"]}><GuardDashboard /></ProtectedRoute>} />
 
-        {/* Admin routes */}
-        <Route
-          path="/dashboard/admin"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* Admin routes (blank for now) */}
+  {/* Admin routes */}
+  <Route path="/dashboard/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+  <Route path="/dashboard/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+  <Route path="/dashboard/admin/visitors" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+  <Route path="/dashboard/admin/manage-staff" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+  <Route path="/dashboard/admin/reports" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+  <Route path="/dashboard/admin/settings" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
 
-        {/* Catch-all route for unmatched paths */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+  {/* Catch-all route for unmatched paths */}
+  <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
