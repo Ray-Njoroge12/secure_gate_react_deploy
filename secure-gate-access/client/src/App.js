@@ -91,11 +91,39 @@ function App() {
             </ProtectedRoute>
           }
         />
-  {/* Guard auxiliary routes (reuse GuardDashboard until specialized components exist) */}
-  <Route path="/dashboard/guard/manual-check" element={<ProtectedRoute allowedRoles={["security"]}><ManualCheck /></ProtectedRoute>} />
-  <Route path="/dashboard/guard/scan-qr" element={<ProtectedRoute allowedRoles={["security"]}><ScanQR /></ProtectedRoute>} />
-  <Route path="/dashboard/guard/visitor-history" element={<ProtectedRoute allowedRoles={["security"]}><GuardDashboard /></ProtectedRoute>} />
-  <Route path="/dashboard/guard/settings" element={<ProtectedRoute allowedRoles={["security"]}><GuardDashboard /></ProtectedRoute>} />
+        {/* Guard auxiliary routes */}
+        <Route
+          path="/dashboard/guard/manual-check"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <ManualCheck />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/guard/scan-qr"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <ScanQR />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/guard/visitor-history"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <VisitorHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/guard/settings"
+          element={
+            <ProtectedRoute allowedRoles={["security"]}>
+              <GuardDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Admin routes (blank for now) */}
   {/* Admin routes */}

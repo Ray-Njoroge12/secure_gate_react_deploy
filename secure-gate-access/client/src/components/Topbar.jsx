@@ -37,57 +37,18 @@ export default function Topbar({ title }) {
             else if (role === "admin") navigate("/dashboard/admin/settings");
           }}
         >
-          {profilePic ? (
-            <img
-              src={profilePic}
-              alt="Profile"
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                objectFit: "cover",
-                border: "2px solid var(--accent)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-            />
-          ) : (
-            <span
-              style={{
-                width: 40,
-                height: 40,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "50%",
-                background: "var(--bg)",
-                border: "2px solid var(--accent)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  cx="12"
-                  cy="8"
-                  r="4"
-                  stroke="var(--accent)"
-                  strokeWidth="2"
-                  fill="var(--bg)"
-                />
-                <path
-                  d="M4 20c0-4 4-6 8-6s8 2 8 6"
-                  stroke="var(--accent)"
-                  strokeWidth="2"
-                  fill="none"
-                />
-              </svg>
+          <span style={{position:'relative', width:40, height:40, display:'inline-block'}}>
+            <span style={{width:40, height:40, borderRadius:'50%', background:'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', border:'2px solid var(--accent)'}}>
+              {(profilePic && profilePic !== "") ? (
+                <img src={profilePic} alt="Profile" style={{width:'100%', height:'100%', objectFit:'cover', borderRadius:'50%'}} />
+              ) : (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:'block', margin:'auto'}}>
+                  <circle cx="12" cy="8" r="4" stroke="var(--accent)" strokeWidth="2" fill="var(--bg)" />
+                  <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="var(--accent)" strokeWidth="2" fill="none" />
+                </svg>
+              )}
             </span>
-          )}
+          </span>
         </button>
       </div>
     </div>

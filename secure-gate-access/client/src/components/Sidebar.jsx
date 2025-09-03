@@ -8,11 +8,12 @@ const Link = ({ to, children }) => (
   </NavLink>
 );
 
-export default function Sidebar({ role, onLogout }) {
+export default function Sidebar({ role, onLogout, error }) {
   return (
     <aside className="sidebar" style={{display:'flex', flexDirection:'column', height:'100%'}}>
       <div>
         <h2>SecureGate</h2>
+        {error && <div className="error-message">{error}</div>}
         {role === "resident" && (
           <>
             <div className="group-title">Resident</div>

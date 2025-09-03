@@ -4,6 +4,8 @@ import cors from "cors";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import userRoutes from "./src/routes/userRoutes.js";
+import apiRoutes from "../client/api.js";
 
 const app = express();
 const PORT = 5000;
@@ -17,6 +19,9 @@ const users = [
 ];
 
 const SECRET_KEY = "supersecretkey";
+
+// Mount all /api/* routes from api.js
+app.use("/api", apiRoutes);
 
 // --- Nodemailer transporter ---
 const createTransporter = async () => {
@@ -98,6 +103,9 @@ app.post("/api/login", async (req, res) => {
   const token = jwt.sign({ email: user.email, role: user.role }, SECRET_KEY, { expiresIn: "1h" });
   res.json({ token, role: user.role });
 });
+
+// --- User Routes ---
+app.use("/api/user", userRoutes);
 
 // --- Start Server ---
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
