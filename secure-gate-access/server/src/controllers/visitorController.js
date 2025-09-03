@@ -1,4 +1,4 @@
-import dbPromise from "../../../database/db.js";
+import pool from "../../../database/db.js";
 import qrcode from "qrcode";
 
 const createVisitor = async (req, res) => {
@@ -8,19 +8,13 @@ const createVisitor = async (req, res) => {
     // Generate unique invite code
     const inviteCode = `INVITE-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    const db = await dbPromise;
-    const result = await db.run(
+    const insertRes = await pool.query(
       `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING']
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, check_in`,
+      [name || null, phone || null, email || null, purpose, dateOfVisit || null, time || null, inviteCode, 'PENDING']
     );
-
-    // Get the inserted visitor
-    const visitor = await db.get(
-      `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, check_in
-       FROM visitors WHERE id = ?`,
-      [result.lastID]
-    );
+    const visitor = insertRes.rows[0];
 
     // Generate invite link
     const inviteLink = `${req.protocol}://${req.get('host')}/invite/${inviteCode}`;
@@ -46,12 +40,12 @@ const createVisitor = async (req, res) => {
 
 const getMyVisitors = async (req, res) => {
   try {
-    const db = await dbPromise;
-    const visitors = await db.all(
+    const result = await pool.query(
       `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, check_in, check_out
        FROM visitors
        ORDER BY check_in DESC`
     );
+    const visitors = result.rows;
 
     const formattedVisitors = visitors.map(visitor => ({
       id: visitor.id,
@@ -76,10 +70,9 @@ const getMyVisitors = async (req, res) => {
 const createPass = async (req, res) => {
   try {
     const { visitorId } = req.params;
-    const db = await dbPromise;
-
-    // Check if visitor exists
-    const visitor = await db.get(`SELECT id FROM visitors WHERE id = ?`, [visitorId]);
+  // Check if visitor exists
+  const vRes = await pool.query(`SELECT id FROM visitors WHERE id = $1`, [visitorId]);
+  const visitor = vRes.rows[0];
 
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found" });
@@ -93,17 +86,13 @@ const createPass = async (req, res) => {
     const qrCodeData = await qrcode.toDataURL(passId);
 
     // Insert pass into database
-    const result = await db.run(
+    const passRes = await pool.query(
       `INSERT INTO passes (pass_id, visitor_id, expires_at, status)
-       VALUES (?, ?, ?, ?)`,
+       VALUES ($1,$2,$3,$4)
+       RETURNING id, pass_id, visitor_id, expires_at, status`,
       [passId, visitorId, expiresAt.toISOString(), 'active']
     );
-
-    // Get the inserted pass
-    const pass = await db.get(
-      `SELECT id, pass_id, visitor_id, expires_at, status FROM passes WHERE id = ?`,
-      [result.lastID]
-    );
+    const pass = passRes.rows[0];
 
     res.status(201).json({
       id: pass.id,
@@ -136,19 +125,13 @@ const bulkInvite = async (req, res) => {
     const inviteCode = `BULK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-    const db = await dbPromise;
-    const result = await db.run(
+    const bulkRes = await pool.query(
       `INSERT INTO bulk_invites (event_name, date, time, num_guests, invite_code, expires_at, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING id, event_name, date, time, num_guests, invite_code, expires_at, created_by`,
       [eventName, date, time, numGuests, inviteCode, expiresAt.toISOString(), residentEmail]
     );
-
-    // Get the inserted bulk invite
-    const bulkInvite = await db.get(
-      `SELECT id, event_name, date, time, num_guests, invite_code, expires_at, created_by
-       FROM bulk_invites WHERE id = ?`,
-      [result.lastID]
-    );
+    const bulkInvite = bulkRes.rows[0];
 
     // Generate invite link (assuming frontend will handle the route)
     const inviteLink = `${req.protocol}://${req.get('host')}/bulk-register/${inviteCode}`;
@@ -173,13 +156,12 @@ const bulkInvite = async (req, res) => {
 const getBulkInvite = async (req, res) => {
   try {
     const { inviteCode } = req.params;
-    const db = await dbPromise;
-
-    const bulkInvite = await db.get(
+    const query = await pool.query(
       `SELECT id, event_name, date, time, num_guests, invite_code, expires_at, created_by
-       FROM bulk_invites WHERE invite_code = ? AND expires_at > datetime('now')`,
+       FROM bulk_invites WHERE invite_code = $1 AND expires_at > NOW()`,
       [inviteCode]
     );
+    const bulkInvite = query.rows[0];
 
     if (!bulkInvite) {
       return res.status(404).json({ message: "Bulk invitation not found or expired" });
@@ -220,13 +202,12 @@ const completeInvite = async (req, res) => {
       return res.status(422).json({ message: "Valid email address is required" });
     }
 
-    const db = await dbPromise;
-
     // Find visitor by invite code
-    const visitor = await db.get(
-      `SELECT id, status FROM visitors WHERE invite_code = ?`,
+    const vRes = await pool.query(
+      `SELECT id, status FROM visitors WHERE invite_code = $1`,
       [inviteCode]
     );
+    const visitor = vRes.rows[0];
 
     if (!visitor) {
       return res.status(404).json({ message: "Invitation not found" });
@@ -242,27 +223,27 @@ const completeInvite = async (req, res) => {
     const qrCodeData = await qrcode.toDataURL(passId);
 
     // Update visitor with guest details
-    await db.run(
+    await pool.query(
       `UPDATE visitors SET
-        name = ?,
-        phone = ?,
-        email = ?,
-        id_number = ?,
-        vehicle_plate = ?,
-        expected_time = ?,
-        otp = ?,
-        qr_code = ?,
+        name = $1,
+        phone = $2,
+        email = $3,
+        id_number = $4,
+        vehicle_plate = $5,
+        expected_time = $6,
+        otp = $7,
+        qr_code = $8,
         status = 'CONFIRMED'
-       WHERE id = ?`,
+       WHERE id = $9`,
       [name, phone, email || null, idNumber || null, vehiclePlate || null, expectedTime || null, otp, qrCodeData, visitor.id]
     );
 
-    // Get updated visitor
-    const updatedVisitor = await db.get(
+    const updatedRes = await pool.query(
       `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, id_number, vehicle_plate, expected_time, otp, qr_code, status
-       FROM visitors WHERE id = ?`,
+       FROM visitors WHERE id = $1`,
       [visitor.id]
     );
+    const updatedVisitor = updatedRes.rows[0];
 
     res.status(200).json({
       id: updatedVisitor.id,
