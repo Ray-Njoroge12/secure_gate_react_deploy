@@ -11,6 +11,10 @@ const pool = new Pool({
 
 // Initialize database schema (idempotent) – keeps function name for server.js compatibility
 const initializeDatabase = async () => {
+  console.log('[DB] Testing Postgres connection...');
+  const test = await pool.query('SELECT version()');
+  console.log('[DB] Postgres version:', test.rows[0].version);
+
   console.log('[DB] Initializing PostgreSQL schema...');
   try {
     console.time('[DB] visitors table');

@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import userRoutes from "./src/routes/userRoutes.js";
 import apiRoutes from "../client/api.js";
+import { initializeDatabase } from "../database/db.js";
 
 const app = express();
 const PORT = 5000;
@@ -108,4 +109,12 @@ app.post("/api/login", async (req, res) => {
 app.use("/api/user", userRoutes);
 
 // --- Start Server ---
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+(async () => {
+  try {
+    await initializeDatabase();
+    app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  } catch (err) {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  }
+})();
