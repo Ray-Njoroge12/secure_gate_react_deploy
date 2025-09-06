@@ -25,7 +25,7 @@ export default function Sidebar({ role, onLogout, error }) {
             <Link to="/resident/settings">Settings</Link>
           </>
         )}
-        {role === "guard" && (
+        {role === "security" && (
           <>
             <div className="group-title">Security</div>
             <Link to="/dashboard/guard">Dashboard</Link>

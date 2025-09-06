@@ -56,7 +56,9 @@ const initializeDatabase = async () => {
       id SERIAL PRIMARY KEY,
       username TEXT,
       email TEXT UNIQUE,
-      password TEXT NOT NULL,
+      -- original password column (legacy) may not exist; new secure column below
+      password TEXT, -- deprecated
+      password_hash TEXT,
       role TEXT NOT NULL,
       phone TEXT,
       area TEXT,
@@ -67,6 +69,13 @@ const initializeDatabase = async () => {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );`);
     console.timeEnd('[DB] users table');
+
+    // If password_hash column was just added and legacy password column has data, migrate (best-effort)
+    try {
+      await pool.query(`UPDATE users SET password_hash = password WHERE password_hash IS NULL AND password IS NOT NULL`);
+    } catch (mErr) {
+      console.warn('[DB] password to password_hash migration skipped:', mErr.message);
+    }
 
     console.time('[DB] bulk_invites table');
     await pool.query(`CREATE TABLE IF NOT EXISTS bulk_invites (

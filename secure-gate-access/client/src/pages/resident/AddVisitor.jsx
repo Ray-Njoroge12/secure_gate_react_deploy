@@ -75,6 +75,7 @@ export default function AddVisitor() {
 
       setSuccess({
         visitor: visitorResponse,
+        pass: passResponse,
         inviteLink: visitorResponse.inviteLink,
         message: 'Invitation created successfully! Share the link with the guest to complete registration.'
       });
@@ -139,7 +140,27 @@ export default function AddVisitor() {
                     </div>
                   )}
                   {success.pass && (
-                    <div>Pass ID: {success.pass.passId} | Expires: {new Date(success.pass.expiresAt).toLocaleString()}</div>
+                    <div style={{marginTop: 8}}>
+                      <strong>Pass Details:</strong>
+                      <div>Pass ID: {success.pass.passId} | Expires: {new Date(success.pass.expiresAt).toLocaleString()}</div>
+                      {success.pass.qrCode && (
+                        <div style={{marginTop: 8}}>
+                          <strong>QR Code:</strong>
+                          <img src={success.pass.qrCode} alt="QR Code" style={{maxWidth: '200px', marginTop: 4}} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {success.visitor.otp && (
+                    <div style={{marginTop: 8}}>
+                      <strong>OTP:</strong> {success.visitor.otp}
+                    </div>
+                  )}
+                  {success.visitor.qrCode && (
+                    <div style={{marginTop: 8}}>
+                      <strong>Visitor QR Code:</strong>
+                      <img src={success.visitor.qrCode} alt="Visitor QR Code" style={{maxWidth: '200px', marginTop: 4}} />
+                    </div>
                   )}
                 </div>
               </div>

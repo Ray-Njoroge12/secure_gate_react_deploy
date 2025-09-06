@@ -1,9 +1,13 @@
-import express from 'express';
-import { updateProfile } from '../controllers/userController.js';
+import { Router } from 'express';
+import { registerUser, loginUser, updateProfile } from '../controllers/userController.js';
 
-const router = express.Router();
+const router = Router();
 
-// Update user profile
+// Register
+router.post('/register', registerUser);
+// Login
+router.post('/login', loginUser);
+// Update profile
 router.put('/profile', updateProfile);
 
 export default router;

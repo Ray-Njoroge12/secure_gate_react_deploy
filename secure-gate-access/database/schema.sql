@@ -1,7 +1,8 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255), -- legacy column, nullable
+    password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL, -- admin, guard, visitor
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -15,6 +16,13 @@ CREATE TABLE visitors (
     vehicle_plate VARCHAR(20),
     purpose TEXT,
     estimated_time TIMESTAMP,
+    date_of_visit DATE,
+    time_of_visit TIME,
+    invite_code VARCHAR(100) UNIQUE,
+    status VARCHAR(20) DEFAULT 'PENDING',
+    expected_time TIMESTAMP,
+    otp VARCHAR(10),
+    qr_code TEXT,
     check_in TIMESTAMP DEFAULT NOW(),
     check_out TIMESTAMP
 );
@@ -25,6 +33,7 @@ CREATE TABLE passes (
     visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
     expires_at TIMESTAMP NOT NULL,
     status VARCHAR(20) DEFAULT 'active',
+    qr_code TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
