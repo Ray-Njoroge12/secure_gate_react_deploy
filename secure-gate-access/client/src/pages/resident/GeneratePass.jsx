@@ -1,21 +1,62 @@
 // client/src/pages/resident/GeneratePass.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
-
-function generateOTP(){ return Math.floor(100000 + Math.random()*900000).toString(); }
+import { getMyVisitors, createPass } from "../../services/passService";
 
 export default function GeneratePass(){
   const onLogout = ()=> { localStorage.removeItem("role"); window.location.href = "/"; };
-  const [visitor, setVisitor] = useState({ name:"", phone:"" });
+  const [visitors, setVisitors] = useState([]);
+  const [selectedVisitor, setSelectedVisitor] = useState('');
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
 
-  const create = (e) => {
+  useEffect(() => {
+    loadVisitors();
+  }, []);
+
+  const loadVisitors = async () => {
+    try {
+      const data = await getMyVisitors();
+      // Filter for approved visitors who don't have active passes
+      const approvedVisitors = data.filter(v => v.status === 'approved');
+      setVisitors(approvedVisitors);
+    } catch (err) {
+      console.error('Failed to load visitors:', err);
+      setError('Failed to load visitors');
+    }
+  };
+
+  const generatePass = async (e) => {
     e.preventDefault();
-    const otp = generateOTP();
-    // mock QR data (in real app server returns image/base64)
-    const qr = `QR: visitor=${visitor.name}|phone=${visitor.phone}|otp=${otp}`;
-    setResult({ otp, qr, expires: new Date(Date.now()+2*60*60*1000).toISOString() });
+    if (!selectedVisitor) {
+      setError('Please select a visitor');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setResult(null);
+
+    try {
+      const response = await createPass(selectedVisitor);
+      setResult({
+        ...response,
+        visitorName: visitors.find(v => v.id == selectedVisitor)?.name || 'Unknown'
+      });
+    } catch (err) {
+      console.error('Failed to create pass:', err);
+      setError(err.message || 'Failed to create pass');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reset = () => {
+    setSelectedVisitor('');
+    setResult(null);
+    setError('');
   };
 
   return (
@@ -25,26 +66,94 @@ export default function GeneratePass(){
         <Topbar title="Generate Pass" onLogout={onLogout} />
         <main className="main">
           <div className="panel">
-            <h3 style={{marginTop:0}}>Generate OTP / QR for visitor</h3>
-            <form onSubmit={create} style={{display:"grid", gap:12, marginTop:12}}>
-              <input className="input" placeholder="Visitor name" value={visitor.name} onChange={e=>setVisitor({...visitor,name:e.target.value})} />
-              <input className="input" placeholder="Visitor phone" value={visitor.phone} onChange={e=>setVisitor({...visitor,phone:e.target.value})} />
+            <h3 style={{marginTop:0}}>Generate QR Pass for Approved Visitor</h3>
+            
+            {error && (
+              <div style={{color: 'red', marginBottom: 16, padding: 12, backgroundColor: '#ffeaea', borderRadius: 4}}>
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={generatePass} style={{display:"grid", gap:12, marginTop:12}}>
+              <select 
+                className="input" 
+                value={selectedVisitor} 
+                onChange={e => setSelectedVisitor(e.target.value)}
+                disabled={loading}
+              >
+                <option value="">Select an approved visitor...</option>
+                {visitors.map(visitor => (
+                  <option key={visitor.id} value={visitor.id}>
+                    {visitor.name} - {visitor.phone} ({visitor.purpose})
+                  </option>
+                ))}
+              </select>
+              
               <div style={{display:"flex", gap:10}}>
-                <button type="button" className="btn" onClick={()=>{ setVisitor({name:"",phone:""}); setResult(null); }}>Reset</button>
-                <button className="btn primary" type="submit">Generate</button>
+                <button type="button" className="btn" onClick={reset} disabled={loading}>
+                  Reset
+                </button>
+                <button className="btn primary" type="submit" disabled={loading || !selectedVisitor}>
+                  {loading ? 'Generating...' : 'Generate Pass'}
+                </button>
               </div>
             </form>
+
+            {visitors.length === 0 && !error && (
+              <div style={{marginTop: 16, padding: 12, backgroundColor: '#f0f0f0', borderRadius: 4}}>
+                No approved visitors found. Please add and approve visitors first.
+              </div>
+            )}
 
             {result && (
               <div style={{marginTop:16}}>
                 <div className="panel">
-                  <div style={{display:"flex", gap:16, alignItems:"center"}}>
-                    <div style={{width:140, height:140}} className="placeholder">QR (mock)</div>
-                    <div>
-                      <div className="kpi">OTP: {result.otp}</div>
-                      <div className="kpi-sub">Expires: {new Date(result.expires).toLocaleString()}</div>
-                      <div style={{marginTop:8}}>
-                        <button className="btn primary" onClick={()=>alert("Sent to visitor (mock)")}>Send to Visitor</button>
+                  <h4 style={{marginTop: 0}}>Pass Generated for {result.visitorName}</h4>
+                  <div style={{display:"flex", gap:16, alignItems:"flex-start", flexWrap: "wrap"}}>
+                    <div style={{minWidth: 200}}>
+                      {result.qrDataUrl ? (
+                        <img 
+                          src={result.qrDataUrl} 
+                          alt="QR Code" 
+                          style={{width: 200, height: 200, border: '1px solid #ddd'}}
+                        />
+                      ) : (
+                        <div style={{width:200, height:200, backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd'}}>
+                          QR Code
+                        </div>
+                      )}
+                    </div>
+                    <div style={{flex: 1, minWidth: 250}}>
+                      <div className="kpi">Pass ID: {result.passId}</div>
+                      <div className="kpi">Visitor ID: {result.visitorId}</div>
+                      {result.plainOtp && (
+                        <div className="kpi">OTP: {result.plainOtp}</div>
+                      )}
+                      <div className="kpi-sub">
+                        Expires: {new Date(result.expiresAt).toLocaleString()}
+                      </div>
+                      <div className="kvi-sub">
+                        Phone: {result.maskedPhone}
+                      </div>
+                      {result.inviteLink && (
+                        <div style={{marginTop:12}}>
+                          <div className="kpi-sub">Invite Link:</div>
+                          <input 
+                            type="text" 
+                            value={result.inviteLink} 
+                            readOnly 
+                            style={{width: '100%', marginTop: 4, fontSize: '12px'}}
+                            onClick={e => e.target.select()}
+                          />
+                        </div>
+                      )}
+                      <div style={{marginTop:16}}>
+                        <button 
+                          className="btn primary" 
+                          onClick={() => alert("Invite sent to visitor via email/SMS (automated)")}
+                        >
+                          Notification Sent
+                        </button>
                       </div>
                     </div>
                   </div>

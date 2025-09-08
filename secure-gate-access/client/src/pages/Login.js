@@ -15,7 +15,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -30,14 +30,15 @@ export default function LoginPage() {
 
       // save token and role
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
+      const role = data.role || data.user?.role;
+      localStorage.setItem("role", role);
       if (remember) localStorage.setItem("remember", "true");
 
       // redirect based on role
-      if (data.role === "admin") navigate("/dashboard/admin");
-      else if (data.role === "security") navigate("/dashboard/guard");
-      else if (data.role === "resident") navigate("/dashboard/resident");
-      else navigate("/");
+      if (role === "admin") navigate("/dashboard/admin");
+      else if (role === "security") navigate("/dashboard/guard");
+      else if (role === "resident") navigate("/dashboard/resident");
+      else navigate("/login");
     } catch (err) {
       setError("Server error. Try again later.");
     }

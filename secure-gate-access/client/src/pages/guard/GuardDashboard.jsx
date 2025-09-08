@@ -37,7 +37,7 @@ export default function GuardDashboard() {
 
   return (
     <div className="app-grid">
-      <Sidebar role="guard" />
+      <Sidebar role={localStorage.getItem('role')} />
       <div>
         <Topbar title="Guard Station" onLogout={onLogout} />
         <main className="main">

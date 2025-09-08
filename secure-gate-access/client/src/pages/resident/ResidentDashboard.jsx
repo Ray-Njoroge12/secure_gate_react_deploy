@@ -23,7 +23,7 @@ export default function ResidentDashboard() {
 
   return (
     <div className="app-grid">
-      <Sidebar role="resident" />
+      <Sidebar role={localStorage.getItem('role')} />
       <div>
         <Topbar title="Resident Dashboard" onLogout={onLogout} />
         <main className="main">

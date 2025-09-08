@@ -17,7 +17,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="app-grid">
-      <Sidebar role="admin" />
+      <Sidebar role={localStorage.getItem('role')} />
       <div>
         <Topbar title="Admin Dashboard" onLogout={onLogout} />
         <main className="main">

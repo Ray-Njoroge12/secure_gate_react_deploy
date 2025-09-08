@@ -1,162 +1,175 @@
 import React, { useState } from "react";
-import { QRCodeCanvas } from "qrcode.react";
+import Sidebar from "../../components/Sidebar";
+import Topbar from "../../components/Topbar";
+import { bulkInvite } from "../../services/passService";
 
 export default function BulkInvite() {
-  const [numGuests, setNumGuests] = useState(1);
-  const [eventType, setEventType] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [guestList, setGuestList] = useState([]);
-  const [otp, setOtp] = useState("");
-  const [qrCode, setQrCode] = useState("");
+  const onLogout = ()=> { localStorage.removeItem("role"); window.location.href = "/"; };
+  const [form, setForm] = useState({
+    eventName: "",
+    date: "",
+    time: "",
+    numGuests: 5
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState(null);
 
-  const handleGenerate = () => {
-    if (!eventType || !eventDate) return alert("Fill all fields!");
-    // Generate OTP
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setOtp(generatedOtp);
-    // Generate QR code string
-    setQrCode(`${eventType}-${eventDate}-${generatedOtp}`);
-
-    // Prepare guest preview
-    const guests = Array.from({ length: numGuests }, (_, i) => ({
-      id: i + 1,
-      name: "",
-      email: "",
-    }));
-    setGuestList(guests);
+  const validateForm = () => {
+    if (!form.eventName.trim()) return 'Event name is required';
+    if (!form.date.trim()) return 'Date is required';
+    if (!form.time.trim()) return 'Time is required';
+    if (form.numGuests < 1) return 'Number of guests must be at least 1';
+    return null;
   };
 
-  const handleGuestChange = (index, field, value) => {
-    const updatedGuests = [...guestList];
-    updatedGuests[index][field] = value;
-    setGuestList(updatedGuests);
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleSubmit = async () => {
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setResult(null);
+
     try {
-      const res = await fetch("http://localhost:5000/api/bulk-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          eventType,
-          eventDate,
-          otp,
-          guestList,
-        }),
+      const response = await bulkInvite({
+        eventName: form.eventName.trim(),
+        date: form.date.trim(),
+        time: form.time.trim(),
+        numGuests: form.numGuests
       });
-      const data = await res.json();
-      if (!res.ok) return alert(data.message || "Error sending invites");
-      alert("Bulk invites sent successfully!");
-      setGuestList([]);
-      setOtp("");
-      setQrCode("");
+      setResult(response);
     } catch (err) {
-      alert("Server error. Try again later.");
+      console.error('Bulk invite failed:', err);
+      setError(err.message || 'Bulk invitation failed');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const clearForm = () => {
+    setForm({
+      eventName: "",
+      date: "",
+      time: "",
+      numGuests: 5
+    });
+    setError('');
+    setResult(null);
+  };
+
   return (
-    <div className="p-6 flex justify-center">
-      <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-3xl">
-        <h2 className="text-xl font-bold mb-4">Bulk Invite</h2>
+    <div className="app-grid">
+      <Sidebar role="resident" />
+      <div>
+        <Topbar title="Bulk Invite" onLogout={onLogout} />
+        <main className="main">
+          <div className="panel">
+            <h3 style={{marginTop:0}}>Bulk Visitor Invitation</h3>
+            <p style={{color: '#666', marginBottom: 16}}>
+              Create a bulk invitation for multiple guests. Guests will use the shared link to register their personal details and generate individual QR codes.
+            </p>
 
-        <div className="form-group mb-4">
-          <label className="block font-medium mb-1">Number of Guests (max 700)</label>
-          <select
-            value={numGuests}
-            onChange={(e) => setNumGuests(Number(e.target.value))}
-            className="w-full border rounded-lg p-2"
-          >
-            {Array.from({ length: 700 }, (_, i) => (
-              <option key={i} value={i + 1}>
-                {i + 1}
-              </option>
-            ))}
-          </select>
-        </div>
+            {error && (
+              <div style={{color: 'red', marginBottom: 16, padding: 12, backgroundColor: '#ffeaea', borderRadius: 4, whiteSpace: 'pre-line'}}>
+                {error}
+              </div>
+            )}
 
-        <div className="form-group mb-4">
-          <label className="block font-medium mb-1">Event Type</label>
-          <input
-            type="text"
-            placeholder="Event type (e.g., Wedding)"
-            value={eventType}
-            onChange={(e) => setEventType(e.target.value)}
-            className="w-full border rounded-lg p-2"
-          />
-        </div>
+            {result && (
+              <div style={{marginBottom: 16, padding: 12, backgroundColor: '#eafaea', borderRadius: 4}}>
+                <h4 style={{margin: 0, color: 'green'}}>Bulk Invitation Created!</h4>
+                <div style={{marginTop: 8, fontSize: '14px'}}>
+                  Event: {result.eventName} | Date: {result.date} | Time: {result.time} | Max Guests: {result.numGuests}
+                </div>
+                <div style={{marginTop: 12}}>
+                  <div style={{fontSize: '14px', fontWeight: 'bold'}}>Share this link with your guests:</div>
+                  <input
+                    type="text"
+                    value={result.inviteLink}
+                    readOnly
+                    style={{width: '100%', padding: '8px', marginTop: 4, border: '1px solid #ddd', borderRadius: 4, fontSize: '12px'}}
+                    onClick={e => e.target.select()}
+                  />
+                  <div style={{marginTop: 8, fontSize: '12px', color: '#666'}}>
+                    Expires: {new Date(result.expiresAt).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            )}
 
-        <div className="form-group mb-4">
-          <label className="block font-medium mb-1">Event Date</label>
-          <input
-            type="date"
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-            className="w-full border rounded-lg p-2"
-          />
-        </div>
+            <form onSubmit={handleSubmit} style={{display:"grid", gap:12, marginTop:12}}>
+              <input
+                className="input"
+                placeholder="Event Name/Purpose *"
+                value={form.eventName}
+                onChange={e=>setForm({...form,eventName:e.target.value})}
+                disabled={loading}
+                required
+              />
+              <input
+                className="input"
+                type="date"
+                placeholder="Date of Visit *"
+                value={form.date}
+                onChange={e=>setForm({...form,date:e.target.value})}
+                disabled={loading}
+                required
+              />
+              <input
+                className="input"
+                type="time"
+                placeholder="Time of Visit *"
+                value={form.time}
+                onChange={e=>setForm({...form,time:e.target.value})}
+                disabled={loading}
+                required
+              />
+              <div style={{display: 'flex', gap: 12, alignItems: 'center'}}>
+                <label>Number of Guests:</label>
+                <select 
+                  value={form.numGuests} 
+                  onChange={(e) => setForm({...form, numGuests: Number(e.target.value)})}
+                  disabled={loading}
+                  style={{padding: '4px 8px'}}
+                >
+                  {Array.from({ length: 50 }, (_, i) => (
+                    <option key={i} value={i + 1}>{i + 1}</option>
+                  ))}
+                </select>
+              </div>
 
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          onClick={handleGenerate}
-        >
-          Generate OTP & QR
-        </button>
+              <div style={{display:"flex", gap:10}}>
+                <button type="button" className="btn" onClick={clearForm} disabled={loading}>
+                  Clear
+                </button>
+                <button type="submit" className="btn primary" disabled={loading}>
+                  {loading ? 'Creating Invitation...' : 'Create Bulk Invitation'}
+                </button>
+              </div>
+            </form>
 
-        {otp && (
-          <div className="mt-4 text-center">
-            <h4 className="font-semibold mb-2">OTP: {otp}</h4>
-            <QRCodeCanvas value={qrCode} size={128} />
+
+
+            {result && result.errors && result.errors.length > 0 && (
+              <div style={{marginTop: 16}}>
+                <h4 style={{color: 'red'}}>Errors</h4>
+                <div style={{backgroundColor: '#ffeaea', padding: 12, borderRadius: 4}}>
+                  {result.errors.map((error, i) => (
+                    <div key={i} style={{fontSize: '14px'}}>
+                      Guest {error.index + 1}: {error.message}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-
-        {guestList.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-bold mb-2">Guest Preview</h3>
-            <table className="table-auto w-full border rounded-lg">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-2 py-1">#</th>
-                  <th className="px-2 py-1">Name</th>
-                  <th className="px-2 py-1">Email</th>
-                </tr>
-              </thead>
-              <tbody>
-                {guestList.map((guest, i) => (
-                  <tr key={i}>
-                    <td className="border px-2 py-1">{i + 1}</td>
-                    <td className="border px-2 py-1">
-                      <input
-                        type="text"
-                        value={guest.name}
-                        onChange={(e) =>
-                          handleGuestChange(i, "name", e.target.value)
-                        }
-                        className="w-full border rounded p-1"
-                      />
-                    </td>
-                    <td className="border px-2 py-1">
-                      <input
-                        type="email"
-                        value={guest.email}
-                        onChange={(e) =>
-                          handleGuestChange(i, "email", e.target.value)
-                        }
-                        className="w-full border rounded p-1"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <button
-              className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-              onClick={handleSubmit}
-            >
-              Send Bulk Invites
-            </button>
-          </div>
-        )}
+        </main>
       </div>
     </div>
   );

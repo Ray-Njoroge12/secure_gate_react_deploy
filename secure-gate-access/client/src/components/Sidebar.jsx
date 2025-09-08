@@ -17,20 +17,21 @@ export default function Sidebar({ role, onLogout, error }) {
         {role === "resident" && (
           <>
             <div className="group-title">Resident</div>
-            <Link to="/pages/resident/ResidentDashboard">Dashboard</Link>
-            <Link to="/pages/resident/AddVisitor">Add Visitor</Link>
-            <Link to="/pages/resident/GeneratePass">Generate Pass</Link>
-            <Link to="/pages/resident/VisitorHistory">Visitor History</Link>
-            <Link to="/pages/resident/BulkInvite">Bulk Invite</Link>
-            <Link to="/pages/resident/Settings">Settings</Link>
+            <Link to="/dashboard/resident">Dashboard</Link>
+            <Link to="/resident/add-visitor">Add Visitor</Link>
+            <Link to="/resident/generate-pass">Generate Pass</Link>
+            <Link to="/resident/visitor-history">Visitor History</Link>
+            <Link to="/resident/bulk-invite">Bulk Invite</Link>
+            <Link to="/resident/settings">Settings</Link>
           </>
         )}
-        {role === "guard" && (
+        {role === "security" && (
           <>
             <div className="group-title">Guard</div>
             <Link to="/dashboard/guard">Dashboard</Link>
-            <Link to="/dashboard/guard/VisitorHistory">Visitor History</Link>
-            <Link to="/dashboard/guard/Settings">Settings</Link>
+            <Link to="/dashboard/guard/scan-qr">Scan QR</Link>
+            <Link to="/dashboard/guard/manual-check">Manual Check</Link>
+            <Link to="/dashboard/guard/visitor-history">Visitor History</Link>
           </>
         )}
         {role === "admin" && (
