@@ -1,37 +1,49 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "../styles.css";
 
-export default function RegistrationPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("resident");
-  const [residentialArea, setResidentialArea] = useState("");
-  const [phone, setPhone] = useState("");
-  const [houseNumber, setHouseNumber] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "resident",
+    area: "",
+    phone: "",
+    house: "",
+  });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-    setSuccess("");
+
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    const payload = {
+      username: form.username,
+      email: form.email,
+      password: form.password,
+      role: form.role,
+      area: form.area,
+      phone: form.phone,
+      house: form.role === "resident" ? form.house : null,
+    };
 
     try {
       const res = await fetch("http://localhost:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username,
-          email,
-          role,
-          area: residentialArea,
-          phone,
-          house: role === "resident" ? houseNumber : "", // only send house number for residents
-          password,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -41,8 +53,7 @@ export default function RegistrationPage() {
         return;
       }
 
-      setSuccess("Registration successful! Please check your email to verify.");
-      setTimeout(() => navigate("/login"), 3000);
+      navigate("/login");
     } catch (err) {
       setError("Server error. Try again later.");
     }
@@ -51,87 +62,108 @@ export default function RegistrationPage() {
   return (
     <div className="login-wrapper">
       <div className="login-panel">
-        <h2>Register</h2>
+        <h2>Create Account</h2>
         <form onSubmit={handleRegister}>
-          <label>Username</label>
+          <label>Full Name</label>
           <input
             type="text"
-            placeholder="Username"
+            name="username"
+            placeholder="Full Name"
             className="input"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={form.username}
+            onChange={handleChange}
             required
           />
 
           <label>Email</label>
           <input
             type="email"
+            name="email"
             placeholder="Email"
             className="input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-
-          <label>Role</label>
-          <select
-            className="input"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="resident">Resident</option>
-            <option value="security">Guard</option>
-          </select>
-
-          <label>Residential Area</label>
-          <input
-            type="text"
-            placeholder="Residential Area"
-            className="input"
-            value={residentialArea}
-            onChange={(e) => setResidentialArea(e.target.value)}
-            required
-          />
-
-          {/* Show house number only for residents */}
-          {role === "resident" && (
-            <>
-              <label>House Number</label>
-              <input
-                type="text"
-                placeholder="House Number"
-                className="input"
-                value={houseNumber}
-                onChange={(e) => setHouseNumber(e.target.value)}
-                required
-              />
-            </>
-          )}
-
-          <label>Phone Number</label>
-          <input
-            type="text"
-            placeholder="Phone Number"
-            className="input"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            value={form.email}
+            onChange={handleChange}
             required
           />
 
           <label>Password</label>
           <input
             type="password"
+            name="password"
             placeholder="Password"
             className="input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={form.password}
+            onChange={handleChange}
             required
           />
 
+          <label>Confirm Password</label>
+          <input
+            type="password"
+            name="confirmPassword"
+            placeholder="Confirm Password"
+            className="input"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            required
+          />
+
+          <label>Role</label>
+          <select
+            name="role"
+            className="input"
+            value={form.role}
+            onChange={handleChange}
+          >
+            <option value="resident">Resident</option>
+            <option value="guard">Guard</option>
+          </select>
+
+          <label>Area</label>
+          <input
+            type="text"
+            name="area"
+            placeholder="Estate/Block"
+            className="input"
+            value={form.area}
+            onChange={handleChange}
+            required
+          />
+
+          <label>Phone</label>
+          <input
+            type="text"
+            name="phone"
+            placeholder="Phone Number"
+            className="input"
+            value={form.phone}
+            onChange={handleChange}
+            required
+          />
+
+          {form.role === "resident" && (
+            <>
+              <label>House Number</label>
+              <input
+                type="text"
+                name="house"
+                placeholder="House/Apartment Number"
+                className="input"
+                value={form.house}
+                onChange={handleChange}
+                required
+              />
+            </>
+          )}
+
+          <p style={{ marginTop: 12 }}>
+            Already have an account?{" "}
+            <Link to="/login" style={{ color: "#007bff" }}>Login</Link>
+          </p>
+
           <button type="submit" className="btn primary">Register</button>
 
-          {error && <p style={{ color: "red", marginTop: 8 }}>{error}</p>}
-          {success && <p style={{ color: "green", marginTop: 8 }}>{success}</p>}
+          {error && <p className="error" style={{ color: "red", marginTop: 8 }}>{error}</p>}
         </form>
       </div>
     </div>

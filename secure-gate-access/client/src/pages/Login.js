@@ -1,6 +1,6 @@
-// client/src/pages/Login.jsx
+
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // import Link
+import { useNavigate, Link } from "react-router-dom";
 import "../styles.css";
 
 export default function LoginPage() {
@@ -93,4 +93,6 @@ export default function LoginPage() {
       </div>
     </div>
   );
+
 }
+   // Renamed from Login.js to Login.jsx
