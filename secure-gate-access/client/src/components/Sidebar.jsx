@@ -37,12 +37,14 @@ export default function Sidebar({ role, onLogout, error }) {
         {role === "admin" && (
           <>
             <div className="group-title">Admin</div>
-            <Link to="/dashboard/admin">Dashboard</Link>
-            <Link to="/dashboard/admin/users">Residents</Link>
-            <Link to="/dashboard/admin/visitors">Visitors Log</Link>
-            <Link to="/dashboard/admin/manage-staff">Staff</Link>
-            <Link to="/dashboard/admin/reports">Reports</Link>
-            <Link to="/dashboard/admin/settings">Settings</Link>
+            <li><Link to="/admin">Dashboard</Link></li>
+            <li><Link to="/admin/users">User Management</Link></li>
+            <li><Link to="/admin/guards">Guards</Link></li>
+            <li><Link to="/admin/visitors">Visitors</Link></li>
+            <li><Link to="/admin/incidents">Incidents</Link></li>
+            <li><Link to="/admin/access">Access Control</Link></li>
+            <li><Link to="/admin/reports">Reports</Link></li>
+            <li><Link to="/admin/settings">Settings</Link></li>
           </>
         )}
       </div>

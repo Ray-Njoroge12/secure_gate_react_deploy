@@ -5,8 +5,8 @@ import "./styles.css";
 
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
+// React.StrictMode can double-invoke some lifecycle hooks in development which
+// may cause confusing duplicate behavior while debugging; disable it temporarily.
 root.render(
-  <React.StrictMode>
-    <App />   {/* No Router here */}
-  </React.StrictMode>
+  <App />
 );

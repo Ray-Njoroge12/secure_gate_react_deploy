@@ -2,15 +2,15 @@ import React from "react";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 
-export default function Reports() {
+export default function Settings() {
   return (
     <div className="app-grid">
       <Sidebar />
       <div>
-        <Topbar title="Reports" onLogout={() => { localStorage.clear(); window.location.href="/login"; }} />
+        <Topbar title="Settings" onLogout={() => { localStorage.clear(); window.location.href="/login"; }} />
         <main className="main">
-          <h3>Reports</h3>
-          <p>Generate/export daily, weekly, monthly logs (implement endpoints on server).</p>
+          <h3>Settings</h3>
+          <p>Configure policies, notification channels, and admin details (server-side).</p>
         </main>
       </div>
     </div>

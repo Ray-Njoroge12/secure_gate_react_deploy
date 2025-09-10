@@ -4,20 +4,20 @@ import Topbar from "../../components/Topbar";
 import Table from "../../components/Table";
 import axios from "axios";
 
-export default function Users() {
+export default function Guards() {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token") || localStorage.getItem("admin_token") || sessionStorage.getItem("admin_token");
-  const [users, setUsers] = useState([]);
-  useEffect(() => {
-    axios.get("/api/admin/users", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => setUsers(r.data)).catch(()=>{});
-  }, []);
+  const [guards, setGuards] = useState([]);
+  useEffect(()=> {
+    axios.get("/api/admin/guards", { headers:{ Authorization:`Bearer ${token}` }})
+      .then(r=>setGuards(r.data)).catch(()=>{});
+  },[]);
   return (
     <div className="app-grid">
       <Sidebar />
       <div>
-        <Topbar title="User Management" onLogout={() => { localStorage.clear(); window.location.href="/login"; }} />
+        <Topbar title="Guards" onLogout={() => { localStorage.clear(); window.location.href="/login"; }} />
         <main className="main">
-          <Table headers={["ID","Name","Role","Status","Actions"]} rows={users.map(u=>[u.id,u.name,u.role,u.status,"Edit | Deactivate"])} />
+          <Table headers={["ID","Name","Post","Status","Actions"]} rows={guards.map(g=>[g.id,g.name,g.post,g.status,"Edit | Remove"])} />
         </main>
       </div>
     </div>

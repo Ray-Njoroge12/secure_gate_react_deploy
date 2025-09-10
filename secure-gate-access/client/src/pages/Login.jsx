@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showForgot, setShowForgot] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -17,37 +18,52 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setMessage("");
+  console.debug("handleLogin invoked", { email, remember, loading });
+  if (loading) return; // prevent double submit
+  setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("http://localhost:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember }),
       });
 
       const data = await res.json();
+      console.log("Login response status:", res.status, "body:", data);
 
       if (!res.ok) {
-        setError(data.message || "Login failed");
+        const reason = data && data.reason ? ` (${data.reason})` : "";
+        setError((data && data.message ? data.message : "Login failed") + reason);
+        setLoading(false);
         return;
       }
 
       // save token and role
+      const token = data.token;
+      const user = data.user || {};
+
       if (remember) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role);
+        localStorage.setItem("token", token);
+        localStorage.setItem("role", user.role);
+        localStorage.setItem("username", user.username);
+        localStorage.setItem("email", user.email);
       } else {
-        sessionStorage.setItem("token", data.token);
-        sessionStorage.setItem("role", data.role);
+        sessionStorage.setItem("token", token);
+        sessionStorage.setItem("role", user.role);
+        sessionStorage.setItem("username", user.username);
+        sessionStorage.setItem("email", user.email);
       }
 
       // redirect based on role
-      if (data.role === "admin") navigate("/dashboard/admin");
-      else if (data.role === "guard") navigate("/dashboard/guard");
-      else if (data.role === "resident") navigate("/dashboard/resident");
+  if (user.role === "admin") navigate("/dashboard/admin");
+      else if (user.role === "guard") navigate("/dashboard/guard");
+      else if (user.role === "resident") navigate("/dashboard/resident");
       else navigate("/");
+  setLoading(false);
     } catch (err) {
       setError("Server error. Try again later.");
+  setLoading(false);
     }
   };
 
@@ -58,7 +74,7 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/forgot-password", {
+  const res = await fetch("http://localhost:5000/api/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resetEmail }),
@@ -141,7 +157,7 @@ export default function LoginPage() {
               </Link>
             </p>
 
-            <button type="submit" className="btn primary">Login</button>
+            <button type="submit" className="btn primary" disabled={loading}>{loading ? "Logging in..." : "Login"}</button>
           </form>
         ) : (
           <form onSubmit={handleForgotPassword}>

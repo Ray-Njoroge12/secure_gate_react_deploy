@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles.css";
@@ -15,10 +14,10 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/users/login", {
+      const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember }),
       });
 
       const data = await res.json();
@@ -28,18 +27,18 @@ export default function LoginPage() {
         return;
       }
 
-      // save token and role
+      // Save token + user info
       localStorage.setItem("token", data.token);
-      const role = data.role || data.user?.role;
-      localStorage.setItem("role", role);
+      localStorage.setItem("role", data.role);
       if (remember) localStorage.setItem("remember", "true");
 
       // redirect based on role
-      if (role === "admin") navigate("/dashboard/admin");
-      else if (role === "security") navigate("/dashboard/guard");
-      else if (role === "resident") navigate("/dashboard/resident");
-      else navigate("/login");
+      if (data.role === "admin") navigate("/dashboard/admin");
+      else if (data.role === "security") navigate("/dashboard/guard");
+      else if (data.role === "resident") navigate("/dashboard/resident");
+      else navigate("/");
     } catch (err) {
+      console.error("Login error:", err);
       setError("Server error. Try again later.");
     }
   };
@@ -83,7 +82,7 @@ export default function LoginPage() {
 
           {/* Register Now link */}
           <p style={{ marginTop: 12 }}>
-            Don't have an account?{" "}
+            Don’t have an account?{" "}
             <Link to="/register" style={{ color: "#007bff" }}>Register Now</Link>
           </p>
 
@@ -94,6 +93,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-
 }
-   // Renamed from Login.js to Login.jsx

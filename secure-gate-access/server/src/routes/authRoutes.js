@@ -1,12 +1,14 @@
-const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
+import { Router } from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import nodemailer from "nodemailer";
 
-const router = express.Router();
+const router = Router();
 
-const SECRET = "secure-gate-secret"; // move to .env later
-const users = []; // temp store, replace with DB later
+const SECRET_KEY = "supersecretkey"; // move to .env later
+let users = [
+  { email: "admin@secure.com", password: "adminadmin", role: "admin", username: "Admin" }
+]; // temp store, replace with DB later
 
 // ======================= MAILER =======================
 const transporter = nodemailer.createTransport({
@@ -17,77 +19,79 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ======================= REGISTER =======================
-router.post("/register", async (req, res) => {
-  try {
-    const { username, email, role, area, phone, house, password } = req.body;
-
-    if (!username || !email || !password || !role) {
-      return res.status(400).json({ message: "All required fields must be filled" });
-    }
-
-    if (users.find((u) => u.email === email)) {
-      return res.status(400).json({ message: "Email already exists" });
-    }
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    const newUser = {
-      id: users.length + 1,
-      username,
-      email,
-      role, // "resident" or "guard"
-      area,
-      phone,
-      house: role === "resident" ? house : null,
-      password: hashed,
-      verified: true,
-    };
-
-    users.push(newUser);
-
-    res.json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 // ======================= LOGIN =======================
 router.post("/login", async (req, res) => {
   const { email, password, remember } = req.body;
   try {
-    console.log("Login attempt:", email);
-
+    console.log("Login request body:", req.body);
     const user = users.find((u) => u.email === email);
+    console.log("User found:", user);
     if (!user) {
       console.log("No user found");
-      return res.status(400).json({ error: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials", reason: "no_user", email });
     }
-
-    const validPassword = await bcrypt.compare(password, user.password);
+    // Accept either plaintext or bcrypt-hashed passwords (handles both dev and registered users)
+    console.log("Received password (length):", password ? password.length : 0);
+    let bcryptMatch = false;
+    try {
+      bcryptMatch = await bcrypt.compare(password, user.password);
+    } catch (e) {
+      bcryptMatch = false;
+    }
+    const plainMatch = password === user.password;
+    const validPassword = bcryptMatch || plainMatch;
+    console.log("Password valid (bcrypt/plain):", bcryptMatch, plainMatch);
     if (!validPassword) {
       console.log("Password mismatch");
-      return res.status(400).json({ error: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials", reason: "password_mismatch" });
     }
-
-    const expiresIn = remember ? "7d" : "1h";
     const token = jwt.sign(
-      { id: user.id, role: user.role },
-      SECRET,
-      { expiresIn }
+      { email: user.email, role: user.role },
+      SECRET_KEY,
+      { expiresIn: remember ? "7d" : "1h" }
     );
-
     console.log("Login successful");
     res.json({
       token,
-      user: { id: user.id, username: user.username, role: user.role }
+      user: { email: user.email, role: user.role, username: user.username }
     });
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).json({ error: "Login failed", details: err.message });
   }
 });
+
+// ======================= REGISTER =======================
+router.post("/register", async (req, res) => {
+  const { username, email, password, role, area, phone, house } = req.body;
+
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: "All required fields must be filled" });
+  }
+
+  if (users.find((u) => u.email === email)) {
+    return res.status(409).json({ message: "User already exists" });
+  }
+
+  const hashed = await bcrypt.hash(password, 10);
+
+  const newUser = {
+    id: users.length + 1,
+    username,
+    email,
+    role: role || "resident",
+    area,
+    phone,
+    house,
+    password: hashed,
+    verified: true,
+  };
+
+  users.push(newUser);
+
+  res.status(201).json({ message: "User registered successfully", user: newUser });
+});
+
 
 // ======================= FORGOT PASSWORD =======================
 router.post("/forgot-password", async (req, res) => {
@@ -96,7 +100,7 @@ router.post("/forgot-password", async (req, res) => {
 
   if (!user) return res.status(400).json({ message: "User not found" });
 
-  const resetToken = jwt.sign({ email: user.email }, SECRET, { expiresIn: "15m" });
+  const resetToken = jwt.sign({ email: user.email }, SECRET_KEY, { expiresIn: "15m" });
   const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
 
   try {
@@ -123,7 +127,7 @@ router.post("/reset-password/:token", async (req, res) => {
   const { newPassword } = req.body;
 
   try {
-    const decoded = jwt.verify(token, SECRET);
+    const decoded = jwt.verify(token, SECRET_KEY);
     const user = users.find((u) => u.email === decoded.email);
 
     if (!user) return res.status(400).json({ message: "Invalid token" });
@@ -143,7 +147,7 @@ router.get("/me", (req, res) => {
   if (!auth) return res.sendStatus(401);
   try {
     const token = auth.split(" ")[1];
-    const decoded = jwt.verify(token, SECRET);
+    const decoded = jwt.verify(token, SECRET_KEY);
     res.json({ user: decoded });
   } catch (e) {
     res.sendStatus(403);

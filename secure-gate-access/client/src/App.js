@@ -1,18 +1,19 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./pages/Login";
-import RegistrationPage from "./pages/Register";
-import ProtectedRoute from "./routes/ProtectedRoute";
-import BulkInvite from "./pages/resident/BulkInvite";
-import Settings from "./pages/resident/Settings";
-import ResidentDashboard from "./pages/resident/ResidentDashboard";
-import AddVisitor from "./pages/resident/AddVisitor";
-import GeneratePass from "./pages/resident/GeneratePass";
-import VisitorHistory from "./pages/resident/VisitorHistory";
-import GuardDashboard from "./pages/guard/GuardDashboard";
-import ManualCheck from "./pages/guard/ManualCheck";
-import ScanQR from "./pages/guard/ScanQR";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import LoginPage from "./pages/Login.js";
+import RegistrationPage from "./pages/Register.js";
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import BulkInvite from "./pages/resident/BulkInvite.jsx";
+import Settings from "./pages/resident/Settings.jsx";
+import ResidentDashboard from "./pages/resident/ResidentDashboard.jsx";
+import AddVisitor from "./pages/resident/AddVisitor.jsx";
+import GeneratePass from "./pages/resident/GeneratePass.jsx";
+import VisitorHistory from "./pages/resident/VisitorHistory.jsx";
+import GuardDashboard from "./pages/guard/GuardDashboard.jsx";
+import ManualCheck from "./pages/guard/ManualCheck.jsx";
+import ScanQR from "./pages/guard/ScanQR.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import Reports from "./pages/admin/Reports.jsx";
 
 function App() {
   return (
@@ -125,17 +126,58 @@ function App() {
           }
         />
 
-        {/* Admin routes (blank for now) */}
-  {/* Admin routes */}
-  <Route path="/dashboard/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-  <Route path="/dashboard/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-  <Route path="/dashboard/admin/visitors" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-  <Route path="/dashboard/admin/manage-staff" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-  <Route path="/dashboard/admin/reports" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
-  <Route path="/dashboard/admin/settings" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+        {/* Admin routes */}
+        <Route
+          path="/dashboard/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/users"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/visitors"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/manage-staff"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/reports"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/settings"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-  {/* Catch-all route for unmatched paths */}
-  <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Catch-all route for unmatched paths */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
