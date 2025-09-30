@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\rayng\\Desktop\\secure-gate-react-express\\secure-gate-access\\server\\logs\\.56fb0b5f21e589a0d8b7943950fdb4f4a43f3570-audit.json",
+    "files": [
+        {
+            "date": 1758036427653,
+            "name": "C:\\Users\\rayng\\Desktop\\secure-gate-react-express\\secure-gate-access\\server\\logs\\security-2025-09-16.log",
+            "hash": "448ba65560fb708bd3b00ec0ff6bdb95885474a7b91e2a196c05d97f6b3def81"
+        }
+    ],
+    "hashType": "sha256"
+}

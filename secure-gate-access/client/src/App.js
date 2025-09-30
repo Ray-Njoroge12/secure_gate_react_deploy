@@ -1,7 +1,9 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext.js";
 import LoginPage from "./pages/Login.js";
 import RegistrationPage from "./pages/Register.js";
+import GuestInvite from "./pages/GuestInvite.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import BulkInvite from "./pages/resident/BulkInvite.jsx";
 import Settings from "./pages/resident/Settings.jsx";
@@ -17,8 +19,9 @@ import Reports from "./pages/admin/Reports.jsx";
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <AuthProvider>
+      <Router>
+        <Routes>
         {/* Default route - redirect to login */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         
@@ -27,6 +30,9 @@ function App() {
         <Route path="/register" element={<RegistrationPage />} />
         <Route path="/register/:inviteCode" element={<RegistrationPage />} />
         <Route path="/bulk-register/:inviteCode" element={<RegistrationPage />} />
+        
+        {/* Guest invitation routes */}
+        <Route path="/invite/:inviteCode" element={<GuestInvite />} />
 
         {/* Resident routes */}
         <Route
@@ -178,8 +184,9 @@ function App() {
 
         {/* Catch-all route for unmatched paths */}
         <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 

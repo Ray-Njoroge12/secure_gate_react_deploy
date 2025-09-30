@@ -2,50 +2,28 @@
 // Unified integration for visitors, passes, and invites.
 // Server duplicate removed.
 
+import { http } from './_http.js';
+
 const API_BASE = '/api/visitors';
 
-function buildHeaders(extra = {}) {
-  const token = localStorage.getItem('token');
-  const residentEmail = localStorage.getItem('residentEmail');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(residentEmail ? { 'x-resident-email': residentEmail } : {}),
-    ...extra
-  };
-}
-
-async function apiCall(endpoint, method = 'GET', body = null, headers = {}) {
-  const opts = { method, headers: buildHeaders(headers) };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(endpoint, opts);
-  let payload;
-  try { payload = await res.json(); } catch { payload = {}; }
-  const { success, data, error } = payload;
-  if (!res.ok || success === false) {
-    throw new Error(error || payload.message || 'Request failed');
-  }
-  return data !== undefined ? data : payload;
-}
-
 // === Visitors ===
-export const createVisitor = (payload) => apiCall(API_BASE, 'POST', payload);
-export const getMyVisitors = () => apiCall(API_BASE, 'GET');
+export const createVisitor = (payload) => http.post(API_BASE, payload);
+export const getMyVisitors = () => http.get(API_BASE);
 export const listVisitors = getMyVisitors;
 
 // === Passes (basic, leave advanced to passService.js) ===
-export const createPass = (visitorId) => apiCall(`${API_BASE}/${visitorId}/pass`, 'POST');
+export const createPass = (visitorId) => http.post(`${API_BASE}/${visitorId}/pass`);
 
 // === Bulk Invites ===
-export const bulkInvite = (eventDetails) => apiCall(`${API_BASE}/bulk-invite`, 'POST', eventDetails);
-export const getBulkInvite = (inviteCode) => apiCall(`${API_BASE}/bulk-invite/${inviteCode}`, 'GET');
-export const completeInvite = (inviteCode, guestDetails) => apiCall(`${API_BASE}/complete/${inviteCode}`, 'POST', guestDetails);
+export const bulkInvite = (eventDetails) => http.post(`${API_BASE}/bulk-invite`, eventDetails);
+export const getBulkInvite = (inviteCode) => http.get(`${API_BASE}/bulk-invite/${inviteCode}`);
+export const completeInvite = (inviteCode, guestDetails) => http.post(`${API_BASE}/complete/${inviteCode}`, guestDetails);
 
 // === Shared Links ===
-export const getInviteByCode = (inviteCode) => apiCall(`/api/invite/${inviteCode}`, 'GET');
+export const getInviteByCode = (inviteCode) => http.get(`/api/invite/${inviteCode}`);
 
 // === Optional OTP Support ===
-export const verifyOtp = (email, otp) => apiCall('/api/verify-otp', 'POST', { email, otp });
+export const verifyOtp = (email, otp) => http.post('/api/verify-otp', { email, otp });
 
 // === Utility ===
 export function normalizeVisitor(v) {
