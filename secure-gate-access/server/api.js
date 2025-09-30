@@ -4,19 +4,35 @@ import bcrypt from "bcryptjs";
 import jwtPkg from "jsonwebtoken";
 const { sign, verify } = jwtPkg;
 
+// SECURITY: Validate JWT secret is properly configured
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('🚨 FATAL SECURITY ERROR: JWT_SECRET must be set and >= 32 characters');
+  console.error('🔧 Generate a secure secret: openssl rand -hex 32');
+  process.exit(1);
+}
+
 const router = express.Router();
-const SECRET_KEY = "supersecretkey";
+const SECRET_KEY = process.env.JWT_SECRET;
 
 let users = []; // replace with DB later
 
-// ✅ Email transporter (Gmail app password)
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "kaymacharia@gmail.com",
-    pass: "eqbi qinf qonp olrv",
-  },
-});
+// ✅ Email transporter configuration
+let transporter = null;
+
+// SECURITY: Only initialize email if credentials are provided via environment variables
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT || 587,
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+} else {
+  console.warn('⚠️  SMTP credentials not configured - email functionality disabled');
+}
 
 /* ---------------- Registration ---------------- */
 router.post("/api/register", async (req, res) => {
@@ -46,14 +62,18 @@ router.post("/api/register", async (req, res) => {
     const token = sign({ email }, SECRET_KEY, { expiresIn: "1d" });
     const verificationLink = `http://localhost:3000/api/verify/${token}`;
 
-    await transporter.sendMail({
-      from: `"Secure Gate" <kaymacharia@gmail.com>`,
-      to: email,
-      subject: "Verify your email",
-      html: `<p>Hello ${username},</p>
-             <p>Please verify your email by clicking below:</p>
-             <a href="${verificationLink}">Verify Email</a>`,
-    });
+    if (transporter) {
+      await transporter.sendMail({
+        from: `"${process.env.SMTP_FROM_NAME || 'Secure Gate'}" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Verify your email",
+        html: `<p>Hello ${username},</p>
+               <p>Please verify your email by clicking below:</p>
+               <a href="${verificationLink}">Verify Email</a>`,
+      });
+    } else {
+      console.warn('⚠️  Email not sent - SMTP not configured');
+    }
 
     res.json({ message: "Registration successful. Check your email to verify." });
   } catch (err) {
@@ -109,14 +129,19 @@ router.post("/api/forgot-password", async (req, res) => {
   const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
 
   try {
-    await transporter.sendMail({
-      from: `"Secure Gate" <kaymacharia@gmail.com>`,
-      to: email,
-      subject: "Password Reset Request",
-      html: `<p>Hello,</p>
-             <p>Click below to reset your password (valid for 15 minutes):</p>
-             <a href="${resetLink}">Reset Password</a>`,
-    });
+    if (transporter) {
+      await transporter.sendMail({
+        from: `"${process.env.SMTP_FROM_NAME || 'Secure Gate'}" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Password Reset Request",
+        html: `<p>Hello,</p>
+               <p>Click below to reset your password (valid for 15 minutes):</p>
+               <a href="${resetLink}">Reset Password</a>`,
+      });
+    } else {
+      console.warn('⚠️  Password reset email not sent - SMTP not configured');
+      return res.status(500).json({ message: "Email service not configured" });
+    }
 
     res.json({ message: "Password reset email sent." });
   } catch (err) {

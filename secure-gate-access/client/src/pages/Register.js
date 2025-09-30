@@ -1,8 +1,9 @@
 // Unified registration page supporting normal user registration and event (bulk invite) visitor self-registration
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { completeInvite, getBulkInvite } from "../services/passService";
+import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } from "../services/passService.js";
 import "../styles.css";
+import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
 
 export default function RegistrationPage() {
   const navigate = useNavigate();
@@ -29,6 +30,13 @@ export default function RegistrationPage() {
   const [purpose, setPurpose] = useState("");
   const [loading, setLoading] = useState(false);
   const [inviteDetails, setInviteDetails] = useState(null);
+  const [qrCode, setQrCode] = useState("");
+  const [confirmedVisitor, setConfirmedVisitor] = useState(null);
+  const [showOtpSection, setShowOtpSection] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
     if (isBulkRegistration && inviteCode) {
@@ -36,8 +44,17 @@ export default function RegistrationPage() {
       const fetchInviteDetails = async () => {
         try {
           const details = await getBulkInvite(inviteCode);
-          setInviteDetails(details);
-          setPurpose(details.eventName || "Event");
+          const normalized = {
+            eventName: details.event_name || details.eventName,
+            date: details.date,
+            time: details.time,
+            numGuests: details.num_guests || details.numGuests,
+            inviteCode: details.invite_code || details.inviteCode,
+            expiresAt: details.expires_at || details.expiresAt,
+            remainingSlots: details.remaining_slots || details.remainingSlots
+          };
+          setInviteDetails(normalized);
+          setPurpose(normalized.eventName || "Event");
         } catch (err) {
           console.error('Failed to fetch invite details:', err);
           setError('Invalid or expired invitation link');
@@ -122,13 +139,25 @@ export default function RegistrationPage() {
         expectedTime: "2 hours"
       };
 
-      const response = await completeInvite(inviteCode, guestData);
-
-      setSuccess("Registration successful! Your QR code and OTP have been generated.");
-      setTimeout(() => navigate("/"), 3000);
+  const response = await completeInvite(inviteCode, guestData);
+  // Expecting { visitor, otp_issued, otp_ttl_minutes, debug_otp? }
+  const v = (response && response.visitor) ? response.visitor : response;
+  setConfirmedVisitor(v || null);
+  // If backend echoed debug OTP (dev only), surface it for ease of local testing
+  if (response && response.debug_otp) {
+    setOtp(response.debug_otp);
+    setOtpSuccess('Debug OTP provided (dev only)');
+  }
+  // Show OTP step; QR will be shown after verification
+  setShowOtpSection(true);
+  setSuccess("Registration submitted. Please check your email/SMS for the OTP and verify to view your QR code.");
     } catch (err) {
-      console.error('Bulk registration failed:', err);
-      setError(err.message || 'Registration failed');
+  console.error('Bulk registration failed:', err);
+  // Friendly messages per status
+  if (err.status === 410) setError('This invitation has expired. Please contact the host for a new link.');
+  else if (err.status === 409) setError('All guest slots have been used for this event.');
+  else if (err.status === 404) setError('Invitation not found. Please check your link.');
+  else setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -159,6 +188,76 @@ export default function RegistrationPage() {
           {success && (
             <div style={{color: 'green', marginBottom: 16, padding: 12, backgroundColor: '#eafaea', borderRadius: 4}}>
               {success}
+            </div>
+          )}
+
+          {/* Show QR and confirmation details after OTP verification */}
+          {qrCode && (
+            <div style={{marginBottom: 16, padding: 16, border: '1px solid #eee', borderRadius: 6, background: '#fafafa', display: 'flex', justifyContent: 'center'}}>
+              <QRCodeDisplay value={qrCode} size={220} otp={otp} altImg={qrCode} />
+            </div>
+          )}
+
+          {/* OTP verification section */}
+          {showOtpSection && (
+            <div style={{marginBottom: 16, padding: 16, border: '1px solid #eee', borderRadius: 6, background: '#fff'}}>
+              <div style={{fontWeight: 600, marginBottom: 8}}>Verify your OTP</div>
+              <div style={{display: 'flex', gap: 8}}>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="Enter 6-digit OTP"
+                  style={{flex: 1, padding: 10, border: '1px solid #ddd', borderRadius: 4}}
+                />
+                <button
+                  onClick={async () => {
+                    setOtpError("");
+                    setOtpSuccess("");
+                    if (!confirmedVisitor?.id || !otp.trim()) {
+                      setOtpError('OTP and visitor are required');
+                      return;
+                    }
+                    try {
+                      const r = await visitorVerifyOtp(confirmedVisitor.id, otp.trim());
+                      const v2 = r?.visitor || r;
+                      if (v2?.qr_code) setQrCode(v2.qr_code);
+                      setConfirmedVisitor(v2);
+                      setOtpSuccess('OTP verified successfully. Your QR code is ready below.');
+                      setShowOtpSection(false);
+                    } catch (e) {
+                      if (e.status === 401) setOtpError('Incorrect OTP. Please try again.');
+                      else if (e.status === 410) setOtpError('OTP has expired. Please request a new one.');
+                      else if (e.status === 429) setOtpError('Too many attempts. Please wait a while before retrying.');
+                      else setOtpError(e.message || 'OTP verification failed');
+                    }
+                  }}
+                  style={{padding: '10px 16px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer'}}
+                >Verify</button>
+                <button
+                  disabled={resendCooldown > 0}
+                  onClick={async () => {
+                    if (!confirmedVisitor?.id) return;
+                    try {
+                      await resendVisitorOtp(confirmedVisitor.id);
+                      setOtpSuccess('OTP resent. Please check your inbox.');
+                      setResendCooldown(60);
+                      const t = setInterval(() => {
+                        setResendCooldown((s) => {
+                          if (s <= 1) { clearInterval(t); return 0; }
+                          return s - 1;
+                        });
+                      }, 1000);
+                    } catch (e) {
+                      if (e.status === 429) setOtpError('Please wait a minute before requesting another OTP.');
+                      else setOtpError(e.message || 'Failed to resend OTP');
+                    }
+                  }}
+                  style={{padding: '10px 16px', backgroundColor: resendCooldown>0 ? '#ccc' : '#6c757d', color: '#fff', border: 'none', borderRadius: 4, cursor: resendCooldown>0 ? 'not-allowed' : 'pointer'}}
+                >{resendCooldown>0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</button>
+              </div>
+              {otpError && <div style={{color:'red', marginTop:8}}>{otpError}</div>}
+              {otpSuccess && <div style={{color:'green', marginTop:8}}>{otpSuccess}</div>}
             </div>
           )}
 

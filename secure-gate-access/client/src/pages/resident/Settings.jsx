@@ -6,7 +6,20 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState({ name: "", phone: "", email: "", area: "", house: "" });
   const [passwords, setPasswords] = useState({ old: "", new: "" });
-  const [notifications, setNotifications] = useState({ visitorInvites: true, smsAlerts: true, emailAlerts: true, dailySummary: false });
+  const [notifications, setNotifications] = useState({ notify_email: true, notify_sms: false });
+  // Load notification preferences from backend
+  useEffect(() => {
+    fetch('/api/users/profile', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+      .then(res => res.json())
+      .then(data => {
+        if (data?.user) {
+          setNotifications({
+            notify_email: !!data.user.notify_email,
+            notify_sms: !!data.user.notify_sms
+          });
+        }
+      });
+  }, []);
   const [security, setSecurity] = useState({ twoFA: false, showLoginHistory: true });
   const [visitorPrefs, setVisitorPrefs] = useState({ defaultDuration: "1 hour", maxVisitors: 5 });
   const [darkMode, setDarkMode] = useState(false);
@@ -25,7 +38,21 @@ export default function Settings() {
 
   const handleUpdate = (type, e) => {
     e.preventDefault();
-    alert(`${type} updated!`);
+    if (type === 'Notifications') {
+      // Save notification preferences
+      fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notify_email: notifications.notify_email, notify_sms: notifications.notify_sms })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) alert('Notification preferences updated!');
+          else alert('Failed to update preferences');
+        });
+    } else {
+      alert(`${type} updated!`);
+    }
   };
 
   const tabs = [
@@ -85,19 +112,16 @@ export default function Settings() {
         )}
 
         {activeTab === "notifications" && (
-          <form onSubmit={(e) => handleUpdate("Notifications", e)} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
+          <form onSubmit={(e) => { e.preventDefault(); handleUpdate("Notifications", e); }} className="bg-panel rounded-2xl p-6 space-y-3 shadow-inner">
             <h2 className="text-lg font-semibold">Notifications</h2>
-            {Object.keys(notifications).map((key) => (
-              <label key={key} className="flex items-center space-x-2 text-sm">
-                <input type="checkbox" checked={notifications[key]} onChange={(e) => setNotifications({ ...notifications, [key]: e.target.checked })} className="w-4 h-4" />
-                <span>
-                  {key === "visitorInvites" && "Visitor Invites"}
-                  {key === "smsAlerts" && "SMS Alerts"}
-                  {key === "emailAlerts" && "Email Alerts"}
-                  {key === "dailySummary" && "Daily Summary"}
-                </span>
-              </label>
-            ))}
+            <label className="flex items-center space-x-2 text-sm">
+              <input type="checkbox" checked={notifications.notify_email} onChange={e => setNotifications({ ...notifications, notify_email: e.target.checked })} className="w-4 h-4" />
+              <span>Email Notifications</span>
+            </label>
+            <label className="flex items-center space-x-2 text-sm">
+              <input type="checkbox" checked={notifications.notify_sms} onChange={e => setNotifications({ ...notifications, notify_sms: e.target.checked })} className="w-4 h-4" />
+              <span>SMS Notifications</span>
+            </label>
             <button type="submit" className={btnClass}>Save Notifications</button>
           </form>
         )}

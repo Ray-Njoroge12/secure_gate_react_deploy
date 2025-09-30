@@ -4,18 +4,35 @@ import bcrypt from "bcryptjs";
 import jwtPkg from "jsonwebtoken";
 const { sign } = jwtPkg;
 
+// SECURITY: Validate JWT secret is properly configured
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('🚨 FATAL SECURITY ERROR: JWT_SECRET must be set and >= 32 characters');
+  console.error('🔧 Generate a secure secret: openssl rand -hex 32');
+  process.exit(1);
+}
+
 const router = express.Router();
-const SECRET_KEY = "supersecretkey";
+const SECRET_KEY = process.env.JWT_SECRET;
 
 let users = []; // ideally replace with database
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "kaymacharia@gmail.com",
-    pass: "eqbi qinf qonp olrv", // use app password from Google
-  },
-});
+// ✅ Email transporter configuration
+let transporter = null;
+
+// SECURITY: Only initialize email if credentials are provided via environment variables
+if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT || 587,
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+} else {
+  console.warn('⚠️  SMTP credentials not configured - email functionality disabled');
+}
 // Registration route
 router.post("/register", async (req, res) => {
   try {
@@ -30,19 +47,23 @@ router.post("/register", async (req, res) => {
     const newUser = { username, email, role, area, phone, house, password: hashedPassword };
     users.push(newUser);
 
-    // send email invitation
-    const mailOptions = {
-      from: "kaymacharia@gmail.com",
-      to: email,
-      subject: "Secure Gate Registration",
-      html: `<p>Hello ${username},</p>
-             <p>Thank you for registering! Your account has been created. Please login using your email.</p>`
-    };
+    // send email invitation if transporter is configured
+    if (transporter) {
+      const mailOptions = {
+        from: `"${process.env.SMTP_FROM_NAME || 'Secure Gate'}" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Secure Gate Registration",
+        html: `<p>Hello ${username},</p>
+               <p>Thank you for registering! Your account has been created. Please login using your email.</p>`
+      };
 
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) console.error(err);
-      else console.log("Email sent:", info.response);
-    });
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) console.error(err);
+        else console.log("Email sent:", info.response);
+      });
+    } else {
+      console.warn('⚠️  Registration email not sent - SMTP not configured');
+    }
 
     res.status(201).json({ message: "User registered, check your email" });
   } catch (err) {

@@ -1,0 +1,892 @@
+openapi: 3.0.3
+info:
+  title: Secure Gate Access API
+  description: |
+    Comprehensive API for visitor management system with role-based access control.
+    
+    ## Authentication
+    This API uses JWT Bearer tokens for authentication. Include the token in the Authorization header:
+    `Authorization: Bearer <your_jwt_token>`
+    
+    ## Roles
+    - **resident**: Can create visitors and manage their invitations
+    - **guard**: Can check visitors in/out and view active visitors  
+    - **admin**: Full system access including metrics and audit logs
+    
+  version: 3.0.0
+  contact:
+    name: Secure Gate Access Team
+    email: support@securegate.com
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:5000/api
+    description: Development server
+  - url: https://api.securegate.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [resident, guard, admin]
+        area:
+          type: string
+        phone:
+          type: string
+        house:
+          type: string
+        verified:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required: [username, email, role]
+
+    Visitor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        id_number:
+          type: string
+        vehicle_plate:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, ON_PREMISE, EXITED, REVOKED, EXPIRED]
+        host_email:
+          type: string
+        date_of_visit:
+          type: string
+          format: date
+        time:
+          type: string
+        purpose:
+          type: string
+        otp:
+          type: string
+        otp_expires_at:
+          type: string
+          format: date-time
+        check_in_time:
+          type: string
+          format: date-time
+        check_out_time:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    BulkInvite:
+      type: object
+      properties:
+        id:
+          type: integer
+        invite_code:
+          type: string
+        event_name:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+        num_guests:
+          type: integer
+        created_by:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [ACTIVE, EXPIRED, CANCELLED]
+
+    Pass:
+      type: object
+      properties:
+        id:
+          type: integer
+        visitor_id:
+          type: integer
+        qr_code:
+          type: string
+        access_code:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        is_active:
+          type: boolean
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+        code:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: integer
+
+paths:
+  # Authentication Endpoints
+  /users/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Register a new user with role-based permissions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                role:
+                  type: string
+                  enum: [resident, guard, admin]
+                area:
+                  type: string
+                phone:
+                  type: string
+                house:
+                  type: string
+              required: [username, email, password, role]
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Validation error or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                remember:
+                  type: boolean
+              required: [email, password]
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                  role:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate user session and JWT token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /users/profile:
+    put:
+      tags:
+        - User Management
+      summary: Update user profile
+      description: Update authenticated user's profile information
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                phone:
+                  type: string
+                area:
+                  type: string
+                house:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Visitor Management Endpoints
+  /visitors:
+    post:
+      tags:
+        - Visitor Management
+      summary: Create visitor invitation
+      description: Create a new visitor invitation (Resident only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                id_number:
+                  type: string
+                vehicle_plate:
+                  type: string
+                date_of_visit:
+                  type: string
+                  format: date
+                time:
+                  type: string
+                purpose:
+                  type: string
+              required: [name, phone, date_of_visit, time, purpose]
+      responses:
+        '201':
+          description: Visitor invitation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Visitor'
+
+    get:
+      tags:
+        - Visitor Management
+      summary: Get my visitors
+      description: Get all visitors created by the authenticated resident
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, ON_PREMISE, EXITED, REVOKED, EXPIRED]
+      responses:
+        '200':
+          description: Visitors retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Visitor'
+
+  /visitors/{visitorId}/pass:
+    post:
+      tags:
+        - Pass Generation
+      summary: Generate visitor pass
+      description: Generate QR code pass for confirmed visitor
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: visitorId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Pass generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Pass'
+
+  /visitors/bulk-invite:
+    post:
+      tags:
+        - Bulk Operations
+      summary: Create bulk invitation
+      description: Create bulk invitation for multiple guests
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_name:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                time:
+                  type: string
+                num_guests:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+              required: [event_name, date, time, num_guests]
+      responses:
+        '201':
+          description: Bulk invitation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/BulkInvite'
+
+  /visitors/bulk-invite/{inviteCode}:
+    get:
+      tags:
+        - Bulk Operations
+      summary: Get bulk invitation details
+      description: Get details of bulk invitation by code (Public endpoint)
+      parameters:
+        - name: inviteCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bulk invitation details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/BulkInvite'
+
+  /visitors/complete/{inviteCode}:
+    post:
+      tags:
+        - Bulk Operations
+      summary: Complete guest registration
+      description: Complete registration for bulk invitation guest (Public endpoint)
+      parameters:
+        - name: inviteCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                phone:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                id_number:
+                  type: string
+                vehicle_plate:
+                  type: string
+                expected_time:
+                  type: string
+              required: [name, phone, email]
+      responses:
+        '201':
+          description: Guest registration completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  visitor:
+                    $ref: '#/components/schemas/Visitor'
+                  otp_issued:
+                    type: boolean
+                  otp_ttl_minutes:
+                    type: integer
+
+  # Guard Operations
+  /visitors/{id}/check-in:
+    post:
+      tags:
+        - Guard Operations
+      summary: Check in visitor
+      description: Check in visitor at the gate (Guard/Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Visitor checked in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                        example: ON_PREMISE
+                      check_in_time:
+                        type: string
+                        format: date-time
+                      already_checked_in:
+                        type: boolean
+
+  /visitors/{id}/check-out:
+    post:
+      tags:
+        - Guard Operations
+      summary: Check out visitor
+      description: Check out visitor from the premises (Guard/Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Visitor checked out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                        example: EXITED
+                      check_out_time:
+                        type: string
+                        format: date-time
+                      already_checked_out:
+                        type: boolean
+
+  /visitors/{id}/revoke:
+    post:
+      tags:
+        - Guard Operations
+      summary: Revoke visitor access
+      description: Revoke visitor access and invalidate passes (Guard/Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Visitor access revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                        example: REVOKED
+
+  /visitors/active:
+    get:
+      tags:
+        - Guard Operations
+      summary: Get active visitors
+      description: Get list of visitors currently on premises (Guard/Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active visitors retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Visitor'
+
+  /visitors/reports:
+    get:
+      tags:
+        - Reporting
+      summary: Get visitor reports
+      description: Generate visitor reports with filtering (Guard/Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: host
+          in: query
+          schema:
+            type: string
+            format: email
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [CONFIRMED, ON_PREMISE, EXITED, REVOKED]
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+      responses:
+        '200':
+          description: Report generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Visitor'
+
+  # OTP Operations
+  /visitors/{id}/verify-otp:
+    post:
+      tags:
+        - OTP Operations
+      summary: Verify visitor OTP
+      description: Verify OTP for visitor confirmation (Public endpoint)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                otp:
+                  type: string
+                  minLength: 6
+                  maxLength: 6
+              required: [otp]
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /visitors/{id}/resend-otp:
+    post:
+      tags:
+        - OTP Operations
+      summary: Resend visitor OTP
+      description: Resend OTP to visitor (Rate limited - 3 per 5 minutes)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OTP resent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Admin Operations
+  /admin/metrics:
+    get:
+      tags:
+        - Admin Operations
+      summary: Get system metrics
+      description: Get comprehensive system metrics and performance data (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      visitors:
+                        type: object
+                      performance:
+                        type: object
+                      system:
+                        type: object
+
+  /admin/audit-logs:
+    get:
+      tags:
+        - Admin Operations
+      summary: Get audit logs
+      description: Get system audit logs with pagination (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Audit logs retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+
+  /admin/settings:
+    post:
+      tags:
+        - Admin Operations
+      summary: Update admin settings
+      description: Update system configuration settings (Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                setting_key:
+                  type: string
+                setting_value:
+                  type: string
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: User Management
+    description: User profile management
+  - name: Visitor Management
+    description: Visitor invitation and management
+  - name: Pass Generation
+    description: QR code pass generation
+  - name: Bulk Operations
+    description: Bulk invitation operations
+  - name: Guard Operations
+    description: Guard check-in/check-out operations
+  - name: OTP Operations
+    description: OTP verification and management
+  - name: Reporting
+    description: Visitor reports and analytics
+  - name: Admin Operations
+    description: Administrative functions and system management

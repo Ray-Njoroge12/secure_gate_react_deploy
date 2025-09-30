@@ -1,0 +1,403 @@
+// server/src/services/redisService.js
+import { createClient } from 'redis';
+import { EventEmitter } from 'events';
+import MemoryCacheService from './memoryCacheService.js';
+
+/**
+ * Redis Service for caching and session management
+ * Provides high-performance caching with fallback mechanisms
+ */
+class RedisService extends EventEmitter {
+  constructor() {
+    super();
+    this.client = null;
+    this.fallbackCache = null;
+    this.isConnected = false;
+    this.usingFallback = false;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 3; // Reduced for faster fallback
+    this.reconnectDelay = 2000;
+    
+    this.cacheStats = {
+      hits: 0,
+      misses: 0,
+      errors: 0,
+      operations: 0
+    };
+  }
+
+  /**
+   * Initialize Redis connection with fallback
+   */
+  async initialize() {
+    console.log('[REDIS] Initializing Redis service...');
+    
+    try {
+      // Attempt Redis connection with timeout
+      this.client = createClient({
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
+        socket: {
+          connectTimeout: 5000,
+          lazyConnect: true
+        }
+      });
+
+      // Set up event handlers
+      this.client.on('connect', () => {
+        console.log('[REDIS] Connected to Redis server');
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+      });
+
+      this.client.on('error', (error) => {
+        if (!this.usingFallback) {
+          console.error('[REDIS] Connection error:', error.message);
+          this.isConnected = false;
+          this.handleReconnection();
+        }
+      });
+
+      this.client.on('end', () => {
+        console.log('[REDIS] Connection ended');
+        this.isConnected = false;
+      });
+
+      // Try to connect with timeout
+      const connectPromise = this.client.connect();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+      );
+
+      await Promise.race([connectPromise, timeoutPromise]);
+      
+      console.log('✅ Redis connected successfully');
+      return true;
+
+    } catch (error) {
+      console.warn(`[REDIS] Redis connection failed: ${error.message}`);
+      console.log('[REDIS] Falling back to memory cache...');
+      return this.initializeFallback();
+    }
+  }
+
+  /**
+   * Initialize fallback memory cache
+   */
+  async initializeFallback() {
+    this.fallbackCache = new MemoryCacheService();
+    this.usingFallback = true;
+    this.isConnected = false;
+    console.log('✅ Memory cache fallback initialized');
+    return true;
+  }
+
+  /**
+   * Handle Redis reconnection attempts
+   */
+  async handleReconnection() {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('[REDIS] Max reconnection attempts reached, switching to fallback');
+      await this.initializeFallback();
+      this.emit('maxReconnectAttemptsReached');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), 10000);
+    
+    console.log(`[REDIS] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+    
+    setTimeout(async () => {
+      try {
+        if (!this.isConnected && this.client) {
+          await this.client.connect();
+        }
+      } catch (error) {
+        console.error('[REDIS] Reconnection failed:', error.message);
+        this.handleReconnection();
+      }
+    }, delay);
+  }
+
+  /**
+   * Set cache value with TTL
+   */
+  async set(key, value, ttlSeconds = 3600) {
+    if (this.usingFallback) {
+      return this.fallbackCache.set(key, value, ttlSeconds);
+    }
+
+    if (!this.isConnected) {
+      console.warn('[REDIS] Cache set failed - Redis not connected');
+      return false;
+    }
+
+    try {
+      this.cacheStats.operations++;
+      const serializedValue = JSON.stringify(value);
+      await this.client.setEx(key, ttlSeconds, serializedValue);
+      console.log(`[REDIS] Cache set: ${key} (TTL: ${ttlSeconds}s)`);
+      return true;
+    } catch (error) {
+      console.error('[REDIS] Cache set error:', error.message);
+      this.cacheStats.errors++;
+      return false;
+    }
+  }
+
+  /**
+   * Get cache value
+   */
+  async get(key) {
+    if (this.usingFallback) {
+      return this.fallbackCache.get(key);
+    }
+
+    if (!this.isConnected) {
+      console.warn('[REDIS] Cache get failed - Redis not connected');
+      this.cacheStats.misses++;
+      return null;
+    }
+
+    try {
+      this.cacheStats.operations++;
+      const value = await this.client.get(key);
+      
+      if (value === null) {
+        this.cacheStats.misses++;
+        console.log(`[REDIS] Cache miss: ${key}`);
+        return null;
+      }
+
+      this.cacheStats.hits++;
+      console.log(`[REDIS] Cache hit: ${key}`);
+      return JSON.parse(value);
+    } catch (error) {
+      console.error('[REDIS] Cache get error:', error.message);
+      this.cacheStats.errors++;
+      this.cacheStats.misses++;
+      return null;
+    }
+  }
+
+  /**
+   * Delete cache key
+   */
+  async delete(key) {
+    if (this.usingFallback) {
+      return this.fallbackCache.delete(key);
+    }
+
+    if (!this.isConnected) {
+      console.warn('[REDIS] Cache delete failed - Redis not connected');
+      return false;
+    }
+
+    try {
+      this.cacheStats.operations++;
+      const result = await this.client.del(key);
+      console.log(`[REDIS] Cache deleted: ${key} (found: ${result > 0})`);
+      return result > 0;
+    } catch (error) {
+      console.error('[REDIS] Cache delete error:', error.message);
+      this.cacheStats.errors++;
+      return false;
+    }
+  }
+
+  /**
+   * Delete multiple keys by pattern
+   */
+  async deletePattern(pattern) {
+    if (this.usingFallback) {
+      return this.fallbackCache.deletePattern(pattern);
+    }
+
+    if (!this.isConnected) {
+      console.warn('[REDIS] Cache pattern delete failed - Redis not connected');
+      return 0;
+    }
+
+    try {
+      this.cacheStats.operations++;
+      const keys = await this.client.keys(pattern);
+      if (keys.length === 0) {
+        return 0;
+      }
+
+      const result = await this.client.del(keys);
+      console.log(`[REDIS] Cache pattern deleted: ${pattern} (${result} keys)`);
+      return result;
+    } catch (error) {
+      console.error('[REDIS] Cache pattern delete error:', error.message);
+      this.cacheStats.errors++;
+      return 0;
+    }
+  }
+
+  /**
+   * Check if key exists
+   */
+  async exists(key) {
+    if (this.usingFallback) {
+      return this.fallbackCache.exists(key);
+    }
+
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      this.cacheStats.operations++;
+      return await this.client.exists(key) > 0;
+    } catch (error) {
+      console.error('[REDIS] Cache exists error:', error.message);
+      this.cacheStats.errors++;
+      return false;
+    }
+  }
+
+  /**
+   * Set TTL for existing key
+   */
+  async expire(key, ttlSeconds) {
+    if (this.usingFallback) {
+      return this.fallbackCache.expire(key, ttlSeconds);
+    }
+
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      this.cacheStats.operations++;
+      return await this.client.expire(key, ttlSeconds) > 0;
+    } catch (error) {
+      console.error('[REDIS] Cache expire error:', error.message);
+      this.cacheStats.errors++;
+      return false;
+    }
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getStats() {
+    const hitRate = this.cacheStats.operations > 0 
+      ? (this.cacheStats.hits / (this.cacheStats.hits + this.cacheStats.misses) * 100).toFixed(2)
+      : 0;
+
+    const stats = {
+      ...this.cacheStats,
+      hitRate: `${hitRate}%`,
+      isConnected: this.isConnected,
+      reconnectAttempts: this.reconnectAttempts,
+      usingFallback: this.usingFallback
+    };
+
+    // Include fallback cache stats if using fallback
+    if (this.usingFallback && this.fallbackCache) {
+      stats.fallbackStats = this.fallbackCache.getStats();
+    }
+
+    return stats;
+  }
+
+  /**
+   * Reset cache statistics
+   */
+  resetStats() {
+    this.cacheStats = {
+      hits: 0,
+      misses: 0,
+      errors: 0,
+      operations: 0
+    };
+  }
+
+  /**
+   * Graceful shutdown
+   */
+  async close() {
+    try {
+      if (this.client && this.isConnected) {
+        console.log('[REDIS] Closing Redis connection...');
+        await this.client.quit();
+        this.isConnected = false;
+        console.log('✅ Redis connection closed gracefully');
+      }
+
+      // Clean up fallback cache if using it
+      if (this.usingFallback && this.fallbackCache) {
+        this.fallbackCache.clear();
+        console.log('✅ Memory cache cleared');
+      }
+    } catch (error) {
+      console.error('[REDIS] Error during shutdown:', error.message);
+    }
+  }
+
+  /**
+   * Health check
+   */
+  async healthCheck() {
+    if (this.usingFallback) {
+      return {
+        status: 'fallback',
+        message: 'Using memory cache fallback',
+        stats: this.getStats()
+      };
+    }
+
+    if (!this.isConnected) {
+      return {
+        status: 'disconnected',
+        error: 'Redis client not connected'
+      };
+    }
+
+    try {
+      const start = Date.now();
+      await this.client.ping();
+      const responseTime = Date.now() - start;
+
+      return {
+        status: 'healthy',
+        responseTime: `${responseTime}ms`,
+        stats: this.getStats()
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        error: error.message
+      };
+    }
+  }
+}
+
+// Cache key builders for different data types
+export const CacheKeys = {
+  user: (id) => `user:${id}`,
+  userByEmail: (email) => `user:email:${email}`,
+  visitor: (id) => `visitor:${id}`,
+  visitorsByDate: (date) => `visitors:date:${date}`,
+  bulkInvite: (code) => `bulk_invite:${code}`,
+  accessLogs: (userId, page = 1) => `access_logs:${userId}:page:${page}`,
+  apiResponse: (path, query) => `api:${path}:${Buffer.from(query).toString('base64')}`,
+  session: (sessionId) => `session:${sessionId}`,
+  rateLimiting: (identifier) => `rate_limit:${identifier}`,
+  otp: (visitorId) => `otp:${visitorId}`,
+  activeVisitors: () => 'active_visitors',
+  dashboardStats: () => 'dashboard_stats'
+};
+
+// Default TTL values (in seconds)
+export const CacheTTL = {
+  SHORT: 300,     // 5 minutes
+  MEDIUM: 1800,   // 30 minutes  
+  LONG: 3600,     // 1 hour
+  SESSION: 86400, // 24 hours
+  PERMANENT: -1   // No expiration
+};
+
+export default RedisService;
