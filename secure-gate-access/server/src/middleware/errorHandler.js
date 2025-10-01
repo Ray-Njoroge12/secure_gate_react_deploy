@@ -11,18 +11,18 @@ export const ERROR_CODES = {
   AUTH_TOKEN_EXPIRED: 'AUTH_TOKEN_EXPIRED',
   AUTH_INSUFFICIENT_PERMISSIONS: 'AUTH_INSUFFICIENT_PERMISSIONS',
   AUTH_INVALID_CREDENTIALS: 'AUTH_INVALID_CREDENTIALS',
-  
+
   // Validation
   VALIDATION_REQUIRED_FIELD: 'VALIDATION_REQUIRED_FIELD',
   VALIDATION_INVALID_FORMAT: 'VALIDATION_INVALID_FORMAT',
   VALIDATION_CONSTRAINT_VIOLATION: 'VALIDATION_CONSTRAINT_VIOLATION',
-  
+
   // Business Logic
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
   RESOURCE_ALREADY_EXISTS: 'RESOURCE_ALREADY_EXISTS',
   OPERATION_NOT_ALLOWED: 'OPERATION_NOT_ALLOWED',
   BUSINESS_RULE_VIOLATION: 'BUSINESS_RULE_VIOLATION',
-  
+
   // System
   DATABASE_ERROR: 'DATABASE_ERROR',
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
@@ -42,7 +42,7 @@ export class AppError extends Error {
     this.details = details;
     this.isOperational = true; // Marks as expected/handled error
     this.timestamp = new Date().toISOString();
-    
+
     Error.captureStackTrace(this, this.constructor);
   }
 }
@@ -52,64 +52,64 @@ export class AppError extends Error {
  */
 export const ErrorHelper = {
   // Authentication errors
-  tokenMissing: (details = null) => 
+  tokenMissing: (details = null) =>
     new AppError('Authentication token required', ERROR_CODES.AUTH_TOKEN_MISSING, 401, details),
-    
-  tokenInvalid: (details = null) => 
+
+  tokenInvalid: (details = null) =>
     new AppError('Invalid authentication token', ERROR_CODES.AUTH_TOKEN_INVALID, 401, details),
-    
-  tokenExpired: (details = null) => 
+
+  tokenExpired: (details = null) =>
     new AppError('Authentication token expired', ERROR_CODES.AUTH_TOKEN_EXPIRED, 401, details),
-    
-  forbidden: (message = 'Insufficient permissions', details = null) => 
+
+  forbidden: (message = 'Insufficient permissions', details = null) =>
     new AppError(message, ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS, 403, details),
-    
-  invalidCredentials: (details = null) => 
+
+  invalidCredentials: (details = null) =>
     new AppError('Invalid credentials', ERROR_CODES.AUTH_INVALID_CREDENTIALS, 401, details),
-    
+
   unauthorized: (code = ERROR_CODES.INVALID_CREDENTIALS, message = 'Unauthorized', details = null) =>
     new AppError(message, code, 401, details),
 
   // Validation errors
   badRequest: (code = ERROR_CODES.VALIDATION_ERROR, message = 'Bad request', details = null) =>
     new AppError(message, code, 400, details),
-    
-  requiredField: (fieldName, details = null) => 
+
+  requiredField: (fieldName, details = null) =>
     new AppError(`${fieldName} is required`, ERROR_CODES.VALIDATION_REQUIRED_FIELD, 400, { field: fieldName, ...details }),
-    
-  invalidFormat: (fieldName, expectedFormat = null, details = null) => 
-    new AppError(`Invalid format for ${fieldName}`, ERROR_CODES.VALIDATION_INVALID_FORMAT, 400, 
+
+  invalidFormat: (fieldName, expectedFormat = null, details = null) =>
+    new AppError(`Invalid format for ${fieldName}`, ERROR_CODES.VALIDATION_INVALID_FORMAT, 400,
       { field: fieldName, expectedFormat, ...details }),
-    
-  constraintViolation: (message, details = null) => 
+
+  constraintViolation: (message, details = null) =>
     new AppError(message, ERROR_CODES.VALIDATION_CONSTRAINT_VIOLATION, 400, details),
 
-  // Business logic errors  
-  notFound: (resource = 'Resource', id = null, details = null) => 
+  // Business logic errors
+  notFound: (resource = 'Resource', id = null, details = null) =>
     new AppError(`${resource} not found`, ERROR_CODES.RESOURCE_NOT_FOUND, 404, { resource, id, ...details }),
-    
-  alreadyExists: (resource = 'Resource', identifier = null, details = null) => 
-    new AppError(`${resource} already exists`, ERROR_CODES.RESOURCE_ALREADY_EXISTS, 409, 
+
+  alreadyExists: (resource = 'Resource', identifier = null, details = null) =>
+    new AppError(`${resource} already exists`, ERROR_CODES.RESOURCE_ALREADY_EXISTS, 409,
       { resource, identifier, ...details }),
-    
-  operationNotAllowed: (operation, reason = null, details = null) => 
-    new AppError(`Operation '${operation}' not allowed`, ERROR_CODES.OPERATION_NOT_ALLOWED, 403, 
+
+  operationNotAllowed: (operation, reason = null, details = null) =>
+    new AppError(`Operation '${operation}' not allowed`, ERROR_CODES.OPERATION_NOT_ALLOWED, 403,
       { operation, reason, ...details }),
-    
-  businessRule: (message, rule = null, details = null) => 
+
+  businessRule: (message, rule = null, details = null) =>
     new AppError(message, ERROR_CODES.BUSINESS_RULE_VIOLATION, 400, { rule, ...details }),
 
   // System errors
-  database: (message = 'Database operation failed', originalError = null, details = null) => 
+  database: (message = 'Database operation failed', originalError = null, details = null) =>
     new AppError(message, ERROR_CODES.DATABASE_ERROR, 500, { originalError: originalError?.message, ...details }),
-    
-  externalService: (service, message = 'External service error', details = null) => 
+
+  externalService: (service, message = 'External service error', details = null) =>
     new AppError(message, ERROR_CODES.EXTERNAL_SERVICE_ERROR, 502, { service, ...details }),
-    
-  internal: (message = 'Internal server error', details = null) => 
+
+  internal: (message = 'Internal server error', details = null) =>
     new AppError(message, ERROR_CODES.INTERNAL_SERVER_ERROR, 500, details),
-    
-  rateLimit: (limit, windowMs, details = null) => 
+
+  rateLimit: (limit, windowMs, details = null) =>
     new AppError('Rate limit exceeded', ERROR_CODES.RATE_LIMIT_EXCEEDED, 429, { limit, windowMs, ...details })
 };
 
@@ -128,9 +128,9 @@ export const requestIdMiddleware = (req, res, next) => {
 export const globalErrorHandler = (err, req, res, next) => {
   // Generate request ID if not present
   const requestId = req.requestId || uuidv4();
-  
+
   // Default error response structure
-  let errorResponse = {
+  const errorResponse = {
     success: false,
     error: {
       code: ERROR_CODES.INTERNAL_SERVER_ERROR,
@@ -139,16 +139,16 @@ export const globalErrorHandler = (err, req, res, next) => {
       timestamp: new Date().toISOString()
     }
   };
-  
+
   let statusCode = 500;
-  
+
   // Handle different error types
   if (err instanceof AppError) {
     // Operational/expected errors
     statusCode = err.statusCode;
     errorResponse.error.code = err.code;
     errorResponse.error.message = err.message;
-    
+
     if (err.details && process.env.NODE_ENV !== 'production') {
       errorResponse.error.details = err.details;
     }
@@ -178,7 +178,7 @@ export const globalErrorHandler = (err, req, res, next) => {
       method: req.method,
       user: req.user?.id || 'anonymous'
     });
-    
+
     // Don't expose internal error details in production
     if (process.env.NODE_ENV !== 'production') {
       errorResponse.error.details = {
@@ -187,17 +187,17 @@ export const globalErrorHandler = (err, req, res, next) => {
       };
     }
   }
-  
+
   // Security logging for authentication/authorization errors
   if (statusCode === 401 || statusCode === 403) {
     console.log(`[SECURITY] ${errorResponse.error.code} - ${req.method} ${req.originalUrl} - IP: ${req.ip} - User: ${req.user?.id || 'anonymous'} - Request ID: ${requestId}`);
   }
-  
+
   // Performance logging for errors that might indicate system issues
   if (statusCode >= 500) {
     console.error(`[SYSTEM ERROR] ${errorResponse.error.code} - ${req.method} ${req.originalUrl} - Request ID: ${requestId}`);
   }
-  
+
   res.status(statusCode).json(errorResponse);
 };
 

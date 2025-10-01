@@ -1,10 +1,10 @@
 /**
  * Security Audit Logger
- * 
+ *
  * Comprehensive audit logging system for security events, compliance,
  * and incident response. Provides structured logging with retention
  * policies and multiple output destinations.
- * 
+ *
  * Features:
  * - Structured security event logging
  * - Multiple log levels and categories
@@ -29,7 +29,7 @@ class SecurityAuditLogger {
     this.enableDatabaseLogging = process.env.AUDIT_DB_LOGGING === 'true';
     this.enableFileLogging = process.env.AUDIT_FILE_LOGGING !== 'false'; // Default enabled
     this.alertThreshold = parseInt(process.env.SECURITY_ALERT_THRESHOLD || '5');
-    
+
     this.eventCounts = new Map(); // Track events for alerting
     this.initializeLogging();
   }
@@ -44,15 +44,15 @@ class SecurityAuditLogger {
         await fs.promises.mkdir(this.logDir, { recursive: true });
         console.log(`📋 Audit logging initialized: ${this.logDir}`);
       }
-      
+
       // Initialize database logging table if enabled
       if (this.enableDatabaseLogging) {
         await this.initializeDatabaseLogging();
       }
-      
+
       // Start cleanup scheduler
       this.scheduleLogCleanup();
-      
+
     } catch (error) {
       console.error('❌ Failed to initialize audit logging:', error);
     }
@@ -63,8 +63,8 @@ class SecurityAuditLogger {
    */
   async initializeDatabaseLogging() {
     try {
-      const { default: pool } = await import('../database/db.js');
-      
+      const { dbManager } = await import('../database/db.enhanced.js');
+
       const createTableQuery = `
         CREATE TABLE IF NOT EXISTS audit_logs (
           id BIGSERIAL PRIMARY KEY,
@@ -86,10 +86,10 @@ class SecurityAuditLogger {
           INDEX idx_audit_category (category)
         );
       `;
-      
-      await pool.query(createTableQuery);
+
+      await dbManager.pool.query(createTableQuery);
       console.log('✅ Database audit logging table initialized');
-      
+
     } catch (error) {
       console.error('❌ Failed to initialize database audit logging:', error);
       this.enableDatabaseLogging = false;
@@ -101,26 +101,26 @@ class SecurityAuditLogger {
    */
   async logSecurityEvent(eventType, data, context = {}) {
     const auditEvent = this.createAuditEvent(eventType, data, context);
-    
+
     try {
       // Log to file
       if (this.enableFileLogging) {
         await this.logToFile(auditEvent);
       }
-      
+
       // Log to database
       if (this.enableDatabaseLogging) {
         await this.logToDatabase(auditEvent);
       }
-      
+
       // Console logging for development
       if (process.env.NODE_ENV !== 'production') {
         this.logToConsole(auditEvent);
       }
-      
+
       // Check for security alerts
       await this.checkSecurityAlerts(auditEvent);
-      
+
     } catch (error) {
       console.error('❌ Audit logging failed:', error);
       // Fallback to console in case of logging failure
@@ -173,24 +173,24 @@ class SecurityAuditLogger {
       'user.account.locked': 'AUTH',
       'user.token.refresh': 'AUTH',
       'user.token.revoke': 'AUTH',
-      
+
       // Authorization events
       'access.granted': 'AUTHZ',
       'access.denied': 'AUTHZ',
       'privilege.escalation': 'AUTHZ',
-      
+
       // Data events
       'data.access': 'DATA',
       'data.modify': 'DATA',
       'data.delete': 'DATA',
       'data.export': 'DATA',
-      
+
       // Security events
       'security.rate_limit': 'SECURITY',
       'security.suspicious_activity': 'SECURITY',
       'security.brute_force': 'SECURITY',
       'security.injection_attempt': 'SECURITY',
-      
+
       // System events
       'system.startup': 'SYSTEM',
       'system.shutdown': 'SYSTEM',
@@ -288,7 +288,7 @@ class SecurityAuditLogger {
 
     try {
       await fs.promises.appendFile(logFile, logLine);
-      
+
       // Check if rotation is needed
       const stats = await fs.promises.stat(logFile);
       if (stats.size > this.maxLogSizeMB * 1024 * 1024) {
@@ -304,15 +304,15 @@ class SecurityAuditLogger {
    */
   async logToDatabase(auditEvent) {
     try {
-      const { default: pool } = await import('../database/db.js');
-      
+      const { dbManager } = await import('../database/db.enhanced.js');
+
       const query = `
         INSERT INTO audit_logs (
           event_type, category, severity, user_id, session_id, 
           ip_address, user_agent, event_data, risk_score
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `;
-      
+
       const values = [
         auditEvent.eventType,
         auditEvent.category,
@@ -324,8 +324,8 @@ class SecurityAuditLogger {
         auditEvent.data,
         auditEvent.riskScore
       ];
-      
-      await pool.query(query, values);
+
+      await dbManager.pool.query(query, values);
     } catch (error) {
       console.error('Failed to write to audit database:', error);
     }
@@ -337,7 +337,7 @@ class SecurityAuditLogger {
   logToConsole(auditEvent) {
     const emoji = this.getSeverityEmoji(auditEvent.severity);
     console.log(`${emoji} [AUDIT] ${auditEvent.eventType} | ${auditEvent.severity} | User: ${auditEvent.userId || 'anonymous'} | IP: ${auditEvent.ipAddress || 'unknown'}`);
-    
+
     if (auditEvent.severity === 'HIGH') {
       console.log(`   Risk Score: ${auditEvent.riskScore} | Data:`, auditEvent.data);
     }
@@ -407,7 +407,7 @@ class SecurityAuditLogger {
   async rotateLogFile(currentLogFile) {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const rotatedFile = currentLogFile.replace('.log', `-${timestamp}.log`);
-    
+
     try {
       await fs.promises.rename(currentLogFile, rotatedFile);
       console.log(`📋 Log file rotated: ${path.basename(rotatedFile)}`);
@@ -422,7 +422,7 @@ class SecurityAuditLogger {
   scheduleLogCleanup() {
     // Run cleanup daily at 2 AM
     const cleanupInterval = 24 * 60 * 60 * 1000; // 24 hours
-    
+
     setInterval(() => {
       this.cleanupOldLogs();
     }, cleanupInterval);

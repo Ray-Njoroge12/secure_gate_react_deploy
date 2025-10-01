@@ -1,14 +1,15 @@
 /* =======================
-   Variables
+   Theme Variables (Consolidated)
 ======================= */
 :root {
-  --bg: #0f172a;
-  --panel: #0b1220;
-  --muted: #9ca3af;
-  --text: #e5e7eb;
-  --accent: #22c55e;
-  --danger: #ef4444;
-  --line: #1f2937;
+  /* Use Tailwind theme colors as single source of truth */
+  --bg: theme('colors.secondary.900');
+  --panel: theme('colors.secondary.800');
+  --muted: theme('colors.secondary.400');
+  --text: theme('colors.secondary.200');
+  --accent: theme('colors.primary.500');
+  --danger: theme('colors.red.500');
+  --line: theme('colors.secondary.700');
 }
 
 /* =======================
@@ -274,15 +275,8 @@ textarea {
   .sidebar { padding: 12px; }
 }
 /* =======================
-   Login Page Styles
+   Login Page Styles (Using consolidated variables)
 ======================= */
-:root {
-  --bg: #0f172a;
-  --panel: #0b1220;
-  --text: #e5e7eb;
-  --accent: #22c55e;
-  --line: #1f2937;
-}
 
 /* Wrapper & panel */
 .login-wrapper {

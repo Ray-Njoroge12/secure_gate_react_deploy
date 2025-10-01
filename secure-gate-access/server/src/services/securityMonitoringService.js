@@ -26,7 +26,7 @@ class SecurityMonitoringService {
 
     this.severityLevels = {
       LOW: 'low',
-      MEDIUM: 'medium', 
+      MEDIUM: 'medium',
       HIGH: 'high',
       CRITICAL: 'critical'
     };
@@ -152,17 +152,17 @@ class SecurityMonitoringService {
       const window = 60 * 60 * 1000; // 1 hour window
 
       switch (event.type) {
-        case this.eventTypes.FAILED_AUTH:
-          await this.checkFailedAuthThreshold(event, thresholds.failedAuthAttempts, window);
-          break;
+      case this.eventTypes.FAILED_AUTH:
+        await this.checkFailedAuthThreshold(event, thresholds.failedAuthAttempts, window);
+        break;
 
-        case this.eventTypes.RATE_LIMIT:
-          await this.checkRateLimitThreshold(event, thresholds.rateLimitViolations, window);
-          break;
+      case this.eventTypes.RATE_LIMIT:
+        await this.checkRateLimitThreshold(event, thresholds.rateLimitViolations, window);
+        break;
 
-        case this.eventTypes.CSP_VIOLATION:
-          await this.checkCSPViolationThreshold(event, thresholds.cspViolations, window);
-          break;
+      case this.eventTypes.CSP_VIOLATION:
+        await this.checkCSPViolationThreshold(event, thresholds.cspViolations, window);
+        break;
       }
 
     } catch (error) {
@@ -177,7 +177,7 @@ class SecurityMonitoringService {
     try {
       const key = `security:alerts:failed_auth:${event.source.ip}`;
       const currentCount = parseInt(await redisService.get(key) || '0') + 1;
-      
+
       // Store updated count with TTL
       await redisService.set(key, currentCount.toString(), Math.floor(window / 1000));
 
@@ -203,7 +203,7 @@ class SecurityMonitoringService {
     try {
       const key = `security:alerts:rate_limit:${event.source.ip}`;
       const currentCount = parseInt(await redisService.get(key) || '0') + 1;
-      
+
       await redisService.set(key, currentCount.toString(), Math.floor(window / 1000));
 
       if (currentCount >= threshold) {
@@ -228,7 +228,7 @@ class SecurityMonitoringService {
     try {
       const key = `security:alerts:csp:${event.source.ip}`;
       const currentCount = parseInt(await redisService.get(key) || '0') + 1;
-      
+
       await redisService.set(key, currentCount.toString(), Math.floor(window / 1000));
 
       if (currentCount >= threshold) {
@@ -367,16 +367,16 @@ class SecurityMonitoringService {
 
       // Get basic metrics for the current day
       const today = new Date().toISOString().split('T')[0];
-      
+
       for (const eventType of Object.values(this.eventTypes)) {
         const dailyKey = `security:metrics:daily:${today}:${eventType}`;
         const count = parseInt(await redisService.get(dailyKey) || '0');
-        
+
         metrics.eventTypes[eventType] = {
           today: count,
           type: eventType
         };
-        
+
         metrics.summary.totalEvents += count;
       }
 
@@ -395,8 +395,8 @@ class SecurityMonitoringService {
    * Get client IP address
    */
   getClientIP(req) {
-    return req.ip || 
-           req.connection.remoteAddress || 
+    return req.ip ||
+           req.connection.remoteAddress ||
            req.socket.remoteAddress ||
            (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
            'unknown';

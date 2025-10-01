@@ -15,7 +15,7 @@ class Logger {
       info: 2,
       debug: 3
     };
-    
+
     this.level = process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info');
   }
 

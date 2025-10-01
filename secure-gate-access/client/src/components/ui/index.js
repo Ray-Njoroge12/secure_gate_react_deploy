@@ -11,3 +11,5 @@ export { default as ErrorBoundary } from './ErrorBoundary.jsx';
 export { default as Breadcrumbs } from './Breadcrumbs.jsx';
 export { default as FlowNavigation } from './FlowNavigation.jsx';
 export { default as LiveRegion, StatusAnnouncement, AlertAnnouncement, LoadingAnnouncement } from './LiveRegion.jsx';
+export { default as ErrorDisplay } from './ErrorDisplay.jsx';
+export { default as SuccessDisplay } from './SuccessDisplay.jsx';

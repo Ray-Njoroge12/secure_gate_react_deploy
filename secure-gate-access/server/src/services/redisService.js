@@ -17,7 +17,7 @@ class RedisService extends EventEmitter {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 3; // Reduced for faster fallback
     this.reconnectDelay = 2000;
-    
+
     this.cacheStats = {
       hits: 0,
       misses: 0,
@@ -31,13 +31,19 @@ class RedisService extends EventEmitter {
    */
   async initialize() {
     console.log('[REDIS] Initializing Redis service...');
-    
+
+    // Quick check if Redis is available
+    if (!process.env.REDIS_URL && process.env.NODE_ENV === 'development') {
+      console.log('[REDIS] No REDIS_URL configured in development, using memory cache');
+      return this.initializeFallback();
+    }
+
     try {
       // Attempt Redis connection with timeout
       this.client = createClient({
         url: process.env.REDIS_URL || 'redis://localhost:6379',
         socket: {
-          connectTimeout: 5000,
+          connectTimeout: 2000, // Reduced timeout for faster fallback
           lazyConnect: true
         }
       });
@@ -51,9 +57,10 @@ class RedisService extends EventEmitter {
 
       this.client.on('error', (error) => {
         if (!this.usingFallback) {
-          console.error('[REDIS] Connection error:', error.message);
+          console.warn('[REDIS] Connection error:', error.message);
           this.isConnected = false;
-          this.handleReconnection();
+          // Don't attempt reconnection immediately, fall back
+          this.initializeFallback();
         }
       });
 
@@ -62,14 +69,14 @@ class RedisService extends EventEmitter {
         this.isConnected = false;
       });
 
-      // Try to connect with timeout
+      // Try to connect with short timeout
       const connectPromise = this.client.connect();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), 2000)
       );
 
       await Promise.race([connectPromise, timeoutPromise]);
-      
+
       console.log('✅ Redis connected successfully');
       return true;
 
@@ -104,9 +111,9 @@ class RedisService extends EventEmitter {
 
     this.reconnectAttempts++;
     const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), 10000);
-    
+
     console.log(`[REDIS] Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
-    
+
     setTimeout(async () => {
       try {
         if (!this.isConnected && this.client) {
@@ -162,7 +169,7 @@ class RedisService extends EventEmitter {
     try {
       this.cacheStats.operations++;
       const value = await this.client.get(key);
-      
+
       if (value === null) {
         this.cacheStats.misses++;
         console.log(`[REDIS] Cache miss: ${key}`);
@@ -283,7 +290,7 @@ class RedisService extends EventEmitter {
    * Get cache statistics
    */
   getStats() {
-    const hitRate = this.cacheStats.operations > 0 
+    const hitRate = this.cacheStats.operations > 0
       ? (this.cacheStats.hits / (this.cacheStats.hits + this.cacheStats.misses) * 100).toFixed(2)
       : 0;
 
@@ -394,7 +401,7 @@ export const CacheKeys = {
 // Default TTL values (in seconds)
 export const CacheTTL = {
   SHORT: 300,     // 5 minutes
-  MEDIUM: 1800,   // 30 minutes  
+  MEDIUM: 1800,   // 30 minutes
   LONG: 3600,     // 1 hour
   SESSION: 86400, // 24 hours
   PERMANENT: -1   // No expiration

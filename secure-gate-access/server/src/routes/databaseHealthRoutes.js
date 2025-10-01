@@ -14,22 +14,22 @@ const router = Router();
  */
 router.get('/health', asyncHandler(async (req, res) => {
   const startTime = Date.now();
-  
+
   try {
     // Basic connection test
     await testDBConnection();
     const responseTime = Date.now() - startTime;
-    
+
     ResponseUtil.success(res, {
       status: 'healthy',
       database: 'connected',
       responseTime: `${responseTime}ms`,
       timestamp: new Date().toISOString()
     }, 'Database is healthy');
-    
+
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    
+
     ResponseUtil.success(res, {
       status: 'unhealthy',
       database: 'disconnected',
@@ -43,12 +43,12 @@ router.get('/health', asyncHandler(async (req, res) => {
 /**
  * Detailed health status (admin only)
  */
-router.get('/health/detailed', 
-  authenticateToken, 
-  requireRole('admin'), 
+router.get('/health/detailed',
+  authenticateToken,
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
     const healthSummary = dbHealthService.getHealthSummary();
-    
+
     ResponseUtil.success(res, healthSummary, 'Detailed database health status retrieved');
   })
 );
@@ -56,12 +56,12 @@ router.get('/health/detailed',
 /**
  * Full health report with history (admin only)
  */
-router.get('/health/report', 
-  authenticateToken, 
-  requireRole('admin'), 
+router.get('/health/report',
+  authenticateToken,
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
     const healthReport = dbHealthService.getHealthReport();
-    
+
     ResponseUtil.success(res, healthReport, 'Complete database health report generated');
   })
 );
@@ -69,12 +69,12 @@ router.get('/health/report',
 /**
  * Connection pool status (admin only)
  */
-router.get('/status/pool', 
-  authenticateToken, 
-  requireRole('admin'), 
+router.get('/status/pool',
+  authenticateToken,
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
     const status = getDBStatus();
-    
+
     ResponseUtil.success(res, status, 'Database connection pool status retrieved');
   })
 );
@@ -82,12 +82,12 @@ router.get('/status/pool',
 /**
  * Active alerts (admin only)
  */
-router.get('/alerts', 
-  authenticateToken, 
-  requireRole('admin'), 
+router.get('/alerts',
+  authenticateToken,
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
     const healthSummary = dbHealthService.getHealthSummary();
-    
+
     ResponseUtil.success(res, {
       alerts: healthSummary.activeAlerts,
       count: healthSummary.alertCount,
@@ -99,12 +99,12 @@ router.get('/alerts',
 /**
  * Manual health check trigger (admin only)
  */
-router.post('/health/check', 
-  authenticateToken, 
-  requireRole('admin'), 
+router.post('/health/check',
+  authenticateToken,
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
     const healthCheck = await dbHealthService.runHealthCheck();
-    
+
     if (healthCheck.success) {
       ResponseUtil.success(res, healthCheck, 'Manual health check completed successfully');
     } else {
@@ -116,15 +116,15 @@ router.post('/health/check',
 /**
  * Clear all alerts (admin only, for testing)
  */
-router.delete('/alerts', 
-  authenticateToken, 
-  requireRole('admin'), 
+router.delete('/alerts',
+  authenticateToken,
+  requireRole('admin'),
   asyncHandler(async (req, res) => {
     dbHealthService.clearAllAlerts();
-    
-    ResponseUtil.success(res, { 
-      cleared: true, 
-      timestamp: new Date().toISOString() 
+
+    ResponseUtil.success(res, {
+      cleared: true,
+      timestamp: new Date().toISOString()
     }, 'All database alerts cleared');
   })
 );

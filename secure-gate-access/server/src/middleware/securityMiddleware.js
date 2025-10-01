@@ -12,15 +12,15 @@ import auditLogger from '../services/auditLogger.js';
 export const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      frameAncestors: ["'none'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"]
+      defaultSrc: ['\'self\''],
+      styleSrc: ['\'self\'', '\'unsafe-inline\'', 'https://fonts.googleapis.com'],
+      fontSrc: ['\'self\'', 'https://fonts.gstatic.com'],
+      imgSrc: ['\'self\'', 'data:', 'https:'],
+      scriptSrc: ['\'self\''],
+      connectSrc: ['\'self\''],
+      frameAncestors: ['\'none\''],
+      objectSrc: ['\'none\''],
+      mediaSrc: ['\'self\'']
     },
   },
   crossOriginEmbedderPolicy: false, // Allow iframe embedding for QR codes
@@ -37,9 +37,13 @@ export const corsConfig = cors({
     const allowedOrigins = [
       process.env.CLIENT_ORIGIN || 'http://localhost:3000',
       'http://localhost:3000', // Development fallback
-      'http://127.0.0.1:3000'
+      'http://127.0.0.1:3000',
+      'http://localhost', // Production frontend
+      'http://127.0.0.1', // Production frontend fallback
+      'http://localhost:80', // Explicit port 80
+      'http://127.0.0.1:80' // Explicit port 80 fallback
     ];
-    
+
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -151,20 +155,20 @@ export const otpRateLimit = rateLimit({
 export const securityHeaders = (req, res, next) => {
   // Remove server information disclosure
   res.removeHeader('X-Powered-By');
-  
+
   // Additional security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  
+
   // Cache control for sensitive endpoints
   if (req.path.includes('/api/')) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
   }
-  
+
   next();
 };
 
@@ -179,28 +183,28 @@ export const requestId = (req, res, next) => {
 // Security audit logging
 export const securityAudit = (req, res, next) => {
   const startTime = Date.now();
-  
+
   // Log security-relevant requests
-  if (req.path.includes('/auth/') || 
-      req.path.includes('/login') || 
+  if (req.path.includes('/auth/') ||
+      req.path.includes('/login') ||
       req.path.includes('/otp') ||
       req.path.includes('/admin/')) {
-    
+
     console.log(`[SECURITY] ${req.method} ${req.path} - IP: ${req.ip} - User-Agent: ${req.get('User-Agent')} - ID: ${req.requestId}`);
   }
-  
+
   // Override res.end to log response
   const originalEnd = res.end;
   res.end = function(...args) {
     const duration = Date.now() - startTime;
-    
+
     // Log failed authentication attempts
     if (res.statusCode === 401 || res.statusCode === 403) {
       console.warn(`[SECURITY] Failed auth - ${req.method} ${req.path} - Status: ${res.statusCode} - IP: ${req.ip} - Duration: ${duration}ms - ID: ${req.requestId}`);
     }
-    
+
     originalEnd.apply(this, args);
   };
-  
+
   next();
 };

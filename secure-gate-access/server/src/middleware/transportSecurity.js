@@ -1,6 +1,6 @@
 /**
  * Transport Security Middleware
- * 
+ *
  * Provides comprehensive transport layer security including:
  * - HTTPS enforcement and redirection
  * - Secure cookie configuration
@@ -22,17 +22,21 @@ export const httpsEnforcement = (req, res, next) => {
     return next();
   }
 
-  // Log HTTP access attempts in production
+  // Log HTTP access attempts in production (with error handling)
   if (process.env.ENFORCE_HTTPS === 'true') {
-    auditLogger.logSecurityEvent('security.http_access_attempt', {
-      originalUrl: req.originalUrl,
-      method: req.method,
-      redirected: true
-    }, {
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent'),
-      requestId: req.id
-    });
+    try {
+      auditLogger.logSecurityEvent('security.http_access_attempt', {
+        originalUrl: req.originalUrl,
+        method: req.method,
+        redirected: true
+      }, {
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        requestId: req.id
+      });
+    } catch (error) {
+      console.warn('Failed to log HTTP access attempt:', error.message);
+    }
 
     // Permanent redirect to HTTPS
     const httpsUrl = `https://${req.get('host')}${req.originalUrl}`;
@@ -93,10 +97,10 @@ export const transportSecurityHeaders = (req, res, next) => {
 export const secureCookieConfig = (req, res, next) => {
   const isProduction = process.env.NODE_ENV === 'production';
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  
+
   // Override res.cookie to add security attributes
   const originalCookie = res.cookie.bind(res);
-  
+
   res.cookie = function(name, value, options = {}) {
     // Default secure cookie options
     const secureOptions = {
@@ -112,25 +116,29 @@ export const secureCookieConfig = (req, res, next) => {
       if (secureOptions.secure !== true && isHttps) {
         console.warn(`🔐 Security Warning: Cookie '${name}' should be secure in production`);
       }
-      
+
       // Validate SameSite attribute
       if (!['strict', 'lax', 'none'].includes(secureOptions.sameSite)) {
         console.warn(`🔐 Security Warning: Cookie '${name}' has invalid SameSite value`);
         secureOptions.sameSite = 'strict';
       }
 
-      // Audit cookie setting for sensitive cookies
+      // Audit cookie setting for sensitive cookies (with error handling)
       if (['refreshToken', 'sessionId', 'authToken'].includes(name)) {
-        auditLogger.logSecurityEvent('security.secure_cookie_set', {
-          cookieName: name,
-          secure: secureOptions.secure,
-          httpOnly: secureOptions.httpOnly,
-          sameSite: secureOptions.sameSite
-        }, {
+        try {
+          auditLogger.logSecurityEvent('security.secure_cookie_set', {
+            cookieName: name,
+            secure: secureOptions.secure,
+            httpOnly: secureOptions.httpOnly,
+            sameSite: secureOptions.sameSite
+          }, {
           ipAddress: req.ip,
           userAgent: req.get('User-Agent'),
           requestId: req.id
         });
+        } catch (error) {
+          console.warn('Failed to log security event for cookie:', error.message);
+        }
       }
     }
 
@@ -146,7 +154,7 @@ export const secureCookieConfig = (req, res, next) => {
  */
 export const certificateSecurityHeaders = (req, res, next) => {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   if (isProduction) {
     // Certificate Transparency (Expect-CT)
     // This header is deprecated but still useful for older browsers
@@ -157,7 +165,7 @@ export const certificateSecurityHeaders = (req, res, next) => {
     if (process.env.ENABLE_HPKP === 'true' && process.env.HPKP_PINS) {
       const pins = process.env.HPKP_PINS.split(',');
       const maxAge = process.env.HPKP_MAX_AGE || '300'; // 5 minutes default for safety
-      
+
       if (pins.length >= 2) { // Minimum 2 pins required
         const pinHeader = pins.map(pin => `pin-sha256="${pin}"`).join('; ');
         res.setHeader('Public-Key-Pins', `${pinHeader}; max-age=${maxAge}; includeSubDomains`);
@@ -174,25 +182,29 @@ export const certificateSecurityHeaders = (req, res, next) => {
  */
 export const tlsSecurityValidation = (req, res, next) => {
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  
+
   // Log TLS information for security monitoring
   if (isHttps && req.connection && req.connection.getPeerCertificate) {
     try {
       const cert = req.connection.getPeerCertificate();
       const cipher = req.connection.getCipher();
-      
+
       // Log TLS details for security analysis
       if (cipher && cipher.version) {
-        auditLogger.logSecurityEvent('security.tls_connection', {
-          tlsVersion: cipher.version,
-          cipherName: cipher.name,
-          certificateValid: cert && !cert.valid_from || new Date(cert.valid_from) <= new Date(),
-          certificateExpiry: cert ? cert.valid_to : null
-        }, {
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent'),
-          requestId: req.id
-        });
+        try {
+          auditLogger.logSecurityEvent('security.tls_connection', {
+            tlsVersion: cipher.version,
+            cipherName: cipher.name,
+            certificateValid: cert && !cert.valid_from || new Date(cert.valid_from) <= new Date(),
+            certificateExpiry: cert ? cert.valid_to : null
+          }, {
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            requestId: req.id
+          });
+        } catch (error) {
+          console.warn('Failed to log TLS connection event:', error.message);
+        }
       }
     } catch (error) {
       // TLS information may not be available in all environments
@@ -209,11 +221,11 @@ export const tlsSecurityValidation = (req, res, next) => {
  */
 export const mixedContentPrevention = (req, res, next) => {
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
-  
+
   if (isHttps || process.env.ENFORCE_HTTPS === 'true') {
     // Block mixed content by default
     const currentCSP = res.getHeader('Content-Security-Policy') || '';
-    
+
     if (!currentCSP.includes('block-all-mixed-content')) {
       // Add mixed content blocking to existing CSP
       const updatedCSP = currentCSP + (currentCSP ? '; ' : '') + 'block-all-mixed-content';
@@ -235,16 +247,20 @@ export const protocolDowngradeProtection = (req, res, next) => {
   // Check for potential downgrade attacks in production
   if (isProduction && !isHttps && req.headers['x-forwarded-proto'] !== 'https') {
     // Log potential downgrade attack
-    auditLogger.logSecurityEvent('security.protocol_downgrade_attempt', {
-      expectedProtocol: 'https',
-      actualProtocol: 'http',
-      forwardedProto: req.headers['x-forwarded-proto'],
-      userAgent: req.get('User-Agent')
-    }, {
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent'),
-      requestId: req.id
-    });
+    try {
+      auditLogger.logSecurityEvent('security.protocol_downgrade_attempt', {
+        expectedProtocol: 'https',
+        actualProtocol: 'http',
+        forwardedProto: req.headers['x-forwarded-proto'],
+        userAgent: req.get('User-Agent')
+      }, {
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        requestId: req.id
+      });
+    } catch (error) {
+      console.warn('Failed to log protocol downgrade attempt:', error.message);
+    }
 
     // Force HTTPS if enforcement is enabled
     if (process.env.ENFORCE_HTTPS === 'true') {
@@ -269,10 +285,10 @@ export const validateTransportSecurity = () => {
 
   // Check HTTPS enforcement
   if (process.env.NODE_ENV === 'production') {
-    if (process.env.ENFORCE_HTTPS !== 'true') {
+    if (process.env.ENFORCE_HTTPS !== 'true' && !process.env.ALLOW_HTTP_IN_PRODUCTION) {
       issues.push('ENFORCE_HTTPS should be "true" in production');
     }
-    
+
     if (process.env.SECURE_COOKIES !== 'true') {
       warnings.push('SECURE_COOKIES should be "true" in production');
     }
@@ -321,11 +337,11 @@ export const transportSecurityStack = [
  */
 export const initializeTransportSecurity = () => {
   const validation = validateTransportSecurity();
-  
+
   if (validation.issues.length > 0) {
     console.error('🚨 Transport Security Issues:');
     validation.issues.forEach(issue => console.error(`   ❌ ${issue}`));
-    
+
     if (process.env.NODE_ENV === 'production') {
       console.error('🚨 Production deployment blocked due to transport security issues');
       process.exit(1);

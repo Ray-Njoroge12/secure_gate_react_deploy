@@ -2,5 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import page transitions */
+/* Custom utilities for the secure gate system */
+@layer utilities {
+  .bg-app {
+    @apply bg-secondary-900;
+  }
+  .bg-panel {
+    @apply bg-secondary-800;
+  }
+  .text-app {
+    @apply text-secondary-100;
+  }
+  .text-muted {
+    @apply text-secondary-400;
+  }
+  .border-app {
+    @apply border-secondary-700;
+  }
+}
+
+/* Import page transitions after Tailwind */
 @import './styles/transitions.css';

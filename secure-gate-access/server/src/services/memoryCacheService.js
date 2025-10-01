@@ -36,7 +36,7 @@ class MemoryCacheService extends EventEmitter {
   async set(key, value, ttlSeconds = 3600) {
     try {
       this.cacheStats.operations++;
-      
+
       // Clear existing timer
       if (this.timers.has(key)) {
         clearTimeout(this.timers.get(key));
@@ -52,7 +52,7 @@ class MemoryCacheService extends EventEmitter {
       }, ttlSeconds * 1000);
 
       this.timers.set(key, timer);
-      
+
       console.log(`[MEMORY CACHE] Set: ${key} (TTL: ${ttlSeconds}s)`);
       return true;
     } catch (error) {
@@ -68,7 +68,7 @@ class MemoryCacheService extends EventEmitter {
   async get(key) {
     try {
       this.cacheStats.operations++;
-      
+
       if (this.cache.has(key)) {
         this.cacheStats.hits++;
         console.log(`[MEMORY CACHE] Hit: ${key}`);
@@ -92,7 +92,7 @@ class MemoryCacheService extends EventEmitter {
   async delete(key) {
     try {
       this.cacheStats.operations++;
-      
+
       // Clear timer
       if (this.timers.has(key)) {
         clearTimeout(this.timers.get(key));
@@ -115,7 +115,7 @@ class MemoryCacheService extends EventEmitter {
   async deletePattern(pattern) {
     try {
       this.cacheStats.operations++;
-      
+
       // Convert Redis pattern to regex
       const regex = new RegExp(
         '^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$'
@@ -158,7 +158,7 @@ class MemoryCacheService extends EventEmitter {
   async expire(key, ttlSeconds) {
     try {
       this.cacheStats.operations++;
-      
+
       if (!this.cache.has(key)) {
         return false;
       }
@@ -187,7 +187,7 @@ class MemoryCacheService extends EventEmitter {
    * Get cache statistics
    */
   getStats() {
-    const hitRate = this.cacheStats.operations > 0 
+    const hitRate = this.cacheStats.operations > 0
       ? (this.cacheStats.hits / (this.cacheStats.hits + this.cacheStats.misses) * 100).toFixed(2)
       : 0;
 
@@ -234,10 +234,10 @@ class MemoryCacheService extends EventEmitter {
       for (const timer of this.timers.values()) {
         clearTimeout(timer);
       }
-      
+
       this.timers.clear();
       this.cache.clear();
-      
+
       console.log('[MEMORY CACHE] Cache cleared');
       return true;
     } catch (error) {

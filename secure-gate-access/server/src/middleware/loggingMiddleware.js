@@ -13,22 +13,30 @@ import loggingService from '../services/loggingService.js';
  */
 export const correlationIdMiddleware = (req, res, next) => {
   // Get correlation ID from header or generate new one
-  const correlationId = req.headers['x-correlation-id'] || 
-                       req.headers['x-request-id'] || 
+  const correlationId = req.headers['x-correlation-id'] ||
+                       req.headers['x-request-id'] ||
                        uuidv4();
-  
+
   // Set correlation ID in request and response
   req.correlationId = correlationId;
   res.setHeader('X-Correlation-Id', correlationId);
-  
-  // Set in logging service for this request
-  loggingService.setCorrelationId(correlationId);
-  
-  // Clear correlation ID after response
-  res.on('finish', () => {
-    loggingService.clearCorrelationId();
-  });
-  
+
+  // Set in logging service for this request (with error handling)
+  try {
+    loggingService.setCorrelationId(correlationId);
+
+    // Clear correlation ID after response
+    res.on('finish', () => {
+      try {
+        loggingService.clearCorrelationId();
+      } catch (error) {
+        console.warn('Failed to clear correlation ID:', error.message);
+      }
+    });
+  } catch (error) {
+    console.warn('Failed to set correlation ID:', error.message);
+  }
+
   next();
 };
 
@@ -38,20 +46,20 @@ export const correlationIdMiddleware = (req, res, next) => {
 export const requestLoggingMiddleware = (req, res, next) => {
   const startTime = Date.now();
   const startMemory = process.memoryUsage().heapUsed;
-  
+
   // Log request start
   loggingService.logAPI('info', 'Request started', req, {
     correlationId: req.correlationId,
     startTime: new Date(startTime).toISOString()
   });
-  
+
   // Capture response details
   const originalSend = res.send;
   res.send = function(data) {
     const endTime = Date.now();
     const duration = endTime - startTime;
     const memoryUsed = process.memoryUsage().heapUsed - startMemory;
-    
+
     // Determine log level based on status code and duration
     let logLevel = 'info';
     if (res.statusCode >= 500) {
@@ -61,7 +69,7 @@ export const requestLoggingMiddleware = (req, res, next) => {
     } else if (duration > 2000) { // Slow requests
       logLevel = 'warn';
     }
-    
+
     // Log response
     loggingService.logAPI(logLevel, 'Request completed', req, {
       correlationId: req.correlationId,
@@ -76,7 +84,7 @@ export const requestLoggingMiddleware = (req, res, next) => {
         slow: duration >= 2000
       }
     });
-    
+
     // Log to performance logger if slow
     if (duration > 1000) {
       loggingService.logPerformance('warn', 'Slow request detected', {
@@ -87,10 +95,10 @@ export const requestLoggingMiddleware = (req, res, next) => {
         statusCode: res.statusCode
       });
     }
-    
+
     return originalSend.call(this, data);
   };
-  
+
   // Handle errors
   res.on('error', (error) => {
     loggingService.logError('Response error', error, {
@@ -100,7 +108,7 @@ export const requestLoggingMiddleware = (req, res, next) => {
       statusCode: res.statusCode
     });
   });
-  
+
   next();
 };
 
@@ -120,11 +128,11 @@ export const accessLoggingMiddleware = morgan((tokens, req, res) => {
     httpVersion: tokens['http-version'](req, res),
     referrer: tokens.referrer(req, res)
   };
-  
+
   // Log to API logger
   const level = res.statusCode >= 400 ? 'warn' : 'info';
   loggingService.logAPI(level, 'Access log', req, logData);
-  
+
   // Return empty string to prevent double logging
   return '';
 });
@@ -146,7 +154,7 @@ export const errorLoggingMiddleware = (error, req, res, next) => {
     statusCode: error.status || error.statusCode || 500,
     stack: error.stack
   });
-  
+
   // Log security event if it looks suspicious
   if (error.status === 401 || error.status === 403 || error.message.includes('unauthorized')) {
     loggingService.logSecurity('warn', 'Authentication/Authorization error', {
@@ -159,7 +167,7 @@ export const errorLoggingMiddleware = (error, req, res, next) => {
       user: req.user ? { id: req.user.id, username: req.user.username } : null
     });
   }
-  
+
   next(error);
 };
 
@@ -176,11 +184,11 @@ export const securityLoggingMiddleware = (req, res, next) => {
     /<iframe/i, // Iframe injection
     /eval\(/i, // Code injection
   ];
-  
+
   const url = req.originalUrl || req.url;
   const body = JSON.stringify(req.body || {});
   const query = JSON.stringify(req.query || {});
-  
+
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(url) || pattern.test(body) || pattern.test(query)) {
       loggingService.logSecurity('warn', 'Suspicious request pattern detected', {
@@ -196,7 +204,7 @@ export const securityLoggingMiddleware = (req, res, next) => {
       break; // Only log once per request
     }
   }
-  
+
   // Log authentication attempts
   if (req.originalUrl?.includes('/auth') || req.originalUrl?.includes('/login')) {
     loggingService.logSecurity('info', 'Authentication attempt', {
@@ -208,7 +216,7 @@ export const securityLoggingMiddleware = (req, res, next) => {
       username: req.body?.username || req.body?.email
     });
   }
-  
+
   next();
 };
 
@@ -218,17 +226,17 @@ export const securityLoggingMiddleware = (req, res, next) => {
 export const databaseLoggingWrapper = (operation, queryName) => {
   return async (queryFn) => {
     const startTime = Date.now();
-    
+
     try {
       loggingService.logDatabase('debug', `Database ${operation} started`, {
         queryName,
         operation,
         timestamp: new Date().toISOString()
       });
-      
+
       const result = await queryFn();
       const duration = Date.now() - startTime;
-      
+
       const level = duration > 1000 ? 'warn' : 'debug';
       loggingService.logDatabase(level, `Database ${operation} completed`, {
         queryName,
@@ -237,12 +245,12 @@ export const databaseLoggingWrapper = (operation, queryName) => {
         success: true,
         rowCount: result?.rowCount || result?.length || 'unknown'
       });
-      
+
       return result;
-      
+
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       loggingService.logDatabase('error', `Database ${operation} failed`, {
         queryName,
         operation,
@@ -250,7 +258,7 @@ export const databaseLoggingWrapper = (operation, queryName) => {
         error: error.message,
         success: false
       });
-      
+
       throw error;
     }
   };
@@ -262,7 +270,7 @@ export const databaseLoggingWrapper = (operation, queryName) => {
 export const logAuditEvent = (action, details = {}, req = null) => {
   const userId = req?.user?.id || details.userId || 'anonymous';
   const correlationId = req?.correlationId || loggingService.getCorrelationId();
-  
+
   loggingService.logAudit(`Audit: ${action}`, action, userId, {
     ...details,
     ip: req?.ip,
@@ -277,16 +285,16 @@ export const logAuditEvent = (action, details = {}, req = null) => {
 export const performanceLoggingWrapper = (operationName, threshold = 1000) => {
   return (target, propertyName, descriptor) => {
     const originalMethod = descriptor.value;
-    
+
     descriptor.value = async function(...args) {
       const startTime = Date.now();
       const startMemory = process.memoryUsage().heapUsed;
-      
+
       try {
         const result = await originalMethod.apply(this, args);
         const duration = Date.now() - startTime;
         const memoryUsed = process.memoryUsage().heapUsed - startMemory;
-        
+
         const level = duration > threshold ? 'warn' : 'debug';
         loggingService.logPerformance(level, `Performance: ${operationName}`, {
           operation: operationName,
@@ -295,22 +303,22 @@ export const performanceLoggingWrapper = (operationName, threshold = 1000) => {
           threshold,
           slow: duration > threshold
         });
-        
+
         return result;
-        
+
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         loggingService.logPerformance('error', `Performance: ${operationName} failed`, {
           operation: operationName,
           duration,
           error: error.message
         });
-        
+
         throw error;
       }
     };
-    
+
     return descriptor;
   };
 };
@@ -324,7 +332,7 @@ export const logUtils = {
   warn: (message, meta = {}) => loggingService.logWarning(message, meta),
   error: (message, error = null, meta = {}) => loggingService.logError(message, error, meta),
   debug: (message, meta = {}) => loggingService.logDebug(message, meta),
-  
+
   // Specialized logging
   security: (level, message, meta = {}) => loggingService.logSecurity(level, message, meta),
   performance: (level, message, meta = {}) => loggingService.logPerformance(level, message, meta),

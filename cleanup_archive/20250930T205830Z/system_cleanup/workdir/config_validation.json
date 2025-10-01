@@ -1,0 +1,17 @@
+{
+  "critical_configs_found": [
+    "./secure-gate-access/server/node_modules/@humanwhocodes/config-array/package.json",
+    "./secure-gate-access/client/nginx.conf",
+    "./secure-gate-access/server/node_modules/@babel/core/lib/config/helpers/environment.js"
+  ],
+  "critical_configs_missing": [
+    "package-lock.json",
+    "docker-compose.yml",
+    "Dockerfile",
+    "schema.sql",
+    "server.js",
+    "app.js"
+  ],
+  "whitelist_violations": [],
+  "safe_to_clean": []
+}

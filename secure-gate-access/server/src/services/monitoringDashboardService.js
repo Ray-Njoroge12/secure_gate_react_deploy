@@ -6,7 +6,7 @@
 
 import EventEmitter from 'events';
 import loggingService from './loggingService.js';
-import { performanceMonitor } from '../middleware/performanceMiddleware.js';
+# import { performanceMonitor } from '../middleware/performanceMiddleware.js';
 import optimizedDb from './optimizedDatabaseService.js';
 
 /**
@@ -25,10 +25,10 @@ class MonitoringDashboardService extends EventEmitter {
       logErrors: 10, // 10 errors in monitoring window
       securityEvents: 5 // 5 security events in monitoring window
     };
-    
+
     this.monitoringWindow = 5 * 60 * 1000; // 5 minutes
     this.checkInterval = 30 * 1000; // 30 seconds
-    
+
     this.metrics = {
       system: {
         uptime: 0,
@@ -54,15 +54,15 @@ class MonitoringDashboardService extends EventEmitter {
       alerts: [],
       lastUpdate: null
     };
-    
+
     this.historicalData = {
       metrics: [],
       maxHistory: 288 // 24 hours of 5-minute intervals
     };
-    
+
     this.connectedClients = new Set();
   }
-  
+
   /**
    * Start monitoring service
    */
@@ -70,22 +70,22 @@ class MonitoringDashboardService extends EventEmitter {
     if (this.isRunning) {
       return;
     }
-    
+
     this.isRunning = true;
     this.monitoringInterval = setInterval(() => {
       this.collectMetrics();
     }, this.checkInterval);
-    
+
     loggingService.logInfo('Monitoring dashboard service started', {
       checkInterval: this.checkInterval,
       monitoringWindow: this.monitoringWindow,
       thresholds: this.alertThresholds
     });
-    
+
     // Initial metrics collection
     this.collectMetrics();
   }
-  
+
   /**
    * Stop monitoring service
    */
@@ -93,64 +93,91 @@ class MonitoringDashboardService extends EventEmitter {
     if (!this.isRunning) {
       return;
     }
-    
+
     this.isRunning = false;
-    
+
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
     }
-    
+
     loggingService.logInfo('Monitoring dashboard service stopped');
   }
-  
+
   /**
    * Collect all system metrics
    */
   async collectMetrics() {
+    const timestamp = new Date().toISOString();
+
+    // Collect each metric type independently to prevent single failures from crashing the whole system
     try {
-      const timestamp = new Date().toISOString();
-      
-      // System metrics
+      // System metrics - usually reliable
       await this.collectSystemMetrics();
-      
+    } catch (error) {
+      loggingService.logError('Error collecting system metrics (non-fatal)', error);
+    }
+
+    try {
       // Application metrics
       await this.collectApplicationMetrics();
-      
-      // Database metrics
+    } catch (error) {
+      loggingService.logError('Error collecting application metrics (non-fatal)', error);
+    }
+
+    try {
+      // Database metrics - most likely to fail
       await this.collectDatabaseMetrics();
-      
+    } catch (error) {
+      loggingService.logError('Error collecting database metrics (non-fatal)', error);
+      // Set degraded database status
+      this.metrics.database = {
+        status: 'DEGRADED',
+        responseTime: -1,
+        connectionPool: { status: 'UNKNOWN' },
+        error: error.message
+      };
+    }
+
+    try {
       // Logging metrics
       await this.collectLoggingMetrics();
-      
+    } catch (error) {
+      loggingService.logError('Error collecting logging metrics (non-fatal)', error);
+    }
+
+    try {
       // Check for alerts
       this.checkAlerts();
-      
-      this.metrics.lastUpdate = timestamp;
-      
+    } catch (error) {
+      loggingService.logError('Error checking alerts (non-fatal)', error);
+    }
+
+    this.metrics.lastUpdate = timestamp;
+
+    try {
       // Store historical data
       this.storeHistoricalData(timestamp);
-      
+
       // Emit update event to connected clients
       this.emit('metrics-updated', {
         metrics: this.metrics,
         timestamp
       });
-      
+
       // Broadcast to SSE clients
       this.broadcastToClients('metrics-update', this.metrics);
-      
     } catch (error) {
-      loggingService.logError('Error collecting monitoring metrics', error);
+      loggingService.logError('Error updating monitoring clients (non-fatal)', error);
     }
   }
-  
+
   /**
    * Collect system-level metrics
    */
   async collectSystemMetrics() {
     const memoryUsage = process.memoryUsage();
-    
+
     this.metrics.system = {
       uptime: process.uptime(),
       memoryUsage: memoryUsage.rss,
@@ -162,7 +189,7 @@ class MonitoringDashboardService extends EventEmitter {
       platform: process.platform
     };
   }
-  
+
   /**
    * Collect application-level metrics
    */
@@ -170,7 +197,7 @@ class MonitoringDashboardService extends EventEmitter {
     // Get performance metrics if available
     if (performanceMonitor) {
       const perfMetrics = performanceMonitor.getMetrics();
-      
+
       this.metrics.application = {
         totalRequests: perfMetrics.summary?.totalRequests || 0,
         errorRate: perfMetrics.summary?.errorRate || 0,
@@ -181,7 +208,7 @@ class MonitoringDashboardService extends EventEmitter {
       };
     }
   }
-  
+
   /**
    * Collect database metrics
    */
@@ -190,7 +217,7 @@ class MonitoringDashboardService extends EventEmitter {
       if (optimizedDb) {
         const dbStats = optimizedDb.getPerformanceStats();
         const health = await optimizedDb.healthCheck();
-        
+
         this.metrics.database = {
           status: health.status,
           responseTime: health.responseTime || 0,
@@ -206,13 +233,13 @@ class MonitoringDashboardService extends EventEmitter {
       loggingService.logError('Error collecting database metrics', error);
     }
   }
-  
+
   /**
    * Collect logging metrics
    */
   async collectLoggingMetrics() {
     const loggingStats = loggingService.getStats();
-    
+
     this.metrics.logging = {
       totalLogs: loggingStats.totalLogs,
       errorCount: loggingStats.errorCount,
@@ -223,14 +250,14 @@ class MonitoringDashboardService extends EventEmitter {
       lastLogTime: loggingStats.lastLogTime
     };
   }
-  
+
   /**
    * Check for alert conditions
    */
   checkAlerts() {
     const alerts = [];
     const timestamp = new Date();
-    
+
     // Check error rate
     if (this.metrics.application.errorRate > this.alertThresholds.errorRate) {
       alerts.push({
@@ -244,7 +271,7 @@ class MonitoringDashboardService extends EventEmitter {
         category: 'performance'
       });
     }
-    
+
     // Check response time
     if (this.metrics.application.averageResponseTime > this.alertThresholds.responseTime) {
       alerts.push({
@@ -258,12 +285,12 @@ class MonitoringDashboardService extends EventEmitter {
         category: 'performance'
       });
     }
-    
+
     // Check memory usage
     if (this.metrics.system.memoryUsage > this.alertThresholds.memoryUsage) {
       const memoryMB = Math.round(this.metrics.system.memoryUsage / 1024 / 1024);
       const thresholdMB = Math.round(this.alertThresholds.memoryUsage / 1024 / 1024);
-      
+
       alerts.push({
         id: `memory-usage-${timestamp.getTime()}`,
         type: 'memory_usage',
@@ -275,7 +302,7 @@ class MonitoringDashboardService extends EventEmitter {
         category: 'system'
       });
     }
-    
+
     // Check logging errors
     const recentLogErrors = this.getRecentLogErrors();
     if (recentLogErrors > this.alertThresholds.logErrors) {
@@ -290,7 +317,7 @@ class MonitoringDashboardService extends EventEmitter {
         category: 'logging'
       });
     }
-    
+
     // Check database health
     if (this.metrics.database?.status === 'unhealthy') {
       alerts.push({
@@ -302,12 +329,12 @@ class MonitoringDashboardService extends EventEmitter {
         category: 'database'
       });
     }
-    
+
     // Update alerts and log new ones
-    const newAlerts = alerts.filter(alert => 
+    const newAlerts = alerts.filter(alert =>
       !this.metrics.alerts.some(existing => existing.type === alert.type)
     );
-    
+
     if (newAlerts.length > 0) {
       newAlerts.forEach(alert => {
         loggingService.logWarning(`Alert: ${alert.message}`, {
@@ -319,14 +346,14 @@ class MonitoringDashboardService extends EventEmitter {
           current: alert.current
         });
       });
-      
+
       // Broadcast new alerts
       this.broadcastToClients('new-alerts', newAlerts);
     }
-    
+
     this.metrics.alerts = alerts;
   }
-  
+
   /**
    * Get recent log errors count
    */
@@ -336,7 +363,7 @@ class MonitoringDashboardService extends EventEmitter {
     const cutoffTime = new Date(Date.now() - this.monitoringWindow);
     return this.metrics.logging?.errorCount || 0;
   }
-  
+
   /**
    * Store historical metrics data
    */
@@ -349,15 +376,15 @@ class MonitoringDashboardService extends EventEmitter {
       logging: { ...this.metrics.logging },
       alertCount: this.metrics.alerts.length
     };
-    
+
     this.historicalData.metrics.push(historicalEntry);
-    
+
     // Keep only the last maxHistory entries
     if (this.historicalData.metrics.length > this.historicalData.maxHistory) {
       this.historicalData.metrics = this.historicalData.metrics.slice(-this.historicalData.maxHistory);
     }
   }
-  
+
   /**
    * Get current metrics
    */
@@ -370,7 +397,7 @@ class MonitoringDashboardService extends EventEmitter {
       thresholds: this.alertThresholds
     };
   }
-  
+
   /**
    * Get historical data summary
    */
@@ -378,10 +405,10 @@ class MonitoringDashboardService extends EventEmitter {
     if (this.historicalData.metrics.length === 0) {
       return null;
     }
-    
+
     const last24h = this.historicalData.metrics.slice(-288); // Last 24 hours
     const last1h = this.historicalData.metrics.slice(-12); // Last hour
-    
+
     return {
       last24Hours: {
         dataPoints: last24h.length,
@@ -399,7 +426,7 @@ class MonitoringDashboardService extends EventEmitter {
       }
     };
   }
-  
+
   /**
    * Calculate average of nested property
    */
@@ -412,22 +439,22 @@ class MonitoringDashboardService extends EventEmitter {
       }
       return typeof value === 'number' ? value : 0;
     }).filter(v => v > 0);
-    
+
     return values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
   }
-  
+
   /**
    * Add SSE client
    */
   addClient(res, clientId) {
     this.connectedClients.add({ res, clientId, connectedAt: new Date() });
-    
+
     // Send current metrics immediately
     this.sendToClient(res, 'initial-metrics', this.metrics);
-    
+
     loggingService.logInfo('Monitoring client connected', { clientId, totalClients: this.connectedClients.size });
   }
-  
+
   /**
    * Remove SSE client
    */
@@ -438,10 +465,10 @@ class MonitoringDashboardService extends EventEmitter {
         break;
       }
     }
-    
+
     loggingService.logInfo('Monitoring client disconnected', { clientId, totalClients: this.connectedClients.size });
   }
-  
+
   /**
    * Send data to specific client
    */
@@ -453,13 +480,13 @@ class MonitoringDashboardService extends EventEmitter {
       // Client disconnected
     }
   }
-  
+
   /**
    * Broadcast to all connected clients
    */
   broadcastToClients(event, data) {
     const disconnectedClients = [];
-    
+
     for (const client of this.connectedClients) {
       try {
         this.sendToClient(client.res, event, data);
@@ -467,13 +494,13 @@ class MonitoringDashboardService extends EventEmitter {
         disconnectedClients.push(client);
       }
     }
-    
+
     // Remove disconnected clients
     disconnectedClients.forEach(client => {
       this.connectedClients.delete(client);
     });
   }
-  
+
   /**
    * Update alert thresholds
    */
@@ -482,20 +509,20 @@ class MonitoringDashboardService extends EventEmitter {
       ...this.alertThresholds,
       ...newThresholds
     };
-    
+
     loggingService.logInfo('Alert thresholds updated', {
       newThresholds,
       currentThresholds: this.alertThresholds
     });
   }
-  
+
   /**
    * Get health status
    */
   getHealthStatus() {
     const criticalAlerts = this.metrics.alerts.filter(alert => alert.severity === 'critical');
     const highAlerts = this.metrics.alerts.filter(alert => alert.severity === 'high');
-    
+
     let status = 'healthy';
     if (criticalAlerts.length > 0) {
       status = 'critical';
@@ -504,7 +531,7 @@ class MonitoringDashboardService extends EventEmitter {
     } else if (this.metrics.alerts.length > 0) {
       status = 'warning';
     }
-    
+
     return {
       status,
       alertCounts: {

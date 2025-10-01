@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { performanceMonitor } from '../middleware/performanceMiddleware.js';
+# import { performanceMonitor } from '../middleware/performanceMiddleware.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import logger from '../utils/logger.js';
 
@@ -20,14 +20,14 @@ const requireRole = (roles) => {
         error: 'Authentication required'
       });
     }
-    
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         error: 'Insufficient permissions'
       });
     }
-    
+
     next();
   };
 };
@@ -40,18 +40,18 @@ const requireRole = (roles) => {
 router.get('/metrics', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
   try {
     const metrics = performanceMonitor.getMetrics();
-    
+
     logger.info('Performance metrics requested', {
       adminId: req.user.id,
       timestamp: new Date().toISOString()
     });
-    
+
     res.json({
       success: true,
       data: metrics,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     logger.error('Error getting performance metrics:', error);
     res.status(500).json({
@@ -77,7 +77,7 @@ router.get('/summary', authenticateToken, requireRole(['admin', 'super_admin']),
       arch: process.arch,
       pid: process.pid
     };
-    
+
     const summary = {
       system: systemInfo,
       performance: {
@@ -90,13 +90,13 @@ router.get('/summary', authenticateToken, requireRole(['admin', 'super_admin']),
       alerts: metrics.alerts,
       topSlowEndpoints: metrics.slowRequests.slice(0, 5)
     };
-    
+
     res.json({
       success: true,
       data: summary,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     logger.error('Error getting performance summary:', error);
     res.status(500).json({
@@ -116,23 +116,23 @@ router.get('/slow-requests', authenticateToken, requireRole(['admin', 'super_adm
   try {
     const { limit = 20, sort = 'averageTime' } = req.query;
     const metrics = performanceMonitor.getMetrics();
-    
-    let slowRequests = metrics.slowRequests;
-    
+
+    const slowRequests = metrics.slowRequests;
+
     // Sort by specified field
     switch (sort) {
-      case 'count':
-        slowRequests.sort((a, b) => b.count - a.count);
-        break;
-      case 'maxTime':
-        slowRequests.sort((a, b) => b.maxTime - a.maxTime);
-        break;
-      case 'averageTime':
-      default:
-        slowRequests.sort((a, b) => b.averageTime - a.averageTime);
-        break;
+    case 'count':
+      slowRequests.sort((a, b) => b.count - a.count);
+      break;
+    case 'maxTime':
+      slowRequests.sort((a, b) => b.maxTime - a.maxTime);
+      break;
+    case 'averageTime':
+    default:
+      slowRequests.sort((a, b) => b.averageTime - a.averageTime);
+      break;
     }
-    
+
     res.json({
       success: true,
       data: {
@@ -144,7 +144,7 @@ router.get('/slow-requests', authenticateToken, requireRole(['admin', 'super_adm
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     logger.error('Error getting slow requests:', error);
     res.status(500).json({
@@ -185,11 +185,11 @@ router.get('/memory', authenticateToken, requireRole(['admin', 'super_admin']), 
         mb: Math.round(memoryUsage.arrayBuffers / 1024 / 1024 * 100) / 100
       }
     };
-    
+
     // Calculate memory efficiency metrics
     const heapUtilization = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
     const totalMemoryMB = memoryUsage.rss / 1024 / 1024;
-    
+
     res.json({
       success: true,
       data: {
@@ -203,7 +203,7 @@ router.get('/memory', authenticateToken, requireRole(['admin', 'super_admin']), 
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     logger.error('Error getting memory info:', error);
     res.status(500).json({
@@ -222,19 +222,19 @@ router.get('/memory', authenticateToken, requireRole(['admin', 'super_admin']), 
 router.post('/reset', authenticateToken, requireRole(['super_admin']), async (req, res) => {
   try {
     performanceMonitor.reset();
-    
+
     logger.warn('Performance metrics reset', {
       adminId: req.user.id,
       adminUsername: req.user.username,
       timestamp: new Date().toISOString()
     });
-    
+
     res.json({
       success: true,
       message: 'Performance metrics have been reset',
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     logger.error('Error resetting performance metrics:', error);
     res.status(500).json({
@@ -254,12 +254,12 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
   try {
     const metrics = performanceMonitor.getMetrics();
     const memoryUsage = process.memoryUsage();
-    
+
     // Determine health status
     let status = 'healthy';
     let score = 100;
     const issues = [];
-    
+
     // Check response time
     if (metrics.summary.averageResponseTime > 2000) {
       status = 'degraded';
@@ -269,7 +269,7 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
       score -= 15;
       issues.push('Elevated response time');
     }
-    
+
     // Check error rate
     if (metrics.summary.errorRate > 0.1) {
       status = 'critical';
@@ -280,7 +280,7 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
       score -= 20;
       issues.push('Elevated error rate');
     }
-    
+
     // Check memory usage
     const memoryMB = memoryUsage.heapUsed / 1024 / 1024;
     if (memoryMB > 800) {
@@ -292,17 +292,17 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
       score -= 20;
       issues.push('High memory usage');
     }
-    
+
     // Check active requests
     if (metrics.summary.activeRequests > 100) {
       status = 'degraded';
       score -= 15;
       issues.push('High number of active requests');
     }
-    
+
     if (score < 60) status = 'critical';
     else if (score < 80) status = 'degraded';
-    
+
     res.json({
       success: true,
       data: {
@@ -321,7 +321,7 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     logger.error('Error getting health status:', error);
     res.status(500).json({
@@ -337,7 +337,7 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
  */
 function generateRecommendations(metrics, memoryUsage) {
   const recommendations = [];
-  
+
   if (metrics.summary.averageResponseTime > 1000) {
     recommendations.push({
       type: 'performance',
@@ -345,7 +345,7 @@ function generateRecommendations(metrics, memoryUsage) {
       priority: 'high'
     });
   }
-  
+
   if (metrics.summary.errorRate > 0.05) {
     recommendations.push({
       type: 'reliability',
@@ -353,7 +353,7 @@ function generateRecommendations(metrics, memoryUsage) {
       priority: 'high'
     });
   }
-  
+
   const memoryMB = memoryUsage.heapUsed / 1024 / 1024;
   if (memoryMB > 400) {
     recommendations.push({
@@ -362,7 +362,7 @@ function generateRecommendations(metrics, memoryUsage) {
       priority: memoryMB > 600 ? 'high' : 'medium'
     });
   }
-  
+
   if (metrics.slowRequests.length > 10) {
     recommendations.push({
       type: 'optimization',
@@ -370,7 +370,7 @@ function generateRecommendations(metrics, memoryUsage) {
       priority: 'medium'
     });
   }
-  
+
   return recommendations;
 }
 

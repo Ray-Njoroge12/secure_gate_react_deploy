@@ -1,0 +1,180 @@
+---
+# Authentication Failure Response Playbook
+# Secure Gate Access Control System
+# Version: 1.0
+# Last Updated: December 19, 2024
+
+- name: "Authentication Failure Response"
+  hosts: all
+  become: yes
+  vars:
+    incident_id: "{{ incident_id | default('UNKNOWN') }}"
+    max_failed_attempts: "{{ max_failed_attempts | default(5) }}"
+    lockout_duration: "{{ lockout_duration | default(300) }}"
+    alert_threshold: "{{ alert_threshold | default(3) }}"
+  
+  tasks:
+    - name: "Log incident start"
+      debug:
+        msg: "Starting authentication failure response for incident {{ incident_id }}"
+    
+    - name: "Check current authentication failures"
+      shell: |
+        grep "authentication_failure" /var/log/secure-gate/auth.log | tail -20
+      register: auth_failures
+      failed_when: false
+    
+    - name: "Count failed authentication attempts"
+      shell: |
+        echo "{{ auth_failures.stdout_lines | length }}"
+      register: failure_count
+    
+    - name: "Check if threshold exceeded"
+      set_fact:
+        threshold_exceeded: "{{ failure_count.stdout | int >= alert_threshold | int }}"
+    
+    - name: "Block suspicious IP addresses"
+      block:
+        - name: "Extract IP addresses from failed attempts"
+          shell: |
+            grep "authentication_failure" /var/log/secure-gate/auth.log | tail -20 | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | sort | uniq
+          register: suspicious_ips
+          when: threshold_exceeded
+        
+        - name: "Add IP addresses to firewall block list"
+          iptables:
+            chain: INPUT
+            source: "{{ item }}"
+            jump: DROP
+            comment: "Blocked due to authentication failure - incident {{ incident_id }}"
+          loop: "{{ suspicious_ips.stdout_lines }}"
+          when: threshold_exceeded and suspicious_ips.stdout_lines | length > 0
+        
+        - name: "Log blocked IP addresses"
+          debug:
+            msg: "Blocked {{ suspicious_ips.stdout_lines | length }} suspicious IP addresses"
+          when: threshold_exceeded
+    
+    - name: "Revoke compromised credentials"
+      block:
+        - name: "Identify compromised user accounts"
+          shell: |
+            grep "authentication_failure" /var/log/secure-gate/auth.log | tail -20 | grep -oE 'user=[a-zA-Z0-9_]+' | cut -d'=' -f2 | sort | uniq
+          register: compromised_users
+          when: threshold_exceeded
+        
+        - name: "Lock compromised user accounts"
+          shell: |
+            for user in {{ compromised_users.stdout_lines | join(' ') }}; do
+              usermod -L $user
+              echo "Account $user locked due to authentication failure - incident {{ incident_id }}" >> /var/log/secure-gate/incidents.log
+            done
+          when: threshold_exceeded and compromised_users.stdout_lines | length > 0
+        
+        - name: "Log locked accounts"
+          debug:
+            msg: "Locked {{ compromised_users.stdout_lines | length }} compromised user accounts"
+          when: threshold_exceeded
+    
+    - name: "Increase monitoring"
+      block:
+        - name: "Enable verbose logging"
+          lineinfile:
+            path: /etc/secure-gate/logging.conf
+            regexp: '^log_level'
+            line: 'log_level = DEBUG'
+            backup: yes
+        
+        - name: "Restart logging service"
+          systemd:
+            name: secure-gate-logging
+            state: restarted
+        
+        - name: "Enable real-time monitoring"
+          shell: |
+            echo "Real-time monitoring enabled for incident {{ incident_id }}" >> /var/log/secure-gate/monitoring.log
+            tail -f /var/log/secure-gate/auth.log | grep "authentication_failure" &
+          async: 300
+          poll: 0
+          register: monitoring_process
+    
+    - name: "Notify security team"
+      block:
+        - name: "Send immediate alert"
+          shell: |
+            curl -X POST "http://localhost:3000/api/notifications" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "type": "authentication_failure_alert",
+                "title": "Authentication Failure Alert",
+                "message": "Multiple authentication failures detected - incident {{ incident_id }}",
+                "severity": "high",
+                "data": {
+                  "incident_id": "{{ incident_id }}",
+                  "failure_count": "{{ failure_count.stdout }}",
+                  "threshold_exceeded": "{{ threshold_exceeded }}",
+                  "blocked_ips": "{{ suspicious_ips.stdout_lines | length if threshold_exceeded else 0 }}",
+                  "locked_accounts": "{{ compromised_users.stdout_lines | length if threshold_exceeded else 0 }}"
+                }
+              }'
+          when: threshold_exceeded
+        
+        - name: "Log notification sent"
+          debug:
+            msg: "Security team notified of authentication failure incident {{ incident_id }}"
+          when: threshold_exceeded
+    
+    - name: "Create incident report"
+      block:
+        - name: "Generate incident report"
+          shell: |
+            cat > /var/log/secure-gate/incidents/{{ incident_id }}_auth_failure.md << EOF
+            # Authentication Failure Incident Report
+            **Incident ID:** {{ incident_id }}
+            **Timestamp:** $(date)
+            **Severity:** High
+            **Status:** Active
+            
+            ## Summary
+            Multiple authentication failures detected in the Secure Gate Access Control System.
+            
+            ## Details
+            - **Failure Count:** {{ failure_count.stdout }}
+            - **Threshold Exceeded:** {{ threshold_exceeded }}
+            - **Blocked IPs:** {{ suspicious_ips.stdout_lines | length if threshold_exceeded else 0 }}
+            - **Locked Accounts:** {{ compromised_users.stdout_lines | length if threshold_exceeded else 0 }}
+            
+            ## Actions Taken
+            1. Analyzed authentication failure logs
+            2. Identified suspicious IP addresses
+            3. Blocked suspicious IP addresses
+            4. Locked compromised user accounts
+            5. Increased monitoring and logging
+            6. Notified security team
+            
+            ## Next Steps
+            1. Monitor for additional authentication failures
+            2. Investigate root cause of failures
+            3. Review and update authentication policies
+            4. Conduct security assessment
+            
+            ## Compliance
+            - **Kenya DPA:** Data breach notification requirements
+            - **GDPR:** Personal data protection requirements
+            - **ISO 27001:** Information security incident management
+            EOF
+        
+        - name: "Set report permissions"
+          file:
+            path: /var/log/secure-gate/incidents/{{ incident_id }}_auth_failure.md
+            mode: '0644'
+            owner: secure-gate
+            group: secure-gate
+    
+    - name: "Log incident completion"
+      debug:
+        msg: "Authentication failure response completed for incident {{ incident_id }}"
+    
+    - name: "Set incident status"
+      shell: |
+        echo "{{ incident_id }}:authentication_failure:completed:$(date)" >> /var/log/secure-gate/incident_status.log

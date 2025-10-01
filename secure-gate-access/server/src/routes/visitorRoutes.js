@@ -13,19 +13,43 @@ import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controlle
 import { attachUserFromToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
+import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
+import { rateLimit } from 'express-rate-limit';
 
 const router = express.Router();
 
+// Rate limiting for visitor creation
+const visitorCreationLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 visitor creations per 15 minutes per IP
+  message: {
+    error: 'Too many visitor creation attempts, please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Protected routes (resident-auth required)
-router.post('/', attachUserFromToken, attachRequestAudit, createVisitor);
+router.post('/', 
+  visitorCreationLimit,
+  attachUserFromToken, 
+  attachRequestAudit, 
+  createVisitor
+);
 router.get('/',
-	attachUserFromToken,
-	attachRequestAudit,
-	CacheMiddleware.apiCache(300, (req) => `visitors:${req.user?.email || 'anonymous'}:${JSON.stringify(req.query)}`),
-	getMyVisitors
+  attachUserFromToken,
+  attachRequestAudit,
+  CacheMiddleware.apiCache(300, (req) => `visitors:${req.user?.email || 'anonymous'}:${JSON.stringify(req.query)}`),
+  getMyVisitors
 );
 router.post('/:visitorId/pass', attachUserFromToken, attachRequestAudit, createPass);
-router.post('/bulk-invite', attachUserFromToken, attachRequestAudit, bulkInvite);
+router.post('/bulk-invite', 
+  visitorCreationLimit,
+  attachUserFromToken, 
+  attachRequestAudit, 
+  bulkInvite
+);
 
 // Guard Operations (guard/admin roles required)
 router.post('/:id/check-in', attachUserFromToken, attachRequestAudit, checkInVisitor);
@@ -37,15 +61,15 @@ router.post('/:id/resend-otp', resendOtp);
 
 // Public routes (guests) - cached for performance
 router.get('/bulk-invite/:inviteCode',
-	CacheMiddleware.apiCache(300, (req) => `bulk-invite:${req.params.inviteCode}`),
-	getBulkInvite
+  CacheMiddleware.apiCache(300, (req) => `bulk-invite:${req.params.inviteCode}`),
+  getBulkInvite
 );
 router.post('/complete/:inviteCode', completeInvite);
 router.post('/self-checkin/:inviteCode', selfCheckIn);
 
 // Admin Operations (admin role required)
-router.get('/admin/active-visitors', attachUserFromToken, attachRequestAudit, getActiveVisitors);
-router.get('/admin/report', attachUserFromToken, attachRequestAudit, getVisitorReport);
-router.delete('/admin/:visitorId/revoke', attachUserFromToken, attachRequestAudit, revokeVisitor);
+router.get('/active', attachUserFromToken, attachRequestAudit, getActiveVisitors);
+router.get('/report', attachUserFromToken, attachRequestAudit, getVisitorReport);
+router.delete('/:visitorId/revoke', attachUserFromToken, attachRequestAudit, revokeVisitor);
 
 export default router;

@@ -14,7 +14,7 @@ export const ValidationSchemas = {
   }),
   uuid: Joi.string().uuid(),
   name: Joi.string().min(1).max(100).trim(),
-  
+
   // User-related schemas
   userRegistration: Joi.object({
     email: Joi.string().email().max(255).required().trim().lowercase().messages({
@@ -30,7 +30,7 @@ export const ValidationSchemas = {
     password: Joi.string()
       .min(8)
       .max(128)
-      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/)
       .required()
       .messages({
         'string.min': 'Password must be at least 8 characters long',
@@ -38,10 +38,10 @@ export const ValidationSchemas = {
         'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
         'any.required': 'Password is required'
       }),
-    phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).optional().allow('').messages({
-      'string.pattern.base': 'Phone number must be in international format (e.g., +1234567890)'
+    phone: Joi.string().pattern(/^(\+?[1-9]\d{1,14}|0[0-9]{9,10})$/).optional().allow('').messages({
+      'string.pattern.base': 'Phone number must be in valid format (e.g., +1234567890 or 0712345678)'
     }),
-    role: Joi.string().valid('resident', 'admin', 'guard').default('resident').messages({
+    role: Joi.string().valid('resident', 'Resident', 'admin', 'Admin', 'guard', 'Guard').default('resident').messages({
       'any.only': 'Role must be either resident, admin, or guard'
     }),
     area: Joi.string().max(100).optional().allow('').trim(),
@@ -81,8 +81,8 @@ export const ValidationSchemas = {
       'string.max': 'Visitor name must not exceed 100 characters',
       'any.required': 'Visitor name is required'
     }),
-    phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).optional().allow('').messages({
-      'string.pattern.base': 'Phone number must be in international format (e.g., +1234567890)'
+    phone: Joi.string().pattern(/^(\+?[1-9]\d{1,14}|0[0-9]{9,10})$/).optional().allow('').messages({
+      'string.pattern.base': 'Phone number must be in valid format (e.g., +1234567890 or 0712345678)'
     }),
     email: Joi.string().email().optional().allow('').trim().lowercase().messages({
       'string.email': 'Please provide a valid email address'
@@ -98,6 +98,28 @@ export const ValidationSchemas = {
     purpose: Joi.string().max(500).required().trim().messages({
       'string.max': 'Purpose must not exceed 500 characters',
       'any.required': 'Purpose of visit is required'
+    })
+  }),
+
+  // Bulk invite creation schema
+  bulkInviteCreation: Joi.object({
+    eventName: Joi.string().min(1).max(255).required().trim().messages({
+      'string.min': 'Event name is required',
+      'string.max': 'Event name must not exceed 255 characters',
+      'any.required': 'Event name is required'
+    }),
+    date: Joi.date().min('now').required().messages({
+      'date.min': 'Event date cannot be in the past',
+      'any.required': 'Event date is required'
+    }),
+    time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required().messages({
+      'string.pattern.base': 'Time must be in HH:MM format (24-hour)',
+      'any.required': 'Event time is required'
+    }),
+    numGuests: Joi.number().integer().min(1).max(50).required().messages({
+      'number.min': 'Number of guests must be at least 1',
+      'number.max': 'Number of guests cannot exceed 50',
+      'any.required': 'Number of guests is required'
     })
   }),
 
@@ -166,7 +188,7 @@ export const validateRequest = (schema, options = {}) => {
   return (req, res, next) => {
     // Determine what to validate based on schema type
     let dataToValidate = req.body;
-    
+
     // Handle query parameters for GET requests
     if (req.method === 'GET' && schema === ValidationSchemas.pagination) {
       dataToValidate = req.query;
@@ -183,10 +205,10 @@ export const validateRequest = (schema, options = {}) => {
       }));
 
       const errorMessage = validationErrors.map(err => `${err.field}: ${err.message}`).join('; ');
-      
+
       throw ErrorHelper.badRequest(
-        ERROR_CODES.VALIDATION_ERROR, 
-        'Input validation failed', 
+        ERROR_CODES.VALIDATION_ERROR,
+        'Input validation failed',
         { validationErrors }
       );
     }
@@ -266,7 +288,7 @@ export const CustomValidators = {
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumbers = /\d/.test(password);
     const hasSpecialChar = /[@$!%*?&]/.test(password);
-    
+
     return {
       isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar,
       score: [password.length >= minLength, hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length,

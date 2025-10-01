@@ -102,7 +102,7 @@ const navigationConfig = {
       )
     }
   ],
-  security: [
+  guard: [
     { 
       path: "/dashboard/guard", 
       label: "Dashboard",
@@ -205,7 +205,7 @@ export default function Sidebar({ role, onLogout, error }) {
   const getRoleDisplayName = (role) => {
     const roleNames = {
       resident: "Resident",
-      security: "Security Guard",
+      guard: "Security Guard",
       admin: "Administrator"
     };
     return roleNames[role] || role;
