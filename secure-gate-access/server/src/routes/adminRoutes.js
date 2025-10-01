@@ -1,33 +1,37 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import requireRole from '../middleware/roleMiddleware.js';
-import { getMetrics, getAuditLogs, updateAdminSetting } from '../controllers/adminController.js';
-import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
-import { adminRateLimit } from '../middleware/rateLimitMiddleware.js';
+import { getMetrics, getAuditLogs } from '../controllers/adminController.js';
+import { attachUserFromToken } from '../middleware/authMiddleware.js';
+import attachRequestAudit from '../middleware/auditLogger.js';
+import { backupService } from '../services/backupService.js';
 
 const router = express.Router();
 
-// Deprecated legacy admin login route kept only to emit 410 responses.
-router.post('/login', (_req, res) => {
-	return res.status(410).json({ success: false, error: 'Legacy admin login removed', message: 'Use /api/users/login with role-based JWT instead' });
+// Admin metrics endpoint
+router.get('/metrics', attachUserFromToken, attachRequestAudit, getMetrics);
+
+// Audit logs endpoint
+router.get('/audit-logs', attachUserFromToken, attachRequestAudit, getAuditLogs);
+
+// Backup trigger endpoint
+router.post('/backup/trigger', attachUserFromToken, attachRequestAudit, async (req, res) => {
+  try {
+    const result = await backupService.triggerBackup();
+    res.json({
+      success: true,
+      message: 'Backup triggered successfully',
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: 'Failed to trigger backup',
+        type: 'Backup Error',
+        requestId: req.requestId
+      }
+    });
+  }
 });
-
-router.get('/metrics', adminRateLimit(), authenticateToken, requireRole('admin'), getMetrics);
-
-router.get('/audit-logs', 
-  adminRateLimit(),
-  authenticateToken, 
-  requireRole('admin'),
-  validateRequest(ValidationSchemas.pagination),
-  getAuditLogs
-);
-
-router.post('/settings', 
-  adminRateLimit(),
-  authenticateToken, 
-  requireRole('admin'),
-  validateRequest(ValidationSchemas.adminSetting),
-  updateAdminSetting
-);
 
 export default router;

@@ -1,4 +1,5 @@
-import pool from './db.js';
+import { dbManager } from './db.enhanced.js';
+const pool = dbManager.pool;
 
 const run = async () => {
   const client = await pool.connect();

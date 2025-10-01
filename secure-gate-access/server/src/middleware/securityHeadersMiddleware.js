@@ -9,14 +9,14 @@ import logger from '../utils/logger.js';
  * Implements comprehensive OWASP security headers with environment-specific configurations
  */
 
-const { 
-  cspDirectives, 
-  hstsConfig, 
-  permissionsPolicy, 
-  securityHeaders, 
+const {
+  cspDirectives,
+  hstsConfig,
+  permissionsPolicy,
+  securityHeaders,
   environmentConfig,
   allowedContentTypes,
-  requestLimits 
+  requestLimits
 } = securityConfig;
 
 /**
@@ -25,13 +25,13 @@ const {
 export const handleCSPViolation = async (req, res, next) => {
   try {
     const violation = req.body;
-    
+
     // Log CSP violation for security monitoring
     await securityMonitoringService.logCSPViolation(violation, req);
-    
+
     // Return empty response to browser
     res.status(204).end();
-    
+
   } catch (error) {
     logger.error('Error handling CSP violation:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -84,7 +84,7 @@ export const enhancedHelmetConfig = helmet({
   // Cross-Origin-Embedder-Policy
   crossOriginEmbedderPolicy: false, // Allow embedding for QR codes and file uploads
 
-  // Cross-Origin-Opener-Policy  
+  // Cross-Origin-Opener-Policy
   crossOriginOpenerPolicy: {
     policy: securityHeaders.crossOriginOpenerPolicy
   },
@@ -111,23 +111,23 @@ export const customSecurityHeaders = (req, res, next) => {
     res.set({
       // Prevent browsers from MIME-type sniffing
       'X-Content-Type-Options': securityHeaders.contentTypeOptions,
-      
+
       // Control referrer information
       'Referrer-Policy': securityHeaders.referrerPolicy,
-      
+
       // Cross-Origin policies
       'Cross-Origin-Opener-Policy': securityHeaders.crossOriginOpenerPolicy,
       'Cross-Origin-Resource-Policy': securityHeaders.crossOriginResourcePolicy,
-      
+
       // Additional security headers
       'X-Permitted-Cross-Domain-Policies': 'none',
-      
+
       // Server information hiding
       'Server': 'SecureGate'
     });
 
     // Cache control for sensitive responses
-    if (req.path.includes('/api/auth/') || 
+    if (req.path.includes('/api/auth/') ||
         req.path.includes('/api/admin/') ||
         req.path.includes('/api/security/')) {
       res.set({
@@ -156,26 +156,20 @@ export const customSecurityHeaders = (req, res, next) => {
  */
 export const contentTypeValidation = (req, res, next) => {
   try {
+    console.log(`🔍 [contentTypeValidation] Method: ${req.method}, Path: ${req.path}`);
+
     // Skip validation for GET, HEAD, OPTIONS requests
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      console.log(`🔍 [contentTypeValidation] Skipping validation for ${req.method} request`);
       return next();
     }
 
+    console.log(`🔍 [contentTypeValidation] Processing ${req.method} request validation`);
+
     const contentType = req.get('Content-Type');
-    
+
     if (!contentType) {
-      // Log security event
-      securityMonitoringService.logSecurityEvent({
-        type: 'MALFORMED_REQUEST',
-        severity: 'medium',
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        endpoint: req.path,
-        method: req.method,
-        details: {
-          reason: 'Missing Content-Type header'
-        }
-      });
+      console.warn(`⚠️ [contentTypeValidation] Missing Content-Type for ${req.method} ${req.path}`);
 
       return res.status(400).json({
         error: 'Content-Type header is required'
@@ -183,24 +177,12 @@ export const contentTypeValidation = (req, res, next) => {
     }
 
     // Check if content type is allowed using centralized config
-    const isAllowed = allowedContentTypes.some(type => 
+    const isAllowed = allowedContentTypes.some(type =>
       contentType.toLowerCase().includes(type.toLowerCase())
     );
 
     if (!isAllowed) {
-      // Log security event
-      securityMonitoringService.logSecurityEvent({
-        type: 'MALFORMED_REQUEST',
-        severity: 'medium',
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        endpoint: req.path,
-        method: req.method,
-        details: {
-          contentType,
-          reason: 'Unsupported content type'
-        }
-      });
+      console.warn(`⚠️ [contentTypeValidation] Unsupported Content-Type: ${contentType} for ${req.method} ${req.path}`);
 
       return res.status(415).json({
         error: 'Unsupported Media Type',
@@ -208,8 +190,10 @@ export const contentTypeValidation = (req, res, next) => {
       });
     }
 
+    console.log(`✅ [contentTypeValidation] Content-Type validation passed for ${req.method} ${req.path}`);
     next();
   } catch (error) {
+    console.error('❌ [contentTypeValidation] Error in content type validation:', error);
     logger.error('Error in content type validation:', error);
     next(error);
   }
@@ -292,7 +276,7 @@ export const securityResponseMiddleware = (req, res, next) => {
     // Log response time and status
     res.on('finish', () => {
       const responseTime = Date.now() - startTime;
-      
+
       // Log slow responses as potential security events
       if (responseTime > 5000) { // 5 seconds
         securityMonitoringService.logSecurityEvent({
@@ -327,13 +311,13 @@ export const securityEventLogger = (req, res, next) => {
     // Log requests to sensitive endpoints
     const sensitiveEndpoints = [
       '/api/auth/login',
-      '/api/auth/register', 
+      '/api/auth/register',
       '/api/auth/reset-password',
       '/api/admin',
       '/api/security'
     ];
 
-    const isSensitive = sensitiveEndpoints.some(endpoint => 
+    const isSensitive = sensitiveEndpoints.some(endpoint =>
       req.path.startsWith(endpoint)
     );
 
@@ -388,7 +372,7 @@ function parseSize(size) {
 
   const value = parseFloat(match[1]);
   const unit = match[2] || 'b';
-  
+
   return Math.floor(value * units[unit]);
 }
 

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 10 node scripts/cleanup-agent.js)",
+      "Bash(node check-database-schema.js)",
+      "Bash(node compare-schemas.js)",
+      "Bash(time npm run build)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

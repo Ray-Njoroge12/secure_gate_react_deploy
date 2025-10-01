@@ -1,0 +1,130 @@
+name: Security Vulnerability Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
+
+jobs:
+  trivy-scan:
+    name: Trivy Vulnerability Scanner
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build Docker image
+      run: |
+        cd secure-gate-access
+        docker build -t secure-gate-backend:latest ./server
+        docker build -t secure-gate-frontend:latest ./client
+        
+    - name: Run Trivy vulnerability scanner on backend
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'secure-gate-backend:latest'
+        format: 'sarif'
+        output: 'trivy-backend-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+        
+    - name: Run Trivy vulnerability scanner on frontend
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'secure-gate-frontend:latest'
+        format: 'sarif'
+        output: 'trivy-frontend-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+        
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-backend-results.sarif,trivy-frontend-results.sarif'
+        
+    - name: Check for critical vulnerabilities
+      run: |
+        # Fail build if critical vulnerabilities found
+        if trivy image --format json --severity CRITICAL secure-gate-backend:latest | jq '.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")' | grep -q "CRITICAL"; then
+          echo "❌ CRITICAL vulnerabilities found in backend image"
+          exit 1
+        fi
+        
+        if trivy image --format json --severity CRITICAL secure-gate-frontend:latest | jq '.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")' | grep -q "CRITICAL"; then
+          echo "❌ CRITICAL vulnerabilities found in frontend image"
+          exit 1
+        fi
+        
+        echo "✅ No CRITICAL vulnerabilities found"
+        
+    - name: Generate vulnerability report
+      run: |
+        echo "# Vulnerability Scan Report" > vuln-report.md
+        echo "Generated: $(date)" >> vuln-report.md
+        echo "" >> vuln-report.md
+        
+        echo "## Backend Image Scan Results" >> vuln-report.md
+        trivy image --format table secure-gate-backend:latest >> vuln-report.md
+        echo "" >> vuln-report.md
+        
+        echo "## Frontend Image Scan Results" >> vuln-report.md
+        trivy image --format table secure-gate-frontend:latest >> vuln-report.md
+        
+    - name: Upload vulnerability report
+      uses: actions/upload-artifact@v3
+      with:
+        name: vulnerability-report
+        path: vuln-report.md
+        
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          secure-gate-access/server/package-lock.json
+          secure-gate-access/client/package-lock.json
+          
+    - name: Install dependencies
+      run: |
+        cd secure-gate-access/server && npm ci
+        cd ../client && npm ci
+        
+    - name: Run npm audit on backend
+      run: |
+        cd secure-gate-access/server
+        npm audit --audit-level=high --json > backend-audit.json
+        
+    - name: Run npm audit on frontend
+      run: |
+        cd secure-gate-access/client
+        npm audit --audit-level=high --json > frontend-audit.json
+        
+    - name: Check for high severity vulnerabilities
+      run: |
+        # Check backend vulnerabilities
+        if jq '.vulnerabilities | keys | length' secure-gate-access/server/backend-audit.json | grep -q "[1-9]"; then
+          echo "❌ High severity vulnerabilities found in backend dependencies"
+          jq '.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical")' secure-gate-access/server/backend-audit.json
+          exit 1
+        fi
+        
+        # Check frontend vulnerabilities
+        if jq '.vulnerabilities | keys | length' secure-gate-access/client/frontend-audit.json | grep -q "[1-9]"; then
+          echo "❌ High severity vulnerabilities found in frontend dependencies"
+          jq '.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical")' secure-gate-access/client/frontend-audit.json
+          exit 1
+        fi
+        
+        echo "✅ No high severity vulnerabilities found in dependencies"

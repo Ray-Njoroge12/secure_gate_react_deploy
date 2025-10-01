@@ -3,10 +3,57 @@
  * Extends existing health service with comprehensive monitoring capabilities
  */
 
-import { healthCheck } from '../services/healthService.js';
 import loggingService from '../services/loggingService.js';
 import { randomUUID } from 'crypto';
-import pool from '../database/db.js';
+import { dbManager } from '../database/db.enhanced.js';
+const pool = dbManager.pool;
+
+/**
+ * Simple health check service
+ */
+class HealthCheckService {
+  constructor() {
+    this.checks = new Map();
+  }
+
+  registerCheck(name, checkFunction) {
+    this.checks.set(name, checkFunction);
+  }
+
+  async runChecks() {
+    const results = {
+      status: 'healthy',
+      checks: {},
+      timestamp: new Date().toISOString()
+    };
+
+    for (const [name, checkFunction] of this.checks) {
+      try {
+        const result = await checkFunction();
+        results.checks[name] = {
+          status: result.status || 'healthy',
+          details: result.details || 'Check passed',
+          timestamp: new Date().toISOString()
+        };
+
+        if (result.status === 'unhealthy') {
+          results.status = 'unhealthy';
+        }
+      } catch (error) {
+        results.checks[name] = {
+          status: 'unhealthy',
+          error: error.message,
+          timestamp: new Date().toISOString()
+        };
+        results.status = 'unhealthy';
+      }
+    }
+
+    return results;
+  }
+}
+
+const healthCheck = new HealthCheckService();
 
 class EnhancedHealthMonitoring {
   constructor() {
@@ -34,11 +81,11 @@ class EnhancedHealthMonitoring {
   async getComprehensiveHealth(req, includeDetails = false) {
     const correlationId = req.headers['x-correlation-id'] || randomUUID();
     const startTime = Date.now();
-    
+
     try {
       // Get detailed health checks
       const healthResult = await healthCheck.runChecks();
-      
+
       // Add enhanced metrics
       const enhancedResult = {
         ...healthResult,
@@ -72,7 +119,7 @@ class EnhancedHealthMonitoring {
 
       // Update metrics
       this.updateHealthMetrics(enhancedResult.status);
-      
+
       // Log health check
       loggingService.logInfo('Health check completed', {
         correlationId,
@@ -82,16 +129,16 @@ class EnhancedHealthMonitoring {
       });
 
       return enhancedResult;
-      
+
     } catch (error) {
       this.updateHealthMetrics('unhealthy');
-      
+
       loggingService.logError('Health check failed', {
         correlationId,
         error: error.message,
         stack: error.stack
       });
-      
+
       return {
         status: 'unhealthy',
         error: error.message,
@@ -137,7 +184,7 @@ class EnhancedHealthMonitoring {
   async getDatabaseStats() {
     try {
       const start = Date.now();
-      
+
       // Run performance test queries
       const [
         connectionTest,
@@ -148,11 +195,11 @@ class EnhancedHealthMonitoring {
         pool.query('SELECT NOW() as server_time, version() as db_version'),
         pool.query('SELECT COUNT(*) as count FROM users'),
         pool.query('SELECT COUNT(*) as count FROM visitors'),
-        pool.query("SELECT COUNT(*) as count FROM visitors WHERE status IN ('ON_PREMISE', 'CONFIRMED')")
+        pool.query('SELECT COUNT(*) as count FROM visitors WHERE status IN (\'ON_PREMISE\', \'CONFIRMED\')')
       ]);
-      
+
       const queryTime = Date.now() - start;
-      
+
       return {
         responseTime: queryTime,
         serverTime: connectionTest.rows[0]?.server_time,
@@ -164,9 +211,9 @@ class EnhancedHealthMonitoring {
         },
         performance: {
           avgQueryTime: queryTime,
-          status: queryTime < 100 ? 'excellent' : 
-                 queryTime < 500 ? 'good' : 
-                 queryTime < 1000 ? 'acceptable' : 'slow'
+          status: queryTime < 100 ? 'excellent' :
+            queryTime < 500 ? 'good' :
+              queryTime < 1000 ? 'acceptable' : 'slow'
         }
       };
     } catch (error) {
@@ -196,13 +243,13 @@ class EnhancedHealthMonitoring {
 
       // Calculate utilization
       const utilization = poolStats.totalConnections / poolStats.maxConnections;
-      
+
       return {
         ...poolStats,
         utilization: Math.round(utilization * 100),
         status: utilization > 0.9 ? 'critical' :
-                utilization > 0.7 ? 'warning' :
-                utilization > 0.5 ? 'moderate' : 'low',
+          utilization > 0.7 ? 'warning' :
+            utilization > 0.5 ? 'moderate' : 'low',
         health: poolStats.waitingConnections > 0 ? 'warning' : 'healthy'
       };
     } catch (error) {
@@ -219,7 +266,7 @@ class EnhancedHealthMonitoring {
   async getSystemPerformanceStats() {
     const memUsage = process.memoryUsage();
     const cpuUsage = process.cpuUsage();
-    
+
     return {
       memory: {
         heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
@@ -247,7 +294,7 @@ class EnhancedHealthMonitoring {
    */
   async getLivenessProbe(req) {
     const correlationId = req.headers['x-correlation-id'] || randomUUID();
-    
+
     try {
       // Very basic check - just verify the process is responsive
       return {
@@ -272,13 +319,13 @@ class EnhancedHealthMonitoring {
   async getReadinessProbe(req) {
     const correlationId = req.headers['x-correlation-id'] || randomUUID();
     const start = Date.now();
-    
+
     try {
       // Check critical dependencies for readiness
       await pool.query('SELECT 1');
-      
+
       const responseTime = Date.now() - start;
-      
+
       return {
         status: 'ready',
         timestamp: new Date().toISOString(),
@@ -307,12 +354,12 @@ class EnhancedHealthMonitoring {
    */
   async getStartupProbe(req) {
     const correlationId = req.headers['x-correlation-id'] || randomUUID();
-    
+
     try {
       // Check if application has been running long enough to be considered started
       const uptime = Date.now() - this.startTime;
       const minStartupTime = 5000; // 5 seconds minimum
-      
+
       if (uptime < minStartupTime) {
         return {
           status: 'starting',
@@ -325,7 +372,7 @@ class EnhancedHealthMonitoring {
 
       // Verify critical components are initialized
       await pool.query('SELECT 1');
-      
+
       return {
         status: 'started',
         timestamp: new Date().toISOString(),
@@ -348,7 +395,7 @@ class EnhancedHealthMonitoring {
    */
   updateHealthMetrics(status) {
     this.healthMetrics.totalRequests++;
-    
+
     if (status === 'healthy') {
       this.healthMetrics.healthyChecks++;
       this.healthMetrics.currentStatus = 'healthy';
@@ -411,9 +458,9 @@ class EnhancedHealthMonitoring {
     // Check visitor management system
     this.registerBusinessHealthCheck('visitor-system', async () => {
       try {
-        const activeVisitors = await pool.query("SELECT COUNT(*) as count FROM visitors WHERE status = 'ON_PREMISE'");
-        const recentVisitors = await pool.query("SELECT COUNT(*) as count FROM visitors WHERE created_at > NOW() - INTERVAL '1 hour'");
-        
+        const activeVisitors = await pool.query('SELECT COUNT(*) as count FROM visitors WHERE status = \'ON_PREMISE\'');
+        const recentVisitors = await pool.query('SELECT COUNT(*) as count FROM visitors WHERE created_at > NOW() - INTERVAL \'1 hour\'');
+
         return {
           status: 'healthy',
           details: 'Visitor management system operational',
@@ -437,7 +484,7 @@ class EnhancedHealthMonitoring {
         // Basic check - verify notification configuration
         const hasEmailConfig = !!(process.env.SMTP_HOST && process.env.SMTP_USER);
         const hasSMSConfig = !!(process.env.SMS_PROVIDER);
-        
+
         return {
           status: 'healthy',
           details: 'Notification system configured',
@@ -454,6 +501,46 @@ class EnhancedHealthMonitoring {
         };
       }
     });
+  }
+
+  /**
+   * Quick health check for load balancers (backward compatibility)
+   */
+  async quickCheck() {
+    try {
+      await pool.query('SELECT 1');
+      return {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: Math.floor((Date.now() - this.startTime) / 1000)
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Run specific health checks (backward compatibility)
+   */
+  async runChecks(checkNames = null) {
+    const results = await healthCheck.runChecks();
+
+    if (checkNames) {
+      // Filter results to only requested checks
+      const filteredChecks = {};
+      checkNames.forEach(name => {
+        if (results.checks[name]) {
+          filteredChecks[name] = results.checks[name];
+        }
+      });
+      results.checks = filteredChecks;
+    }
+
+    return results;
   }
 }
 

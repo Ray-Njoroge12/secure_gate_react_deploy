@@ -1,13 +1,13 @@
 // API endpoints configuration
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export const API_ENDPOINTS = {
   // Base API URL
   BASE: `${BASE_URL}/api`,
   
   // Authentication
-  LOGIN: `${BASE_URL}/api/auth/login`,
-  REGISTER: `${BASE_URL}/api/auth/register`,
+  LOGIN: `${BASE_URL}/api/users/login`,
+  REGISTER: `${BASE_URL}/api/users/register`,
   FORGOT_PASSWORD: `${BASE_URL}/api/auth/forgot-password`,
   RESET_PASSWORD: `${BASE_URL}/api/auth/reset-password`,
   

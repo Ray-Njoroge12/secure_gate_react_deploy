@@ -15,7 +15,7 @@ class TokenService {
     this.accessTokenExpiry = '15m'; // Short-lived access tokens
     this.refreshTokenExpiry = '7d'; // Longer refresh token lifetime
     this.revokedTokens = new Set(); // In-memory revocation list (use Redis in production)
-    
+
     // Warn about insecure configuration
     if (this.accessTokenSecret.includes('fallback') || this.refreshTokenSecret.includes('fallback')) {
       console.warn('⚠️  SECURITY WARNING: Using fallback JWT secrets! Set JWT_SECRET and JWT_REFRESH_SECRET in production');
@@ -29,15 +29,15 @@ class TokenService {
     const jti = randomUUID(); // Standard JWT ID claim
     const refreshJti = randomUUID();
     const now = Math.floor(Date.now() / 1000);
-    
+
     // Standardized access token claims
     const accessToken = jwt.sign(
-      { 
+      {
         // Standard JWT claims
         sub: String(payload.id || payload.userId), // Subject (user ID as string)
         iat: now,                                  // Issued at
         jti: jti,                                 // JWT ID for revocation
-        
+
         // Custom claims for backward compatibility
         id: payload.id || payload.userId,         // Legacy user ID
         email: payload.email,                     // User email
@@ -47,7 +47,7 @@ class TokenService {
         type: 'access'
       },
       this.accessTokenSecret,
-      { 
+      {
         expiresIn: this.accessTokenExpiry,
         issuer: 'secure-gate-api',
         audience: 'secure-gate-client'
@@ -65,7 +65,7 @@ class TokenService {
         type: 'refresh'
       },
       this.refreshTokenSecret,
-      { 
+      {
         expiresIn: this.refreshTokenExpiry,
         issuer: 'secure-gate-api',
         audience: 'secure-gate-client'
@@ -88,14 +88,14 @@ class TokenService {
   generateAccessToken(payload, expiresIn = '15m') {
     const jti = randomUUID();
     const now = Math.floor(Date.now() / 1000);
-    
+
     return jwt.sign(
-      { 
+      {
         // Standard JWT claims
         sub: String(payload.id || payload.userId),
         iat: now,
         jti: jti,
-        
+
         // Custom claims for backward compatibility
         id: payload.id || payload.userId,
         email: payload.email,
@@ -105,7 +105,7 @@ class TokenService {
         type: 'access'
       },
       this.accessTokenSecret,
-      { 
+      {
         expiresIn: expiresIn,
         issuer: 'secure-gate-api',
         audience: 'secure-gate-client'
@@ -189,18 +189,18 @@ class TokenService {
   refreshAccessToken(refreshToken, userPayload) {
     try {
       const decoded = this.verifyRefreshToken(refreshToken);
-      
+
       // Validate that userPayload matches token subject for security
       if (userPayload.id && decoded.sub && userPayload.id.toString() !== decoded.sub) {
         throw new Error('Token subject mismatch');
       }
-      
+
       // Revoke old refresh token by JTI
       this.revokeToken(refreshToken);
-      
+
       // Generate new token pair with same user data
       const tokens = this.generateTokens(userPayload);
-      
+
       return tokens;
     } catch (error) {
       throw new Error(`Token refresh failed: ${error.message}`);
@@ -220,7 +220,7 @@ class TokenService {
         // Fallback for tokens without JTI (backward compatibility)
         this.revokedTokens.add(token);
       }
-      
+
       // Clean up old revoked tokens periodically
       if (this.revokedTokens.size > 10000) {
         // In production, implement proper cleanup with database TTL
@@ -299,7 +299,7 @@ class TokenService {
 
         // Delete refresh tokens for user
         await this.db.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
-        
+
         console.log(`Revoked all tokens for user ${userId}`);
       } catch (error) {
         console.error('Failed to revoke user tokens:', error);
@@ -338,7 +338,7 @@ class TokenService {
 
     const secret = type === 'access' ? this.accessTokenSecret : this.refreshTokenSecret;
     const jti = this.generateJTI();
-    
+
     const payload = {
       ...userPayload,
       type,
@@ -411,11 +411,11 @@ class PasswordService {
   generateSecurePassword(length = 16) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
     let result = '';
-    
+
     for (let i = 0; i < length; i++) {
       result += chars.charAt(crypto.randomInt(0, chars.length));
     }
-    
+
     return result;
   }
 
@@ -433,7 +433,7 @@ class PasswordService {
 
     const score = Object.values(checks).filter(Boolean).length;
     let strength = 'weak';
-    
+
     if (score >= 4) strength = 'strong';
     else if (score >= 3) strength = 'medium';
 
@@ -447,14 +447,14 @@ class PasswordService {
 
   getStrengthMessage(strength, checks) {
     if (strength === 'strong') return 'Password is strong';
-    
+
     const missing = [];
     if (!checks.length) missing.push('at least 8 characters');
     if (!checks.uppercase) missing.push('uppercase letter');
     if (!checks.lowercase) missing.push('lowercase letter');
     if (!checks.numbers) missing.push('number');
     if (!checks.symbols) missing.push('special character');
-    
+
     return `Password needs: ${missing.join(', ')}`;
   }
 }
@@ -475,23 +475,23 @@ class AccountSecurityService {
   recordFailedAttempt(userId, ip) {
     const now = Date.now();
     const current = this.failedAttempts.get(userId) || { count: 0, lastAttempt: 0, lockedUntil: 0 };
-    
+
     // Reset if last attempt was more than 1 hour ago
     if (now - current.lastAttempt > 60 * 60 * 1000) {
       current.count = 0;
     }
-    
+
     current.count++;
     current.lastAttempt = now;
-    
+
     // Lock account if too many attempts
     if (current.count >= this.maxFailedAttempts) {
       current.lockedUntil = now + this.lockoutDuration;
       console.warn(`🔒 Account locked for user ${userId} from IP ${ip} after ${current.count} failed attempts`);
     }
-    
+
     this.failedAttempts.set(userId, current);
-    
+
     return {
       isLocked: current.lockedUntil > now,
       remainingAttempts: Math.max(0, this.maxFailedAttempts - current.count),
@@ -512,7 +512,7 @@ class AccountSecurityService {
   isAccountLocked(userId) {
     const current = this.failedAttempts.get(userId);
     if (!current) return false;
-    
+
     const now = Date.now();
     return current.lockedUntil > now;
   }
@@ -523,7 +523,7 @@ class AccountSecurityService {
   getLockoutInfo(userId) {
     const current = this.failedAttempts.get(userId);
     if (!current) return null;
-    
+
     const now = Date.now();
     return {
       isLocked: current.lockedUntil > now,

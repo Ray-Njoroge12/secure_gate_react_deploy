@@ -1,9 +1,9 @@
 /**
  * Environment Configuration & Secrets Management
- * 
+ *
  * This module provides secure environment variable loading, validation,
  * and secret management for production deployments.
- * 
+ *
  * Security features:
  * - Mandatory environment validation for production
  * - Secret strength validation
@@ -18,23 +18,23 @@ class EnvironmentConfig {
     this.isProduction = process.env.NODE_ENV === 'production';
     this.isDevelopment = process.env.NODE_ENV === 'development';
     this.isTest = process.env.NODE_ENV === 'test';
-    
+
     this.requiredSecrets = [
       'JWT_SECRET',
       'JWT_REFRESH_SECRET',
       'PGPASSWORD'
     ];
-    
+
     this.productionSecrets = [
       'JWT_SECRET',
-      'JWT_REFRESH_SECRET', 
+      'JWT_REFRESH_SECRET',
       'PGPASSWORD',
       'SESSION_SECRET'
     ];
-    
+
     this.validationErrors = [];
     this.warnings = [];
-    
+
     this.validateEnvironment();
   }
 
@@ -43,21 +43,21 @@ class EnvironmentConfig {
    */
   validateEnvironment() {
     console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-    
+
     // Database configuration validation
     this.validateDatabaseConfig();
-    
-    // Security secrets validation  
+
+    // Security secrets validation
     this.validateSecrets();
-    
+
     // Optional service configurations
     this.validateOptionalServices();
-    
+
     // Production-specific validations
     if (this.isProduction) {
       this.validateProductionConfig();
     }
-    
+
     this.reportValidationResults();
   }
 
@@ -66,11 +66,11 @@ class EnvironmentConfig {
    */
   validateDatabaseConfig() {
     const dbConfig = this.getDatabaseConfig();
-    
+
     if (!dbConfig.host || !dbConfig.database || !dbConfig.user) {
       this.validationErrors.push('Database configuration incomplete (PGHOST, PGDATABASE, PGUSER required)');
     }
-    
+
     if (!dbConfig.password) {
       if (this.isProduction) {
         this.validationErrors.push('Database password (PGPASSWORD) is required in production');
@@ -78,7 +78,7 @@ class EnvironmentConfig {
         this.warnings.push('Database password (PGPASSWORD) not set - using default');
       }
     }
-    
+
     // Validate connection pool settings
     if (dbConfig.pool.max < 1 || dbConfig.pool.max > 100) {
       this.warnings.push(`Database pool size (${dbConfig.pool.max}) should be between 1-100`);
@@ -101,7 +101,7 @@ class EnvironmentConfig {
       }
     }
 
-    // JWT Refresh Token Secret  
+    // JWT Refresh Token Secret
     const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
     if (!jwtRefreshSecret) {
       if (this.isProduction) {
@@ -137,14 +137,14 @@ class EnvironmentConfig {
         this.warnings.push('SMTP configured but missing SMTP_USER or SMTP_PASS');
       }
     }
-    
+
     // Twilio Configuration
     const twilioSid = process.env.TWILIO_ACCOUNT_SID;
     const twilioToken = process.env.TWILIO_AUTH_TOKEN;
     if (twilioSid && !twilioToken) {
       this.warnings.push('TWILIO_ACCOUNT_SID set but TWILIO_AUTH_TOKEN missing');
     }
-    
+
     // Redis Configuration (for rate limiting)
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl && this.isProduction) {
@@ -156,21 +156,21 @@ class EnvironmentConfig {
    * Production-specific configuration validation
    */
   validateProductionConfig() {
-    // Enforce HTTPS in production
-    if (process.env.ENFORCE_HTTPS !== 'true') {
+    // Enforce HTTPS in production (allow override for local development)
+    if (process.env.ENFORCE_HTTPS !== 'true' && process.env.NODE_ENV === 'production' && !process.env.ALLOW_HTTP_IN_PRODUCTION) {
       this.validationErrors.push('ENFORCE_HTTPS must be "true" in production');
     }
-    
+
     // Secure cookies in production
     if (!process.env.SECURE_COOKIES || process.env.SECURE_COOKIES !== 'true') {
       this.validationErrors.push('SECURE_COOKIES must be "true" in production');
     }
-    
+
     // Trust proxy configuration
     if (!process.env.TRUST_PROXY) {
       this.warnings.push('TRUST_PROXY not configured - may affect client IP detection');
     }
-    
+
     // Disable debug features
     if (process.env.OTP_DEBUG_ECHO === 'true') {
       this.validationErrors.push('OTP_DEBUG_ECHO must be disabled in production');
@@ -182,10 +182,10 @@ class EnvironmentConfig {
    */
   isWeakSecret(secret) {
     if (!secret) return true;
-    
+
     // Length check
     if (secret.length < 32) return true;
-    
+
     // Common weak patterns
     const weakPatterns = [
       /^(dev|test|development|prod|production)/i,
@@ -194,15 +194,15 @@ class EnvironmentConfig {
       /^(123|abc|default)/i,
       /^(.)\1{10,}/  // Repeated characters
     ];
-    
+
     for (const pattern of weakPatterns) {
       if (pattern.test(secret)) return true;
     }
-    
+
     // Basic entropy check (simplified)
     const uniqueChars = new Set(secret.toLowerCase()).size;
     if (uniqueChars < 16) return true;  // Should have decent character variety
-    
+
     return false;
   }
 
@@ -219,7 +219,7 @@ class EnvironmentConfig {
   generateDevelopmentSecrets() {
     return {
       JWT_SECRET: this.generateSecureSecret(32),
-      JWT_REFRESH_SECRET: this.generateSecureSecret(32), 
+      JWT_REFRESH_SECRET: this.generateSecureSecret(32),
       SESSION_SECRET: this.generateSecureSecret(32),
       API_KEY: this.generateSecureSecret(16)
     };
@@ -230,10 +230,10 @@ class EnvironmentConfig {
    */
   getDatabaseConfig() {
     return {
-      user: process.env.PGUSER || "postgres",
-      host: process.env.PGHOST || "localhost", 
-      database: process.env.PGDATABASE || "secure_gate",
-      password: process.env.PGPASSWORD || "postgres",
+      user: process.env.PGUSER || 'postgres',
+      host: process.env.PGHOST || 'localhost',
+      database: process.env.PGDATABASE || 'secure_gate',
+      password: process.env.PGPASSWORD || 'postgres',
       port: Number(process.env.PGPORT || 5432),
       pool: {
         max: Number(process.env.PGPOOL_MAX || 20),
@@ -265,17 +265,17 @@ class EnvironmentConfig {
   getCorsOrigins() {
     const clientOrigin = process.env.CLIENT_ORIGIN;
     const additionalOrigins = process.env.ADDITIONAL_ORIGINS;
-    
+
     const origins = ['http://localhost:3000']; // Default for development
-    
+
     if (clientOrigin) {
       origins.push(clientOrigin);
     }
-    
+
     if (additionalOrigins) {
       origins.push(...additionalOrigins.split(',').map(o => o.trim()));
     }
-    
+
     return [...new Set(origins)]; // Remove duplicates
   }
 
@@ -286,7 +286,7 @@ class EnvironmentConfig {
     return {
       windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 900000), // 15 minutes
       max: Number(process.env.RATE_LIMIT_MAX || 100),
-      authWindowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 900000), // 15 minutes  
+      authWindowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 900000), // 15 minutes
       authMax: Number(process.env.AUTH_RATE_LIMIT_MAX || 10),
       otpWindowMs: Number(process.env.OTP_RATE_LIMIT_WINDOW_MS || 60000), // 1 minute
       otpMax: Number(process.env.OTP_RATE_LIMIT_MAX || 3)
@@ -300,7 +300,7 @@ class EnvironmentConfig {
     if (this.validationErrors.length > 0) {
       console.error('❌ ENVIRONMENT CONFIGURATION ERRORS:');
       this.validationErrors.forEach(error => console.error(`   • ${error}`));
-      
+
       if (this.isProduction && !this.isTest) {
         console.error('\n🚨 PRODUCTION DEPLOYMENT BLOCKED - Fix configuration errors above');
         process.exit(1);
@@ -317,7 +317,7 @@ class EnvironmentConfig {
     if (this.validationErrors.length === 0 && this.warnings.length === 0) {
       console.log('✅ Environment configuration validated successfully');
     }
-    
+
     console.log(''); // Add spacing
   }
 

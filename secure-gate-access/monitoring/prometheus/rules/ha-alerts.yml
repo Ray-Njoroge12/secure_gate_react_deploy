@@ -1,0 +1,315 @@
+# High Availability Alert Rules for Secure Gate Access Control System
+# Comprehensive alerting for PostgreSQL, Redis, Vault, and load balancer
+
+groups:
+  - name: postgres_ha_alerts
+    rules:
+      - alert: PostgreSQLPrimaryDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgres
+          component: primary
+        annotations:
+          summary: "PostgreSQL primary is down"
+          description: "PostgreSQL primary node has been down for more than 1 minute"
+          runbook_url: "https://docs.securegate.local/runbooks/postgres-primary-down"
+
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag > 1048576
+        for: 5m
+        labels:
+          severity: warning
+          service: postgres
+          component: replication
+        annotations:
+          summary: "PostgreSQL replication lag is high"
+          description: "PostgreSQL replication lag is {{ $value }} bytes, above threshold of 1MB"
+          runbook_url: "https://docs.securegate.local/runbooks/postgres-replication-lag"
+
+      - alert: PostgreSQLReplicaDown
+        expr: pg_replication_lag == -1
+        for: 2m
+        labels:
+          severity: warning
+          service: postgres
+          component: replica
+        annotations:
+          summary: "PostgreSQL replica is down"
+          description: "PostgreSQL replica node has been down for more than 2 minutes"
+          runbook_url: "https://docs.securegate.local/runbooks/postgres-replica-down"
+
+      - alert: PostgreSQLConnectionPoolExhausted
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: postgres
+          component: connections
+        annotations:
+          summary: "PostgreSQL connection pool is nearly exhausted"
+          description: "PostgreSQL connection pool usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.securegate.local/runbooks/postgres-connections"
+
+  - name: redis_ha_alerts
+    rules:
+      - alert: RedisMasterDown
+        expr: redis_up{role="master"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+          component: master
+        annotations:
+          summary: "Redis master is down"
+          description: "Redis master node has been down for more than 1 minute"
+          runbook_url: "https://docs.securegate.local/runbooks/redis-master-down"
+
+      - alert: RedisReplicaDown
+        expr: redis_up{role="slave"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+          component: replica
+        annotations:
+          summary: "Redis replica is down"
+          description: "Redis replica node has been down for more than 2 minutes"
+          runbook_url: "https://docs.securegate.local/runbooks/redis-replica-down"
+
+      - alert: RedisSentinelDown
+        expr: redis_sentinel_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+          component: sentinel
+        annotations:
+          summary: "Redis Sentinel is down"
+          description: "Redis Sentinel node has been down for more than 1 minute"
+          runbook_url: "https://docs.securegate.local/runbooks/redis-sentinel-down"
+
+      - alert: RedisMemoryUsageHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+          component: memory
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.securegate.local/runbooks/redis-memory"
+
+      - alert: RedisReplicationLag
+        expr: redis_slave_repl_offset - redis_master_repl_offset > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+          component: replication
+        annotations:
+          summary: "Redis replication lag is high"
+          description: "Redis replication lag is {{ $value }} bytes"
+          runbook_url: "https://docs.securegate.local/runbooks/redis-replication-lag"
+
+  - name: vault_ha_alerts
+    rules:
+      - alert: VaultDown
+        expr: vault_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: vault
+          component: cluster
+        annotations:
+          summary: "Vault cluster is down"
+          description: "Vault cluster has been down for more than 1 minute"
+          runbook_url: "https://docs.securegate.local/runbooks/vault-down"
+
+      - alert: VaultSealed
+        expr: vault_sealed == 1
+        for: 30s
+        labels:
+          severity: critical
+          service: vault
+          component: sealing
+        annotations:
+          summary: "Vault is sealed"
+          description: "Vault cluster is sealed and cannot serve requests"
+          runbook_url: "https://docs.securegate.local/runbooks/vault-sealed"
+
+      - alert: VaultLeaderElectionDelay
+        expr: vault_leader_election_duration_seconds > 30
+        for: 1m
+        labels:
+          severity: warning
+          service: vault
+          component: leadership
+        annotations:
+          summary: "Vault leader election is slow"
+          description: "Vault leader election took {{ $value }}s, above threshold of 30s"
+          runbook_url: "https://docs.securegate.local/runbooks/vault-leader-election"
+
+      - alert: VaultUnsealKeysUsed
+        expr: vault_unseal_keys_used > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: vault
+          component: unsealing
+        annotations:
+          summary: "Vault unseal keys are being used"
+          description: "Vault is using unseal keys, which may indicate an issue"
+          runbook_url: "https://docs.securegate.local/runbooks/vault-unseal-keys"
+
+  - name: load_balancer_alerts
+    rules:
+      - alert: LoadBalancerDown
+        expr: up{job="haproxy"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: load_balancer
+          component: haproxy
+        annotations:
+          summary: "Load balancer is down"
+          description: "HAProxy load balancer has been down for more than 1 minute"
+          runbook_url: "https://docs.securegate.local/runbooks/load-balancer-down"
+
+      - alert: LoadBalancerBackendDown
+        expr: haproxy_backend_servers{state="DOWN"} > 0
+        for: 2m
+        labels:
+          severity: warning
+          service: load_balancer
+          component: backend
+        annotations:
+          summary: "Load balancer backend is down"
+          description: "{{ $value }} backend servers are down"
+          runbook_url: "https://docs.securegate.local/runbooks/load-balancer-backend-down"
+
+      - alert: LoadBalancerHighConnections
+        expr: haproxy_current_connections > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: load_balancer
+          component: connections
+        annotations:
+          summary: "Load balancer has high connection count"
+          description: "HAProxy has {{ $value }} active connections"
+          runbook_url: "https://docs.securegate.local/runbooks/load-balancer-connections"
+
+      - alert: LoadBalancerResponseTimeHigh
+        expr: haproxy_backend_response_time_seconds > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: load_balancer
+          component: performance
+        annotations:
+          summary: "Load balancer response time is high"
+          description: "HAProxy backend response time is {{ $value }}s"
+          runbook_url: "https://docs.securegate.local/runbooks/load-balancer-response-time"
+
+  - name: application_ha_alerts
+    rules:
+      - alert: ApplicationDown
+        expr: up{job="secure-gate-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: application
+          component: backend
+        annotations:
+          summary: "Application backend is down"
+          description: "Secure Gate backend has been down for more than 1 minute"
+          runbook_url: "https://docs.securegate.local/runbooks/application-down"
+
+      - alert: ApplicationHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: application
+          component: errors
+        annotations:
+          summary: "Application error rate is high"
+          description: "Application error rate is {{ $value | humanizePercentage }}"
+          runbook_url: "https://docs.securegate.local/runbooks/application-errors"
+
+      - alert: ApplicationHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: application
+          component: performance
+        annotations:
+          summary: "Application response time is high"
+          description: "Application 95th percentile response time is {{ $value }}s"
+          runbook_url: "https://docs.securegate.local/runbooks/application-response-time"
+
+      - alert: ApplicationMemoryUsageHigh
+        expr: process_resident_memory_bytes / 1024 / 1024 / 1024 > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: application
+          component: memory
+        annotations:
+          summary: "Application memory usage is high"
+          description: "Application memory usage is {{ $value }}GB"
+          runbook_url: "https://docs.securegate.local/runbooks/application-memory"
+
+  - name: slo_alerts
+    rules:
+      - alert: SLOViolation
+        expr: secure_gate_availability_percent < 99.9
+        for: 5m
+        labels:
+          severity: critical
+          service: slo
+          component: availability
+        annotations:
+          summary: "SLO violation detected"
+          description: "System availability is {{ $value }}%, below SLO threshold of 99.9%"
+          runbook_url: "https://docs.securegate.local/runbooks/slo-violation"
+
+      - alert: RTOTargetExceeded
+        expr: secure_gate_rto_seconds > 30
+        for: 1m
+        labels:
+          severity: critical
+          service: slo
+          component: rto
+        annotations:
+          summary: "RTO target exceeded"
+          description: "Recovery time objective is {{ $value }}s, above target of 30s"
+          runbook_url: "https://docs.securegate.local/runbooks/rto-exceeded"
+
+      - alert: RPOTargetExceeded
+        expr: secure_gate_rpo_seconds > 60
+        for: 1m
+        labels:
+          severity: critical
+          service: slo
+          component: rpo
+        annotations:
+          summary: "RPO target exceeded"
+          description: "Recovery point objective is {{ $value }}s, above target of 60s"
+          runbook_url: "https://docs.securegate.local/runbooks/rpo-exceeded"
+
+      - alert: FailoverFrequencyHigh
+        expr: rate(secure_gate_failovers_total[1h]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: slo
+          component: failover
+        annotations:
+          summary: "Failover frequency is high"
+          description: "System is experiencing {{ $value }} failovers per hour"
+          runbook_url: "https://docs.securegate.local/runbooks/failover-frequency"

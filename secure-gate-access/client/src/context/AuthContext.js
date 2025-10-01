@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
 
   // login(email, password, remember=false)
   const login = async (email, password, remember = false) => {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch("/api/users/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -55,7 +55,12 @@ export const AuthProvider = ({ children }) => {
     }
 
     // Extract token and user from response
-    const { token: authToken, user: userData } = data.data || data;
+    const authToken = data.accessToken || data.token;
+    const userData = data.user;
+    
+    if (!authToken || !userData) {
+      throw new Error("Invalid response format from server");
+    }
     
     setToken(authToken);
     setUser(userData);
@@ -88,6 +93,50 @@ export const AuthProvider = ({ children }) => {
     return user?.role === role;
   };
 
+  // Register new user
+  const register = async (userData) => {
+    setLoading(true);
+    try {
+      // Transform frontend data to match backend expectations
+      const registrationData = {
+        email: userData.email,
+        username: userData.name, // Backend expects 'username' not 'name'
+        password: userData.password,
+        role: userData.role || 'resident',
+        phone: userData.phoneNumber, // Backend expects 'phone' not 'phoneNumber'
+        house: userData.residenceNumber, // Backend expects 'house' not 'residenceNumber'
+        area: userData.area || 'General' // Backend expects 'area' field
+      };
+
+      const response = await fetch('/api/users/register', { // Correct endpoint
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle validation errors from server
+        if (data.errors && Array.isArray(data.errors)) {
+          const error = new Error(data.message || 'Registration failed');
+          error.response = { data };
+          throw error;
+        }
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Check if user has any of the specified roles
   const hasAnyRole = (roles) => {
     return roles.includes(user?.role);
@@ -100,6 +149,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!token && !!user,
     login,
     logout,
+    register,
     hasRole,
     hasAnyRole
   };

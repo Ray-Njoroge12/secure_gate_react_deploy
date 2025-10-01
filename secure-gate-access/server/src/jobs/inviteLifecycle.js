@@ -1,12 +1,13 @@
 import cron from 'node-cron';
-import pool from '../database/db.js';
+import { dbManager } from '../database/db.enhanced.js';
+const pool = dbManager.pool;
 import { auditLog } from '../services/auditService.js';
 
 export async function runOnce() {
   try {
     // Expire and archive processing; exact expire flag depends on schema; we conservatively only set archived_at here
     const archiveRes = await pool.query(
-      "UPDATE bulk_invites SET archived_at = now() WHERE expires_at <= (now() - INTERVAL '90 days') AND archived_at IS NULL RETURNING id"
+      'UPDATE bulk_invites SET archived_at = now() WHERE expires_at <= (now() - INTERVAL \'90 days\') AND archived_at IS NULL RETURNING id'
     );
     if (archiveRes.rowCount > 0) {
       for (const r of archiveRes.rows) {

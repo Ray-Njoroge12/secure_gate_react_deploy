@@ -22,7 +22,7 @@ router.get('/stats',
   requireRole(['admin', 'super_admin']),
   asyncHandler(async (req, res) => {
     const stats = await rateLimitStats.getStats();
-    
+
     ResponseUtil.success(res, stats, 'Rate limit statistics retrieved successfully');
   })
 );
@@ -94,7 +94,7 @@ router.post('/reset',
         }
       });
 
-      ResponseUtil.success(res, 
+      ResponseUtil.success(res,
         { reset: true, key: resetKey },
         'Rate limit reset successfully'
       );
@@ -144,11 +144,11 @@ router.post('/whitelist',
       severity: 'MEDIUM'
     });
 
-    ResponseUtil.success(res, 
-      { 
-        whitelisted: true, 
-        ip, 
-        duration, 
+    ResponseUtil.success(res,
+      {
+        whitelisted: true,
+        ip,
+        duration,
         resetCount,
         expiresAt: new Date(Date.now() + duration * 1000).toISOString()
       },
@@ -201,17 +201,17 @@ router.post('/config',
   authenticateToken,
   requireRole(['super_admin']),
   asyncHandler(async (req, res) => {
-    const { 
-      generalLimit, 
-      authLimit, 
-      adminLimit, 
-      bulkLimit, 
-      ddosThreshold 
+    const {
+      generalLimit,
+      authLimit,
+      adminLimit,
+      bulkLimit,
+      ddosThreshold
     } = req.body;
 
     // In a full implementation, this would update configuration
     // For now, just validate the request and return current config
-    
+
     const currentConfig = {
       general: { windowMs: 15 * 60 * 1000, max: generalLimit || 100 },
       auth: { windowMs: 15 * 60 * 1000, max: authLimit || 5 },
@@ -231,7 +231,7 @@ router.post('/config',
       severity: 'HIGH'
     });
 
-    ResponseUtil.success(res, 
+    ResponseUtil.success(res,
       { updated: true, config: currentConfig },
       'Rate limiting configuration updated'
     );
@@ -247,7 +247,7 @@ router.get('/metrics',
   requireRole(['admin', 'super_admin']),
   asyncHandler(async (req, res) => {
     const timeRange = req.query.range || '1h'; // 1h, 6h, 24h
-    
+
     // In a full implementation, this would aggregate metrics from logs/Redis
     const metrics = {
       timestamp: new Date().toISOString(),

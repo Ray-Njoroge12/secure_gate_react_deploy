@@ -66,7 +66,7 @@ class EnhancedSessionManager {
         resave: false,
         saveUninitialized: false,
         rolling: true, // Reset expiry on activity
-        
+
         cookie: {
           secure: process.env.NODE_ENV === 'production', // HTTPS only in production
           httpOnly: true, // Prevent XSS attacks
@@ -74,7 +74,7 @@ class EnhancedSessionManager {
           sameSite: 'strict', // Strict CSRF protection
           domain: process.env.SESSION_DOMAIN || undefined
         },
-        
+
         // Enhanced session ID generation
         genid: () => {
           const crypto = require('crypto');
@@ -87,7 +87,7 @@ class EnhancedSessionManager {
       };
 
       return session(this.sessionConfig);
-      
+
     } catch (error) {
       loggingService.logSecurity('Enhanced session initialization failed', { error: error.message });
       throw error;
@@ -100,11 +100,11 @@ class EnhancedSessionManager {
   getSessionSecrets() {
     const primarySecret = process.env.SESSION_SECRET;
     const secondarySecret = process.env.SESSION_SECRET_BACKUP;
-    
+
     if (!primarySecret) {
       throw new Error('SESSION_SECRET environment variable is required');
     }
-    
+
     // Support secret rotation by accepting old and new secrets
     return secondarySecret ? [primarySecret, secondarySecret] : primarySecret;
   }
@@ -123,18 +123,18 @@ class EnhancedSessionManager {
         // Validate session security if session exists
         if (req.sessionID && req.session) {
           const validation = await sessionSecurityService.validateSession(req);
-          
+
           if (!validation.valid) {
             await this.handleInvalidSession(req, res, validation.reason);
             return;
           }
-          
+
           // Handle session warning if needed
           if (validation.warningNeeded) {
             res.set('X-Session-Warning', 'true');
             res.set('X-Session-Time-Remaining', validation.timeUntilExpiry.toString());
           }
-          
+
           // Update session data
           req.session.sessionSecurity = validation.sessionData;
         }
@@ -170,10 +170,10 @@ class EnhancedSessionManager {
 
         // Regenerate session ID to prevent fixation attacks
         await sessionSecurityService.regenerateSession(req, 'login');
-        
+
         // Initialize secure session
         await sessionSecurityService.initializeSession(req, req.user);
-        
+
         next();
       } catch (error) {
         loggingService.logSecurity('Login session initialization failed', {
@@ -181,7 +181,7 @@ class EnhancedSessionManager {
           userId: req.user?.id,
           correlationId: req.correlationId
         });
-        
+
         // Don't fail the login, but log the issue
         next();
       }
@@ -200,21 +200,21 @@ class EnhancedSessionManager {
 
         const userId = req.user.id;
         const activeSessions = await sessionSecurityService.getUserActiveSessions(userId);
-        
+
         // Check concurrent session limit
         if (activeSessions.length >= maxSessions) {
           // Find oldest session to terminate
           const oldestSession = activeSessions
             .sort((a, b) => new Date(a.lastActivity) - new Date(b.lastActivity))[0];
-          
+
           if (oldestSession && oldestSession.sessionId !== req.sessionID) {
             await sessionSecurityService.terminateUserSession(
-              userId, 
-              userId, 
-              oldestSession.sessionId, 
+              userId,
+              userId,
+              oldestSession.sessionId,
               'concurrent_limit_exceeded'
             );
-            
+
             loggingService.logSecurity('Oldest session terminated due to concurrent limit', {
               userId,
               terminatedSession: oldestSession.sessionId,
@@ -257,7 +257,7 @@ class EnhancedSessionManager {
         // Check if user has sufficient privileges
         const userRole = req.user?.role || sessionData.userRole;
         const hasRequiredPrivileges = this.hasRequiredPrivileges(userRole, req.path, req.method);
-        
+
         if (!hasRequiredPrivileges) {
           loggingService.logSecurity('Insufficient privileges for operation', {
             userId: sessionData.userId,
@@ -266,7 +266,7 @@ class EnhancedSessionManager {
             method: req.method,
             correlationId: req.correlationId
           });
-          
+
           return res.status(403).json({
             success: false,
             message: 'Insufficient privileges for this operation'
@@ -285,7 +285,7 @@ class EnhancedSessionManager {
           userId: req.session?.sessionSecurity?.userId,
           correlationId: req.correlationId
         });
-        
+
         return res.status(500).json({
           success: false,
           message: 'Privilege validation error'
@@ -301,12 +301,12 @@ class EnhancedSessionManager {
     try {
       const sessionId = req.sessionID;
       const userId = req.session?.sessionSecurity?.userId;
-      
+
       // Destroy the invalid session
       if (req.session) {
         await sessionSecurityService.destroySession(req, `invalid_session_${reason}`);
       }
-      
+
       loggingService.logSecurity('Invalid session handled', {
         sessionId,
         userId,
@@ -314,40 +314,40 @@ class EnhancedSessionManager {
         path: req.path,
         correlationId: req.correlationId
       });
-      
+
       // Send appropriate response based on reason
       let message = 'Session invalid';
       let statusCode = 401;
-      
+
       switch (reason) {
-        case 'fingerprint_mismatch':
-          message = 'Session security violation detected';
-          statusCode = 403;
-          break;
-        case 'session_timeout':
-          message = 'Session expired';
-          break;
-        case 'no_session':
-          message = 'No active session';
-          break;
-        default:
-          message = 'Session validation failed';
+      case 'fingerprint_mismatch':
+        message = 'Session security violation detected';
+        statusCode = 403;
+        break;
+      case 'session_timeout':
+        message = 'Session expired';
+        break;
+      case 'no_session':
+        message = 'No active session';
+        break;
+      default:
+        message = 'Session validation failed';
       }
-      
+
       return res.status(statusCode).json({
         success: false,
         message,
         reason,
         requiresReauth: true
       });
-      
+
     } catch (error) {
       loggingService.logSecurity('Failed to handle invalid session', {
         error: error.message,
         reason,
         correlationId: req.correlationId
       });
-      
+
       return res.status(500).json({
         success: false,
         message: 'Session handling error'
@@ -369,7 +369,7 @@ class EnhancedSessionManager {
       '/static',
       '/favicon.ico'
     ];
-    
+
     return publicPaths.some(publicPath => path.startsWith(publicPath));
   }
 
@@ -384,7 +384,7 @@ class EnhancedSessionManager {
       '/api/monitoring/admin',
       '/api/logs/admin'
     ];
-    
+
     return privilegedPaths.some(path => req.path.startsWith(path));
   }
 
@@ -400,7 +400,7 @@ class EnhancedSessionManager {
       'admin': 3,
       'superadmin': 4
     };
-    
+
     // Define minimum required roles for different operations
     const requiredRoles = {
       '/api/admin': 'admin',
@@ -409,16 +409,16 @@ class EnhancedSessionManager {
       '/api/monitoring/admin': 'admin',
       '/api/logs/admin': 'admin'
     };
-    
+
     const userLevel = roleHierarchy[userRole] || 0;
-    
+
     for (const [pathPattern, requiredRole] of Object.entries(requiredRoles)) {
       if (path.startsWith(pathPattern)) {
         const requiredLevel = roleHierarchy[requiredRole] || 0;
         return userLevel >= requiredLevel;
       }
     }
-    
+
     return true; // Allow if no specific requirement found
   }
 }

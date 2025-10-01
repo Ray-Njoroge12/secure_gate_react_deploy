@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "parallel-ops": "node scripts/parallel-ops-manager.js",
+    "cleanup-agent": "node scripts/cleanup-agent.js",
+    "debugging-agent": "node scripts/debugging-agent.js"
+  }
+}

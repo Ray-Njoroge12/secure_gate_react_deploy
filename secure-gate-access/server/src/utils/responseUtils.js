@@ -19,7 +19,7 @@ export const ResponseUtil = {
         ...meta
       }
     };
-    
+
     return res.status(200).json(response);
   },
 
@@ -37,7 +37,7 @@ export const ResponseUtil = {
         ...meta
       }
     };
-    
+
     return res.status(201).json(response);
   },
 
@@ -69,7 +69,7 @@ export const ResponseUtil = {
         requestId: res.locals.requestId || res.getHeader('X-Request-ID') || uuidv4()
       }
     };
-    
+
     return res.status(200).json(response);
   },
 
@@ -86,11 +86,11 @@ export const ResponseUtil = {
         requestId: res.locals.requestId || res.getHeader('X-Request-ID') || uuidv4()
       }
     };
-    
+
     if (details && process.env.NODE_ENV !== 'production') {
       response.error.details = details;
     }
-    
+
     return res.status(statusCode).json(response);
   }
 };
@@ -101,14 +101,14 @@ export const ResponseUtil = {
 export const responseMiddleware = (req, res, next) => {
   // Store request ID for response utilities
   res.locals.requestId = req.requestId;
-  
+
   // Attach response utilities to res object
   res.success = (data, message, meta) => ResponseUtil.success(res, data, message, meta);
   res.created = (data, message, meta) => ResponseUtil.created(res, data, message, meta);
   res.noContent = () => ResponseUtil.noContent(res);
   res.paginated = (data, pagination, message) => ResponseUtil.paginated(res, data, pagination, message);
   res.apiError = (message, code, statusCode, details) => ResponseUtil.error(res, message, code, statusCode, details);
-  
+
   next();
 };
 
@@ -117,7 +117,7 @@ export const responseMiddleware = (req, res, next) => {
  */
 export const sanitizeUser = (user) => {
   if (!user) return null;
-  
+
   // Remove sensitive fields from user object
   const sanitized = { ...user };
   delete sanitized.password;
@@ -125,7 +125,7 @@ export const sanitizeUser = (user) => {
   delete sanitized.otp_hash;
   delete sanitized.otp_secret;
   delete sanitized.reset_token;
-  
+
   return sanitized;
 };
 

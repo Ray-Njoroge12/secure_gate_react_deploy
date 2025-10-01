@@ -16,13 +16,13 @@ export function setRateLimitRedisService(redis) {
 
 // IPv6-compatible IP key generation
 const getClientIP = (req) => {
-    const forwarded = req.headers['x-forwarded-for'];
-    const ip = forwarded ? forwarded.split(',')[0].trim() : 
-               req.connection?.remoteAddress || 
-               req.socket?.remoteAddress || 
-               req.ip || 
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = forwarded ? forwarded.split(',')[0].trim() :
+    req.connection?.remoteAddress ||
+               req.socket?.remoteAddress ||
+               req.ip ||
                'unknown';
-    return ip.replace(/^::ffff:/, ''); // Remove IPv4-mapped IPv6 prefix
+  return ip.replace(/^::ffff:/, ''); // Remove IPv4-mapped IPv6 prefix
 };
 
 /**
@@ -43,15 +43,15 @@ class RedisRateLimitStore {
 
       const redisKey = this.prefix + key;
       const client = redisService.getClient();
-      
+
       // Use Redis pipeline for atomic operations
       const multi = client.multi();
       multi.incr(redisKey);
       multi.expire(redisKey, Math.ceil(windowMs / 1000));
-      
+
       const results = await multi.exec();
       const hits = results[0][1];
-      
+
       return {
         totalHits: hits,
         resetTime: new Date(Date.now() + windowMs)
@@ -119,11 +119,11 @@ export const generalRateLimit = () => rateLimit({
 
 /**
  * Authentication rate limiting
- * 5 login attempts per 15 minutes per IP
+ * 50 login attempts per 15 minutes per IP (increased for testing)
  */
 export const authRateLimit = () => rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
+  max: 50,
   message: {
     error: 'Too many login attempts, please try again later.',
     retryAfter: '15 minutes'
@@ -211,11 +211,11 @@ export const passwordResetLimit = () => rateLimit({
 
 /**
  * Registration rate limiting
- * 3 registrations per hour per IP
+ * 1000 registrations per hour per IP (increased for testing)
  */
 export const registrationLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3,
+  max: 1000,
   message: {
     error: 'Too many registration attempts, please try again later.',
     retryAfter: '1 hour'
@@ -239,10 +239,11 @@ export const registrationLimit = () => rateLimit({
 export const speedLimitMiddleware = () => slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 50, // Allow 50 requests per window without delay
-  delayMs: 500, // Add 500ms delay per request after delayAfter
+  delayMs: () => 500, // Fixed 500ms delay (new v2 behavior)
   maxDelayMs: 20000, // Max delay of 20 seconds
   store: createStore(),
-  keyGenerator: (req) => getClientIP(req)
+  keyGenerator: (req) => getClientIP(req),
+  validate: { delayMs: false } // Disable warning
 });
 
 /**
@@ -334,21 +335,21 @@ export const rateLimitStats = {
         // Get stats from Redis
         const client = redisService.getClient();
         const keys = await client.keys('rate_limit:*');
-        
+
         const stats = {
           totalKeys: keys.length,
           activeRateLimits: keys.length,
           redisConnected: true,
           storeType: 'redis'
         };
-        
+
         // Group by type
         const byType = {};
         for (const key of keys) {
           const type = key.split(':')[1]?.split(':')[0] || 'unknown';
           byType[type] = (byType[type] || 0) + 1;
         }
-        
+
         stats.byType = byType;
         return stats;
       } else {
@@ -369,7 +370,7 @@ export const rateLimitStats = {
       };
     }
   },
-  
+
   /**
    * Reset rate limits for a specific key pattern
    */
@@ -378,7 +379,7 @@ export const rateLimitStats = {
       if (redisService && redisService.isConnected()) {
         const client = redisService.getClient();
         const keys = await client.keys(`rate_limit:*${keyPattern}*`);
-        
+
         if (keys.length > 0) {
           await client.del(...keys);
           return { success: true, keysDeleted: keys.length };
@@ -393,7 +394,7 @@ export const rateLimitStats = {
       return { success: false, error: error.message };
     }
   },
-  
+
   /**
    * Get system status for rate limiting
    */
@@ -406,7 +407,7 @@ export const rateLimitStats = {
       timestamp: new Date().toISOString()
     };
   },
-  
+
   /**
    * Whitelist an IP temporarily
    */

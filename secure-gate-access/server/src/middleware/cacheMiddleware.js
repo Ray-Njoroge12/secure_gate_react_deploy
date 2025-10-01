@@ -26,28 +26,28 @@ class CacheMiddleware {
 
       try {
         // Generate cache key
-        const cacheKey = keyGenerator 
+        const cacheKey = keyGenerator
           ? keyGenerator(req)
           : CacheKeys.apiResponse(req.path, JSON.stringify(req.query));
 
         // Try to get cached response
         const cachedResponse = await redisService.get(cacheKey);
-        
+
         if (cachedResponse) {
           console.log(`[CACHE] API Cache hit: ${req.path}`);
-          
+
           // Set cache headers
           res.set({
             'X-Cache': 'HIT',
             'Cache-Control': `max-age=${ttl}, must-revalidate`
           });
-          
+
           return res.status(cachedResponse.statusCode).json(cachedResponse.data);
         }
 
         // Cache miss - intercept response
         console.log(`[CACHE] API Cache miss: ${req.path}`);
-        
+
         const originalJson = res.json;
         const originalStatus = res.status;
         let statusCode = 200;
@@ -140,7 +140,7 @@ class CacheMiddleware {
     return async (req, res, next) => {
       // Store original methods
       const originalJson = res.json;
-      
+
       res.json = function(data) {
         // Only invalidate cache on successful operations
         if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -150,7 +150,7 @@ class CacheMiddleware {
               if (typeof pattern === 'function') {
                 pattern = pattern(req, data);
               }
-              
+
               await redisService.deletePattern(pattern);
               console.log(`[CACHE] Invalidated cache pattern: ${pattern}`);
             } catch (error) {
@@ -158,7 +158,7 @@ class CacheMiddleware {
             }
           });
         }
-        
+
         return originalJson.call(this, data);
       };
 
@@ -185,7 +185,7 @@ class CacheMiddleware {
   static invalidateVisitorCache(req, responseData) {
     const visitorId = req.params.visitorId || responseData?.visitor?.id;
     const date = new Date().toISOString().split('T')[0];
-    
+
     return [
       visitorId ? CacheKeys.visitor(visitorId) : null,
       CacheKeys.visitorsByDate(date),
@@ -200,7 +200,7 @@ class CacheMiddleware {
    */
   static invalidateBulkInviteCache(req, responseData) {
     const inviteCode = req.params.inviteCode || responseData?.inviteCode;
-    
+
     return [
       inviteCode ? CacheKeys.bulkInvite(inviteCode) : null,
       'bulk_invite:*',
@@ -214,7 +214,7 @@ class CacheMiddleware {
   static invalidateAuthCache(req, responseData) {
     const userId = req.user?.id;
     const email = req.body?.email;
-    
+
     return [
       userId ? CacheKeys.user(userId) : null,
       email ? CacheKeys.userByEmail(email) : null,

@@ -1,0 +1,446 @@
+# High Availability Configuration for Secure Gate Access Control System
+# PostgreSQL clustering with Patroni, Redis Sentinel, Vault HA, and load balancing
+
+version: '3.8'
+
+services:
+  # etcd cluster for Patroni DCS
+  etcd1:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: secure-gate-etcd-1
+    environment:
+      - ETCD_NAME=etcd1
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd1:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd1:2380
+      - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_AUTO_TLS=true
+      - ETCD_PEER_AUTO_TLS=true
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    volumes:
+      - etcd1_data:/etcd-data
+    networks:
+      - ha-network
+    restart: unless-stopped
+
+  etcd2:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: secure-gate-etcd-2
+    environment:
+      - ETCD_NAME=etcd2
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd2:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd2:2380
+      - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_AUTO_TLS=true
+      - ETCD_PEER_AUTO_TLS=true
+    ports:
+      - "2479:2379"
+      - "2480:2380"
+    volumes:
+      - etcd2_data:/etcd-data
+    networks:
+      - ha-network
+    restart: unless-stopped
+
+  etcd3:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: secure-gate-etcd-3
+    environment:
+      - ETCD_NAME=etcd3
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd3:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd3:2380
+      - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      - ETCD_INITIAL_CLUSTER_STATE=new
+      - ETCD_AUTO_TLS=true
+      - ETCD_PEER_AUTO_TLS=true
+    ports:
+      - "2579:2379"
+      - "2580:2380"
+    volumes:
+      - etcd3_data:/etcd-data
+    networks:
+      - ha-network
+    restart: unless-stopped
+
+  # PostgreSQL Primary with Patroni
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: secure-gate-postgres-primary
+    environment:
+      - POSTGRES_DB=secure_gate_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=SecureGate2024!DBPassword
+      - PATRONI_SCOPE=postgres
+      - PATRONI_NAMESPACE=/patroni/
+      - PATRONI_LOG_LEVEL=INFO
+      - PATRONI_ETCD_HOSTS=etcd1:2379,etcd2:2379,etcd3:2379
+      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
+      - PATRONI_POSTGRESQL_PGPASS=/tmp/pgpass
+      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
+      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=postgres-primary:5432
+      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
+      - PATRONI_RESTAPI_CONNECT_ADDRESS=postgres-primary:8008
+      - PATRONI_SUPERUSER_USERNAME=postgres
+      - PATRONI_SUPERUSER_PASSWORD=SecureGate2024!DBPassword
+      - PATRONI_REPLICATION_USERNAME=replicator
+      - PATRONI_REPLICATION_PASSWORD=SecureGate2024!ReplicationPassword
+    ports:
+      - "5432:5432"
+      - "8008:8008"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./patroni/postgres-primary.yml:/etc/patroni.yml:ro
+    command: ["patroni", "/etc/patroni.yml"]
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Replica 1
+  postgres-replica1:
+    image: postgres:15-alpine
+    container_name: secure-gate-postgres-replica1
+    environment:
+      - POSTGRES_DB=secure_gate_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=SecureGate2024!DBPassword
+      - PATRONI_SCOPE=postgres
+      - PATRONI_NAMESPACE=/patroni/
+      - PATRONI_LOG_LEVEL=INFO
+      - PATRONI_ETCD_HOSTS=etcd1:2379,etcd2:2379,etcd3:2379
+      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
+      - PATRONI_POSTGRESQL_PGPASS=/tmp/pgpass
+      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
+      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=postgres-replica1:5432
+      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
+      - PATRONI_RESTAPI_CONNECT_ADDRESS=postgres-replica1:8008
+      - PATRONI_SUPERUSER_USERNAME=postgres
+      - PATRONI_SUPERUSER_PASSWORD=SecureGate2024!DBPassword
+      - PATRONI_REPLICATION_USERNAME=replicator
+      - PATRONI_REPLICATION_PASSWORD=SecureGate2024!ReplicationPassword
+    ports:
+      - "5433:5432"
+      - "8009:8008"
+    volumes:
+      - postgres_replica1_data:/var/lib/postgresql/data
+      - ./patroni/postgres-replica1.yml:/etc/patroni.yml:ro
+    command: ["patroni", "/etc/patroni.yml"]
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Replica 2
+  postgres-replica2:
+    image: postgres:15-alpine
+    container_name: secure-gate-postgres-replica2
+    environment:
+      - POSTGRES_DB=secure_gate_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=SecureGate2024!DBPassword
+      - PATRONI_SCOPE=postgres
+      - PATRONI_NAMESPACE=/patroni/
+      - PATRONI_LOG_LEVEL=INFO
+      - PATRONI_ETCD_HOSTS=etcd1:2379,etcd2:2379,etcd3:2379
+      - PATRONI_POSTGRESQL_DATA_DIR=/var/lib/postgresql/data/pgdata
+      - PATRONI_POSTGRESQL_PGPASS=/tmp/pgpass
+      - PATRONI_POSTGRESQL_LISTEN=0.0.0.0:5432
+      - PATRONI_POSTGRESQL_CONNECT_ADDRESS=postgres-replica2:5432
+      - PATRONI_RESTAPI_LISTEN=0.0.0.0:8008
+      - PATRONI_RESTAPI_CONNECT_ADDRESS=postgres-replica2:8008
+      - PATRONI_SUPERUSER_USERNAME=postgres
+      - PATRONI_SUPERUSER_PASSWORD=SecureGate2024!DBPassword
+      - PATRONI_REPLICATION_USERNAME=replicator
+      - PATRONI_REPLICATION_PASSWORD=SecureGate2024!ReplicationPassword
+    ports:
+      - "5434:5432"
+      - "8010:8008"
+    volumes:
+      - postgres_replica2_data:/var/lib/postgresql/data
+      - ./patroni/postgres-replica2.yml:/etc/patroni.yml:ro
+    command: ["patroni", "/etc/patroni.yml"]
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Master
+  redis-master:
+    image: redis:7-alpine
+    container_name: secure-gate-redis-master
+    command: redis-server --appendonly yes --appendfsync everysec --requirepass SecureGate2024!RedisPassword
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_master_data:/data
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Redis Replica 1
+  redis-replica1:
+    image: redis:7-alpine
+    container_name: secure-gate-redis-replica1
+    command: redis-server --appendonly yes --appendfsync everysec --requirepass SecureGate2024!RedisPassword --replicaof redis-master 6379 --masterauth SecureGate2024!RedisPassword
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_replica1_data:/data
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    depends_on:
+      - redis-master
+
+  # Redis Replica 2
+  redis-replica2:
+    image: redis:7-alpine
+    container_name: secure-gate-redis-replica2
+    command: redis-server --appendonly yes --appendfsync everysec --requirepass SecureGate2024!RedisPassword --replicaof redis-master 6379 --masterauth SecureGate2024!RedisPassword
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_replica2_data:/data
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    depends_on:
+      - redis-master
+
+  # Redis Sentinel 1
+  redis-sentinel1:
+    image: redis:7-alpine
+    container_name: secure-gate-redis-sentinel1
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./redis/sentinel1.conf:/usr/local/etc/redis/sentinel.conf:ro
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+
+  # Redis Sentinel 2
+  redis-sentinel2:
+    image: redis:7-alpine
+    container_name: secure-gate-redis-sentinel2
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./redis/sentinel2.conf:/usr/local/etc/redis/sentinel.conf:ro
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+
+  # Redis Sentinel 3
+  redis-sentinel3:
+    image: redis:7-alpine
+    container_name: secure-gate-redis-sentinel3
+    command: redis-sentinel /usr/local/etc/redis/sentinel.conf
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./redis/sentinel3.conf:/usr/local/etc/redis/sentinel.conf:ro
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    depends_on:
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+
+  # Vault HA Node 1
+  vault-1:
+    image: vault:1.15.2
+    container_name: secure-gate-vault-1
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN:-SG2024!VaultRootTokenForSecureGate}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_API_ADDR: http://0.0.0.0:8200
+      VAULT_CLUSTER_ADDR: http://vault-1:8201
+      VAULT_UI: true
+      VAULT_LOG_LEVEL: info
+    ports:
+      - "8200:8200"
+      - "8201:8201"
+    volumes:
+      - vault1_data:/vault/data
+      - vault1_config:/vault/config
+      - ./vault/ha/vault-1.hcl:/vault/config/vault.hcl:ro
+    command: ["vault", "server", "-config=/vault/config/vault.hcl"]
+    restart: unless-stopped
+    networks:
+      - ha-network
+      - secure-gate-network
+
+  # Vault HA Node 2
+  vault-2:
+    image: vault:1.15.2
+    container_name: secure-gate-vault-2
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN:-SG2024!VaultRootTokenForSecureGate}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_API_ADDR: http://0.0.0.0:8200
+      VAULT_CLUSTER_ADDR: http://vault-2:8201
+      VAULT_UI: true
+      VAULT_LOG_LEVEL: info
+    ports:
+      - "8202:8200"
+      - "8203:8201"
+    volumes:
+      - vault2_data:/vault/data
+      - vault2_config:/vault/config
+      - ./vault/ha/vault-2.hcl:/vault/config/vault.hcl:ro
+    command: ["vault", "server", "-config=/vault/config/vault.hcl"]
+    restart: unless-stopped
+    networks:
+      - ha-network
+      - secure-gate-network
+
+  # Vault HA Node 3
+  vault-3:
+    image: vault:1.15.2
+    container_name: secure-gate-vault-3
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_ROOT_TOKEN:-SG2024!VaultRootTokenForSecureGate}
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+      VAULT_ADDR: http://0.0.0.0:8200
+      VAULT_API_ADDR: http://0.0.0.0:8200
+      VAULT_CLUSTER_ADDR: http://vault-3:8201
+      VAULT_UI: true
+      VAULT_LOG_LEVEL: info
+    ports:
+      - "8204:8200"
+      - "8205:8201"
+    volumes:
+      - vault3_data:/vault/data
+      - vault3_config:/vault/config
+      - ./vault/ha/vault-3.hcl:/vault/config/vault.hcl:ro
+    command: ["vault", "server", "-config=/vault/config/vault.hcl"]
+    restart: unless-stopped
+    networks:
+      - ha-network
+      - secure-gate-network
+
+  # HAProxy Load Balancer
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: secure-gate-haproxy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # HAProxy stats
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - ha-network
+      - secure-gate-network
+    restart: unless-stopped
+    depends_on:
+      - postgres-primary
+      - postgres-replica1
+      - postgres-replica2
+      - redis-master
+      - redis-replica1
+      - redis-replica2
+      - vault-1
+      - vault-2
+      - vault-3
+
+# Named volumes for data persistence
+volumes:
+  etcd1_data:
+    driver: local
+  etcd2_data:
+    driver: local
+  etcd3_data:
+    driver: local
+  postgres_primary_data:
+    driver: local
+  postgres_replica1_data:
+    driver: local
+  postgres_replica2_data:
+    driver: local
+  redis_master_data:
+    driver: local
+  redis_replica1_data:
+    driver: local
+  redis_replica2_data:
+    driver: local
+  vault1_data:
+    driver: local
+  vault1_config:
+    driver: local
+  vault2_data:
+    driver: local
+  vault2_config:
+    driver: local
+  vault3_data:
+    driver: local
+  vault3_config:
+    driver: local
+
+# Networks
+networks:
+  ha-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+  secure-gate-network:
+    external: true

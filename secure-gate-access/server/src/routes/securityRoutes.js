@@ -28,7 +28,7 @@ router.get('/headers',
         reportOnly: process.env.NODE_ENV === 'development',
         directives: [
           'default-src',
-          'script-src', 
+          'script-src',
           'style-src',
           'img-src',
           'connect-src',
@@ -109,10 +109,10 @@ router.get('/audit',
   requireRole(['admin', 'super_admin']),
   asyncHandler(async (req, res) => {
     const { limit = 100, offset = 0, severity, type } = req.query;
-    
+
     // Mock audit data - replace with actual audit log query
     const auditEvents = generateAuditLog(limit, offset, { severity, type });
-    
+
     const response = {
       events: auditEvents,
       pagination: {
@@ -141,7 +141,7 @@ router.post('/headers/test',
   requireRole(['admin', 'super_admin']),
   asyncHandler(async (req, res) => {
     const { url, headers } = req.body;
-    
+
     if (!url) {
       return ResponseUtil.error(res, 'URL is required for testing', 400);
     }
@@ -149,7 +149,7 @@ router.post('/headers/test',
     try {
       // Simulate testing headers (replace with actual HTTP test)
       const testResults = await testSecurityHeaders(url, headers);
-      
+
       ResponseUtil.success(res, testResults, 'Security headers test completed');
     } catch (error) {
       ResponseUtil.error(res, 'Failed to test security headers: ' + error.message, 500);
@@ -167,13 +167,13 @@ router.post('/scan',
   requireRole(['super_admin']),
   asyncHandler(async (req, res) => {
     const { scanType = 'basic', target = 'application' } = req.body;
-    
+
     try {
       const scanId = `scan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Start security scan (mock implementation)
       const scanResults = await performSecurityScan(scanType, target);
-      
+
       const response = {
         scanId,
         type: scanType,

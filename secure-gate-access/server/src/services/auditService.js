@@ -1,8 +1,8 @@
-import pool from '../database/db.js';
+import { dbManager } from '../database/db.enhanced.js';
 
 export async function auditLog(userId, action, entity_type = null, entity_id = null, details = null, ip = null) {
   try {
-    await pool.query(
+    await dbManager.query(
       'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address) VALUES ($1,$2,$3,$4,$5,$6)',
       [userId || null, action, entity_type, entity_id, details ? JSON.stringify(details) : null, ip]
     );

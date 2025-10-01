@@ -1,8 +1,18 @@
-import pool from '../database/db.js';
-import qrcode from 'qrcode';
+import { dbManager } from '../database/db.enhanced.js';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const qrcode = require('qrcode');
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
-import { sendInviteEmail, sendSms as sendSmsGeneric } from '../services/notificationService.js';
+import { 
+  sendInviteEmail, 
+  sendSms as sendSmsGeneric,
+  sendVisitorInviteEmail,
+  sendVisitorInviteSms,
+  sendOtpVerificationEmail,
+  sendOtpVerificationSms
+} from '../services/notificationService.js';
+import { broadcastNewVisitor } from '../routes/sseRoutes.js';
 import * as tokenHelper from '../utils/tokenHelper.js';
 import { respond, respondError } from '../utils/respond.js';
 import { withTransaction } from '../utils/transactionHelper.js';
@@ -12,56 +22,91 @@ const { sendEmailOtp, sendSmsOtp, metrics } = tokenHelper;
 
 const OTP_TTL_MINUTES = 15;
 
+// Input sanitization function
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return input;
+  return input.trim().replace(/[<>]/g, '');
+};
+
 const createVisitor = async (req, res) => {
   try {
     const { name, phone, email, dateOfVisit, time, purpose } = req.body;
-    if (!dateOfVisit || !time) return respondError(res, 400, 'dateOfVisit and time required');
+    
+    // Authentication check first
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role && req.user.role !== 'resident') {
       await req.audit?.('invite.create', 'visitor', null, { outcome: 'fail', message: 'Forbidden: role not allowed' });
       return respondError(res, 403, 'Forbidden');
     }
+    
+    // Basic validation
+    if (!name || typeof name !== 'string' || !name.trim()) return respondError(res, 400, 'Visitor name is required');
+    if (!dateOfVisit || typeof dateOfVisit !== 'string') return respondError(res, 400, 'Visit date is required');
+    if (!time || typeof time !== 'string') return respondError(res, 400, 'Visit time is required');
+    if (!purpose || typeof purpose !== 'string' || !purpose.trim()) return respondError(res, 400, 'Purpose of visit is required');
+    
+    // Validate date format
     const visitDate = new Date(dateOfVisit);
+    if (isNaN(visitDate.getTime())) return respondError(res, 400, 'Invalid date format');
+    
+    // Validate time format (HH:MM)
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(time)) return respondError(res, 400, 'Time must be in HH:MM format (24-hour)');
+    
+    // Sanitize inputs
+    const sanitizedData = {
+      name: sanitizeInput(name),
+      phone: phone ? sanitizeInput(phone) : null,
+      email: email ? sanitizeInput(email) : null,
+      dateOfVisit,
+      time: sanitizeInput(time),
+      purpose: sanitizeInput(purpose)
+    };
+    
     const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
     if (visitDate < today) return respondError(res, 422, 'dateOfVisit cannot be in the past');
     const inviteCode = `INVITE-${randomUUID()}`;
     // Detect whether visitors.created_by exists (backwards compatibility)
     if (typeof createVisitor._hasCreatedBy === 'undefined') {
       try {
-        const probe = await pool.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'visitors' AND column_name = 'created_by' LIMIT 1`);
+        const probe = await dbManager.query('SELECT 1 FROM information_schema.columns WHERE table_name = \'visitors\' AND column_name = \'created_by\' LIMIT 1');
         createVisitor._hasCreatedBy = probe.rowCount > 0;
       } catch { createVisitor._hasCreatedBy = false; }
     }
     let insertRes;
     if (createVisitor._hasCreatedBy) {
       const createdBy = req.user.email;
-      insertRes = await pool.query(
+      insertRes = await dbManager.query(
         `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, created_by)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
          RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,
-           check_in_time AS check_in, check_out_time AS check_out, created_by`,
-        [name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING', createdBy]
+           check_in, check_out, created_by`,
+        [sanitizedData.name || null, sanitizedData.phone || null, sanitizedData.email || null, sanitizedData.purpose, sanitizedData.dateOfVisit, sanitizedData.time, inviteCode, 'PENDING', createdBy]
       );
     } else {
-      insertRes = await pool.query(
+      insertRes = await dbManager.query(
         `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
          RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,
-           check_in_time AS check_in, check_out_time AS check_out`,
-        [name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING']
+           check_in, check_out`,
+        [sanitizedData.name || null, sanitizedData.phone || null, sanitizedData.email || null, sanitizedData.purpose, sanitizedData.dateOfVisit, sanitizedData.time, inviteCode, 'PENDING']
       );
     }
     const visitor = insertRes.rows[0];
-  // Align with client route for single-invite registration
-  const inviteLink = `${req.protocol}://${req.get('host')}/register/${inviteCode}`;
-    // audit success
-    await req.audit?.('invite.create', 'visitor', String(visitor.id), { inviteCode, dateOfVisit, time, outcome: 'success', message: 'Visitor invitation created' });
-    // Try to notify invitee and/or resident host (best-effort)
+    // Align with client route for single-invite registration
+    const inviteLink = `${req.protocol}://${req.get('host')}/invite/${inviteCode}`;
+        // audit success
+        await req.audit?.('invite.create', 'visitor', String(visitor.id), { inviteCode, dateOfVisit, time, outcome: 'success', message: 'Visitor invitation created' });
+        
+        // Broadcast new visitor to guards
+        broadcastNewVisitor(visitor);
+        
+        // Try to notify invitee and/or resident host (best-effort)
     try {
       // Fetch resident notification preferences
       let notify_email = true, notify_sms = false;
       if (req.user?.email) {
-        const prefRes = await pool.query('SELECT notify_email, notify_sms FROM users WHERE email = $1', [req.user.email]);
+        const prefRes = await dbManager.query('SELECT notify_email, notify_sms FROM users WHERE email = $1', [req.user.email]);
         if (prefRes.rowCount > 0) {
           notify_email = prefRes.rows[0].notify_email;
           notify_sms = prefRes.rows[0].notify_sms;
@@ -75,7 +120,7 @@ const createVisitor = async (req, res) => {
         await sendSmsGeneric(phone, `You have been invited. Complete here: ${inviteLink}`);
       }
     } catch {}
-  respond(res, { ...visitor, inviteLink });
+    respond(res, { ...visitor, inviteLink });
   } catch (error) {
     await req.audit?.('invite.create', 'visitor', null, { outcome: 'fail', message: 'Failed to create visitor invitation', error: String(error?.message) });
     respondError(res, 500, 'Failed to create visitor');
@@ -96,7 +141,7 @@ const getMyVisitors = async (req, res) => {
     // Check if created_by column exists (backwards compatibility)
     if (typeof getMyVisitors._hasCreatedBy === 'undefined') {
       try {
-        const probe = await pool.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'visitors' AND column_name = 'created_by' LIMIT 1`);
+        const probe = await dbManager.query('SELECT 1 FROM information_schema.columns WHERE table_name = \'visitors\' AND column_name = \'created_by\' LIMIT 1');
         getMyVisitors._hasCreatedBy = probe.rowCount > 0;
       } catch { getMyVisitors._hasCreatedBy = false; }
     }
@@ -104,7 +149,7 @@ const getMyVisitors = async (req, res) => {
     let dataRes, countRes;
     if (getMyVisitors._hasCreatedBy) {
       // Use created_by column if it exists
-      dataRes = await pool.query(
+      dataRes = await dbManager.query(
         `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,
                 check_in_time AS check_in, check_out_time AS check_out
          FROM visitors WHERE created_by = $1
@@ -112,10 +157,10 @@ const getMyVisitors = async (req, res) => {
          LIMIT $2 OFFSET $3`,
         [email, limit, offset]
       );
-      countRes = await pool.query(`SELECT COUNT(*)::int AS total FROM visitors WHERE created_by = $1`, [email]);
+      countRes = await dbManager.query('SELECT COUNT(*)::int AS total FROM visitors WHERE created_by = $1', [email]);
     } else {
       // Fallback: return all visitors (for backwards compatibility)
-      dataRes = await pool.query(
+      dataRes = await dbManager.query(
         `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,
                 check_in_time AS check_in, check_out_time AS check_out
          FROM visitors
@@ -123,7 +168,7 @@ const getMyVisitors = async (req, res) => {
          LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
-      countRes = await pool.query(`SELECT COUNT(*)::int AS total FROM visitors`);
+      countRes = await dbManager.query('SELECT COUNT(*)::int AS total FROM visitors');
     }
     const total = countRes.rows[0]?.total || 0;
 
@@ -142,40 +187,32 @@ const createPass = async (req, res) => {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role && req.user.role !== 'resident') return respondError(res, 403, 'Forbidden');
     const { visitorId } = req.params;
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const vRes = await client.query('SELECT id, date_of_visit FROM visitors WHERE id = $1 FOR UPDATE', [visitorId]);
-      const visitor = vRes.rows[0];
-      if (!visitor) { await client.query('ROLLBACK'); return respondError(res, 404, 'Visitor not found'); }
+    
+    const vRes = await dbManager.query('SELECT id, date_of_visit FROM visitors WHERE id = $1', [visitorId]);
+    const visitor = vRes.rows[0];
+    if (!visitor) return respondError(res, 404, 'Visitor not found');
 
-      // Enforce single active pass per visitor
-      const exists = await client.query(`SELECT id FROM passes WHERE visitor_id = $1 AND status IN ('active','ACTIVE','PENDING') LIMIT 1`, [visitorId]);
-      if (exists.rowCount > 0) { await client.query('ROLLBACK'); return respondError(res, 409, 'Active pass already exists'); }
+    // Enforce single active pass per visitor
+    const exists = await dbManager.query('SELECT id FROM passes WHERE visitor_id = $1 AND status IN (\'active\',\'ACTIVE\',\'PENDING\') LIMIT 1', [visitorId]);
+    if (exists.rowCount > 0) return respondError(res, 409, 'Active pass already exists');
 
-      const passId = `PASS-${visitorId}-${Date.now()}`;
-      const expiresAt = new Date(new Date(visitor.date_of_visit).setHours(23,59,59,999));
-      let qrCodeData;
-      try { qrCodeData = await qrcode.toDataURL(passId); } catch {
-        await client.query('ROLLBACK');
-        return respondError(res, 500, 'Failed to generate QR');
-      }
-
-      const passRes = await client.query(
-        `INSERT INTO passes (pass_id, visitor_id, expires_at, status, qr_code)
-         VALUES ($1,$2,$3,$4,$5) RETURNING id, pass_id, visitor_id, expires_at, status, qr_code`,
-        [passId, visitorId, expiresAt.toISOString(), 'active', qrCodeData]
-      );
-      await client.query('COMMIT');
-
-      await req.audit?.('pass.create', 'pass', String(passRes.rows[0].id), { visitorId: Number(visitorId), expiresAt: expiresAt.toISOString(), outcome: 'success', message: 'Pass created for visitor' });
-      respond(res, passRes.rows[0]);
+    const passId = `PASS-${visitorId}-${Date.now()}`;
+    const expiresAt = new Date(new Date(visitor.date_of_visit).setHours(23,59,59,999));
+    let qrCodeData;
+    try { 
+      qrCodeData = await qrcode.toDataURL(passId); 
     } catch (error) {
-      try { await client.query('ROLLBACK'); } catch {}
-      throw error;
-    } finally {
-      try { client.release(); } catch {}
+      return respondError(res, 500, 'Failed to generate QR');
     }
+
+    const passRes = await dbManager.query(
+      `INSERT INTO passes (pass_id, visitor_id, expires_at, status, qr_code)
+       VALUES ($1,$2,$3,$4,$5) RETURNING id, pass_id, visitor_id, expires_at, status, qr_code`,
+      [passId, visitorId, expiresAt.toISOString(), 'active', qrCodeData]
+    );
+
+    await req.audit?.('pass.create', 'pass', String(passRes.rows[0].id), { visitorId: Number(visitorId), expiresAt: expiresAt.toISOString(), outcome: 'success', message: 'Pass created for visitor' });
+    respond(res, { data: passRes.rows[0] });
   } catch (error) {
     await req.audit?.('pass.create', 'pass', null, { outcome: 'fail', message: 'Failed to create pass', error: String(error?.message) });
     respondError(res, 500, 'Failed to create pass');
@@ -184,8 +221,8 @@ const createPass = async (req, res) => {
 
 const bulkInvite = async (req, res) => {
   try {
-  if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-  if (req.user.role && req.user.role !== 'resident') return respondError(res, 403, 'Forbidden');
+    if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
+    if (req.user.role && req.user.role !== 'resident') return respondError(res, 403, 'Forbidden');
     const { eventName, date, time, numGuests } = req.body;
     const residentId = req.user && req.user.id ? req.user.id : null;
     if (!eventName || !date || !time || !numGuests) return respondError(res, 400, 'Missing required fields');
@@ -200,7 +237,7 @@ const bulkInvite = async (req, res) => {
       exp = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     }
     const expiresAt = exp.toISOString();
-    const bulkRes = await pool.query(
+    const bulkRes = await dbManager.query(
       `INSERT INTO bulk_invites (event_name, date, time, num_guests, invite_code, created_by, expires_at, remaining_slots)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        RETURNING id, event_name, date, time, num_guests, invite_code, remaining_slots, expires_at, created_by`,
@@ -218,7 +255,7 @@ const bulkInvite = async (req, res) => {
 const getBulkInvite = async (req, res) => {
   try {
     const { inviteCode } = req.params;
-    const query = await pool.query(`SELECT id, event_name, date, time, num_guests, invite_code, expires_at, remaining_slots, created_by FROM bulk_invites WHERE invite_code = $1 AND expires_at > NOW()`, [inviteCode]);
+    const query = await dbManager.query('SELECT id, event_name, date, time, num_guests, invite_code, expires_at, remaining_slots, created_by FROM bulk_invites WHERE invite_code = $1 AND expires_at > NOW()', [inviteCode]);
     if (!query.rows[0]) return respondError(res, 404, 'Bulk invitation not found or expired');
     respond(res, query.rows[0]);
   } catch (error) {
@@ -227,28 +264,56 @@ const getBulkInvite = async (req, res) => {
 };
 
 const completeInvite = async (req, res) => {
+  const startTime = Date.now();
+  const requestId = req.headers['x-request-id'] || Math.random().toString(36).slice(2);
+  
   try {
+    console.log(`[${requestId}] Starting completeInvite for code: ${req.params.inviteCode}`);
+    console.log(`[${requestId}] Request body:`, JSON.stringify(req.body, null, 2));
+    
     const { inviteCode } = req.params;
     const { name, phone, email, idNumber, vehiclePlate, expectedTime } = req.body;
 
-    if (!name || !phone) return handleValidationError(res, 'Name and phone required');
+    // Enhanced validation with detailed logging
+    if (!name || !phone) {
+      console.log(`[${requestId}] Validation failed: Missing name or phone`);
+      console.log(`[${requestId}] Name: ${name}, Phone: ${phone}`);
+      return handleValidationError(res, 'Name and phone required');
+    }
 
+    console.log(`[${requestId}] Querying database for invite code: ${inviteCode}`);
     // Check for existing single invite first
-    const vRes = await pool.query('SELECT id, status, date_of_visit, time_of_visit FROM visitors WHERE invite_code = $1', [inviteCode]);
+    const vRes = await dbManager.query('SELECT id, status, date_of_visit, time_of_visit FROM visitors WHERE invite_code = $1', [inviteCode]);
     let visitor = vRes.rows[0];
+    
+    console.log(`[${requestId}] Database query result:`, {
+      rowCount: vRes.rowCount,
+      visitor: visitor ? {
+        id: visitor.id,
+        status: visitor.status,
+        date_of_visit: visitor.date_of_visit,
+        time_of_visit: visitor.time_of_visit
+      } : null
+    });
 
     // If a single invite exists, reject if it's expired (date_of_visit in the past)
     if (visitor && visitor.date_of_visit) {
       const visitDate = new Date(visitor.date_of_visit);
       const today = new Date();
       today.setHours(0,0,0,0);
-      if (visitDate < today) return handleValidationError(res, 'Invitation expired');
+      console.log(`[${requestId}] Checking expiration: visitDate=${visitDate.toISOString()}, today=${today.toISOString()}`);
+      if (visitDate < today) {
+        console.log(`[${requestId}] Invitation expired`);
+        return handleValidationError(res, 'Invitation expired');
+      }
     }
 
     if (!visitor) {
+      console.log(`[${requestId}] No single invite found, checking bulk invites`);
       // Handle bulk invite creation
       try {
         visitor = await withTransaction(async (client) => {
+          console.log(`[${requestId}] Attempting to decrement bulk invite slots for code: ${inviteCode}`);
           const dec = await client.query(
             `UPDATE bulk_invites
                SET remaining_slots = remaining_slots - 1
@@ -259,25 +324,49 @@ const completeInvite = async (req, res) => {
             [inviteCode]
           );
 
+          console.log(`[${requestId}] Bulk invite update result:`, { rowCount: dec.rowCount });
+
           if (dec.rowCount === 0) {
+            console.log(`[${requestId}] No slots decremented, checking bulk invite status`);
             // Determine cause (not found vs. expired/no slots)
             const chk = await client.query('SELECT id, expires_at, remaining_slots FROM bulk_invites WHERE invite_code = $1', [inviteCode]);
-            if (chk.rowCount === 0) throw new Error('Invitation not found');
+            console.log(`[${requestId}] Bulk invite check result:`, { 
+              rowCount: chk.rowCount, 
+              data: chk.rows[0] ? {
+                id: chk.rows[0].id,
+                expires_at: chk.rows[0].expires_at,
+                remaining_slots: chk.rows[0].remaining_slots
+              } : null
+            });
+            
+            if (chk.rowCount === 0) {
+              console.log(`[${requestId}] Bulk invitation not found`);
+              throw new Error('Invitation not found');
+            }
             const expired = new Date(chk.rows[0].expires_at).getTime() <= Date.now();
-            if (expired) throw new Error('Bulk invitation expired');
+            if (expired) {
+              console.log(`[${requestId}] Bulk invitation expired`);
+              throw new Error('Bulk invitation expired');
+            }
+            console.log(`[${requestId}] No remaining slots for bulk invite`);
             throw new Error('No remaining slots for this bulk invite');
           }
 
           const bulk = dec.rows[0];
+          console.log(`[${requestId}] Bulk invite found:`, bulk);
+          
+          console.log(`[${requestId}] Creating visitor from bulk invite`);
           const created = await client.query(
             `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, status)
              VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id, status`,
             [name || null, phone || null, email || null, null, bulk.date, bulk.time, 'PENDING']
           );
 
+          console.log(`[${requestId}] Visitor created from bulk invite:`, created.rows[0]);
           return created.rows[0];
         });
       } catch (error) {
+        console.log(`[${requestId}] Bulk invite transaction error:`, error.message);
         if (error.message === 'Invitation not found') return handleNotFoundError(res, 'Invitation');
         if (error.message === 'Bulk invitation expired') return handleValidationError(res, 'Bulk invitation expired');
         if (error.message === 'No remaining slots for this bulk invite') return handleValidationError(res, 'No remaining slots for this bulk invite');
@@ -285,16 +374,23 @@ const completeInvite = async (req, res) => {
       }
     }
 
-    if (visitor.status !== 'PENDING') return handleValidationError(res, 'Invitation already completed');
+    if (visitor.status !== 'PENDING') {
+      console.log(`[${requestId}] Invitation already completed, status: ${visitor.status}`);
+      return handleValidationError(res, 'Invitation already completed');
+    }
 
-    // Generate secure OTP and update visitor
+    console.log(`[${requestId}] Generating OTP and QR code for visitor ID: ${visitor.id}`);
+    // Generate OTP for visitor
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpHash = await bcrypt.hash(otp, 10);
     const otpExpiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+
+    console.log(`[${requestId}] OTP generated: ${otp}, expires at: ${otpExpiresAt.toISOString()}`);
 
     // Generate QR code for pass
     const passId = `PASS-${visitor.id}-${Date.now()}`;
+    console.log(`[${requestId}] Generating QR code for pass ID: ${passId}`);
     const qrCodeData = await qrcode.toDataURL(passId);
+    console.log(`[${requestId}] QR code generated successfully`);
 
     // Normalize expected time to a timestamp when possible
     let expectedTs = null;
@@ -313,49 +409,85 @@ const completeInvite = async (req, res) => {
     }
 
     // Update visitor with secure OTP fields; move to OTP_SENT until verification
-    await pool.query(
-      `UPDATE visitors SET name=$1, phone=$2, email=$3, id_number=$4, vehicle_plate=$5, expected_time=$6,
-        otp_hash=$7, otp_expires_at=$8, otp_attempts=0, qr_code=$9, status='OTP_SENT' WHERE id=$10`,
-      [name, phone, email || null, idNumber || null, vehiclePlate || null, expectedTs, otpHash, otpExpiresAt, qrCodeData, visitor.id]
-    );
+    console.log(`[${requestId}] Updating visitor in database with OTP and QR code`);
+    try {
+      await dbManager.query(
+        `UPDATE visitors SET name=$1, phone=$2, email=$3, id_number=$4, vehicle_plate=$5, expected_time=$6,
+          otp=$7, qr_code=$8, status='OTP_SENT' WHERE id=$9`,
+        [name, phone, email || null, idNumber || null, vehiclePlate || null, expectedTs, otp, qrCodeData, visitor.id]
+      );
+      console.log(`[${requestId}] Visitor updated successfully in database`);
+    } catch (dbError) {
+      console.error(`[${requestId}] Database update failed:`, dbError);
+      throw dbError;
+    }
 
     // Deliver OTP via available channels (best-effort)
-    // Fetch resident notification preferences
-    let notify_email = true, notify_sms = false;
-    let residentEmail = null;
-    if (visitor && visitor.created_by) {
-      residentEmail = visitor.created_by;
-      const prefRes = await pool.query('SELECT notify_email, notify_sms FROM users WHERE email = $1', [residentEmail]);
-      if (prefRes.rowCount > 0) {
-        notify_email = prefRes.rows[0].notify_email;
-        notify_sms = prefRes.rows[0].notify_sms;
+    console.log(`[${requestId}] Starting OTP delivery process`);
+    try {
+      // Fetch resident notification preferences
+      let notify_email = true, notify_sms = false;
+      let residentEmail = null;
+      if (visitor && visitor.created_by) {
+        residentEmail = visitor.created_by;
+        console.log(`[${requestId}] Fetching notification preferences for resident: ${residentEmail}`);
+        const prefRes = await dbManager.query('SELECT notify_email, notify_sms FROM users WHERE email = $1', [residentEmail]);
+        if (prefRes.rowCount > 0) {
+          notify_email = prefRes.rows[0].notify_email;
+          notify_sms = prefRes.rows[0].notify_sms;
+          console.log(`[${requestId}] Notification preferences: email=${notify_email}, sms=${notify_sms}`);
+        }
       }
+      
+      const deliveries = [];
+      if (email && notify_email) {
+        console.log(`[${requestId}] Adding email OTP delivery for: ${email}`);
+        deliveries.push(sendEmailOtp(email, otp));
+      }
+      if (phone && notify_sms) {
+        console.log(`[${requestId}] Adding SMS OTP delivery for: ${phone}`);
+        deliveries.push(sendSmsOtp(phone, otp));
+      }
+      
+      console.log(`[${requestId}] Executing ${deliveries.length} OTP deliveries`);
+      const results = await Promise.allSettled(deliveries);
+      const delivered = results.some(r => r.status === 'fulfilled' && r.value === true);
+      console.log(`[${requestId}] OTP delivery results: ${results.length} attempts, ${delivered ? 'success' : 'failed'}`);
+      
+      await req.audit?.('otp.deliver', 'visitor', String(visitor.id), { channels: { email: !!email, phone: !!phone }, outcome: delivered ? 'success' : 'fail', message: delivered ? 'OTP delivered' : 'OTP delivery failed' });
+    } catch (deliveryError) {
+      console.error(`[${requestId}] OTP delivery failed:`, deliveryError);
+      // Don't throw here, continue with the response
     }
-    const deliveries = [];
-    if (email && notify_email) {
-      deliveries.push(sendEmailOtp(email, otp));
-    }
-    if (phone && notify_sms) {
-      deliveries.push(sendSmsOtp(phone, otp));
-    }
-    const results = await Promise.allSettled(deliveries);
-    const delivered = results.some(r => r.status === 'fulfilled' && r.value === true);
-    await req.audit?.('otp.deliver', 'visitor', String(visitor.id), { channels: { email: !!email, phone: !!phone }, outcome: delivered ? 'success' : 'fail', message: delivered ? 'OTP delivered' : 'OTP delivery failed' });
 
     // Return a safe subset; never include OTP or hashes
-    const safeVisitor = (await pool.query(
+    console.log(`[${requestId}] Fetching final visitor data for response`);
+    const safeVisitor = (await dbManager.query(
       `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,
               check_in_time AS check_in, check_out_time AS check_out, expected_time, qr_code
        FROM visitors WHERE id=$1`, [visitor.id]
     )).rows[0];
+
+    console.log(`[${requestId}] Final visitor data:`, {
+      id: safeVisitor.id,
+      name: safeVisitor.name,
+      status: safeVisitor.status,
+      hasQrCode: !!safeVisitor.qr_code
+    });
 
     await req.audit?.('otp.issue', 'visitor', String(visitor.id), { ttl: OTP_TTL_MINUTES, outcome: 'success', message: 'OTP issued for visitor' });
 
     const debugOtp = process.env.OTP_DEBUG_ECHO === 'true' ? otp : undefined;
     const payload = { visitor: safeVisitor, otp_issued: true, otp_ttl_minutes: OTP_TTL_MINUTES };
     if (debugOtp) payload.debug_otp = debugOtp;
+    
+    const duration = Date.now() - startTime;
+    console.log(`[${requestId}] CompleteInvite successful in ${duration}ms`);
     respond(res, payload);
   } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`[${requestId}] CompleteInvite failed after ${duration}ms:`, error);
+    console.error(`[${requestId}] Error stack:`, error.stack);
     await req.audit?.('otp.issue', 'visitor', null, { outcome: 'fail', message: 'Failed to issue OTP', error: String(error?.message) });
     respondError(res, 500, 'Failed to complete invitation');
   }

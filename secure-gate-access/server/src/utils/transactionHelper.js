@@ -1,4 +1,5 @@
-import pool from '../database/db.js';
+import { dbManager } from '../database/db.enhanced.js';
+const pool = dbManager.pool;
 
 /**
  * Execute a database transaction with automatic rollback on error

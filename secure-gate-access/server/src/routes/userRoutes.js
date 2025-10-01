@@ -8,14 +8,14 @@ import enhancedSessionManager from '../middleware/enhancedSessionMiddleware.js';
 const router = express.Router();
 
 // Authentication routes with validation
-router.post('/register', 
-  registrationLimit(), 
+router.post('/register',
+  registrationLimit(),
   validateRequest(ValidationSchemas.userRegistration),
   registerUser
 );
 
-router.post('/login', 
-  authRateLimit(), 
+router.post('/login',
+  authRateLimit(),
   validateRequest(ValidationSchemas.userLogin),
   loginUser,
   enhancedSessionManager.loginSessionMiddleware()
@@ -27,8 +27,8 @@ router.post('/logout', logoutUser);
 router.post('/auth/refresh', refreshToken);
 
 // Protected routes with validation
-router.put('/profile', 
-  authenticateToken, 
+router.put('/profile',
+  authenticateToken,
   validateRequest(ValidationSchemas.userProfileUpdate),
   updateProfile
 );

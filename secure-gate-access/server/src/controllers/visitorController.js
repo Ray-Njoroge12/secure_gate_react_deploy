@@ -1,4 +1,5 @@
-import pool from '../database/db.js';
+import { dbManager } from '../database/db.enhanced.js';
+const pool = dbManager.pool;
 import qrcode from 'qrcode';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
@@ -6,11 +7,10 @@ import * as tokenHelper from '../utils/tokenHelper.js';
 import { sendInviteEmail, sendSms as sendSmsGeneric } from '../services/notificationService.js';
 const { sendEmailOtp, sendSmsOtp, eventBus, notifyHost, metrics, notifyAdmin, maybeAlert } = tokenHelper;
 
-const respond = (res, { success = true, data = null, error = null, message = null, code = 200 }) => {
-  const status = success ? 'ok' : 'error';
-  const msg = message || error || null;
-  res.status(code).json({ success, status, message: msg, data, error, code });
-};
+// Import new standardized utilities
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { ErrorHelper, ERROR_CODES } from '../middleware/errorHandler.js';
+import { ResponseUtil, CommonResponses } from '../utils/responseUtils.js';
 
 // OTP security settings
 const OTP_TTL_MINUTES = 15;
@@ -90,7 +90,7 @@ const createVisitor = async (req, res) => {
     }
     const visitor = insertRes.rows[0];
   // Align with client route for single-invite registration
-  const inviteLink = `${req.protocol}://${req.get('host')}/register/${inviteCode}`;
+  const inviteLink = `${req.protocol}://${req.get('host')}/invite/${inviteCode}`;
     // audit success
     await auditLog(req, {
       userId: req.user?.id,

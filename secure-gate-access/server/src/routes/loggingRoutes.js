@@ -20,14 +20,14 @@ const requireRole = (roles) => {
         error: 'Authentication required'
       });
     }
-    
+
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         success: false,
         error: 'Insufficient permissions'
       });
     }
-    
+
     next();
   };
 };
@@ -40,21 +40,21 @@ const requireRole = (roles) => {
 router.get('/stats', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
   try {
     const stats = loggingService.getStats();
-    
+
     logAuditEvent('logs.stats.accessed', { adminId: req.user.id }, req);
-    
+
     res.json({
       success: true,
       data: stats,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error getting logging stats', error, {
       correlationId: req.correlationId,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve logging statistics',
@@ -71,12 +71,12 @@ router.get('/stats', authenticateToken, requireRole(['admin', 'super_admin']), a
 router.get('/files', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
   try {
     const files = await loggingService.getLogFiles();
-    
-    logAuditEvent('logs.files.listed', { 
+
+    logAuditEvent('logs.files.listed', {
       adminId: req.user.id,
-      fileCount: files.length 
+      fileCount: files.length
     }, req);
-    
+
     res.json({
       success: true,
       data: {
@@ -86,13 +86,13 @@ router.get('/files', authenticateToken, requireRole(['admin', 'super_admin']), a
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error getting log files', error, {
       correlationId: req.correlationId,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve log files',
@@ -110,7 +110,7 @@ router.get('/file/:filename', authenticateToken, requireRole(['admin', 'super_ad
   try {
     const { filename } = req.params;
     const { maxSize = 1024 * 1024 } = req.query; // 1MB default
-    
+
     // Validate filename to prevent path traversal
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return res.status(400).json({
@@ -118,15 +118,15 @@ router.get('/file/:filename', authenticateToken, requireRole(['admin', 'super_ad
         error: 'Invalid filename'
       });
     }
-    
+
     const fileContent = await loggingService.readLogFile(filename, parseInt(maxSize));
-    
-    logAuditEvent('logs.file.accessed', { 
+
+    logAuditEvent('logs.file.accessed', {
       adminId: req.user.id,
       filename,
       size: fileContent.readSize
     }, req);
-    
+
     res.json({
       success: true,
       data: {
@@ -138,14 +138,14 @@ router.get('/file/:filename', authenticateToken, requireRole(['admin', 'super_ad
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error reading log file', error, {
       correlationId: req.correlationId,
       filename: req.params.filename,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to read log file',
@@ -169,10 +169,10 @@ router.post('/search', authenticateToken, requireRole(['admin', 'super_admin']),
       message = null,
       limit = 100
     } = req.body;
-    
+
     // Validate limit
     const validLimit = Math.min(parseInt(limit) || 100, 1000); // Max 1000 results
-    
+
     const criteria = {
       level,
       category,
@@ -181,15 +181,15 @@ router.post('/search', authenticateToken, requireRole(['admin', 'super_admin']),
       message,
       limit: validLimit
     };
-    
+
     const results = await loggingService.searchLogs(criteria);
-    
-    logAuditEvent('logs.search.performed', { 
+
+    logAuditEvent('logs.search.performed', {
       adminId: req.user.id,
       criteria,
-      resultCount: results.length 
+      resultCount: results.length
     }, req);
-    
+
     res.json({
       success: true,
       data: {
@@ -200,14 +200,14 @@ router.post('/search', authenticateToken, requireRole(['admin', 'super_admin']),
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error searching logs', error, {
       correlationId: req.correlationId,
       criteria: req.body,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to search logs',
@@ -224,19 +224,19 @@ router.post('/search', authenticateToken, requireRole(['admin', 'super_admin']),
 router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
   try {
     const health = loggingService.healthCheck();
-    
+
     res.json({
       success: true,
       data: health,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error checking logging health', error, {
       correlationId: req.correlationId,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to check logging service health',
@@ -253,18 +253,18 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
 router.post('/cleanup', authenticateToken, requireRole(['super_admin']), async (req, res) => {
   try {
     const { daysToKeep = 30 } = req.body;
-    
+
     // Validate daysToKeep
     const validDays = Math.max(1, Math.min(parseInt(daysToKeep) || 30, 365)); // 1-365 days
-    
+
     const deletedFiles = await loggingService.cleanupOldLogs(validDays);
-    
-    logAuditEvent('logs.cleanup.performed', { 
+
+    logAuditEvent('logs.cleanup.performed', {
       adminId: req.user.id,
       daysToKeep: validDays,
-      deletedFiles 
+      deletedFiles
     }, req);
-    
+
     res.json({
       success: true,
       data: {
@@ -274,14 +274,14 @@ router.post('/cleanup', authenticateToken, requireRole(['super_admin']), async (
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error cleaning up logs', error, {
       correlationId: req.correlationId,
       daysToKeep: req.body.daysToKeep,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to cleanup old logs',
@@ -298,23 +298,23 @@ router.post('/cleanup', authenticateToken, requireRole(['super_admin']), async (
 router.post('/reset-stats', authenticateToken, requireRole(['super_admin']), async (req, res) => {
   try {
     loggingService.resetStats();
-    
-    logAuditEvent('logs.stats.reset', { 
-      adminId: req.user.id 
+
+    logAuditEvent('logs.stats.reset', {
+      adminId: req.user.id
     }, req);
-    
+
     res.json({
       success: true,
       message: 'Logging statistics have been reset',
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error resetting logging stats', error, {
       correlationId: req.correlationId,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to reset logging statistics',
@@ -333,24 +333,24 @@ router.get('/dashboard', authenticateToken, requireRole(['admin', 'super_admin']
     const stats = loggingService.getStats();
     const health = loggingService.healthCheck();
     const files = await loggingService.getLogFiles();
-    
+
     // Recent error logs (last 24 hours)
     const yesterday = new Date();
     yesterday.setHours(yesterday.getHours() - 24);
-    
+
     const recentErrors = await loggingService.searchLogs({
       level: 'error',
       startDate: yesterday.toISOString(),
       limit: 10
     });
-    
+
     // Recent security logs
     const recentSecurity = await loggingService.searchLogs({
       category: 'security',
       startDate: yesterday.toISOString(),
       limit: 10
     });
-    
+
     const dashboard = {
       summary: {
         totalLogs: stats.totalLogs,
@@ -378,21 +378,21 @@ router.get('/dashboard', authenticateToken, requireRole(['admin', 'super_admin']
       levelDistribution: stats.logsByLevel,
       categoryDistribution: stats.logsByCategory
     };
-    
+
     logAuditEvent('logs.dashboard.accessed', { adminId: req.user.id }, req);
-    
+
     res.json({
       success: true,
       data: dashboard,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error getting logging dashboard', error, {
       correlationId: req.correlationId,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve logging dashboard',
@@ -410,9 +410,9 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
   try {
     const { type = 'all', count = 1 } = req.body;
     const validCount = Math.min(parseInt(count) || 1, 10); // Max 10 test logs
-    
+
     const testMessages = [];
-    
+
     for (let i = 0; i < validCount; i++) {
       if (type === 'all' || type === 'info') {
         loggingService.logInfo(`Test info log ${i + 1}`, {
@@ -421,7 +421,7 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
         });
         testMessages.push(`info-${i + 1}`);
       }
-      
+
       if (type === 'all' || type === 'warning') {
         loggingService.logWarning(`Test warning log ${i + 1}`, {
           testId: `test-${Date.now()}-${i}`,
@@ -429,7 +429,7 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
         });
         testMessages.push(`warning-${i + 1}`);
       }
-      
+
       if (type === 'all' || type === 'error') {
         loggingService.logError(`Test error log ${i + 1}`, new Error(`Test error ${i + 1}`), {
           testId: `test-${Date.now()}-${i}`,
@@ -437,7 +437,7 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
         });
         testMessages.push(`error-${i + 1}`);
       }
-      
+
       if (type === 'all' || type === 'security') {
         loggingService.logSecurity('warn', `Test security log ${i + 1}`, {
           testId: `test-${Date.now()}-${i}`,
@@ -446,7 +446,7 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
         });
         testMessages.push(`security-${i + 1}`);
       }
-      
+
       if (type === 'all' || type === 'performance') {
         loggingService.logPerformance('info', `Test performance log ${i + 1}`, {
           testId: `test-${Date.now()}-${i}`,
@@ -456,14 +456,14 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
         testMessages.push(`performance-${i + 1}`);
       }
     }
-    
-    logAuditEvent('logs.test.performed', { 
+
+    logAuditEvent('logs.test.performed', {
       adminId: req.user.id,
       type,
       count: validCount,
       messages: testMessages
     }, req);
-    
+
     res.json({
       success: true,
       data: {
@@ -474,13 +474,13 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
       },
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     loggingService.logError('Error generating test logs', error, {
       correlationId: req.correlationId,
       adminId: req.user.id
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to generate test logs',

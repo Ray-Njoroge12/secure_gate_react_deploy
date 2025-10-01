@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Sidebar from "../../components/Sidebar";
-import Topbar from "../../components/Topbar";
+import AppShell from "../../layouts/AppShell";
 import StatsCard from "../../components/StatsCard";
 import Table from "../../components/Table";
 import axios from "axios";
@@ -76,40 +75,88 @@ export default function AdminDashboard() {
   ]);
 
   return (
-    <div className="app-grid">
-      <Sidebar role="admin" />
-      <div>
-        <Topbar title="Admin Dashboard" onLogout={onLogout} />
-        <main className="main">
-          <div className="grid four">
-            <StatsCard title="Active Invites" value={String(metrics.invitesActive || 0)} loading={loadingMetrics} />
-            <StatsCard title="Expired Invites" value={String(metrics.invitesExpired || 0)} loading={loadingMetrics} />
-            <StatsCard title="Check-ins Today" value={String(metrics.checkinsToday || 0)} loading={loadingMetrics} />
-            <StatsCard title="Failed OTPs" value={String(metrics.failedOtps || 0)} loading={loadingMetrics} />
-          </div>
+    <AppShell role={localStorage.getItem('role') || 'admin'} title="Admin Dashboard" onLogout={onLogout}>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <StatsCard title="Active Invites" value={String(metrics.invitesActive || 0)} loading={loadingMetrics} />
+        <StatsCard title="Expired Invites" value={String(metrics.invitesExpired || 0)} loading={loadingMetrics} />
+        <StatsCard title="Check-ins Today" value={String(metrics.checkinsToday || 0)} loading={loadingMetrics} />
+        <StatsCard title="Failed OTPs" value={String(metrics.failedOtps || 0)} loading={loadingMetrics} />
+      </div>
 
-          {metricsError && <div className="error">{metricsError}</div>}
+      {metricsError && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+          {metricsError}
+        </div>
+      )}
 
-          <h3 style={{ marginTop: 16 }}>Audit Logs</h3>
-          <div className="row" style={{ gap: 8, marginBottom: 8 }}>
-            <input placeholder="Filter action" value={filters.action} onChange={e=>setFilters(f=>({...f, action: e.target.value}))} />
-            <input placeholder="Filter user id" value={filters.user} onChange={e=>setFilters(f=>({...f, user: e.target.value}))} />
-            <input type="date" value={filters.date} onChange={e=>setFilters(f=>({...f, date: e.target.value}))} />
-            <select value={limit} onChange={e=>{ setLimit(Number(e.target.value)||25); setPage(1); }}>
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
+      {/* Audit Logs Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Audit Logs</h3>
+        </div>
+        
+        <div className="p-6">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-3 mb-4">
+            <input
+              type="text"
+              placeholder="Filter action"
+              value={filters.action}
+              onChange={e => setFilters(f => ({...f, action: e.target.value}))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            />
+            <input
+              type="text"
+              placeholder="Filter user ID"
+              value={filters.user}
+              onChange={e => setFilters(f => ({...f, user: e.target.value}))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            />
+            <input
+              type="date"
+              value={filters.date}
+              onChange={e => setFilters(f => ({...f, date: e.target.value}))}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            />
+            <select
+              value={limit}
+              onChange={e => { setLimit(Number(e.target.value)||25); setPage(1); }}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            >
+              <option value={10}>10 per page</option>
+              <option value={25}>25 per page</option>
+              <option value={50}>50 per page</option>
             </select>
           </div>
-          {logsError && <div className="error">{logsError}</div>}
+          
+          {logsError && (
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+              {logsError}
+            </div>
+          )}
+          
           <Table headers={auditHeaders} rows={auditRows} loading={logsLoading} />
-          <div className="row" style={{ gap: 8, marginTop: 8 }}>
-            <button disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Prev</button>
-            <span>Page {page}</span>
-            <button onClick={()=>setPage(p=>p+1)}>Next</button>
+          
+          {/* Pagination */}
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p-1))}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-700">Page {page}</span>
+            <button
+              onClick={() => setPage(p => p+1)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Next
+            </button>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

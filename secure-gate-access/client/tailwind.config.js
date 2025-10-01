@@ -1,6 +1,6 @@
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  darkMode: false, // or 'media' or 'class'
+  darkMode: 'class', // Enable class-based dark mode as optional
   theme: {
     screens: {
       'xs': '360px',    // Mobile phones
@@ -12,6 +12,22 @@ module.exports = {
     },
     extend: {
       colors: {
+        // Professional brand palette from original design
+        brand: {
+          50:  "#eef6ff",
+          100: "#d9eaff",
+          200: "#b8d7ff",
+          300: "#8dbdff", 
+          400: "#5a9aff",
+          500: "#2f7cff",     // Primary brand color
+          600: "#1f61db",
+          700: "#194db1",
+          800: "#173f8d",
+          900: "#132f66",
+        },
+        success: { DEFAULT: "#16a34a" },
+        warning: { DEFAULT: "#f59e0b" },
+        danger:  { DEFAULT: "#dc2626" },
         primary: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -42,7 +58,8 @@ module.exports = {
           600: '#2563eb',
           700: '#1d4ed8',
         },
-        brand: {
+        // Additional semantic colors for specific components
+        semantic: {
           green: '#22c55e',
           blue: '#3b82f6',
           slate: '#334155',
@@ -66,9 +83,12 @@ module.exports = {
         'sans': ['Inter', 'system-ui', 'sans-serif'],
         'mono': ['JetBrains Mono', 'Consolas', 'monospace'],
       },
+      borderRadius: {
+        'smooth': '0.625rem', // 10px - Professional rounded corners
+      },
       boxShadow: {
         'brand': '0 4px 6px -1px rgb(34 197 94 / 0.1), 0 2px 4px -2px rgb(34 197 94 / 0.1)',
-        'card': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        'card': '0 4px 16px rgba(0,0,0,0.06)', // Subtle professional shadow
       },
       maxWidth: {
         'screen-xs': '360px',

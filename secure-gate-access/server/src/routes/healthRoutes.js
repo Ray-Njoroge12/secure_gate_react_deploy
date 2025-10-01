@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
   try {
     const result = await enhancedHealthMonitoring.getLivenessProbe(req);
     const statusCode = result.status === 'alive' ? 200 : 503;
-    
+
     res.status(statusCode).json(result);
   } catch (error) {
     loggingService.logError('Health check endpoint failed', {
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
       error: error.message,
       endpoint: '/health'
     });
-    
+
     res.status(500).json({
       status: 'error',
       timestamp: new Date().toISOString(),
@@ -54,7 +54,7 @@ router.get('/live', async (req, res) => {
   try {
     const result = await enhancedHealthMonitoring.getLivenessProbe(req);
     const statusCode = result.status === 'alive' ? 200 : 503;
-    
+
     res.status(statusCode).json(result);
   } catch (error) {
     res.status(500).json({
@@ -73,7 +73,7 @@ router.get('/ready', async (req, res) => {
   try {
     const result = await enhancedHealthMonitoring.getReadinessProbe(req);
     const statusCode = result.status === 'ready' ? 200 : 503;
-    
+
     res.status(statusCode).json(result);
   } catch (error) {
     res.status(503).json({
@@ -93,7 +93,7 @@ router.get('/startup', async (req, res) => {
   try {
     const result = await enhancedHealthMonitoring.getStartupProbe(req);
     const statusCode = result.status === 'started' ? 200 : 503;
-    
+
     res.status(statusCode).json(result);
   } catch (error) {
     res.status(503).json({
@@ -114,16 +114,16 @@ router.get('/detailed', attachUserFromToken, async (req, res) => {
     // Optional: Require admin role for detailed health information
     const role = req.user?.role;
     const includeDetails = role === 'admin' || req.query.include === 'details';
-    
+
     const result = await enhancedHealthMonitoring.getComprehensiveHealth(req, includeDetails);
-    
+
     // Status code based on overall health
     const statusCode = result.status === 'healthy' ? 200 :
-                      result.status === 'warning' ? 200 :
-                      result.status === 'critical' ? 503 : 503;
-    
+      result.status === 'warning' ? 200 :
+        result.status === 'critical' ? 503 : 503;
+
     res.status(statusCode).json(result);
-    
+
   } catch (error) {
     loggingService.logError('Detailed health check failed', {
       correlationId: req.headers['x-correlation-id'],
@@ -131,7 +131,7 @@ router.get('/detailed', attachUserFromToken, async (req, res) => {
       stack: error.stack,
       user: req.user?.id || 'anonymous'
     });
-    
+
     res.status(500).json({
       status: 'error',
       error: 'Health check service unavailable',
@@ -156,21 +156,21 @@ router.get('/metrics', attachUserFromToken, async (req, res) => {
     }
 
     const metrics = enhancedHealthMonitoring.getHealthMetrics();
-    
+
     res.json({
       success: true,
       data: metrics,
       timestamp: new Date().toISOString(),
       correlationId: req.headers['x-correlation-id']
     });
-    
+
   } catch (error) {
     loggingService.logError('Health metrics endpoint failed', {
       correlationId: req.headers['x-correlation-id'],
       error: error.message,
       user: req.user?.id || 'anonymous'
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve health metrics',
@@ -194,7 +194,7 @@ router.get('/status', attachUserFromToken, async (req, res) => {
     }
 
     const healthResult = await enhancedHealthMonitoring.getComprehensiveHealth(req, true);
-    
+
     // Format for dashboard consumption
     const statusDashboard = {
       overall: {
@@ -222,20 +222,20 @@ router.get('/status', attachUserFromToken, async (req, res) => {
       monitoring: healthResult.monitoring || {},
       timestamp: healthResult.timestamp
     };
-    
+
     res.json({
       success: true,
       data: statusDashboard,
       correlationId: req.headers['x-correlation-id']
     });
-    
+
   } catch (error) {
     loggingService.logError('System status endpoint failed', {
       correlationId: req.headers['x-correlation-id'],
       error: error.message,
       user: req.user?.id || 'anonymous'
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve system status',
@@ -260,28 +260,28 @@ router.post('/check', attachUserFromToken, async (req, res) => {
 
     const { checks } = req.body;
     const result = await enhancedHealthMonitoring.getComprehensiveHealth(req, true);
-    
+
     loggingService.logInfo('Manual health check triggered', {
       correlationId: req.headers['x-correlation-id'],
       user: req.user?.id,
       requestedChecks: checks,
       result: result.status
     });
-    
+
     res.json({
       success: true,
       data: result,
       message: 'Health check completed successfully',
       correlationId: req.headers['x-correlation-id']
     });
-    
+
   } catch (error) {
     loggingService.logError('Manual health check failed', {
       correlationId: req.headers['x-correlation-id'],
       error: error.message,
       user: req.user?.id || 'anonymous'
     });
-    
+
     res.status(500).json({
       success: false,
       error: 'Health check execution failed',
@@ -299,7 +299,7 @@ router.use((error, req, res, next) => {
     path: req.path,
     method: req.method
   });
-  
+
   res.status(500).json({
     status: 'error',
     error: 'Health monitoring service error',

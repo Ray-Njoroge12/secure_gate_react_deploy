@@ -16,44 +16,44 @@ class QueryPerformanceMonitor {
     this.queryStats = new Map();
     this.slowQueryThreshold = 1000; // 1 second
   }
-  
+
   /**
    * Monitor query execution time
    */
   async monitorQuery(queryName, queryFn, params = {}) {
     const startTime = Date.now();
     const startMemory = process.memoryUsage().heapUsed;
-    
+
     try {
       const result = await queryFn();
       const executionTime = Date.now() - startTime;
       const memoryUsed = process.memoryUsage().heapUsed - startMemory;
-      
+
       // Track query statistics
       this.recordQueryStats(queryName, executionTime, memoryUsed, true);
-      
+
       // Log slow queries
       if (executionTime > this.slowQueryThreshold) {
         this.recordSlowQuery(queryName, executionTime, params);
       }
-      
+
       return result;
-      
+
     } catch (error) {
       const executionTime = Date.now() - startTime;
       this.recordQueryStats(queryName, executionTime, 0, false);
-      
+
       logger.error('Query execution failed:', {
         queryName,
         executionTime,
         params,
         error: error.message
       });
-      
+
       throw error;
     }
   }
-  
+
   /**
    * Record query statistics
    */
@@ -71,7 +71,7 @@ class QueryPerformanceMonitor {
         avgMemory: 0
       });
     }
-    
+
     const stats = this.queryStats.get(queryName);
     stats.totalExecutions++;
     stats.totalTime += executionTime;
@@ -80,56 +80,56 @@ class QueryPerformanceMonitor {
     stats.maxTime = Math.max(stats.maxTime, executionTime);
     stats.totalMemory += memoryUsed;
     stats.avgMemory = stats.totalMemory / stats.totalExecutions;
-    
+
     if (success) {
       stats.successCount++;
     } else {
       stats.errorCount++;
     }
   }
-  
+
   /**
    * Record slow query for analysis
    */
   recordSlowQuery(queryName, executionTime, params) {
     const key = `${queryName}_${Date.now()}`;
-    
+
     this.slowQueries.set(key, {
       queryName,
       executionTime,
       params,
       timestamp: new Date().toISOString()
     });
-    
+
     // Keep only last 100 slow queries
     if (this.slowQueries.size > 100) {
       const firstKey = this.slowQueries.keys().next().value;
       this.slowQueries.delete(firstKey);
     }
-    
+
     logger.warn('Slow query detected:', {
       queryName,
       executionTime,
       params: Object.keys(params).length > 0 ? params : 'none'
     });
   }
-  
+
   /**
    * Get query performance statistics
    */
   getQueryStats() {
     const stats = {};
-    
+
     for (const [queryName, data] of this.queryStats.entries()) {
       stats[queryName] = {
         ...data,
         successRate: data.totalExecutions > 0 ? data.successCount / data.totalExecutions : 0
       };
     }
-    
+
     return stats;
   }
-  
+
   /**
    * Get slow queries
    */
@@ -137,14 +137,14 @@ class QueryPerformanceMonitor {
     return Array.from(this.slowQueries.values())
       .sort((a, b) => b.executionTime - a.executionTime);
   }
-  
+
   /**
    * Get recommendations for query optimization
    */
   getOptimizationRecommendations() {
     const recommendations = [];
     const stats = this.getQueryStats();
-    
+
     for (const [queryName, data] of Object.entries(stats)) {
       if (data.avgTime > 500) {
         recommendations.push({
@@ -155,7 +155,7 @@ class QueryPerformanceMonitor {
           suggestion: 'Consider adding indexes, optimizing WHERE clauses, or implementing caching'
         });
       }
-      
+
       if (data.maxTime > 5000) {
         recommendations.push({
           type: 'slow_max',
@@ -165,7 +165,7 @@ class QueryPerformanceMonitor {
           suggestion: 'Investigate specific cases causing very slow execution'
         });
       }
-      
+
       if (data.successRate < 0.95) {
         recommendations.push({
           type: 'low_success_rate',
@@ -175,7 +175,7 @@ class QueryPerformanceMonitor {
           suggestion: 'Review error handling and query logic'
         });
       }
-      
+
       if (data.avgMemory > 10 * 1024 * 1024) { // 10MB
         recommendations.push({
           type: 'high_memory',
@@ -186,10 +186,10 @@ class QueryPerformanceMonitor {
         });
       }
     }
-    
+
     return recommendations;
   }
-  
+
   /**
    * Reset statistics
    */
@@ -212,11 +212,11 @@ class ConnectionPoolOptimizer {
       created: 0,
       destroyed: 0
     };
-    
+
     this.monitoringInterval = null;
     this.startMonitoring();
   }
-  
+
   /**
    * Start connection pool monitoring
    */
@@ -227,7 +227,7 @@ class ConnectionPoolOptimizer {
       }
     }, 5000); // Every 5 seconds
   }
-  
+
   /**
    * Stop monitoring
    */
@@ -237,7 +237,7 @@ class ConnectionPoolOptimizer {
       this.monitoringInterval = null;
     }
   }
-  
+
   /**
    * Update connection statistics
    */
@@ -251,22 +251,22 @@ class ConnectionPoolOptimizer {
         total: this.pool.totalConnections || 0,
         max: this.pool.maxConnections || this.pool.max || 10
       };
-      
+
       // Check for potential issues
       this.checkPoolHealth();
-      
+
     } catch (error) {
       logger.error('Error updating connection stats:', error);
     }
   }
-  
+
   /**
    * Check connection pool health
    */
   checkPoolHealth() {
     const { active, idle, waiting, total, max } = this.connectionStats;
     const utilization = total / max;
-    
+
     if (utilization > 0.9) {
       logger.warn('High connection pool utilization', {
         utilization: (utilization * 100).toFixed(1) + '%',
@@ -277,7 +277,7 @@ class ConnectionPoolOptimizer {
         max
       });
     }
-    
+
     if (waiting > 5) {
       logger.warn('High number of waiting connections', {
         waiting,
@@ -286,7 +286,7 @@ class ConnectionPoolOptimizer {
       });
     }
   }
-  
+
   /**
    * Get connection pool statistics
    */
@@ -297,14 +297,14 @@ class ConnectionPoolOptimizer {
       efficiency: this.connectionStats.active / (this.connectionStats.active + this.connectionStats.idle) || 0
     };
   }
-  
+
   /**
    * Get pool optimization recommendations
    */
   getRecommendations() {
     const recommendations = [];
     const stats = this.getStats();
-    
+
     if (stats.utilization > 0.8) {
       recommendations.push({
         type: 'pool_size',
@@ -313,7 +313,7 @@ class ConnectionPoolOptimizer {
         suggestion: 'Consider increasing max connections or optimizing query performance'
       });
     }
-    
+
     if (stats.efficiency < 0.5 && stats.total > 5) {
       recommendations.push({
         type: 'pool_efficiency',
@@ -322,7 +322,7 @@ class ConnectionPoolOptimizer {
         suggestion: 'Consider reducing max connections or implementing connection timeout'
       });
     }
-    
+
     if (this.connectionStats.waiting > 10) {
       recommendations.push({
         type: 'waiting_connections',
@@ -331,7 +331,7 @@ class ConnectionPoolOptimizer {
         suggestion: 'Increase pool size or optimize query performance immediately'
       });
     }
-    
+
     return recommendations;
   }
 }
@@ -350,14 +350,14 @@ class QueryCacheManager {
       errors: 0
     };
   }
-  
+
   /**
    * Get cached query result
    */
   async get(key) {
     try {
       const cached = await this.redis.get(this.getCacheKey(key));
-      
+
       if (cached) {
         this.cacheStats.hits++;
         return JSON.parse(cached);
@@ -365,14 +365,14 @@ class QueryCacheManager {
         this.cacheStats.misses++;
         return null;
       }
-      
+
     } catch (error) {
       this.cacheStats.errors++;
       logger.error('Cache get error:', error);
       return null;
     }
   }
-  
+
   /**
    * Set cached query result
    */
@@ -383,17 +383,17 @@ class QueryCacheManager {
         ttl,
         JSON.stringify(data)
       );
-      
+
       this.cacheStats.sets++;
       return true;
-      
+
     } catch (error) {
       this.cacheStats.errors++;
       logger.error('Cache set error:', error);
       return false;
     }
   }
-  
+
   /**
    * Execute query with caching
    */
@@ -403,53 +403,53 @@ class QueryCacheManager {
     if (cached) {
       return cached;
     }
-    
+
     // Execute query and cache result
     const result = await queryFn();
     await this.set(key, result, ttl);
-    
+
     return result;
   }
-  
+
   /**
    * Invalidate cached query
    */
   async invalidate(pattern) {
     try {
       const keys = await this.redis.keys(this.getCacheKey(pattern));
-      
+
       if (keys.length > 0) {
         await this.redis.del(keys);
       }
-      
+
       return keys.length;
-      
+
     } catch (error) {
       logger.error('Cache invalidation error:', error);
       return 0;
     }
   }
-  
+
   /**
    * Get cache statistics
    */
   getStats() {
     const total = this.cacheStats.hits + this.cacheStats.misses;
-    
+
     return {
       ...this.cacheStats,
       hitRate: total > 0 ? this.cacheStats.hits / total : 0,
       totalRequests: total
     };
   }
-  
+
   /**
    * Generate cache key
    */
   getCacheKey(key) {
     return `query_cache:${key}`;
   }
-  
+
   /**
    * Reset cache statistics
    */
