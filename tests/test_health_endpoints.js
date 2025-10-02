@@ -14,21 +14,40 @@ async function testHealthEndpoints() {
   let serverProcess = null;
   
   try {
-    // Start the server
+    // Start the server on port 3001 to avoid AirTunes conflict
     console.log('Starting server for testing...');
     serverProcess = spawn('node', ['server.js'], {
       cwd: '/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server',
-      stdio: 'pipe'
+      stdio: 'pipe',
+      env: { ...process.env, PORT: '3001' }
     });
     
-    // Wait for server to start
-    await setTimeout(5000);
+    // Capture server output for debugging
+    let serverOutput = '';
+    let serverError = '';
+    serverProcess.stdout.on('data', (data) => {
+      serverOutput += data.toString();
+    });
+    serverProcess.stderr.on('data', (data) => {
+      serverError += data.toString();
+    });
+    
+    // Wait for server to start (longer timeout for database connection)
+    await setTimeout(8000);
+    
+    // Check if server started successfully
+    if (serverError) {
+      console.log('Server errors:', serverError);
+    }
+    if (serverOutput) {
+      console.log('Server output:', serverOutput);
+    }
     
     console.log('Testing health endpoints...\n');
     
     // Test 1: Basic health endpoint
     console.log('1. Testing GET /health...');
-    const healthResult = await runCurl('http://localhost:5000/health');
+    const healthResult = await runCurl('http://localhost:3001/health');
     if (healthResult.includes('200')) {
       console.log('✅ GET /health returns 200');
     } else {
@@ -38,7 +57,7 @@ async function testHealthEndpoints() {
     
     // Test 2: API health endpoint
     console.log('\n2. Testing GET /api/health...');
-    const apiHealthResult = await runCurl('http://localhost:5000/api/health');
+    const apiHealthResult = await runCurl('http://localhost:3001/api/health');
     if (apiHealthResult.includes('200')) {
       console.log('✅ GET /api/health returns 200');
     } else {
@@ -48,7 +67,7 @@ async function testHealthEndpoints() {
     
     // Test 3: Health endpoint content validation
     console.log('\n3. Testing health endpoint content...');
-    const healthContent = await runCurlWithBody('http://localhost:5000/health');
+    const healthContent = await runCurlWithBody('http://localhost:3001/health');
     if (healthContent.includes('healthy') || healthContent.includes('status')) {
       console.log('✅ Health endpoint returns valid content');
     } else {
@@ -60,7 +79,7 @@ async function testHealthEndpoints() {
     console.log('\n4. Testing health endpoint rate limiting...');
     let rateLimitTestPassed = true;
     for (let i = 0; i < 5; i++) {
-      const result = await runCurl('http://localhost:5000/health');
+      const result = await runCurl('http://localhost:3001/health');
       if (result.includes('403')) {
         console.log(`❌ Health endpoint rate limited on request ${i + 1}:`, result);
         rateLimitTestPassed = false;
@@ -75,7 +94,7 @@ async function testHealthEndpoints() {
     
     // Test 5: Enhanced health service integration
     console.log('\n5. Testing enhanced health service...');
-    const enhancedHealthResult = await runCurl('http://localhost:5000/api/health');
+    const enhancedHealthResult = await runCurl('http://localhost:3001/api/health');
     if (enhancedHealthResult.includes('200')) {
       console.log('✅ Enhanced health service works');
     } else {

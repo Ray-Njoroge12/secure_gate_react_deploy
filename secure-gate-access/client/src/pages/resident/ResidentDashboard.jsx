@@ -23,7 +23,9 @@ const DashboardHome = () => {
       const token = localStorage.getItem('token');
       
       if (!token) {
-        console.error('No authentication token found');
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[AUTH] No authentication token found');
+        }
         setLoading(false);
         return;
       }
@@ -63,13 +65,13 @@ const DashboardHome = () => {
         setUpcomingInvites(upcoming);
         setRecentVisitors(recent);
       } else {
-        console.error('Failed to fetch visitor data:', response.status);
+        console.error('[ERROR] Failed to fetch visitor data:', response.status);
         // Fallback to empty data
         setUpcomingInvites([]);
         setRecentVisitors([]);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('[ERROR] Error fetching dashboard data:', error);
       // Fallback to empty data
       setUpcomingInvites([]);
       setRecentVisitors([]);

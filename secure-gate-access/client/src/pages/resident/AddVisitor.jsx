@@ -96,16 +96,22 @@ const AddVisitor = () => {
         purpose: formData.purpose.trim(),
       };
 
-      console.log('Sending visitor data:', visitorData);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DEBUG] Sending visitor data:', visitorData);
+      }
       const visitorResponse = await createVisitor(visitorData);
-      console.log('Visitor response:', visitorResponse);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[DEBUG] Visitor response:', visitorResponse);
+      }
       
       let passResponse = null;
       if (formData.generatePassImmediately) {
         try {
           passResponse = await createPass(visitorResponse.id);
         } catch (passError) {
-          console.warn('Pass generation failed:', passError);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[WARN] Pass generation failed:', passError);
+          }
         }
       }
 
