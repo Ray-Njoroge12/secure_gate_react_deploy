@@ -325,3 +325,10 @@ export default {
   SanitizeUtil,
   CustomValidators
 };
+
+// Minimal compliance validator export to satisfy imports
+// Adjust to specific schema as needed per route
+export const validateComplianceRequest = (req, res, next) => {
+  // For now, just pass-through; extend with specific Joi schemas if required
+  return next();
+};

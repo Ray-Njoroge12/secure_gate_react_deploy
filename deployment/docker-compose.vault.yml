@@ -1,0 +1,138 @@
+# Vault Docker Compose Configuration
+# HashiCorp Vault with file storage and UI
+
+version: '3.8'
+
+networks:
+  vault-network:
+    driver: bridge
+    name: secure-gate-vault-network
+
+volumes:
+  vault_data:
+    name: secure-gate-vault-data
+  vault_logs:
+    name: secure-gate-vault-logs
+  vault_config:
+    name: secure-gate-vault-config
+
+services:
+  # HashiCorp Vault
+  vault:
+    image: hashicorp/vault:1.15.2
+    container_name: secure-gate-vault
+    networks:
+      - vault-network
+    ports:
+      - "8200:8200"
+      - "8201:8201"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=root-token-change-me
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_ADDR=http://0.0.0.0:8200
+      - VAULT_API_ADDR=http://0.0.0.0:8200
+      - VAULT_CLUSTER_ADDR=http://0.0.0.0:8201
+    volumes:
+      - vault_data:/vault/data
+      - vault_logs:/vault/logs
+      - vault_config:/vault/config
+      - ./vault/vault-config.hcl:/vault/config/vault.hcl
+    command: ["vault", "server", "-config=/vault/config/vault.hcl"]
+    cap_add:
+      - IPC_LOCK
+    healthcheck:
+      test: ["CMD", "vault", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Vault Initializer
+  vault-init:
+    image: hashicorp/vault:1.15.2
+    container_name: secure-gate-vault-init
+    networks:
+      - vault-network
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root-token-change-me
+    volumes:
+      - ./vault/init-vault.sh:/init-vault.sh
+    command: ["sh", "/init-vault.sh"]
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+        reservations:
+          memory: 64M
+          cpus: '0.05'
+
+  # Vault UI (Optional - for development)
+  vault-ui:
+    image: hashicorp/vault:1.15.2
+    container_name: secure-gate-vault-ui
+    networks:
+      - vault-network
+    ports:
+      - "8202:8200"
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root-token-change-me
+    command: ["vault", "server", "-dev", "-dev-root-token-id=root-token-change-me", "-dev-listen-address=0.0.0.0:8200"]
+    depends_on:
+      vault:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Vault Agent (for application integration)
+  vault-agent:
+    image: hashicorp/vault:1.15.2
+    container_name: secure-gate-vault-agent
+    networks:
+      - vault-network
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root-token-change-me
+    volumes:
+      - ./vault/agent-config.hcl:/vault/config/agent.hcl
+      - ./vault/secrets:/vault/secrets
+    command: ["vault", "agent", "-config=/vault/config/agent.hcl"]
+    depends_on:
+      vault:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+        reservations:
+          memory: 64M
+          cpus: '0.05'

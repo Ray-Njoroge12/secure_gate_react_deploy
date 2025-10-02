@@ -135,7 +135,7 @@ export default function RegistrationPage() {
     }
 
     try {
-      const res = await fetch("/api/users/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -218,9 +218,9 @@ export default function RegistrationPage() {
       const v = (response && response.visitor) ? response.visitor : response;
       setConfirmedVisitor(v || null);
       // If backend echoed debug OTP (dev only), surface it for ease of local testing
-      if (response && response.debug_otp) {
+      if (process.env.NODE_ENV === 'development' && response && response.debug_otp) {
         setOtp(response.debug_otp);
-        setOtpSuccess('Debug OTP provided (dev only)');
+        setOtpSuccess('⚠️ Debug OTP (dev only): ' + response.debug_otp);
       }
       // Show OTP step; QR will be shown after verification
       setShowOtpSection(true);

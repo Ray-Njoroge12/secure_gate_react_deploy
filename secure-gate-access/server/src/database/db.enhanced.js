@@ -72,11 +72,38 @@ class DatabaseManager extends EventEmitter {
   async initialize() {
     try {
       await this.connect();
+      await this.ensureIndexes();
       this.startHealthMonitoring();
       // Database manager initialized successfully
     } catch (error) {
       console.error('❌ Failed to initialize database manager:', error.message);
       this.emit('error', error);
+    }
+  }
+
+  async ensureIndexes() {
+    try {
+      const indexes = [
+        'CREATE INDEX IF NOT EXISTS idx_visitors_invite_code ON visitors(invite_code)',
+        'CREATE INDEX IF NOT EXISTS idx_visitors_status_date ON visitors(status, date_of_visit)',
+        'CREATE INDEX IF NOT EXISTS idx_passes_pass_id ON passes(pass_id)',
+        'CREATE INDEX IF NOT EXISTS idx_passes_visitor_id ON passes(visitor_id)',
+        'CREATE INDEX IF NOT EXISTS idx_access_logs_visitor_created ON access_logs(visitor_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_visitors_created_by ON visitors(created_by)',
+        'CREATE INDEX IF NOT EXISTS idx_visitors_qr_code ON visitors(qr_code)'
+      ];
+
+      for (const indexQuery of indexes) {
+        try {
+          await this.query(indexQuery);
+        } catch (error) {
+          // Ignore errors for indexes that might already exist or columns that don't exist yet
+          console.warn(`Index creation warning: ${error.message}`);
+        }
+      }
+      console.log('✓ Database indexes ensured');
+    } catch (error) {
+      console.warn('Index creation failed:', error.message);
     }
   }
 
@@ -362,10 +389,6 @@ class DatabaseManager extends EventEmitter {
 // Create singleton instance
 const dbManager = new DatabaseManager();
 
-// Export both the manager and a pool-compatible interface
-export default dbManager.pool;
-export { dbManager };
-
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
   console.log('🔄 Received SIGINT, closing database connections...');
@@ -393,5 +416,10 @@ process.on('unhandledRejection', async (reason, promise) => {
 // Export connection status for health checks
 export const getDBStatus = () => dbManager.getStatus();
 export const testDBConnection = () => dbManager.testConnection();
+
+// Export the dbManager instance for queries (aliased as both 'db' and 'dbManager')
+export const db = dbManager;
+export { dbManager };
+export default dbManager;
 
 console.log('🚀 Enhanced database connection manager loaded');

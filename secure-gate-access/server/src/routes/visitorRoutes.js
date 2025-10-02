@@ -72,4 +72,31 @@ router.get('/active', attachUserFromToken, attachRequestAudit, getActiveVisitors
 router.get('/report', attachUserFromToken, attachRequestAudit, getVisitorReport);
 router.delete('/:visitorId/revoke', attachUserFromToken, attachRequestAudit, revokeVisitor);
 
+// Route aliases to match frontend expectations
+router.get('/reports', attachUserFromToken, attachRequestAudit, getVisitorReport); // Alias for /report (plural)
+
+// Public invite route alias
+router.get('/invite/:inviteCode',
+  CacheMiddleware.apiCache(300, (req) => `bulk-invite:${req.params.inviteCode}`),
+  getBulkInvite
+);
+
+// OTP verification shim for frontend compatibility
+router.post('/verify-otp', (req, res) => {
+  const { id, otp } = req.body;
+  if (!id || !otp) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        code: 400,
+        message: 'Visitor ID and OTP are required. Use { id: visitorId, otp: "123456" } format.',
+        type: 'Validation Error'
+      }
+    });
+  }
+  // Forward to existing verifyOtp controller
+  req.params.id = id;
+  verifyOtp(req, res);
+});
+
 export default router;

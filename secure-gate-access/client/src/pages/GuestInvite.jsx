@@ -142,7 +142,7 @@ export default function GuestInvite() {
                   <div className="flex justify-center w-full">
                     <QRCodeDisplay 
                       value={visitor.qr_code} 
-                      otp={visitor.debug_otp || visitor.otp}
+                      otp={process.env.NODE_ENV === 'development' ? (visitor.debug_otp || visitor.otp) : visitor.otp}
                       showCopyButton={true}
                     />
                   </div>

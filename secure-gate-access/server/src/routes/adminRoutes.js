@@ -2,7 +2,7 @@ import express from 'express';
 import { getMetrics, getAuditLogs } from '../controllers/adminController.js';
 import { attachUserFromToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
-import { backupService } from '../services/backupService.js';
+import backupService from '../services/backupService.js';
 
 const router = express.Router();
 

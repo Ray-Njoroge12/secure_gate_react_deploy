@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install dependencies (including devDependencies for build tools)
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -26,7 +26,8 @@ FROM nginx:alpine AS production
 RUN apk add --no-cache curl
 
 # Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+ARG NGINX_CONFIG=nginx.conf
+COPY ${NGINX_CONFIG} /etc/nginx/nginx.conf
 
 # Copy built application from builder stage
 COPY --from=builder /app/build /usr/share/nginx/html

@@ -34,9 +34,10 @@ import rateLimitRoutes from './routes/rateLimitRoutes.js';
 import securityRoutes from './routes/securityRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import visitorRoutes from './routes/visitorRoutes.js';
-import residentRoutes from './routes/residentRoutes.js';
-import guardRoutes from './routes/guardRoutes.js';
+// import residentRoutes from './routes/residentRoutes.js'; // Removed - placeholder implementation
+// import guardRoutes from './routes/guardRoutes.js'; // Removed - placeholder implementation
 import authRoutes from './routes/authRoutes.js';
+import complianceRoutes from './routes/complianceRoutes.js';
 import preDeploymentValidationRoutes from './routes/preDeploymentValidationRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -78,13 +79,17 @@ const corsConfig = cors({
 app.use(corsConfig);
 app.use(cookieParser());
 
-// Rate limiting
+// Rate limiting (exclude health endpoints)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for health endpoints
+    return req.path === '/health' || req.path === '/api/health';
+  }
 });
 
 app.use(limiter);
@@ -108,10 +113,14 @@ app.use('/api/rate-limits', rateLimitRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/visitors', visitorRoutes);
-app.use('/api/residents', residentRoutes);
-app.use('/api/guards', guardRoutes);
+// app.use('/api/residents', residentRoutes); // Removed - placeholder implementation
+// app.use('/api/guards', guardRoutes); // Removed - placeholder implementation
 app.use('/api/auth', authRoutes);
+app.use('/api/compliance', complianceRoutes);
 app.use('/api/pre-deployment', preDeploymentValidationRoutes);
+
+// Public invite route alias for frontend compatibility
+app.use('/api/invite', visitorRoutes);
 
 // Health check endpoints
 app.get('/health', (req, res) => {

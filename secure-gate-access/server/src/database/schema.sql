@@ -29,6 +29,11 @@ CREATE TABLE visitors (
     status VARCHAR(20) DEFAULT 'PENDING',
     expected_time TIMESTAMP,
     otp VARCHAR(10),
+    otp_hash TEXT,
+    otp_expires_at TIMESTAMP,
+    otp_attempts INT DEFAULT 0,
+    otp_resend_count INT DEFAULT 0,
+    otp_last_resend TIMESTAMP,
     qr_code TEXT,
     check_in TIMESTAMP,
     check_out TIMESTAMP,
@@ -65,7 +70,22 @@ CREATE TABLE access_logs (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
     action VARCHAR(100), -- e.g. "login", "logout", "door_open"
-    log_time TIMESTAMP DEFAULT NOW()
+    log_time TIMESTAMP DEFAULT NOW(),
+    request_id VARCHAR(100),
+    entity_type VARCHAR(50),
+    entity_id VARCHAR(100),
+    outcome VARCHAR(20),
+    message TEXT,
+    metadata JSONB
+);
+
+CREATE TABLE otp_resend_log (
+    id SERIAL PRIMARY KEY,
+    visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
+    channel VARCHAR(20),
+    success BOOLEAN,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE audit_logs (
@@ -93,11 +113,16 @@ CREATE TABLE security_events (
 CREATE INDEX idx_visitors_invite_code ON visitors(invite_code);
 CREATE INDEX idx_visitors_status ON visitors(status);
 CREATE INDEX idx_visitors_date_of_visit ON visitors(date_of_visit);
+CREATE INDEX idx_visitors_otp_expires_at ON visitors(otp_expires_at);
+CREATE INDEX idx_visitors_created_by ON visitors(created_by);
 CREATE INDEX idx_passes_visitor_id ON passes(visitor_id);
 CREATE INDEX idx_passes_status ON passes(status);
 CREATE INDEX idx_passes_expires_at ON passes(expires_at);
 CREATE INDEX idx_access_logs_user_id ON access_logs(user_id);
 CREATE INDEX idx_access_logs_created_at ON access_logs(created_at);
+CREATE INDEX idx_access_logs_request_id ON access_logs(request_id);
+CREATE INDEX idx_otp_resend_log_visitor_id ON otp_resend_log(visitor_id);
+CREATE INDEX idx_otp_resend_log_created_at ON otp_resend_log(created_at);
 CREATE INDEX idx_security_events_type ON security_events(event_type);
 CREATE INDEX idx_security_events_ip ON security_events(ip_address);
 CREATE INDEX idx_security_events_created_at ON security_events(created_at);
