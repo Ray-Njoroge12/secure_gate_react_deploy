@@ -1,5 +1,6 @@
 // client/src/utils/errorHandler.js
 import { useState, useCallback } from 'react';
+import logger from './logger';
 
 /**
  * Enhanced error handling utilities for the Secure Gate Access System
@@ -187,12 +188,11 @@ export function handleError(error, context = '', options = {}) {
   
   // Log to console in development
   if (logToConsole && process.env.NODE_ENV === 'development') {
-    console.group(`🚨 Error [${errorType}] - ${severity.toUpperCase()}`);
-    console.error('Context:', context);
-    console.error('User Message:', userMessage);
-    console.error('Original Error:', error);
-    console.error('Error Info:', errorInfo);
-    console.groupEnd();
+    logger.error(`Error [${errorType}] - ${severity.toUpperCase()}`, error, {
+      context,
+      userMessage,
+      errorInfo
+    });
   }
   
   // Report to error service in production

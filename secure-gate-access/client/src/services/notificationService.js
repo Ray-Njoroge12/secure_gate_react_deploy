@@ -1,4 +1,6 @@
 // Toast Notification Service
+import logger from '../utils/logger';
+
 class NotificationService {
   constructor() {
     this.listeners = [];
@@ -63,7 +65,7 @@ class NotificationService {
       try {
         callback(this.toasts);
       } catch (error) {
-        console.error('Error in notification listener:', error);
+        logger.error('Error in notification listener', error);
       }
     });
   }
@@ -164,7 +166,7 @@ class NotificationService {
       const eventSource = new EventSource('/api/ws/guards');
       
       eventSource.onopen = () => {
-        console.log('Connected to SSE for notifications');
+        logger.info('Connected to SSE for notifications');
         this.info('Connected', 'Real-time notifications enabled');
       };
 
@@ -173,18 +175,18 @@ class NotificationService {
           const data = JSON.parse(event.data);
           this.handleBackendEvent(data);
         } catch (error) {
-          console.error('Error parsing SSE data:', error);
+          logger.error('Error parsing SSE data', error);
         }
       };
 
       eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
+        logger.error('SSE connection error', error);
         this.warning('Connection Lost', 'Real-time notifications temporarily unavailable');
       };
 
       return eventSource;
     } catch (error) {
-      console.error('Failed to connect to SSE:', error);
+      logger.error('Failed to connect to SSE', error);
       this.error('Connection Failed', 'Unable to connect to real-time notifications');
       return null;
     }
