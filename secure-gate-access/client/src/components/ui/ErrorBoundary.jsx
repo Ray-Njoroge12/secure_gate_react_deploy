@@ -1,6 +1,7 @@
 // client/src/components/ui/ErrorBoundary.jsx
 import React from 'react';
 import { Card, Button } from './index';
+import logger from '../../utils/logger';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -28,13 +29,19 @@ class ErrorBoundary extends React.Component {
       errorId
     });
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by boundary:', error, errorInfo);
-    }
+    // Log using centralized logger
+    logger.error('Error caught by ErrorBoundary:', {
+      errorId,
+      error: error.toString(),
+      errorInfo,
+      componentStack: errorInfo.componentStack
+    });
 
     // In production, you might want to log to an error reporting service
-    // logErrorToService(error, errorInfo, errorId);
+    // Example: Sentry, LogRocket, etc.
+    // if (process.env.NODE_ENV === 'production') {
+    //   logErrorToService(error, errorInfo, errorId);
+    // }
   }
 
   handleReload = () => {
