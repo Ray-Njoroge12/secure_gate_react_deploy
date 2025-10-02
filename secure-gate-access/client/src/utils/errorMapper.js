@@ -1,5 +1,6 @@
 // client/src/utils/errorMapper.js
 // Maps HTTP status codes and error messages to user-friendly text
+import logger from './logger';
 
 /**
  * Maps HTTP status codes to user-friendly messages
@@ -48,11 +49,10 @@ export const mapStatusToMessage = (status, payload = null) => {
  */
 export const handleApiError = (error, context = 'API call') => {
   // Log detailed error for debugging
-  console.error(`${context} error:`, {
-    message: error.message,
+  logger.error(`${context} error`, error, {
+    context,
     status: error.status,
-    response: error.response,
-    stack: error.stack
+    response: error.response
   });
 
   // Return user-friendly message

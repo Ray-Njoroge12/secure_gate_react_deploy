@@ -4,6 +4,7 @@ import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom"
 import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } from "../services/passService.js";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
+import logger from '../utils/logger';
 
 export default function RegistrationPage() {
   const navigate = useNavigate();
@@ -64,7 +65,7 @@ export default function RegistrationPage() {
           setInviteDetails(normalized);
           setBulkFormData(prev => ({ ...prev, purpose: normalized.eventName || "Event" }));
         } catch (err) {
-          console.error('Failed to fetch invite details:', err);
+          logger.error('Failed to fetch invite details', err);
           setErrors({ general: 'Invalid or expired invitation link' });
         }
       };
@@ -226,7 +227,7 @@ export default function RegistrationPage() {
       setShowOtpSection(true);
       setSuccess("Registration submitted. Please check your email/SMS for the OTP and verify to view your QR code.");
     } catch (err) {
-      console.error('Bulk registration failed:', err);
+      logger.error('Bulk registration failed', err, { inviteId });
       // Friendly messages per status
       if (err.status === 410) setErrors({ general: 'This invitation has expired. Please contact the host for a new link.' });
       else if (err.status === 409) setErrors({ general: 'All guest slots have been used for this event.' });

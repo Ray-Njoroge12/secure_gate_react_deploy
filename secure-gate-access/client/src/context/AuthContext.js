@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect, useContext } from "react";
+import logger from '../utils/logger';
 
 export const AuthContext = createContext();
 
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }) => {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.warn('Failed to parse stored user data:', error);
+        logger.warn('Failed to parse stored user data', error);
         // Clear invalid data
         localStorage.removeItem("token");
         localStorage.removeItem("user");
@@ -130,7 +131,7 @@ export const AuthProvider = ({ children }) => {
 
       return data;
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error', error);
       throw error;
     } finally {
       setLoading(false);

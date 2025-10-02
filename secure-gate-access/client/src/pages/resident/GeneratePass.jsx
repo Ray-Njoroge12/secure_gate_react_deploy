@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import { getMyVisitors, createPass } from "../../services/passService";
+import logger from "../../utils/logger";
 
 export default function GeneratePass(){
   const onLogout = ()=> { localStorage.removeItem("role"); window.location.href = "/"; };
@@ -23,7 +24,7 @@ export default function GeneratePass(){
       const approvedVisitors = data.filter(v => v.status === 'approved');
       setVisitors(approvedVisitors);
     } catch (err) {
-      console.error('Failed to load visitors:', err);
+      logger.error('Failed to load visitors', err);
       setError('Failed to load visitors');
     }
   };
@@ -46,7 +47,7 @@ export default function GeneratePass(){
         visitorName: visitors.find(v => v.id == selectedVisitor)?.name || 'Unknown'
       });
     } catch (err) {
-      console.error('Failed to create pass:', err);
+      logger.error('Failed to create pass', err, { visitorId: selectedVisitor });
       setError(err.message || 'Failed to create pass');
     } finally {
       setLoading(false);
