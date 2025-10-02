@@ -3,6 +3,7 @@ import { authenticateToken, attachUserFromToken } from '../middleware/authMiddle
 import { tokenService } from '../services/tokenService.js';
 import { userService } from '../services/userService.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
+import loggingService from '../services/loggingService.js';
 
 const router = express.Router();
 
@@ -73,7 +74,26 @@ router.post('/login', attachRequestAudit, async (req, res) => {
     }
 
     // Authenticate user
-    const user = await userService.authenticateUser(username, password);
+    let user;
+    try {
+      user = await userService.authenticateUser(username, password);
+    } catch (authError) {
+      // Handle authentication errors (invalid credentials, account locked, etc.)
+      if (authError.message.includes('Invalid credentials') || 
+          authError.message.includes('Account is locked')) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 401,
+            message: authError.message,
+            type: 'Authentication Error',
+            requestId: req.requestId
+          }
+        });
+      }
+      // Re-throw unexpected errors to be caught by outer catch block
+      throw authError;
+    }
     
     if (!user) {
       return res.status(401).json({
@@ -106,11 +126,19 @@ router.post('/login', attachRequestAudit, async (req, res) => {
       }
     });
   } catch (error) {
+    // Log detailed error for diagnostics
+    try {
+      loggingService.logError('Login failed', error, {
+        requestId: req.requestId,
+        username: req.body?.username,
+        route: '/api/auth/login'
+      });
+    } catch {}
     res.status(500).json({
       success: false,
       error: {
         code: 500,
-        message: 'Login failed',
+        message: process.env.NODE_ENV === 'production' ? 'Login failed' : `Login failed: ${error.message}`,
         type: 'Internal Server Error',
         requestId: req.requestId
       }

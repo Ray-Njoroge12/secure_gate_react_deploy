@@ -1,398 +1,146 @@
-// Performance Optimization Middleware
-// Implements caching, compression, and response optimization
-
-import { dbManager } from '../database/db.enhanced.js';
-import logger from '../utils/logger.js';
-
 /**
- * Response Caching Middleware
- * Implements intelligent caching for frequently accessed data
+ * Performance Monitoring Middleware
  */
-export const responseCachingMiddleware = (options = {}) => {
-  const {
-    ttl = 300, // 5 minutes default TTL
-    maxSize = 100, // Maximum number of cached items
-    cacheableMethods = ['GET'],
-    cacheablePaths = ['/api/visitors', '/api/dashboard', '/api/admin']
-  } = options;
 
-  const cache = new Map();
-  let cacheHits = 0;
-  let cacheMisses = 0;
+import { performance } from 'perf_hooks';
+import loggingService from '../services/loggingService.js';
 
-  // Clean up expired cache entries
-  const cleanupCache = () => {
-    const now = Date.now();
-    for (const [key, value] of cache.entries()) {
-      if (now > value.expiresAt) {
-        cache.delete(key);
-      }
-    }
-  };
-
-  // Generate cache key
-  const generateCacheKey = (req) => {
-    const path = req.path;
-    const query = JSON.stringify(req.query);
-    const user = req.user ? req.user.id : 'anonymous';
-    return `${path}:${query}:${user}`;
-  };
-
-  // Check if request is cacheable
-  const isCacheable = (req) => {
-    return cacheableMethods.includes(req.method) &&
-           cacheablePaths.some(path => req.path.startsWith(path)) &&
-           !req.headers['cache-control']?.includes('no-cache');
-  };
-
-  return (req, res, next) => {
-    if (!isCacheable(req)) {
-      return next();
+class PerformanceMiddleware {
+    constructor() {
+        this.metrics = {
+            requests: 0,
+            totalResponseTime: 0,
+            averageResponseTime: 0,
+            slowRequests: 0,
+            errors: 0
+        };
+        
+        this.slowRequestThreshold = parseInt(process.env.SLOW_REQUEST_THRESHOLD || '1000');
+        this.endpointMetrics = new Map();
+        this.startPeriodicReporting();
     }
 
-    const cacheKey = generateCacheKey(req);
-    const cached = cache.get(cacheKey);
+    middleware() {
+        return (req, res, next) => {
+            const startTime = performance.now();
+            const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            req.performance = {
+                requestId,
+                startTime,
+                endpoint: `${req.method} ${req.route?.path || req.path}`
+            };
+            
+            this.metrics.requests++;
+            
+            // Use on('finish') instead of overriding res.end to avoid header issues
+            res.on('finish', () => {
+                const endTime = performance.now();
+                const duration = endTime - startTime;
+                this.trackRequestEnd(req, res, duration);
+            });
 
-    if (cached && Date.now() < cached.expiresAt) {
-      cacheHits++;
-      logger.debug(`Cache hit for ${cacheKey}`);
-      
-      // Set cache headers (only if response not finished)
-      if (!res.headersSent) {
-        res.set('X-Cache', 'HIT');
-        res.set('X-Cache-Key', cacheKey);
-      }
-      if (!res.headersSent) {
-        res.set('Cache-Control', `public, max-age=${Math.floor((cached.expiresAt - Date.now()) / 1000)}`);
-      }
-      
-      return res.json(cached.data);
+            next();
+        };
     }
 
-    cacheMisses++;
-    logger.debug(`Cache miss for ${cacheKey}`);
-
-    // Override res.json to cache the response
-    const originalJson = res.json;
-    res.json = function(data) {
-      // Cache the response
-      if (res.statusCode === 200) {
-        cache.set(cacheKey, {
-          data,
-          expiresAt: Date.now() + (ttl * 1000)
-        });
-
-        // Set cache headers (only if response not finished)
-        if (!res.headersSent) {
-          res.set('X-Cache', 'MISS');
-          res.set('X-Cache-Key', cacheKey);
+    trackRequestEnd(req, res, duration) {
+        const responseTime = Math.round(duration);
+        
+        this.metrics.totalResponseTime += responseTime;
+        this.metrics.averageResponseTime = this.metrics.totalResponseTime / this.metrics.requests;
+        
+        if (responseTime > this.slowRequestThreshold) {
+            this.metrics.slowRequests++;
+            loggingService.logWarn('Slow request detected', {
+                endpoint: req.performance?.endpoint,
+                duration: `${responseTime}ms`,
+                method: req.method,
+                url: req.originalUrl
+            });
         }
-        if (!res.headersSent) {
-          res.set('Cache-Control', `public, max-age=${ttl}`);
-        }
-
-        // Cleanup cache if it's getting too large
-        if (cache.size > maxSize) {
-          cleanupCache();
-        }
-      }
-
-      return originalJson.call(this, data);
-    };
-
-    next();
-  };
-};
-
-/**
- * Database Query Optimization Middleware
- * Implements query caching and optimization
- */
-export const databaseOptimizationMiddleware = () => {
-  const queryCache = new Map();
-  const queryStats = {
-    totalQueries: 0,
-    cachedQueries: 0,
-    slowQueries: 0
-  };
-
-  return (req, res, next) => {
-    // Override dbManager.query to add optimization
-    const originalQuery = dbManager.query;
-    dbManager.query = async function(sql, params = []) {
-      const startTime = Date.now();
-      queryStats.totalQueries++;
-
-      // Check for slow queries
-      const result = await originalQuery.call(this, sql, params);
-      const duration = Date.now() - startTime;
-
-      if (duration > 1000) { // Queries taking more than 1 second
-        queryStats.slowQueries++;
-        logger.warn(`Slow query detected (${duration}ms):`, {
-          sql: sql.substring(0, 100) + '...',
-          duration,
-          params: params.length
-        });
-      }
-
-      return result;
-    };
-
-    // Add query stats to response headers (only if response not finished)
-    if (!res.headersSent) {
-      res.set('X-Query-Stats', JSON.stringify(queryStats));
-    }
-
-    next();
-  };
-};
-
-/**
- * Memory Usage Monitoring Middleware
- */
-export const memoryMonitoringMiddleware = () => {
-  return (req, res, next) => {
-    const memUsage = process.memoryUsage();
-    const memUsageMB = {
-      rss: Math.round(memUsage.rss / 1024 / 1024),
-      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-      external: Math.round(memUsage.external / 1024 / 1024)
-    };
-
-    // Add memory usage to response headers (only if response not finished)
-    if (!res.headersSent) {
-      res.set('X-Memory-Usage', JSON.stringify(memUsageMB));
-    }
-
-    // Log high memory usage
-    if (memUsageMB.heapUsed > 500) { // More than 500MB
-      logger.warn('High memory usage detected:', memUsageMB);
-    }
-
-    next();
-  };
-};
-
-/**
- * Request Size Optimization Middleware
- */
-export const requestSizeOptimizationMiddleware = () => {
-  return (req, res, next) => {
-    const contentLength = parseInt(req.headers['content-length'] || '0');
-    const maxSize = 10 * 1024 * 1024; // 10MB
-
-    if (contentLength > maxSize) {
-      logger.warn('Large request detected:', {
-        contentLength,
-        maxSize,
-        url: req.url,
-        method: req.method
-      });
-
-      return res.status(413).json({
-        success: false,
-        error: {
-          code: 413,
-          message: 'Request entity too large'
-        }
-      });
-    }
-
-    next();
-  };
-};
-
-/**
- * Response Compression Middleware
- */
-export const responseCompressionMiddleware = () => {
-  return (req, res, next) => {
-    const originalJson = res.json;
-    const originalSend = res.send;
-
-    // Compress JSON responses
-    res.json = function(data) {
-      const jsonString = JSON.stringify(data);
-      
-      // Only compress if response is large enough
-      if (jsonString.length > 1024) {
-        res.set('Content-Encoding', 'gzip');
-        res.set('Vary', 'Accept-Encoding');
-      }
-
-      return originalJson.call(this, data);
-    };
-
-    // Compress text responses
-    res.send = function(data) {
-      if (typeof data === 'string' && data.length > 1024) {
-        res.set('Content-Encoding', 'gzip');
-        res.set('Vary', 'Accept-Encoding');
-      }
-
-      return originalSend.call(this, data);
-    };
-
-    next();
-  };
-};
-
-/**
- * Performance Metrics Collection
- */
-export const performanceMetricsMiddleware = () => {
-  const metrics = {
-    requestCount: 0,
-    totalResponseTime: 0,
-    averageResponseTime: 0,
-    errorCount: 0,
-    successCount: 0
-  };
-
-  return (req, res, next) => {
-    const startTime = Date.now();
-    metrics.requestCount++;
-
-    // Store original end method
-    const originalEnd = res.end;
-    const originalJson = res.json;
-    const originalSend = res.send;
-
-    // Override response methods to capture completion
-    res.end = function(...args) {
-      try {
-        const duration = Date.now() - startTime;
-        metrics.totalResponseTime += duration;
-        metrics.averageResponseTime = metrics.totalResponseTime / metrics.requestCount;
-
+        
         if (res.statusCode >= 400) {
-          metrics.errorCount++;
-        } else {
-          metrics.successCount++;
+            this.metrics.errors++;
         }
-
-        // Add performance metrics to response headers BEFORE sending
-        if (!res.headersSent) {
-          res.set('X-Response-Time', `${duration}ms`);
-          res.set('X-Performance-Metrics', JSON.stringify({
-            requestCount: metrics.requestCount,
-            averageResponseTime: Math.round(metrics.averageResponseTime),
-            errorRate: Math.round((metrics.errorCount / metrics.requestCount) * 100),
-            successRate: Math.round((metrics.successCount / metrics.requestCount) * 100)
-          }));
+        
+        if (req.performance) {
+            this.trackEndpointMetrics(req.performance.endpoint, responseTime, res.statusCode);
         }
-      } catch (error) {
-        // Log error but don't break the response
-        console.error('Error in performance metrics:', error.message);
-      }
-      
-      return originalEnd.apply(this, args);
-    };
-
-    res.json = function(data) {
-      try {
-        const duration = Date.now() - startTime;
-        metrics.totalResponseTime += duration;
-        metrics.averageResponseTime = metrics.totalResponseTime / metrics.requestCount;
-
-        if (res.statusCode >= 400) {
-          metrics.errorCount++;
-        } else {
-          metrics.successCount++;
-        }
-
-        // Add performance metrics to response headers BEFORE sending
-        if (!res.headersSent) {
-          res.set('X-Response-Time', `${duration}ms`);
-          res.set('X-Performance-Metrics', JSON.stringify({
-            requestCount: metrics.requestCount,
-            averageResponseTime: Math.round(metrics.averageResponseTime),
-            errorRate: Math.round((metrics.errorCount / metrics.requestCount) * 100),
-            successRate: Math.round((metrics.successCount / metrics.requestCount) * 100)
-          }));
-        }
-      } catch (error) {
-        // Log error but don't break the response
-        console.error('Error in performance metrics:', error.message);
-      }
-      
-      return originalJson.call(this, data);
-    };
-
-    res.send = function(data) {
-      try {
-        const duration = Date.now() - startTime;
-        metrics.totalResponseTime += duration;
-        metrics.averageResponseTime = metrics.totalResponseTime / metrics.requestCount;
-
-        if (res.statusCode >= 400) {
-          metrics.errorCount++;
-        } else {
-          metrics.successCount++;
-        }
-
-        // Add performance metrics to response headers BEFORE sending
-        if (!res.headersSent) {
-          res.set('X-Response-Time', `${duration}ms`);
-          res.set('X-Performance-Metrics', JSON.stringify({
-            requestCount: metrics.requestCount,
-            averageResponseTime: Math.round(metrics.averageResponseTime),
-            errorRate: Math.round((metrics.errorCount / metrics.requestCount) * 100),
-            successRate: Math.round((metrics.successCount / metrics.requestCount) * 100)
-          }));
-        }
-      } catch (error) {
-        // Log error but don't break the response
-        console.error('Error in performance metrics:', error.message);
-      }
-      
-      return originalSend.call(this, data);
-    };
-
-    next();
-  };
-};
-
-/**
- * Backwards-compatible Performance Monitor facade
- * Provides a minimal API used elsewhere: middleware(), getMetrics(), getEndpointStats()
- */
-export const performanceMonitor = {
-  middleware: () => {
-    // No-op middleware maintaining signature compatibility
-    return (_req, _res, next) => next();
-  },
-  getMetrics: () => ({
-    globalStats: {},
-    slowRequests: [],
-    summary: {
-      totalRequests: 0,
-      errorRate: 0,
-      averageResponseTime: 0,
-      activeRequests: 0
     }
-  }),
-  getEndpointStats: () => []
-};
 
-/**
- * Compatibility shims referenced by app and routes
- */
-export const compressionMiddleware = (_req, _res, next) => next();
-export const responseOptimizationMiddleware = (_req, _res, next) => next();
-export const requestTimeoutMiddleware = (_ms = 10000) => (_req, _res, next) => next();
+    trackEndpointMetrics(endpoint, responseTime, statusCode) {
+        const metrics = this.endpointMetrics.get(endpoint) || {
+            count: 0,
+            totalTime: 0,
+            averageTime: 0,
+            slowCount: 0,
+            errorCount: 0
+        };
+        
+        metrics.count++;
+        metrics.totalTime += responseTime;
+        metrics.averageTime = metrics.totalTime / metrics.count;
+        
+        if (responseTime > this.slowRequestThreshold) {
+            metrics.slowCount++;
+        }
+        
+        if (statusCode >= 400) {
+            metrics.errorCount++;
+        }
+        
+        this.endpointMetrics.set(endpoint, metrics);
+    }
 
-export default {
-  responseCachingMiddleware,
-  databaseOptimizationMiddleware,
-  memoryMonitoringMiddleware,
-  requestSizeOptimizationMiddleware,
-  responseCompressionMiddleware,
-  performanceMetricsMiddleware,
-  performanceMonitor,
-  compressionMiddleware,
-  responseOptimizationMiddleware,
-  requestTimeoutMiddleware
-};
+    startPeriodicReporting() {
+        setInterval(() => {
+            this.reportMetrics();
+        }, 300000);
+    }
+
+    reportMetrics() {
+        const report = {
+            timestamp: new Date().toISOString(),
+            overall: {
+                requests: this.metrics.requests,
+                averageResponseTime: `${this.metrics.averageResponseTime.toFixed(2)}ms`,
+                slowRequests: this.metrics.slowRequests,
+                errors: this.metrics.errors,
+                errorRate: `${((this.metrics.errors / this.metrics.requests) * 100).toFixed(2)}%`
+            },
+            topEndpoints: this.getTopEndpoints(5)
+        };
+        
+        loggingService.logInfo('Performance metrics report', report);
+    }
+
+    getTopEndpoints(limit = 10) {
+        return Array.from(this.endpointMetrics.entries())
+            .sort((a, b) => b[1].count - a[1].count)
+            .slice(0, limit)
+            .map(([endpoint, metrics]) => ({
+                endpoint,
+                count: metrics.count,
+                averageTime: `${metrics.averageTime.toFixed(2)}ms`,
+                slowCount: metrics.slowCount,
+                errorCount: metrics.errorCount
+            }));
+    }
+
+    getMetrics() {
+        return {
+            overall: {
+                requests: this.metrics.requests,
+                averageResponseTime: this.metrics.averageResponseTime,
+                slowRequests: this.metrics.slowRequests,
+                errors: this.metrics.errors,
+                errorRate: this.metrics.requests > 0 ? (this.metrics.errors / this.metrics.requests) * 100 : 0
+            },
+            endpoints: Object.fromEntries(this.endpointMetrics)
+        };
+    }
+}
+
+export const performanceMonitor = new PerformanceMiddleware();
+export default performanceMonitor;

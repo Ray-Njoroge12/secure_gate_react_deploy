@@ -9,7 +9,7 @@ export default function SettingsNotifications() {
       <label><input type="checkbox" checked={email} onChange={e=>setEmail(e.target.checked)} /> Email notifications</label>
       <br />
       <label><input type="checkbox" checked={sms} onChange={e=>setSms(e.target.checked)} /> SMS notifications</label>
-      <div style={{marginTop:8}}><button disabled>Save (wire to /api/users/profile)</button></div>
+      <div style={{marginTop:8}}><button disabled>Save (wire to /api/auth/profile)</button></div>
     </div>
   );
 }

@@ -1,11 +1,12 @@
 // server/src/middleware/enhancedSessionMiddleware.js
 import session from 'express-session';
-import RedisStore from 'connect-redis';
-import MemoryStore from 'memorystore';
+import { RedisStore } from 'connect-redis';
+import createMemoryStore from 'memorystore';
+import crypto from 'crypto';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import loggingService from '../services/loggingService.js';
 
-const memoryStore = MemoryStore(session);
+const MemoryStore = createMemoryStore(session);
 
 /**
  * Enhanced Session Middleware with Security Hardening
@@ -51,7 +52,7 @@ class EnhancedSessionManager {
         });
         loggingService.logSecurity('Enhanced session store initialized with Redis backend', {});
       } else {
-        this.sessionStore = new memoryStore({
+        this.sessionStore = new MemoryStore({
           checkPeriod: 86400000, // Prune expired entries every 24h
           max: 10000 // Maximum sessions in memory
         });
@@ -77,7 +78,6 @@ class EnhancedSessionManager {
 
         // Enhanced session ID generation
         genid: () => {
-          const crypto = require('crypto');
           // Generate cryptographically secure session ID with additional entropy
           const randomBytes = crypto.randomBytes(32);
           const timestamp = Date.now().toString(36);

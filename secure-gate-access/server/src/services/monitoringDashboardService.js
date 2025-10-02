@@ -6,7 +6,7 @@
 
 import EventEmitter from 'events';
 import loggingService from './loggingService.js';
-# import { performanceMonitor } from '../middleware/performanceMiddleware.js';
+// import { performanceMonitor } from '../middleware/performanceMiddleware.js';
 import optimizedDb from './optimizedDatabaseService.js';
 
 /**
@@ -195,7 +195,7 @@ class MonitoringDashboardService extends EventEmitter {
    */
   async collectApplicationMetrics() {
     // Get performance metrics if available
-    if (performanceMonitor) {
+    if (typeof performanceMonitor !== 'undefined' && performanceMonitor) {
       const perfMetrics = performanceMonitor.getMetrics();
 
       this.metrics.application = {

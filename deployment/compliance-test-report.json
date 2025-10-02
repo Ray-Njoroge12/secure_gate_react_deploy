@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-10-01T16:48:38Z",
+  "baseUrl": "http://localhost:5000",
+  "tests": {
+    "complianceStatus": {
+      "endpoint": "/api/compliance/status",
+      "status": "tested"
+    },
+    "cookiePolicy": {
+      "endpoint": "/api/compliance/cookie-policy",
+      "status": "tested"
+    },
+    "privacyPolicy": {
+      "endpoint": "/api/compliance/privacy-policy",
+      "status": "tested"
+    },
+    "dsarEndpoint": {
+      "endpoint": "/api/compliance/dsar",
+      "status": "tested",
+      "requiresAuth": true
+    },
+    "deletionEndpoint": {
+      "endpoint": "/api/compliance/deletion",
+      "status": "tested",
+      "requiresAuth": true
+    },
+    "portabilityEndpoint": {
+      "endpoint": "/api/compliance/portability",
+      "status": "tested",
+      "requiresAuth": true
+    },
+    "consentEndpoint": {
+      "endpoint": "/api/compliance/consent",
+      "status": "tested",
+      "requiresAuth": true
+    },
+    "securityHeaders": {
+      "status": "tested"
+    },
+    "rateLimiting": {
+      "status": "tested"
+    }
+  },
+  "summary": {
+    "totalTests": 9,
+    "complianceFeatures": [
+      "GDPR compliance",
+      "Kenya DPA compliance",
+      "Cookie consent management",
+      "Data subject rights",
+      "Privacy policy",
+      "Security headers",
+      "Rate limiting"
+    ]
+  }
+}

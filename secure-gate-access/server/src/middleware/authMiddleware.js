@@ -115,4 +115,6 @@ export async function attachUserFromToken(req, res, next) {
   return next();
 }
 
+// Export 'protect' as an alias for authenticateToken for compatibility
+export { authenticateToken as protect };
 export default authenticateToken;

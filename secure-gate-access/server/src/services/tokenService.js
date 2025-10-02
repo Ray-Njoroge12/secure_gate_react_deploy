@@ -114,6 +114,30 @@ class TokenService {
   }
 
   /**
+   * Generate only a refresh token (to match existing route usage)
+   */
+  generateRefreshToken(payload, expiresIn = '7d') {
+    const now = Math.floor(Date.now() / 1000);
+    const refreshJti = randomUUID();
+
+    return jwt.sign(
+      {
+        sub: String(payload.id || payload.userId),
+        iat: now,
+        jti: refreshJti,
+        email: payload.email,
+        type: 'refresh'
+      },
+      this.refreshTokenSecret,
+      {
+        expiresIn,
+        issuer: 'secure-gate-api',
+        audience: 'secure-gate-client'
+      }
+    );
+  }
+
+  /**
    * Verify access token with JTI-based revocation check
    */
   verifyAccessToken(token) {

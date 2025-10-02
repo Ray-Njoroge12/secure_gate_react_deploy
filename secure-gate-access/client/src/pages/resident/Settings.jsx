@@ -9,7 +9,7 @@ export default function Settings() {
   const [notifications, setNotifications] = useState({ notify_email: true, notify_sms: false });
   // Load notification preferences from backend
   useEffect(() => {
-    fetch('/api/users/profile', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+    fetch('/api/auth/profile', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
       .then(res => res.json())
       .then(data => {
         if (data?.user) {
@@ -40,7 +40,7 @@ export default function Settings() {
     e.preventDefault();
     if (type === 'Notifications') {
       // Save notification preferences
-      fetch('/api/users/profile', {
+      fetch('/api/auth/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ notify_email: notifications.notify_email, notify_sms: notifications.notify_sms })
