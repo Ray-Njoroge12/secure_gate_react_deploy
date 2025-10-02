@@ -2,23 +2,48 @@ import React, { useEffect, useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import Table from "../../components/Table";
-import axios from "axios";
+import { getAccessLogs } from "../../services/adminService";
+import { handleApiError } from "../../utils/errorMapper";
+import logger from "../../utils/logger";
 
 export default function AccessControl() {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token") || localStorage.getItem("admin_token") || sessionStorage.getItem("admin_token");
   const [cards, setCards] = useState([]);
-  useEffect(()=>{
-    // endpoint example; adapt to your backend
-    axios.get("/api/admin/access-cards", { headers:{ Authorization:`Bearer ${token}` }})
-      .then(r=>setCards(r.data)).catch(()=>setCards([]));
-  },[]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function loadAccessLogs() {
+      try {
+        const data = await getAccessLogs();
+        setCards(data || []);
+      } catch (e) {
+        const errorMsg = handleApiError(e);
+        setError(errorMsg);
+        logger.error('Failed to load access logs:', e);
+        setCards([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAccessLogs();
+  }, []);
+
   return (
     <div className="app-grid">
       <Sidebar />
       <div>
         <Topbar title="Access Control" onLogout={() => { localStorage.clear(); window.location.href="/login"; }} />
         <main className="main">
-          <Table headers={["Card ID","Holder","Zone","Status","Actions"]} rows={cards.map(c=>[c.id,c.holder,c.zone,c.status,"Disable | Assign"])} />
+          {error && (
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+              {error}
+            </div>
+          )}
+          <Table 
+            headers={["Card ID","Holder","Zone","Status","Actions"]} 
+            rows={cards.map(c=>[c.id,c.holder,c.zone,c.status,"Disable | Assign"])}
+            loading={loading}
+          />
         </main>
       </div>
     </div>

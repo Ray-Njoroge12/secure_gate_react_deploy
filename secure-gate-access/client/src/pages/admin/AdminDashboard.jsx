@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import AppShell from "../../layouts/AppShell";
 import StatsCard from "../../components/StatsCard";
 import Table from "../../components/Table";
-import axios from "axios";
+import { getMetrics, getAuditLogs } from "../../services/adminService";
+import { handleApiError } from "../../utils/errorMapper";
+import logger from "../../utils/logger";
 
 export default function AdminDashboard() {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token") || localStorage.getItem("admin_token") || sessionStorage.getItem("admin_token");
-  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   // Metrics state
   const [metrics, setMetrics] = useState({ invitesActive: 0, invitesExpired: 0, checkinsToday: 0, failedOtps: 0, invitesByStatus: [] });
@@ -26,10 +26,14 @@ export default function AdminDashboard() {
     async function loadMetrics() {
       setLoadingMetrics(true); setMetricsError(null);
       try {
-        const res = await axios.get("/api/admin/metrics", { headers });
-        if (!cancelled) setMetrics(res.data?.data || {});
+        const data = await getMetrics();
+        if (!cancelled) setMetrics(data || {});
       } catch (e) {
-        if (!cancelled) setMetricsError("Failed to load metrics");
+        if (!cancelled) {
+          const errorMsg = handleApiError(e);
+          setMetricsError(errorMsg);
+          logger.error('Failed to load metrics:', e);
+        }
       } finally {
         if (!cancelled) setLoadingMetrics(false);
       }
@@ -37,16 +41,16 @@ export default function AdminDashboard() {
     loadMetrics();
     const id = setInterval(loadMetrics, 30000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [headers]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     async function loadLogs() {
       setLogsLoading(true); setLogsError(null);
       try {
-        const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-        const res = await axios.get(`/api/admin/audit-logs?${params}`, { headers });
-        let rows = res.data?.data || [];
+        const params = { page: String(page), limit: String(limit) };
+        const data = await getAuditLogs(params);
+        let rows = data || [];
         // Client filters: action contains, user id contains, date (YYYY-MM-DD)
         const { action, user, date } = filters;
         if (action) rows = rows.filter(r => String(r.action || "").toLowerCase().includes(action.toLowerCase()));
@@ -54,13 +58,17 @@ export default function AdminDashboard() {
         if (date) rows = rows.filter(r => String(r.created_at || "").slice(0,10) === date);
         if (!cancelled) setLogs(rows);
       } catch (e) {
-        if (!cancelled) setLogsError("Failed to load audit logs");
+        if (!cancelled) {
+          const errorMsg = handleApiError(e);
+          setLogsError(errorMsg);
+          logger.error('Failed to load audit logs:', e);
+        }
       } finally {
         if (!cancelled) setLogsLoading(false);
       }
     }
     loadLogs();
-  }, [headers, page, limit, filters]);
+  }, [page, limit, filters]);
 
   const onLogout = () => { localStorage.clear(); window.location.href = "/login"; };
 
