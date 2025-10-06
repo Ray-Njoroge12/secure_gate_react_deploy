@@ -8,6 +8,9 @@ const Input = memo(({
   icon,
   required = false,
   className = '',
+  'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedby,
+  'aria-invalid': ariaInvalid,
   ...props 
 }) => {
   const inputClasses = `
@@ -44,18 +47,22 @@ const Input = memo(({
         <input
           id={id}
           className={`${inputClasses} ${icon ? 'pl-10' : ''}`}
+          aria-label={ariaLabel || (label ? undefined : props.placeholder)}
+          aria-describedby={ariaDescribedby || (error ? `${id}-error` : helperText ? `${id}-helper` : undefined)}
+          aria-invalid={ariaInvalid || (error ? 'true' : 'false')}
+          aria-required={required}
           {...props}
         />
       </div>
       
       {error && (
-        <p className="text-sm text-red-400" role="alert">
+        <p id={`${id}-error`} className="text-sm text-red-400" role="alert">
           {error}
         </p>
       )}
       
       {helperText && !error && (
-        <p className="text-sm text-slate-400">
+        <p id={`${id}-helper`} className="text-sm text-slate-400">
           {helperText}
         </p>
       )}

@@ -11,6 +11,10 @@ const Button = memo(({
   onClick,
   type = 'button',
   className = '',
+  'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedby,
+  'aria-expanded': ariaExpanded,
+  'aria-controls': ariaControls,
   ...props 
 }) => {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -38,6 +42,11 @@ const Button = memo(({
       onClick={onClick}
       disabled={disabled || loading}
       className={buttonClasses}
+      aria-label={ariaLabel}
+      aria-describedby={ariaDescribedby}
+      aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
+      aria-disabled={disabled || loading}
       {...props}
     >
       {loading && (

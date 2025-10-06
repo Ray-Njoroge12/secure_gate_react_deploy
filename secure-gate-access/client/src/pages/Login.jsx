@@ -95,13 +95,13 @@ export default function LoginPage() {
   return (
     <AuthLayout title={showForgot ? "Reset Password" : "Sign In"}>
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md" role="alert" aria-live="polite">
           {error}
         </div>
       )}
       
       {message && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">
+        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md" role="status" aria-live="polite">
           {message}
         </div>
       )}
@@ -120,8 +120,10 @@ export default function LoginPage() {
               onChange={(e) => setResetEmail(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
+              aria-required="true"
+              aria-describedby="resetEmail-help"
             />
-            <p className="mt-1 text-sm text-gray-500">We'll send you a password reset link</p>
+            <p id="resetEmail-help" className="mt-1 text-sm text-gray-500">We'll send you a password reset link</p>
           </div>
           
           <button 
@@ -154,6 +156,8 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
+              aria-required="true"
+              autoComplete="email"
             />
           </div>
 
@@ -170,11 +174,15 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 required
+                aria-required="true"
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
               >
                 {showPassword ? (
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -197,6 +205,7 @@ export default function LoginPage() {
                 className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
+                aria-describedby="remember-help"
               />
               <span className="ml-2 text-sm text-gray-700">Remember me</span>
             </label>
@@ -205,6 +214,7 @@ export default function LoginPage() {
               type="button"
               className="text-sm text-brand-600 hover:text-brand-500 font-medium"
               onClick={() => setShowForgot(true)}
+              aria-label="Reset your password"
             >
               Forgot password?
             </button>
