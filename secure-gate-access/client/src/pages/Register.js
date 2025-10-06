@@ -340,33 +340,35 @@ export default function RegistrationPage() {
             </div>
           )}
 
-          <form onSubmit={handleBulkRegister} className="grid gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name *</label>
-              <input
-                type="text"
-                value={bulkFormData.name}
-                onChange={e => setBulkFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
-                placeholder="Enter your full name"
-                disabled={loading}
-                required
-              />
-              {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
-            </div>
+          <form onSubmit={handleBulkRegister} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  value={bulkFormData.name}
+                  onChange={e => setBulkFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  placeholder="Enter your full name"
+                  disabled={loading}
+                  required
+                />
+                {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
-              <input
-                type="tel"
-                value={bulkFormData.visitorPhone}
-                onChange={e => setBulkFormData(prev => ({ ...prev, visitorPhone: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
-                placeholder="0xxxxxxxxx"
-                disabled={loading}
-                required
-              />
-              {errors.visitorPhone && <p className="text-red-600 text-sm mt-1">{errors.visitorPhone}</p>}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
+                <input
+                  type="tel"
+                  value={bulkFormData.visitorPhone}
+                  onChange={e => setBulkFormData(prev => ({ ...prev, visitorPhone: e.target.value }))}
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  placeholder="0xxxxxxxxx"
+                  disabled={loading}
+                  required
+                />
+                {errors.visitorPhone && <p className="text-red-600 text-sm mt-1">{errors.visitorPhone}</p>}
+              </div>
             </div>
 
             <div>
@@ -375,7 +377,7 @@ export default function RegistrationPage() {
                 type="email"
                 value={bulkFormData.visitorEmail}
                 onChange={e => setBulkFormData(prev => ({ ...prev, visitorEmail: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
                 placeholder="your.email@example.com"
                 disabled={loading}
                 required
@@ -383,28 +385,30 @@ export default function RegistrationPage() {
               {errors.visitorEmail && <p className="text-red-600 text-sm mt-1">{errors.visitorEmail}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">ID Number</label>
-              <input
-                type="text"
-                value={bulkFormData.idNumber}
-                onChange={e => setBulkFormData(prev => ({ ...prev, idNumber: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
-                placeholder="Optional"
-                disabled={loading}
-              />
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">ID Number</label>
+                <input
+                  type="text"
+                  value={bulkFormData.idNumber}
+                  onChange={e => setBulkFormData(prev => ({ ...prev, idNumber: e.target.value }))}
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  placeholder="Optional"
+                  disabled={loading}
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Vehicle Plate Number</label>
-              <input
-                type="text"
-                value={bulkFormData.vehiclePlate}
-                onChange={e => setBulkFormData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
-                placeholder="Optional"
-                disabled={loading}
-              />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Vehicle Plate Number</label>
+                <input
+                  type="text"
+                  value={bulkFormData.vehiclePlate}
+                  onChange={e => setBulkFormData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  placeholder="Optional"
+                  disabled={loading}
+                />
+              </div>
             </div>
 
             <div>
@@ -412,7 +416,7 @@ export default function RegistrationPage() {
               <select
                 value={bulkFormData.purpose}
                 onChange={e => setBulkFormData(prev => ({ ...prev, purpose: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
                 disabled={loading}
                 required
               >
@@ -430,7 +434,7 @@ export default function RegistrationPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full mt-4 px-4 py-3 text-white border-none rounded-md text-base font-semibold ${
+              className={`w-full mt-4 min-h-[44px] px-4 py-3 text-white border-none rounded-md text-base font-semibold ${
                 loading 
                   ? 'bg-gray-400 cursor-not-allowed' 
                   : 'bg-green-600 hover:bg-green-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
