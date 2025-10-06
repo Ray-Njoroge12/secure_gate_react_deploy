@@ -24,6 +24,28 @@ export default function Settings() {
   const [visitorPrefs, setVisitorPrefs] = useState({ defaultDuration: "1 hour", maxVisitors: 5 });
   const [darkMode, setDarkMode] = useState(false);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleUpdate('Notifications', e);
+      }
+      // Escape to clear messages
+      if (e.key === 'Escape') {
+        // Clear any error/success messages
+        const errorElements = document.querySelectorAll('.error-message');
+        const successElements = document.querySelectorAll('.success-message');
+        errorElements.forEach(el => el.style.display = 'none');
+        successElements.forEach(el => el.style.display = 'none');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   useEffect(() => {
     const savedMode = localStorage.getItem("darkMode") === "true";
     setDarkMode(savedMode);

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../layouts/AppShell";
 import { Card, Button, Badge } from "../../components/ui";
 import Table from "../../components/Table";
@@ -15,6 +15,7 @@ export default function GuardDashboard() {
     window.location.href = "/login";
   };
   const location = useLocation();
+  const navigate = useNavigate();
   const role = localStorage.getItem('role') || 'guard';
   const [active, setActive] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,32 @@ export default function GuardDashboard() {
   const [toasts, setToasts] = useState([]);
   const [toastFilter, setToastFilter] = useState(()=> localStorage.getItem('toastFilter') || 'all'); // all|info|warning|error
   const toastRef = React.useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + S to scan QR
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        navigate('/dashboard/guard/scan-qr');
+      }
+      // Ctrl/Cmd + M to manual check
+      if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+        e.preventDefault();
+        navigate('/dashboard/guard/manual-check');
+      }
+      // Ctrl/Cmd + R to refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        if (!loading) {
+          fetchActiveVisitors();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loading, navigate]);
 
   function statusChip(s){
     const color = s==='ON_PREMISE' ? '#10b981' : s==='CONFIRMED' ? '#3b82f6' : s==='EXITED' ? '#6b7280' : s==='REVOKED' ? '#ef4444' : '#9ca3af';

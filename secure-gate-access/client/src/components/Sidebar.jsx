@@ -1,43 +1,69 @@
 // client/src/components/Sidebar.jsx
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { NavLink } from "react-router-dom";
 import { Button, Badge } from "./ui";
 
-const NavigationLink = ({ to, children, icon, description, badge }) => (
-  <NavLink 
-    to={to} 
-    className={({isActive}) => 
-      `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
-        isActive 
-          ? "bg-green-600 text-white shadow-sm" 
-          : "text-slate-300 hover:bg-slate-700 hover:text-white"
-      }`
+const NavigationLink = ({ to, children, icon, description, badge }) => {
+  const linkRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Space or Enter to activate link
+      if ((e.key === ' ' || e.key === 'Enter') && e.target === linkRef.current) {
+        e.preventDefault();
+        linkRef.current.click();
+      }
+      // Escape to clear focus
+      if (e.key === 'Escape' && linkRef.current) {
+        linkRef.current.blur();
+      }
+    };
+
+    const link = linkRef.current;
+    if (link) {
+      link.addEventListener('keydown', handleKeyDown);
+      return () => link.removeEventListener('keydown', handleKeyDown);
     }
-    aria-label={`Navigate to ${children}`}
-  >
-    {icon && <span className="w-5 h-5 flex-shrink-0" aria-hidden="true">{icon}</span>}
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center justify-between">
-        <span className="font-medium">{children}</span>
-        {badge && (
-          <Badge 
-            variant="outline" 
-            size="sm" 
-            className="ml-2 text-xs bg-slate-600 border-slate-500 text-slate-200"
-            aria-label={`${badge} badge`}
-          >
-            {badge}
-          </Badge>
+  }, []);
+
+  return (
+    <NavLink 
+      ref={linkRef}
+      to={to} 
+      className={({isActive}) => 
+        `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
+          isActive 
+            ? "bg-green-600 text-white shadow-sm" 
+            : "text-slate-300 hover:bg-slate-700 hover:text-white"
+        }`
+      }
+      aria-label={`Navigate to ${children}`}
+    >
+      {icon && <span className="w-5 h-5 flex-shrink-0" aria-hidden="true">{icon}</span>}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <span className="font-medium">{children}</span>
+          {badge && (
+            <Badge 
+              variant="outline" 
+              size="sm" 
+              className="ml-2 text-xs bg-slate-600 border-slate-500 text-slate-200"
+              aria-label={`${badge} badge`}
+            >
+              {badge}
+            </Badge>
+          )}
+        </div>
+        {description && (
+          <p className="text-xs text-slate-400 mt-0.5 truncate">
+            {description}
+          </p>
         )}
       </div>
-      {description && (
-        <p className="text-xs text-slate-400 mt-0.5 truncate">
-          {description}
-        </p>
-      )}
-    </div>
-  </NavLink>
-);
+    </NavLink>
+  );
+};
 
 const navigationConfig = {
   resident: [
@@ -203,6 +229,7 @@ const navigationConfig = {
 
 export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
   const navigation = navigationConfig[role] || [];
+  const sidebarRef = useRef(null);
   
   const getRoleDisplayName = (role) => {
     const roleNames = {
@@ -212,6 +239,37 @@ export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
     };
     return roleNames[role] || role;
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape to close sidebar
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+      // Arrow keys to navigate between menu items
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const menuItems = sidebarRef.current?.querySelectorAll('.navlink');
+        if (menuItems && menuItems.length > 0) {
+          const currentIndex = Array.from(menuItems).indexOf(document.activeElement);
+          let nextIndex;
+          if (e.key === 'ArrowDown') {
+            nextIndex = currentIndex < menuItems.length - 1 ? currentIndex + 1 : 0;
+          } else {
+            nextIndex = currentIndex > 0 ? currentIndex - 1 : menuItems.length - 1;
+          }
+          menuItems[nextIndex]?.focus();
+        }
+      }
+    };
+
+    const sidebar = sidebarRef.current;
+    if (sidebar) {
+      sidebar.addEventListener('keydown', handleKeyDown);
+      return () => sidebar.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
 
   return (
     <>
@@ -226,6 +284,7 @@ export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
       
       {/* Sidebar */}
       <aside 
+        ref={sidebarRef}
         className={`
           sidebar flex flex-col h-full fixed md:relative z-50 w-64
           transform transition-transform duration-300 ease-in-out

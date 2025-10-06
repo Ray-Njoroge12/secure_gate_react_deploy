@@ -1,5 +1,5 @@
 // client/src/components/ui/Card.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const Card = ({ 
   children, 
@@ -8,6 +8,26 @@ const Card = ({
   hover = false,
   ...props 
 }) => {
+  const cardRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape to close modal cards
+      if (e.key === 'Escape' && cardRef.current?.closest('.modal')) {
+        const closeButton = cardRef.current.querySelector('[aria-label*="close"], [aria-label*="Close"]');
+        if (closeButton) {
+          closeButton.click();
+        }
+      }
+    };
+
+    const card = cardRef.current;
+    if (card) {
+      card.addEventListener('keydown', handleKeyDown);
+      return () => card.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
   const paddingClasses = {
     none: '',
     sm: 'p-4',
@@ -23,7 +43,7 @@ const Card = ({
   `.trim().replace(/\s+/g, ' ');
   
   return (
-    <div className={cardClasses} {...props}>
+    <div ref={cardRef} className={cardClasses} {...props}>
       {children}
     </div>
   );

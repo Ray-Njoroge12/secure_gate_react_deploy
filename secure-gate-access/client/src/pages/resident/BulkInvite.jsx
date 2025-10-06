@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { bulkInvite } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
@@ -24,6 +24,27 @@ const BulkInvite = () => {
     time: "",
     numGuests: 5
   });
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + S to save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (!loading) {
+          handleSubmit(e);
+        }
+      }
+      // Ctrl/Cmd + R to reset
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        resetForm();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loading]);
   const [csvText, setCsvText] = useState("");
   const [parsedGuests, setParsedGuests] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);

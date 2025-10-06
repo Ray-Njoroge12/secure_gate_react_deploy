@@ -1,5 +1,5 @@
 // client/src/components/ui/FlowNavigation.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Button from './Button.jsx';
 import { useNavigationFlow } from '../../utils/navigationFlow';
 
@@ -10,6 +10,46 @@ const FlowNavigation = ({
   showProgress = true,
   className = '' 
 }) => {
+  const flowRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Arrow keys to navigate between steps
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevious();
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+      }
+      // Home key to go to first step
+      if (e.key === 'Home') {
+        e.preventDefault();
+        // Go to first step in flow
+        const firstStep = flowInfo?.steps?.[0];
+        if (firstStep?.path) {
+          window.location.href = firstStep.path;
+        }
+      }
+      // End key to go to last step
+      if (e.key === 'End') {
+        e.preventDefault();
+        // Go to last step in flow
+        const lastStep = flowInfo?.steps?.[flowInfo.steps.length - 1];
+        if (lastStep?.path) {
+          window.location.href = lastStep.path;
+        }
+      }
+    };
+
+    const flow = flowRef.current;
+    if (flow) {
+      flow.addEventListener('keydown', handleKeyDown);
+      return () => flow.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [currentPath, userRole, flowName]);
   const { 
     goToNextInFlow, 
     goToPreviousInFlow, 
@@ -29,7 +69,7 @@ const FlowNavigation = ({
   };
 
   return (
-    <div className={`flex items-center justify-between p-4 bg-gray-50 border-t ${className}`}>
+    <div ref={flowRef} className={`flex items-center justify-between p-4 bg-gray-50 border-t ${className}`}>
       {/* Progress indicator */}
       {showProgress && (
         <div className="flex items-center space-x-2">

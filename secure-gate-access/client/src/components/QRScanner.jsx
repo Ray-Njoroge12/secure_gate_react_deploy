@@ -4,11 +4,13 @@ import { Card, Button } from './ui';
 const QRScanner = ({ onScan, onError, onClose }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const modalRef = useRef(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(null);
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const streamRef = useRef(null);
+  const previousActiveElement = useRef(null);
 
   // Simple QR code detection using canvas and basic pattern matching
   const detectQRCode = (canvas) => {
@@ -139,18 +141,90 @@ const QRScanner = ({ onScan, onError, onClose }) => {
     onClose?.();
   };
 
+  // Focus management
   useEffect(() => {
+    // Store the previously focused element
+    previousActiveElement.current = document.activeElement;
+    
+    // Focus the modal when it opens
+    setTimeout(() => {
+      modalRef.current?.focus();
+    }, 100);
+    
     return () => {
       stopScanning();
+      // Restore focus to the previously focused element
+      if (previousActiveElement.current) {
+        previousActiveElement.current.focus();
+      }
     };
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Space to start/stop scanning
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (isScanning) {
+          stopScanning();
+        } else {
+          startScanning();
+        }
+      }
+      // Escape to close
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+      // Ctrl/Cmd + S to start scanning
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (!isScanning) {
+          startScanning();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isScanning]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+      // Space to start/stop scanning
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (isScanning) {
+          stopScanning();
+        } else {
+          startScanning();
+        }
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isScanning]);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="qr-scanner-title"
+    >
+      <Card 
+        ref={modalRef}
+        tabIndex={-1}
+        className="w-full max-w-md mx-4 focus:outline-none"
+      >
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">QR Code Scanner</h3>
+            <h3 id="qr-scanner-title" className="text-lg font-semibold">QR Code Scanner</h3>
             <Button
               variant="ghost"
               size="sm"

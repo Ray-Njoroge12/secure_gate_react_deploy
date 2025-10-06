@@ -1,12 +1,44 @@
 // client/src/components/ui/Breadcrumbs.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 const Breadcrumbs = ({ breadcrumbs = [], className = '' }) => {
+  const breadcrumbsRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Home key to go to first breadcrumb
+      if (e.key === 'Home' && breadcrumbsRef.current) {
+        e.preventDefault();
+        const firstLink = breadcrumbsRef.current.querySelector('a');
+        if (firstLink) {
+          firstLink.focus();
+        }
+      }
+      // End key to go to last breadcrumb
+      if (e.key === 'End' && breadcrumbsRef.current) {
+        e.preventDefault();
+        const links = breadcrumbsRef.current.querySelectorAll('a');
+        const lastLink = links[links.length - 1];
+        if (lastLink) {
+          lastLink.focus();
+        }
+      }
+    };
+
+    const breadcrumbs = breadcrumbsRef.current;
+    if (breadcrumbs) {
+      breadcrumbs.addEventListener('keydown', handleKeyDown);
+      return () => breadcrumbs.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
+
   if (!breadcrumbs.length) return null;
 
   return (
     <nav 
+      ref={breadcrumbsRef}
       className={`flex text-sm text-gray-600 mb-4 ${className}`}
       aria-label="Breadcrumbs"
     >

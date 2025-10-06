@@ -28,6 +28,30 @@ export default function RegistrationPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + Enter to submit
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (!loading) {
+          if (isBulkRegistration) {
+            handleBulkRegister(e);
+          } else {
+            handleSubmit(e);
+          }
+        }
+      }
+      // Escape to clear errors
+      if (e.key === 'Escape' && Object.keys(errors).length > 0) {
+        setErrors({});
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loading, errors, isBulkRegistration]);
+
   // Bulk registration fields
   const [bulkFormData, setBulkFormData] = useState({
     name: '',

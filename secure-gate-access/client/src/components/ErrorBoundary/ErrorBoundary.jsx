@@ -39,6 +39,54 @@ class ErrorBoundary extends Component {
     this.logError(error, errorInfo);
   }
 
+  componentDidMount() {
+    // Add keyboard event listener for error boundary
+    document.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  componentWillUnmount() {
+    // Remove keyboard event listener
+    document.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  handleKeyDown = (e) => {
+    // Only handle keyboard shortcuts when error boundary is active
+    if (!this.state.hasError) return;
+
+    // Escape to go home
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this.handleGoHome();
+    }
+    // Ctrl/Cmd + R to retry
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+      e.preventDefault();
+      if (!this.state.isRetrying && this.state.retryCount < 3) {
+        this.handleRetry();
+      }
+    }
+    // Ctrl/Cmd + L to reload page
+    if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+      e.preventDefault();
+      this.handleReload();
+    }
+    // Ctrl/Cmd + H to go home
+    if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+      e.preventDefault();
+      this.handleGoHome();
+    }
+    // Ctrl/Cmd + B to report bug
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      this.handleReportBug();
+    }
+    // Space or Enter to toggle details
+    if ((e.key === ' ' || e.key === 'Enter') && e.target.tagName === 'SUMMARY') {
+      e.preventDefault();
+      e.target.click();
+    }
+  };
+
   logError = async (error, errorInfo) => {
     const errorData = {
       errorId: this.state.errorId,
@@ -161,29 +209,48 @@ class ErrorBoundary extends Component {
     const { error, errorId, isRetrying } = this.state;
 
     return (
-      <div className="error-boundary error-boundary--component">
+      <div 
+        className="error-boundary error-boundary--component"
+        tabIndex={0}
+        role="alert"
+        aria-live="polite"
+        aria-label="Component error - Something went wrong"
+      >
         <div className="error-boundary__icon">⚠️</div>
         <div className="error-boundary__content">
           <h3 className="error-boundary__title">Something went wrong</h3>
           <p className="error-boundary__message">
             This component encountered an error and couldn't render properly.
           </p>
-          {process.env.NODE_ENV === 'development' && (
-            <details className="error-boundary__details">
-              <summary>Error Details</summary>
-              <pre className="error-boundary__error-text">
-                {error?.message || 'Unknown error'}
-              </pre>
-            </details>
-          )}
+            {process.env.NODE_ENV === 'development' && (
+              <details className="error-boundary__details">
+                <summary 
+                  tabIndex={0}
+                  aria-label="Toggle error details"
+                  title="Press Space or Enter to toggle details"
+                >
+                  Error Details
+                </summary>
+                <pre className="error-boundary__error-text">
+                  {error?.message || 'Unknown error'}
+                </pre>
+              </details>
+            )}
           <div className="error-boundary__actions">
             <button
               className="error-boundary__button error-boundary__button--primary"
               onClick={this.handleRetry}
               disabled={isRetrying}
+              aria-label="Try to recover from the error"
+              title="Press Ctrl/Cmd + R to retry"
             >
               {isRetrying ? 'Retrying...' : 'Try Again'}
             </button>
+          </div>
+          <div className="error-boundary__help">
+            <p className="error-boundary__keyboard-help">
+              <strong>Keyboard shortcuts:</strong> Ctrl/Cmd + R to retry.
+            </p>
           </div>
         </div>
       </div>
@@ -194,7 +261,13 @@ class ErrorBoundary extends Component {
     const { error, errorId, retryCount, isRetrying } = this.state;
 
     return (
-      <div className="error-boundary error-boundary--page">
+      <div 
+        className="error-boundary error-boundary--page"
+        tabIndex={0}
+        role="alert"
+        aria-live="assertive"
+        aria-label="Error boundary - Something went wrong"
+      >
         <div className="error-boundary__container">
           <div className="error-boundary__icon">🚨</div>
           <div className="error-boundary__content">
@@ -215,7 +288,13 @@ class ErrorBoundary extends Component {
 
             {process.env.NODE_ENV === 'development' && (
               <details className="error-boundary__details">
-                <summary>Technical Details</summary>
+                <summary 
+                  tabIndex={0}
+                  aria-label="Toggle technical details"
+                  title="Press Space or Enter to toggle details"
+                >
+                  Technical Details
+                </summary>
                 <div className="error-boundary__error-text">
                   <strong>Error:</strong> {error?.message || 'Unknown error'}
                   {error?.stack && (
@@ -232,6 +311,8 @@ class ErrorBoundary extends Component {
                 className="error-boundary__button error-boundary__button--primary"
                 onClick={this.handleRetry}
                 disabled={isRetrying || retryCount >= 3}
+                aria-label="Try to recover from the error"
+                title="Press Ctrl/Cmd + R to retry"
               >
                 {isRetrying ? 'Retrying...' : 'Try Again'}
               </button>
@@ -239,6 +320,8 @@ class ErrorBoundary extends Component {
               <button
                 className="error-boundary__button error-boundary__button--secondary"
                 onClick={this.handleReload}
+                aria-label="Reload the entire page"
+                title="Press Ctrl/Cmd + L to reload"
               >
                 Reload Page
               </button>
@@ -246,6 +329,8 @@ class ErrorBoundary extends Component {
               <button
                 className="error-boundary__button error-boundary__button--secondary"
                 onClick={this.handleGoHome}
+                aria-label="Go to the home page"
+                title="Press Ctrl/Cmd + H or Escape to go home"
               >
                 Go Home
               </button>
@@ -253,6 +338,8 @@ class ErrorBoundary extends Component {
               <button
                 className="error-boundary__button error-boundary__button--outline"
                 onClick={this.handleReportBug}
+                aria-label="Report this bug to support"
+                title="Press Ctrl/Cmd + B to report bug"
               >
                 Report Bug
               </button>
@@ -261,6 +348,9 @@ class ErrorBoundary extends Component {
             <div className="error-boundary__help">
               <p>
                 If this problem persists, please contact support with the Error ID above.
+              </p>
+              <p className="error-boundary__keyboard-help">
+                <strong>Keyboard shortcuts:</strong> Escape or Ctrl/Cmd + H to go home, Ctrl/Cmd + R to retry, Ctrl/Cmd + L to reload, Ctrl/Cmd + B to report bug.
               </p>
             </div>
           </div>

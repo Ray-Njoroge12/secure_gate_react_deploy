@@ -1,5 +1,5 @@
 // client/src/components/ui/Modal.jsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Button } from './Button';
 
 const Modal = ({ 
@@ -13,6 +13,9 @@ const Modal = ({
   className = '',
   ...props 
 }) => {
+  const modalRef = useRef(null);
+  const previousActiveElement = useRef(null);
+  
   const sizeClasses = {
     sm: 'max-w-md',
     md: 'max-w-lg', 
@@ -21,7 +24,32 @@ const Modal = ({
     full: 'max-w-full mx-4'
   };
   
-  // Handle escape key
+  // Focus trap functionality
+  const trapFocus = (e) => {
+    if (!modalRef.current) return;
+    
+    const focusableElements = modalRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          lastElement?.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          firstElement?.focus();
+          e.preventDefault();
+        }
+      }
+    }
+  };
+  
+  // Handle escape key and focus management
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen) {
@@ -30,13 +58,28 @@ const Modal = ({
     };
     
     if (isOpen) {
+      // Store the previously focused element
+      previousActiveElement.current = document.activeElement;
+      
       document.addEventListener('keydown', handleEscape);
+      document.addEventListener('keydown', trapFocus);
       document.body.style.overflow = 'hidden';
+      
+      // Focus the modal when it opens
+      setTimeout(() => {
+        modalRef.current?.focus();
+      }, 100);
     }
     
     return () => {
       document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', trapFocus);
       document.body.style.overflow = 'unset';
+      
+      // Restore focus to the previously focused element
+      if (previousActiveElement.current) {
+        previousActiveElement.current.focus();
+      }
     };
   }, [isOpen, onClose]);
   
@@ -57,11 +100,14 @@ const Modal = ({
       aria-labelledby={title ? "modal-title" : undefined}
     >
       <div 
+        ref={modalRef}
+        tabIndex={-1}
         className={`
           bg-slate-800 rounded-lg border border-slate-700 shadow-xl 
           transform transition-all duration-200 
           w-full ${sizeClasses[size]} 
           max-h-[90vh] overflow-auto
+          focus:outline-none
           ${className}
         `}
         {...props}

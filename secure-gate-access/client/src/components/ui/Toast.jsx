@@ -1,5 +1,5 @@
 // client/src/components/ui/Toast.jsx
-import React, { useEffect, memo } from 'react';
+import React, { useEffect, memo, useRef } from 'react';
 
 const Toast = memo(({ 
   message, 
@@ -9,6 +9,28 @@ const Toast = memo(({
   className = '',
   ...props 
 }) => {
+  const toastRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape to close
+      if (e.key === 'Escape' && toastRef.current) {
+        onClose?.();
+      }
+      // Space or Enter to close
+      if ((e.key === ' ' || e.key === 'Enter') && e.target === toastRef.current) {
+        e.preventDefault();
+        onClose?.();
+      }
+    };
+
+    const toast = toastRef.current;
+    if (toast) {
+      toast.addEventListener('keydown', handleKeyDown);
+      return () => toast.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [onClose]);
   const baseClasses = 'fixed top-4 right-4 max-w-sm p-4 rounded-lg shadow-brand border z-50 transform transition-all duration-300';
   
   const typeClasses = {
@@ -54,7 +76,7 @@ const Toast = memo(({
   const toastClasses = `${baseClasses} ${typeClasses[type]} ${className}`;
   
   return (
-    <div className={toastClasses} role="alert" {...props}>
+    <div ref={toastRef} className={toastClasses} role="alert" tabIndex={0} {...props}>
       <div className="flex items-start">
         <div className="flex-shrink-0">
           {icons[type]}

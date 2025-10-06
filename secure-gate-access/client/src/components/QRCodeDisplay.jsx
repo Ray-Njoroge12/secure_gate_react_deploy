@@ -1,4 +1,4 @@
-import React, { useState, memo, useCallback } from 'react';
+import React, { useState, memo, useCallback, useEffect, useRef } from 'react';
 import QRCode from 'react-qr-code';
 import { Button, Toast } from './ui';
 import { useCurrentBreakpoint, TOUCH_SIZES } from '../utils/responsive';
@@ -12,6 +12,37 @@ import { useCurrentBreakpoint, TOUCH_SIZES } from '../utils/responsive';
 const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altImg, showCopyButton = true }) {
   const [showToast, setShowToast] = useState(false);
   const breakpoint = useCurrentBreakpoint();
+  const qrRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Space or Enter to copy QR code data
+      if ((e.key === ' ' || e.key === 'Enter') && e.target === qrRef.current) {
+        e.preventDefault();
+        if (value) {
+          navigator.clipboard.writeText(value);
+        }
+      }
+      // Escape to clear focus
+      if (e.key === 'Escape' && qrRef.current) {
+        qrRef.current.blur();
+      }
+      // Ctrl/Cmd + C to copy QR code data
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && qrRef.current) {
+        e.preventDefault();
+        if (value) {
+          navigator.clipboard.writeText(value);
+        }
+      }
+    };
+
+    const qr = qrRef.current;
+    if (qr) {
+      qr.addEventListener('keydown', handleKeyDown);
+      return () => qr.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [value]);
   
   // Responsive QR code sizing
   const responsiveSize = TOUCH_SIZES.qr[breakpoint] || size;
@@ -36,7 +67,7 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
 
   return (
     <>
-      <div className={wrapperClasses}>
+      <div ref={qrRef} className={wrapperClasses} tabIndex={0}>
         <div className={qrContainerClasses}>
           {isDataUrl ? (
             <img 

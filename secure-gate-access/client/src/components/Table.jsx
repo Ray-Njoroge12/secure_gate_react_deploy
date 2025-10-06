@@ -1,7 +1,63 @@
 // client/src/components/Table.jsx
-import React from "react";
+import React, { useEffect } from "react";
 
 export default function Table({ headers = [], rows = [], mobileCardView = true }) {
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + F to focus search (if available)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="search"], input[type="text"]');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+      // Escape to clear search (if available)
+      if (e.key === 'Escape') {
+        const searchInput = document.querySelector('input[type="search"], input[type="text"]');
+        if (searchInput && searchInput.value) {
+          searchInput.value = '';
+          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      }
+      // Arrow keys to navigate table rows
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const tableRows = document.querySelectorAll('tbody tr');
+        if (tableRows && tableRows.length > 0) {
+          const currentIndex = Array.from(tableRows).indexOf(document.activeElement);
+          let nextIndex;
+          if (e.key === 'ArrowDown') {
+            nextIndex = currentIndex < tableRows.length - 1 ? currentIndex + 1 : 0;
+          } else {
+            nextIndex = currentIndex > 0 ? currentIndex - 1 : tableRows.length - 1;
+          }
+          tableRows[nextIndex]?.focus();
+        }
+      }
+      // Home key to go to first row
+      if (e.key === 'Home') {
+        e.preventDefault();
+        const firstRow = document.querySelector('tbody tr:first-child');
+        if (firstRow) {
+          firstRow.focus();
+        }
+      }
+      // End key to go to last row
+      if (e.key === 'End') {
+        e.preventDefault();
+        const lastRow = document.querySelector('tbody tr:last-child');
+        if (lastRow) {
+          lastRow.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // If no data, show empty state
   if (rows.length === 0) {
     return (

@@ -7,6 +7,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const role = localStorage.getItem("role") || "guest";
   const [profilePic, setProfilePic] = useState(null);
   const navigate = useNavigate();
+  const topbarRef = useRef(null);
 
   const getRoleDisplayName = (role) => {
     const roleNames = {
@@ -17,6 +18,27 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
     };
     return roleNames[role] || role;
   };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Space or Enter to activate profile button
+      if ((e.key === ' ' || e.key === 'Enter') && e.target === topbarRef.current) {
+        e.preventDefault();
+        handleProfileClick();
+      }
+      // Escape to clear focus
+      if (e.key === 'Escape' && topbarRef.current) {
+        topbarRef.current.blur();
+      }
+    };
+
+    const topbar = topbarRef.current;
+    if (topbar) {
+      topbar.addEventListener('keydown', handleKeyDown);
+      return () => topbar.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
 
   useEffect(() => {
     setProfilePic(localStorage.getItem("profilePic"));
@@ -34,6 +56,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
 
   return (
     <header 
+      ref={topbarRef}
       className="topbar" 
       role="banner"
       aria-label="Page header"

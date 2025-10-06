@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AppShell from "../../layouts/AppShell";
 import StatsCard from "../../components/StatsCard";
 import Table from "../../components/Table";
@@ -7,11 +8,43 @@ import { handleApiError } from "../../utils/errorMapper";
 import logger from "../../utils/logger";
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
 
   // Metrics state
   const [metrics, setMetrics] = useState({ invitesActive: 0, invitesExpired: 0, checkinsToday: 0, failedOtps: 0, invitesByStatus: [] });
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [metricsError, setMetricsError] = useState(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + U to users
+      if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+        e.preventDefault();
+        navigate('/dashboard/admin/users');
+      }
+      // Ctrl/Cmd + A to audit logs
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        navigate('/dashboard/admin/audit-logs');
+      }
+      // Ctrl/Cmd + S to settings
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        navigate('/dashboard/admin/settings');
+      }
+      // Ctrl/Cmd + R to refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        if (!loadingMetrics) {
+          loadMetrics();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loadingMetrics, navigate]);
 
   // Audit logs state
   const [logs, setLogs] = useState([]);

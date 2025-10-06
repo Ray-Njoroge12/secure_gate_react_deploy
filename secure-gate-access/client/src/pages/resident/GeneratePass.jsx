@@ -13,6 +13,27 @@ export default function GeneratePass(){
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + G to generate pass
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        if (!loading && selectedVisitor) {
+          generatePass(e);
+        }
+      }
+      // Ctrl/Cmd + R to reset
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        reset();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loading, selectedVisitor]);
+
   useEffect(() => {
     loadVisitors();
   }, []);

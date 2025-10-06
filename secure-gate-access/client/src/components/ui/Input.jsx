@@ -1,5 +1,5 @@
 // client/src/components/ui/Input.jsx
-import React, { memo } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 
 const Input = memo(({ 
   label,
@@ -13,6 +13,31 @@ const Input = memo(({
   'aria-invalid': ariaInvalid,
   ...props 
 }) => {
+  const inputRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + A to select all
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        if (inputRef.current) {
+          inputRef.current.select();
+        }
+      }
+      // Escape to clear
+      if (e.key === 'Escape' && inputRef.current) {
+        inputRef.current.value = '';
+        inputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    };
+
+    const input = inputRef.current;
+    if (input) {
+      input.addEventListener('keydown', handleKeyDown);
+      return () => input.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
   const inputClasses = `
     w-full min-h-[44px] px-3 sm:px-4 py-2 sm:py-3 bg-slate-800 border rounded-lg 
     text-sm sm:text-base text-slate-200 placeholder-slate-400 
