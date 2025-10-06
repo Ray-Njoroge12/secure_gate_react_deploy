@@ -208,7 +208,7 @@ const AddVisitor = () => {
                   Personal Information
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Full Name"
                     placeholder="Enter visitor's full name"
@@ -255,7 +255,7 @@ const AddVisitor = () => {
                   Visit Details
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Date of Visit"
                     type="date"
@@ -319,20 +319,20 @@ const AddVisitor = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Button
                   type="button"
                   onClick={resetForm}
                   disabled={loading}
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 min-h-[44px]"
                 >
                   Clear Form
                 </Button>
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="flex-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                  className="flex-1 sm:flex-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 min-h-[44px]"
                 >
                   {loading ? (
                     <>

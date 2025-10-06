@@ -11,10 +11,11 @@ const Input = memo(({
   ...props 
 }) => {
   const inputClasses = `
-    w-full min-h-[44px] px-3 xs:px-4 py-2 xs:py-3 bg-slate-800 border rounded-lg 
-    text-sm xs:text-base text-slate-200 placeholder-slate-400 
+    w-full min-h-[44px] px-3 sm:px-4 py-2 sm:py-3 bg-slate-800 border rounded-lg 
+    text-sm sm:text-base text-slate-200 placeholder-slate-400 
     transition-colors duration-200
     focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+    disabled:opacity-50 disabled:cursor-not-allowed
     ${error 
       ? 'border-red-500 focus:ring-red-500' 
       : 'border-slate-600 hover:border-slate-500'
@@ -27,9 +28,9 @@ const Input = memo(({
   return (
     <div className="space-y-1">
       {label && (
-        <label htmlFor={id} className="block text-xs xs:text-sm font-medium text-slate-300">
+        <label htmlFor={id} className="block text-sm sm:text-base font-medium text-slate-300">
           {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
+          {required && <span className="text-red-400 ml-1" aria-label="required">*</span>}
         </label>
       )}
       
