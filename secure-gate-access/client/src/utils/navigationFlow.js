@@ -273,6 +273,7 @@ function formatBreadcrumbLabel(segment) {
     'dashboard': 'Dashboard',
     'resident': 'Resident',
     'guard': 'Guard',
+    'admin': 'Admin',
     'add-visitor': 'Add Visitor',
     'generate-pass': 'Generate Pass',
     'visitor-history': 'History',
@@ -280,7 +281,10 @@ function formatBreadcrumbLabel(segment) {
     'scan-qr': 'Scan QR',
     'manual-check': 'Manual Check',
     'settings': 'Settings',
-    'reports': 'Reports'
+    'reports': 'Reports',
+    'users': 'Users',
+    'audit-logs': 'Audit Logs',
+    'pages': 'Pages'
   };
 
   return labelMap[segment] || segment.split('-').map(word => 
