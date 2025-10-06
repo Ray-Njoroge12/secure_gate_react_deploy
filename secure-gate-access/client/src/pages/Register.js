@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } from "../services/passService.js";
+import { useError } from "../contexts/ErrorContext.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
 import logger from '../utils/logger';
@@ -10,6 +11,7 @@ export default function RegistrationPage() {
   const navigate = useNavigate();
   const { inviteCode } = useParams();
   const [searchParams] = useSearchParams();
+  const { handleError, handleSuccess, handleWarning, clearAllErrors } = useError();
   const isBulkRegistration = !!inviteCode || searchParams.get('bulk') === 'true';
 
   // Enhanced form state management
@@ -43,7 +45,8 @@ export default function RegistrationPage() {
         }
       }
       // Escape to clear errors
-      if (e.key === 'Escape' && Object.keys(errors).length > 0) {
+      if (e.key === 'Escape') {
+        clearAllErrors();
         setErrors({});
       }
     };
@@ -90,7 +93,12 @@ export default function RegistrationPage() {
           setBulkFormData(prev => ({ ...prev, purpose: normalized.eventName || "Event" }));
         } catch (err) {
           logger.error('Failed to fetch invite details', err);
-          setErrors({ general: 'Invalid or expired invitation link' });
+          handleError('Invalid or expired invitation link', {
+            context: 'Invite Details',
+            title: 'Invalid Invitation',
+            showRecoveryActions: true,
+            onHelp: () => window.open('mailto:support@securegate.com?subject=Invalid Invitation&body=Please provide a valid invitation link.')
+          });
         }
       };
       fetchInviteDetails();
@@ -152,6 +160,7 @@ export default function RegistrationPage() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setErrors({});
+    clearAllErrors();
     setLoading(true);
 
     if (!validateForm()) {
@@ -177,14 +186,30 @@ export default function RegistrationPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrors({ general: data.message || "Registration failed" });
+        handleError(data.message || "Registration failed", {
+          context: 'User Registration',
+          title: 'Registration Failed',
+          showRecoveryActions: true,
+          onRetry: () => handleRegister(e)
+        });
         return;
       }
 
+      handleSuccess("Registration successful! Redirecting to login...", {
+        context: 'User Registration',
+        title: 'Registration Successful',
+        autoClose: true,
+        autoCloseDelay: 2000
+      });
       setSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
-      setErrors({ general: "Server error. Try again later." });
+      handleError(err, {
+        context: 'User Registration',
+        title: 'Server Error',
+        showRecoveryActions: true,
+        onRetry: () => handleRegister(e)
+      });
     } finally {
       setLoading(false);
     }
@@ -253,10 +278,35 @@ export default function RegistrationPage() {
     } catch (err) {
       logger.error('Bulk registration failed', err, { inviteId });
       // Friendly messages per status
-      if (err.status === 410) setErrors({ general: 'This invitation has expired. Please contact the host for a new link.' });
-      else if (err.status === 409) setErrors({ general: 'All guest slots have been used for this event.' });
-      else if (err.status === 404) setErrors({ general: 'Invitation not found. Please check your link.' });
-      else setErrors({ general: err.message || 'Registration failed' });
+      if (err.status === 410) {
+        handleError('This invitation has expired. Please contact the host for a new link.', {
+          context: 'Bulk Registration',
+          title: 'Invitation Expired',
+          showRecoveryActions: true,
+          onHelp: () => window.open('mailto:support@securegate.com?subject=Expired Invitation&body=Please provide a new invitation link.')
+        });
+      } else if (err.status === 409) {
+        handleError('All guest slots have been used for this event.', {
+          context: 'Bulk Registration',
+          title: 'Event Full',
+          showRecoveryActions: true,
+          onHelp: () => window.open('mailto:support@securegate.com?subject=Event Full&body=Please increase the guest limit for this event.')
+        });
+      } else if (err.status === 404) {
+        handleError('Invitation not found. Please check your link.', {
+          context: 'Bulk Registration',
+          title: 'Invalid Invitation',
+          showRecoveryActions: true,
+          onHelp: () => window.open('mailto:support@securegate.com?subject=Invalid Invitation&body=Please provide a valid invitation link.')
+        });
+      } else {
+        handleError(err, {
+          context: 'Bulk Registration',
+          title: 'Registration Failed',
+          showRecoveryActions: true,
+          onRetry: () => handleBulkRegister(e)
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -278,11 +328,6 @@ export default function RegistrationPage() {
             )}
           </div>
 
-          {errors.general && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md whitespace-pre-line">
-              {errors.general}
-            </div>
-          )}
 
           {success && (
             <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">
@@ -483,11 +528,6 @@ export default function RegistrationPage() {
 
   return (
     <AuthLayout title="Create Account">
-      {errors.general && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
-          {errors.general}
-        </div>
-      )}
 
       {success && (
         <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">

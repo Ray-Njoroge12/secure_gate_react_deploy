@@ -1,207 +1,270 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { handleApiError } from '../utils/errorMapper';
+import errorQueueService from '../services/errorQueueService';
+import logger from '../utils/logger';
 
 /**
- * Custom hook for handling errors in functional components
+ * Standardized Error Handling Hook
+ * Provides consistent error handling across the application
  */
-export const useErrorHandler = () => {
-  const [error, setError] = useState(null);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+export const useErrorHandler = (options = {}) => {
+  const {
+    context = 'Unknown',
+    showToUser = true,
+    logToConsole = true,
+    reportToService = false,
+    defaultType = 'error',
+    autoClose = true,
+    autoCloseDelay = 5000,
+    position = 'top-right',
+    showRecoveryActions = true
+  } = options;
 
-  const handleError = useCallback((error, errorInfo = {}) => {
-    console.error('Error caught by useErrorHandler:', error, errorInfo);
-    
-    setError({
-      message: error.message || 'An unexpected error occurred',
-      stack: error.stack,
-      ...errorInfo,
-      timestamp: new Date().toISOString(),
-      errorId: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  const [localErrors, setLocalErrors] = useState([]);
+  const errorIdRef = useRef(null);
+
+  /**
+   * Handle error with standardized processing
+   * @param {Error|string} error - Error object or message
+   * @param {Object} errorOptions - Additional error options
+   * @returns {string} Error ID
+   */
+  const handleError = useCallback((error, errorOptions = {}) => {
+    let errorMessage;
+    let errorType = defaultType;
+
+    // Process error based on type
+    if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error instanceof Error) {
+      errorMessage = handleApiError(error, context);
+      errorType = categorizeErrorType(error);
+    } else if (error?.message) {
+      errorMessage = error.message;
+      errorType = error.type || defaultType;
+    } else {
+      errorMessage = 'An unexpected error occurred';
+    }
+
+    // Log error if enabled
+    if (logToConsole) {
+      logger.error(`[${context}] Error occurred`, error, {
+        context,
+        errorMessage,
+        errorType,
+        ...errorOptions
+      });
+    }
+
+    // Report to service if enabled
+    if (reportToService && process.env.NODE_ENV === 'production') {
+      // reportErrorToService(error, context, errorOptions);
+    }
+
+    // Add to error queue if showToUser is enabled
+    if (showToUser) {
+      const errorId = errorQueueService.addError({
+        message: errorMessage,
+        type: errorType,
+        title: errorOptions.title || getDefaultTitle(errorType),
+        persistent: errorOptions.persistent || false,
+        autoClose: errorOptions.autoClose !== undefined ? errorOptions.autoClose : autoClose,
+        autoCloseDelay: errorOptions.autoCloseDelay || autoCloseDelay,
+        position: errorOptions.position || position,
+        showRecoveryActions: errorOptions.showRecoveryActions !== undefined ? errorOptions.showRecoveryActions : showRecoveryActions,
+        onRetry: errorOptions.onRetry || null,
+        onHelp: errorOptions.onHelp || null,
+        onClose: errorOptions.onClose || null
+      });
+
+      errorIdRef.current = errorId;
+      return errorId;
+    }
+
+    return null;
+  }, [context, showToUser, logToConsole, reportToService, defaultType, autoClose, autoCloseDelay, position, showRecoveryActions]);
+
+  /**
+   * Handle success message
+   * @param {string} message - Success message
+   * @param {Object} successOptions - Additional success options
+   * @returns {string} Success ID
+   */
+  const handleSuccess = useCallback((message, successOptions = {}) => {
+    const successId = errorQueueService.addError({
+      message,
+      type: 'success',
+      title: successOptions.title || 'Success',
+      persistent: successOptions.persistent || false,
+      autoClose: successOptions.autoClose !== undefined ? successOptions.autoClose : true,
+      autoCloseDelay: successOptions.autoCloseDelay || 3000,
+      position: successOptions.position || position,
+      showRecoveryActions: false,
+      ...successOptions
     });
 
-    // Log error to backend
-    logErrorToBackend(error, errorInfo);
+    return successId;
+  }, [position]);
+
+  /**
+   * Handle warning message
+   * @param {string} message - Warning message
+   * @param {Object} warningOptions - Additional warning options
+   * @returns {string} Warning ID
+   */
+  const handleWarning = useCallback((message, warningOptions = {}) => {
+    const warningId = errorQueueService.addError({
+      message,
+      type: 'warning',
+      title: warningOptions.title || 'Warning',
+      persistent: warningOptions.persistent || false,
+      autoClose: warningOptions.autoClose !== undefined ? warningOptions.autoClose : true,
+      autoCloseDelay: warningOptions.autoCloseDelay || 4000,
+      position: warningOptions.position || position,
+      showRecoveryActions: warningOptions.showRecoveryActions !== undefined ? warningOptions.showRecoveryActions : true,
+      ...warningOptions
+    });
+
+    return warningId;
+  }, [position]);
+
+  /**
+   * Handle info message
+   * @param {string} message - Info message
+   * @param {Object} infoOptions - Additional info options
+   * @returns {string} Info ID
+   */
+  const handleInfo = useCallback((message, infoOptions = {}) => {
+    const infoId = errorQueueService.addError({
+      message,
+      type: 'info',
+      title: infoOptions.title || 'Information',
+      persistent: infoOptions.persistent || false,
+      autoClose: infoOptions.autoClose !== undefined ? infoOptions.autoClose : true,
+      autoCloseDelay: infoOptions.autoCloseDelay || 3000,
+      position: infoOptions.position || position,
+      showRecoveryActions: false,
+      ...infoOptions
+    });
+
+    return infoId;
+  }, [position]);
+
+  /**
+   * Clear specific error
+   * @param {string} errorId - Error ID to clear
+   */
+  const clearError = useCallback((errorId) => {
+    errorQueueService.removeError(errorId);
   }, []);
 
-  const clearError = useCallback(() => {
-    setError(null);
-    setIsRetrying(false);
+  /**
+   * Clear all errors
+   */
+  const clearAllErrors = useCallback(() => {
+    errorQueueService.clearAll();
   }, []);
 
-  const retry = useCallback(async (retryFunction) => {
-    if (!retryFunction || typeof retryFunction !== 'function') {
-      console.warn('Retry function not provided or not a function');
-      return;
-    }
+  /**
+   * Clear errors by type
+   * @param {string} type - Error type to clear
+   */
+  const clearErrorsByType = useCallback((type) => {
+    errorQueueService.clearByType(type);
+  }, []);
 
-    setIsRetrying(true);
-    setRetryCount(prev => prev + 1);
+  /**
+   * Get all errors
+   * @returns {Array} Array of error objects
+   */
+  const getErrors = useCallback(() => {
+    return errorQueueService.getErrors();
+  }, []);
 
-    try {
-      await retryFunction();
-      clearError();
-    } catch (retryError) {
-      console.error('Retry failed:', retryError);
-      handleError(retryError, { isRetry: true, retryCount: retryCount + 1 });
-    } finally {
-      setIsRetrying(false);
-    }
-  }, [handleError, clearError, retryCount]);
+  /**
+   * Get errors by type
+   * @param {string} type - Error type
+   * @returns {Array} Array of error objects
+   */
+  const getErrorsByType = useCallback((type) => {
+    return errorQueueService.getErrorsByType(type);
+  }, []);
 
-  const reset = useCallback(() => {
-    setError(null);
-    setIsRetrying(false);
-    setRetryCount(0);
+  /**
+   * Check if there are any errors
+   * @returns {boolean} True if there are errors
+   */
+  const hasErrors = useCallback(() => {
+    return errorQueueService.getErrorCount() > 0;
+  }, []);
+
+  /**
+   * Check if there are errors of specific type
+   * @param {string} type - Error type
+   * @returns {boolean} True if there are errors of this type
+   */
+  const hasErrorsOfType = useCallback((type) => {
+    return errorQueueService.getErrorCountByType(type) > 0;
   }, []);
 
   return {
-    error,
-    isRetrying,
-    retryCount,
     handleError,
+    handleSuccess,
+    handleWarning,
+    handleInfo,
     clearError,
-    retry,
-    reset,
-    hasError: !!error
+    clearAllErrors,
+    clearErrorsByType,
+    getErrors,
+    getErrorsByType,
+    hasErrors,
+    hasErrorsOfType,
+    errorId: errorIdRef.current
   };
 };
 
 /**
- * Hook for handling async operations with error boundaries
+ * Categorize error type based on error object
+ * @param {Error} error - Error object
+ * @returns {string} Error type
  */
-export const useAsyncErrorHandler = () => {
-  const { handleError, ...rest } = useErrorHandler();
-
-  const executeAsync = useCallback(async (asyncFunction, options = {}) => {
-    const { 
-      onSuccess, 
-      onError, 
-      retryable = true,
-      maxRetries = 3 
-    } = options;
-
-    try {
-      const result = await asyncFunction();
-      onSuccess?.(result);
-      return result;
-    } catch (error) {
-      console.error('Async operation failed:', error);
-      
-      const errorInfo = {
-        isAsync: true,
-        retryable,
-        maxRetries,
-        ...options
-      };
-
-      handleError(error, errorInfo);
-      onError?.(error);
-      throw error;
+const categorizeErrorType = (error) => {
+  if (error?.response?.status) {
+    const status = error.response.status;
+    if (status >= 400 && status < 500) {
+      if (status === 401) return 'error';
+      if (status === 403) return 'error';
+      if (status === 404) return 'warning';
+      if (status === 422) return 'warning';
+      return 'error';
     }
-  }, [handleError]);
-
-  return {
-    ...rest,
-    executeAsync
-  };
-};
-
-/**
- * Hook for handling API errors specifically
- */
-export const useApiErrorHandler = () => {
-  const { handleError, ...rest } = useErrorHandler();
-
-  const handleApiError = useCallback((error, requestInfo = {}) => {
-    const apiError = {
-      ...error,
-      isApiError: true,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      url: requestInfo.url,
-      method: requestInfo.method,
-      headers: requestInfo.headers
-    };
-
-    handleError(apiError, requestInfo);
-  }, [handleError]);
-
-  const isNetworkError = useCallback((error) => {
-    return !error.response && error.request;
-  }, []);
-
-  const isServerError = useCallback((error) => {
-    return error.response?.status >= 500;
-  }, []);
-
-  const isClientError = useCallback((error) => {
-    return error.response?.status >= 400 && error.response?.status < 500;
-  }, []);
-
-  const isAuthError = useCallback((error) => {
-    return error.response?.status === 401 || error.response?.status === 403;
-  }, []);
-
-  return {
-    ...rest,
-    handleApiError,
-    isNetworkError,
-    isServerError,
-    isClientError,
-    isAuthError
-  };
-};
-
-/**
- * Log error to backend
- */
-const logErrorToBackend = async (error, errorInfo) => {
-  const errorData = {
-    message: error.message,
-    stack: error.stack,
-    ...errorInfo,
-    timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent,
-    url: window.location.href,
-    userId: getCurrentUserId()
-  };
-
-  try {
-    await fetch('/api/logs/error', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getAuthToken()}`
-      },
-      body: JSON.stringify(errorData)
-    });
-  } catch (logError) {
-    console.error('Failed to log error to backend:', logError);
+    if (status >= 500) return 'error';
   }
+
+  if (error?.message?.includes('network') || error?.message?.includes('fetch')) {
+    return 'error';
+  }
+
+  if (error?.message?.includes('validation') || error?.message?.includes('invalid')) {
+    return 'warning';
+  }
+
+  return 'error';
 };
 
 /**
- * Get current user ID from localStorage
+ * Get default title based on error type
+ * @param {string} type - Error type
+ * @returns {string} Default title
  */
-const getCurrentUserId = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user'));
-    return user?.id || null;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Get auth token from localStorage
- */
-const getAuthToken = () => {
-  try {
-    return localStorage.getItem('token') || null;
-  } catch {
-    return null;
-  }
+const getDefaultTitle = (type) => {
+  const titles = {
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Information',
+    success: 'Success'
+  };
+  return titles[type] || 'Error';
 };
 
 export default useErrorHandler;

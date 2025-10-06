@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.js";
+import { useError } from "../contexts/ErrorContext.jsx";
 import { handleApiError } from "../utils/errorMapper.js";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 
@@ -8,11 +9,11 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isAuthenticated, user } = useAuth();
+  const { handleError, handleSuccess, clearAllErrors } = useError();
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,22 +35,22 @@ export default function LoginPage() {
           }
         }
       }
-      // Escape to clear error
-      if (e.key === 'Escape' && error) {
-        setError("");
+      // Escape to clear errors
+      if (e.key === 'Escape') {
+        clearAllErrors();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loading, showForgot, error]);
+  }, [loading, showForgot]);
 
   // Handle login
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
+    clearAllErrors();
     setMessage("");
-    
+
     if (loading) return; // prevent double submit
     setLoading(true);
 
@@ -68,7 +69,12 @@ export default function LoginPage() {
         else navigate("/");
       }
     } catch (err) {
-      setError(handleApiError(err, 'Login'));
+      handleError(err, { 
+        context: 'Login',
+        title: 'Login Failed',
+        showRecoveryActions: true,
+        onRetry: () => handleLogin(e)
+      });
     } finally {
       setLoading(false);
     }
@@ -77,7 +83,7 @@ export default function LoginPage() {
   // Handle forgot password
   const handleForgotPassword = async (e) => {
     e.preventDefault();
-    setError("");
+    clearAllErrors();
     setMessage("");
 
     try {
@@ -90,14 +96,29 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Error sending reset link");
+        handleError(data.message || "Error sending reset link", {
+          context: 'Password Reset',
+          title: 'Reset Failed',
+          showRecoveryActions: true,
+          onRetry: () => handleForgotPassword(e)
+        });
         return;
       }
 
-      setMessage("Password reset link sent to your email.");
+      handleSuccess("Password reset link sent to your email.", {
+        context: 'Password Reset',
+        title: 'Reset Link Sent',
+        autoClose: true,
+        autoCloseDelay: 3000
+      });
       setShowForgot(false);
     } catch (err) {
-      setError("Server error. Try again later.");
+      handleError(err, {
+        context: 'Password Reset',
+        title: 'Server Error',
+        showRecoveryActions: true,
+        onRetry: () => handleForgotPassword(e)
+      });
     }
   };
 
@@ -119,17 +140,6 @@ export default function LoginPage() {
 
   return (
     <AuthLayout title={showForgot ? "Reset Password" : "Sign In"}>
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md" role="alert" aria-live="polite">
-          {error}
-        </div>
-      )}
-      
-      {message && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md" role="status" aria-live="polite">
-          {message}
-        </div>
-      )}
 
       {showForgot ? (
         <form onSubmit={handleForgotPassword} className="space-y-6">
