@@ -40,11 +40,11 @@ const Button = memo(({
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variantClasses = {
-    primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500 shadow-brand',
-    secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-200 focus:ring-slate-500 shadow-sm',
-    outline: 'border border-slate-600 hover:border-slate-500 bg-transparent hover:bg-slate-800 text-slate-300 focus:ring-slate-500',
-    ghost: 'bg-transparent hover:bg-slate-800 text-slate-300 focus:ring-slate-500',
-    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 shadow-sm'
+    primary: 'bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white focus:ring-brand-500 shadow-brand',
+    secondary: 'bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-slate-200 focus:ring-slate-500 shadow-sm',
+    outline: 'border-2 border-brand-600 text-brand-600 hover:bg-brand-600 hover:text-white focus:ring-brand-500 bg-transparent',
+    ghost: 'text-slate-300 hover:bg-slate-800 hover:text-slate-100 focus:ring-slate-500 bg-transparent',
+    danger: 'bg-error-600 hover:bg-error-700 active:bg-error-800 text-white focus:ring-error-500 shadow-sm'
   };
   
   const sizeClasses = {

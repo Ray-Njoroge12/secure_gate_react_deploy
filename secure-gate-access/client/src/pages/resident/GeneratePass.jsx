@@ -82,12 +82,12 @@ export default function GeneratePass(){
   };
 
   return (
-    <div className="app-grid">
+    <div className="grid grid-cols-[260px_1fr] min-h-screen">
       <Sidebar role="resident" />
       <div>
         <Topbar title="Generate Pass" onLogout={onLogout} />
-        <main className="main">
-          <div className="panel">
+        <main className="flex-1 overflow-y-auto bg-slate-900 p-6">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-brand p-6">
             <h3 style={{marginTop:0}}>Generate QR Pass for Approved Visitor</h3>
             
             {error && (
@@ -129,7 +129,7 @@ export default function GeneratePass(){
 
             {result && (
               <div style={{marginTop:16}}>
-                <div className="panel">
+                <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-brand p-6">
                   <h4 style={{marginTop: 0}}>Pass Generated for {result.visitorName}</h4>
                   <div style={{display:"flex", gap:16, alignItems:"flex-start", flexWrap: "wrap"}}>
                     <div style={{minWidth: 200}}>

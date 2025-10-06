@@ -20,6 +20,34 @@ module.exports = {
           900: '#064e3b',
         },
         
+        // Primary Colors (alias for brand)
+        primary: {
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+        },
+        
+        // Secondary Colors (alias for slate)
+        secondary: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+        },
+        
         // Neutral Colors
         slate: {
           50: '#f8fafc',
@@ -32,6 +60,20 @@ module.exports = {
           700: '#334155',
           800: '#1e293b',
           900: '#0f172a',
+        },
+        
+        // Accent Colors
+        accent: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
         
         // Semantic Colors
@@ -179,7 +221,7 @@ module.exports = {
           'min-width': '44px',
         },
         '.focus-ring': {
-          'outline': '2px solid var(--color-brand-500)',
+          'outline': '2px solid #10b981',
           'outline-offset': '2px',
         },
         '.text-balance': {
@@ -191,6 +233,54 @@ module.exports = {
           '&::-webkit-scrollbar': {
             display: 'none',
           },
+        },
+        '.shadow-brand': {
+          'box-shadow': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        },
+        '.rounded-smooth': {
+          'border-radius': '8px',
+        },
+        '.bg-app': {
+          'background-color': '#0f172a',
+        },
+        '.bg-panel': {
+          'background-color': '#1e293b',
+        },
+        '.text-app': {
+          'color': '#e2e8f0',
+        },
+        '.text-muted': {
+          'color': '#94a3b8',
+        },
+        '.border-app': {
+          'border-color': '#334155',
+        },
+        '.bg-accent': {
+          'background-color': '#10b981',
+        },
+        '.text-accent': {
+          'color': '#10b981',
+        },
+        '.border-accent': {
+          'border-color': '#10b981',
+        },
+        '.bg-danger': {
+          'background-color': '#ef4444',
+        },
+        '.text-danger': {
+          'color': '#ef4444',
+        },
+        '.border-danger': {
+          'border-color': '#ef4444',
+        },
+        '.bg-line': {
+          'background-color': '#334155',
+        },
+        '.text-line': {
+          'color': '#334155',
+        },
+        '.border-line': {
+          'border-color': '#334155',
         },
       };
       

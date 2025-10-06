@@ -36,7 +36,7 @@ const Card = ({
   };
   
   const cardClasses = `
-    bg-secondary-800 rounded-lg border border-secondary-700 shadow-brand 
+    bg-slate-800 rounded-lg border border-slate-700 shadow-brand 
     ${hover ? 'hover:border-slate-600 transition-colors duration-200' : ''}
     ${paddingClasses[padding]}
     ${className}
@@ -56,7 +56,7 @@ const CardHeader = ({ children, className = '' }) => (
 );
 
 const CardTitle = ({ children, className = '' }) => (
-  <h3 className={`text-lg font-semibold text-secondary-200 ${className}`}>
+  <h3 className={`text-lg font-semibold text-slate-200 ${className}`}>
     {children}
   </h3>
 );
@@ -68,7 +68,7 @@ const CardContent = ({ children, className = '' }) => (
 );
 
 const CardFooter = ({ children, className = '' }) => (
-  <div className={`mt-4 pt-4 border-t border-secondary-700 ${className}`}>
+  <div className={`mt-4 pt-4 border-t border-slate-700 ${className}`}>
     {children}
   </div>
 );

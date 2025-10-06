@@ -4,7 +4,7 @@ import Topbar from "./Topbar";
 
 export default function Layout({ title, right, children, role }) {
   return (
-    <div className="app-grid" role="application" aria-label="Secure Gate Application">
+    <div className="grid grid-cols-[260px_1fr] min-h-screen" role="application" aria-label="Secure Gate Application">
       {/* Skip Navigation Link for Accessibility */}
       <a 
         href="#main-content" 

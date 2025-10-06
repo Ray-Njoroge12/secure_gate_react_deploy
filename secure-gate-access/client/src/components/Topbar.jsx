@@ -57,7 +57,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   return (
     <header 
       ref={topbarRef}
-      className="topbar" 
+      className="bg-slate-800 border-b border-slate-700 px-6 py-3 flex items-center justify-between sticky top-0 z-40" 
       role="banner"
       aria-label="Page header"
     >
@@ -65,7 +65,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
         {/* Mobile Menu Toggle Button */}
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="md:hidden p-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={sidebarOpen}
           aria-controls="main-navigation"
