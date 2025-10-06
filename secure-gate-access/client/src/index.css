@@ -5,19 +5,19 @@
 /* Custom utilities for the secure gate system */
 @layer utilities {
   .bg-app {
-    @apply bg-secondary-900;
+    @apply bg-slate-900;
   }
   .bg-panel {
-    @apply bg-secondary-800;
+    @apply bg-slate-800;
   }
   .text-app {
-    @apply text-secondary-100;
+    @apply text-slate-100;
   }
   .text-muted {
-    @apply text-secondary-400;
+    @apply text-slate-400;
   }
   .border-app {
-    @apply border-secondary-700;
+    @apply border-slate-700;
   }
 }
 
