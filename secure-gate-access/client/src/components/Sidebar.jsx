@@ -7,14 +7,15 @@ const NavigationLink = ({ to, children, icon, description, badge }) => (
   <NavLink 
     to={to} 
     className={({isActive}) => 
-      `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
+      `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
         isActive 
           ? "bg-green-600 text-white shadow-sm" 
           : "text-slate-300 hover:bg-slate-700 hover:text-white"
       }`
     }
+    aria-label={`Navigate to ${children}`}
   >
-    {icon && <span className="w-5 h-5 flex-shrink-0">{icon}</span>}
+    {icon && <span className="w-5 h-5 flex-shrink-0" aria-hidden="true">{icon}</span>}
     <div className="flex-1 min-w-0">
       <div className="flex items-center justify-between">
         <span className="font-medium">{children}</span>
@@ -23,6 +24,7 @@ const NavigationLink = ({ to, children, icon, description, badge }) => (
             variant="outline" 
             size="sm" 
             className="ml-2 text-xs bg-slate-600 border-slate-500 text-slate-200"
+            aria-label={`${badge} badge`}
           >
             {badge}
           </Badge>
@@ -199,7 +201,7 @@ const navigationConfig = {
   ]
 };
 
-export default function Sidebar({ role, onLogout, error }) {
+export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
   const navigation = navigationConfig[role] || [];
   
   const getRoleDisplayName = (role) => {
@@ -212,11 +214,26 @@ export default function Sidebar({ role, onLogout, error }) {
   };
 
   return (
-    <aside 
-      className="sidebar flex flex-col h-full"
-      role="navigation"
-      aria-label="Main navigation"
-    >
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside 
+        className={`
+          sidebar flex flex-col h-full fixed md:relative z-50 w-64
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+        role="navigation"
+        aria-label="Main navigation"
+      >
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
@@ -264,17 +281,19 @@ export default function Sidebar({ role, onLogout, error }) {
       <div className="mt-auto pt-4 border-t border-slate-700">
         <Button 
           variant="outline" 
-          className="w-full justify-center"
+          className="w-full justify-center min-h-[44px]"
           onClick={onLogout}
           icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
           }
+          aria-label="Logout from application"
         >
           Logout
         </Button>
       </div>
     </aside>
+    </>
   );
 }
