@@ -1,0 +1,232 @@
+/* Authentication Error Boundary Styles */
+.auth-error-boundary {
+  border: 2px dashed #e74c3c;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 16px 0;
+  background: linear-gradient(135deg, #fdf2f2 0%, #fce4ec 100%);
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.auth-error-boundary__icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.auth-error-boundary__content {
+  max-width: 100%;
+}
+
+.auth-error-boundary__title {
+  color: #c0392b;
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.auth-error-boundary__message {
+  color: #8e4a4a;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.auth-error-boundary__info {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.auth-error-boundary__info p {
+  color: #8e4a4a;
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.auth-error-boundary__info ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #8e4a4a;
+}
+
+.auth-error-boundary__info li {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.auth-error-boundary__retry-info {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #856404;
+}
+
+.auth-error-boundary__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.auth-error-boundary__button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.auth-error-boundary__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-error-boundary__button--primary {
+  background: #e74c3c;
+  color: white;
+}
+
+.auth-error-boundary__button--primary:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+.auth-error-boundary__button--secondary {
+  background: #95a5a6;
+  color: white;
+}
+
+.auth-error-boundary__button--secondary:hover:not(:disabled) {
+  background: #7f8c8d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(149, 165, 166, 0.3);
+}
+
+.auth-error-boundary__button--outline {
+  background: transparent;
+  color: #e74c3c;
+  border: 2px solid #e74c3c;
+}
+
+.auth-error-boundary__button--outline:hover:not(:disabled) {
+  background: #e74c3c;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+.auth-error-boundary__help {
+  color: #8e4a4a;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.auth-error-boundary__help p {
+  margin: 0;
+}
+
+.auth-error-boundary__help a {
+  color: #e74c3c;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-error-boundary__help a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .auth-error-boundary {
+    padding: 20px 16px;
+  }
+  
+  .auth-error-boundary__title {
+    font-size: 1.25rem;
+  }
+  
+  .auth-error-boundary__message {
+    font-size: 0.9rem;
+  }
+  
+  .auth-error-boundary__actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .auth-error-boundary__button {
+    width: 100%;
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-error-boundary {
+    padding: 16px 12px;
+  }
+  
+  .auth-error-boundary__icon {
+    font-size: 2.5rem;
+  }
+  
+  .auth-error-boundary__title {
+    font-size: 1.1rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .auth-error-boundary {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-color: #e74c3c;
+  }
+  
+  .auth-error-boundary__title {
+    color: #e74c3c;
+  }
+  
+  .auth-error-boundary__message {
+    color: #bdc3c7;
+  }
+  
+  .auth-error-boundary__info {
+    background: rgba(52, 73, 94, 0.7);
+  }
+  
+  .auth-error-boundary__info p {
+    color: #bdc3c7;
+  }
+  
+  .auth-error-boundary__info ul {
+    color: #bdc3c7;
+  }
+  
+  .auth-error-boundary__help {
+    color: #bdc3c7;
+  }
+  
+  .auth-error-boundary__help a {
+    color: #e74c3c;
+  }
+}

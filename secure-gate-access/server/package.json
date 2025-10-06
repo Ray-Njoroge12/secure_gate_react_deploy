@@ -6,7 +6,34 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --inspect server.js"
+    "dev": "node --inspect server.js",
+    "test:integration": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --testMatch='**/tests/integration/**/*.test.js' --runInBand --detectOpenHandles",
+    "test:integration:verbose": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --testMatch='**/tests/integration/**/*.test.js' --runInBand --verbose",
+    "test:integration:coverage": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --testMatch='**/tests/integration/**/*.test.js' --runInBand --coverage",
+    "test:e2e": "npx playwright test",
+    "test:e2e:headed": "npx playwright test --headed",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:debug": "npx playwright test --debug",
+    "test:e2e:report": "npx playwright show-report",
+    "test:e2e:install": "npx playwright install",
+    "test:manual": "node tests/manual/execute-manual-tests.js",
+    "test:manual:run": "node tests/manual/run-manual-tests.js",
+    "test:manual:report": "open tests/results/manual-test-report.html",
+    "test:performance": "node tests/performance/run-performance-tests.js",
+    "test:performance:load": "k6 run tests/performance/load-test.js",
+    "test:performance:stress": "k6 run tests/performance/stress-test.js",
+    "test:performance:spike": "k6 run tests/performance/spike-test.js",
+    "test:security": "node tests/security/run-security-audit.js",
+    "test:security:audit": "node tests/security/security-audit.js",
+    "test:security:vulnerability": "node tests/security/vulnerability-tests.js",
+    "test:security:npm": "npm audit",
+    "test:all": "npm run test:integration && npm run test:e2e && npm run test:manual && npm run test:performance && npm run test:security",
+    "optimize:database": "node scripts/optimize-database.js",
+    "setup:env": "node scripts/setup-env.js",
+    "setup:env:generate": "node scripts/setup-env.js --generate",
+    "validate:env": "node src/config/validateEnv.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js"
   },
   "engines": {
     "node": ">=18 <19"
@@ -29,16 +56,27 @@
     "jsonwebtoken": "^9.0.2",
     "memorystore": "^1.6.7",
     "morgan": "^1.10.1",
+    "node-pg-migrate": "^8.0.3",
     "nodemailer": "^7.0.6",
     "pg": "^8.16.3",
     "qrcode": "^1.5.4",
     "redis": "^5.8.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "twilio": "^5.10.2",
     "uuid": "^13.0.0",
     "winston": "^3.18.3",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "audit": "^0.0.6",
+    "axios": "^1.6.0",
+    "eslint-plugin-security": "^3.0.1",
+    "jest": "^29.7.0",
+    "k6": "^0.0.0",
+    "npm-audit-resolver": "^3.0.0-RC.0",
+    "playwright": "^1.55.1",
     "supertest": "^7.1.4"
   }
 }

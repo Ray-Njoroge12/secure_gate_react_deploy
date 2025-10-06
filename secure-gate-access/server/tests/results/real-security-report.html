@@ -1,0 +1,66 @@
+
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Real Security Test Report</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; color: #333; }
+          .container { max-width: 1200px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+          h1, h2, h3 { color: #0056b3; }
+          .status-passed { color: green; font-weight: bold; }
+          .status-failed { color: red; font-weight: bold; }
+          .vulnerability { background: #ffe6e6; border-left: 5px solid #ff4444; padding: 10px; margin: 10px 0; }
+          .severity-critical { border-left-color: #ff0000; }
+          .severity-high { border-left-color: #ff6600; }
+          .severity-medium { border-left-color: #ffaa00; }
+          .summary-box { background-color: #e9f7ef; border-left: 5px solid #28a745; padding: 15px; margin-bottom: 20px; }
+          .summary-box.failed { background-color: #f8d7da; border-left: 5px solid #dc3545; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Real Security Test Report</h1>
+          <p><strong>Date:</strong> 10/6/2025, 1:29:00 PM</p>
+          <p><strong>Target:</strong> http://localhost:3001</p>
+
+          <div class="summary-box ">
+            <h2>Overall Security Score: <span class="status-passed">100%</span></h2>
+            <p>Total Vulnerabilities Found: <span class="status-passed">0</span></p>
+          </div>
+
+          <div class="section">
+            <h3>SQL Injection Testing</h3>
+            <p>Status: <span class="status-passed">PASSED</span></p>
+            <p>Score: 100%</p>
+            <p>✅ No SQL injection vulnerabilities found</p>
+          </div>
+
+          <div class="section">
+            <h3>XSS Testing</h3>
+            <p>Status: <span class="status-passed">PASSED</span></p>
+            <p>Score: 100%</p>
+            <p>✅ No XSS vulnerabilities found</p>
+          </div>
+
+          <div class="section">
+            <h3>Authentication Testing</h3>
+            <p>Status: <span class="status-passed">PASSED</span></p>
+            <p>Score: 100%</p>
+            <p>✅ Authentication is secure</p>
+          </div>
+
+          <div class="section">
+            <h3>Rate Limiting Testing</h3>
+            <p>Status: <span class="status-passed">PASSED</span></p>
+            <p>Score: 100%</p>
+            <p>✅ Rate limiting is working</p>
+          </div>
+
+          
+
+        </div>
+      </body>
+      </html>
+    

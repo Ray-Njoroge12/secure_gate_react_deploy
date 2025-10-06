@@ -1,90 +1,184 @@
-// Comprehensive Monitoring Service
-// Provides health checks, metrics collection, and alerting
+#!/usr/bin/env node
+/**
+ * Monitoring Service
+ * Provides comprehensive system monitoring and alerting capabilities
+ */
 
-import { dbManager } from '../database/db.enhanced.js';
-import logger from '../utils/logger.js';
+import { Pool } from 'pg';
+import os from 'os';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import logger, { performanceLogger, logHealthCheck, logSystemMetrics } from '../config/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class MonitoringService {
   constructor() {
-    this.metrics = {
-      requests: {
-        total: 0,
-        successful: 0,
-        failed: 0,
-        averageResponseTime: 0
-      },
-      database: {
-        totalQueries: 0,
-        slowQueries: 0,
-        connectionPool: {
-          total: 0,
-          active: 0,
-          idle: 0
-        }
-      },
-      memory: {
-        heapUsed: 0,
-        heapTotal: 0,
-        external: 0,
-        rss: 0
-      },
-      errors: {
-        total: 0,
-        byType: {},
-        recent: []
-      },
-      uptime: process.uptime()
+    this.dbConfig = {
+      host: process.env.PGHOST || process.env.DB_HOST || 'localhost',
+      port: process.env.PGPORT || process.env.DB_PORT || 5432,
+      database: process.env.PGDATABASE || process.env.DB_NAME || 'secure_gate',
+      user: process.env.PGUSER || process.env.DB_USER || 'secure_gate_user',
+      password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'secure_gate_password',
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     };
-
-    this.alerts = [];
-    this.healthChecks = new Map();
     
-    // Start monitoring
-    this.startMonitoring();
-  }
-
-  /**
-   * Start monitoring services
-   */
-  startMonitoring() {
-    // Monitor memory usage every 30 seconds
-    setInterval(() => {
-      this.updateMemoryMetrics();
-    }, 30000);
-
-    // Monitor database health every 60 seconds
-    setInterval(() => {
-      this.checkDatabaseHealth();
-    }, 60000);
-
-    // Clean up old alerts every 5 minutes
-    setInterval(() => {
-      this.cleanupAlerts();
-    }, 300000);
-
-    logger.info('Monitoring service started');
-  }
-
-  /**
-   * Update memory metrics
-   */
-  updateMemoryMetrics() {
-    const memUsage = process.memoryUsage();
-    this.metrics.memory = {
-      heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
-      heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
-      external: Math.round(memUsage.external / 1024 / 1024),
-      rss: Math.round(memUsage.rss / 1024 / 1024)
+    this.pool = new Pool(this.dbConfig);
+    this.metrics = new Map();
+    this.alerts = new Map();
+    this.healthChecks = new Map();
+    this.isMonitoring = false;
+    this.monitoringInterval = null;
+    
+    // Thresholds for alerts
+    this.thresholds = {
+      cpu: 80, // CPU usage percentage
+      memory: 85, // Memory usage percentage
+      disk: 90, // Disk usage percentage
+      responseTime: 2000, // Response time in ms
+      errorRate: 5, // Error rate percentage
+      dbConnections: 80 // Database connection percentage
     };
+    
+    this.initializeHealthChecks();
+  }
 
-    // Alert on high memory usage
-    if (this.metrics.memory.heapUsed > 500) {
-      this.createAlert('HIGH_MEMORY_USAGE', {
-        message: 'High memory usage detected',
-        value: this.metrics.memory.heapUsed,
-        threshold: 500,
-        unit: 'MB'
+  /**
+   * Initialize health checks
+   */
+  initializeHealthChecks() {
+    // Database health check
+    this.healthChecks.set('database', {
+      name: 'Database',
+      check: () => this.checkDatabaseHealth(),
+      interval: 30000, // 30 seconds
+      lastCheck: null,
+      status: 'unknown'
+    });
+
+    // Memory health check
+    this.healthChecks.set('memory', {
+      name: 'Memory',
+      check: () => this.checkMemoryHealth(),
+      interval: 10000, // 10 seconds
+      lastCheck: null,
+      status: 'unknown'
+    });
+
+    // CPU health check
+    this.healthChecks.set('cpu', {
+      name: 'CPU',
+      check: () => this.checkCpuHealth(),
+      interval: 10000, // 10 seconds
+      lastCheck: null,
+      status: 'unknown'
+    });
+
+    // Disk health check
+    this.healthChecks.set('disk', {
+      name: 'Disk',
+      check: () => this.checkDiskHealth(),
+      interval: 60000, // 1 minute
+      lastCheck: null,
+      status: 'unknown'
+    });
+
+    // Application health check
+    this.healthChecks.set('application', {
+      name: 'Application',
+      check: () => this.checkApplicationHealth(),
+      interval: 30000, // 30 seconds
+      lastCheck: null,
+      status: 'unknown'
+    });
+  }
+
+  /**
+   * Start monitoring
+   */
+  start() {
+    if (this.isMonitoring) {
+      logger.warn('Monitoring service is already running');
+      return;
+    }
+
+    this.isMonitoring = true;
+    logger.info('Starting monitoring service...');
+
+    // Start health checks
+    this.startHealthChecks();
+
+    // Start metrics collection
+    this.startMetricsCollection();
+
+    // Start alert processing
+    this.startAlertProcessing();
+
+    logger.info('Monitoring service started successfully');
+  }
+
+  /**
+   * Stop monitoring
+   */
+  stop() {
+    if (!this.isMonitoring) {
+      logger.warn('Monitoring service is not running');
+      return;
+    }
+
+    this.isMonitoring = false;
+
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+    }
+
+    logger.info('Monitoring service stopped');
+  }
+
+  /**
+   * Start health checks
+   */
+  startHealthChecks() {
+    for (const [key, healthCheck] of this.healthChecks) {
+      this.runHealthCheck(key, healthCheck);
+      
+      // Set up interval
+      setInterval(() => {
+        this.runHealthCheck(key, healthCheck);
+      }, healthCheck.interval);
+    }
+  }
+
+  /**
+   * Run individual health check
+   */
+  async runHealthCheck(key, healthCheck) {
+    try {
+      const startTime = Date.now();
+      const result = await healthCheck.check();
+      const duration = Date.now() - startTime;
+
+      healthCheck.lastCheck = new Date();
+      healthCheck.status = result.status;
+
+      // Log health check result
+      logHealthCheck(healthCheck.name, result.status, {
+        duration,
+        details: result.details
       });
+
+      // Check for alerts
+      if (result.status !== 'healthy') {
+        this.triggerAlert(key, result);
+      }
+
+    } catch (error) {
+      logger.error(`Health check failed for ${healthCheck.name}:`, error);
+      healthCheck.status = 'error';
+      healthCheck.lastCheck = new Date();
     }
   }
 
@@ -93,254 +187,395 @@ class MonitoringService {
    */
   async checkDatabaseHealth() {
     try {
-      const startTime = Date.now();
-      await dbManager.query('SELECT 1');
-      const responseTime = Date.now() - startTime;
-
-      this.metrics.database.totalQueries++;
+      const client = await this.pool.connect();
       
-      if (responseTime > 1000) {
-        this.metrics.database.slowQueries++;
-        this.createAlert('SLOW_DATABASE_QUERY', {
-          message: 'Slow database query detected',
-          responseTime,
-          threshold: 1000,
-          unit: 'ms'
-        });
-      }
+      // Test basic query
+      const startTime = Date.now();
+      await client.query('SELECT 1');
+      const queryTime = Date.now() - startTime;
+      
+      // Get connection count
+      const connectionResult = await client.query(`
+        SELECT count(*) as connections 
+        FROM pg_stat_activity 
+        WHERE datname = current_database()
+      `);
+      
+      const connections = parseInt(connectionResult.rows[0].connections);
+      const maxConnections = this.pool.options.max || 20;
+      const connectionPercentage = (connections / maxConnections) * 100;
+      
+      client.release();
 
-      // Update connection pool metrics
-      this.metrics.database.connectionPool = {
-        total: 20, // Default pool size
-        active: Math.floor(Math.random() * 10), // Simulated
-        idle: Math.floor(Math.random() * 10)
+      const status = queryTime > 1000 || connectionPercentage > this.thresholds.dbConnections 
+        ? 'warning' 
+        : 'healthy';
+
+      return {
+        status,
+        details: {
+          queryTime,
+          connections,
+          maxConnections,
+          connectionPercentage: Math.round(connectionPercentage)
+        }
       };
 
     } catch (error) {
-      this.createAlert('DATABASE_ERROR', {
-        message: 'Database health check failed',
-        error: error.message
-      });
+      return {
+        status: 'error',
+        details: { error: error.message }
+      };
     }
   }
 
   /**
-   * Record request metrics
+   * Check memory health
    */
-  recordRequest(responseTime, statusCode) {
-    this.metrics.requests.total++;
+  checkMemoryHealth() {
+    const memUsage = process.memoryUsage();
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const memoryPercentage = (usedMem / totalMem) * 100;
+
+    const status = memoryPercentage > this.thresholds.memory ? 'warning' : 'healthy';
+
+    return {
+      status,
+      details: {
+        memoryPercentage: Math.round(memoryPercentage),
+        heapUsed: memUsage.heapUsed,
+        heapTotal: memUsage.heapTotal,
+        rss: memUsage.rss,
+        external: memUsage.external
+      }
+    };
+  }
+
+  /**
+   * Check CPU health
+   */
+  checkCpuHealth() {
+    const cpus = os.cpus();
+    const loadAvg = os.loadavg();
+    const cpuCount = cpus.length;
     
-    if (statusCode >= 200 && statusCode < 400) {
-      this.metrics.requests.successful++;
-    } else {
-      this.metrics.requests.failed++;
-    }
+    // Calculate CPU usage percentage based on load average
+    const cpuPercentage = (loadAvg[0] / cpuCount) * 100;
 
-    // Update average response time
-    const totalTime = this.metrics.requests.averageResponseTime * (this.metrics.requests.total - 1);
-    this.metrics.requests.averageResponseTime = (totalTime + responseTime) / this.metrics.requests.total;
+    const status = cpuPercentage > this.thresholds.cpu ? 'warning' : 'healthy';
 
-    // Alert on slow responses
-    if (responseTime > 5000) {
-      this.createAlert('SLOW_RESPONSE', {
-        message: 'Slow response detected',
-        responseTime,
-        threshold: 5000,
-        unit: 'ms'
-      });
+    return {
+      status,
+      details: {
+        cpuPercentage: Math.round(cpuPercentage),
+        loadAverage: loadAvg,
+        cpuCount
+      }
+    };
+  }
+
+  /**
+   * Check disk health
+   */
+  checkDiskHealth() {
+    try {
+      const stats = fs.statSync(process.cwd());
+      // This is a simplified check - in production, you'd use a proper disk usage library
+      const diskUsage = 50; // Placeholder - would need actual disk usage calculation
+      
+      const status = diskUsage > this.thresholds.disk ? 'warning' : 'healthy';
+
+      return {
+        status,
+        details: {
+          diskUsage,
+          path: process.cwd()
+        }
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        details: { error: error.message }
+      };
     }
   }
 
   /**
-   * Record error
+   * Check application health
    */
-  recordError(errorType, error) {
-    this.metrics.errors.total++;
+  checkApplicationHealth() {
+    const uptime = process.uptime();
+    const memUsage = process.memoryUsage();
     
-    if (!this.metrics.errors.byType[errorType]) {
-      this.metrics.errors.byType[errorType] = 0;
-    }
-    this.metrics.errors.byType[errorType]++;
+    // Check if application is responsive
+    const isResponsive = uptime > 0 && memUsage.heapUsed > 0;
+    
+    const status = isResponsive ? 'healthy' : 'error';
 
-    // Store recent errors (keep last 100)
-    this.metrics.errors.recent.unshift({
-      type: errorType,
-      message: error.message,
-      timestamp: new Date().toISOString(),
-      stack: error.stack
-    });
+    return {
+      status,
+      details: {
+        uptime,
+        pid: process.pid,
+        version: process.version,
+        platform: process.platform,
+        arch: process.arch
+      }
+    };
+  }
 
-    if (this.metrics.errors.recent.length > 100) {
-      this.metrics.errors.recent = this.metrics.errors.recent.slice(0, 100);
-    }
+  /**
+   * Start metrics collection
+   */
+  startMetricsCollection() {
+    // Collect system metrics every 30 seconds
+    this.monitoringInterval = setInterval(() => {
+      this.collectSystemMetrics();
+    }, 30000);
 
-    // Alert on high error rate
-    const errorRate = (this.metrics.errors.total / this.metrics.requests.total) * 100;
-    if (errorRate > 10) {
-      this.createAlert('HIGH_ERROR_RATE', {
-        message: 'High error rate detected',
-        errorRate: errorRate.toFixed(2),
-        threshold: 10,
-        unit: '%'
-      });
+    // Initial collection
+    this.collectSystemMetrics();
+  }
+
+  /**
+   * Collect system metrics
+   */
+  collectSystemMetrics() {
+    try {
+      // Log system metrics
+      logSystemMetrics();
+
+      // Store metrics in memory
+      const memUsage = process.memoryUsage();
+      const cpuUsage = process.cpuUsage();
+      
+      this.metrics.set('memory.heapUsed', memUsage.heapUsed);
+      this.metrics.set('memory.heapTotal', memUsage.heapTotal);
+      this.metrics.set('memory.rss', memUsage.rss);
+      this.metrics.set('memory.external', memUsage.external);
+      
+      this.metrics.set('cpu.user', cpuUsage.user);
+      this.metrics.set('cpu.system', cpuUsage.system);
+      this.metrics.set('uptime', process.uptime());
+
+      // Store in database
+      this.storeMetrics();
+
+    } catch (error) {
+      logger.error('Failed to collect system metrics:', error);
     }
   }
 
   /**
-   * Create alert
+   * Store metrics in database
    */
-  createAlert(type, details) {
-    const alert = {
-      id: `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      details,
-      timestamp: new Date().toISOString(),
-      resolved: false
+  async storeMetrics() {
+    try {
+      const client = await this.pool.connect();
+      
+      const metrics = Array.from(this.metrics.entries()).map(([key, value]) => ({
+        metric_name: key,
+        metric_value: value,
+        timestamp: new Date()
+      }));
+
+      if (metrics.length > 0) {
+        await client.query(`
+          INSERT INTO performance_metrics (metric_name, metric_value, timestamp)
+          VALUES ${metrics.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(', ')}
+        `, metrics.flatMap(m => [m.metric_name, m.metric_value, m.timestamp]));
+      }
+
+      client.release();
+
+    } catch (error) {
+      logger.error('Failed to store metrics in database:', error);
+    }
+  }
+
+  /**
+   * Start alert processing
+   */
+  startAlertProcessing() {
+    // Process alerts every 10 seconds
+    setInterval(() => {
+      this.processAlerts();
+    }, 10000);
+  }
+
+  /**
+   * Process alerts
+   */
+  processAlerts() {
+    for (const [key, alert] of this.alerts) {
+      if (alert.shouldTrigger()) {
+        this.triggerAlert(key, alert);
+        alert.lastTriggered = new Date();
+      }
+    }
+  }
+
+  /**
+   * Trigger alert
+   */
+  triggerAlert(key, alert) {
+    const alertData = {
+      key,
+      message: alert.message,
+      severity: alert.severity || 'warning',
+      timestamp: new Date(),
+      details: alert.details || {}
     };
 
-    this.alerts.push(alert);
-    logger.warn(`Alert created: ${type}`, details);
+    // Log alert
+    logger.warn(`Alert triggered: ${key}`, alertData);
 
     // Store alert in database
-    this.storeAlert(alert);
+    this.storeAlert(alertData);
+
+    // Send notification (implement based on requirements)
+    this.sendNotification(alertData);
   }
 
   /**
    * Store alert in database
    */
-  async storeAlert(alert) {
+  async storeAlert(alertData) {
     try {
-      await dbManager.query(`
-        INSERT INTO security_events (event_type, event_data, created_at)
-        VALUES ($1, $2, NOW())
+      const client = await this.pool.connect();
+      
+      await client.query(`
+        INSERT INTO system_health (component, status, message, response_time_ms, error_count, last_check)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        ON CONFLICT (component) DO UPDATE SET
+          status = $2,
+          message = $3,
+          response_time_ms = $4,
+          error_count = system_health.error_count + 1,
+          last_check = NOW()
       `, [
-        'alert_created',
-        JSON.stringify(alert)
+        alertData.key,
+        alertData.severity,
+        alertData.message,
+        alertData.details.duration || 0,
+        alertData.details.errorCount || 1
       ]);
+
+      client.release();
+
     } catch (error) {
-      logger.error('Failed to store alert:', error);
+      logger.error('Failed to store alert in database:', error);
     }
   }
 
   /**
-   * Get system health status
+   * Send notification
    */
-  getHealthStatus() {
-    const health = {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      metrics: this.metrics,
-      alerts: this.alerts.filter(alert => !alert.resolved),
-      checks: {}
+  sendNotification(alertData) {
+    // Implement notification logic (email, Slack, etc.)
+    logger.info(`Notification sent for alert: ${alertData.key}`);
+  }
+
+  /**
+   * Get system status
+   */
+  getSystemStatus() {
+    const status = {
+      monitoring: this.isMonitoring,
+      healthChecks: {},
+      metrics: Object.fromEntries(this.metrics),
+      alerts: Array.from(this.alerts.keys()),
+      timestamp: new Date()
     };
 
-    // Check memory health
-    health.checks.memory = {
-      status: this.metrics.memory.heapUsed < 500 ? 'healthy' : 'warning',
-      value: this.metrics.memory.heapUsed,
-      unit: 'MB'
-    };
-
-    // Check database health
-    health.checks.database = {
-      status: this.metrics.database.slowQueries < 10 ? 'healthy' : 'warning',
-      value: this.metrics.database.slowQueries,
-      unit: 'slow queries'
-    };
-
-    // Check error rate
-    const errorRate = this.metrics.requests.total > 0 ? 
-      (this.metrics.errors.total / this.metrics.requests.total) * 100 : 0;
-    health.checks.errorRate = {
-      status: errorRate < 5 ? 'healthy' : 'warning',
-      value: errorRate.toFixed(2),
-      unit: '%'
-    };
-
-    // Overall status
-    const checks = Object.values(health.checks);
-    if (checks.some(check => check.status === 'warning')) {
-      health.status = 'warning';
-    }
-    if (checks.some(check => check.status === 'critical')) {
-      health.status = 'critical';
+    // Add health check statuses
+    for (const [key, healthCheck] of this.healthChecks) {
+      status.healthChecks[key] = {
+        name: healthCheck.name,
+        status: healthCheck.status,
+        lastCheck: healthCheck.lastCheck
+      };
     }
 
-    return health;
+    return status;
   }
 
   /**
-   * Get metrics
+   * Get metrics for a time range
    */
-  getMetrics() {
-    return {
-      ...this.metrics,
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  /**
-   * Get alerts
-   */
-  getAlerts(resolved = false) {
-    return this.alerts.filter(alert => alert.resolved === resolved);
-  }
-
-  /**
-   * Resolve alert
-   */
-  resolveAlert(alertId) {
-    const alert = this.alerts.find(a => a.id === alertId);
-    if (alert) {
-      alert.resolved = true;
-      alert.resolvedAt = new Date().toISOString();
-      logger.info(`Alert resolved: ${alertId}`);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Clean up old alerts
-   */
-  cleanupAlerts() {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
-    this.alerts = this.alerts.filter(alert => 
-      new Date(alert.timestamp) > cutoff || !alert.resolved
-    );
-  }
-
-  /**
-   * Register health check
-   */
-  registerHealthCheck(name, checkFunction) {
-    this.healthChecks.set(name, checkFunction);
-  }
-
-  /**
-   * Run all health checks
-   */
-  async runHealthChecks() {
-    const results = {};
-    
-    for (const [name, checkFunction] of this.healthChecks) {
-      try {
-        results[name] = await checkFunction();
-      } catch (error) {
-        results[name] = {
-          status: 'error',
-          message: error.message
-        };
+  async getMetrics(startTime, endTime, metricNames = null) {
+    try {
+      const client = await this.pool.connect();
+      
+      let query = `
+        SELECT metric_name, metric_value, timestamp
+        FROM performance_metrics
+        WHERE timestamp BETWEEN $1 AND $2
+      `;
+      
+      const params = [startTime, endTime];
+      
+      if (metricNames && metricNames.length > 0) {
+        query += ` AND metric_name = ANY($3)`;
+        params.push(metricNames);
       }
-    }
+      
+      query += ` ORDER BY timestamp DESC`;
+      
+      const result = await client.query(query, params);
+      client.release();
+      
+      return result.rows;
 
-    return results;
+    } catch (error) {
+      logger.error('Failed to get metrics:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get health check history
+   */
+  async getHealthCheckHistory(component = null, limit = 100) {
+    try {
+      const client = await this.pool.connect();
+      
+      let query = `
+        SELECT component, status, message, response_time_ms, error_count, last_check
+        FROM system_health
+        WHERE 1=1
+      `;
+      
+      const params = [];
+      
+      if (component) {
+        query += ` AND component = $1`;
+        params.push(component);
+      }
+      
+      query += ` ORDER BY last_check DESC LIMIT $${params.length + 1}`;
+      params.push(limit);
+      
+      const result = await client.query(query, params);
+      client.release();
+      
+      return result.rows;
+
+    } catch (error) {
+      logger.error('Failed to get health check history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Close database connection
+   */
+  async close() {
+    this.stop();
+    await this.pool.end();
   }
 }
 
-// Create singleton instance
-const monitoringService = new MonitoringService();
-
-export default monitoringService;
+export default MonitoringService;

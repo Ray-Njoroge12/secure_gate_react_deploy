@@ -1,5 +1,6 @@
 import { passwordService, accountSecurity } from './tokenService.js';
 import { db } from '../database/db.enhanced.js';
+import { AppError } from '../middleware/standardizedErrorHandler.js';
 
 /**
  * User Service with SQL Injection Protection
@@ -54,7 +55,7 @@ class UserService {
       );
 
       if (existingUser.rows.length > 0) {
-        throw new Error('Username or email already exists');
+        throw new AppError('Username or email already exists', 409, 'DUPLICATE_ENTRY');
       }
 
       // Hash password securely
@@ -75,10 +76,14 @@ class UserService {
 
       return user;
     } catch (error) {
-      if (error.code === '23505') { // PostgreSQL unique violation
-        throw new Error('Username or email already exists');
+      if (error instanceof AppError) {
+        // Re-throw AppError instances (like DUPLICATE_ENTRY) without wrapping
+        throw error;
       }
-      throw new Error(`User creation failed: ${error.message}`);
+      if (error.code === '23505') { // PostgreSQL unique violation
+        throw new AppError('Username or email already exists', 409, 'DUPLICATE_ENTRY');
+      }
+      throw new AppError(`User creation failed: ${error.message}`, 500, 'INTERNAL_ERROR');
     }
   }
 

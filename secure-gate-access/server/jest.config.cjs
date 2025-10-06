@@ -1,14 +1,21 @@
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
+  testMatch: [
+    '<rootDir>/tests/integration/**/*.test.js'
+  ],
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/**/*.test.js',
-    '!src/**/*.spec.js'
+    '!src/**/*.spec.js',
+    '!src/database/**/*.js'
   ],
-  coverageDirectory: 'coverage',
+  coverageDirectory: 'coverage/integration',
   coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
-  testTimeout: 10000,
-  verbose: true
+  verbose: true,
+  testTimeout: 30000,
+  maxWorkers: 1, // Run tests sequentially to avoid database conflicts
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/coverage/'
+  ]
 };

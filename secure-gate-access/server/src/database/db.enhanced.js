@@ -88,7 +88,7 @@ class DatabaseManager extends EventEmitter {
         'CREATE INDEX IF NOT EXISTS idx_visitors_status_date ON visitors(status, date_of_visit)',
         'CREATE INDEX IF NOT EXISTS idx_passes_pass_id ON passes(pass_id)',
         'CREATE INDEX IF NOT EXISTS idx_passes_visitor_id ON passes(visitor_id)',
-        'CREATE INDEX IF NOT EXISTS idx_access_logs_visitor_created ON access_logs(visitor_id, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_access_logs_user_created ON access_logs(user_id, log_time)',
         'CREATE INDEX IF NOT EXISTS idx_visitors_created_by ON visitors(created_by)',
         'CREATE INDEX IF NOT EXISTS idx_visitors_qr_code ON visitors(qr_code)'
       ];
