@@ -89,11 +89,11 @@ const AccessibleButton = forwardRef(({
     ]
   };
 
-  // Size classes
+  // Size classes - All sizes meet 44px minimum touch target requirement
   const sizeClasses = {
-    small: ['text-sm', 'px-3', 'py-1.5', 'min-h-[32px]'],
-    medium: ['text-sm', 'px-4', 'py-2', 'min-h-[40px]'],
-    large: ['text-base', 'px-6', 'py-3', 'min-h-[48px]']
+    small: ['text-sm', 'px-3', 'py-2', 'min-h-[44px]', 'min-w-[44px]'],
+    medium: ['text-sm', 'px-4', 'py-3', 'min-h-[48px]', 'min-w-[48px]'],
+    large: ['text-base', 'px-6', 'py-3', 'min-h-[52px]', 'min-w-[52px]']
   };
 
   // Combine all classes

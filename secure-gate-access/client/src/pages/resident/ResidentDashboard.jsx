@@ -126,7 +126,7 @@ const DashboardHome = () => {
         </div>
         <button 
           onClick={() => window.location.href = '/resident/add-visitor'}
-          className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-smooth font-medium transition-colors"
+          className="min-h-[44px] min-w-[44px] bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-smooth font-medium transition-colors"
         >
           Create Invite
         </button>
@@ -216,7 +216,7 @@ const DashboardHome = () => {
           
           <button 
             onClick={() => window.location.href = '/resident/visitor-history'}
-            className="mt-4 text-sm text-brand-600 hover:text-brand-500 font-medium"
+            className="mt-4 min-h-[44px] min-w-[44px] text-sm text-brand-600 hover:text-brand-500 font-medium px-2 py-1"
           >
             View all history →
           </button>

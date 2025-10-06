@@ -376,7 +376,7 @@ export default function RegistrationPage() {
                       else setOtpError(e.message || 'OTP verification failed');
                     }
                   }}
-                  className="px-4 py-2 bg-brand-600 text-white border-none rounded-md cursor-pointer hover:bg-brand-700"
+                  className="min-h-[44px] min-w-[44px] px-4 py-2 bg-brand-600 text-white border-none rounded-md cursor-pointer hover:bg-brand-700"
                 >Verify</button>
                 <button
                   disabled={resendCooldown > 0}
@@ -397,7 +397,7 @@ export default function RegistrationPage() {
                       else setOtpError(e.message || 'Failed to resend OTP');
                     }
                   }}
-                  className={`px-4 py-2 text-white border-none rounded-md ${
+                  className={`min-h-[44px] min-w-[44px] px-4 py-2 text-white border-none rounded-md ${
                     resendCooldown > 0 
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-gray-600 cursor-pointer hover:bg-gray-700'
@@ -516,7 +516,7 @@ export default function RegistrationPage() {
           <div className="text-center mt-6 pt-6 border-t border-gray-200">
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-2 bg-transparent text-brand-600 border border-brand-600 rounded-md cursor-pointer text-sm hover:bg-brand-50"
+              className="min-h-[44px] min-w-[44px] px-4 py-2 bg-transparent text-brand-600 border border-brand-600 rounded-md cursor-pointer text-sm hover:bg-brand-50"
             >
               Back to Home
             </button>

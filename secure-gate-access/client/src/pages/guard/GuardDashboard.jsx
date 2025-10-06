@@ -171,7 +171,7 @@ export default function GuardDashboard() {
       <div data-testid="toasts" ref={toastRef} className="fixed top-16 right-4 flex flex-col gap-2 z-50 max-w-sm max-h-80 overflow-y-auto">
         <div className="flex gap-2 justify-end mb-1">
           {['all','info','warning','error'].map(f => (
-            <button key={f} className="text-xs px-2 py-1 rounded opacity-70 hover:opacity-100 bg-gray-800 text-white" 
+            <button key={f} className="min-h-[44px] min-w-[44px] text-xs px-3 py-2 rounded opacity-70 hover:opacity-100 bg-gray-800 text-white" 
                     style={{opacity: toastFilter===f?1:0.7}} onClick={()=>setToastFilter(f)}>
               {f.toUpperCase()}
             </button>
