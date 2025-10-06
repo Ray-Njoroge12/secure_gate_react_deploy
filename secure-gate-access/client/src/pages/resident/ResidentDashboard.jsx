@@ -225,7 +225,7 @@ const DashboardHome = () => {
       </div>
 
       {/* Essential Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => window.location.href = '/resident/add-visitor'}
@@ -243,6 +243,21 @@ const DashboardHome = () => {
 
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => window.location.href = '/resident/add-visitor-wizard'}
+        >
+          <Card.Content className="p-6 text-center">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="font-medium text-gray-900">Add Visitor Wizard</h3>
+            <p className="text-sm text-gray-500 mt-1">Step-by-step process</p>
+          </Card.Content>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => window.location.href = '/resident/bulk-invite'}
         >
           <Card.Content className="p-6 text-center">
@@ -253,6 +268,21 @@ const DashboardHome = () => {
             </div>
             <h3 className="font-medium text-gray-900">Bulk Invite</h3>
             <p className="text-sm text-gray-500 mt-1">Invite multiple guests</p>
+          </Card.Content>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => window.location.href = '/resident/bulk-invite-wizard'}
+        >
+          <Card.Content className="p-6 text-center">
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="font-medium text-gray-900">Bulk Invite Wizard</h3>
+            <p className="text-sm text-gray-500 mt-1">Guided bulk process</p>
           </Card.Content>
         </Card>
 
