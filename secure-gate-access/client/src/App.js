@@ -1,8 +1,11 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.js";
+import { ErrorProvider } from "./contexts/ErrorContext.jsx";
 import Loading from "./components/ui/Loading.jsx";
-import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
+import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
+import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
+import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import ToastContainer from "./components/ToastContainer.jsx";
 
 // Lazy load all page components for better build performance
@@ -30,10 +33,13 @@ const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <ErrorBoundary>
-          <Suspense fallback={<Loading />}>
+    <ErrorProvider>
+      <AuthProvider>
+        <Router>
+          <ErrorBoundary level="page">
+            <NetworkErrorBoundary>
+              <AuthErrorBoundary>
+                <Suspense fallback={<Loading />}>
             <Routes>
             {/* Default route - redirect to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
@@ -198,11 +204,14 @@ function App() {
             {/* Catch-all route for unmatched paths */}
             <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
-          </Suspense>
-        </ErrorBoundary>
-        <ToastContainer />
-      </Router>
-    </AuthProvider>
+                </Suspense>
+              </AuthErrorBoundary>
+            </NetworkErrorBoundary>
+          </ErrorBoundary>
+          <ToastContainer />
+        </Router>
+      </AuthProvider>
+    </ErrorProvider>
   );
 }
 

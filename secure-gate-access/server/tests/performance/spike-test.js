@@ -1,0 +1,357 @@
+/**
+ * K6 Spike Testing Script
+ * 
+ * This script performs spike testing to determine how the system
+ * handles sudden increases in load and recovers from them.
+ */
+
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { Rate, Trend, Counter } from 'k6/metrics';
+
+// Custom metrics
+const errorRate = new Rate('error_rate');
+const responseTime = new Trend('response_time');
+const requestCount = new Counter('request_count');
+const spikeRecoveryTime = new Trend('spike_recovery_time');
+
+// Test configuration
+export const options = {
+  stages: [
+    { duration: '1m', target: 10 },   // Normal load
+    { duration: '1m', target: 10 },   // Stay at normal load
+    { duration: '30s', target: 100 }, // Spike to 100 users
+    { duration: '1m', target: 100 },  // Stay at spike load
+    { duration: '30s', target: 10 },  // Drop back to normal
+    { duration: '1m', target: 10 },   // Stay at normal load
+    { duration: '30s', target: 200 }, // Spike to 200 users
+    { duration: '1m', target: 200 },  // Stay at spike load
+    { duration: '30s', target: 10 },  // Drop back to normal
+    { duration: '1m', target: 10 },   // Stay at normal load
+    { duration: '30s', target: 0 },   // Ramp down to 0
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<2000', 'p(99)<5000'], // Relaxed thresholds for spike test
+    http_req_failed: ['rate<0.2'], // Allow up to 20% error rate during spikes
+    error_rate: ['rate<0.2'],
+    response_time: ['p(95)<2000', 'p(99)<5000'],
+  },
+};
+
+// Test data
+const BASE_URL = __ENV.BASE_URL || 'http://localhost:3001';
+
+// Test users
+const testUsers = [
+  { email: 'admin@test.com', password: 'AdminPass123!', role: 'admin' },
+  { email: 'resident@test.com', password: 'ResidentPass123!', role: 'resident' },
+  { email: 'guard@test.com', password: 'GuardPass123!', role: 'guard' }
+];
+
+// Global variables
+let authToken = null;
+let currentUser = null;
+let spikeStartTime = null;
+let spikeEndTime = null;
+
+export function setup() {
+  console.log('🚀 Starting spike test setup...');
+  
+  // Test basic connectivity
+  const healthResponse = http.get(`${BASE_URL}/health`);
+  if (healthResponse.status !== 200) {
+    throw new Error(`Health check failed: ${healthResponse.status}`);
+  }
+  
+  console.log('✅ Backend health check passed');
+  
+  return { baseUrl: BASE_URL };
+}
+
+export default function(data) {
+  const { baseUrl } = data;
+  
+  // Randomly select a test user
+  currentUser = testUsers[Math.floor(Math.random() * testUsers.length)];
+  
+  // Detect spike conditions
+  const currentVUs = __ENV.VU;
+  const currentIter = __ENV.ITER;
+  
+  // Test sequence
+  testHealthEndpoint(baseUrl);
+  testAuthentication(baseUrl);
+  testProtectedEndpoints(baseUrl);
+  testDataOperations(baseUrl);
+  testSpikeRecovery(baseUrl);
+  
+  // Sleep based on load
+  if (currentVUs > 50) {
+    sleep(0.1); // Minimal sleep during spike
+  } else {
+    sleep(1); // Normal sleep
+  }
+}
+
+/**
+ * Test health endpoint during spikes
+ */
+function testHealthEndpoint(baseUrl) {
+  const startTime = Date.now();
+  const response = http.get(`${baseUrl}/health`);
+  const duration = Date.now() - startTime;
+  
+  const success = check(response, {
+    'health endpoint status is 200': (r) => r.status === 200,
+    'health endpoint response time < 1000ms': (r) => r.timings.duration < 1000,
+  });
+  
+  errorRate.add(!success);
+  responseTime.add(duration);
+  requestCount.add(1);
+  
+  if (!success) {
+    console.error(`❌ Health endpoint failed during spike: ${response.status}`);
+  }
+}
+
+/**
+ * Test authentication during spikes
+ */
+function testAuthentication(baseUrl) {
+  const loginData = {
+    email: currentUser.email,
+    password: currentUser.password
+  };
+  
+  const startTime = Date.now();
+  const response = http.post(`${baseUrl}/api/auth/login`, JSON.stringify(loginData), {
+    headers: { 'Content-Type': 'application/json' }
+  });
+  const duration = Date.now() - startTime;
+  
+  const success = check(response, {
+    'login status is 200': (r) => r.status === 200,
+    'login response time < 10000ms': (r) => r.timings.duration < 10000,
+  });
+  
+  if (success) {
+    try {
+      const body = JSON.parse(response.body);
+      authToken = body.data?.token;
+    } catch (e) {
+      // Ignore parsing errors during spike
+    }
+  }
+  
+  errorRate.add(!success);
+  responseTime.add(duration);
+  requestCount.add(1);
+  
+  if (!success) {
+    console.error(`❌ Login failed during spike: ${response.status}`);
+  }
+}
+
+/**
+ * Test protected endpoints during spikes
+ */
+function testProtectedEndpoints(baseUrl) {
+  if (!authToken) return;
+  
+  const headers = {
+    'Authorization': `Bearer ${authToken}`,
+    'Content-Type': 'application/json'
+  };
+  
+  // Test profile endpoint
+  testProfileEndpoint(baseUrl, headers);
+  
+  // Test role-specific endpoints
+  if (currentUser.role === 'admin') {
+    testAdminEndpoints(baseUrl, headers);
+  } else if (currentUser.role === 'resident') {
+    testResidentEndpoints(baseUrl, headers);
+  } else if (currentUser.role === 'guard') {
+    testGuardEndpoints(baseUrl, headers);
+  }
+}
+
+/**
+ * Test profile endpoint during spikes
+ */
+function testProfileEndpoint(baseUrl, headers) {
+  const startTime = Date.now();
+  const response = http.get(`${baseUrl}/api/auth/profile`, { headers });
+  const duration = Date.now() - startTime;
+  
+  const success = check(response, {
+    'profile endpoint status is 200': (r) => r.status === 200,
+    'profile response time < 5000ms': (r) => r.timings.duration < 5000,
+  });
+  
+  errorRate.add(!success);
+  responseTime.add(duration);
+  requestCount.add(1);
+}
+
+/**
+ * Test admin endpoints during spikes
+ */
+function testAdminEndpoints(baseUrl, headers) {
+  testEndpoint(`${baseUrl}/api/admin/metrics`, 'GET', headers, 'admin metrics');
+  testEndpoint(`${baseUrl}/api/admin/audit-logs`, 'GET', headers, 'admin audit logs');
+  testEndpoint(`${baseUrl}/api/admin/residents`, 'GET', headers, 'admin residents list');
+}
+
+/**
+ * Test resident endpoints during spikes
+ */
+function testResidentEndpoints(baseUrl, headers) {
+  testEndpoint(`${baseUrl}/api/visitors`, 'GET', headers, 'resident visitors list');
+  
+  // Test visitor creation during spike
+  const visitorData = {
+    name: `Spike Test Visitor ${Math.random()}`,
+    email: `spike${Math.random()}@test.com`,
+    phone: `+254712345${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+    purpose: 'Spike test visit'
+  };
+  
+  testEndpoint(`${baseUrl}/api/visitors`, 'POST', headers, 'resident create visitor', visitorData);
+}
+
+/**
+ * Test guard endpoints during spikes
+ */
+function testGuardEndpoints(baseUrl, headers) {
+  testEndpoint(`${baseUrl}/api/visitors`, 'GET', headers, 'guard visitors list');
+  testEndpoint(`${baseUrl}/api/visitors/pending`, 'GET', headers, 'guard pending visitors');
+}
+
+/**
+ * Test data operations during spikes
+ */
+function testDataOperations(baseUrl) {
+  if (!authToken) return;
+  
+  const headers = {
+    'Authorization': `Bearer ${authToken}`,
+    'Content-Type': 'application/json'
+  };
+  
+  // Test bulk operations during spike
+  testBulkOperations(baseUrl, headers);
+  
+  // Test search operations during spike
+  testSearchOperations(baseUrl, headers);
+  
+  // Test pagination during spike
+  testPaginationOperations(baseUrl, headers);
+}
+
+/**
+ * Test bulk operations during spikes
+ */
+function testBulkOperations(baseUrl, headers) {
+  const bulkData = {
+    visitors: Array.from({ length: 3 }, (_, i) => ({
+      name: `Spike Bulk Visitor ${i}`,
+      email: `spikebulk${i}@test.com`,
+      phone: `+254712345${i.toString().padStart(3, '0')}`,
+      purpose: 'Spike bulk test visit'
+    }))
+  };
+  
+  testEndpoint(`${baseUrl}/api/visitors/bulk`, 'POST', headers, 'bulk visitor creation', bulkData);
+}
+
+/**
+ * Test search operations during spikes
+ */
+function testSearchOperations(baseUrl, headers) {
+  const searchQueries = ['test', 'visitor', 'admin', 'resident', 'guard', 'spike'];
+  const randomQuery = searchQueries[Math.floor(Math.random() * searchQueries.length)];
+  
+  testEndpoint(`${baseUrl}/api/visitors?search=${randomQuery}`, 'GET', headers, 'visitor search');
+  testEndpoint(`${baseUrl}/api/admin/residents?search=${randomQuery}`, 'GET', headers, 'resident search');
+}
+
+/**
+ * Test pagination operations during spikes
+ */
+function testPaginationOperations(baseUrl, headers) {
+  const page = Math.floor(Math.random() * 5) + 1; // Random page 1-5
+  const limit = Math.floor(Math.random() * 20) + 10; // Random limit 10-30
+  
+  testEndpoint(`${baseUrl}/api/visitors?page=${page}&limit=${limit}`, 'GET', headers, 'visitor pagination');
+  testEndpoint(`${baseUrl}/api/admin/residents?page=${page}&limit=${limit}`, 'GET', headers, 'resident pagination');
+}
+
+/**
+ * Test spike recovery
+ */
+function testSpikeRecovery(baseUrl) {
+  const currentVUs = __ENV.VU;
+  
+  // Detect spike start
+  if (currentVUs > 50 && !spikeStartTime) {
+    spikeStartTime = Date.now();
+    console.log(`🚀 Spike detected: ${currentVUs} VUs`);
+  }
+  
+  // Detect spike end
+  if (currentVUs <= 50 && spikeStartTime && !spikeEndTime) {
+    spikeEndTime = Date.now();
+    const recoveryTime = spikeEndTime - spikeStartTime;
+    spikeRecoveryTime.add(recoveryTime);
+    console.log(`✅ Spike recovery time: ${recoveryTime}ms`);
+  }
+  
+  // Reset spike tracking
+  if (currentVUs <= 10) {
+    spikeStartTime = null;
+    spikeEndTime = null;
+  }
+}
+
+/**
+ * Generic endpoint test function for spike testing
+ */
+function testEndpoint(url, method, headers, testName, data = null) {
+  const startTime = Date.now();
+  let response;
+  
+  if (method === 'GET') {
+    response = http.get(url, { headers });
+  } else if (method === 'POST') {
+    response = http.post(url, JSON.stringify(data), { headers });
+  } else if (method === 'PUT') {
+    response = http.put(url, JSON.stringify(data), { headers });
+  } else if (method === 'DELETE') {
+    response = http.delete(url, { headers });
+  }
+  
+  const duration = Date.now() - startTime;
+  
+  const success = check(response, {
+    [`${testName} status is 200 or 201`]: (r) => r.status === 200 || r.status === 201,
+    [`${testName} response time < 10000ms`]: (r) => r.timings.duration < 10000,
+  });
+  
+  errorRate.add(!success);
+  responseTime.add(duration);
+  requestCount.add(1);
+  
+  if (!success) {
+    console.error(`❌ ${testName} failed during spike: ${response.status}`);
+  }
+}
+
+export function teardown(data) {
+  console.log('🏁 Spike test completed');
+  console.log(`📊 Total requests: ${requestCount.count}`);
+  console.log(`⏱️  Average response time: ${responseTime.avg}ms`);
+  console.log(`❌ Error rate: ${(errorRate.count * 100).toFixed(2)}%`);
+  console.log(`🚀 Average spike recovery time: ${spikeRecoveryTime.avg}ms`);
+}

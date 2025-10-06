@@ -4,12 +4,13 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import { rateLimiters, speedLimiters } from './config/rateLimits.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 // Import middleware
 import { attachUserFromToken } from './middleware/authMiddleware.js';
-import attachRequestAudit from './middleware/auditLogger.js';
+import auditLogger from './middleware/auditLogger.js';
 import {
   customSecurityHeaders,
   securityResponseMiddleware,
@@ -21,12 +22,15 @@ import {
   transportSecurityStack,
   initializeTransportSecurity
 } from './middleware/transportSecurity.js';
-import {
-  globalErrorHandler,
-  requestIdMiddleware,
-  notFoundHandler
-} from './middleware/errorHandler.js';
+import { requestIdMiddleware } from './middleware/errorHandler.js';
+import { errorHandler, notFoundHandler } from './middleware/standardizedErrorHandler.js';
 import { responseMiddleware } from './utils/responseUtils.js';
+import swaggerMiddleware from './config/swagger.js';
+
+// Import logging and monitoring middleware
+import { requestLogger, errorLogger } from './config/logger.js';
+import { performanceMonitoring } from './middleware/performanceMonitoring.js';
+import { auditLogging, authAuditLogging, securityAuditLogging, dataAccessAuditLogging } from './middleware/auditLogging.js';
 
 // Import routes
 import createCacheRoutes from './routes/cacheRoutes.js';
@@ -37,8 +41,18 @@ import visitorRoutes from './routes/visitorRoutes.js';
 // import residentRoutes from './routes/residentRoutes.js'; // Removed - placeholder implementation
 // import guardRoutes from './routes/guardRoutes.js'; // Removed - placeholder implementation
 import authRoutes from './routes/authRoutes.js';
+import consentRoutes from './routes/consentRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import preDeploymentValidationRoutes from './routes/preDeploymentValidationRoutes.js';
+import backupRoutes from './routes/backupRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
+
+// Import versioned routes
+import v1Routes from './routes/v1/index.js';
+import v2Routes from './routes/v2/index.js';
+
+// Import API versioning middleware
+import { apiVersioning, getSupportedVersions, getVersionMigrationGuide } from './middleware/apiVersioning.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -68,6 +82,23 @@ app.use(customSecurityHeaders); // Custom security headers and cache control
 app.use(securityResponseMiddleware); // Add security metadata to responses
 app.use(securityEventLogger); // Log security events for monitoring
 
+// Enhanced logging and monitoring middleware
+app.use(requestLogger); // Request/response logging
+app.use(performanceMonitoring({ 
+  trackResponseTime: true, 
+  trackMemoryUsage: true, 
+  slowRequestThreshold: 1000,
+  logSlowRequests: true 
+})); // Performance monitoring
+app.use(auditLogging({ 
+  logRequests: true, 
+  logResponses: true, 
+  logDataChanges: true 
+})); // General audit logging
+app.use(authAuditLogging); // Authentication audit logging
+app.use(securityAuditLogging); // Security event audit logging
+app.use(dataAccessAuditLogging); // Data access audit logging
+
 // CORS configuration
 const corsConfig = cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -79,20 +110,14 @@ const corsConfig = cors({
 app.use(corsConfig);
 app.use(cookieParser());
 
-// Rate limiting (exclude health endpoints)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for health endpoints
-    return req.path === '/health' || req.path === '/api/health';
-  }
-});
+// Enhanced rate limiting with multiple strategies
+app.use('/api', rateLimiters.general); // General API rate limiting
+app.use('/api/auth', rateLimiters.auth); // Stricter auth rate limiting
+app.use('/api/admin', rateLimiters.admin); // Admin operations rate limiting
+app.use('/api/sensitive', rateLimiters.sensitive); // Sensitive operations rate limiting
 
-app.use(limiter);
+// Speed limiting for gradual slowdown
+app.use('/api', speedLimiters.general);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -104,10 +129,34 @@ app.use(compression());
 // Security audit middleware
 app.use(securityAuditMiddleware);
 
+// Audit logging middleware
+app.use(auditLogger({
+  logLevel: 'info',
+  includeRequestBody: false,
+  includeResponseBody: false,
+  sensitiveFields: ['password', 'token', 'secret', 'key'],
+  excludePaths: ['/health', '/api/health']
+}));
+
 // Response middleware
 app.use(responseMiddleware);
 
-// Routes
+// API Versioning middleware
+app.use('/api', apiVersioning({
+  defaultVersion: 'v1',
+  strictMode: false,
+  logVersionUsage: true
+}));
+
+// Versioned API routes
+app.use('/api/v1', v1Routes);
+app.use('/api/v2', v2Routes);
+
+// API version information endpoints
+app.get('/api/versions', getSupportedVersions);
+app.get('/api/migration-guide', getVersionMigrationGuide);
+
+// Legacy routes (for backward compatibility)
 app.use('/api/cache', createCacheRoutes());
 app.use('/api/rate-limits', rateLimitRoutes);
 app.use('/api/security', securityRoutes);
@@ -116,11 +165,17 @@ app.use('/api/visitors', visitorRoutes);
 // app.use('/api/residents', residentRoutes); // Removed - placeholder implementation
 // app.use('/api/guards', guardRoutes); // Removed - placeholder implementation
 app.use('/api/auth', authRoutes);
+app.use('/api/consent', consentRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api/pre-deployment', preDeploymentValidationRoutes);
+app.use('/api/backup', backupRoutes);
+app.use('/api/health', healthRoutes);
 
 // Public invite route alias for frontend compatibility
 app.use('/api/invite', visitorRoutes);
+
+// API Documentation (Swagger)
+app.use('/api-docs', swaggerMiddleware.serve, swaggerMiddleware.setup);
 
 // Health check endpoints
 app.get('/health', (req, res) => {
@@ -141,11 +196,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 404 handler
+// 404 handler (standardized)
 app.use(notFoundHandler);
 
-// Global error handler
-app.use(globalErrorHandler);
+// Global error handler (standardized)
+app.use(errorHandler);
+app.use(errorLogger); // Enhanced error logging
 
 // Graceful shutdown handler
 process.on('SIGTERM', gracefulShutdownHandler);

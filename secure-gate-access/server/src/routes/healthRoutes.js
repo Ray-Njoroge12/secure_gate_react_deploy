@@ -1,311 +1,364 @@
+#!/usr/bin/env node
 /**
- * Enhanced Health Endpoints Router
- * Comprehensive health monitoring endpoints with correlation IDs and structured logging
+ * Health Check API Routes
+ * Provides health monitoring and system status endpoints
  */
 
 import express from 'express';
-import { enhancedHealthMonitoring } from '../services/enhancedHealthService.js';
-import { attachUserFromToken } from '../middleware/authMiddleware.js';
-import loggingService from '../services/loggingService.js';
-import { randomUUID } from 'crypto';
+import { asyncHandler } from '../middleware/enhancedErrorHandler.js';
+import { successResponse } from '../utils/responseUtils.js';
+import { authenticate, authorize } from '../middleware/authMiddleware.js';
+import MonitoringService from '../services/monitoringService.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 
-/**
- * Middleware to add correlation ID and track health endpoint usage
- */
-router.use((req, res, next) => {
-  if (!req.headers['x-correlation-id']) {
-    req.headers['x-correlation-id'] = randomUUID();
-  }
-  next();
-});
+// Initialize monitoring service
+const monitoringService = new MonitoringService();
+
+// Start monitoring service
+monitoringService.start();
 
 /**
- * GET /health - Quick health check for load balancers
- * Returns minimal response optimized for high-frequency probing
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Get system health status
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: System health status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       enum: [healthy, warning, error]
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                     uptime:
+ *                       type: number
+ *                     healthChecks:
+ *                       type: object
+ *                       additionalProperties:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                           status:
+ *                             type: string
+ *                           lastCheck:
+ *                             type: string
+ *                             format: date-time
  */
-router.get('/', async (req, res) => {
-  try {
-    const result = await enhancedHealthMonitoring.getLivenessProbe(req);
-    const statusCode = result.status === 'alive' ? 200 : 503;
-
-    res.status(statusCode).json(result);
-  } catch (error) {
-    loggingService.logError('Health check endpoint failed', {
-      correlationId: req.headers['x-correlation-id'],
-      error: error.message,
-      endpoint: '/health'
-    });
-
-    res.status(500).json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-/**
- * GET /health/live - Kubernetes liveness probe
- * Minimal check to verify process is running and responsive
- */
-router.get('/live', async (req, res) => {
-  try {
-    const result = await enhancedHealthMonitoring.getLivenessProbe(req);
-    const statusCode = result.status === 'alive' ? 200 : 503;
-
-    res.status(statusCode).json(result);
-  } catch (error) {
-    res.status(500).json({
-      status: 'dead',
-      timestamp: new Date().toISOString(),
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-/**
- * GET /health/ready - Kubernetes readiness probe
- * Checks if application is ready to serve traffic (dependencies available)
- */
-router.get('/ready', async (req, res) => {
-  try {
-    const result = await enhancedHealthMonitoring.getReadinessProbe(req);
-    const statusCode = result.status === 'ready' ? 200 : 503;
-
-    res.status(statusCode).json(result);
-  } catch (error) {
-    res.status(503).json({
-      status: 'not-ready',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-/**
- * GET /health/startup - Kubernetes startup probe
- * Checks if application has completed initialization
- */
-router.get('/startup', async (req, res) => {
-  try {
-    const result = await enhancedHealthMonitoring.getStartupProbe(req);
-    const statusCode = result.status === 'started' ? 200 : 503;
-
-    res.status(statusCode).json(result);
-  } catch (error) {
-    res.status(503).json({
-      status: 'startup-failed',
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-/**
- * GET /health/detailed - Comprehensive health check with full system information
- * Requires authentication and returns detailed monitoring data
- */
-router.get('/detailed', attachUserFromToken, async (req, res) => {
-  try {
-    // Optional: Require admin role for detailed health information
-    const role = req.user?.role;
-    const includeDetails = role === 'admin' || req.query.include === 'details';
-
-    const result = await enhancedHealthMonitoring.getComprehensiveHealth(req, includeDetails);
-
-    // Status code based on overall health
-    const statusCode = result.status === 'healthy' ? 200 :
-      result.status === 'warning' ? 200 :
-        result.status === 'critical' ? 503 : 503;
-
-    res.status(statusCode).json(result);
-
-  } catch (error) {
-    loggingService.logError('Detailed health check failed', {
-      correlationId: req.headers['x-correlation-id'],
-      error: error.message,
-      stack: error.stack,
-      user: req.user?.id || 'anonymous'
-    });
-
-    res.status(500).json({
-      status: 'error',
-      error: 'Health check service unavailable',
-      timestamp: new Date().toISOString(),
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-/**
- * GET /health/metrics - Health monitoring metrics
- * Returns health check statistics and performance metrics
- */
-router.get('/metrics', attachUserFromToken, async (req, res) => {
-  try {
-    const role = req.user?.role;
-    if (role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Admin access required for health metrics'
-      });
-    }
-
-    const metrics = enhancedHealthMonitoring.getHealthMetrics();
-
-    res.json({
-      success: true,
-      data: metrics,
-      timestamp: new Date().toISOString(),
-      correlationId: req.headers['x-correlation-id']
-    });
-
-  } catch (error) {
-    loggingService.logError('Health metrics endpoint failed', {
-      correlationId: req.headers['x-correlation-id'],
-      error: error.message,
-      user: req.user?.id || 'anonymous'
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve health metrics',
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-/**
- * GET /health/status - System status dashboard endpoint
- * Returns formatted status information for monitoring dashboards
- */
-router.get('/status', attachUserFromToken, async (req, res) => {
-  try {
-    const role = req.user?.role;
-    if (!['admin', 'guard'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions for system status'
-      });
-    }
-
-    const healthResult = await enhancedHealthMonitoring.getComprehensiveHealth(req, true);
-
-    // Format for dashboard consumption
-    const statusDashboard = {
-      overall: {
-        status: healthResult.status,
-        uptime: healthResult.application?.uptime || 0,
-        environment: healthResult.environment?.environment || 'unknown'
-      },
-      components: {
-        database: {
-          status: healthResult.checks?.database?.status || 'unknown',
-          latency: healthResult.checks?.database?.latency || 'unknown',
-          connections: healthResult.details?.connectionPool || {}
-        },
-        memory: {
-          status: healthResult.checks?.memory?.status || 'unknown',
-          usage: healthResult.checks?.memory?.system?.usage || 'unknown',
-          process: healthResult.details?.system?.memory || {}
-        },
-        application: {
-          version: healthResult.application?.version || 'unknown',
-          nodeVersion: healthResult.environment?.nodeVersion || 'unknown',
-          platform: healthResult.environment?.platform || 'unknown'
-        }
-      },
-      monitoring: healthResult.monitoring || {},
-      timestamp: healthResult.timestamp
-    };
-
-    res.json({
-      success: true,
-      data: statusDashboard,
-      correlationId: req.headers['x-correlation-id']
-    });
-
-  } catch (error) {
-    loggingService.logError('System status endpoint failed', {
-      correlationId: req.headers['x-correlation-id'],
-      error: error.message,
-      user: req.user?.id || 'anonymous'
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to retrieve system status',
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-/**
- * POST /health/check - Trigger manual health check
- * Allows administrators to trigger health checks on demand
- */
-router.post('/check', attachUserFromToken, async (req, res) => {
-  try {
-    const role = req.user?.role;
-    if (role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Admin access required to trigger health checks'
-      });
-    }
-
-    const { checks } = req.body;
-    const result = await enhancedHealthMonitoring.getComprehensiveHealth(req, true);
-
-    loggingService.logInfo('Manual health check triggered', {
-      correlationId: req.headers['x-correlation-id'],
-      user: req.user?.id,
-      requestedChecks: checks,
-      result: result.status
-    });
-
-    res.json({
-      success: true,
-      data: result,
-      message: 'Health check completed successfully',
-      correlationId: req.headers['x-correlation-id']
-    });
-
-  } catch (error) {
-    loggingService.logError('Manual health check failed', {
-      correlationId: req.headers['x-correlation-id'],
-      error: error.message,
-      user: req.user?.id || 'anonymous'
-    });
-
-    res.status(500).json({
-      success: false,
-      error: 'Health check execution failed',
-      correlationId: req.headers['x-correlation-id']
-    });
-  }
-});
-
-// Error handling middleware for health routes
-router.use((error, req, res, next) => {
-  loggingService.logError('Health endpoint error', {
-    correlationId: req.headers['x-correlation-id'],
-    error: error.message,
-    stack: error.stack,
-    path: req.path,
-    method: req.method
-  });
-
-  res.status(500).json({
-    status: 'error',
-    error: 'Health monitoring service error',
+router.get('/', asyncHandler(async (req, res) => {
+  const systemStatus = monitoringService.getSystemStatus();
+  
+  // Determine overall status
+  const healthCheckStatuses = Object.values(systemStatus.healthChecks).map(hc => hc.status);
+  const hasError = healthCheckStatuses.includes('error');
+  const hasWarning = healthCheckStatuses.includes('warning');
+  
+  const overallStatus = hasError ? 'error' : hasWarning ? 'warning' : 'healthy';
+  
+  const healthData = {
+    status: overallStatus,
     timestamp: new Date().toISOString(),
-    correlationId: req.headers['x-correlation-id']
+    uptime: process.uptime(),
+    healthChecks: systemStatus.healthChecks,
+    monitoring: systemStatus.monitoring
+  };
+
+  successResponse(res, healthData, 'System health status retrieved');
+}));
+
+/**
+ * @swagger
+ * /api/health/detailed:
+ *   get:
+ *     summary: Get detailed system health status
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Detailed system health status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                     timestamp:
+ *                       type: string
+ *                     uptime:
+ *                       type: number
+ *                     healthChecks:
+ *                       type: object
+ *                     metrics:
+ *                       type: object
+ *                     alerts:
+ *                       type: array
+ */
+router.get('/detailed', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  const systemStatus = monitoringService.getSystemStatus();
+  
+  // Get recent metrics
+  const endTime = new Date();
+  const startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000); // Last 24 hours
+  const metrics = await monitoringService.getMetrics(startTime, endTime);
+  
+  // Get health check history
+  const healthHistory = await monitoringService.getHealthCheckHistory(null, 50);
+  
+  const detailedData = {
+    ...systemStatus,
+    metrics: metrics.reduce((acc, metric) => {
+      if (!acc[metric.metric_name]) {
+        acc[metric.metric_name] = [];
+      }
+      acc[metric.metric_name].push({
+        value: metric.metric_value,
+        timestamp: metric.timestamp
+      });
+      return acc;
+    }, {}),
+    healthHistory: healthHistory.slice(0, 10), // Last 10 health checks
+    timestamp: new Date().toISOString()
+  };
+
+  successResponse(res, detailedData, 'Detailed system health status retrieved');
+}));
+
+/**
+ * @swagger
+ * /api/health/metrics:
+ *   get:
+ *     summary: Get system metrics
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startTime
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Start time for metrics (ISO 8601)
+ *       - in: query
+ *         name: endTime
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: End time for metrics (ISO 8601)
+ *       - in: query
+ *         name: metricNames
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: string
+ *         description: Specific metric names to retrieve
+ *     responses:
+ *       200:
+ *         description: System metrics retrieved
+ */
+router.get('/metrics', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  const { startTime, endTime, metricNames } = req.query;
+  
+  const start = startTime ? new Date(startTime) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const end = endTime ? new Date(endTime) : new Date();
+  const metrics = metricNames ? metricNames.split(',') : null;
+  
+  const metricsData = await monitoringService.getMetrics(start, end, metrics);
+  
+  successResponse(res, metricsData, 'System metrics retrieved');
+}));
+
+/**
+ * @swagger
+ * /api/health/health-checks:
+ *   get:
+ *     summary: Get health check history
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: component
+ *         schema:
+ *           type: string
+ *         description: Specific component to check
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 100
+ *         description: Number of records to return
+ *     responses:
+ *       200:
+ *         description: Health check history retrieved
+ */
+router.get('/health-checks', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  const { component, limit = 100 } = req.query;
+  
+  const healthHistory = await monitoringService.getHealthCheckHistory(component, parseInt(limit));
+  
+  successResponse(res, healthHistory, 'Health check history retrieved');
+}));
+
+/**
+ * @swagger
+ * /api/health/restart-monitoring:
+ *   post:
+ *     summary: Restart monitoring service
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Monitoring service restarted
+ */
+router.post('/restart-monitoring', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  monitoringService.stop();
+  monitoringService.start();
+  
+  logger.info('Monitoring service restarted by admin', {
+    userId: req.user.id,
+    timestamp: new Date().toISOString()
   });
+  
+  successResponse(res, { status: 'restarted' }, 'Monitoring service restarted');
+}));
+
+/**
+ * @swagger
+ * /api/health/stop-monitoring:
+ *   post:
+ *     summary: Stop monitoring service
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Monitoring service stopped
+ */
+router.post('/stop-monitoring', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  monitoringService.stop();
+  
+  logger.info('Monitoring service stopped by admin', {
+    userId: req.user.id,
+    timestamp: new Date().toISOString()
+  });
+  
+  successResponse(res, { status: 'stopped' }, 'Monitoring service stopped');
+}));
+
+/**
+ * @swagger
+ * /api/health/start-monitoring:
+ *   post:
+ *     summary: Start monitoring service
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Monitoring service started
+ */
+router.post('/start-monitoring', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  monitoringService.start();
+  
+  logger.info('Monitoring service started by admin', {
+    userId: req.user.id,
+    timestamp: new Date().toISOString()
+  });
+  
+  successResponse(res, { status: 'started' }, 'Monitoring service started');
+}));
+
+/**
+ * @swagger
+ * /api/health/database:
+ *   get:
+ *     summary: Check database health specifically
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Database health status
+ */
+router.get('/database', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  const dbHealth = await monitoringService.checkDatabaseHealth();
+  
+  successResponse(res, dbHealth, 'Database health status retrieved');
+}));
+
+/**
+ * @swagger
+ * /api/health/memory:
+ *   get:
+ *     summary: Check memory health specifically
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Memory health status
+ */
+router.get('/memory', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  const memoryHealth = monitoringService.checkMemoryHealth();
+  
+  successResponse(res, memoryHealth, 'Memory health status retrieved');
+}));
+
+/**
+ * @swagger
+ * /api/health/cpu:
+ *   get:
+ *     summary: Check CPU health specifically
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: CPU health status
+ */
+router.get('/cpu', authenticate, authorize(['admin']), asyncHandler(async (req, res) => {
+  const cpuHealth = monitoringService.checkCpuHealth();
+  
+  successResponse(res, cpuHealth, 'CPU health status retrieved');
+}));
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  logger.info('Shutting down monitoring service...');
+  await monitoringService.close();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  logger.info('Shutting down monitoring service...');
+  await monitoringService.close();
+  process.exit(0);
 });
 
 export default router;

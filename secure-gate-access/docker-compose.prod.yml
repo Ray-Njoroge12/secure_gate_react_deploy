@@ -1,144 +1,285 @@
-# Docker Compose for Secure Gate Production Deployment
-# Complete production stack with all services
-
 version: '3.8'
 
 services:
   # PostgreSQL Database
-  database:
+  postgres:
     image: postgres:15-alpine
+    container_name: secure-gate-postgres-prod
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: secure_gate
-      POSTGRES_USER: secure_gate_user
-      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-secure_gate}
+      POSTGRES_USER: ${POSTGRES_USER:-secure_gate_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./server/src/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./server/src/database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+      - ./server/database/init:/docker-entrypoint-initdb.d
+      - ./backups:/backups
     ports:
       - "5432:5432"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U secure_gate_user -d secure_gate"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
     networks:
       - secure-gate-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-secure_gate_user} -d ${POSTGRES_DB:-secure_gate}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Redis Cache
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    container_name: secure-gate-redis-prod
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
     ports:
       - "6379:6379"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "auth", "${REDIS_PASSWORD}", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 10s
     networks:
       - secure-gate-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Backend API Server
   backend:
     build:
       context: ./server
-      dockerfile: Dockerfile
-      target: production
+      dockerfile: Dockerfile.prod
+    container_name: secure-gate-backend-prod
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: 5000
-      PGHOST: database
+      PGHOST: postgres
       PGPORT: 5432
-      PGDATABASE: secure_gate
-      PGUSER: secure_gate_user
-      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-secure_gate}
+      PGUSER: ${POSTGRES_USER:-secure_gate_user}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      SESSION_SECRET: ${SESSION_SECRET}
-      ENFORCE_HTTPS: ${ENFORCE_HTTPS:-false}  # Set to true when SSL is configured
-      ALLOW_HTTP_IN_PRODUCTION: true  # Allow HTTP for local development
-      SECURE_COOKIES: ${SECURE_COOKIES:-true}  # Enable secure cookies in production
-      CORS_ORIGIN: http://localhost
-      API_BASE_URL: http://localhost:5001
-      LOG_LEVEL: warn
-      ENABLE_MONITORING: true
-      
-      # Email Configuration (Gmail)
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      JWT_EXPIRY: ${JWT_EXPIRY:-15m}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-https://securegate.com}
+      SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_SECURE: ${SMTP_SECURE:-false}
-      SMTP_USER: ${SMTP_USER:-rayngi12@gmail.com}
+      SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
-      FROM_EMAIL: ${FROM_EMAIL:-rayngi12@gmail.com}
-      SITE_NAME: ${SITE_NAME:-Secure Gate Access}
-      SITE_URL: ${SITE_URL:-http://localhost}
-      ENABLE_EMAIL_NOTIFICATIONS: ${ENABLE_EMAIL_NOTIFICATIONS:-true}
+      SMTP_FROM: ${SMTP_FROM:-noreply@securegate.com}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MONITORING_INTERVAL_MS: ${MONITORING_INTERVAL_MS:-60000}
+    volumes:
+      - ./server/logs:/app/logs
+      - ./backups:/app/backups
     ports:
-      - "5001:5000"
+      - "5000:5000"
+    networks:
+      - secure-gate-network
     depends_on:
-      database:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:5000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
-    networks:
-      - secure-gate-network
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Frontend Web Application
+  # Frontend React App
   frontend:
     build:
       context: ./client
-      dockerfile: Dockerfile
-      target: production
+      dockerfile: Dockerfile.prod
+    container_name: secure-gate-frontend-prod
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-https://api.securegate.com}
+      REACT_APP_ENVIRONMENT: production
+      REACT_APP_VERSION: ${REACT_APP_VERSION:-1.0.0}
     ports:
-      - "80:80"
+      - "3000:80"
+    networks:
+      - secure-gate-network
     depends_on:
       - backend
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: secure-gate-nginx-prod
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
     networks:
       - secure-gate-network
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-# Nginx Reverse Proxy removed for simplified deployment
-# Add SSL termination at load balancer level in production
+  # Backup Service
+  backup:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.backup
+    container_name: secure-gate-backup-prod
+    restart: "no"
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-secure_gate}
+      PGUSER: ${POSTGRES_USER:-secure_gate_user}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./backups:/backups
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - secure-gate-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - backup
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-# Named volumes for data persistence
+  # Monitoring Service
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: secure-gate-monitoring-prod
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - secure-gate-network
+    profiles:
+      - monitoring
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Log Aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: secure-gate-loki-prod
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - secure-gate-network
+    profiles:
+      - monitoring
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: secure-gate-grafana-prod
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    networks:
+      - secure-gate-network
+    depends_on:
+      - loki
+      - monitoring
+    profiles:
+      - monitoring
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
+  prometheus_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local
 
-# Network for service communication
 networks:
   secure-gate-network:
     driver: bridge
     ipam:
       config:
         - subnet: 172.20.0.0/16
-

@@ -1,16 +1,17 @@
 // server/src/middleware/authMiddleware.js
 import { dbManager } from '../database/db.enhanced.js';
 import { tokenService } from '../services/tokenService.js';
+import { AppError, asyncHandler } from './standardizedErrorHandler.js';
 
 // Enhanced authentication middleware with secure token verification
-export async function authenticateToken(req, res, next) {
+export const authenticateToken = asyncHandler(async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       console.log('[AUTH] No token provided');
-      return res.status(401).json({ success: false, message: 'Token required' });
+      throw new AppError('Token required', 401, 'AUTH_TOKEN_MISSING');
     }
 
     // Verify token using enhanced token service
@@ -19,7 +20,11 @@ export async function authenticateToken(req, res, next) {
       payload = tokenService.verifyAccessToken(token);
     } catch (error) {
       console.log('[AUTH] Token verification failed:', error.message);
-      return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+      if (error.name === 'TokenExpiredError') {
+        throw new AppError('Token expired', 401, 'AUTH_TOKEN_EXPIRED');
+      } else {
+        throw new AppError('Invalid token', 401, 'AUTH_TOKEN_INVALID');
+      }
     }
 
     console.log('[AUTH] Token decoded:', { email: payload.email, role: payload.role, exp: new Date(payload.exp * 1000) });
@@ -27,7 +32,7 @@ export async function authenticateToken(req, res, next) {
     // Validate required fields
     if (!payload.email) {
       console.log('[AUTH] Token missing email field');
-      return res.status(401).json({ success: false, message: 'Invalid token format' });
+      throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
     }
 
     // Look up user in database to get full user info
@@ -38,7 +43,7 @@ export async function authenticateToken(req, res, next) {
 
     if (userQuery.rowCount === 0) {
       console.log('[AUTH] User not found in database:', payload.email);
-      return res.status(401).json({ success: false, message: 'User not found' });
+      throw new AppError('User not found', 401, 'AUTH_USER_NOT_FOUND');
     }
 
     const dbUser = userQuery.rows[0];
@@ -55,18 +60,21 @@ export async function authenticateToken(req, res, next) {
 
     return next();
   } catch (err) {
-    if (err.name === 'JsonWebTokenError') {
+    if (err instanceof AppError) {
+      // Re-throw AppError instances to be handled by the global error handler
+      throw err;
+    } else if (err.name === 'JsonWebTokenError') {
       console.log('[AUTH] Invalid JWT:', err.message);
-      return res.status(401).json({ success: false, message: 'Invalid token' });
+      throw new AppError('Invalid token', 401, 'AUTH_TOKEN_INVALID');
     } else if (err.name === 'TokenExpiredError') {
       console.log('[AUTH] Expired JWT:', err.message);
-      return res.status(401).json({ success: false, message: 'Token expired' });
+      throw new AppError('Token expired', 401, 'AUTH_TOKEN_EXPIRED');
     } else {
       console.error('[AUTH] Unexpected error:', err);
-      return res.status(500).json({ success: false, message: 'Authentication error' });
+      throw new AppError('Authentication error', 500, 'AUTH_INTERNAL_ERROR');
     }
   }
-}
+});
 
 // Convenience middleware: attach user when Authorization header present but don't fail.
 export async function attachUserFromToken(req, res, next) {

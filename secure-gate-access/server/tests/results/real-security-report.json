@@ -1,0 +1,35 @@
+{
+  "sqlInjection": {
+    "status": "PASSED",
+    "vulnerabilities": [],
+    "score": 100
+  },
+  "xss": {
+    "status": "PASSED",
+    "vulnerabilities": [],
+    "score": 100
+  },
+  "authentication": {
+    "status": "PASSED",
+    "vulnerabilities": [],
+    "score": 100
+  },
+  "authorization": {
+    "status": "PENDING",
+    "vulnerabilities": [],
+    "score": 0
+  },
+  "csrf": {
+    "status": "PENDING",
+    "vulnerabilities": [],
+    "score": 0
+  },
+  "rateLimiting": {
+    "status": "PASSED",
+    "vulnerabilities": [],
+    "score": 100
+  },
+  "overallScore": 100,
+  "totalVulnerabilities": 0,
+  "recommendations": []
+}

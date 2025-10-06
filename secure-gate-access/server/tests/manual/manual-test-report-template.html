@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Testing Report - Secure Gate Access Control System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-card .label {
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .pass { color: #28a745; }
+        .fail { color: #dc3545; }
+        .warning { color: #ffc107; }
+        
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .category-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .category-header {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .category-header h3 {
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .category-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        .category-body {
+            padding: 20px;
+        }
+        
+        .test-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #dee2e6;
+            background: #f8f9fa;
+        }
+        
+        .test-item.pass {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .test-item.fail {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .test-item.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        
+        .test-id {
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .test-name {
+            margin: 5px 0;
+            color: #212529;
+        }
+        
+        .test-description {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .test-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .test-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .test-status.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .test-status.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .test-status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .test-message {
+            font-size: 0.9em;
+            color: #495057;
+        }
+        
+        .test-timestamp {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+            margin-top: 30px;
+        }
+        
+        .overall-status {
+            text-align: center;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .overall-status.excellent {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+        
+        .overall-status.good {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+        
+        .overall-status.needs-improvement {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        
+        .overall-status.poor {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .categories {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Manual Testing Report</h1>
+            <p>Secure Gate Access Control System</p>
+            <p>Generated: <span id="generated-date"></span></p>
+        </div>
+        
+        <div class="summary">
+            <div class="metric-card">
+                <h3>Total Tests</h3>
+                <div class="value" id="total-tests">0</div>
+                <div class="label">Tests Executed</div>
+            </div>
+            <div class="metric-card">
+                <h3>Passed</h3>
+                <div class="value pass" id="passed-tests">0</div>
+                <div class="label">Tests Passed</div>
+            </div>
+            <div class="metric-card">
+                <h3>Failed</h3>
+                <div class="value fail" id="failed-tests">0</div>
+                <div class="label">Tests Failed</div>
+            </div>
+            <div class="metric-card">
+                <h3>Pass Rate</h3>
+                <div class="value" id="pass-rate">0%</div>
+                <div class="label">Success Rate</div>
+            </div>
+            <div class="metric-card">
+                <h3>Duration</h3>
+                <div class="value" id="duration">0m</div>
+                <div class="label">Test Duration</div>
+            </div>
+        </div>
+        
+        <div class="overall-status" id="overall-status">
+            <div id="status-message">Loading...</div>
+        </div>
+        
+        <div class="categories" id="categories">
+            <!-- Categories will be populated by JavaScript -->
+        </div>
+        
+        <div class="footer">
+            <p>This report was generated by the Manual Testing Framework</p>
+            <p>Secure Gate Access Control System - Version 1.0.0</p>
+        </div>
+    </div>
+    
+    <script>
+        // This will be populated by the test runner
+        const testData = {
+            summary: {
+                totalTests: 0,
+                passedTests: 0,
+                failedTests: 0,
+                duration: 0,
+                startTime: new Date().toISOString(),
+                endTime: new Date().toISOString()
+            },
+            categories: {},
+            details: {}
+        };
+        
+        function formatDuration(ms) {
+            const minutes = Math.floor(ms / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            return `${minutes}m ${seconds}s`;
+        }
+        
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString();
+        }
+        
+        function getOverallStatus(passRate) {
+            if (passRate >= 95) return { class: 'excellent', message: '✅ EXCELLENT - All tests passed with high quality' };
+            if (passRate >= 90) return { class: 'good', message: '⚠️ GOOD - Minor issues need attention' };
+            if (passRate >= 80) return { class: 'needs-improvement', message: '⚠️ NEEDS IMPROVEMENT - Several issues found' };
+            return { class: 'poor', message: '❌ POOR - Major issues need immediate attention' };
+        }
+        
+        function renderReport(data) {
+            // Update summary
+            document.getElementById('total-tests').textContent = data.summary.totalTests;
+            document.getElementById('passed-tests').textContent = data.summary.passedTests;
+            document.getElementById('failed-tests').textContent = data.summary.failedTests;
+            document.getElementById('pass-rate').textContent = ((data.summary.passedTests / data.summary.totalTests) * 100).toFixed(1) + '%';
+            document.getElementById('duration').textContent = formatDuration(data.summary.duration);
+            document.getElementById('generated-date').textContent = formatDate(data.summary.endTime);
+            
+            // Update overall status
+            const passRate = (data.summary.passedTests / data.summary.totalTests) * 100;
+            const status = getOverallStatus(passRate);
+            const statusElement = document.getElementById('overall-status');
+            statusElement.className = `overall-status ${status.class}`;
+            statusElement.innerHTML = `<div>${status.message}</div>`;
+            
+            // Render categories
+            const categoriesContainer = document.getElementById('categories');
+            categoriesContainer.innerHTML = '';
+            
+            Object.entries(data.categories).forEach(([categoryName, categoryStats]) => {
+                const categoryCard = document.createElement('div');
+                categoryCard.className = 'category-card';
+                
+                const passRate = categoryStats.passRate;
+                const statusClass = passRate >= 90 ? 'pass' : passRate >= 80 ? 'warning' : 'fail';
+                
+                categoryCard.innerHTML = `
+                    <div class="category-header">
+                        <h3>${categoryName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</h3>
+                        <div class="category-stats">
+                            <span>Total: ${categoryStats.total}</span>
+                            <span>Passed: ${categoryStats.passed}</span>
+                            <span>Failed: ${categoryStats.failed}</span>
+                            <span>Pass Rate: ${passRate}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${passRate}%"></div>
+                        </div>
+                    </div>
+                    <div class="category-body">
+                        ${data.details[categoryName].map(test => `
+                            <div class="test-item ${test.result.status.toLowerCase()}">
+                                <div class="test-id">${test.id}</div>
+                                <div class="test-name">${test.name}</div>
+                                <div class="test-description">${test.description}</div>
+                                <div class="test-result">
+                                    <span class="test-status ${test.result.status.toLowerCase()}">${test.result.status}</span>
+                                    <span class="test-message">${test.result.message}</span>
+                                </div>
+                                <div class="test-timestamp">${formatDate(test.timestamp)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                categoriesContainer.appendChild(categoryCard);
+            });
+        }
+        
+        // Initialize with sample data or load from file
+        renderReport(testData);
+    </script>
+</body>
+</html>
