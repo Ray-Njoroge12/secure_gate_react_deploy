@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "./ui";
 
-export default function Topbar({ title, onLogout }) {
+export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const role = localStorage.getItem("role") || "guest";
   const [profilePic, setProfilePic] = useState(null);
   const navigate = useNavigate();
@@ -39,6 +39,29 @@ export default function Topbar({ title, onLogout }) {
       aria-label="Page header"
     >
       <div className="flex items-center gap-4">
+        {/* Mobile Menu Toggle Button */}
+        <button
+          onClick={onMenuToggle}
+          className="md:hidden p-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={sidebarOpen}
+          aria-controls="main-navigation"
+        >
+          <svg 
+            className="w-6 h-6" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            {sidebarOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+        
         <h1 className="text-lg font-semibold text-slate-200 m-0">
           {title}
         </h1>
