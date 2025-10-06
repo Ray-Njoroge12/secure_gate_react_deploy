@@ -1,102 +1,129 @@
-// client/src/components/ui/FormField.jsx
-import React, { useEffect, useRef } from 'react';
-import { Input } from './Input';
+// FormField component with integrated validation
+import React, { memo, useCallback } from 'react';
+import ValidatedInput from './ValidatedInput';
+import { FIELD_VALIDATORS } from '../../utils/validationRules';
 
-const FormField = ({ 
-  label, 
-  error, 
+const FormField = memo(({
+  name,
+  label,
+  type = 'text',
   required = false,
-  children,
-  htmlFor,
-  description,
+  placeholder,
+  helperText,
+  example,
+  icon,
+  validationType,
+  customValidator,
+  showValidationIcon = true,
+  showExample = true,
   className = '',
-  ...props 
+  formValidation,
+  ...props
 }) => {
-  const fieldRef = useRef(null);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ctrl/Cmd + A to select all in input fields
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        const input = fieldRef.current?.querySelector('input, textarea, select');
-        if (input) {
-          e.preventDefault();
-          input.select();
-        }
-      }
-      // Escape to clear input fields
-      if (e.key === 'Escape') {
-        const input = fieldRef.current?.querySelector('input, textarea, select');
-        if (input && input.value) {
-          input.value = '';
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-      }
-    };
-
-    const field = fieldRef.current;
-    if (field) {
-      field.addEventListener('keydown', handleKeyDown);
-      return () => field.removeEventListener('keydown', handleKeyDown);
+  // Get validator for this field
+  const getValidator = useCallback(() => {
+    if (customValidator) return customValidator;
+    if (validationType && FIELD_VALIDATORS[validationType]) {
+      return FIELD_VALIDATORS[validationType];
     }
+    if (required) return FIELD_VALIDATORS.required;
+    return FIELD_VALIDATORS.optional;
+  }, [customValidator, validationType, required]);
+
+  // Handle field change
+  const handleChange = useCallback((e) => {
+    const value = e.target.value;
+    
+    if (formValidation) {
+      formValidation.handleFieldChange(name, value);
+    }
+    
+    if (props.onChange) {
+      props.onChange(e);
+    }
+  }, [name, formValidation, props.onChange]);
+
+  // Handle field blur
+  const handleBlur = useCallback((e) => {
+    if (formValidation) {
+      formValidation.handleFieldBlur(name, e.target.value);
+    }
+    
+    if (props.onBlur) {
+      props.onBlur(e);
+    }
+  }, [name, formValidation, props.onBlur]);
+
+  // Handle field focus
+  const handleFocus = useCallback((e) => {
+    if (formValidation) {
+      formValidation.handleFieldFocus(name);
+    }
+    
+    if (props.onFocus) {
+      props.onFocus(e);
+    }
+  }, [name, formValidation, props.onFocus]);
+
+  // Handle validation change
+  const handleValidationChange = useCallback((validationResult) => {
+    // This is called by ValidatedInput when validation state changes
+    // We can use this to update form-level validation state if needed
   }, []);
-  const fieldId = htmlFor || props.id || props.name || label?.toLowerCase().replace(/\s+/g, '-');
-  const errorId = error ? `${fieldId}-error` : undefined;
-  const descriptionId = description ? `${fieldId}-description` : undefined;
-  
-  const ariaDescribedBy = [descriptionId, errorId].filter(Boolean).join(' ') || undefined;
-  
+
+  // Get field validation state
+  const fieldState = formValidation ? formValidation.getFieldState(name) : {
+    hasErrors: false,
+    hasWarnings: false,
+    isValid: true,
+    isTouched: false,
+    isValidating: false,
+    state: 'idle',
+    errors: [],
+    warnings: []
+  };
+
+  // Get field value
+  const value = formValidation ? formValidation.values[name] : props.value || '';
+
+  // Get error message
+  const errorMessage = fieldState.hasErrors ? fieldState.errors[0] : null;
+
+  // Get helper text
+  const displayHelperText = showExample && example ? example : helperText;
+
+  // Register field with form validation on mount
+  React.useEffect(() => {
+    if (formValidation) {
+      const validator = getValidator();
+      formValidation.registerField(name, validator);
+    }
+  }, [formValidation, name, getValidator]);
+
   return (
-    <div ref={fieldRef} className={`space-y-2 ${className}`}>
-      {label && (
-        <label 
-          htmlFor={fieldId} 
-          className="block text-sm font-medium text-slate-300"
-        >
-          {label}
-          {required && (
-            <span className="text-red-400 ml-1" aria-label="required">
-              *
-            </span>
-          )}
-        </label>
-      )}
-      
-      {description && (
-        <p 
-          id={descriptionId} 
-          className="text-sm text-slate-400"
-        >
-          {description}
-        </p>
-      )}
-      
-      <div className="relative">
-        {React.isValidElement(children) 
-          ? React.cloneElement(children, {
-              id: fieldId,
-              'aria-describedby': ariaDescribedBy,
-              'aria-invalid': error ? 'true' : 'false',
-              'aria-required': required,
-              ...children.props
-            })
-          : children
-        }
-      </div>
-      
-      {error && (
-        <p 
-          id={errorId} 
-          className="text-sm text-red-400" 
-          role="alert"
-          aria-live="polite"
-        >
-          {error}
-        </p>
-      )}
-    </div>
+    <ValidatedInput
+      name={name}
+      label={label}
+      type={type}
+      required={required}
+      placeholder={placeholder}
+      helperText={displayHelperText}
+      icon={icon}
+      error={errorMessage}
+      validator={getValidator()}
+      showValidationIcon={showValidationIcon}
+      showExample={showExample}
+      className={className}
+      value={value}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      onFocus={handleFocus}
+      onValidationChange={handleValidationChange}
+      {...props}
+    />
   );
-};
+});
+
+FormField.displayName = 'FormField';
 
 export default FormField;

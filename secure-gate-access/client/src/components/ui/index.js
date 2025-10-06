@@ -14,3 +14,5 @@ export { default as LiveRegion, StatusAnnouncement, AlertAnnouncement, LoadingAn
 export { default as ErrorDisplay } from './ErrorDisplay.jsx';
 export { default as SuccessDisplay } from './SuccessDisplay.jsx';
 export { default as FormWizard } from './FormWizard.jsx';
+export { default as ValidatedInput } from './ValidatedInput.jsx';
+export { default as ValidatedForm } from './ValidatedForm.jsx';
