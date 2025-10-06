@@ -1,46 +1,27 @@
+/** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  darkMode: 'class', // Enable class-based dark mode as optional
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
   theme: {
-    screens: {
-      'xs': '360px',    // Mobile phones
-      'sm': '640px',    // Large phones / small tablets
-      'md': '768px',    // Tablets
-      'lg': '1024px',   // Laptops
-      'xl': '1280px',   // Desktops
-      '2xl': '1536px',  // Large desktops
-    },
     extend: {
       colors: {
-        // Professional brand palette from original design
+        // Brand Colors
         brand: {
-          50:  "#eef6ff",
-          100: "#d9eaff",
-          200: "#b8d7ff",
-          300: "#8dbdff", 
-          400: "#5a9aff",
-          500: "#2f7cff",     // Primary brand color
-          600: "#1f61db",
-          700: "#194db1",
-          800: "#173f8d",
-          900: "#132f66",
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
         },
-        success: { DEFAULT: "#16a34a" },
-        warning: { DEFAULT: "#f59e0b" },
-        danger:  { DEFAULT: "#dc2626" },
-        primary: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#15803d', // Darker for better contrast (was #16a34a)
-          700: '#166534',
-          800: '#14532d',
-          900: '#0f5132', // Even darker for highest contrast
-        },
-        secondary: {
+        
+        // Neutral Colors
+        slate: {
           50: '#f8fafc',
           100: '#f1f5f9',
           200: '#e2e8f0',
@@ -52,24 +33,46 @@ module.exports = {
           800: '#1e293b',
           900: '#0f172a',
         },
-        accent: {
+        
+        // Semantic Colors
+        success: {
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          500: '#10b981',
+          600: '#059669',
+          700: '#047857',
+        },
+        
+        warning: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+        },
+        
+        error: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
+        },
+        
+        info: {
           50: '#eff6ff',
+          100: '#dbeafe',
           500: '#3b82f6',
           600: '#2563eb',
           700: '#1d4ed8',
         },
-        // Additional semantic colors for specific components
-        semantic: {
-          green: '#22c55e',
-          blue: '#3b82f6',
-          slate: '#334155',
-        }
       },
-      spacing: {
-        'touch': '44px',  // Minimum touch target size
-        'safe-area-top': 'env(safe-area-inset-top)',
-        'safe-area-bottom': 'env(safe-area-inset-bottom)',
+      
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono: ['"Fira Code"', '"JetBrains Mono"', '"SF Mono"', 'Consolas', 'monospace'],
       },
+      
       fontSize: {
         'xs': ['0.75rem', { lineHeight: '1rem' }],
         'sm': ['0.875rem', { lineHeight: '1.25rem' }],
@@ -78,27 +81,120 @@ module.exports = {
         'xl': ['1.25rem', { lineHeight: '1.75rem' }],
         '2xl': ['1.5rem', { lineHeight: '2rem' }],
         '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
+        '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
       },
-      fontFamily: {
-        'sans': ['Inter', 'system-ui', 'sans-serif'],
-        'mono': ['JetBrains Mono', 'Consolas', 'monospace'],
+      
+      fontWeight: {
+        light: '300',
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
       },
+      
+      spacing: {
+        // 4px base unit
+        '1': '4px',
+        '2': '8px',
+        '3': '12px',
+        '4': '16px',
+        '5': '20px',
+        '6': '24px',
+        '8': '32px',
+        '10': '40px',
+        '12': '48px',
+        '16': '64px',
+        '20': '80px',
+        '24': '96px',
+        '32': '128px',
+        '40': '160px',
+        '48': '192px',
+        '56': '224px',
+        '64': '256px',
+      },
+      
       borderRadius: {
-        'smooth': '0.625rem', // 10px - Professional rounded corners
+        'sm': '4px',
+        'md': '8px',
+        'lg': '12px',
+        'xl': '16px',
+        '2xl': '20px',
+        '3xl': '24px',
+        'full': '9999px',
       },
+      
       boxShadow: {
-        'brand': '0 4px 6px -1px rgb(34 197 94 / 0.1), 0 2px 4px -2px rgb(34 197 94 / 0.1)',
-        'card': '0 4px 16px rgba(0,0,0,0.06)', // Subtle professional shadow
+        'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        'md': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        'lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+        '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+        'inner': 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
       },
-      maxWidth: {
-        'screen-xs': '360px',
-        'screen-sm': '640px',
-        'screen-md': '768px',
-      }
+      
+      zIndex: {
+        'hide': -1,
+        'auto': 'auto',
+        'base': 0,
+        'docked': 10,
+        'dropdown': 1000,
+        'sticky': 1100,
+        'banner': 1200,
+        'overlay': 1300,
+        'modal': 1400,
+        'popover': 1500,
+        'skipLink': 1600,
+        'toast': 1700,
+        'tooltip': 1800,
+      },
+      
+      transitionDuration: {
+        'fast': '150ms',
+        'normal': '200ms',
+        'slow': '300ms',
+      },
+      
+      transitionTimingFunction: {
+        'ease-in': 'cubic-bezier(0.4, 0, 1, 1)',
+        'ease-out': 'cubic-bezier(0, 0, 0.2, 1)',
+        'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+      
+      screens: {
+        'xs': '0px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+      },
     },
   },
-  variants: {
-    extend: {},
-  },
-  plugins: [],
-}
+  plugins: [
+    // Custom utilities for design system
+    function({ addUtilities }) {
+      const newUtilities = {
+        '.touch-target': {
+          'min-height': '44px',
+          'min-width': '44px',
+        },
+        '.focus-ring': {
+          'outline': '2px solid var(--color-brand-500)',
+          'outline-offset': '2px',
+        },
+        '.text-balance': {
+          'text-wrap': 'balance',
+        },
+        '.scrollbar-hide': {
+          '-ms-overflow-style': 'none',
+          'scrollbar-width': 'none',
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        },
+      };
+      
+      addUtilities(newUtilities);
+    },
+  ],
+};
