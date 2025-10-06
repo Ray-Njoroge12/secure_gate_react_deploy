@@ -279,6 +279,24 @@ textarea {
   font-size: 13px;
 }
 
+/* Mobile table adjustments */
+@media (max-width: 768px) {
+  .table {
+    font-size: 14px;
+  }
+  
+  .table th,
+  .table td {
+    padding: 8px 6px;
+  }
+  
+  /* Ensure table doesn't overflow on mobile */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* =======================
    KPI
 ======================= */

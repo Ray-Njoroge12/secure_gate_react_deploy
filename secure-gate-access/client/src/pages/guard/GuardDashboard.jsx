@@ -230,20 +230,24 @@ export default function GuardDashboard() {
 
           <div className="hidden md:block">
             {/* Desktop Table */}
-            <Table headers={["Visitor","Host","In","Out","Status","Actions"]} rows={active.map(v => [
-              (v.name||`#${v.id}`),
-              (v.host?mask(v.host):'-'), 
-              ''+(v.check_in_time||''), 
-              ''+(v.check_out_time||''), 
-              statusChip(v.status),
-              ((['guard','admin'].includes(role)) ? (
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={()=>onCheckIn(v.id)} disabled={v.status!=='CONFIRMED'}>Check-in</Button>
-                  <Button size="sm" onClick={()=>onCheckOut(v.id)} disabled={!(v.status==='ON_PREMISE' || (v.check_in_time && !v.check_out_time))}>Check-out</Button>
-                  <Button size="sm" variant="destructive" onClick={()=>onRevoke(v.id)} disabled={v.status==='REVOKED'}>Revoke</Button>
-                </div>
-              ) : null)
-            ])} />
+            <Table 
+              headers={["Visitor","Host","In","Out","Status","Actions"]} 
+              rows={active.map(v => [
+                (v.name||`#${v.id}`),
+                (v.host?mask(v.host):'-'), 
+                ''+(v.check_in_time||''), 
+                ''+(v.check_out_time||''), 
+                statusChip(v.status),
+                ((['guard','admin'].includes(role)) ? (
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={()=>onCheckIn(v.id)} disabled={v.status!=='CONFIRMED'}>Check-in</Button>
+                    <Button size="sm" onClick={()=>onCheckOut(v.id)} disabled={!(v.status==='ON_PREMISE' || (v.check_in_time && !v.check_out_time))}>Check-out</Button>
+                    <Button size="sm" variant="destructive" onClick={()=>onRevoke(v.id)} disabled={v.status==='REVOKED'}>Revoke</Button>
+                  </div>
+                ) : null)
+              ])} 
+              mobileCardView={false}
+            />
           </div>
         </Card.Content>
       </Card>
