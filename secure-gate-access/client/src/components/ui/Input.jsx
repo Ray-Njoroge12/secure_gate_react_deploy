@@ -42,10 +42,10 @@ const Input = memo(({
     w-full min-h-[44px] px-3 sm:px-4 py-2 sm:py-3 bg-slate-800 border rounded-lg 
     text-sm sm:text-base text-slate-200 placeholder-slate-400 
     transition-colors duration-200
-    focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
+    focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
     disabled:opacity-50 disabled:cursor-not-allowed
     ${error 
-      ? 'border-red-500 focus:ring-red-500' 
+      ? 'border-error-500 focus:ring-error-500' 
       : 'border-slate-600 hover:border-slate-500'
     }
     ${className}

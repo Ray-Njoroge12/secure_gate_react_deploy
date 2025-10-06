@@ -28,11 +28,11 @@ export default function Incidents() {
   }, []);
 
   return (
-    <div className="app-grid">
+    <div className="grid grid-cols-[260px_1fr] min-h-screen">
       <Sidebar />
       <div>
         <Topbar title="Incidents" onLogout={() => { localStorage.clear(); window.location.href="/login"; }} />
-        <main className="main">
+        <main className="flex-1 overflow-y-auto bg-slate-900 p-6">
           {error && (
             <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
               {error}

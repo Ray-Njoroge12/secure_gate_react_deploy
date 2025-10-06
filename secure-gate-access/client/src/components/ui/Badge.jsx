@@ -30,11 +30,11 @@ const Badge = ({
   
   const variantClasses = {
     default: 'bg-slate-700 text-slate-300',
-    success: 'bg-green-900 text-green-300',
-    warning: 'bg-yellow-900 text-yellow-300',
-    danger: 'bg-red-900 text-red-300',
-    info: 'bg-blue-900 text-blue-300',
-    pending: 'bg-orange-900 text-orange-300'
+    success: 'bg-success-50 text-success-700',
+    warning: 'bg-warning-50 text-warning-700',
+    danger: 'bg-error-50 text-error-700',
+    info: 'bg-info-50 text-info-700',
+    pending: 'bg-warning-50 text-warning-700'
   };
   
   const sizeClasses = {
