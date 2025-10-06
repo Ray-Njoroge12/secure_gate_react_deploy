@@ -1,5 +1,5 @@
 // client/src/components/ui/Loading.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const Loading = ({ 
   size = 'md', 
@@ -8,6 +8,23 @@ const Loading = ({
   overlay = false,
   ...props 
 }) => {
+  const loadingRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape to cancel loading (if supported)
+      if (e.key === 'Escape' && loadingRef.current?.onCancel) {
+        loadingRef.current.onCancel();
+      }
+    };
+
+    const loading = loadingRef.current;
+    if (loading) {
+      loading.addEventListener('keydown', handleKeyDown);
+      return () => loading.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-8 h-8',
@@ -16,7 +33,7 @@ const Loading = ({
   };
   
   const spinner = (
-    <div className={`inline-flex items-center gap-3 ${className}`} {...props}>
+    <div ref={loadingRef} className={`inline-flex items-center gap-3 ${className}`} {...props}>
       <svg 
         className={`animate-spin ${sizeClasses[size]} text-green-500`} 
         fill="none" 

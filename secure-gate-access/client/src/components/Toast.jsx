@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card } from './ui';
 
 const Toast = ({ toast, onClose }) => {
+  const toastRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Space or Enter to close toast
+      if ((e.key === ' ' || e.key === 'Enter') && e.target === toastRef.current) {
+        e.preventDefault();
+        onClose(toast.id);
+      }
+      // Escape to close toast
+      if (e.key === 'Escape' && e.target === toastRef.current) {
+        onClose(toast.id);
+      }
+    };
+
+    const toastElement = toastRef.current;
+    if (toastElement) {
+      toastElement.addEventListener('keydown', handleKeyDown);
+      return () => toastElement.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [toast.id, onClose]);
   const getToastStyles = (type) => {
     const baseStyles = "border-l-4 shadow-lg";
     
@@ -49,7 +71,15 @@ const Toast = ({ toast, onClose }) => {
   };
 
   return (
-    <div className={`p-4 rounded-md ${getToastStyles(toast.type)} animate-in slide-in-from-right-full duration-300`}>
+    <div 
+      ref={toastRef}
+      className={`toast p-4 rounded-md ${getToastStyles(toast.type)} animate-in slide-in-from-right-full duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer`}
+      tabIndex={0}
+      role="alert"
+      aria-live="polite"
+      aria-label={`${toast.type} notification: ${toast.title}`}
+      title="Press Space or Enter to close, Escape to close"
+    >
       <div className="flex items-start">
         <div className="flex-shrink-0">
           {getIcon(toast.type)}
@@ -72,7 +102,8 @@ const Toast = ({ toast, onClose }) => {
         <div className="ml-4 flex-shrink-0">
           <button
             onClick={() => onClose(toast.id)}
-            className="inline-flex text-current opacity-75 hover:opacity-100 focus:outline-none"
+            className="inline-flex text-current opacity-75 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            aria-label="Close notification"
           >
             <span className="sr-only">Close</span>
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

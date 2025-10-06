@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Table from "../../components/Table";
 import { Button } from "../../components/ui";
 import { RefreshCw } from "lucide-react";
@@ -13,6 +13,22 @@ function mask(value) {
 export default function VisitorHistory() {
   const [rows, setRows] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + R to refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        if (!loading) {
+          fetchMine();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loading]);
 
   async function fetchMine() {
     try {

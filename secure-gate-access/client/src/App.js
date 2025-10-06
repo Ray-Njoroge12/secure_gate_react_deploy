@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.js";
 import { ErrorProvider } from "./contexts/ErrorContext.jsx";
@@ -32,14 +32,61 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
 const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
 
 function App() {
+  const appRef = useRef(null);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + K to focus search (if available)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="search"], input[type="text"]');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+      // Ctrl/Cmd + H to go to home/dashboard
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault();
+        const role = localStorage.getItem('role');
+        if (role) {
+          window.location.href = `/dashboard/${role}`;
+        } else {
+          window.location.href = '/login';
+        }
+      }
+      // Ctrl/Cmd + L to logout
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = '/login';
+      }
+      // Ctrl/Cmd + B to toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        const sidebarToggle = document.querySelector('[aria-label*="menu"]');
+        if (sidebarToggle) {
+          sidebarToggle.click();
+        }
+      }
+    };
+
+    const app = appRef.current;
+    if (app) {
+      app.addEventListener('keydown', handleKeyDown);
+      return () => app.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
+
   return (
-    <ErrorProvider>
-      <AuthProvider>
-        <Router>
-          <ErrorBoundary level="page">
-            <NetworkErrorBoundary>
-              <AuthErrorBoundary>
-                <Suspense fallback={<Loading />}>
+    <div ref={appRef}>
+      <ErrorProvider>
+        <AuthProvider>
+          <Router>
+            <ErrorBoundary level="page">
+              <NetworkErrorBoundary>
+                <AuthErrorBoundary>
+                  <Suspense fallback={<Loading />}>
             <Routes>
             {/* Default route - redirect to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
@@ -212,6 +259,7 @@ function App() {
         </Router>
       </AuthProvider>
     </ErrorProvider>
+    </div>
   );
 }
 

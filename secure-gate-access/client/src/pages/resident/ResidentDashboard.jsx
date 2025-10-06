@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../layouts/AppShell";
 import { Card, Button } from "../../components/ui";
 import AddVisitor from "./AddVisitor";
@@ -12,6 +12,42 @@ const DashboardHome = () => {
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + A to add visitor
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        window.location.href = '/dashboard/resident/add-visitor';
+      }
+      // Ctrl/Cmd + G to generate pass
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
+        e.preventDefault();
+        window.location.href = '/dashboard/resident/generate-pass';
+      }
+      // Ctrl/Cmd + B to bulk invite
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        window.location.href = '/dashboard/resident/bulk-invite';
+      }
+      // Ctrl/Cmd + H to visitor history
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault();
+        window.location.href = '/dashboard/resident/visitor-history';
+      }
+      // Ctrl/Cmd + R to refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        if (!loading) {
+          fetchDashboardData();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loading]);
 
   useEffect(() => {
     fetchDashboardData();

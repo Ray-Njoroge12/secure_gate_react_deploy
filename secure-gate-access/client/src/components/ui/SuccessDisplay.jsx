@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CheckCircle, Copy, ExternalLink, QrCode, X } from 'lucide-react';
 
 const SuccessDisplay = ({ 
@@ -6,6 +6,37 @@ const SuccessDisplay = ({
   onClose, 
   className = '' 
 }) => {
+  const successRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Escape to close
+      if (e.key === 'Escape' && successRef.current) {
+        onClose?.();
+      }
+      // Space or Enter to close
+      if ((e.key === ' ' || e.key === 'Enter') && e.target === successRef.current) {
+        e.preventDefault();
+        onClose?.();
+      }
+      // Ctrl/Cmd + C to copy success message
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && successRef.current) {
+        e.preventDefault();
+        const successText = successRef.current.textContent;
+        if (successText) {
+          navigator.clipboard.writeText(successText);
+        }
+      }
+    };
+
+    const successElement = successRef.current;
+    if (successElement) {
+      successElement.addEventListener('keydown', handleKeyDown);
+      return () => successElement.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [onClose]);
+
   if (!success) return null;
 
   const copyToClipboard = (text) => {
@@ -15,7 +46,7 @@ const SuccessDisplay = ({
 
   return (
     <div className={`fixed top-4 right-4 z-50 max-w-md ${className}`}>
-      <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 shadow-lg">
+      <div ref={successRef} className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 shadow-lg" tabIndex={0}>
         <div className="flex items-start">
           <div className="flex-shrink-0 mr-3">
             <CheckCircle className="w-5 h-5" />

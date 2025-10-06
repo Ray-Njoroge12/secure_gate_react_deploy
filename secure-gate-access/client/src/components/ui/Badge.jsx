@@ -1,5 +1,5 @@
 // client/src/components/ui/Badge.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 const Badge = ({ 
   children, 
@@ -8,6 +8,24 @@ const Badge = ({
   className = '',
   ...props 
 }) => {
+  const badgeRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Space or Enter to activate clickable badges
+      if ((e.key === ' ' || e.key === 'Enter') && badgeRef.current?.onClick) {
+        e.preventDefault();
+        badgeRef.current.click();
+      }
+    };
+
+    const badge = badgeRef.current;
+    if (badge) {
+      badge.addEventListener('keydown', handleKeyDown);
+      return () => badge.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
   const baseClasses = 'inline-flex items-center font-medium rounded-full';
   
   const variantClasses = {
@@ -28,7 +46,7 @@ const Badge = ({
   const badgeClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
   
   return (
-    <span className={badgeClasses} {...props}>
+    <span ref={badgeRef} className={badgeClasses} {...props}>
       {children}
     </span>
   );

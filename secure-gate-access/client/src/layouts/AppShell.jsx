@@ -10,6 +10,7 @@ export default function AppShell({
   className = "" 
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const appShellRef = useRef(null);
 
   const handleLogout = onLogout || (() => {
     // Default logout behavior
@@ -28,8 +29,42 @@ export default function AppShell({
     setSidebarOpen(false);
   };
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + B to toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+      // Escape to close sidebar
+      if (e.key === 'Escape' && sidebarOpen) {
+        closeSidebar();
+      }
+      // Ctrl/Cmd + L to logout
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        handleLogout();
+      }
+      // Ctrl/Cmd + K to focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="search"], input[type="text"]');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      }
+    };
+
+    const appShell = appShellRef.current;
+    if (appShell) {
+      appShell.addEventListener('keydown', handleKeyDown);
+      return () => appShell.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [sidebarOpen, handleLogout]);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div ref={appShellRef} className="min-h-screen bg-gray-50 flex">
       {/* Skip Navigation Link */}
       <a 
         href="#main-content" 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../../components/ui';
 import QRScanner from '../../components/QRScanner';
 
@@ -6,6 +6,26 @@ const ScanQR = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedData, setScannedData] = useState(null);
   const [error, setError] = useState(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + S to start scanning
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (!isScanning) {
+          setIsScanning(true);
+        }
+      }
+      // Escape to stop scanning
+      if (e.key === 'Escape' && isScanning) {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isScanning]);
 
   const handleScan = (data) => {
     if (data) {

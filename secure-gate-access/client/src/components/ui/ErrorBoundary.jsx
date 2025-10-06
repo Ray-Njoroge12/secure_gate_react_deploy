@@ -21,6 +21,31 @@ class ErrorBoundary extends React.Component {
     
     this.maxRetries = props.maxRetries || 3;
     this.retryDelay = props.retryDelay || 1000;
+    this.errorRef = React.createRef();
+  }
+
+  // Keyboard shortcuts
+  componentDidMount() {
+    const handleKeyDown = (e) => {
+      // Escape to dismiss error
+      if (e.key === 'Escape' && this.state.hasError) {
+        this.handleDismiss();
+      }
+      // Ctrl/Cmd + R to reload page
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r' && this.state.hasError) {
+        e.preventDefault();
+        window.location.reload();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    this.keydownHandler = handleKeyDown;
+  }
+
+  componentWillUnmount() {
+    if (this.keydownHandler) {
+      document.removeEventListener('keydown', this.keydownHandler);
+    }
   }
 
   static getDerivedStateFromError(error) {
