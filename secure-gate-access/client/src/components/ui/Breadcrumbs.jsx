@@ -1,9 +1,20 @@
 // client/src/components/ui/Breadcrumbs.jsx
 import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { generateBreadcrumbs } from '../../utils/navigationFlow';
 
-const Breadcrumbs = ({ breadcrumbs = [], className = '' }) => {
+const Breadcrumbs = ({ 
+  breadcrumbs = null, 
+  className = '',
+  showHome = true,
+  maxItems = 5,
+  userRole = null 
+}) => {
   const breadcrumbsRef = useRef(null);
+  const location = useLocation();
+  
+  // Generate breadcrumbs if not provided
+  const currentBreadcrumbs = breadcrumbs || (userRole ? generateBreadcrumbs(location.pathname, userRole) : []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -25,6 +36,23 @@ const Breadcrumbs = ({ breadcrumbs = [], className = '' }) => {
           lastLink.focus();
         }
       }
+      // Arrow keys to navigate between breadcrumbs
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const links = Array.from(breadcrumbsRef.current.querySelectorAll('a'));
+        const currentIndex = links.indexOf(document.activeElement);
+        let nextIndex;
+        
+        if (e.key === 'ArrowLeft') {
+          nextIndex = currentIndex > 0 ? currentIndex - 1 : links.length - 1;
+        } else {
+          nextIndex = currentIndex < links.length - 1 ? currentIndex + 1 : 0;
+        }
+        
+        if (links[nextIndex]) {
+          links[nextIndex].focus();
+        }
+      }
     };
 
     const breadcrumbs = breadcrumbsRef.current;
@@ -32,25 +60,36 @@ const Breadcrumbs = ({ breadcrumbs = [], className = '' }) => {
       breadcrumbs.addEventListener('keydown', handleKeyDown);
       return () => breadcrumbs.removeEventListener('keydown', handleKeyDown);
     }
-  }, []);
+  }, [currentBreadcrumbs]);
 
-  if (!breadcrumbs.length) return null;
+  if (!currentBreadcrumbs.length) return null;
+
+  // Limit breadcrumbs if too many
+  const displayBreadcrumbs = currentBreadcrumbs.length > maxItems 
+    ? [
+        currentBreadcrumbs[0], // Always show first (Home)
+        { label: '...', path: '', isEllipsis: true },
+        ...currentBreadcrumbs.slice(-2) // Show last 2 items
+      ]
+    : currentBreadcrumbs;
 
   return (
     <nav 
       ref={breadcrumbsRef}
-      className={`flex text-sm text-gray-600 mb-4 ${className}`}
-      aria-label="Breadcrumbs"
+      className={`flex items-center text-sm text-slate-400 mb-6 ${className}`}
+      aria-label="Breadcrumb navigation"
+      role="navigation"
     >
-      <ol className="flex items-center space-x-2">
-        {breadcrumbs.map((crumb, index) => (
-          <li key={crumb.path} className="flex items-center">
+      <ol className="flex items-center space-x-1">
+        {displayBreadcrumbs.map((crumb, index) => (
+          <li key={`${crumb.path}-${index}`} className="flex items-center">
             {index > 0 && (
               <svg 
-                className="w-4 h-4 mx-2 text-gray-400" 
+                className="w-4 h-4 mx-2 text-slate-500 flex-shrink-0" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path 
                   strokeLinecap="round" 
@@ -61,14 +100,22 @@ const Breadcrumbs = ({ breadcrumbs = [], className = '' }) => {
               </svg>
             )}
             
-            {crumb.isCurrent ? (
-              <span className="text-gray-900 font-medium" aria-current="page">
+            {crumb.isEllipsis ? (
+              <span className="text-slate-500 px-2" aria-hidden="true">
+                ...
+              </span>
+            ) : crumb.isCurrent ? (
+              <span 
+                className="text-slate-200 font-medium px-2 py-1 rounded-md bg-slate-800" 
+                aria-current="page"
+              >
                 {crumb.label}
               </span>
             ) : (
               <Link
                 to={crumb.path}
-                className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                className="text-slate-400 hover:text-slate-200 hover:bg-slate-800 px-2 py-1 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                aria-label={`Navigate to ${crumb.label}`}
               >
                 {crumb.label}
               </Link>

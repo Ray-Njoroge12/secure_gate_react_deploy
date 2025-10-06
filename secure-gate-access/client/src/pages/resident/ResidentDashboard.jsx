@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../layouts/AppShell";
 import { Card, Button } from "../../components/ui";
+import PageHeader from "../../components/PageHeader";
 import AddVisitor from "./AddVisitor";
 import BulkInvite from "./BulkInvite";
 import VisitorHistory from "./VisitorHistory";
@@ -118,19 +119,19 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with primary action */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Your Visitors</h1>
-          <p className="text-gray-600 mt-1">Manage invites and visitor access</p>
-        </div>
-        <button 
-          onClick={() => window.location.href = '/resident/add-visitor'}
-          className="min-h-[44px] min-w-[44px] bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-smooth font-medium transition-colors"
-        >
-          Create Invite
-        </button>
-      </div>
+      <PageHeader
+        title="Your Visitors"
+        subtitle="Manage invites and visitor access"
+        actions={
+          <Button
+            onClick={() => window.location.href = '/resident/add-visitor'}
+            variant="primary"
+            size="md"
+          >
+            Create Invite
+          </Button>
+        }
+      />
 
       {/* Action-focused cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

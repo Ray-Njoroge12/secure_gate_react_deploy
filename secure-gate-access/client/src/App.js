@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.js";
 import { ErrorProvider } from "./contexts/ErrorContext.jsx";
+import { NavigationProvider } from "./contexts/NavigationContext.jsx";
 import Loading from "./components/ui/Loading.jsx";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
 import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
@@ -83,7 +84,8 @@ function App() {
     <div ref={appRef}>
       <ErrorProvider>
         <AuthProvider>
-          <Router>
+          <NavigationProvider>
+            <Router>
             <ErrorBoundary level="page">
               <NetworkErrorBoundary>
                 <AuthErrorBoundary>
@@ -258,9 +260,10 @@ function App() {
           </ErrorBoundary>
           <ToastContainer />
           <ErrorQueue />
-        </Router>
-      </AuthProvider>
-    </ErrorProvider>
+            </Router>
+          </NavigationProvider>
+        </AuthProvider>
+      </ErrorProvider>
     </div>
   );
 }
