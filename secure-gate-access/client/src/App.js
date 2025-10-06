@@ -7,6 +7,7 @@ import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
 import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
 import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import ToastContainer from "./components/ToastContainer.jsx";
+import ErrorQueue from "./components/ErrorQueue.jsx";
 
 // Lazy load all page components for better build performance
 const LoginPage = lazy(() => import("./pages/Login.jsx"));
@@ -256,6 +257,7 @@ function App() {
             </NetworkErrorBoundary>
           </ErrorBoundary>
           <ToastContainer />
+          <ErrorQueue />
         </Router>
       </AuthProvider>
     </ErrorProvider>
