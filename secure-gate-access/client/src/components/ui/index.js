@@ -13,3 +13,4 @@ export { default as FlowNavigation } from './FlowNavigation.jsx';
 export { default as LiveRegion, StatusAnnouncement, AlertAnnouncement, LoadingAnnouncement } from './LiveRegion.jsx';
 export { default as ErrorDisplay } from './ErrorDisplay.jsx';
 export { default as SuccessDisplay } from './SuccessDisplay.jsx';
+export { default as FormWizard } from './FormWizard.jsx';

@@ -18,9 +18,11 @@ const ProtectedRoute = lazy(() => import("./routes/ProtectedRoute.jsx"));
 
 // Resident pages
 const BulkInvite = lazy(() => import("./pages/resident/BulkInvite.jsx"));
+const BulkInviteWizard = lazy(() => import("./pages/resident/BulkInviteWizard.jsx"));
 const Settings = lazy(() => import("./pages/resident/Settings.jsx"));
 const ResidentDashboard = lazy(() => import("./pages/resident/ResidentDashboard.jsx"));
 const AddVisitor = lazy(() => import("./pages/resident/AddVisitor.jsx"));
+const AddVisitorWizard = lazy(() => import("./pages/resident/AddVisitorWizard.jsx"));
 const GeneratePass = lazy(() => import("./pages/resident/GeneratePass.jsx"));
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
 
@@ -150,6 +152,22 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["resident"]}>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/resident/add-visitor-wizard"
+              element={
+                <ProtectedRoute allowedRoles={["resident"]}>
+                  <AddVisitorWizard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/resident/bulk-invite-wizard"
+              element={
+                <ProtectedRoute allowedRoles={["resident"]}>
+                  <BulkInviteWizard />
                 </ProtectedRoute>
               }
             />
