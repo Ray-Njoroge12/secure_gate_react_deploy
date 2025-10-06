@@ -1,4 +1,7 @@
 import React from "react";
+import Table from "../../components/Table";
+import { Button } from "../../components/ui";
+import { RefreshCw } from "lucide-react";
 
 function mask(value) {
   if (!value) return "";
@@ -31,34 +34,32 @@ export default function VisitorHistory() {
     return () => clearInterval(t);
   }, []);
 
+  // Transform data for table
+  const tableData = rows.map((r) => [
+    r.name || mask(r.phone) || "Unknown",
+    r.status || "Unknown",
+    r.check_in || r.check_in_time || "Not checked in",
+    r.check_out || r.check_out_time || "Not checked out"
+  ]);
+
+  const headers = ["Name", "Status", "Check-in", "Check-out"];
+
   return (
-    <div className="panel">
-      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-        <button className="btn" onClick={fetchMine} disabled={loading}>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-slate-200">Visitor History</h2>
+        <Button
+          onClick={fetchMine}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+          icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
+        >
           {loading ? "Refreshing..." : "Refresh"}
-        </button>
+        </Button>
       </div>
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Status</th>
-            <th>Check-in</th>
-            <th>Check-out</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td>{r.name || mask(r.phone) || ""}</td>
-              <td>{r.status || ""}</td>
-              <td>{r.check_in || r.check_in_time || ""}</td>
-              <td>{r.check_out || r.check_out_time || ""}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <Table headers={headers} rows={tableData} />
     </div>
   );
 }
