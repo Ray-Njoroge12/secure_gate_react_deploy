@@ -98,7 +98,7 @@ export default function Settings() {
             <div
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-2 rounded-t-xl font-semibold cursor-pointer whitespace-nowrap text-sm ${
+              className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-t-xl font-semibold cursor-pointer whitespace-nowrap text-sm ${
                 activeTab === tab.key ? "bg-accent text-black" : "text-muted hover:bg-line"
               }`}
             >

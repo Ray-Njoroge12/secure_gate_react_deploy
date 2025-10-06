@@ -171,7 +171,7 @@ export default function LoginPage() {
           
           <button
             type="button"
-            className="w-full text-center text-brand-600 hover:text-brand-500 text-sm font-medium"
+            className="w-full min-h-[44px] text-center text-brand-600 hover:text-brand-500 text-sm font-medium px-2 py-2"
             onClick={() => setShowForgot(false)}
           >
             Back to Sign In
@@ -214,7 +214,7 @@ export default function LoginPage() {
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px]"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
@@ -247,7 +247,7 @@ export default function LoginPage() {
             
             <button
               type="button"
-              className="text-sm text-brand-600 hover:text-brand-500 font-medium"
+              className="min-h-[44px] min-w-[44px] text-sm text-brand-600 hover:text-brand-500 font-medium px-2 py-1"
               onClick={() => setShowForgot(true)}
               aria-label="Reset your password"
             >
