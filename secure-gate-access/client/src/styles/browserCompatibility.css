@@ -1,0 +1,450 @@
+/* Browser compatibility styles for cross-browser support */
+
+/* =======================
+   Browser-specific fixes
+   ======================= */
+
+/* Safari fixes */
+.safari-vh-fix {
+  /* Fix for Safari's 100vh issue */
+  --vh: 1vh;
+}
+
+.safari-vh-fix .full-height {
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+/* Firefox fixes */
+.firefox-flexbox-fix {
+  /* Fix for Firefox's flexbox min-height issue */
+  min-height: 0;
+}
+
+.firefox-flexbox-fix .flex-item {
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Chrome fixes */
+.chrome-scrollbar-fix {
+  /* Fix for Chrome's scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.chrome-scrollbar-fix::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.chrome-scrollbar-fix::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.chrome-scrollbar-fix::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.chrome-scrollbar-fix::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Edge fixes */
+.edge-grid-fix {
+  /* Fix for Edge's CSS Grid issues */
+  display: -ms-grid;
+}
+
+.edge-grid-fix .grid-item {
+  -ms-grid-column: 1;
+  -ms-grid-row: 1;
+}
+
+/* =======================
+   Feature detection classes
+   ======================= */
+
+/* CSS Grid support */
+.supports-grid .grid-container {
+  display: grid;
+}
+
+.no-grid .grid-container {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.no-grid .grid-item {
+  flex: 1 1 300px;
+  margin: 0.5rem;
+}
+
+/* CSS Flexbox support */
+.supports-flexbox .flex-container {
+  display: flex;
+}
+
+.no-flexbox .flex-container {
+  display: table;
+}
+
+.no-flexbox .flex-item {
+  display: table-cell;
+  vertical-align: top;
+}
+
+/* CSS Custom Properties support */
+.supports-custom-properties {
+  --primary-color: #3b82f6;
+  --secondary-color: #6b7280;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+}
+
+.no-custom-properties {
+  /* Fallback colors for browsers without custom properties support */
+  --primary-color: #3b82f6;
+  --secondary-color: #6b7280;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+}
+
+/* Touch support */
+.supports-touch .touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.no-touch .touch-target {
+  min-height: 32px;
+  min-width: 32px;
+}
+
+/* WebGL support */
+.supports-webgl .webgl-container {
+  display: block;
+}
+
+.no-webgl .webgl-container {
+  display: none;
+}
+
+.no-webgl .webgl-fallback {
+  display: block;
+}
+
+/* WebAssembly support */
+.supports-webassembly .wasm-module {
+  display: block;
+}
+
+.no-webassembly .wasm-module {
+  display: none;
+}
+
+.no-webassembly .wasm-fallback {
+  display: block;
+}
+
+/* =======================
+   Performance classes
+   ======================= */
+
+/* High performance devices */
+.high-performance .heavy-animation {
+  animation-duration: 0.3s;
+  transition-duration: 0.3s;
+}
+
+.high-performance .complex-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+/* Medium performance devices */
+.medium-performance .heavy-animation {
+  animation-duration: 0.5s;
+  transition-duration: 0.5s;
+}
+
+.medium-performance .complex-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.medium-performance .complex-layout > * {
+  flex: 1 1 300px;
+}
+
+/* Low performance devices */
+.low-performance .heavy-animation {
+  animation-duration: 0.8s;
+  transition-duration: 0.8s;
+}
+
+.low-performance .complex-layout {
+  display: block;
+}
+
+.low-performance .complex-layout > * {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.low-performance .complex-layout > *:last-child {
+  margin-bottom: 0;
+}
+
+/* =======================
+   Memory classes
+   ======================= */
+
+/* High memory devices */
+.high-memory .lazy-load {
+  display: block;
+}
+
+.high-memory .virtual-scroll {
+  display: block;
+}
+
+/* Medium memory devices */
+.medium-memory .lazy-load {
+  display: block;
+}
+
+.medium-memory .virtual-scroll {
+  display: none;
+}
+
+/* Low memory devices */
+.low-memory .lazy-load {
+  display: none;
+}
+
+.low-memory .virtual-scroll {
+  display: none;
+}
+
+.low-memory .heavy-content {
+  display: none;
+}
+
+/* =======================
+   Browser-specific overrides
+   ======================= */
+
+/* Internet Explorer */
+.browser-ie .modern-feature {
+  display: none;
+}
+
+.browser-ie .ie-fallback {
+  display: block;
+}
+
+.browser-ie .grid-container {
+  display: table;
+  width: 100%;
+}
+
+.browser-ie .grid-item {
+  display: table-cell;
+  vertical-align: top;
+}
+
+/* Opera */
+.browser-opera .opera-specific {
+  display: block;
+}
+
+/* =======================
+   Responsive design fixes
+   ======================= */
+
+/* Mobile Safari */
+@supports (-webkit-touch-callout: none) {
+  .mobile-safari .viewport-fix {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Mobile Chrome */
+@supports (display: -webkit-box) {
+  .mobile-chrome .viewport-fix {
+    height: 100vh;
+  }
+}
+
+/* =======================
+   Accessibility fixes
+   ======================= */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .high-contrast .text-muted {
+    color: #000000;
+  }
+  
+  .high-contrast .border-subtle {
+    border-color: #000000;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .reduced-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =======================
+   Print styles
+   ======================= */
+
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+  
+  .print-visible {
+    display: block !important;
+  }
+  
+  .print-break {
+    page-break-before: always;
+  }
+  
+  .print-no-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* =======================
+   Dark mode support
+   ======================= */
+
+@media (prefers-color-scheme: dark) {
+  .dark-mode .bg-white {
+    background-color: #1f2937;
+  }
+  
+  .dark-mode .text-gray-900 {
+    color: #f9fafb;
+  }
+  
+  .dark-mode .text-gray-600 {
+    color: #d1d5db;
+  }
+  
+  .dark-mode .border-gray-200 {
+    border-color: #374151;
+  }
+}
+
+/* =======================
+   Fallback styles
+   ======================= */
+
+/* Fallback for unsupported features */
+.no-support .feature-dependent {
+  display: none;
+}
+
+.no-support .fallback-content {
+  display: block;
+}
+
+/* Graceful degradation */
+.degraded .enhanced-feature {
+  display: none;
+}
+
+.degraded .basic-feature {
+  display: block;
+}
+
+/* =======================
+   Utility classes
+   ======================= */
+
+/* Browser detection utilities */
+.browser-chrome .chrome-only {
+  display: block;
+}
+
+.browser-firefox .firefox-only {
+  display: block;
+}
+
+.browser-safari .safari-only {
+  display: block;
+}
+
+.browser-edge .edge-only {
+  display: block;
+}
+
+.browser-opera .opera-only {
+  display: block;
+}
+
+/* Feature detection utilities */
+.supports-grid .grid-only {
+  display: block;
+}
+
+.supports-flexbox .flexbox-only {
+  display: block;
+}
+
+.supports-custom-properties .custom-properties-only {
+  display: block;
+}
+
+.supports-touch .touch-only {
+  display: block;
+}
+
+.supports-webgl .webgl-only {
+  display: block;
+}
+
+.supports-webassembly .webassembly-only {
+  display: block;
+}
+
+/* Performance utilities */
+.high-performance .performance-optimized {
+  display: block;
+}
+
+.medium-performance .performance-optimized {
+  display: none;
+}
+
+.low-performance .performance-optimized {
+  display: none;
+}
+
+/* Memory utilities */
+.high-memory .memory-intensive {
+  display: block;
+}
+
+.medium-memory .memory-intensive {
+  display: none;
+}
+
+.low-memory .memory-intensive {
+  display: none;
+}
+

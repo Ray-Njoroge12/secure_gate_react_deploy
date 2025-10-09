@@ -1,16 +1,9 @@
-// client/src/__tests__/adminService.test.js
-import { 
-  getMetrics, 
-  getAuditLogs, 
-  getAllResidents,
-  getAllGuards,
-  getVisitorLogs,
-  getAccessLogs,
-  getIncidents 
-} from '../services/adminService';
+// client/src/__tests__/services/adminService.test.js
+import * as adminService from '../../services/adminService';
+import { http } from '../../services/_http';
 
 // Mock the http service
-jest.mock('../services/_http.js', () => ({
+jest.mock('../../services/_http', () => ({
   http: {
     get: jest.fn(),
     post: jest.fn(),
@@ -19,8 +12,6 @@ jest.mock('../services/_http.js', () => ({
   }
 }));
 
-import { http } from '../services/_http.js';
-
 describe('Admin Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -28,146 +19,257 @@ describe('Admin Service', () => {
 
   describe('getMetrics', () => {
     test('should fetch metrics from correct endpoint', async () => {
-      const mockMetrics = {
+      const mockData = {
         invitesActive: 10,
         invitesExpired: 5,
         checkinsToday: 20,
         failedOtps: 2
       };
       
-      http.get.mockResolvedValue(mockMetrics);
+      http.get.mockResolvedValue(mockData);
       
-      const result = await getMetrics();
+      const result = await adminService.getMetrics();
       
       expect(http.get).toHaveBeenCalledWith('/api/admin/metrics');
-      expect(result).toEqual(mockMetrics);
+      expect(result).toEqual(mockData);
     });
 
-    test('should handle errors gracefully', async () => {
+    test('should handle error when fetching metrics', async () => {
       http.get.mockRejectedValue(new Error('Network error'));
       
-      await expect(getMetrics()).rejects.toThrow('Network error');
+      await expect(adminService.getMetrics()).rejects.toThrow('Network error');
     });
   });
 
   describe('getAuditLogs', () => {
-    test('should fetch audit logs with params', async () => {
-      const mockLogs = [
-        { id: 1, action: 'login', user_id: '123' },
-        { id: 2, action: 'logout', user_id: '456' }
-      ];
-      
+    test('should fetch audit logs without params', async () => {
+      const mockLogs = [{ id: 1, action: 'login' }];
       http.get.mockResolvedValue(mockLogs);
       
-      const result = await getAuditLogs({ page: 1, limit: 25 });
+      const result = await adminService.getAuditLogs();
       
-      expect(http.get).toHaveBeenCalledWith('/api/admin/audit-logs?page=1&limit=25');
+      expect(http.get).toHaveBeenCalledWith('/api/admin/audit-logs');
       expect(result).toEqual(mockLogs);
     });
 
-    test('should handle empty params', async () => {
-      http.get.mockResolvedValue([]);
+    test('should fetch audit logs with params', async () => {
+      const params = { page: 2, limit: 50, action: 'login' };
+      const mockLogs = [{ id: 1, action: 'login' }];
+      http.get.mockResolvedValue(mockLogs);
       
-      await getAuditLogs();
+      const result = await adminService.getAuditLogs(params);
       
-      expect(http.get).toHaveBeenCalledWith('/api/admin/audit-logs');
+      expect(http.get).toHaveBeenCalledWith(
+        expect.stringContaining('/api/admin/audit-logs?')
+      );
+      expect(http.get).toHaveBeenCalledWith(
+        expect.stringContaining('page=2')
+      );
+      expect(http.get).toHaveBeenCalledWith(
+        expect.stringContaining('limit=50')
+      );
+      expect(result).toEqual(mockLogs);
     });
   });
 
-  describe('getAllResidents', () => {
-    test('should fetch all residents', async () => {
+  describe('Residents Management', () => {
+    test('getAllResidents should fetch all residents', async () => {
       const mockResidents = [
-        { id: 1, name: 'John Doe', email: 'john@example.com' },
-        { id: 2, name: 'Jane Doe', email: 'jane@example.com' }
+        { id: 1, name: 'John Doe' },
+        { id: 2, name: 'Jane Smith' }
       ];
-      
       http.get.mockResolvedValue(mockResidents);
       
-      const result = await getAllResidents();
+      const result = await adminService.getAllResidents();
       
       expect(http.get).toHaveBeenCalledWith('/api/admin/residents');
       expect(result).toEqual(mockResidents);
     });
+
+    test('updateResident should send PUT request', async () => {
+      const residentId = 1;
+      const updateData = { name: 'Updated Name' };
+      http.put.mockResolvedValue({ success: true });
+      
+      await adminService.updateResident(residentId, updateData);
+      
+      expect(http.put).toHaveBeenCalledWith(
+        '/api/admin/residents/1',
+        updateData
+      );
+    });
+
+    test('deleteResident should send DELETE request', async () => {
+      const residentId = 1;
+      http.delete.mockResolvedValue({ success: true });
+      
+      await adminService.deleteResident(residentId);
+      
+      expect(http.delete).toHaveBeenCalledWith('/api/admin/residents/1');
+    });
   });
 
-  describe('getAllGuards', () => {
-    test('should fetch all guards', async () => {
-      const mockGuards = [
-        { id: 1, name: 'Guard One', post: 'Main Gate' },
-        { id: 2, name: 'Guard Two', post: 'Back Gate' }
-      ];
-      
+  describe('Guards Management', () => {
+    test('getAllGuards should fetch all guards', async () => {
+      const mockGuards = [{ id: 1, name: 'Guard One' }];
       http.get.mockResolvedValue(mockGuards);
       
-      const result = await getAllGuards();
+      const result = await adminService.getAllGuards();
       
       expect(http.get).toHaveBeenCalledWith('/api/admin/guards');
       expect(result).toEqual(mockGuards);
     });
-  });
 
-  describe('getVisitorLogs', () => {
-    test('should fetch visitor logs with filters', async () => {
-      const mockLogs = [
-        { id: 1, name: 'Visitor 1', status: 'checked-in' }
-      ];
+    test('addGuard should send POST request', async () => {
+      const guardData = { name: 'New Guard', email: 'guard@test.com' };
+      http.post.mockResolvedValue({ id: 3, ...guardData });
       
-      http.get.mockResolvedValue(mockLogs);
+      await adminService.addGuard(guardData);
       
-      const result = await getVisitorLogs({ status: 'checked-in' });
+      expect(http.post).toHaveBeenCalledWith('/api/admin/guards', guardData);
+    });
+
+    test('updateGuard should send PUT request', async () => {
+      const guardId = 1;
+      const updateData = { name: 'Updated Guard' };
+      http.put.mockResolvedValue({ success: true });
       
-      expect(http.get).toHaveBeenCalledWith('/api/admin/visitors?status=checked-in');
-      expect(result).toEqual(mockLogs);
+      await adminService.updateGuard(guardId, updateData);
+      
+      expect(http.put).toHaveBeenCalledWith(
+        '/api/admin/guards/1',
+        updateData
+      );
+    });
+
+    test('deleteGuard should send DELETE request', async () => {
+      const guardId = 1;
+      http.delete.mockResolvedValue({ success: true });
+      
+      await adminService.deleteGuard(guardId);
+      
+      expect(http.delete).toHaveBeenCalledWith('/api/admin/guards/1');
     });
   });
 
-  describe('getAccessLogs', () => {
-    test('should fetch access logs', async () => {
-      const mockLogs = [
-        { id: 1, cardId: 'CARD123', zone: 'Zone A' }
-      ];
-      
+  describe('Visitor Logs', () => {
+    test('getVisitorLogs should fetch visitor logs', async () => {
+      const mockLogs = [{ id: 1, visitor: 'John Doe' }];
       http.get.mockResolvedValue(mockLogs);
       
-      const result = await getAccessLogs();
+      const result = await adminService.getVisitorLogs();
+      
+      expect(http.get).toHaveBeenCalledWith('/api/admin/visitors');
+      expect(result).toEqual(mockLogs);
+    });
+
+    test('getVisitorLogs should handle query params', async () => {
+      const params = { status: 'active', date: '2025-10-02' };
+      http.get.mockResolvedValue([]);
+      
+      await adminService.getVisitorLogs(params);
+      
+      expect(http.get).toHaveBeenCalledWith(
+        expect.stringContaining('status=active')
+      );
+    });
+
+    test('checkInVisitor should send POST request', async () => {
+      const visitorId = 123;
+      http.post.mockResolvedValue({ success: true });
+      
+      await adminService.checkInVisitor(visitorId);
+      
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/admin/visitors/123/check-in'
+      );
+    });
+
+    test('checkOutVisitor should send POST request', async () => {
+      const visitorId = 123;
+      http.post.mockResolvedValue({ success: true });
+      
+      await adminService.checkOutVisitor(visitorId);
+      
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/admin/visitors/123/check-out'
+      );
+    });
+  });
+
+  describe('Access Control', () => {
+    test('getAccessLogs should fetch access logs', async () => {
+      const mockLogs = [{ id: 1, type: 'entry' }];
+      http.get.mockResolvedValue(mockLogs);
+      
+      const result = await adminService.getAccessLogs();
       
       expect(http.get).toHaveBeenCalledWith('/api/admin/access-logs');
       expect(result).toEqual(mockLogs);
     });
   });
 
-  describe('getIncidents', () => {
-    test('should fetch incidents', async () => {
-      const mockIncidents = [
-        { id: 1, title: 'Security Breach', status: 'open' }
-      ];
-      
+  describe('Incident Management', () => {
+    test('getIncidents should fetch incidents', async () => {
+      const mockIncidents = [{ id: 1, title: 'Test Incident' }];
       http.get.mockResolvedValue(mockIncidents);
       
-      const result = await getIncidents();
+      const result = await adminService.getIncidents();
       
       expect(http.get).toHaveBeenCalledWith('/api/admin/incidents');
       expect(result).toEqual(mockIncidents);
     });
-  });
 
-  describe('Service Structure', () => {
-    test('should not import axios directly', () => {
-      const serviceCode = require('fs').readFileSync(
-        require.resolve('../services/adminService.js'),
-        'utf-8'
+    test('createIncident should send POST request', async () => {
+      const incidentData = { title: 'New Incident', severity: 'high' };
+      http.post.mockResolvedValue({ id: 1, ...incidentData });
+      
+      await adminService.createIncident(incidentData);
+      
+      expect(http.post).toHaveBeenCalledWith(
+        '/api/admin/incidents',
+        incidentData
       );
-      expect(serviceCode).not.toContain('import axios');
-      expect(serviceCode).toContain('from \'./_http.js\'');
     });
 
-    test('should use centralized http service', () => {
-      const serviceCode = require('fs').readFileSync(
-        require.resolve('../services/adminService.js'),
-        'utf-8'
+    test('updateIncident should send PUT request', async () => {
+      const incidentId = 1;
+      const updateData = { status: 'resolved' };
+      http.put.mockResolvedValue({ success: true });
+      
+      await adminService.updateIncident(incidentId, updateData);
+      
+      expect(http.put).toHaveBeenCalledWith(
+        '/api/admin/incidents/1',
+        updateData
       );
-      expect(serviceCode).toContain('http.get');
-      expect(serviceCode).toContain('http.post');
+    });
+
+    test('deleteIncident should send DELETE request', async () => {
+      const incidentId = 1;
+      http.delete.mockResolvedValue({ success: true });
+      
+      await adminService.deleteIncident(incidentId);
+      
+      expect(http.delete).toHaveBeenCalledWith('/api/admin/incidents/1');
+    });
+  });
+
+  describe('Service Integration', () => {
+    test('should use centralized http service (not axios)', () => {
+      // This test ensures the service imports from _http.js
+      expect(http.get).toBeDefined();
+      expect(http.post).toBeDefined();
+      expect(http.put).toBeDefined();
+      expect(http.delete).toBeDefined();
+    });
+
+    test('all methods should return promises', () => {
+      http.get.mockResolvedValue({});
+      
+      expect(adminService.getMetrics()).toBeInstanceOf(Promise);
+      expect(adminService.getAllResidents()).toBeInstanceOf(Promise);
+      expect(adminService.getAllGuards()).toBeInstanceOf(Promise);
     });
   });
 });

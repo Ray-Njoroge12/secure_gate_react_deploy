@@ -1,5 +1,6 @@
 // Enhanced form component with integrated validation
 import React, { memo, useCallback, useEffect } from 'react';
+import logger from 'utils/logger';
 import { useFormValidation } from '../../hooks/useFormValidation';
 import { Button, Card } from './index';
 
@@ -26,10 +27,10 @@ const ValidatedForm = memo(({
     
     if (result.success) {
       // Form submitted successfully
-      console.log('Form submitted successfully:', result.data);
+      logger.debug('Form submitted successfully:', result.data);
     } else {
       // Form validation failed or submission error
-      console.error('Form submission failed:', result.errors || result.error);
+      logger.error('Form submission failed:', result.errors || result.error);
     }
   }, [formValidation, onSubmit]);
 

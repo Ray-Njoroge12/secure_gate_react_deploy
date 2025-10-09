@@ -1,6 +1,8 @@
 // Custom hook for enhanced form validation with real-time feedback
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { debounce, VALIDATION_TIMING } from '../utils/validationRules';
+import logger from 'utils/logger';
+import { debounce } from '../utils/validationRules';
+import { VALIDATION_TIMING } from '../constants/validation';
 
 export const useFormValidation = (initialValues = {}, options = {}) => {
   const {
@@ -52,7 +54,7 @@ export const useFormValidation = (initialValues = {}, options = {}) => {
           [fieldName]: result.state || 'idle'
         }));
       } catch (err) {
-        console.error(`Validation error for field ${fieldName}:`, err);
+        logger.error(`Validation error for field ${fieldName}:`, err);
         setErrors(prev => ({
           ...prev,
           [fieldName]: ['Validation failed. Please try again.']
@@ -94,7 +96,7 @@ export const useFormValidation = (initialValues = {}, options = {}) => {
 
       return result;
     } catch (err) {
-      console.error(`Validation error for field ${fieldName}:`, err);
+      logger.error(`Validation error for field ${fieldName}:`, err);
       const errorResult = {
         isValid: false,
         errors: ['Validation failed. Please try again.'],
@@ -183,7 +185,7 @@ export const useFormValidation = (initialValues = {}, options = {}) => {
       const result = await submitFn(values);
       return { success: true, data: result };
     } catch (error) {
-      console.error('Form submission error:', error);
+      logger.error('Form submission error:', error);
       return { success: false, error: error.message || 'Submission failed' };
     } finally {
       setIsSubmitting(false);

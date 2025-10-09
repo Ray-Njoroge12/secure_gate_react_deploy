@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useApiForm } from '../../hooks/useApiForm';
 import { Card, Button, Loading, Toast } from '../ui';
 
@@ -18,7 +18,7 @@ import { Card, Button, Loading, Toast } from '../ui';
  * @param {boolean} props.showSuccessToast - Whether to show success toast
  * @param {boolean} props.showErrorToast - Whether to show error toast
  */
-export const ApiForm = ({
+export const ApiForm = memo(({
   submitFn,
   initialFormData = {},
   validateFn = null,
@@ -113,7 +113,9 @@ export const ApiForm = ({
       )}
     </>
   );
-};
+});
+
+ApiForm.displayName = 'ApiForm';
 
 /**
  * Submit button component for use within ApiForm

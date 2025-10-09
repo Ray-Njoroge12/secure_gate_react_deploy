@@ -1,6 +1,6 @@
 // client/src/__tests__/accessibility.test.js
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor  } from '../../test-utils';
 import userEvent from '@testing-library/user-event';
 import { useAccessibility, useFocusManagement, useKeyboardShortcuts } from '../hooks/useAccessibility';
 import AccessibleButton from '../components/ui/AccessibleButton';
@@ -471,3 +471,7 @@ describe('Accessibility Integration', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });
+
+
+
+

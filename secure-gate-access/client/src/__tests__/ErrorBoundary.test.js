@@ -1,6 +1,7 @@
 // client/src/__tests__/ErrorBoundary.test.js
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import logger from 'utils/logger';
+import { render, screen, fireEvent, waitFor  } from '../../test-utils';
 import ErrorBoundary from '../components/ui/ErrorBoundary';
 import { reportError, reportUserAction } from '../utils/errorReporting';
 
@@ -367,3 +368,7 @@ describe('ErrorBoundary', () => {
     });
   });
 });
+
+
+
+

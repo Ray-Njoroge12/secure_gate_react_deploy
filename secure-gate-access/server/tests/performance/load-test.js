@@ -350,3 +350,7 @@ export function teardown(data) {
   console.log(`⏱️  Average response time: ${responseTime.avg}ms`);
   console.log(`❌ Error rate: ${(errorRate.count * 100).toFixed(2)}%`);
 }
+
+
+
+

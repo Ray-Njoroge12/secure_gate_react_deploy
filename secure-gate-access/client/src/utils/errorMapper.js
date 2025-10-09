@@ -36,6 +36,9 @@ export const mapStatusToMessage = (status, payload = null) => {
     if (message.includes('duplicate')) return 'This item already exists.';
     if (message.includes('invalid otp')) return 'Invalid verification code. Please try again.';
     if (message.includes('rate limit')) return 'Too many attempts. Please wait before trying again.';
+    
+    // Return the custom message if it doesn't match any patterns
+    return payload.message;
   }
 
   return errorMessages[status] || 'An unexpected error occurred. Please try again.';
@@ -48,6 +51,11 @@ export const mapStatusToMessage = (status, payload = null) => {
  * @returns {string} User-friendly error message
  */
 export const handleApiError = (error, context = 'API call') => {
+  // Handle null/undefined errors
+  if (!error) {
+    return 'An unexpected error occurred. Please try again.';
+  }
+
   // Log detailed error for debugging
   logger.error(`${context} error`, error, {
     context,
@@ -61,8 +69,13 @@ export const handleApiError = (error, context = 'API call') => {
   }
 
   // Handle network/fetch errors
-  if (error.message?.includes('fetch')) {
+  if (error.message?.includes('fetch') || error.message?.includes('Network')) {
     return 'Network error. Please check your connection and try again.';
+  }
+
+  // Handle timeout errors
+  if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
+    return 'Request timeout. Please try again.';
   }
 
   return 'An unexpected error occurred. Please try again.';

@@ -6,13 +6,15 @@ import { auditThemeAccessibility, runAccessibilityChecks } from '../utils/access
  * Enhanced accessibility hook for comprehensive WCAG 2.1 AA compliance
  */
 export const useAccessibility = (options = {}) => {
+  // Ensure options is always an object and has the expected structure
+  const safeOptions = options && typeof options === 'object' ? options : {};
   const {
     enableLiveChecks = true,
     enableKeyboardNavigation = true,
     enableScreenReader = true,
     enableHighContrast = false,
     enableReducedMotion = false
-  } = options;
+  } = safeOptions;
 
   const [accessibilityState, setAccessibilityState] = useState({
     isHighContrast: false,
@@ -32,12 +34,12 @@ export const useAccessibility = (options = {}) => {
   useEffect(() => {
     const detectPreferences = () => {
       // High contrast detection
-      const highContrastQuery = window.matchMedia('(prefers-contrast: high)');
-      const isHighContrast = highContrastQuery.matches;
+      const highContrastQuery = window.matchMedia && window.matchMedia('(prefers-contrast: high)');
+      const isHighContrast = highContrastQuery ? highContrastQuery.matches : false;
 
       // Reduced motion detection
-      const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-      const isReducedMotion = reducedMotionQuery.matches;
+      const reducedMotionQuery = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+      const isReducedMotion = reducedMotionQuery ? reducedMotionQuery.matches : false;
 
       // Screen reader detection (basic)
       const isScreenReader = 
@@ -68,12 +70,20 @@ export const useAccessibility = (options = {}) => {
       setAccessibilityState(prev => ({ ...prev, isReducedMotion: e.matches }));
     };
 
-    highContrastQuery.addEventListener('change', handleHighContrastChange);
-    reducedMotionQuery.addEventListener('change', handleReducedMotionChange);
+    if (highContrastQuery && highContrastQuery.addEventListener) {
+      highContrastQuery.addEventListener('change', handleHighContrastChange);
+    }
+    if (reducedMotionQuery && reducedMotionQuery.addEventListener) {
+      reducedMotionQuery.addEventListener('change', handleReducedMotionChange);
+    }
 
     return () => {
-      highContrastQuery.removeEventListener('change', handleHighContrastChange);
-      reducedMotionQuery.removeEventListener('change', handleReducedMotionChange);
+      if (highContrastQuery && highContrastQuery.removeEventListener) {
+        highContrastQuery.removeEventListener('change', handleHighContrastChange);
+      }
+      if (reducedMotionQuery && reducedMotionQuery.removeEventListener) {
+        reducedMotionQuery.removeEventListener('change', handleReducedMotionChange);
+      }
     };
   }, []);
 
@@ -417,3 +427,7 @@ export const useKeyboardShortcuts = (shortcuts = {}) => {
 };
 
 export default useAccessibility;
+
+
+
+

@@ -197,6 +197,11 @@ export const CommonResponses = {
   }
 };
 
+// Export aliases for backward compatibility
+export const successResponse = ResponseUtil.success;
+export const errorResponse = ResponseUtil.error;
+export const createdResponse = ResponseUtil.created;
+
 export default {
   ResponseUtil,
   responseMiddleware,

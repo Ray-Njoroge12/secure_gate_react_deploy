@@ -327,3 +327,7 @@ We conduct regular audits to ensure:
 ---
 
 *Secure Gate Access Control System - Protecting Your Privacy, Securing Your Access*
+
+
+
+

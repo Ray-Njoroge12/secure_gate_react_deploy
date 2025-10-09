@@ -1,241 +1,18 @@
-// Validation rules and utilities for form validation
-export const VALIDATION_RULES = {
-  // Email validation
-  email: {
-    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    message: 'Please enter a valid email address',
-    example: 'user@example.com'
-  },
+/**
+ * Validation Rules Utility
+ * 
+ * Comprehensive collection of validation rules and utilities:
+ * - Built-in validation functions
+ * - Common validation patterns
+ * - Async validation helpers
+ * - Cross-field validation utilities
+ * - Validation message templates
+ */
 
-  // Phone validation (Kenyan format)
-  phone: {
-    pattern: /^0\d{9}$/,
-    message: 'Phone must be in format 0xxxxxxxxx (10 digits)',
-    example: '0712345678'
-  },
+import { VALIDATION_MESSAGES, VALIDATION_RULES } from '../constants/validation';
 
-  // Password validation
-  password: {
-    minLength: 8,
-    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character',
-    example: 'MyPass123!'
-  },
-
-  // Username validation
-  username: {
-    minLength: 3,
-    maxLength: 30,
-    pattern: /^[a-zA-Z0-9_-]+$/,
-    message: 'Username must be 3-30 characters, letters, numbers, hyphens, and underscores only',
-    example: 'john_doe123'
-  },
-
-  // Name validation
-  name: {
-    minLength: 2,
-    maxLength: 50,
-    pattern: /^[a-zA-Z\s'-]+$/,
-    message: 'Name must be 2-50 characters, letters, spaces, hyphens, and apostrophes only',
-    example: 'John Doe'
-  },
-
-  // Date validation
-  date: {
-    future: (date) => {
-      const inputDate = new Date(date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      return inputDate >= today;
-    },
-    message: 'Date cannot be in the past',
-    example: '2024-12-31'
-  },
-
-  // Time validation
-  time: {
-    pattern: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
-    message: 'Please enter a valid time in HH:MM format',
-    example: '14:30'
-  },
-
-  // Required field
-  required: {
-    message: 'This field is required',
-    validate: (value) => value && value.toString().trim().length > 0
-  }
-};
-
-// Validation state icons
-export const VALIDATION_ICONS = {
-  valid: (
-    <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-    </svg>
-  ),
-  invalid: (
-    <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-    </svg>
-  ),
-  warning: (
-    <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-    </svg>
-  ),
-  loading: (
-    <svg className="w-4 h-4 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-  )
-};
-
-// Validation states
-export const VALIDATION_STATES = {
-  IDLE: 'idle',
-  VALIDATING: 'validating',
-  VALID: 'valid',
-  INVALID: 'invalid',
-  WARNING: 'warning'
-};
-
-// Create validation function for a field
-export const createFieldValidator = (rules) => {
-  return (value, fieldName) => {
-    const errors = [];
-    const warnings = [];
-
-    // Check required validation
-    if (rules.required && !VALIDATION_RULES.required.validate(value)) {
-      errors.push(VALIDATION_RULES.required.message);
-    }
-
-    // Skip other validations if value is empty and not required
-    if (!value || value.toString().trim().length === 0) {
-      return {
-        isValid: !rules.required,
-        errors: errors,
-        warnings: warnings,
-        state: rules.required ? VALIDATION_STATES.INVALID : VALIDATION_STATES.IDLE
-      };
-    }
-
-    const trimmedValue = value.toString().trim();
-
-    // Check minimum length
-    if (rules.minLength && trimmedValue.length < rules.minLength) {
-      errors.push(`${fieldName} must be at least ${rules.minLength} characters`);
-    }
-
-    // Check maximum length
-    if (rules.maxLength && trimmedValue.length > rules.maxLength) {
-      errors.push(`${fieldName} must be no more than ${rules.maxLength} characters`);
-    }
-
-    // Check pattern validation
-    if (rules.pattern && !rules.pattern.test(trimmedValue)) {
-      if (rules.message) {
-        errors.push(rules.message);
-      } else {
-        errors.push(`${fieldName} format is invalid`);
-      }
-    }
-
-    // Check custom validation functions
-    if (rules.custom) {
-      const customResult = rules.custom(trimmedValue);
-      if (customResult && typeof customResult === 'string') {
-        errors.push(customResult);
-      } else if (customResult && typeof customResult === 'object') {
-        if (customResult.error) errors.push(customResult.error);
-        if (customResult.warning) warnings.push(customResult.warning);
-      }
-    }
-
-    // Check date validation
-    if (rules.date && rules.date.future && !rules.date.future(trimmedValue)) {
-      errors.push(rules.date.message);
-    }
-
-    // Determine validation state
-    let state = VALIDATION_STATES.VALID;
-    if (errors.length > 0) {
-      state = VALIDATION_STATES.INVALID;
-    } else if (warnings.length > 0) {
-      state = VALIDATION_STATES.WARNING;
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors: errors,
-      warnings: warnings,
-      state: state
-    };
-  };
-};
-
-// Common validation rules for different field types
-export const FIELD_VALIDATORS = {
-  email: createFieldValidator({
-    required: true,
-    pattern: VALIDATION_RULES.email.pattern,
-    message: VALIDATION_RULES.email.message
-  }),
-
-  phone: createFieldValidator({
-    required: true,
-    pattern: VALIDATION_RULES.phone.pattern,
-    message: VALIDATION_RULES.phone.message
-  }),
-
-  password: createFieldValidator({
-    required: true,
-    minLength: VALIDATION_RULES.password.minLength,
-    pattern: VALIDATION_RULES.password.pattern,
-    message: VALIDATION_RULES.password.message
-  }),
-
-  username: createFieldValidator({
-    required: true,
-    minLength: VALIDATION_RULES.username.minLength,
-    maxLength: VALIDATION_RULES.username.maxLength,
-    pattern: VALIDATION_RULES.username.pattern,
-    message: VALIDATION_RULES.username.message
-  }),
-
-  name: createFieldValidator({
-    required: true,
-    minLength: VALIDATION_RULES.name.minLength,
-    maxLength: VALIDATION_RULES.name.maxLength,
-    pattern: VALIDATION_RULES.name.pattern,
-    message: VALIDATION_RULES.name.message
-  }),
-
-  date: createFieldValidator({
-    required: true,
-    custom: (value) => {
-      if (!VALIDATION_RULES.date.future(value)) {
-        return VALIDATION_RULES.date.message;
-      }
-      return null;
-    }
-  }),
-
-  time: createFieldValidator({
-    required: true,
-    pattern: VALIDATION_RULES.time.pattern,
-    message: VALIDATION_RULES.time.message
-  }),
-
-  required: createFieldValidator({
-    required: true
-  }),
-
-  optional: createFieldValidator({})
-};
-
-// Debounce utility for real-time validation
+import logger from './logger';
+// Debounce utility for validation
 export const debounce = (func, wait) => {
   let timeout;
   return function executedFunction(...args) {
@@ -248,19 +25,531 @@ export const debounce = (func, wait) => {
   };
 };
 
-// Validation timing configuration
-export const VALIDATION_TIMING = {
-  DEBOUNCE_DELAY: 300, // ms
-  VALIDATE_ON_BLUR: true,
-  VALIDATE_ON_CHANGE: true,
-  VALIDATE_ON_SUBMIT: true
+// Throttle utility for validation
+export const throttle = (func, limit) => {
+  let inThrottle;
+  return function executedFunction(...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+};
+
+// Validation result factory
+export const createValidationResult = (isValid, message, data = {}) => ({
+  isValid,
+  message,
+  ...data
+});
+
+// Built-in validation functions
+export const validationFunctions = {
+  // Required field validation
+  required: (value, options = {}) => {
+    if (!value || (typeof value === 'string' && !value.trim())) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.REQUIRED);
+    }
+    return createValidationResult(true);
+  },
+
+  // Email validation
+  email: (value, options = {}) => {
+    if (!value) return createValidationResult(true); // Let required rule handle empty values
+    if (!VALIDATION_RULES.EMAIL_REGEX.test(value)) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.EMAIL_INVALID);
+    }
+    return createValidationResult(true);
+  },
+
+  // Phone validation
+  phone: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    if (!VALIDATION_RULES.PHONE_REGEX.test(value)) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.PHONE_INVALID);
+    }
+    return createValidationResult(true);
+  },
+
+  // URL validation
+  url: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    if (!VALIDATION_RULES.URL_REGEX.test(value)) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.URL_INVALID);
+    }
+    return createValidationResult(true);
+  },
+
+  // Minimum length validation
+  minLength: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    if (value.length < options.min) {
+      return createValidationResult(
+        false, 
+        options.message || VALIDATION_MESSAGES.MIN_LENGTH.replace('{min}', options.min)
+      );
+    }
+    return createValidationResult(true);
+  },
+
+  // Maximum length validation
+  maxLength: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    if (value.length > options.max) {
+      return createValidationResult(
+        false, 
+        options.message || VALIDATION_MESSAGES.MAX_LENGTH.replace('{max}', options.max)
+      );
+    }
+    return createValidationResult(true);
+  },
+
+  // Pattern validation
+  pattern: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    if (!options.pattern.test(value)) {
+      return createValidationResult(false, options.message || 'Invalid format');
+    }
+    return createValidationResult(true);
+  },
+
+  // Number validation
+  number: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    const num = Number(value);
+    if (isNaN(num)) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.NUMBER_INVALID);
+    }
+    return createValidationResult(true);
+  },
+
+  // Positive number validation
+  positiveNumber: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    const num = Number(value);
+    if (isNaN(num) || num <= 0) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.POSITIVE_NUMBER);
+    }
+    return createValidationResult(true);
+  },
+
+  // Date validation
+  date: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.DATE_INVALID);
+    }
+    return createValidationResult(true);
+  },
+
+  // Time validation
+  time: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(value)) {
+      return createValidationResult(false, options.message || VALIDATION_MESSAGES.TIME_INVALID);
+    }
+    return createValidationResult(true);
+  },
+
+  // Password strength validation
+  passwordStrength: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    
+    const minLength = options.minLength || VALIDATION_RULES.PASSWORD_MIN_LENGTH;
+    const hasUppercase = /[A-Z]/.test(value);
+    const hasLowercase = /[a-z]/.test(value);
+    const hasNumbers = /\d/.test(value);
+    const hasSpecialChars = /[!@#$%^&*(),.?":{}|<>]/.test(value);
+    
+    const errors = [];
+    
+    if (value.length < minLength) {
+      errors.push(`Password must be at least ${minLength} characters long`);
+    }
+    if (options.requireUppercase && !hasUppercase) {
+      errors.push('Password must contain at least one uppercase letter');
+    }
+    if (options.requireLowercase && !hasLowercase) {
+      errors.push('Password must contain at least one lowercase letter');
+    }
+    if (options.requireNumbers && !hasNumbers) {
+      errors.push('Password must contain at least one number');
+    }
+    if (options.requireSpecialChars && !hasSpecialChars) {
+      errors.push('Password must contain at least one special character');
+    }
+    
+    if (errors.length > 0) {
+      return createValidationResult(false, errors.join('. '));
+    }
+    
+    return createValidationResult(true);
+  },
+
+  // Username validation
+  username: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    
+    const minLength = options.minLength || 3;
+    const maxLength = options.maxLength || 20;
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    
+    if (value.length < minLength) {
+      return createValidationResult(false, `Username must be at least ${minLength} characters long`);
+    }
+    if (value.length > maxLength) {
+      return createValidationResult(false, `Username must be no more than ${maxLength} characters long`);
+    }
+    if (!usernameRegex.test(value)) {
+      return createValidationResult(false, 'Username can only contain letters, numbers, and underscores');
+    }
+    
+    return createValidationResult(true);
+  },
+
+  // Credit card validation
+  creditCard: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    
+    // Remove spaces and dashes
+    const cleanValue = value.replace(/[\s-]/g, '');
+    
+    // Check if it's all digits
+    if (!/^\d+$/.test(cleanValue)) {
+      return createValidationResult(false, 'Credit card number must contain only digits');
+    }
+    
+    // Check length (13-19 digits)
+    if (cleanValue.length < 13 || cleanValue.length > 19) {
+      return createValidationResult(false, 'Credit card number must be between 13 and 19 digits');
+    }
+    
+    // Luhn algorithm validation
+    let sum = 0;
+    let isEven = false;
+    
+    for (let i = cleanValue.length - 1; i >= 0; i--) {
+      let digit = parseInt(cleanValue.charAt(i));
+      
+      if (isEven) {
+        digit *= 2;
+        if (digit > 9) {
+          digit -= 9;
+        }
+      }
+      
+      sum += digit;
+      isEven = !isEven;
+    }
+    
+    if (sum % 10 !== 0) {
+      return createValidationResult(false, 'Invalid credit card number');
+    }
+    
+    return createValidationResult(true);
+  },
+
+  // File validation
+  file: (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    
+    if (options.maxSize && value.size > options.maxSize) {
+      const maxSizeMB = options.maxSize / (1024 * 1024);
+      return createValidationResult(false, `File size must be less than ${maxSizeMB}MB`);
+    }
+    
+    if (options.allowedTypes && !options.allowedTypes.includes(value.type)) {
+      return createValidationResult(false, `File type must be one of: ${options.allowedTypes.join(', ')}`);
+    }
+    
+    return createValidationResult(true);
+  }
+};
+
+// Async validation functions
+export const asyncValidationFunctions = {
+  // Email uniqueness check
+  emailUnique: async (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    
+    try {
+      // Simulate API call
+      const response = await fetch(`/api/check-email?email=${encodeURIComponent(value)}`);
+      const data = await response.json();
+      
+      if (data.exists) {
+        return createValidationResult(false, options.message || 'Email is already taken');
+      }
+      
+      return createValidationResult(true);
+    } catch (error) {
+      logger.error('Email uniqueness check failed:', error);
+      return createValidationResult(false, 'Unable to verify email uniqueness');
+    }
+  },
+
+  // Username uniqueness check
+  usernameUnique: async (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    
+    try {
+      const response = await fetch(`/api/check-username?username=${encodeURIComponent(value)}`);
+      const data = await response.json();
+      
+      if (data.exists) {
+        return createValidationResult(false, options.message || 'Username is already taken');
+      }
+      
+      return createValidationResult(true);
+    } catch (error) {
+      logger.error('Username uniqueness check failed:', error);
+      return createValidationResult(false, 'Unable to verify username uniqueness');
+    }
+  },
+
+  // Domain validation
+  domainValid: async (value, options = {}) => {
+    if (!value) return createValidationResult(true);
+    
+    try {
+      const response = await fetch(`/api/check-domain?domain=${encodeURIComponent(value)}`);
+      const data = await response.json();
+      
+      if (!data.valid) {
+        return createValidationResult(false, options.message || 'Invalid domain');
+      }
+      
+      return createValidationResult(true);
+    } catch (error) {
+      logger.error('Domain validation failed:', error);
+      return createValidationResult(false, 'Unable to verify domain');
+    }
+  }
+};
+
+// Cross-field validation functions
+export const crossFieldValidationFunctions = {
+  // Password confirmation
+  passwordMatch: (value, fieldName, allValues, options = {}) => {
+    const passwordField = options.passwordField || 'password';
+    const password = allValues[passwordField];
+    
+    if (!value || !password) return createValidationResult(true);
+    
+    if (value !== password) {
+      return createValidationResult(false, options.message || 'Passwords do not match');
+    }
+    
+    return createValidationResult(true);
+  },
+
+  // Date range validation
+  dateRange: (value, fieldName, allValues, options = {}) => {
+    const startDateField = options.startDateField || 'startDate';
+    const endDateField = options.endDateField || 'endDate';
+    
+    if (fieldName === startDateField) {
+      const endDate = allValues[endDateField];
+      if (endDate && new Date(value) >= new Date(endDate)) {
+        return createValidationResult(false, options.message || 'Start date must be before end date');
+      }
+    } else if (fieldName === endDateField) {
+      const startDate = allValues[startDateField];
+      if (startDate && new Date(value) <= new Date(startDate)) {
+        return createValidationResult(false, options.message || 'End date must be after start date');
+      }
+    }
+    
+    return createValidationResult(true);
+  },
+
+  // Numeric range validation
+  numericRange: (value, fieldName, allValues, options = {}) => {
+    const minField = options.minField || 'minValue';
+    const maxField = options.maxField || 'maxValue';
+    
+    if (fieldName === minField) {
+      const maxValue = allValues[maxField];
+      if (maxValue && Number(value) >= Number(maxValue)) {
+        return createValidationResult(false, options.message || 'Minimum value must be less than maximum value');
+      }
+    } else if (fieldName === maxField) {
+      const minValue = allValues[minField];
+      if (minValue && Number(value) <= Number(minValue)) {
+        return createValidationResult(false, options.message || 'Maximum value must be greater than minimum value');
+      }
+    }
+    
+    return createValidationResult(true);
+  }
+};
+
+// Validation rule factory
+export const createValidationRule = (type, options = {}) => {
+  const rule = {
+    type,
+    ...options,
+    id: `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  };
+
+  // Add default message if not provided
+  if (!rule.message) {
+    switch (type) {
+      case 'required':
+        rule.message = VALIDATION_MESSAGES.REQUIRED;
+        break;
+      case 'email':
+        rule.message = VALIDATION_MESSAGES.EMAIL_INVALID;
+        break;
+      case 'phone':
+        rule.message = VALIDATION_MESSAGES.PHONE_INVALID;
+        break;
+      case 'minLength':
+        rule.message = VALIDATION_MESSAGES.MIN_LENGTH.replace('{min}', options.min);
+        break;
+      case 'maxLength':
+        rule.message = VALIDATION_MESSAGES.MAX_LENGTH.replace('{max}', options.max);
+        break;
+      default:
+        rule.message = 'Invalid value';
+    }
+  }
+
+  return rule;
+};
+
+// Validation rule presets
+export const validationPresets = {
+  // Common form fields
+  name: [
+    createValidationRule('required'),
+    createValidationRule('minLength', { min: 2 }),
+    createValidationRule('maxLength', { max: 50 })
+  ],
+  
+  email: [
+    createValidationRule('required'),
+    createValidationRule('email')
+  ],
+  
+  phone: [
+    createValidationRule('phone')
+  ],
+  
+  password: [
+    createValidationRule('required'),
+    createValidationRule('minLength', { min: 8 }),
+    createValidationRule('passwordStrength', {
+      requireUppercase: true,
+      requireLowercase: true,
+      requireNumbers: true,
+      requireSpecialChars: false
+    })
+  ],
+  
+  confirmPassword: [
+    createValidationRule('required'),
+    createValidationRule('passwordMatch')
+  ],
+  
+  website: [
+    createValidationRule('url')
+  ],
+  
+  age: [
+    createValidationRule('required'),
+    createValidationRule('number'),
+    createValidationRule('positiveNumber')
+  ],
+  
+  bio: [
+    createValidationRule('maxLength', { max: 500 })
+  ]
+};
+
+// Validation utility functions
+export const validationUtils = {
+  // Check if value is empty
+  isEmpty: (value) => {
+    return !value || (typeof value === 'string' && !value.trim());
+  },
+
+  // Check if value is a valid email
+  isEmail: (value) => {
+    return VALIDATION_RULES.EMAIL_REGEX.test(value);
+  },
+
+  // Check if value is a valid phone number
+  isPhone: (value) => {
+    return VALIDATION_RULES.PHONE_REGEX.test(value);
+  },
+
+  // Check if value is a valid URL
+  isUrl: (value) => {
+    return VALIDATION_RULES.URL_REGEX.test(value);
+  },
+
+  // Check if value is a valid number
+  isNumber: (value) => {
+    return !isNaN(Number(value));
+  },
+
+  // Check if value is a positive number
+  isPositiveNumber: (value) => {
+    const num = Number(value);
+    return !isNaN(num) && num > 0;
+  },
+
+  // Check if value is a valid date
+  isDate: (value) => {
+    const date = new Date(value);
+    return !isNaN(date.getTime());
+  },
+
+  // Check if value is a valid time
+  isTime: (value) => {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(value);
+  },
+
+  // Format validation message with parameters
+  formatMessage: (message, params = {}) => {
+    let formattedMessage = message;
+    Object.entries(params).forEach(([key, value]) => {
+      formattedMessage = formattedMessage.replace(`{${key}}`, value);
+    });
+    return formattedMessage;
+  },
+
+  // Get validation severity
+  getSeverity: (errors, warnings) => {
+    if (errors.length > 0) return 'error';
+    if (warnings.length > 0) return 'warning';
+    return 'success';
+  }
+};
+
+// Common validation rules for easy access
+export const commonRules = {
+  requiredName: (value) => validationFunctions.required(value),
+  requiredPhone: (value) => validationFunctions.phone(value),
+  emailFormat: (value) => validationFunctions.email(value),
+  requiredDate: (value) => validationFunctions.date(value),
+  requiredTime: (value, date) => validationFunctions.time(value),
 };
 
 export default {
-  VALIDATION_RULES,
-  VALIDATION_ICONS,
-  VALIDATION_STATES,
-  FIELD_VALIDATORS,
+  validationFunctions,
+  asyncValidationFunctions,
+  crossFieldValidationFunctions,
+  createValidationRule,
+  validationPresets,
+  validationUtils,
+  commonRules,
   debounce,
-  VALIDATION_TIMING
+  throttle,
+  createValidationResult
 };

@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import AppShell from "../../layouts/AppShell";
 import StatsCard from "../../components/StatsCard";
 import Table from "../../components/Table";
+import { SearchFilter, Pagination } from "../../components/ui";
 import { getMetrics, getAuditLogs } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
-import logger from "../../utils/logger";
+import logger from 'utils/logger';
+import { useSearchData } from "../../hooks/useSearch";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -50,9 +52,35 @@ export default function AdminDashboard() {
   const [logs, setLogs] = useState([]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
-  const [filters, setFilters] = useState({ action: "", user: "", date: "" });
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Search and filter configuration for audit logs
+  const searchFields = ['action', 'user_id', 'entity_type', 'entity_id', 'ip_address'];
+  const filterFields = [
+    { key: 'action', label: 'Action', type: 'select' },
+    { key: 'entity_type', label: 'Entity Type', type: 'select' },
+    { key: 'created_at', label: 'Date', type: 'date' }
+  ];
+
+  // Use search hook for audit logs
+  const {
+    data: filteredLogs,
+    pagination,
+    searchTerm,
+    filters,
+    setSearchTerm,
+    setFilters,
+    clearFilters,
+    setPage: setSearchPage,
+    isSearching,
+    hasFilters,
+    hasResults
+  } = useSearchData(logs, searchFields, filterFields, {
+    enablePagination: true,
+    pageSize: limit
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -83,13 +111,7 @@ export default function AdminDashboard() {
       try {
         const params = { page: String(page), limit: String(limit) };
         const data = await getAuditLogs(params);
-        let rows = data || [];
-        // Client filters: action contains, user id contains, date (YYYY-MM-DD)
-        const { action, user, date } = filters;
-        if (action) rows = rows.filter(r => String(r.action || "").toLowerCase().includes(action.toLowerCase()));
-        if (user) rows = rows.filter(r => String(r.user_id || "").toLowerCase().includes(user.toLowerCase()));
-        if (date) rows = rows.filter(r => String(r.created_at || "").slice(0,10) === date);
-        if (!cancelled) setLogs(rows);
+        if (!cancelled) setLogs(data || []);
       } catch (e) {
         if (!cancelled) {
           const errorMsg = handleApiError(e);
@@ -101,12 +123,12 @@ export default function AdminDashboard() {
       }
     }
     loadLogs();
-  }, [page, limit, filters]);
+  }, [page, limit]);
 
   const onLogout = () => { localStorage.clear(); window.location.href = "/login"; };
 
   const auditHeaders = ["Time", "User", "Action", "Entity", "Details", "IP"];
-  const auditRows = logs.map(l => [
+  const auditRows = filteredLogs.map(l => [
     l.created_at,
     l.user_id || "-",
     l.action,
@@ -133,33 +155,9 @@ export default function AdminDashboard() {
 
       {/* Audit Logs Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex flex-row items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Audit Logs</h3>
-        </div>
-        
-        <div className="p-6">
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3 mb-4">
-            <input
-              type="text"
-              placeholder="Filter action"
-              value={filters.action}
-              onChange={e => setFilters(f => ({...f, action: e.target.value}))}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-            />
-            <input
-              type="text"
-              placeholder="Filter user ID"
-              value={filters.user}
-              onChange={e => setFilters(f => ({...f, user: e.target.value}))}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-            />
-            <input
-              type="date"
-              value={filters.date}
-              onChange={e => setFilters(f => ({...f, date: e.target.value}))}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-            />
+          <div className="flex items-center gap-2">
             <select
               value={limit}
               onChange={e => { setLimit(Number(e.target.value)||25); setPage(1); }}
@@ -170,6 +168,41 @@ export default function AdminDashboard() {
               <option value={50}>50 per page</option>
             </select>
           </div>
+        </div>
+        
+        <div className="p-6">
+          {/* Search and Filters */}
+          <SearchFilter
+            data={logs}
+            searchFields={searchFields}
+            filterFields={filterFields}
+            onSearch={setSearchTerm}
+            onFilter={setFilters}
+            placeholder="Search audit logs by action, user, entity, or IP..."
+            showAdvanced={showFilters}
+            enableSorting={true}
+            enablePagination={false}
+          />
+          
+          {/* Results Summary */}
+          <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+            <div>
+              {isSearching || hasFilters ? (
+                <>
+                  Showing {filteredLogs.length} of {logs.length} logs
+                  {searchTerm && ` for "${searchTerm}"`}
+                </>
+              ) : (
+                `Total: ${logs.length} logs`
+              )}
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              {showFilters ? 'Hide' : 'Show'} Filters
+            </button>
+          </div>
           
           {logsError && (
             <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
@@ -177,25 +210,43 @@ export default function AdminDashboard() {
             </div>
           )}
           
-          <Table headers={auditHeaders} rows={auditRows} loading={logsLoading} />
-          
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-3 mt-4">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage(p => Math.max(1, p-1))}
-              className="min-h-[44px] min-w-[44px] px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <span className="text-sm text-gray-700">Page {page}</span>
-            <button
-              onClick={() => setPage(p => p+1)}
-              className="min-h-[44px] min-w-[44px] px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Next
-            </button>
-          </div>
+          {hasResults ? (
+            <>
+              <Table headers={auditHeaders} rows={auditRows} loading={logsLoading} />
+              
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    onPageChange={setSearchPage}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mt-2">No audit logs found</h3>
+              <p className="text-gray-600 mt-1">
+                {isSearching || hasFilters ? 'Try adjusting your search terms or filters' : 'Audit logs will appear here as system activity occurs'}
+              </p>
+              {(isSearching || hasFilters) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    clearFilters();
+                  }}
+                  className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Clear search and filters
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

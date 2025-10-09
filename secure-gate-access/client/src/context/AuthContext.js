@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from "react";
-import logger from '../utils/logger';
+import logger from 'utils/logger';
 
 export const AuthContext = createContext();
 

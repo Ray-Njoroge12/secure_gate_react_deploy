@@ -1,5 +1,5 @@
 // Toast Notification Service
-import logger from '../utils/logger';
+import logger from 'utils/logger';
 
 class NotificationService {
   constructor() {

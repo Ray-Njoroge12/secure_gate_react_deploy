@@ -1,139 +1,177 @@
-// client/src/components/ui/Modal.jsx
-import React, { useEffect, useRef } from 'react';
-import { Button } from './Button';
+/**
+ * @fileoverview Modal component for Secure Gate Access
+ * @description Accessible modal with focus trap and keyboard navigation
+ * @author Secure Gate Access Team
+ * @version 1.0.0
+ */
 
-const Modal = ({ 
-  isOpen, 
-  onClose, 
-  title, 
+import React, { useEffect, useRef, useCallback } from 'react';
+import { createFocusTrap, focusManager } from '../../utils/focusManagement';
+import { X } from 'lucide-react';
+
+/**
+ * Modal component with focus trap and keyboard navigation
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {boolean} props.isOpen - Whether modal is open
+ * @param {Function} props.onClose - Function to call when modal should close
+ * @param {React.ReactNode} props.children - Modal content
+ * @param {string} [props.title] - Modal title
+ * @param {string} [props.size='md'] - Modal size ('sm', 'md', 'lg', 'xl', 'full')
+ * @param {boolean} [props.closeOnOverlayClick=true] - Whether to close on overlay click
+ * @param {boolean} [props.closeOnEscape=true] - Whether to close on Escape key
+ * @param {string} [props.className=''] - Additional CSS classes
+ * @param {string} [props.ariaLabel] - ARIA label for the modal
+ * @param {string} [props.ariaLabelledBy] - ID of element that labels the modal
+ * @param {string} [props.ariaDescribedBy] - ID of element that describes the modal
+ * @returns {JSX.Element} Modal component
+ * 
+ * @example
+ * <Modal
+ *   isOpen={isModalOpen}
+ *   onClose={() => setIsModalOpen(false)}
+ *   title="Confirm Action"
+ *   size="md"
+ * >
+ *   <p>Are you sure you want to proceed?</p>
+ * </Modal>
+ */
+const Modal = ({
+  isOpen,
+  onClose,
   children,
+  title,
   size = 'md',
-  showCloseButton = true,
-  preventCloseOnBackdrop = false,
+  closeOnOverlayClick = true,
+  closeOnEscape = true,
   className = '',
-  ...props 
+  ariaLabel,
+  ariaLabelledBy,
+  ariaDescribedBy
 }) => {
   const modalRef = useRef(null);
-  const previousActiveElement = useRef(null);
-  
+  const titleRef = useRef(null);
+  const cleanupRef = useRef(null);
+
+  // Size classes
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg', 
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
     full: 'max-w-full mx-4'
   };
-  
-  // Focus trap functionality
-  const trapFocus = (e) => {
-    if (!modalRef.current) return;
-    
-    const focusableElements = modalRef.current.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-    
-    if (e.key === 'Tab') {
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          lastElement?.focus();
-          e.preventDefault();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          firstElement?.focus();
-          e.preventDefault();
-        }
-      }
+
+  // Handle escape key
+  const handleKeyDown = useCallback((event) => {
+    if (closeOnEscape && event.key === 'Escape') {
+      onClose();
     }
-  };
-  
-  // Handle escape key and focus management
+  }, [closeOnEscape, onClose]);
+
+  // Handle overlay click
+  const handleOverlayClick = useCallback((event) => {
+    if (closeOnOverlayClick && event.target === event.currentTarget) {
+      onClose();
+    }
+  }, [closeOnOverlayClick, onClose]);
+
+  // Set up focus trap when modal opens
   useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose?.();
+    if (isOpen && modalRef.current) {
+      // Save current focus
+      focusManager.saveFocus();
+
+      // Create focus trap
+      cleanupRef.current = createFocusTrap(modalRef.current, titleRef.current);
+
+      // Focus the title or first focusable element
+      if (titleRef.current) {
+        titleRef.current.focus();
+      } else {
+        focusManager.focusFirst(modalRef.current);
       }
-    };
-    
-    if (isOpen) {
-      // Store the previously focused element
-      previousActiveElement.current = document.activeElement;
-      
-      document.addEventListener('keydown', handleEscape);
-      document.addEventListener('keydown', trapFocus);
+
+      // Add escape key listener
+      document.addEventListener('keydown', handleKeyDown);
+
+      // Prevent body scroll
       document.body.style.overflow = 'hidden';
-      
-      // Focus the modal when it opens
-      setTimeout(() => {
-        modalRef.current?.focus();
-      }, 100);
+
+      return () => {
+        // Cleanup
+        if (cleanupRef.current) {
+          cleanupRef.current();
+        }
+        document.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = 'unset';
+      };
     }
-    
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('keydown', trapFocus);
-      document.body.style.overflow = 'unset';
-      
-      // Restore focus to the previously focused element
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
-      }
-    };
-  }, [isOpen, onClose]);
-  
+  }, [isOpen, handleKeyDown]);
+
+  // Restore focus when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      focusManager.restoreFocus();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
-  
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget && !preventCloseOnBackdrop) {
-      onClose?.();
-    }
-  };
-  
+
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={handleBackdropClick}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? "modal-title" : undefined}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
     >
-      <div 
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={handleOverlayClick}
+        aria-hidden="true"
+      />
+
+      {/* Modal */}
+      <div
         ref={modalRef}
-        tabIndex={-1}
         className={`
-          bg-slate-800 rounded-lg border border-slate-700 shadow-xl 
-          transform transition-all duration-200 
-          w-full ${sizeClasses[size]} 
-          max-h-[90vh] overflow-auto
-          focus:outline-none
+          relative bg-slate-800 rounded-lg shadow-xl w-full
+          ${sizeClasses[size]}
           ${className}
         `}
-        {...props}
+        role="document"
       >
         {/* Header */}
-        {(title || showCloseButton) && (
+        {(title || onClose) && (
           <div className="flex items-center justify-between p-6 border-b border-slate-700">
             {title && (
-              <h2 id="modal-title" className="text-xl font-semibold text-slate-200">
+              <h2
+                ref={titleRef}
+                id={ariaLabelledBy}
+                className="text-xl font-semibold text-slate-200"
+                tabIndex={-1}
+              >
                 {title}
               </h2>
             )}
-            {showCloseButton && (
+            
+            {onClose && (
               <button
                 onClick={onClose}
-                className="text-slate-400 hover:text-slate-200 transition-colors p-2 -mr-2"
+                className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Close modal"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-5 h-5" />
               </button>
             )}
           </div>
         )}
-        
+
         {/* Content */}
         <div className="p-6">
           {children}
@@ -142,27 +180,5 @@ const Modal = ({
     </div>
   );
 };
-
-const ModalHeader = ({ children, className = '' }) => (
-  <div className={`mb-4 ${className}`}>
-    {children}
-  </div>
-);
-
-const ModalBody = ({ children, className = '' }) => (
-  <div className={className}>
-    {children}
-  </div>
-);
-
-const ModalFooter = ({ children, className = '' }) => (
-  <div className={`flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-700 ${className}`}>
-    {children}
-  </div>
-);
-
-Modal.Header = ModalHeader;
-Modal.Body = ModalBody;
-Modal.Footer = ModalFooter;
 
 export default Modal;

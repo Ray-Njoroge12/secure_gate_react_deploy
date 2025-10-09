@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
 import Topbar from "../../components/Topbar";
 import { getMyVisitors, createPass } from "../../services/passService";
-import logger from "../../utils/logger";
+import logger from 'utils/logger';
 
 export default function GeneratePass(){
   const onLogout = ()=> { localStorage.removeItem("role"); window.location.href = "/"; };

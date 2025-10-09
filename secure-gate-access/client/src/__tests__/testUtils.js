@@ -1,5 +1,6 @@
 // Test utilities for React components
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import logger from 'utils/logger';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
@@ -115,7 +116,7 @@ export const checkAccessibility = async (container) => {
   const buttons = container.querySelectorAll('button');
   buttons.forEach(button => {
     if (!button.textContent.trim() && !button.getAttribute('aria-label')) {
-      console.warn('Button without accessible name found:', button);
+      logger.warn('Button without accessible name found:', button);
     }
   });
 
@@ -126,7 +127,7 @@ export const checkAccessibility = async (container) => {
     const ariaLabelledBy = input.getAttribute('aria-labelledby');
 
     if (!label && !ariaLabel && !ariaLabelledBy) {
-      console.warn('Input without accessible label found:', input);
+      logger.warn('Input without accessible label found:', input);
     }
   });
 };
@@ -143,3 +144,18 @@ export const waitForErrorMessage = async (message) => {
     expect(screen.getByText(message)).toBeInTheDocument();
   });
 };
+
+// Simple test to make this a valid test file
+describe('Test Utils', () => {
+  test('should export utility functions', () => {
+    expect(typeof mockUsers).toBe('object');
+    expect(typeof renderWithProviders).toBe('function');
+    expect(typeof createMockResponse).toBe('function');
+    expect(typeof mockApiCall).toBe('function');
+    expect(typeof fillForm).toBe('function');
+    expect(typeof submitForm).toBe('function');
+    expect(typeof checkAccessibility).toBe('function');
+    expect(typeof waitForLoadingToFinish).toBe('function');
+    expect(typeof waitForErrorMessage).toBe('function');
+  });
+});

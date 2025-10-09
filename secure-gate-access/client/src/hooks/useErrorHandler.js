@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { handleApiError } from '../utils/errorMapper';
 import errorQueueService from '../services/errorQueueService';
-import logger from '../utils/logger';
+import logger from 'utils/logger';
 
 /**
  * Standardized Error Handling Hook

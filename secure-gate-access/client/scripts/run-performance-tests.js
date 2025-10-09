@@ -1,320 +1,331 @@
 #!/usr/bin/env node
 
 /**
- * Performance Test Runner
- * Runs comprehensive performance tests and generates reports
+ * Performance Testing Script
+ * Runs comprehensive performance tests including Lighthouse, bundle analysis, and runtime monitoring
  */
 
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// Mock performance testing utilities for Node.js environment
-const mockPerformanceTests = {
-  runPerformanceTests: async (testConfigs) => {
-    console.log('🚀 Running performance tests...');
-    
-    const results = {
-      name: 'Performance Test Suite',
-      startTime: Date.now(),
-      tests: [],
-      summary: {
-        total: testConfigs.length,
-        passed: 0,
-        failed: 0,
-        totalDuration: 0
-      }
-    };
-
-    for (const test of testConfigs) {
-      const testResult = {
-        name: test.name,
-        startTime: Date.now(),
-        passed: true,
-        score: 95,
-        stats: {
-          avg: Math.random() * 100 + 50,
-          min: Math.random() * 50 + 10,
-          max: Math.random() * 200 + 100,
-          median: Math.random() * 100 + 50
-        },
-        measurements: [Math.random() * 100 + 50],
-        errors: [],
-        duration: Math.random() * 1000 + 100
-      };
-
-      results.tests.push(testResult);
-      results.summary.passed++;
-      results.summary.totalDuration += testResult.duration;
-    }
-
-    results.endTime = Date.now();
-    results.summary.overallDuration = results.endTime - results.startTime;
-    results.summary.successRate = (results.summary.passed / results.summary.total) * 100;
-
-    return results;
+// Configuration
+const config = {
+  buildDir: './build',
+  reportDir: './performance-reports',
+  lighthouseThresholds: {
+    performance: 85,
+    accessibility: 90,
+    bestPractices: 90,
+    seo: 80
+  },
+  bundleThresholds: {
+    maxSize: 500000, // 500KB
+    maxGzipSize: 150000, // 150KB
+    maxChunks: 20
   }
 };
 
-// Performance test configurations
-const performanceTestConfigs = [
-  {
-    name: 'Bundle Size Analysis',
-    description: 'Analyze JavaScript and CSS bundle sizes',
-    tests: ['bundleSize']
-  },
-  {
-    name: 'Memory Usage Test',
-    description: 'Check memory consumption patterns',
-    tests: ['memoryUsage']
-  },
-  {
-    name: 'Component Render Performance',
-    description: 'Test component rendering performance',
-    tests: ['componentRender']
-  },
-  {
-    name: 'API Response Times',
-    description: 'Measure API endpoint response times',
-    tests: ['apiCall']
-  },
-  {
-    name: 'Web Vitals',
-    description: 'Core Web Vitals measurement',
-    tests: ['webVitals']
+// Colors for console output
+const colors = {
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  reset: '\x1b[0m'
+};
+
+function log(message, color = 'white') {
+  console.log(`${colors[color]}${message}${colors.reset}`);
+}
+
+function logSection(title) {
+  log(`\n${'='.repeat(60)}`, 'cyan');
+  log(title, 'cyan');
+  log('='.repeat(60), 'cyan');
+}
+
+function logSuccess(message) {
+  log(`✅ ${message}`, 'green');
+}
+
+function logError(message) {
+  log(`❌ ${message}`, 'red');
+}
+
+function logWarning(message) {
+  log(`⚠️  ${message}`, 'yellow');
+}
+
+function logInfo(message) {
+  log(`ℹ️  ${message}`, 'blue');
+}
+
+// Create reports directory
+function createReportsDir() {
+  if (!fs.existsSync(config.reportDir)) {
+    fs.mkdirSync(config.reportDir, { recursive: true });
+    logSuccess('Created performance reports directory');
   }
-];
+}
+
+// Run Lighthouse CI
+function runLighthouseCI() {
+  logSection('LIGHTHOUSE CI PERFORMANCE AUDIT');
+  
+  try {
+    logInfo('Starting Lighthouse CI audit...');
+    const output = execSync('npx lhci autorun', { 
+      encoding: 'utf8',
+      stdio: 'pipe'
+    });
+    
+    logSuccess('Lighthouse CI completed successfully');
+    log(output);
+    
+    // Parse results and check thresholds
+    const results = parseLighthouseResults(output);
+    checkLighthouseThresholds(results);
+    
+  } catch (error) {
+    logError('Lighthouse CI failed:');
+    log(error.message, 'red');
+    return false;
+  }
+  
+  return true;
+}
+
+// Parse Lighthouse results from output
+function parseLighthouseResults(output) {
+  const results = {};
+  
+  // Extract scores from output
+  const scoreRegex = /(\w+):\s*(\d+)/g;
+  let match;
+  
+  while ((match = scoreRegex.exec(output)) !== null) {
+    const [, category, score] = match;
+    results[category] = parseInt(score);
+  }
+  
+  return results;
+}
+
+// Check Lighthouse thresholds
+function checkLighthouseThresholds(results) {
+  logSection('LIGHTHOUSE THRESHOLD CHECKS');
+  
+  const checks = [
+    { key: 'performance', threshold: config.lighthouseThresholds.performance },
+    { key: 'accessibility', threshold: config.lighthouseThresholds.accessibility },
+    { key: 'best-practices', threshold: config.lighthouseThresholds.bestPractices },
+    { key: 'seo', threshold: config.lighthouseThresholds.seo }
+  ];
+  
+  let allPassed = true;
+  
+  checks.forEach(({ key, threshold }) => {
+    const score = results[key];
+    if (score !== undefined) {
+      if (score >= threshold) {
+        logSuccess(`${key}: ${score} (threshold: ${threshold})`);
+      } else {
+        logError(`${key}: ${score} (threshold: ${threshold}) - FAILED`);
+        allPassed = false;
+      }
+    } else {
+      logWarning(`${key}: Score not found in results`);
+    }
+  });
+  
+  if (allPassed) {
+    logSuccess('All Lighthouse thresholds passed!');
+  } else {
+    logError('Some Lighthouse thresholds failed!');
+  }
+  
+  return allPassed;
+}
+
+// Analyze bundle size
+function analyzeBundleSize() {
+  logSection('BUNDLE SIZE ANALYSIS');
+  
+  try {
+    const buildDir = config.buildDir;
+    if (!fs.existsSync(buildDir)) {
+      logError('Build directory not found. Run "npm run build" first.');
+      return false;
+    }
+    
+    const jsDir = path.join(buildDir, 'static/js');
+    const cssDir = path.join(buildDir, 'static/css');
+    
+    let totalJSSize = 0;
+    let totalCSSSize = 0;
+    let jsFiles = [];
+    let cssFiles = [];
+    
+    // Analyze JS files
+    if (fs.existsSync(jsDir)) {
+      const files = fs.readdirSync(jsDir);
+      files.forEach(file => {
+        if (file.endsWith('.js')) {
+          const filePath = path.join(jsDir, file);
+          const stats = fs.statSync(filePath);
+          const size = stats.size;
+          totalJSSize += size;
+          jsFiles.push({ name: file, size });
+        }
+      });
+    }
+    
+    // Analyze CSS files
+    if (fs.existsSync(cssDir)) {
+      const files = fs.readdirSync(cssDir);
+      files.forEach(file => {
+        if (file.endsWith('.css')) {
+          const filePath = path.join(cssDir, file);
+          const stats = fs.statSync(filePath);
+          const size = stats.size;
+          totalCSSSize += size;
+          cssFiles.push({ name: file, size });
+        }
+      });
+    }
+    
+    // Display results
+    logInfo(`Total JS size: ${formatBytes(totalJSSize)}`);
+    logInfo(`Total CSS size: ${formatBytes(totalCSSSize)}`);
+    logInfo(`Total bundle size: ${formatBytes(totalJSSize + totalCSSSize)}`);
+    
+    // Check thresholds
+    const jsThresholdPassed = totalJSSize <= config.bundleThresholds.maxSize;
+    const cssThresholdPassed = totalCSSSize <= config.bundleThresholds.maxSize;
+    const chunkThresholdPassed = jsFiles.length <= config.bundleThresholds.maxChunks;
+    
+    if (jsThresholdPassed) {
+      logSuccess(`JS size within threshold (${formatBytes(config.bundleThresholds.maxSize)})`);
+    } else {
+      logError(`JS size exceeds threshold (${formatBytes(config.bundleThresholds.maxSize)})`);
+    }
+    
+    if (cssThresholdPassed) {
+      logSuccess(`CSS size within threshold (${formatBytes(config.bundleThresholds.maxSize)})`);
+    } else {
+      logError(`CSS size exceeds threshold (${formatBytes(config.bundleThresholds.maxSize)})`);
+    }
+    
+    if (chunkThresholdPassed) {
+      logSuccess(`Chunk count within threshold (${config.bundleThresholds.maxChunks})`);
+    } else {
+      logError(`Chunk count exceeds threshold (${config.bundleThresholds.maxChunks})`);
+    }
+    
+    // Show largest files
+    logSection('LARGEST FILES');
+    const allFiles = [...jsFiles, ...cssFiles].sort((a, b) => b.size - a.size);
+    allFiles.slice(0, 10).forEach((file, index) => {
+      log(`${index + 1}. ${file.name}: ${formatBytes(file.size)}`, 'white');
+    });
+    
+    return jsThresholdPassed && cssThresholdPassed && chunkThresholdPassed;
+    
+  } catch (error) {
+    logError('Bundle analysis failed:');
+    log(error.message, 'red');
+    return false;
+  }
+}
+
+// Format bytes to human readable format
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
 
 // Generate performance report
-function generatePerformanceReport(results) {
+function generateReport(lighthousePassed, bundlePassed) {
+  logSection('GENERATING PERFORMANCE REPORT');
+  
+  const timestamp = new Date().toISOString();
   const report = {
-    timestamp: new Date().toISOString(),
-    summary: results.summary,
-    tests: results.tests.map(test => ({
-      name: test.name,
-      passed: test.passed,
-      score: test.score,
-      duration: test.duration,
-      stats: test.stats
-    })),
-    recommendations: generateRecommendations(results)
+    timestamp,
+    lighthouse: {
+      passed: lighthousePassed,
+      thresholds: config.lighthouseThresholds
+    },
+    bundle: {
+      passed: bundlePassed,
+      thresholds: config.bundleThresholds
+    },
+    overall: {
+      passed: lighthousePassed && bundlePassed,
+      score: lighthousePassed && bundlePassed ? 'PASS' : 'FAIL'
+    }
   };
-
+  
+  const reportPath = path.join(config.reportDir, `performance-report-${Date.now()}.json`);
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+  
+  logSuccess(`Performance report saved to: ${reportPath}`);
+  
   return report;
 }
 
-// Generate performance recommendations
-function generateRecommendations(results) {
-  const recommendations = [];
-
-  // Check bundle size
-  const bundleTest = results.tests.find(t => t.name === 'Bundle Size Analysis');
-  if (bundleTest && bundleTest.stats.avg > 1000) {
-    recommendations.push({
-      type: 'bundle_size',
-      priority: 'high',
-      message: 'Bundle size is larger than recommended. Consider code splitting and tree shaking.',
-      action: 'Implement lazy loading and remove unused dependencies'
-    });
-  }
-
-  // Check memory usage
-  const memoryTest = results.tests.find(t => t.name === 'Memory Usage Test');
-  if (memoryTest && memoryTest.stats.avg > 50) {
-    recommendations.push({
-      type: 'memory_usage',
-      priority: 'medium',
-      message: 'Memory usage is higher than expected. Check for memory leaks.',
-      action: 'Review component lifecycle and cleanup functions'
-    });
-  }
-
-  // Check render performance
-  const renderTest = results.tests.find(t => t.name === 'Component Render Performance');
-  if (renderTest && renderTest.stats.avg > 16) {
-    recommendations.push({
-      type: 'render_performance',
-      priority: 'high',
-      message: 'Component rendering is slower than 60fps threshold.',
-      action: 'Optimize component rendering with React.memo and useMemo'
-    });
-  }
-
-  // Check API performance
-  const apiTest = results.tests.find(t => t.name === 'API Response Times');
-  if (apiTest && apiTest.stats.avg > 1000) {
-    recommendations.push({
-      type: 'api_performance',
-      priority: 'medium',
-      message: 'API response times are slower than expected.',
-      action: 'Optimize backend queries and implement caching'
-    });
-  }
-
-  return recommendations;
-}
-
-// Generate HTML report
-function generateHTMLReport(report) {
-  const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Performance Test Report</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-        .content { padding: 20px; }
-        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .summary-card { background: #f8fafc; padding: 20px; border-radius: 8px; text-align: center; }
-        .summary-card h3 { margin: 0 0 10px 0; color: #374151; }
-        .summary-card .value { font-size: 2em; font-weight: bold; color: #2563eb; }
-        .test-results { margin-bottom: 30px; }
-        .test-item { background: #f8fafc; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 4px solid #10b981; }
-        .test-item.failed { border-left-color: #ef4444; }
-        .recommendations { background: #fef3c7; padding: 20px; border-radius: 8px; }
-        .recommendation { background: white; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #f59e0b; }
-        .priority-high { border-left-color: #ef4444; }
-        .priority-medium { border-left-color: #f59e0b; }
-        .priority-low { border-left-color: #10b981; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Performance Test Report</h1>
-            <p>Generated on ${new Date(report.timestamp).toLocaleString()}</p>
-        </div>
-        <div class="content">
-            <div class="summary">
-                <div class="summary-card">
-                    <h3>Total Tests</h3>
-                    <div class="value">${report.summary.total}</div>
-                </div>
-                <div class="summary-card">
-                    <h3>Passed</h3>
-                    <div class="value" style="color: #10b981;">${report.summary.passed}</div>
-                </div>
-                <div class="summary-card">
-                    <h3>Failed</h3>
-                    <div class="value" style="color: #ef4444;">${report.summary.failed}</div>
-                </div>
-                <div class="summary-card">
-                    <h3>Success Rate</h3>
-                    <div class="value">${report.summary.successRate.toFixed(1)}%</div>
-                </div>
-            </div>
-
-            <div class="test-results">
-                <h2>Test Results</h2>
-                ${report.tests.map(test => `
-                    <div class="test-item ${test.passed ? '' : 'failed'}">
-                        <h3>${test.name}</h3>
-                        <p><strong>Status:</strong> ${test.passed ? '✅ Passed' : '❌ Failed'}</p>
-                        <p><strong>Score:</strong> ${test.score}/100</p>
-                        <p><strong>Duration:</strong> ${test.duration.toFixed(2)}ms</p>
-                        ${test.stats ? `
-                            <p><strong>Average:</strong> ${test.stats.avg.toFixed(2)}ms</p>
-                            <p><strong>Min:</strong> ${test.stats.min.toFixed(2)}ms | <strong>Max:</strong> ${test.stats.max.toFixed(2)}ms</p>
-                        ` : ''}
-                    </div>
-                `).join('')}
-            </div>
-
-            ${report.recommendations.length > 0 ? `
-                <div class="recommendations">
-                    <h2>Recommendations</h2>
-                    ${report.recommendations.map(rec => `
-                        <div class="recommendation priority-${rec.priority}">
-                            <h4>${rec.message}</h4>
-                            <p><strong>Action:</strong> ${rec.action}</p>
-                            <p><strong>Priority:</strong> ${rec.priority.toUpperCase()}</p>
-                        </div>
-                    `).join('')}
-                </div>
-            ` : ''}
-        </div>
-    </div>
-</body>
-</html>
-  `;
-
-  return html;
-}
-
 // Main execution
-async function main() {
+function main() {
   const args = process.argv.slice(2);
   const watchMode = args.includes('--watch');
-  const generateReport = args.includes('--report');
-
-  console.log('🔍 Performance Test Runner');
-  console.log('==========================');
-
+  const reportMode = args.includes('--report');
+  
+  logSection('PERFORMANCE TESTING SUITE');
+  logInfo('Starting comprehensive performance analysis...');
+  
+  createReportsDir();
+  
+  let lighthousePassed = false;
+  let bundlePassed = false;
+  
   try {
-    // Run performance tests
-    const results = await mockPerformanceTests.runPerformanceTests(performanceTestConfigs);
-
+    // Run Lighthouse CI
+    lighthousePassed = runLighthouseCI();
+    
+    // Analyze bundle size
+    bundlePassed = analyzeBundleSize();
+    
     // Generate report
-    const report = generatePerformanceReport(results);
-
-    // Display results
-    console.log('\n📊 Test Results:');
-    console.log(`Total Tests: ${results.summary.total}`);
-    console.log(`Passed: ${results.summary.passed}`);
-    console.log(`Failed: ${results.summary.failed}`);
-    console.log(`Success Rate: ${results.summary.successRate.toFixed(1)}%`);
-    console.log(`Total Duration: ${results.summary.overallDuration}ms`);
-
-    console.log('\n📋 Individual Test Results:');
-    results.tests.forEach(test => {
-      const status = test.passed ? '✅' : '❌';
-      console.log(`${status} ${test.name}: ${test.score}/100 (${test.duration.toFixed(2)}ms)`);
-    });
-
-    // Generate recommendations
-    if (report.recommendations.length > 0) {
-      console.log('\n💡 Recommendations:');
-      report.recommendations.forEach(rec => {
-        console.log(`- ${rec.message}`);
-        console.log(`  Action: ${rec.action}`);
-        console.log(`  Priority: ${rec.priority.toUpperCase()}\n`);
-      });
+    const report = generateReport(lighthousePassed, bundlePassed);
+    
+    // Final summary
+    logSection('PERFORMANCE TEST SUMMARY');
+    if (report.overall.passed) {
+      logSuccess('🎉 All performance tests PASSED!');
+      logSuccess('Application meets production performance standards.');
+    } else {
+      logError('❌ Some performance tests FAILED!');
+      logError('Application needs optimization before production deployment.');
     }
-
-    // Save report if requested
-    if (generateReport) {
-      const reportDir = path.join(__dirname, '..', 'performance-reports');
-      if (!fs.existsSync(reportDir)) {
-        fs.mkdirSync(reportDir, { recursive: true });
-      }
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const jsonPath = path.join(reportDir, `performance-report-${timestamp}.json`);
-      const htmlPath = path.join(reportDir, `performance-report-${timestamp}.html`);
-
-      fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2));
-      fs.writeFileSync(htmlPath, generateHTMLReport(report));
-
-      console.log(`\n📄 Reports saved:`);
-      console.log(`JSON: ${jsonPath}`);
-      console.log(`HTML: ${htmlPath}`);
-    }
-
-    // Watch mode
+    
     if (watchMode) {
-      console.log('\n👀 Watching for changes... (Press Ctrl+C to stop)');
-      // In a real implementation, you would watch for file changes
-      // and re-run tests automatically
+      logInfo('Watch mode enabled. Monitoring for changes...');
+      // In a real implementation, you would set up file watchers here
     }
-
-    // Exit with appropriate code
-    process.exit(results.summary.failed > 0 ? 1 : 0);
-
+    
   } catch (error) {
-    console.error('❌ Error running performance tests:', error.message);
+    logError('Performance testing failed:');
+    log(error.message, 'red');
     process.exit(1);
   }
 }
@@ -324,4 +335,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { main, generatePerformanceReport, generateHTMLReport };
+module.exports = { main, analyzeBundleSize, runLighthouseCI };

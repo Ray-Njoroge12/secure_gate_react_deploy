@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Brand Colors
+        // Brand Colors (Primary)
         brand: {
           50: '#ecfdf5',
           100: '#d1fae5',
@@ -34,7 +34,7 @@ module.exports = {
           900: '#064e3b',
         },
         
-        // Secondary Colors (alias for slate)
+        // Secondary Colors (Neutral)
         secondary: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -48,7 +48,7 @@ module.exports = {
           900: '#0f172a',
         },
         
-        // Neutral Colors
+        // Neutral Colors (Slate)
         slate: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -62,7 +62,7 @@ module.exports = {
           900: '#0f172a',
         },
         
-        // Accent Colors
+        // Accent Colors (Blue)
         accent: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -107,6 +107,40 @@ module.exports = {
           500: '#3b82f6',
           600: '#2563eb',
           700: '#1d4ed8',
+        },
+        
+        // Application-specific color mappings
+        background: {
+          primary: '#0f172a',    // Main app background
+          secondary: '#1e293b',  // Panel/card backgrounds
+          tertiary: '#334155',   // Elevated surfaces
+          inverse: '#f8fafc',    // Light backgrounds
+        },
+        
+        text: {
+          primary: '#f8fafc',    // Primary text
+          secondary: '#cbd5e1',  // Secondary text
+          tertiary: '#94a3b8',   // Tertiary text
+          inverse: '#0f172a',    // Text on light backgrounds
+          muted: '#64748b',      // Muted text
+          disabled: '#475569',   // Disabled text
+        },
+        
+        border: {
+          primary: '#334155',    // Primary borders
+          secondary: '#475569',  // Secondary borders
+          focus: '#10b981',      // Focus borders
+          error: '#ef4444',      // Error borders
+          success: '#10b981',    // Success borders
+        },
+        
+        // Status colors
+        status: {
+          online: '#10b981',
+          offline: '#64748b',
+          pending: '#f59e0b',
+          error: '#ef4444',
+          info: '#3b82f6',
         },
       },
       
@@ -282,9 +316,110 @@ module.exports = {
         '.border-line': {
           'border-color': '#334155',
         },
+        // Design System Utilities
+        '.bg-app': {
+          'background-color': 'var(--color-background-primary)',
+        },
+        '.bg-panel': {
+          'background-color': 'var(--color-background-secondary)',
+        },
+        '.bg-elevated': {
+          'background-color': 'var(--color-background-tertiary)',
+        },
+        '.text-app': {
+          'color': 'var(--color-text-primary)',
+        },
+        '.text-muted': {
+          'color': 'var(--color-text-muted)',
+        },
+        '.text-disabled': {
+          'color': 'var(--color-text-disabled)',
+        },
+        '.border-app': {
+          'border-color': 'var(--color-border-primary)',
+        },
+        '.border-focus': {
+          'border-color': 'var(--color-border-focus)',
+        },
+        '.focus-ring': {
+          'outline': '2px solid var(--color-border-focus)',
+          'outline-offset': '2px',
+        },
+        '.touch-target': {
+          'min-height': '44px',
+          'min-width': '44px',
+        },
+        '.text-balance': {
+          'text-wrap': 'balance',
+        },
+        '.scrollbar-hide': {
+          '-ms-overflow-style': 'none',
+          'scrollbar-width': 'none',
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        },
+        '.shadow-brand': {
+          'box-shadow': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        },
+        '.rounded-smooth': {
+          'border-radius': '8px',
+        },
+        // Status utilities
+        '.status-online': {
+          'color': 'var(--color-status-online)',
+        },
+        '.status-offline': {
+          'color': 'var(--color-status-offline)',
+        },
+        '.status-pending': {
+          'color': 'var(--color-status-pending)',
+        },
+        '.status-error': {
+          'color': 'var(--color-status-error)',
+        },
+        '.status-info': {
+          'color': 'var(--color-status-info)',
+        },
+        // Animation utilities
+        '.animate-fade-in': {
+          'animation': 'fadeIn 200ms ease-out',
+        },
+        '.animate-slide-in': {
+          'animation': 'slideIn 200ms ease-out',
+        },
+        '.animate-scale-in': {
+          'animation': 'scaleIn 150ms ease-out',
+        },
+        // Layout utilities
+        '.container-app': {
+          'max-width': '1200px',
+          'margin': '0 auto',
+          'padding': '0 16px',
+        },
+        '.grid-responsive': {
+          'display': 'grid',
+          'grid-template-columns': 'repeat(auto-fit, minmax(300px, 1fr))',
+          'gap': '16px',
+        },
       };
       
       addUtilities(newUtilities);
     },
   ],
+  // Add keyframes for animations
+  keyframes: {
+    fadeIn: {
+      '0%': { opacity: '0' },
+      '100%': { opacity: '1' },
+    },
+    slideIn: {
+      '0%': { transform: 'translateY(-10px)', opacity: '0' },
+      '100%': { transform: 'translateY(0)', opacity: '1' },
+    },
+    scaleIn: {
+      '0%': { transform: 'scale(0.95)', opacity: '0' },
+      '100%': { transform: 'scale(1)', opacity: '1' },
+    },
+  },
 };

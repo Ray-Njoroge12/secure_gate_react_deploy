@@ -18,12 +18,17 @@
   },
   "dependencies": {
     "axios": "^1.11.0",
+    "es6-promise": "^4.2.8",
+    "intersection-observer": "^0.12.2",
     "lucide-react": "^0.544.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-qr-code": "^2.0.18",
     "react-router-dom": "^6.28.0",
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "resize-observer-polyfill": "^1.5.1",
+    "url-polyfill": "^1.1.14",
+    "whatwg-fetch": "^3.6.20"
   },
   "overrides": {
     "@svgr/plugin-svgo": "^8.1.0",
@@ -35,9 +40,18 @@
   "proxy": "http://localhost:5000",
   "browserslist": {
     "production": [
-      ">0.2%",
+      "> 1%",
+      "last 2 versions",
       "not dead",
-      "not op_mini all"
+      "Chrome >= 60",
+      "Firefox >= 60",
+      "Safari >= 12",
+      "Edge >= 79",
+      "iOS >= 12",
+      "Android >= 8",
+      "not IE 11",
+      "not IE_Mob 11",
+      "not OperaMini all"
     ],
     "development": [
       "last 1 chrome version",
@@ -45,8 +59,27 @@
       "last 1 safari version"
     ]
   },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/**/*.test.{js,jsx}",
+      "!src/index.js",
+      "!src/reportWebVitals.js",
+      "!src/scripts/**/*"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 70,
+        "branches": 65,
+        "functions": 70,
+        "lines": 70
+      }
+    }
+  },
   "devDependencies": {
+    "@axe-core/react": "^4.10.2",
     "@craco/craco": "^5.9.0",
+    "@lhci/cli": "^0.15.1",
     "@tailwindcss/postcss": "^4.1.12",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.8.0",
@@ -54,9 +87,10 @@
     "@testing-library/user-event": "^14.6.1",
     "autoprefixer": "^10.4.21",
     "cross-env": "^10.0.0",
+    "jest-axe": "^10.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "web-vitals": "^3.5.0"
+    "web-vitals": "^3.5.0",
+    "webpack-bundle-analyzer": "^4.10.2"
   }
 }

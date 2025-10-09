@@ -1,7 +1,7 @@
 // FormField component with integrated validation
 import React, { memo, useCallback } from 'react';
 import ValidatedInput from './ValidatedInput';
-import { FIELD_VALIDATORS } from '../../utils/validationRules';
+import { validationFunctions } from '../../utils/validationRules';
 
 const FormField = memo(({
   name,
@@ -23,11 +23,11 @@ const FormField = memo(({
   // Get validator for this field
   const getValidator = useCallback(() => {
     if (customValidator) return customValidator;
-    if (validationType && FIELD_VALIDATORS[validationType]) {
-      return FIELD_VALIDATORS[validationType];
+    if (validationType && validationFunctions[validationType]) {
+      return validationFunctions[validationType];
     }
-    if (required) return FIELD_VALIDATORS.required;
-    return FIELD_VALIDATORS.optional;
+    if (required) return validationFunctions.required;
+    return null; // No validation for optional fields
   }, [customValidator, validationType, required]);
 
   // Handle field change

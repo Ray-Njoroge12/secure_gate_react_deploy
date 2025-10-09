@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import logger from 'utils/logger';
 import PropTypes from 'prop-types';
 import './ErrorBoundary.css';
 
@@ -32,7 +33,7 @@ class ErrorBoundary extends Component {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
+      logger.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
     // Send error to logging service
@@ -111,7 +112,7 @@ class ErrorBoundary extends Component {
         body: JSON.stringify(errorData)
       });
     } catch (logError) {
-      console.error('Failed to log error:', logError);
+      logger.error('Failed to log error:', logError);
     }
   };
 

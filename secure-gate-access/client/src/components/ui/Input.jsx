@@ -4,6 +4,8 @@ import React, { memo, useEffect, useRef } from 'react';
 const Input = memo(({ 
   label,
   error,
+  success,
+  warning,
   helperText,
   icon,
   required = false,
@@ -39,13 +41,17 @@ const Input = memo(({
     }
   }, []);
   const inputClasses = `
-    w-full min-h-[44px] px-3 sm:px-4 py-2 sm:py-3 bg-slate-800 border rounded-lg 
+    w-full min-h-[44px] sm:min-h-[48px] px-3 sm:px-4 py-2 sm:py-3 bg-slate-800 border rounded-lg 
     text-sm sm:text-base text-slate-200 placeholder-slate-400 
     transition-colors duration-200
     focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
     disabled:opacity-50 disabled:cursor-not-allowed
     ${error 
-      ? 'border-error-500 focus:ring-error-500' 
+      ? 'border-red-500 focus:ring-red-500' 
+      : success
+      ? 'border-green-500 focus:ring-green-500'
+      : warning
+      ? 'border-yellow-500 focus:ring-yellow-500'
       : 'border-slate-600 hover:border-slate-500'
     }
     ${className}

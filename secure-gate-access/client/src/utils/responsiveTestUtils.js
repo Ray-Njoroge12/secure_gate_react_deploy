@@ -1,5 +1,6 @@
 // client/src/utils/responsiveTestUtils.js
 import React, { useState, useEffect } from 'react';
+import logger from './logger';
 import { useScreenSize, useCurrentBreakpoint, BREAKPOINTS } from './responsive';
 
 // Component to test responsive behavior
@@ -139,7 +140,7 @@ export function viewportSizeTest(testCase) {
   const { width, height } = RESPONSIVE_TEST_CASES[testCase];
   
   // This won't actually resize the window, but can be used for testing
-  console.log(`Testing at ${width}x${height} (${RESPONSIVE_TEST_CASES[testCase].name})`);
+  logger.debug(`Testing at ${width}x${height} (${RESPONSIVE_TEST_CASES[testCase].name})`);
   
   return { width, height };
 }

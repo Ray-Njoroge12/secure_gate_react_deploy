@@ -5,7 +5,7 @@ import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } fro
 import { useError } from "../contexts/ErrorContext.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
-import logger from '../utils/logger';
+import logger from 'utils/logger';
 
 export default function RegistrationPage() {
   const navigate = useNavigate();

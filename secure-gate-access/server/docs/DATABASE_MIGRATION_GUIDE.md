@@ -371,3 +371,7 @@ SELECT * FROM system_health ORDER BY last_check DESC;
 The database migration system provides a robust, reliable, and maintainable way to manage database schema changes in the Secure Gate Access Control System. By following the guidelines and best practices outlined in this guide, you can ensure smooth database evolution while maintaining data integrity and system reliability.
 
 For questions or issues, refer to the main project documentation or contact the development team.
+
+
+
+

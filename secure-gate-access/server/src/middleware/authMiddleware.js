@@ -125,4 +125,19 @@ export async function attachUserFromToken(req, res, next) {
 
 // Export 'protect' as an alias for authenticateToken for compatibility
 export { authenticateToken as protect };
+
+// Additional aliases for consistency
+export { authenticateToken as authenticate };
+export const authorize = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');
+    }
+    if (roles && !roles.includes(req.user.role)) {
+      throw new AppError('Insufficient permissions', 403, 'AUTH_FORBIDDEN');
+    }
+    next();
+  };
+};
+
 export default authenticateToken;

@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import logger from 'utils/logger';
 import { Card, Button } from './ui';
 
 const QRScanner = ({ onScan, onError, onClose }) => {
@@ -97,7 +98,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
       // Start scanning loop
       scanLoop();
     } catch (err) {
-      console.error('Error accessing camera:', err);
+      logger.error('Error accessing camera:', err);
       setError(err.message);
       setIsScanning(false);
       onError?.(err.message);

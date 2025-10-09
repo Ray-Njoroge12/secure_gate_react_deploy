@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import logger from 'utils/logger';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Checkbox } from './ui/checkbox';
@@ -39,7 +40,7 @@ const CookieConsentBanner = () => {
         const parsedConsent = JSON.parse(savedConsent);
         setConsent(parsedConsent);
       } catch (error) {
-        console.error('Failed to parse saved consent:', error);
+        logger.error('Failed to parse saved consent:', error);
         setShowBanner(true);
       }
     }
@@ -97,7 +98,7 @@ const CookieConsentBanner = () => {
             })
           });
         } catch (error) {
-          console.error('Failed to save consent to backend:', error);
+          logger.error('Failed to save consent to backend:', error);
         }
       }
       
@@ -110,7 +111,7 @@ const CookieConsentBanner = () => {
       }));
       
     } catch (error) {
-      console.error('Failed to save consent:', error);
+      logger.error('Failed to save consent:', error);
     } finally {
       setLoading(false);
     }

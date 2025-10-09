@@ -1,9 +1,13 @@
 // client/src/pages/resident/AddVisitor.jsx
 import React, { useState, useEffect } from "react";
+import logger from 'utils/logger';
 import { useNavigate } from "react-router-dom";
 import { createVisitor, createPass } from "../../services/visitorService";
-import { handleApiError } from "../../utils/errorMapper";
-import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay } from "../../components/ui";
+import { useError } from "../../contexts/ErrorContext";
+import { useLoading } from "../../contexts/LoadingContext";
+import { Button, Input, Card, Badge, ValidatedForm } from "../../components/ui";
+import ValidatedInput from "../../components/ui/ValidatedInput";
+import { commonRules } from "../../utils/validationRules";
 import { 
   User, 
   Phone, 
@@ -19,6 +23,9 @@ import {
 
 const AddVisitor = () => {
   const navigate = useNavigate();
+  const { handleError, handleSuccess, handleApiError, handleValidationError, clearAllErrors } = useError();
+  const { setLoading, isLoading } = useLoading();
+  
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -35,7 +42,7 @@ const AddVisitor = () => {
       // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (!loading) {
+        if (!isLoading('addVisitor')) {
           handleSubmit(e);
         }
       }
@@ -44,14 +51,16 @@ const AddVisitor = () => {
         e.preventDefault();
         resetForm();
       }
+      // Escape to clear errors
+      if (e.key === 'Escape') {
+        clearAllErrors();
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loading]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(null);
+  }, [isLoading, clearAllErrors]);
+  
   const [validationErrors, setValidationErrors] = useState({});
 
   const validateForm = () => {
@@ -98,13 +107,12 @@ const AddVisitor = () => {
     e.preventDefault();
     
     if (!validateForm()) {
-      setError("Please fix the validation errors below");
+      handleValidationError(validationErrors, 'Add Visitor Form');
       return;
     }
 
-    setLoading(true);
-    setError("");
-    setSuccess(null);
+    setLoading('addVisitor', true, { message: 'Creating visitor...' });
+    clearAllErrors();
 
     try {
       // Create visitor
@@ -118,11 +126,11 @@ const AddVisitor = () => {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('[DEBUG] Sending visitor data:', visitorData);
+        logger.debug('[DEBUG] Sending visitor data:', visitorData);
       }
       const visitorResponse = await createVisitor(visitorData);
       if (process.env.NODE_ENV === 'development') {
-        console.log('[DEBUG] Visitor response:', visitorResponse);
+        logger.debug('[DEBUG] Visitor response:', visitorResponse);
       }
       
       let passResponse = null;
@@ -131,13 +139,13 @@ const AddVisitor = () => {
           passResponse = await createPass(visitorResponse.id);
         } catch (passError) {
           if (process.env.NODE_ENV === 'development') {
-            console.warn('[WARN] Pass generation failed:', passError);
+            logger.warn('[WARN] Pass generation failed:', passError);
           }
         }
       }
 
-      setSuccess({
-        message: 'Visitor created successfully!',
+      handleSuccess('Visitor created successfully!', {
+        context: 'Add Visitor',
         data: {
           visitor: visitorResponse,
           pass: passResponse,
@@ -156,20 +164,19 @@ const AddVisitor = () => {
           purpose: "",
           generatePassImmediately: true,
         });
-        setSuccess(null);
-      }, 5000);
+        setValidationErrors({});
+      }, 2000);
 
     } catch (err) {
-      console.error('Visitor creation error:', err);
-      console.error('Error details:', {
+      logger.error('Visitor creation error:', err);
+      logger.error('Error details:', {
         message: err.message,
         status: err.status,
         response: err.response
       });
-      const errorMessage = handleApiError(err, 'Visitor creation');
-      setError(errorMessage);
+      handleApiError(err, 'Add Visitor');
     } finally {
-      setLoading(false);
+      setLoading('addVisitor', false);
     }
   };
 
@@ -192,8 +199,7 @@ const AddVisitor = () => {
       purpose: "",
       generatePassImmediately: true,
     });
-    setError("");
-    setSuccess(null);
+    clearAllErrors();
     setValidationErrors({});
   };
 
@@ -205,7 +211,8 @@ const AddVisitor = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/dashboard/resident')}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Go back to resident dashboard"
             >
               <ArrowLeft className="w-5 h-5 text-slate-300" />
             </button>
@@ -230,40 +237,43 @@ const AddVisitor = () => {
                 </h3>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
+                  <ValidatedInput
+                    name="name"
                     label="Full Name"
                     placeholder="Enter visitor's full name"
                     value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    disabled={loading}
+                    onChange={(value) => handleInputChange('name', value)}
+                    disabled={isLoading('addVisitor')}
                     required
-                    error={validationErrors.name}
+                    validationRules={[commonRules.requiredName]}
                     icon={<User className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                   />
 
-                  <Input
+                  <ValidatedInput
+                    name="phone"
                     label="Phone Number"
                     placeholder="0xxxxxxxxx"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    disabled={loading}
+                    onChange={(value) => handleInputChange('phone', value)}
+                    disabled={isLoading('addVisitor')}
                     required
-                    error={validationErrors.phone}
-                    helperText="Format: 0xxxxxxxxx (10 digits)"
+                    validationRules={[commonRules.requiredPhone]}
+                    helpText="Format: 0xxxxxxxxx (10 digits)"
                     icon={<Phone className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                   />
                 </div>
 
-                <Input
+                <ValidatedInput
+                  name="email"
                   label="Email Address"
                   type="email"
                   placeholder="visitor@example.com (optional)"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  disabled={loading}
-                  error={validationErrors.email}
+                  onChange={(value) => handleInputChange('email', value)}
+                  disabled={isLoading('addVisitor')}
+                  validationRules={[commonRules.emailFormat]}
                   icon={<Mail className="w-4 h-4" />}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                 />
@@ -277,39 +287,42 @@ const AddVisitor = () => {
                 </h3>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
+                  <ValidatedInput
+                    name="dateOfVisit"
                     label="Date of Visit"
                     type="date"
                     value={formData.dateOfVisit}
-                    onChange={(e) => handleInputChange('dateOfVisit', e.target.value)}
-                    disabled={loading}
+                    onChange={(value) => handleInputChange('dateOfVisit', value)}
+                    disabled={isLoading('addVisitor')}
                     required
-                    error={validationErrors.dateOfVisit}
+                    validationRules={[commonRules.requiredDate]}
                     icon={<Calendar className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white"
                   />
 
-                  <Input
+                  <ValidatedInput
+                    name="time"
                     label="Time of Visit"
                     type="time"
                     value={formData.time}
-                    onChange={(e) => handleInputChange('time', e.target.value)}
-                    disabled={loading}
+                    onChange={(value) => handleInputChange('time', value)}
+                    disabled={isLoading('addVisitor')}
                     required
-                    error={validationErrors.time}
+                    validationRules={[(value) => commonRules.requiredTime(value, formData.dateOfVisit)]}
                     icon={<Clock className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
 
-                <Input
+                <ValidatedInput
+                  name="purpose"
                   label="Purpose of Visit"
                   placeholder="e.g., visit, delivery, meeting, maintenance"
                   value={formData.purpose}
-                  onChange={(e) => handleInputChange('purpose', e.target.value)}
-                  disabled={loading}
+                  onChange={(value) => handleInputChange('purpose', value)}
+                  disabled={isLoading('addVisitor')}
                   required
-                  error={validationErrors.purpose}
+                  validationRules={[commonRules.requiredName]}
                   icon={<FileText className="w-4 h-4" />}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                 />
@@ -352,10 +365,10 @@ const AddVisitor = () => {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={isLoading('addVisitor')}
                   className="flex-1 sm:flex-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 min-h-[44px]"
                 >
-                  {loading ? (
+                  {isLoading('addVisitor') ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       Creating...
@@ -373,19 +386,7 @@ const AddVisitor = () => {
         </Card>
       </div>
 
-      {/* Error Display */}
-      <ErrorDisplay
-        error={error}
-        onClose={() => setError("")}
-        type="error"
-        title="Creation Failed"
-      />
-
-      {/* Success Display */}
-      <SuccessDisplay
-        success={success}
-        onClose={() => setSuccess(null)}
-      />
+      {/* Error and Success messages are now handled by ErrorContext */}
     </div>
   );
 };
