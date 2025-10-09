@@ -1,6 +1,0 @@
-{
-  "test_suite": "Authentication",
-  "timestamp": "2025-10-02T12:26:22Z",
-  "api_url": "http://localhost:5002/api",
-  "tests": []
-}

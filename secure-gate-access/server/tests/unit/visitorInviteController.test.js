@@ -43,7 +43,7 @@ const mockHandleNotFoundError = jest.fn();
 const mockHandleForbiddenError = jest.fn();
 
 // Setup module mocks
-jest.unstable_mockModule('../../../src/database/db.enhanced.js', () => ({
+jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
   dbManager: mockDbManager
 }));
 
