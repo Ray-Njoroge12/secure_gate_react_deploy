@@ -64,3 +64,11 @@ Thumbs.db
 # Cleanup artifacts
 .cleanup-backups/
 cleanup-log.json
+
+# Archive directories (created during cleanup)
+docs/archive/
+cleanup-analysis-*/
+
+# Temporary files
+*.tmp
+*.temp
