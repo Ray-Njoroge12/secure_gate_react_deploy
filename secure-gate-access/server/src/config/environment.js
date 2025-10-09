@@ -9,15 +9,24 @@
  * - Secret strength validation
  * - Secure defaults with warnings
  * - Runtime configuration validation
+ * - AWS Secrets Manager integration for production
  */
 
 import crypto from 'crypto';
+import { SecretsManagerService } from '../services/secretsManagerService.js';
 
 class EnvironmentConfig {
   constructor() {
     this.isProduction = process.env.NODE_ENV === 'production';
     this.isDevelopment = process.env.NODE_ENV === 'development';
     this.isTest = process.env.NODE_ENV === 'test';
+
+    // Initialize secrets manager for production
+    this.secretsManager = this.isProduction && !this.isTest 
+      ? new SecretsManagerService() 
+      : null;
+    
+    this.secretsLoaded = false;
 
     this.requiredSecrets = [
       'JWT_SECRET',
@@ -35,11 +44,66 @@ class EnvironmentConfig {
     this.validationErrors = [];
     this.warnings = [];
 
-    this.validateEnvironment();
+    // Load secrets from AWS Secrets Manager in production
+    this.loadSecrets()
+      .then(() => {
+        // Validate environment after loading secrets
+        this.validateEnvironment();
+      })
+      .catch(err => {
+        console.error('❌ Failed to load secrets:', err);
+        process.exit(1);
+      });
+  }
+
+  /**
+   * Load secrets from AWS Secrets Manager in production
+   * @returns {Promise<void>}
+   */
+  async loadSecrets() {
+    if (!this.secretsManager || this.secretsLoaded) {
+      this.secretsLoaded = true;
+      return;
+    }
+
+    try {
+      console.log('🔐 Loading secrets from AWS Secrets Manager...');
+      
+      const secretNames = [
+        'secure-gate/jwt-secret',
+        'secure-gate/jwt-refresh-secret',
+        'secure-gate/session-secret',
+        'secure-gate/database-password'
+      ];
+
+      const secrets = await this.secretsManager.getSecrets(secretNames);
+      
+      // Override environment variables with secrets from AWS
+      if (secrets['secure-gate/jwt-secret']) {
+        process.env.JWT_SECRET = secrets['secure-gate/jwt-secret'];
+      }
+      if (secrets['secure-gate/jwt-refresh-secret']) {
+        process.env.JWT_REFRESH_SECRET = secrets['secure-gate/jwt-refresh-secret'];
+      }
+      if (secrets['secure-gate/session-secret']) {
+        process.env.SESSION_SECRET = secrets['secure-gate/session-secret'];
+      }
+      if (secrets['secure-gate/database-password']) {
+        process.env.PGPASSWORD = secrets['secure-gate/database-password'];
+      }
+
+      console.log('✅ Secrets loaded successfully from AWS');
+      this.secretsLoaded = true;
+    } catch (error) {
+      console.warn('⚠️  Failed to load secrets from AWS, falling back to environment variables');
+      console.warn(`   Error: ${error.message}`);
+      this.secretsLoaded = true; // Mark as loaded to prevent retries
+    }
   }
 
   /**
    * Validate all environment variables and secrets
+   * Should be called after loadSecrets() in production
    */
   validateEnvironment() {
     console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -323,17 +387,31 @@ class EnvironmentConfig {
 
   /**
    * Validate startup requirements and log configuration status
+   * @param {boolean} loadAwsSecrets - Whether to load secrets from AWS (production only)
+   * @returns {Promise<Object>}
    */
-  static validateAndReport() {
+  static async validateAndReport(loadAwsSecrets = true) {
     const config = new EnvironmentConfig();
+    
+    // Load secrets from AWS in production
+    if (loadAwsSecrets && config.secretsManager) {
+      await config.loadSecrets();
+    }
+    
+    // Validate environment after secrets are loaded
+    config.validateEnvironment();
+    
     return {
       isValid: config.validationErrors.length === 0,
       database: config.getDatabaseConfig(),
       security: config.getSecurityConfig(),
       errors: config.validationErrors,
-      warnings: config.warnings
+      warnings: config.warnings,
+      secretsLoaded: config.secretsLoaded
     };
   }
 }
+
+export default EnvironmentConfig;
 
 export default EnvironmentConfig;

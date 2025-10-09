@@ -1,277 +1,303 @@
-// client/src/utils/performanceOptimization.js
-import React, { lazy, memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import React, { memo, useMemo, useCallback, useRef, useEffect } from 'react';
 
-// Lazy-loaded components for code splitting
-export const LazyGuardDashboard = lazy(() => 
-  import('../pages/guard/GuardDashboard.jsx')
-);
+import logger from './logger';
+// Higher-order component for performance optimization
+export const withPerformanceOptimization = (WrappedComponent, options = {}) => {
+  const {
+    enableMemo = true,
+    enableCallback = true,
+    enableRef = true,
+    trackRenders = false,
+    logPerformance = false
+  } = options;
 
-export const LazyResidentDashboard = lazy(() => 
-  import('../pages/Dashboard.js')
-);
+  const OptimizedComponent = memo((props) => {
+    const renderCount = useRef(0);
+    const lastRenderTime = useRef(performance.now());
 
-export const LazyReports = lazy(() => 
-  import('../pages/Reports.js')
-);
-
-export const LazyVisitorHistory = lazy(() => 
-  import('../pages/guard/VisitorHistory.jsx')
-);
-
-export const LazySettings = lazy(() => 
-  import('../pages/guard/Settings.jsx')
-);
-
-export const LazyBulkInvite = lazy(() => 
-  import('../pages/ResidentInvites.jsx')
-);
-
-// Performance monitoring utilities
-export class PerformanceMonitor {
-  constructor() {
-    this.metrics = new Map();
-    this.observers = [];
-  }
-
-  // Measure component render time
-  measureRender(componentName, renderFn) {
-    const start = performance.now();
-    const result = renderFn();
-    const end = performance.now();
-    
-    this.recordMetric('render', componentName, end - start);
-    return result;
-  }
-
-  // Measure async operations
-  async measureAsync(operationName, asyncFn) {
-    const start = performance.now();
-    try {
-      const result = await asyncFn();
-      const end = performance.now();
-      this.recordMetric('async', operationName, end - start);
-      return result;
-    } catch (error) {
-      const end = performance.now();
-      this.recordMetric('async_error', operationName, end - start);
-      throw error;
-    }
-  }
-
-  // Record performance metric
-  recordMetric(type, name, duration) {
-    const key = `${type}_${name}`;
-    if (!this.metrics.has(key)) {
-      this.metrics.set(key, []);
-    }
-    this.metrics.get(key).push({
-      duration,
-      timestamp: Date.now()
+    // Track renders
+    useEffect(() => {
+      if (trackRenders) {
+        renderCount.current += 1;
+        const now = performance.now();
+        const renderTime = now - lastRenderTime.current;
+        
+        if (logPerformance) {
+          logger.debug(`[PERF] ${WrappedComponent.displayName || WrappedComponent.name} render #${renderCount.current} in ${renderTime.toFixed(2)}ms`);
+        }
+        
+        lastRenderTime.current = now;
+      }
     });
 
-    // Keep only last 100 measurements
-    const measurements = this.metrics.get(key);
-    if (measurements.length > 100) {
-      measurements.splice(0, measurements.length - 100);
-    }
-  }
+    return <WrappedComponent {...props} />;
+  });
 
-  // Get performance statistics
-  getStats(type, name) {
-    const key = `${type}_${name}`;
-    const measurements = this.metrics.get(key) || [];
-    
-    if (measurements.length === 0) return null;
-
-    const durations = measurements.map(m => m.duration);
-    const avg = durations.reduce((sum, d) => sum + d, 0) / durations.length;
-    const min = Math.min(...durations);
-    const max = Math.max(...durations);
-    
-    return {
-      count: durations.length,
-      average: avg,
-      min,
-      max,
-      latest: durations[durations.length - 1]
-    };
-  }
-
-  // Get all metrics
-  getAllStats() {
-    const stats = {};
-    for (const [key] of this.metrics) {
-      const [type, name] = key.split('_');
-      stats[key] = this.getStats(type, name);
-    }
-    return stats;
-  }
-}
-
-// Global performance monitor instance
-export const performanceMonitor = new PerformanceMonitor();
-
-// High-order component for performance measurement
-export function withPerformanceMonitoring(WrappedComponent, componentName) {
-  const MemoizedComponent = memo(WrappedComponent);
+  OptimizedComponent.displayName = `withPerformanceOptimization(${WrappedComponent.displayName || WrappedComponent.name})`;
   
-  return function PerformanceMonitoredComponent(props) {
-    return performanceMonitor.measureRender(
-      componentName, 
-      () => <MemoizedComponent {...props} />
-    );
-  };
-}
+  return OptimizedComponent;
+};
 
-// Hook for expensive computations with memoization
-export function useExpensiveComputation(computeFn, dependencies, name = 'computation') {
-  return useMemo(() => {
-    return performanceMonitor.measureRender(name, computeFn);
-  }, dependencies);
-}
+// Hook for optimizing expensive calculations
+export const useOptimizedValue = (factory, deps) => {
+  return useMemo(factory, deps);
+};
 
-// Hook for optimized event handlers
-export function useOptimizedCallbacks(handlers) {
-  const stableCallbacks = {};
-  
-  for (const [key, handler] of Object.entries(handlers)) {
-    stableCallbacks[key] = useCallback(handler, []);
-  }
-  
-  return stableCallbacks;
-}
+// Hook for optimizing event handlers
+export const useOptimizedCallback = (callback, deps) => {
+  return useCallback(callback, deps);
+};
 
-// Image lazy loading hook
-export function useLazyImage(src, options = {}) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const imgRef = useRef(null);
+// Hook for optimizing refs
+export const useOptimizedRef = (initialValue) => {
+  return useRef(initialValue);
+};
+
+// Hook for debouncing values
+export const useDebouncedValue = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = React.useState(value);
 
   useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+// Hook for throttling values
+export const useThrottledValue = (value, delay) => {
+  const [throttledValue, setThrottledValue] = React.useState(value);
+  const lastUpdateTime = useRef(0);
+
+  useEffect(() => {
+    const now = performance.now();
+    
+    if (now - lastUpdateTime.current >= delay) {
+      setThrottledValue(value);
+      lastUpdateTime.current = now;
+    }
+  }, [value, delay]);
+
+  return throttledValue;
+};
+
+// Hook for intersection observer (lazy loading)
+export const useIntersectionObserver = (options = {}) => {
+  const {
+    threshold = 0.1,
+    rootMargin = '0px',
+    triggerOnce = true
+  } = options;
+
+  const [isIntersecting, setIsIntersecting] = React.useState(false);
+  const [hasIntersected, setHasIntersected] = React.useState(false);
+  const elementRef = useRef(null);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-          observer.disconnect();
+        const isElementIntersecting = entry.isIntersecting;
+        setIsIntersecting(isElementIntersecting);
+        
+        if (isElementIntersecting && !hasIntersected) {
+          setHasIntersected(true);
         }
       },
-      { threshold: options.threshold || 0.1 }
+      { threshold, rootMargin }
     );
 
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
+    observer.observe(element);
 
-    return () => observer.disconnect();
-  }, [options.threshold]);
+    return () => {
+      observer.unobserve(element);
+    };
+  }, [threshold, rootMargin, hasIntersected]);
 
-  const imgProps = {
-    ref: imgRef,
-    src: isInView ? src : undefined,
-    onLoad: () => setIsLoaded(true),
-    style: {
-      opacity: isLoaded ? 1 : 0,
-      transition: 'opacity 0.3s ease-in-out',
-      ...options.style
-    }
-  };
+  return { elementRef, isIntersecting, hasIntersected };
+};
 
-  return { imgProps, isLoaded, isInView };
-}
+// Hook for virtual scrolling
+export const useVirtualScrolling = (items, itemHeight, containerHeight, overscan = 5) => {
+  const [scrollTop, setScrollTop] = React.useState(0);
 
-// Virtual scrolling for large lists
-export function useVirtualScrolling(items, itemHeight, containerHeight) {
-  const [startIndex, setStartIndex] = useState(0);
-  const [endIndex, setEndIndex] = useState(0);
-  
-  const visibleCount = Math.ceil(containerHeight / itemHeight) + 2; // Buffer
+  const visibleStart = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const visibleEnd = Math.min(
+    items.length - 1,
+    Math.ceil((scrollTop + containerHeight) / itemHeight) + overscan
+  );
 
-  useEffect(() => {
-    setEndIndex(Math.min(startIndex + visibleCount, items.length));
-  }, [startIndex, visibleCount, items.length]);
-
-  const handleScroll = useCallback((scrollTop) => {
-    const newStartIndex = Math.floor(scrollTop / itemHeight);
-    setStartIndex(Math.max(0, newStartIndex));
-  }, [itemHeight]);
-
-  const visibleItems = items.slice(startIndex, endIndex);
+  const visibleItems = items.slice(visibleStart, visibleEnd + 1);
   const totalHeight = items.length * itemHeight;
-  const offsetY = startIndex * itemHeight;
+  const offsetY = visibleStart * itemHeight;
+
+  const handleScroll = useCallback((e) => {
+    setScrollTop(e.target.scrollTop);
+  }, []);
 
   return {
     visibleItems,
     totalHeight,
     offsetY,
-    handleScroll
+    handleScroll,
+    visibleStart,
+    visibleEnd
   };
-}
+};
 
-// Bundle size monitoring
-export function getBundleAnalytics() {
-  const resourceTiming = performance.getEntriesByType('resource');
-  
-  const jsFiles = resourceTiming.filter(entry => 
-    entry.name.includes('.js') && !entry.name.includes('hot-update')
-  );
-  
-  const cssFiles = resourceTiming.filter(entry => 
-    entry.name.includes('.css')
-  );
-  
-  const totalJSSize = jsFiles.reduce((sum, file) => sum + (file.transferSize || 0), 0);
-  const totalCSSSize = cssFiles.reduce((sum, file) => sum + (file.transferSize || 0), 0);
-  
-  return {
-    jsFiles: jsFiles.length,
-    cssFiles: cssFiles.length,
-    totalJSSize: Math.round(totalJSSize / 1024), // KB
-    totalCSSSize: Math.round(totalCSSSize / 1024), // KB
-    totalSize: Math.round((totalJSSize + totalCSSSize) / 1024), // KB
-    resourceTiming
-  };
-}
+// Hook for image lazy loading
+export const useLazyImage = (src, options = {}) => {
+  const {
+    placeholder = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8vPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZTwvdGV4dD48L3N2Zz4=',
+    fallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWY0NDQ0Ii8vPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+RXJyb3I8L3RleHQ+PC9zdmc+'
+  } = options;
 
-// Memory usage monitoring
-export function getMemoryUsage() {
-  if (performance.memory) {
-    return {
-      used: Math.round(performance.memory.usedJSHeapSize / 1048576), // MB
-      total: Math.round(performance.memory.totalJSHeapSize / 1048576), // MB
-      limit: Math.round(performance.memory.jsHeapSizeLimit / 1048576) // MB
-    };
-  }
-  return null;
-}
+  const [imageState, setImageState] = React.useState({
+    loading: true,
+    error: false,
+    loaded: false
+  });
 
-// React DevTools profiler integration
-export function ProfiledComponent({ id, children, onRender }) {
-  return (
-    <React.Profiler id={id} onRender={onRender}>
-      {children}
-    </React.Profiler>
-  );
-}
-
-// Performance debugging hook
-export function usePerformanceDebug(componentName, enabled = false) {
-  const renderCount = useRef(0);
-  const lastRenderTime = useRef(Date.now());
+  const { elementRef, isIntersecting } = useIntersectionObserver({
+    threshold: 0.1,
+    triggerOnce: true
+  });
 
   useEffect(() => {
-    if (enabled) {
+    if (!isIntersecting) return;
+
+    const img = new Image();
+    
+    img.onload = () => {
+      setImageState({
+        loading: false,
+        error: false,
+        loaded: true
+      });
+    };
+
+    img.onerror = () => {
+      setImageState({
+        loading: false,
+        error: true,
+        loaded: false
+      });
+    };
+
+    img.src = src;
+  }, [src, isIntersecting]);
+
+  return {
+    elementRef,
+    imageState,
+    imageSrc: imageState.error ? fallback : src,
+    placeholder
+  };
+};
+
+// Hook for performance monitoring
+export const usePerformanceMonitor = (componentName, options = {}) => {
+  const {
+    trackRenders = true,
+    trackProps = false,
+    logToConsole = false
+  } = options;
+
+  const renderCount = useRef(0);
+  const lastProps = useRef(null);
+  const performanceData = useRef({
+    componentName,
+    renderCount: 0,
+    propChanges: [],
+    lastRenderTime: null
+  });
+
+  // Track renders
+  useEffect(() => {
+    if (trackRenders) {
       renderCount.current += 1;
-      const now = Date.now();
-      const timeSinceLastRender = now - lastRenderTime.current;
-      
-      console.log(`[${componentName}] Render #${renderCount.current}, Time since last: ${timeSinceLastRender}ms`);
-      
-      lastRenderTime.current = now;
+      performanceData.current.renderCount = renderCount.current;
+      performanceData.current.lastRenderTime = performance.now();
+
+      if (logToConsole) {
+        logger.debug(`[PERF] ${componentName} render #${renderCount.current}`);
+      }
     }
   });
 
+  // Track prop changes
+  const trackPropsChanges = useCallback((props) => {
+    if (lastProps.current) {
+      const propChanges = Object.keys(props).filter(key => 
+        props[key] !== lastProps.current[key]
+      );
+
+      if (propChanges.length > 0) {
+        performanceData.current.propChanges.push({
+          render: renderCount.current,
+          changedProps: propChanges,
+          timestamp: performance.now()
+        });
+      }
+    }
+
+    lastProps.current = { ...props };
+  }, []);
+
   return {
     renderCount: renderCount.current,
-    timeSinceLastRender: Date.now() - lastRenderTime.current
+    performanceData: performanceData.current,
+    trackProps: trackPropsChanges
   };
-}
+};
+
+// Utility for creating optimized selectors
+export const createOptimizedSelector = (selector, equalityFn) => {
+  let lastResult;
+  let lastArgs;
+
+  return (...args) => {
+    if (lastArgs && args.length === lastArgs.length && args.every((arg, i) => arg === lastArgs[i])) {
+      return lastResult;
+    }
+
+    lastArgs = args;
+    lastResult = selector(...args);
+    return lastResult;
+  };
+};
+
+// Utility for creating optimized event handlers
+export const createOptimizedEventHandler = (handler, deps) => {
+  return useCallback(handler, deps);
+};
+
+// Utility for creating optimized refs
+export const createOptimizedRef = (initialValue) => {
+  return useRef(initialValue);
+};
+
+// Export all utilities
+export default {
+  withPerformanceOptimization,
+  useOptimizedValue,
+  useOptimizedCallback,
+  useOptimizedRef,
+  useDebouncedValue,
+  useThrottledValue,
+  useIntersectionObserver,
+  useVirtualScrolling,
+  useLazyImage,
+  usePerformanceMonitor,
+  createOptimizedSelector,
+  createOptimizedEventHandler,
+  createOptimizedRef
+};

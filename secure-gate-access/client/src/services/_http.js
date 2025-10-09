@@ -1,7 +1,7 @@
 // client/src/services/_http.js
 // Centralized HTTP utilities for all services
 
-import { validateResponse, mapErrorMessage } from '../utils/errorMapper.js';
+import { validateResponse, mapErrorMessage, mapStatusToMessage } from '../utils/errorMapper.js';
 import { API_ENDPOINTS } from '../constants/endpoints.js';
 
 /**

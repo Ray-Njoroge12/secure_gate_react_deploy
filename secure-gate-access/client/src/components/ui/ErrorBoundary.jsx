@@ -1,7 +1,7 @@
 // client/src/components/ui/ErrorBoundary.jsx
 import React from 'react';
 import { Card, Button } from './index';
-import logger from '../../utils/logger';
+import logger from 'utils/logger';
 import { reportError, reportUserAction } from '../../utils/errorReporting';
 import { handleError, getRecoveryActions, ERROR_TYPES } from '../../utils/errorHandler';
 
@@ -62,10 +62,10 @@ class ErrorBoundary extends React.Component {
       showToUser: true,
       logToConsole: true,
       reportToService: true
-    });
+    }) || { type: 'unknown', message: error.message };
 
     // Get recovery actions based on error type
-    const recoveryActions = getRecoveryActions(processedError.type, 'error_boundary');
+    const recoveryActions = getRecoveryActions(processedError.type, 'error_boundary') || [];
     
     this.setState({
       error,
@@ -315,7 +315,7 @@ class ErrorBoundary extends React.Component {
                 </Button>
                 
                 {/* Recovery actions based on error type */}
-                {recoveryActions.length > 0 && (
+                {recoveryActions && recoveryActions.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600 text-center">Or try:</p>
                     <div className="grid grid-cols-2 gap-2">

@@ -55,3 +55,7 @@ scrape_configs:
         - 'redis:6379'
     metrics_path: '/health'
     scrape_interval: 60s
+
+
+
+

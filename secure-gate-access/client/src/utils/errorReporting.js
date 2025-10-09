@@ -374,7 +374,7 @@ export async function reportError(errorInfo, context = {}) {
   const recentActions = errorReporter.getRecentActions();
   const enhancedContext = {
     ...context,
-    recentActions: recentActions.slice(-5) // Last 5 actions
+    recentActions: Array.isArray(recentActions) ? recentActions.slice(-5) : [] // Last 5 actions
   };
 
   await errorReporter.reportError(errorInfo, enhancedContext);
@@ -407,3 +407,5 @@ export function getErrorAnalytics() {
 }
 
 export default errorReporter;
+
+

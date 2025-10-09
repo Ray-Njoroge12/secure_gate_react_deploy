@@ -1,6 +1,7 @@
 // Custom hook for managing form wizard state and validation
 import { useState, useCallback, useRef } from 'react';
 
+import logger from 'utils/logger';
 export const useFormWizard = (initialSteps = [], options = {}) => {
   const {
     autoSave = false,
@@ -30,7 +31,7 @@ export const useFormWizard = (initialSteps = [], options = {}) => {
           setCompletedSteps(new Set(parsed.completedSteps || []));
           setCurrentStep(parsed.currentStep || 0);
         } catch (error) {
-          console.warn('Failed to load form wizard data from storage:', error);
+          logger.warn('Failed to load form wizard data from storage:', error);
         }
       }
     }
@@ -72,7 +73,7 @@ export const useFormWizard = (initialSteps = [], options = {}) => {
         localStorage.setItem(storageKey, JSON.stringify(dataToSave));
         setIsDirty(false);
       } catch (error) {
-        console.warn('Failed to save form wizard data to storage:', error);
+        logger.warn('Failed to save form wizard data to storage:', error);
       }
     }
   }, [stepData, completedSteps, currentStep, persistToStorage, storageKey]);
@@ -119,7 +120,7 @@ export const useFormWizard = (initialSteps = [], options = {}) => {
       
       return false;
     } catch (error) {
-      console.error('Step validation error:', error);
+      logger.error('Step validation error:', error);
       setErrors(prev => ({ 
         ...prev, 
         [stepIndex]: { general: 'Validation failed. Please try again.' }

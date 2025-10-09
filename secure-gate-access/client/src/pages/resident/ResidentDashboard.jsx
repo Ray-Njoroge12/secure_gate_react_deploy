@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import logger from 'utils/logger';
 import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../layouts/AppShell";
-import { Card, Button } from "../../components/ui";
+import { Card, Button, LoadingStates, Skeleton } from "../../components/ui";
 import PageHeader from "../../components/PageHeader";
+import { useLoadingState } from "../../hooks/useLoadingState";
 import AddVisitor from "./AddVisitor";
 import BulkInvite from "./BulkInvite";
 import VisitorHistory from "./VisitorHistory";
@@ -12,7 +14,7 @@ import Settings from "./Settings";
 const DashboardHome = () => {
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { loading, startLoading, stopLoading, setLoadingError } = useLoadingState();
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -56,14 +58,14 @@ const DashboardHome = () => {
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      startLoading({ message: 'Loading dashboard data...' });
       const token = localStorage.getItem('token');
       
       if (!token) {
         if (process.env.NODE_ENV === 'development') {
-          console.error('[AUTH] No authentication token found');
+          logger.error('[AUTH] No authentication token found');
         }
-        setLoading(false);
+        stopLoading();
         return;
       }
 
@@ -102,18 +104,17 @@ const DashboardHome = () => {
         setUpcomingInvites(upcoming);
         setRecentVisitors(recent);
       } else {
-        console.error('[ERROR] Failed to fetch visitor data:', response.status);
+        logger.error('[ERROR] Failed to fetch visitor data:', response.status);
         // Fallback to empty data
         setUpcomingInvites([]);
         setRecentVisitors([]);
       }
     } catch (error) {
-      console.error('[ERROR] Error fetching dashboard data:', error);
+      logger.error('[ERROR] Error fetching dashboard data:', error);
+      setLoadingError("Failed to load dashboard data. Please try again.");
       // Fallback to empty data
       setUpcomingInvites([]);
       setRecentVisitors([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -147,14 +148,7 @@ const DashboardHome = () => {
           </div>
           
           {loading ? (
-            <div className="space-y-3">
-              {[1, 2].map(i => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
+            <Skeleton.List items={2} showAvatar={false} />
           ) : upcomingInvites.length === 0 ? (
             <div className="text-center py-8">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -189,14 +183,7 @@ const DashboardHome = () => {
           <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Visitors</h2>
           
           {loading ? (
-            <div className="space-y-3">
-              {[1, 2].map(i => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-                </div>
-              ))}
-            </div>
+            <Skeleton.List items={2} showAvatar={false} />
           ) : recentVisitors.length === 0 ? (
             <div className="text-center py-8">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,5 +1,6 @@
 // AddVisitor Wizard - Multi-step form for adding visitors
 import React, { useState, useEffect } from "react";
+import logger from 'utils/logger';
 import { useNavigate } from "react-router-dom";
 import { createVisitor, createPass } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
@@ -119,7 +120,7 @@ const AddVisitorWizard = () => {
 
   const handleStepChange = (stepIndex, allStepData) => {
     // Optional: Handle step changes
-    console.log(`Moved to step ${stepIndex + 1}`, allStepData);
+    logger.debug(`Moved to step ${stepIndex + 1}`, allStepData);
   };
 
   const resetForm = () => {

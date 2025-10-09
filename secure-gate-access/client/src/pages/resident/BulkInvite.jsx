@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { bulkInvite } from "../../services/visitorService";
-import { handleApiError } from "../../utils/errorMapper";
-import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay } from "../../components/ui";
+import { useError } from "../../contexts/ErrorContext";
+import { useLoading } from "../../contexts/LoadingContext";
+import { Button, Input, Card, Badge } from "../../components/ui";
 import { 
   Users, 
   Calendar, 
@@ -18,6 +19,9 @@ import {
 
 const BulkInvite = () => {
   const navigate = useNavigate();
+  const { handleError, handleSuccess, handleApiError, handleValidationError, clearAllErrors } = useError();
+  const { setLoading, isLoading } = useLoading();
+  
   const [formData, setFormData] = useState({
     eventName: "",
     date: "",
@@ -31,7 +35,7 @@ const BulkInvite = () => {
       // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (!loading) {
+        if (!isLoading('bulkInvite')) {
           handleSubmit(e);
         }
       }
@@ -40,18 +44,20 @@ const BulkInvite = () => {
         e.preventDefault();
         resetForm();
       }
+      // Escape to clear errors
+      if (e.key === 'Escape') {
+        clearAllErrors();
+      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loading]);
+  }, [isLoading, clearAllErrors]);
+  
   const [csvText, setCsvText] = useState("");
   const [parsedGuests, setParsedGuests] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
   const [csvInfo, setCsvInfo] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(null);
 
   const emailOk = (v) => /\S+@\S+\.\S+/.test((v || "").trim());
   const phoneOk = (v) => !v || /^0\d{9}$/.test((v || "").trim());
@@ -179,13 +185,12 @@ const BulkInvite = () => {
     
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
-      setError("Please fix the validation errors below");
+      handleValidationError(errors, 'Bulk Invite Form');
       return;
     }
 
-    setLoading(true);
-    setError("");
-    setSuccess(null);
+    setLoading('bulkInvite', true, { message: 'Creating bulk invitation...' });
+    clearAllErrors();
 
     try {
       const numGuests = csvText.trim().length > 0 ? parsedGuests.length : formData.numGuests;
@@ -197,8 +202,8 @@ const BulkInvite = () => {
         numGuests
       });
 
-      setSuccess({
-        message: 'Bulk invitation created successfully!',
+      handleSuccess('Bulk invitation created successfully!', {
+        context: 'Bulk Invite',
         data: result
       });
 
@@ -214,14 +219,12 @@ const BulkInvite = () => {
         setParsedGuests([]);
         setCsvErrors([]);
         setCsvInfo("");
-        setSuccess(null);
       }, 10000);
 
     } catch (err) {
-      const errorMessage = handleApiError(err, 'Bulk invitation creation');
-      setError(errorMessage);
+      handleApiError(err, 'Bulk Invite');
     } finally {
-      setLoading(false);
+      setLoading('bulkInvite', false);
     }
   };
 
@@ -240,8 +243,7 @@ const BulkInvite = () => {
     setParsedGuests([]);
     setCsvErrors([]);
     setCsvInfo("");
-    setError("");
-    setSuccess(null);
+    clearAllErrors();
   };
 
   const copyToClipboard = (text) => {
@@ -377,10 +379,10 @@ const BulkInvite = () => {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={loading}
+                    disabled={isLoading('bulkInvite')}
                     className="flex-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                   >
-                    {loading ? (
+                    {isLoading('bulkInvite') ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                         Creating...
@@ -495,13 +497,7 @@ const BulkInvite = () => {
         </div>
       </div>
 
-      {/* Error Display */}
-      <ErrorDisplay
-        error={error}
-        onClose={() => setError("")}
-        type="error"
-        title="Creation Failed"
-      />
+      {/* Error and Success messages are now handled by ErrorContext */}
     </div>
   );
 };

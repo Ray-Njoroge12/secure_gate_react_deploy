@@ -1,5 +1,5 @@
 // client/src/components/Topbar.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "./ui";
 
@@ -95,7 +95,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
       
       <div className="flex items-center gap-3">
         <button
-          className="profile-btn focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full transition-all"
+          className="profile-btn focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
           onClick={handleProfileClick}
           aria-label={`Open ${getRoleDisplayName(role)} settings`}
           title="Profile Settings"
@@ -128,7 +128,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
         {onLogout && (
           <button
             onClick={onLogout}
-            className="p-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Logout from application"
             title="Logout"
           >

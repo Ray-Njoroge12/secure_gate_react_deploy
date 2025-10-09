@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { generateBreadcrumbs } from '../../utils/navigationFlow';
+import { componentTokens } from '../../design-system';
 
 const Breadcrumbs = ({ 
   breadcrumbs = null, 

@@ -259,3 +259,7 @@ GRANT SELECT ON audit_summary TO secure_gate_user;
 SELECT setval('audit_logs_id_seq', 1, false);
 
 COMMIT;
+
+
+
+

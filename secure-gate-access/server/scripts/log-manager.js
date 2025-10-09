@@ -597,3 +597,7 @@ Examples:
 // Run the CLI tool
 const logManager = new LogManager();
 logManager.main().catch(console.error);
+
+
+
+

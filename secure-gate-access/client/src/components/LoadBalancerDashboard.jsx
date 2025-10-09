@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import logger from 'utils/logger';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -61,7 +62,7 @@ const LoadBalancerDashboard = () => {
       setStatistics(status.data?.loadBalancer);
       setAlgorithms(algorithms.data || []);
     } catch (error) {
-      console.error('Failed to fetch load balancer data:', error);
+      logger.error('Failed to fetch load balancer data:', error);
       setMessage('Failed to load load balancer data');
     } finally {
       setLoading(false);
@@ -89,7 +90,7 @@ const LoadBalancerDashboard = () => {
         setMessage(`Failed to toggle server: ${result.message}`);
       }
     } catch (error) {
-      console.error('Failed to toggle server:', error);
+      logger.error('Failed to toggle server:', error);
       setMessage('Failed to toggle server');
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ const LoadBalancerDashboard = () => {
         setMessage(`Failed to change algorithm: ${result.message}`);
       }
     } catch (error) {
-      console.error('Failed to change algorithm:', error);
+      logger.error('Failed to change algorithm:', error);
       setMessage('Failed to change algorithm');
     } finally {
       setLoading(false);
@@ -145,7 +146,7 @@ const LoadBalancerDashboard = () => {
         setMessage(`Failed to toggle sticky sessions: ${result.message}`);
       }
     } catch (error) {
-      console.error('Failed to toggle sticky sessions:', error);
+      logger.error('Failed to toggle sticky sessions:', error);
       setMessage('Failed to toggle sticky sessions');
     } finally {
       setLoading(false);
@@ -171,7 +172,7 @@ const LoadBalancerDashboard = () => {
         setMessage(`Failed to perform health check: ${result.message}`);
       }
     } catch (error) {
-      console.error('Failed to perform health check:', error);
+      logger.error('Failed to perform health check:', error);
       setMessage('Failed to perform health check');
     } finally {
       setLoading(false);

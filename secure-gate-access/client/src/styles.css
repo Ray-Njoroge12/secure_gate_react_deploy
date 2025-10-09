@@ -169,3 +169,6 @@ textarea:focus {
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Import browser compatibility styles */
+@import './styles/browserCompatibility.css';

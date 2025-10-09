@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AppShell from "../../layouts/AppShell";
-import { Card, Button, Badge } from "../../components/ui";
+import { Card, Button, Badge, SearchFilter, SearchResults, Pagination } from "../../components/ui";
 import Table from "../../components/Table";
 import ManualCheck from "./ManualCheck";
 import ScanQR from "./ScanQR";
 import Settings from "./Settings";
 import VisitorHistory from "./VisitorHistory";
 import notificationService from "../../services/notificationService";
+import { useSearchData } from "../../hooks/useSearch";
+import { useError } from "../../contexts/ErrorContext";
+import { useLoading } from "../../contexts/LoadingContext";
 
 export default function GuardDashboard() {
   const onLogout = () => {
@@ -17,12 +20,40 @@ export default function GuardDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const role = localStorage.getItem('role') || 'guard';
+  const { handleError, handleApiError, clearAllErrors } = useError();
+  const { setLoading, isLoading } = useLoading();
+  
   const [active, setActive] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [toasts, setToasts] = useState([]);
   const [toastFilter, setToastFilter] = useState(()=> localStorage.getItem('toastFilter') || 'all'); // all|info|warning|error
+  const [showFilters, setShowFilters] = useState(false);
   const toastRef = React.useRef(null);
+
+  // Search and filter configuration
+  const searchFields = ['name', 'host', 'status'];
+  const filterFields = [
+    { key: 'status', label: 'Status', type: 'select' },
+    { key: 'check_in_time', label: 'Check-in Time', type: 'date' },
+    { key: 'check_out_time', label: 'Check-out Time', type: 'date' }
+  ];
+
+  // Use search hook
+  const {
+    data: filteredActive,
+    pagination,
+    searchTerm,
+    filters,
+    setSearchTerm,
+    setFilters,
+    clearFilters,
+    setPage,
+    isSearching,
+    hasFilters,
+    hasResults
+  } = useSearchData(active, searchFields, filterFields, {
+    enablePagination: true,
+    pageSize: 10
+  });
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -57,15 +88,18 @@ export default function GuardDashboard() {
 
   async function fetchActive() {
     try {
-  setLoading(true); setError("");
-  const token = localStorage.getItem('token');
-  const res = await fetch('/api/visitors/active', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
+      clearAllErrors();
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/visitors/active', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed');
       setActive(json.data || []);
     } catch (e) {
-      setError(e.message);
-    } finally { setLoading(false); }
+      handleApiError(e, 'Guard Dashboard');
+    } finally { 
+      setLoading('guardDashboard', false); 
+    }
   }
 
   useEffect(() => { fetchActive(); }, []);
@@ -211,18 +245,60 @@ export default function GuardDashboard() {
         />
       </div>
 
+      {/* Search and Filters */}
+      <SearchFilter
+        data={active}
+        searchFields={searchFields}
+        filterFields={filterFields}
+        onSearch={setSearchTerm}
+        onFilter={setFilters}
+        placeholder="Search visitors by name, host, or status..."
+        showAdvanced={showFilters}
+        enableSorting={true}
+        enablePagination={false}
+      />
+
       {/* Status Overview */}
       <Card>
-        <Card.Header>
+        <Card.Header className="flex flex-row items-center justify-between">
           <Card.Title>Visitor Status</Card.Title>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            {showFilters ? 'Hide' : 'Show'} Filters
+          </Button>
         </Card.Header>
         <Card.Content>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatusBadge label="Confirmed" value={getStatusCount('CONFIRMED')} color="text-blue-600 bg-blue-50" />
-            <StatusBadge label="On Premise" value={getStatusCount('ON_PREMISE')} color="text-green-600 bg-green-50" />
-            <StatusBadge label="Exited" value={getStatusCount('EXITED')} color="text-gray-600 bg-gray-50" />
-            <StatusBadge label="Revoked" value={getStatusCount('REVOKED')} color="text-red-600 bg-red-50" />
+            <StatusBadge 
+              label="Confirmed" 
+              value={isSearching || hasFilters ? getFilteredStatusCount('CONFIRMED') : getStatusCount('CONFIRMED')} 
+              color="text-blue-600 bg-blue-50" 
+            />
+            <StatusBadge 
+              label="On Premise" 
+              value={isSearching || hasFilters ? getFilteredStatusCount('ON_PREMISE') : getStatusCount('ON_PREMISE')} 
+              color="text-green-600 bg-green-50" 
+            />
+            <StatusBadge 
+              label="Exited" 
+              value={isSearching || hasFilters ? getFilteredStatusCount('EXITED') : getStatusCount('EXITED')} 
+              color="text-gray-600 bg-gray-50" 
+            />
+            <StatusBadge 
+              label="Revoked" 
+              value={isSearching || hasFilters ? getFilteredStatusCount('REVOKED') : getStatusCount('REVOKED')} 
+              color="text-red-600 bg-red-50" 
+            />
           </div>
+          {(isSearching || hasFilters) && (
+            <div className="mt-4 text-sm text-gray-600">
+              Showing {filteredActive.length} of {active.length} visitors
+              {searchTerm && ` for "${searchTerm}"`}
+            </div>
+          )}
         </Card.Content>
       </Card>
 
@@ -230,25 +306,40 @@ export default function GuardDashboard() {
       <Card>
         <Card.Header className="flex flex-row items-center justify-between">
           <Card.Title>Active Visitors</Card.Title>
-          <Button variant="outline" size="sm" onClick={fetchActive} disabled={loading}>
-            {loading ? 'Refreshing...' : 'Refresh'}
+          <Button variant="outline" size="sm" onClick={fetchActive} disabled={isLoading('guardDashboard')}>
+            {isLoading('guardDashboard') ? 'Refreshing...' : 'Refresh'}
           </Button>
         </Card.Header>
         <Card.Content>
-          {error && <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">{error}</div>}
+          {/* Error messages are now handled by ErrorContext */}
           
           <div className="md:hidden">
             {/* Mobile Cards */}
-            {active.length === 0 ? (
+            {filteredActive.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <p>No active visitors</p>
+                <p>
+                  {isSearching || hasFilters ? 'No visitors found' : 'No active visitors'}
+                </p>
+                {(isSearching || hasFilters) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      clearFilters();
+                    }}
+                    className="mt-2"
+                  >
+                    Clear search and filters
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
-                {active.map(v => (
+                {filteredActive.map(v => (
                   <VisitorCard key={v.id} visitor={v} onCheckIn={onCheckIn} onCheckOut={onCheckOut} onRevoke={onRevoke} role={role} />
                 ))}
               </div>
@@ -257,24 +348,61 @@ export default function GuardDashboard() {
 
           <div className="hidden md:block">
             {/* Desktop Table */}
-            <Table 
-              headers={["Visitor","Host","In","Out","Status","Actions"]} 
-              rows={active.map(v => [
-                (v.name||`#${v.id}`),
-                (v.host?mask(v.host):'-'), 
-                ''+(v.check_in_time||''), 
-                ''+(v.check_out_time||''), 
-                statusChip(v.status),
-                ((['guard','admin'].includes(role)) ? (
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={()=>onCheckIn(v.id)} disabled={v.status!=='CONFIRMED'}>Check-in</Button>
-                    <Button size="sm" onClick={()=>onCheckOut(v.id)} disabled={!(v.status==='ON_PREMISE' || (v.check_in_time && !v.check_out_time))}>Check-out</Button>
-                    <Button size="sm" variant="destructive" onClick={()=>onRevoke(v.id)} disabled={v.status==='REVOKED'}>Revoke</Button>
+            {filteredActive.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <p className="mt-2">
+                  {isSearching || hasFilters ? 'No visitors found' : 'No active visitors'}
+                </p>
+                {(isSearching || hasFilters) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      clearFilters();
+                    }}
+                    className="mt-2"
+                  >
+                    Clear search and filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <Table 
+                  headers={["Visitor","Host","In","Out","Status","Actions"]} 
+                  rows={filteredActive.map(v => [
+                    (v.name||`#${v.id}`),
+                    (v.host?mask(v.host):'-'), 
+                    ''+(v.check_in_time||''), 
+                    ''+(v.check_out_time||''), 
+                    statusChip(v.status),
+                    ((['guard','admin'].includes(role)) ? (
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={()=>onCheckIn(v.id)} disabled={v.status!=='CONFIRMED'}>Check-in</Button>
+                        <Button size="sm" onClick={()=>onCheckOut(v.id)} disabled={!(v.status==='ON_PREMISE' || (v.check_in_time && !v.check_out_time))}>Check-out</Button>
+                        <Button size="sm" variant="destructive" onClick={()=>onRevoke(v.id)} disabled={v.status==='REVOKED'}>Revoke</Button>
+                      </div>
+                    ) : null)
+                  ])} 
+                  mobileCardView={false}
+                />
+                
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                  <div className="mt-4">
+                    <Pagination
+                      currentPage={pagination.currentPage}
+                      totalPages={pagination.totalPages}
+                      onPageChange={setPage}
+                    />
                   </div>
-                ) : null)
-              ])} 
-              mobileCardView={false}
-            />
+                )}
+              </>
+            )}
           </div>
         </Card.Content>
       </Card>
@@ -283,6 +411,11 @@ export default function GuardDashboard() {
 
   function getStatusCount(status) {
     return active.filter(v => v.status === status).length;
+  }
+
+  // Get filtered status counts
+  function getFilteredStatusCount(status) {
+    return filteredActive.filter(v => v.status === status).length;
   }
   if (location.pathname === "/dashboard/guard/ManualCheck" || location.pathname === "/dashboard/guard/manual-check") panel = <ManualCheck />;
   else if (location.pathname === "/dashboard/guard/ScanQR" || location.pathname === "/dashboard/guard/scanner") panel = <ScanQR />;

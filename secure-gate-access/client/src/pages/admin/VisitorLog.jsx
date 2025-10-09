@@ -4,7 +4,7 @@ import Topbar from "../../components/Topbar";
 import Table from "../../components/Table";
 import { getVisitorLogs } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
-import logger from "../../utils/logger";
+import logger from 'utils/logger';
 
 export default function Visitors() {
   const [visitors, setVisitors] = useState([]);

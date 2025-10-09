@@ -4,6 +4,9 @@
 import logger from '../utils/logger.js';
 import { dbManager } from '../database/db.enhanced.js';
 
+// Re-export AppError for compatibility
+export { AppError } from './standardizedErrorHandler.js';
+
 /**
  * Enhanced Error Handler
  * Provides comprehensive error handling with logging and monitoring
@@ -200,6 +203,9 @@ export const asyncErrorHandler = (fn) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
+
+// Export alias for compatibility
+export const asyncHandler = asyncErrorHandler;
 
 /**
  * Graceful Shutdown Handler

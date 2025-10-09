@@ -437,3 +437,7 @@ This policy applies to all personal data processed by the Secure Gate Access Con
 ---
 
 *Secure Gate Access Control System - Responsible Data Management*
+
+
+
+

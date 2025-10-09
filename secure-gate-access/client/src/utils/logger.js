@@ -5,18 +5,20 @@
  * Provides consistent logging interface with log levels and context.
  * 
  * Usage:
- *   import logger from '@/utils/logger';
+ *   import logger from './logger';
  *   logger.debug('Component mounted', { componentName: 'Dashboard' });
  *   logger.error('API call failed', error);
  *   logger.warn('Deprecated feature used');
  *   logger.info('User logged in');
  */
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 class Logger {
   constructor() {
-    this.isDevelopment = isDevelopment;
+    // Check environment at runtime
+  }
+
+  get isDevelopment() {
+    return process.env.NODE_ENV === 'development';
   }
 
   /**

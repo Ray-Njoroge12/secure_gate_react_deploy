@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button } from '../../components/ui';
+import { useError } from '../../contexts/ErrorContext';
+import { useLoading } from '../../contexts/LoadingContext';
 
 const ManualCheck = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { handleError, handleApiError, clearAllErrors } = useError();
+  const { setLoading, isLoading } = useLoading();
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -31,13 +33,13 @@ const ManualCheck = () => {
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      setError('Please enter a search term');
+      handleError('Please enter a search term', { context: 'Manual Check Search' });
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      setLoading('manualCheck', true, { message: 'Searching visitors...' });
+      clearAllErrors();
       
       const token = localStorage.getItem('token');
       const response = await fetch('/api/visitors', {
@@ -60,17 +62,20 @@ const ManualCheck = () => {
         
         setSearchResults(filtered);
       } else {
-        setError('Failed to fetch visitors');
+        const error = new Error('Failed to fetch visitors');
+        error.response = { status: response.status };
+        throw error;
       }
     } catch (err) {
-      setError('Search failed: ' + err.message);
+      handleApiError(err, 'Manual Check Search');
     } finally {
-      setLoading(false);
+      setLoading('manualCheck', false);
     }
   };
 
   const handleCheckIn = async (visitorId) => {
     try {
+      setLoading('checkIn', true, { message: 'Checking in visitor...' });
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/visitors/${visitorId}/check-in`, {
         method: 'POST',
@@ -89,16 +94,20 @@ const ManualCheck = () => {
           )
         );
       } else {
-        const error = await response.json();
-        setError('Check-in failed: ' + (error.message || 'Unknown error'));
+        const error = new Error('Check-in failed');
+        error.response = { status: response.status, data: await response.json() };
+        throw error;
       }
     } catch (err) {
-      setError('Check-in failed: ' + err.message);
+      handleApiError(err, 'Visitor Check-in');
+    } finally {
+      setLoading('checkIn', false);
     }
   };
 
   const handleCheckOut = async (visitorId) => {
     try {
+      setLoading('checkOut', true, { message: 'Checking out visitor...' });
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/visitors/${visitorId}/check-out`, {
         method: 'POST',
@@ -117,11 +126,14 @@ const ManualCheck = () => {
           )
         );
       } else {
-        const error = await response.json();
-        setError('Check-out failed: ' + (error.message || 'Unknown error'));
+        const error = new Error('Check-out failed');
+        error.response = { status: response.status, data: await response.json() };
+        throw error;
       }
     } catch (err) {
-      setError('Check-out failed: ' + err.message);
+      handleApiError(err, 'Visitor Check-out');
+    } finally {
+      setLoading('checkOut', false);
     }
   };
 
@@ -166,16 +178,10 @@ const ManualCheck = () => {
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               />
-              <Button onClick={handleSearch} disabled={loading}>
-                {loading ? 'Searching...' : 'Search'}
+              <Button onClick={handleSearch} disabled={isLoading('manualCheck')}>
+                {isLoading('manualCheck') ? 'Searching...' : 'Search'}
               </Button>
             </div>
-
-            {error && (
-              <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
-                {error}
-              </div>
-            )}
           </div>
         </Card.Content>
       </Card>
@@ -205,8 +211,9 @@ const ManualCheck = () => {
                       <Button
                         size="sm"
                         onClick={() => handleCheckIn(visitor.id)}
+                        disabled={isLoading('checkIn')}
                       >
-                        Check In
+                        {isLoading('checkIn') ? 'Checking In...' : 'Check In'}
                       </Button>
                     )}
                     {visitor.status === 'CHECKED_IN' && (
@@ -214,8 +221,9 @@ const ManualCheck = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => handleCheckOut(visitor.id)}
+                        disabled={isLoading('checkOut')}
                       >
-                        Check Out
+                        {isLoading('checkOut') ? 'Checking Out...' : 'Check Out'}
                       </Button>
                     )}
                     {visitor.status === 'PENDING' && (
@@ -229,7 +237,7 @@ const ManualCheck = () => {
         </Card>
       )}
 
-      {searchResults.length === 0 && !loading && searchTerm && (
+      {searchResults.length === 0 && !isLoading('manualCheck') && searchTerm && (
         <Card>
           <Card.Content className="text-center py-8">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

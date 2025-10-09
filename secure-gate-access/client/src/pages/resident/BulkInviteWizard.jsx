@@ -1,5 +1,6 @@
 // BulkInvite Wizard - Multi-step form for bulk visitor invitations
 import React, { useState, useEffect, useCallback } from "react";
+import logger from 'utils/logger';
 import { useNavigate } from "react-router-dom";
 import { bulkInvite } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
@@ -145,7 +146,7 @@ const BulkInviteWizard = () => {
   };
 
   const handleStepChange = (stepIndex, allStepData) => {
-    console.log(`Moved to step ${stepIndex + 1}`, allStepData);
+    logger.debug(`Moved to step ${stepIndex + 1}`, allStepData);
   };
 
   const resetForm = () => {

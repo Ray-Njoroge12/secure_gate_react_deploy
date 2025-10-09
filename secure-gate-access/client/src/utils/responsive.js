@@ -1,6 +1,7 @@
 // client/src/utils/responsive.js
 import { useState, useEffect } from 'react';
 
+import logger from './logger';
 // Responsive breakpoints matching Tailwind config
 export const BREAKPOINTS = {
   xs: 360,  // Mobile phones
@@ -48,7 +49,7 @@ export function useBreakpoint(breakpoint) {
   const breakpointValue = BREAKPOINTS[breakpoint];
   
   if (!breakpointValue) {
-    console.warn(`Unknown breakpoint: ${breakpoint}`);
+    logger.warn(`Unknown breakpoint: ${breakpoint}`);
     return false;
   }
   

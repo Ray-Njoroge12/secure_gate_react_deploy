@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import logger from 'utils/logger';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -59,7 +60,7 @@ const ComplianceManager = () => {
       setCookiePolicy(cookie.data);
       setPrivacyPolicy(privacy.data);
     } catch (error) {
-      console.error('Failed to fetch compliance data:', error);
+      logger.error('Failed to fetch compliance data:', error);
       setMessage('Failed to load compliance information');
     } finally {
       setLoading(false);
@@ -86,7 +87,7 @@ const ComplianceManager = () => {
         setMessage(`Failed to submit ${type} request: ${result.message}`);
       }
     } catch (error) {
-      console.error(`Failed to submit ${type} request:`, error);
+      logger.error(`Failed to submit ${type} request:`, error);
       setMessage(`Failed to submit ${type} request`);
     } finally {
       setLoading(false);
@@ -116,7 +117,7 @@ const ComplianceManager = () => {
       await Promise.all(consentPromises);
       setMessage('Consent preferences updated successfully');
     } catch (error) {
-      console.error('Failed to update consent:', error);
+      logger.error('Failed to update consent:', error);
       setMessage('Failed to update consent preferences');
     } finally {
       setLoading(false);

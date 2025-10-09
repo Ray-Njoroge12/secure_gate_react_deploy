@@ -190,3 +190,7 @@ maintenance-cleanup:
 	@echo "Cleaning up old logs and data..."
 	docker-compose -f docker-compose.prod.yml exec backend node scripts/log-manager.js cleanup application
 	docker-compose -f docker-compose.prod.yml exec backend node scripts/log-manager.js cleanup error
+
+
+
+

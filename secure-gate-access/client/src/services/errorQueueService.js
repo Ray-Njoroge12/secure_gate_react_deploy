@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
+import logger from 'utils/logger';
 /**
  * Error Queue Service
  * Manages error display queue to prevent overlapping errors
@@ -117,7 +118,7 @@ class ErrorQueueService {
       try {
         callback(this.getErrors());
       } catch (error) {
-        console.error('Error in error queue subscriber:', error);
+        logger.error('Error in error queue subscriber:', error);
       }
     });
   }

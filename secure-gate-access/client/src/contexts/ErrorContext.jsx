@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useCallback } from 'react';
+import logger from 'utils/logger';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import errorQueueService from '../services/errorQueueService';
+import { createApiErrorHandler, createErrorContext } from '../utils/apiErrorHandler';
+import { ERROR_TYPES } from '../utils/errorHandling';
 
 const ErrorContext = createContext();
 
@@ -10,6 +13,20 @@ const ErrorContext = createContext();
  */
 export const ErrorProvider = ({ children, options = {} }) => {
   const errorHandler = useErrorHandler(options);
+  const apiErrorHandler = createApiErrorHandler({
+    onError: (error, context) => {
+      // Log error for debugging
+      logger.error('API Error:', error, context);
+    },
+    onRetry: (attempt, error, context) => {
+      // Show retry notification
+      errorHandler.handleInfo(`Retrying... (Attempt ${attempt})`, {
+        context: 'Retry',
+        autoClose: true,
+        autoCloseDelay: 2000
+      });
+    }
+  });
 
   const contextValue = {
     ...errorHandler,
@@ -21,24 +38,41 @@ export const ErrorProvider = ({ children, options = {} }) => {
     // Queue management
     getErrorQueue: () => errorQueueService.getErrors(),
     clearErrorQueue: () => errorQueueService.clearAll(),
-    // Utility methods
-    handleApiError: (error, context = 'API call') => {
-      return errorHandler.handleError(error, { context });
+    // Enhanced API error handling
+    handleApiError: async (error, context = 'API call', options = {}) => {
+      const errorContext = createErrorContext(context, 'ErrorContext', options);
+      return await apiErrorHandler.handleApiError(error, errorContext, options);
     },
+    handleApiErrorWithRetry: async (error, context = 'API call', options = {}) => {
+      const errorContext = createErrorContext(context, 'ErrorContext', options);
+      return await apiErrorHandler.handleWithRetry(error, errorContext, options);
+    },
+    // Specialized error handlers
     handleValidationError: (errors, context = 'Validation') => {
       const errorMessages = Object.values(errors).join(', ');
       return errorHandler.handleWarning(errorMessages, { 
         context,
         title: 'Validation Error',
-        showRecoveryActions: true
+        showRecoveryActions: true,
+        type: ERROR_TYPES.VALIDATION
       });
     },
-    handleNetworkError: (error, context = 'Network') => {
-      return errorHandler.handleError(error, {
+    handleNetworkError: async (error, context = 'Network') => {
+      const errorContext = createErrorContext(context, 'ErrorContext');
+      const handledError = await apiErrorHandler.handleApiError(error, errorContext, {
+        retry: true,
+        retryConfig: {
+          maxRetries: 3,
+          baseDelay: 1000
+        }
+      });
+      
+      return errorHandler.handleError(handledError, {
         context,
         title: 'Connection Error',
         showRecoveryActions: true,
-        onRetry: () => window.location.reload()
+        onRetry: () => window.location.reload(),
+        type: ERROR_TYPES.NETWORK
       });
     },
     handleAuthError: (error, context = 'Authentication') => {
@@ -46,9 +80,31 @@ export const ErrorProvider = ({ children, options = {} }) => {
         context,
         title: 'Authentication Error',
         showRecoveryActions: true,
-        onRetry: () => window.location.href = '/login'
+        onRetry: () => window.location.href = '/login',
+        type: ERROR_TYPES.AUTHENTICATION,
+        persistent: true
       });
-    }
+    },
+    handleServerError: async (error, context = 'Server') => {
+      const errorContext = createErrorContext(context, 'ErrorContext');
+      const handledError = await apiErrorHandler.handleApiError(error, errorContext, {
+        retry: true,
+        retryConfig: {
+          maxRetries: 2,
+          baseDelay: 2000
+        }
+      });
+      
+      return errorHandler.handleError(handledError, {
+        context,
+        title: 'Server Error',
+        showRecoveryActions: true,
+        type: ERROR_TYPES.SERVER
+      });
+    },
+    // Utility methods
+    createErrorContext: createErrorContext,
+    getRetryActions: (error, context) => apiErrorHandler.getRetryActions(error, context)
   };
 
   return (
@@ -70,4 +126,5 @@ export const useError = () => {
   return context;
 };
 
+export { ErrorContext };
 export default ErrorContext;

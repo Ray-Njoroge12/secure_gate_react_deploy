@@ -332,3 +332,7 @@ export function teardown(data) {
   console.log(`❌ Error rate: ${(errorRate.count * 100).toFixed(2)}%`);
   console.log(`🚀 Throughput: ${throughput.count} requests`);
 }
+
+
+
+

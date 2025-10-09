@@ -1,4 +1,5 @@
 import React, { useState, memo, useCallback, useEffect, useRef } from 'react';
+import logger from 'utils/logger';
 import QRCode from 'react-qr-code';
 import { Button, Toast } from './ui';
 import { useCurrentBreakpoint, TOUCH_SIZES } from '../utils/responsive';
@@ -60,7 +61,7 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
       } catch (error) {
-        console.error('Failed to copy OTP:', error);
+        logger.error('Failed to copy OTP:', error);
       }
     }
   }, [otp]);

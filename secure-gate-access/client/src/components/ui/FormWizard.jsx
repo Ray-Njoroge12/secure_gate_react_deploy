@@ -1,5 +1,6 @@
 // FormWizard component for multi-step forms with progressive disclosure
 import React, { useState, useEffect, useRef } from 'react';
+import logger from 'utils/logger';
 import { Button, Card, Badge } from './index';
 import { useNavigation } from '../../contexts/NavigationContext';
 
@@ -78,7 +79,7 @@ const FormWizard = ({
           return;
         }
       } catch (error) {
-        console.error('Step validation error:', error);
+        logger.error('Step validation error:', error);
         setIsValidating(false);
         return;
       }

@@ -343,3 +343,7 @@ COMMENT ON FUNCTION get_performance_summary(INTEGER) IS 'Returns performance met
 
 COMMENT ON VIEW recent_errors IS 'Shows errors from the last 24 hours';
 COMMENT ON VIEW security_events_summary IS 'Summary of security events from the last 7 days';
+
+
+
+

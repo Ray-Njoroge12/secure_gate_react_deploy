@@ -1,12 +1,13 @@
 // client/src/components/Sidebar.jsx
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, memo, useMemo, useCallback } from "react";
 import { NavLink } from "react-router-dom";
 import { Button, Badge } from "./ui";
+import { createRovingTabindex, focusManager } from "../utils/focusManagement";
 
-const NavigationLink = ({ to, children, icon, description, badge }) => {
+const NavigationLink = memo(({ to, children, icon, description, badge }) => {
   const linkRef = useRef(null);
 
-  // Keyboard shortcuts
+  // Enhanced keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Space or Enter to activate link
@@ -17,6 +18,32 @@ const NavigationLink = ({ to, children, icon, description, badge }) => {
       // Escape to clear focus
       if (e.key === 'Escape' && linkRef.current) {
         linkRef.current.blur();
+      }
+      // Arrow keys for navigation within sidebar
+      if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+        e.preventDefault();
+        const navLinks = document.querySelectorAll('.navlink');
+        const currentIndex = Array.from(navLinks).indexOf(linkRef.current);
+        
+        let targetIndex = currentIndex;
+        switch (e.key) {
+          case 'ArrowUp':
+            targetIndex = currentIndex > 0 ? currentIndex - 1 : navLinks.length - 1;
+            break;
+          case 'ArrowDown':
+            targetIndex = currentIndex < navLinks.length - 1 ? currentIndex + 1 : 0;
+            break;
+          case 'Home':
+            targetIndex = 0;
+            break;
+          case 'End':
+            targetIndex = navLinks.length - 1;
+            break;
+        }
+        
+        if (navLinks[targetIndex]) {
+          navLinks[targetIndex].focus();
+        }
       }
     };
 
@@ -32,7 +59,7 @@ const NavigationLink = ({ to, children, icon, description, badge }) => {
       ref={linkRef}
       to={to} 
       className={({isActive}) => 
-        `flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
+        `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
           isActive 
             ? "bg-brand-600 text-white shadow-sm" 
             : "text-slate-300 hover:bg-slate-700 hover:text-white"
@@ -63,7 +90,7 @@ const NavigationLink = ({ to, children, icon, description, badge }) => {
       </div>
     </NavLink>
   );
-};
+});
 
 const navigationConfig = {
   resident: [
@@ -227,18 +254,35 @@ const navigationConfig = {
   ]
 };
 
-export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
-  const navigation = navigationConfig[role] || [];
-  const sidebarRef = useRef(null);
+const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
+  // Memoize navigation items to prevent unnecessary re-renders
+  const navigation = useMemo(() => navigationConfig[role] || [], [role]);
   
-  const getRoleDisplayName = (role) => {
+  const getRoleDisplayName = useCallback((role) => {
     const roleNames = {
       resident: "Resident",
       guard: "Security Guard",
       admin: "Administrator"
     };
     return roleNames[role] || role;
-  };
+  }, []);
+  
+  const sidebarRef = useRef(null);
+  const navListRef = useRef(null);
+  const cleanupRef = useRef(null);
+
+  // Set up roving tabindex for navigation
+  useEffect(() => {
+    if (navListRef.current) {
+      cleanupRef.current = createRovingTabindex(navListRef.current, '.navlink');
+    }
+
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+    };
+  }, [navigation]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -246,21 +290,6 @@ export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
       // Escape to close sidebar
       if (e.key === 'Escape' && isOpen) {
         onClose();
-      }
-      // Arrow keys to navigate between menu items
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const menuItems = sidebarRef.current?.querySelectorAll('.navlink');
-        if (menuItems && menuItems.length > 0) {
-          const currentIndex = Array.from(menuItems).indexOf(document.activeElement);
-          let nextIndex;
-          if (e.key === 'ArrowDown') {
-            nextIndex = currentIndex < menuItems.length - 1 ? currentIndex + 1 : 0;
-          } else {
-            nextIndex = currentIndex > 0 ? currentIndex - 1 : menuItems.length - 1;
-          }
-          menuItems[nextIndex]?.focus();
-        }
       }
     };
 
@@ -291,8 +320,8 @@ export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
-        role="navigation"
         aria-label="Main navigation"
+        id="main-navigation"
       >
       {/* Header */}
       <div className="mb-8">
@@ -322,19 +351,20 @@ export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
 
       {/* Navigation Links */}
       <nav className="flex-1" aria-label={`${getRoleDisplayName(role)} navigation`}>
-        <div className="space-y-1">
+        <ul ref={navListRef} className="space-y-1">
           {navigation.map((item) => (
-            <NavigationLink
-              key={item.path}
-              to={item.path}
-              icon={item.icon}
-              description={item.description}
-              badge={item.badge}
-            >
-              {item.label}
-            </NavigationLink>
+            <li key={item.path}>
+              <NavigationLink
+                to={item.path}
+                icon={item.icon}
+                description={item.description}
+                badge={item.badge}
+              >
+                {item.label}
+              </NavigationLink>
+            </li>
           ))}
-        </div>
+        </ul>
       </nav>
 
       {/* Logout Button */}
@@ -356,4 +386,6 @@ export default function Sidebar({ role, onLogout, error, isOpen, onClose }) {
     </aside>
     </>
   );
-}
+});
+
+export default Sidebar;

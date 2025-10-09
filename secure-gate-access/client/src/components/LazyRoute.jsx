@@ -1,8 +1,8 @@
 // client/src/components/LazyRoute.jsx
-import React, { Suspense } from 'react';
+import React, { Suspense, memo } from 'react';
 import { Loading, ErrorBoundary } from './ui';
 
-const LazyRoute = ({ 
+const LazyRoute = memo(({ 
   component: Component, 
   fallback = null, 
   errorBoundary = true,
@@ -32,6 +32,8 @@ const LazyRoute = ({
   }
 
   return <LoadingSuspense />;
-};
+});
+
+LazyRoute.displayName = 'LazyRoute';
 
 export default LazyRoute;
