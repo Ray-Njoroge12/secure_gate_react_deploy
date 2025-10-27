@@ -500,6 +500,27 @@ export default function RegistrationPage() {
               {errors.purpose && <p className="text-red-600 text-sm mt-1">{errors.purpose}</p>}
             </div>
 
+            {/* Privacy Policy and Terms Agreement */}
+            <div className="flex items-start space-x-2 mt-4">
+              <input
+                type="checkbox"
+                id="bulkPrivacyTerms"
+                required
+                className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              />
+              <label htmlFor="bulkPrivacyTerms" className="text-sm text-gray-600">
+                I agree to the{' '}
+                <Link to="/privacy-policy" target="_blank" className="text-green-600 hover:text-green-500 underline">
+                  Privacy Policy
+                </Link>
+                {' '}and{' '}
+                <Link to="/terms-of-service" target="_blank" className="text-green-600 hover:text-green-500 underline">
+                  Terms of Service
+                </Link>
+                {' '}of Secure Gate Access Control System.
+              </label>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -663,6 +684,27 @@ export default function RegistrationPage() {
             required
           />
           {errors.confirmPassword && <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>}
+        </div>
+
+        {/* Privacy Policy and Terms Agreement */}
+        <div className="flex items-start space-x-2">
+          <input
+            type="checkbox"
+            id="privacyTerms"
+            required
+            className="mt-1 h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
+          />
+          <label htmlFor="privacyTerms" className="text-sm text-gray-600">
+            I agree to the{' '}
+            <Link to="/privacy-policy" target="_blank" className="text-brand-600 hover:text-brand-500 underline">
+              Privacy Policy
+            </Link>
+            {' '}and{' '}
+            <Link to="/terms-of-service" target="_blank" className="text-brand-600 hover:text-brand-500 underline">
+              Terms of Service
+            </Link>
+            {' '}of Secure Gate Access Control System.
+          </label>
         </div>
 
         <button

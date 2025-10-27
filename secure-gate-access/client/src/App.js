@@ -34,6 +34,8 @@ import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // A
 const LoginPage = lazy(() => import("./pages/Login.jsx"));
 const RegistrationPage = lazy(() => import("./pages/Register.js"));
 const GuestInvite = lazy(() => import("./pages/GuestInvite.jsx"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
 const ProtectedRoute = lazy(() => import("./routes/ProtectedRoute.jsx"));
 
 // Resident pages - Visitor management functionality for residents
@@ -155,6 +157,10 @@ function App() {
             <Route path="/register" element={<RegistrationPage />} />
             <Route path="/register/:inviteCode" element={<RegistrationPage />} />
             <Route path="/bulk-register/:inviteCode" element={<RegistrationPage />} />
+
+            {/* Privacy and Terms routes */}
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
 
             {/* Guest invitation routes */}
             <Route path="/invite/:inviteCode" element={<GuestInvite />} />

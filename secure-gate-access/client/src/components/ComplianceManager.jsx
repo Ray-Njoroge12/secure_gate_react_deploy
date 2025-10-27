@@ -5,15 +5,15 @@
 
 import React, { useState, useEffect } from 'react';
 import logger from 'utils/logger';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Checkbox } from './ui/checkbox';
-import { Alert, AlertDescription } from './ui/alert';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Label } from './ui/Label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/Select';
+import { Checkbox } from './ui/Checkbox';
+import { Alert, AlertDescription } from './ui/Alert';
+import { Badge } from './ui/Badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/Tabs';
 import { 
   Shield, 
   Download, 

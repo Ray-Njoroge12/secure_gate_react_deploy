@@ -19,6 +19,8 @@ const mockNodemailer = {
 
 const mockTwilio = jest.fn();
 
+const mockAfricasTalking = jest.fn();
+
 const mockMetrics = {
   notifications_email_sent: 0,
   notifications_email_failed: 0,
@@ -40,13 +42,17 @@ jest.unstable_mockModule('twilio', () => ({
   default: mockTwilio
 }));
 
-jest.unstable_mockModule('../../../src/templates/email-templates.js', () => ({
+jest.unstable_mockModule('africastalking', () => ({
+  default: mockAfricasTalking
+}));
+
+jest.unstable_mockModule('../../src/templates/email-templates.js', () => ({
   visitorInviteTemplate: mockVisitorInviteTemplate,
   bulkInviteTemplate: jest.fn(),
   otpVerificationTemplate: mockOtpVerificationTemplate
 }));
 
-jest.unstable_mockModule('../../../src/templates/sms-templates.js', () => ({
+jest.unstable_mockModule('../../src/templates/sms-templates.js', () => ({
   visitorInviteSmsTemplate: mockVisitorInviteSmsTemplate,
   bulkInviteSmsTemplate: jest.fn(),
   otpVerificationSmsTemplate: mockOtpVerificationSmsTemplate,
@@ -54,7 +60,7 @@ jest.unstable_mockModule('../../../src/templates/sms-templates.js', () => ({
   checkinReminderSmsTemplate: jest.fn()
 }));
 
-jest.unstable_mockModule('../../../src/utils/metrics.js', () => ({
+jest.unstable_mockModule('../../src/utils/metrics.js', () => ({
   metrics: mockMetrics
 }));
 
@@ -62,6 +68,7 @@ describe('notificationService', () => {
   let notificationService;
   let mockTransporter;
   let mockTwilioClient;
+  let mockAtClient;
   let originalEnv;
 
   beforeAll(async () => {
@@ -82,6 +89,16 @@ describe('notificationService', () => {
     };
     mockTwilio.mockReturnValue(mockTwilioClient);
 
+    // Setup mock Africa's Talking client
+    mockAtClient = {
+      send: jest.fn().mockResolvedValue({
+        SMSMessageData: {
+          Recipients: [{ status: 'Success', statusCode: '101' }]
+        }
+      })
+    };
+    mockAfricasTalking.mockReturnValue({ SMS: mockAtClient });
+
     // Set environment variables
     process.env.SMTP_HOST = 'smtp.test.com';
     process.env.SMTP_PORT = '587';
@@ -91,11 +108,15 @@ describe('notificationService', () => {
     process.env.TWILIO_ACCOUNT_SID = 'test-account-sid';
     process.env.TWILIO_AUTH_TOKEN = 'test-auth-token';
     process.env.TWILIO_FROM = '+1234567890';
+    process.env.SMS_PROVIDER = 'twilio'; // Default for most tests
+    process.env.AT_USERNAME = 'test-at-username';
+    process.env.AT_API_KEY = 'test-at-api-key';
+    process.env.AT_SENDER_ID = 'SECUREGATE';
     process.env.SITE_NAME = 'Test Secure Gate';
     process.env.SITE_URL = 'https://test.com';
 
     // Import service after mocks are set up
-    notificationService = await import('../../../src/services/notificationService.js');
+    notificationService = await import('../../src/services/notificationService.js');
   });
 
   afterAll(() => {
@@ -175,7 +196,7 @@ describe('notificationService', () => {
 
       // Need to re-import to pick up env change
       jest.resetModules();
-      const service = await import('../../../src/services/notificationService.js');
+      const service = await import('../../src/services/notificationService.js');
 
       const result = await service.sendVisitorInviteEmail(
         visitorData,
@@ -330,7 +351,7 @@ describe('notificationService', () => {
       delete process.env.TWILIO_ACCOUNT_SID;
 
       jest.resetModules();
-      const service = await import('../../../src/services/notificationService.js');
+      const service = await import('../../src/services/notificationService.js');
 
       const result = await service.sendVisitorInviteSms(
         visitorData,
@@ -568,6 +589,168 @@ describe('notificationService', () => {
     });
   });
 
+  describe('Africa\'s Talking SMS Integration', () => {
+    const visitorData = {
+      name: 'John Visitor',
+      phone: '+254712345678',
+      email: 'john@example.com',
+      dateOfVisit: '2025-01-15',
+      time: '10:00 AM',
+      purpose: 'Meeting',
+      inviteCode: 'INV123'
+    };
+
+    const residentData = {
+      name: 'Jane Resident',
+      email: 'jane@example.com'
+    };
+
+    const inviteLink = 'https://test.com/invite/INV123';
+
+    beforeEach(() => {
+      // Reset mocks
+      mockAtClient.send.mockClear();
+      mockTwilioClient.messages.create.mockClear();
+      
+      // Set SMS provider to Africa's Talking
+      process.env.SMS_PROVIDER = 'africastalking';
+    });
+
+    it('should send visitor invitation SMS via Africa\'s Talking', async () => {
+      const result = await notificationService.sendVisitorInviteSms(
+        visitorData,
+        residentData,
+        inviteLink
+      );
+
+      expect(result).toBe(true);
+      expect(mockAtClient.send).toHaveBeenCalledWith({
+        to: ['+254712345678'],
+        message: expect.any(String),
+        from: 'SECUREGATE'
+      });
+      expect(mockVisitorInviteSmsTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visitorName: 'John Visitor',
+          residentName: 'Jane Resident',
+          inviteCode: 'INV123'
+        })
+      );
+    });
+
+    it('should send OTP verification SMS via Africa\'s Talking', async () => {
+      const otpCode = '654321';
+
+      const result = await notificationService.sendOtpVerificationSms(
+        visitorData,
+        otpCode
+      );
+
+      expect(result).toBe(true);
+      expect(mockAtClient.send).toHaveBeenCalledWith({
+        to: ['+254712345678'],
+        message: expect.any(String),
+        from: 'SECUREGATE'
+      });
+      expect(mockOtpVerificationSmsTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visitorName: 'John Visitor',
+          otpCode: '654321',
+          expiryMinutes: 15
+        })
+      );
+    });
+
+    it('should handle Africa\'s Talking SMS errors', async () => {
+      mockAtClient.send.mockRejectedValueOnce(
+        new Error('Africa\'s Talking API error')
+      );
+
+      const result = await notificationService.sendVisitorInviteSms(
+        visitorData,
+        residentData,
+        inviteLink
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('should handle Africa\'s Talking API failure response', async () => {
+      mockAtClient.send.mockResolvedValueOnce({
+        SMSMessageData: {
+          Recipients: [{ status: 'Failed', statusCode: 'Invalid phone number' }]
+        }
+      });
+
+      const result = await notificationService.sendVisitorInviteSms(
+        visitorData,
+        residentData,
+        inviteLink
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('should use custom sender ID when provided', async () => {
+      const originalSenderId = process.env.AT_SENDER_ID;
+      process.env.AT_SENDER_ID = 'CUSTOMID';
+
+      const result = await notificationService.sendVisitorInviteSms(
+        visitorData,
+        residentData,
+        inviteLink
+      );
+
+      expect(result).toBe(true);
+      expect(mockAtClient.send).toHaveBeenCalledWith({
+        to: ['+254712345678'],
+        message: expect.any(String),
+        from: 'CUSTOMID'
+      });
+
+      process.env.AT_SENDER_ID = originalSenderId;
+    });
+
+    it('should fail when Africa\'s Talking is not configured but provider is set to africastalking', async () => {
+      // Remove AT credentials but keep provider as africastalking
+      const originalUsername = process.env.AT_USERNAME;
+      const originalApiKey = process.env.AT_API_KEY;
+      delete process.env.AT_USERNAME;
+      delete process.env.AT_API_KEY;
+
+      // Reset modules to force re-initialization
+      jest.resetModules();
+      const freshService = await import('../../src/services/notificationService.js');
+
+      const result = await freshService.sendVisitorInviteSms(
+        visitorData,
+        residentData,
+        inviteLink
+      );
+
+      // Should fail because AT is not configured but provider is set to africastalking
+      expect(result).toBe(false);
+
+      // Restore credentials
+      process.env.AT_USERNAME = originalUsername;
+      process.env.AT_API_KEY = originalApiKey;
+    });
+
+    it('should send legacy SMS via Africa\'s Talking', async () => {
+      const result = await notificationService.sendSms(
+        '+254712345678',
+        'Test message'
+      );
+
+      expect(result).toBe(true);
+      expect(mockAtClient.send).toHaveBeenCalledWith({
+        to: ['+254712345678'],
+        message: 'Test message',
+        from: 'SECUREGATE'
+      });
+    });
+  });
+
   describe('Configuration validation', () => {
     it('should handle missing FROM_EMAIL gracefully', async () => {
       const originalFrom = process.env.FROM_EMAIL;
@@ -589,7 +772,7 @@ describe('notificationService', () => {
       delete process.env.TWILIO_FROM;
 
       jest.resetModules();
-      const service = await import('../../../src/services/notificationService.js');
+      const service = await import('../../src/services/notificationService.js');
 
       const result = await service.sendSms('+1234567890', 'Test');
 

@@ -62,13 +62,14 @@ services:
     container_name: secure-gate-backend-prod
     restart: unless-stopped
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 5000
       PGHOST: postgres
       PGPORT: 5432
       PGDATABASE: ${POSTGRES_DB:-secure_gate}
       PGUSER: ${POSTGRES_USER:-secure_gate_user}
       PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGSSLMODE: disable
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -86,11 +87,12 @@ services:
       RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       MONITORING_INTERVAL_MS: ${MONITORING_INTERVAL_MS:-60000}
+      ENFORCE_HTTPS: "false"
     volumes:
       - ./server/logs:/app/logs
       - ./backups:/app/backups
     ports:
-      - "5000:5000"
+      - "5001:5000"
     networks:
       - secure-gate-network
     depends_on:

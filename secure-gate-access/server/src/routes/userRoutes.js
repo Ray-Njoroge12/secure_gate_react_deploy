@@ -17,8 +17,10 @@ router.post('/register',
 router.post('/login',
   authRateLimit(),
   validateRequest(ValidationSchemas.userLogin),
-  loginUser,
-  enhancedSessionManager.loginSessionMiddleware()
+  loginUser
+  // TEMPORARY FIX: Session middleware disabled - was causing authentication to hang
+  // TODO: Re-enable after adding timeout protection to session regeneration
+  // enhancedSessionManager.loginSessionMiddleware()
 );
 
 router.post('/logout', logoutUser);

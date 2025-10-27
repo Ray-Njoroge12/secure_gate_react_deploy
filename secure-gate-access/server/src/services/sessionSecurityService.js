@@ -44,6 +44,21 @@ class SessionSecurityService {
   }
 
   /**
+   * Check if Redis is available and connected
+   */
+  isRedisAvailable() {
+    try {
+      return this.redisService && 
+             this.redisService.isConnected && 
+             this.redisService.isConnected() &&
+             !this.redisService.usingFallback;
+    } catch (error) {
+      console.warn('Redis availability check failed:', error.message);
+      return false;
+    }
+  }
+
+  /**
    * Generate session fingerprint for hijacking detection
    */
   generateSessionFingerprint(req) {
@@ -86,8 +101,8 @@ class SessionSecurityService {
         consecutiveFailures: 0
       };
 
-      // Store session metadata in Redis
-      if (this.redisService && !this.redisService.usingFallback) {
+      // Store session metadata in Redis (with availability check)
+      if (this.isRedisAvailable()) {
         const sessionKey = `session_meta:${sessionId}`;
         await this.redisService.set(sessionKey, sessionData, this.sessionTimeoutMs / 1000);
 

@@ -1,347 +1,420 @@
 /**
- * Cache Middleware
+ * Cache Middleware for API Response Caching
  * 
- * This middleware implements Redis caching for improved performance
- * and reduced database load.
+ * Implements Redis-based caching with configurable TTL and invalidation strategies
  */
 
 import redis from 'redis';
-import { promisify } from 'util';
+import crypto from 'crypto';
 
 class CacheMiddleware {
-  constructor() {
-    this.client = null;
-    this.enabled = false;
+  constructor(options = {}) {
+    this.redisClient = null;
+    this.isConnected = false;
+    this.defaultTTL = options.defaultTTL || 300; // 5 minutes
+    this.maxTTL = options.maxTTL || 3600; // 1 hour
+    this.cacheStats = {
+      hits: 0,
+      misses: 0,
+      sets: 0,
+      deletes: 0,
+      errors: 0
+    };
     
+    this.init();
+  }
+
+  async init() {
     try {
-      this.client = redis.createClient({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: process.env.REDIS_PORT || 6379,
-        password: process.env.REDIS_PASSWORD || undefined,
-        db: process.env.REDIS_DB || 0,
-        retry_strategy: (options) => {
-          if (options.error && options.error.code === 'ECONNREFUSED') {
-            console.warn('⚠️  Redis connection refused - caching disabled');
-            return undefined;
+      // Create Redis client
+      this.redisClient = redis.createClient({
+        socket: {
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT) || 6379,
+          connectTimeout: 5000,
+          reconnectStrategy: (retries) => {
+            if (retries > 10) {
+              console.error('Redis connection failed after 10 retries');
+              return false;
+            }
+            return Math.min(retries * 100, 3000);
           }
-          if (options.total_retry_time > 1000 * 60 * 60) {
-            console.warn('⚠️  Redis retry time exhausted - caching disabled');
-            return undefined;
-          }
-          if (options.attempt > 10) {
-            console.warn('⚠️  Redis max retry attempts reached - caching disabled');
-            return undefined;
-          }
-          return Math.min(options.attempt * 100, 3000);
-        }
+        },
+        password: process.env.REDIS_PASSWORD,
+        database: parseInt(process.env.REDIS_DB) || 0
       });
 
-      // Promisify Redis methods only if client is available and has methods
-      if (this.client && this.client.get) {
-        this.get = promisify(this.client.get).bind(this.client);
-        this.set = promisify(this.client.set).bind(this.client);
-        this.del = promisify(this.client.del).bind(this.client);
-        this.exists = promisify(this.client.exists).bind(this.client);
-        this.expire = promisify(this.client.expire).bind(this.client);
-        this.flushdb = promisify(this.client.flushdb).bind(this.client);
-        this.enabled = true;
-      }
+      // Event handlers
+      this.redisClient.on('error', (error) => {
+        console.error('Redis Client Error:', error);
+        this.isConnected = false;
+        this.cacheStats.errors++;
+      });
+
+      this.redisClient.on('connect', () => {
+        console.log('Redis Client Connected');
+        this.isConnected = true;
+      });
+
+      this.redisClient.on('ready', () => {
+        console.log('Redis Client Ready');
+        this.isConnected = true;
+      });
+
+      this.redisClient.on('end', () => {
+        console.log('Redis Client Disconnected');
+        this.isConnected = false;
+      });
+
+      // Connect to Redis
+      await this.redisClient.connect();
     } catch (error) {
-      console.warn('⚠️  Redis not available - caching disabled:', error.message);
-      this.enabled = false;
+      console.error('Failed to initialize Redis client:', error);
+      this.isConnected = false;
+    }
+  }
+
+  /**
+   * Generate cache key from request
+   */
+  generateCacheKey(req, options = {}) {
+    const {
+      includeQuery = true,
+      includeBody = false,
+      includeHeaders = false,
+      prefix = 'cache'
+    } = options;
+
+    let key = `${prefix}:${req.method}:${req.path}`;
+
+    // Include query parameters
+    if (includeQuery && req.query && Object.keys(req.query).length > 0) {
+      const sortedQuery = Object.keys(req.query)
+        .sort()
+        .map(key => `${key}=${req.query[key]}`)
+        .join('&');
+      key += `:query:${crypto.createHash('md5').update(sortedQuery).digest('hex')}`;
     }
 
-    // Handle Redis connection events only if client exists
-    if (this.client) {
-      this.client.on('connect', () => {
-        console.log('✅ Redis connected');
-        this.enabled = true;
-      });
+    // Include request body (for POST/PUT requests)
+    if (includeBody && req.body && Object.keys(req.body).length > 0) {
+      const bodyHash = crypto.createHash('md5').update(JSON.stringify(req.body)).digest('hex');
+      key += `:body:${bodyHash}`;
+    }
 
-      this.client.on('error', (err) => {
-        console.error('❌ Redis error:', err);
-        this.enabled = false;
-      });
+    // Include relevant headers
+    if (includeHeaders && req.headers) {
+      const relevantHeaders = ['authorization', 'user-agent', 'accept-language'];
+      const headerValues = relevantHeaders
+        .filter(header => req.headers[header])
+        .map(header => `${header}:${req.headers[header]}`)
+        .join('|');
       
-      this.client.on('end', () => {
-        console.log('🔌 Redis disconnected');
-        this.enabled = false;
-      });
-    } else {
-      console.warn('⚠️  Redis client not initialized - caching disabled');
-      this.enabled = false;
+      if (headerValues) {
+        const headerHash = crypto.createHash('md5').update(headerValues).digest('hex');
+        key += `:headers:${headerHash}`;
+      }
+    }
+
+    return key;
+  }
+
+  /**
+   * Get cached response
+   */
+  async get(key) {
+    if (!this.isConnected) {
+      return null;
+    }
+
+    try {
+      const cached = await this.redisClient.get(key);
+      if (cached) {
+        this.cacheStats.hits++;
+        const parsed = JSON.parse(cached);
+        
+        // Check if cache has expired
+        if (parsed.expires && Date.now() > parsed.expires) {
+          await this.redisClient.del(key);
+          this.cacheStats.misses++;
+          return null;
+        }
+        
+        return parsed.data;
+      } else {
+        this.cacheStats.misses++;
+        return null;
+      }
+    } catch (error) {
+      console.error('Cache get error:', error);
+      this.cacheStats.errors++;
+      return null;
+    }
+  }
+
+  /**
+   * Set cached response
+   */
+  async set(key, data, ttl = null) {
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      const actualTTL = Math.min(ttl || this.defaultTTL, this.maxTTL);
+      const cacheData = {
+        data: data,
+        timestamp: Date.now(),
+        expires: Date.now() + (actualTTL * 1000),
+        ttl: actualTTL
+      };
+
+      await this.redisClient.setEx(key, actualTTL, JSON.stringify(cacheData));
+      this.cacheStats.sets++;
+      return true;
+    } catch (error) {
+      console.error('Cache set error:', error);
+      this.cacheStats.errors++;
+      return false;
+    }
+  }
+
+  /**
+   * Delete cached response
+   */
+  async del(key) {
+    if (!this.isConnected) {
+      return false;
+    }
+
+    try {
+      const result = await this.redisClient.del(key);
+      this.cacheStats.deletes++;
+      return result > 0;
+    } catch (error) {
+      console.error('Cache delete error:', error);
+      this.cacheStats.errors++;
+      return false;
+    }
+  }
+
+  /**
+   * Delete multiple keys by pattern
+   */
+  async delPattern(pattern) {
+    if (!this.isConnected) {
+      return 0;
+    }
+
+    try {
+      const keys = await this.redisClient.keys(pattern);
+      if (keys.length > 0) {
+        const result = await this.redisClient.del(keys);
+        this.cacheStats.deletes += keys.length;
+        return result;
+      }
+      return 0;
+    } catch (error) {
+      console.error('Cache delete pattern error:', error);
+      this.cacheStats.errors++;
+      return 0;
     }
   }
 
   /**
    * Cache middleware factory
    */
-  cache(options = {}) {
+  createMiddleware(options = {}) {
     const {
-      ttl = 300, // 5 minutes default
-      keyGenerator = null,
+      ttl = this.defaultTTL,
+      keyOptions = {},
       skipCache = false,
-      skipIf = null
+      cacheCondition = null,
+      invalidateOn = []
     } = options;
 
     return async (req, res, next) => {
-      try {
-        // Skip caching if requested
-        if (skipCache || (skipIf && skipIf(req))) {
-          return next();
-        }
+      // Skip caching if disabled
+      if (skipCache || !this.isConnected) {
+        return next();
+      }
 
+      // Skip non-GET requests unless explicitly allowed
+      if (req.method !== 'GET' && !options.allowMethods?.includes(req.method)) {
+        return next();
+      }
+
+      // Check cache condition
+      if (cacheCondition && !cacheCondition(req)) {
+        return next();
+      }
+
+      try {
         // Generate cache key
-        const cacheKey = keyGenerator ? keyGenerator(req) : this.generateCacheKey(req);
+        const cacheKey = this.generateCacheKey(req, keyOptions);
         
-        // Check if data exists in cache
+        // Try to get from cache
         const cachedData = await this.get(cacheKey);
         
         if (cachedData) {
-          // Return cached data
-          const data = JSON.parse(cachedData);
-          res.json(data);
-          return;
+          // Add cache headers
+          res.set({
+            'X-Cache': 'HIT',
+            'X-Cache-TTL': ttl.toString(),
+            'Cache-Control': `public, max-age=${ttl}`
+          });
+          
+          return res.json(cachedData);
         }
 
-        // Store original res.json method
+        // Cache miss - continue to route handler
+        // Store original json method
         const originalJson = res.json.bind(res);
         
-        // Override res.json to cache the response
-        res.json = (data) => {
+        // Override json method to cache response
+        res.json = async (data) => {
           // Cache the response
-          this.set(cacheKey, JSON.stringify(data), 'EX', ttl)
-            .catch(err => console.error('Cache set error:', err));
+          await this.set(cacheKey, data, ttl);
           
-          // Send the response
-          originalJson(data);
+          // Add cache headers
+          res.set({
+            'X-Cache': 'MISS',
+            'X-Cache-TTL': ttl.toString(),
+            'Cache-Control': `public, max-age=${ttl}`
+          });
+          
+          // Send response
+          return originalJson(data);
         };
 
         next();
       } catch (error) {
         console.error('Cache middleware error:', error);
-        next(); // Continue without caching
+        next();
       }
     };
   }
 
   /**
-   * Generate cache key from request
+   * Cache invalidation middleware
    */
-  generateCacheKey(req) {
-    const baseKey = `${req.method}:${req.originalUrl}`;
-    const queryString = req.query ? JSON.stringify(req.query) : '';
-    const user = req.user ? req.user.id : 'anonymous';
-    
-    return `cache:${user}:${baseKey}:${queryString}`;
-  }
+  createInvalidationMiddleware(options = {}) {
+    const {
+      patterns = [],
+      customInvalidation = null
+    } = options;
 
-  /**
-   * Invalidate cache by pattern
-   */
-  async invalidatePattern(pattern) {
-    try {
-      const keys = await this.client.keys(pattern);
-      if (keys.length > 0) {
-        await this.client.del(...keys);
-        console.log(`🗑️  Invalidated ${keys.length} cache keys matching pattern: ${pattern}`);
-      }
-    } catch (error) {
-      console.error('Cache invalidation error:', error);
-    }
-  }
+    return async (req, res, next) => {
+      // Store original methods
+      const originalJson = res.json.bind(res);
+      const originalSend = res.send.bind(res);
 
-  /**
-   * Invalidate user cache
-   */
-  async invalidateUserCache(userId) {
-    const pattern = `cache:${userId}:*`;
-    await this.invalidatePattern(pattern);
-  }
+      // Override response methods to invalidate cache after successful operations
+      res.json = async (data) => {
+        try {
+          // Custom invalidation logic
+          if (customInvalidation) {
+            await customInvalidation(req, res, data);
+          }
 
-  /**
-   * Invalidate all cache
-   */
-  async invalidateAllCache() {
-    try {
-      await this.flushdb();
-      console.log('🗑️  All cache invalidated');
-    } catch (error) {
-      console.error('Cache flush error:', error);
-    }
+          // Pattern-based invalidation
+          for (const pattern of patterns) {
+            const cachePattern = typeof pattern === 'function' 
+              ? pattern(req, res, data) 
+              : pattern;
+            
+            if (cachePattern) {
+              await this.delPattern(cachePattern);
+            }
+          }
+
+          return originalJson(data);
+        } catch (error) {
+          console.error('Cache invalidation error:', error);
+          return originalJson(data);
+        }
+      };
+
+      res.send = async (data) => {
+        try {
+          // Custom invalidation logic
+          if (customInvalidation) {
+            await customInvalidation(req, res, data);
+          }
+
+          // Pattern-based invalidation
+          for (const pattern of patterns) {
+            const cachePattern = typeof pattern === 'function' 
+              ? pattern(req, res, data) 
+              : pattern;
+            
+            if (cachePattern) {
+              await this.delPattern(cachePattern);
+            }
+          }
+
+          return originalSend(data);
+        } catch (error) {
+          console.error('Cache invalidation error:', error);
+          return originalSend(data);
+        }
+      };
+
+      next();
+    };
   }
 
   /**
    * Get cache statistics
    */
-  async getCacheStats() {
-    try {
-      const info = await this.client.info('memory');
-      const keyspace = await this.client.info('keyspace');
-      
-      return {
-        memory: this.parseRedisInfo(info),
-        keyspace: this.parseRedisInfo(keyspace),
-        connected: this.client.connected
-      };
-    } catch (error) {
-      console.error('Cache stats error:', error);
-      return { connected: false, error: error.message };
-    }
-  }
-
-  /**
-   * Parse Redis info output
-   */
-  parseRedisInfo(info) {
-    const lines = info.split('\r\n');
-    const result = {};
+  getStats() {
+    const total = this.cacheStats.hits + this.cacheStats.misses;
+    const hitRate = total > 0 ? (this.cacheStats.hits / total * 100).toFixed(2) : 0;
     
-    lines.forEach(line => {
-      if (line && !line.startsWith('#')) {
-        const [key, value] = line.split(':');
-        if (key && value) {
-          result[key] = isNaN(value) ? value : Number(value);
-        }
-      }
-    });
-    
-    return result;
-  }
-
-  /**
-   * Cache specific data
-   */
-  async setCache(key, data, ttl = 300) {
-    if (!this.enabled || !this.client) {
-      return true; // Return true when caching is disabled
-    }
-    
-    try {
-      await this.set(key, JSON.stringify(data), 'EX', ttl);
-      return true;
-    } catch (error) {
-      console.error('Cache set error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get cached data
-   */
-  async getCache(key) {
-    if (!this.enabled || !this.client) {
-      return null;
-    }
-    
-    try {
-      const data = await this.get(key);
-      return data ? JSON.parse(data) : null;
-    } catch (error) {
-      console.error('Cache get error:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Delete cached data
-   */
-  async deleteCache(key) {
-    if (!this.enabled || !this.client) {
-      return true; // Return true when caching is disabled
-    }
-    
-    try {
-      await this.del(key);
-      return true;
-    } catch (error) {
-      console.error('Cache delete error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Check if cache exists
-   */
-  async cacheExists(key) {
-    if (!this.enabled || !this.client) {
-      return false;
-    }
-    
-    try {
-      const exists = await this.exists(key);
-      return exists === 1;
-    } catch (error) {
-      console.error('Cache exists error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Set cache expiration
-   */
-  async setCacheExpiration(key, ttl) {
-    if (!this.enabled || !this.client) {
-      return true; // Return true when caching is disabled
-    }
-    
-    try {
-      await this.expire(key, ttl);
-      return true;
-    } catch (error) {
-      console.error('Cache expiration error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * API cache middleware
-   */
-  apiCache(ttl, keyGenerator) {
-    return async (req, res, next) => {
-      if (!this.enabled || !this.client) {
-        return next();
-      }
-
-      try {
-        const key = keyGenerator ? keyGenerator(req) : `api:${req.method}:${req.originalUrl}`;
-        const cached = await this.getCache(key);
-        
-        if (cached) {
-          return res.json(cached);
-        }
-
-        // Store original json method
-        const originalJson = res.json;
-        res.json = function(data) {
-          // Cache the response
-          cacheMiddleware.setCache(key, data, ttl).catch(err => {
-            console.error('Cache set error:', err);
-          });
-          return originalJson.call(this, data);
-        };
-
-        next();
-      } catch (error) {
-        console.error('API cache error:', error);
-        next();
-      }
+    return {
+      ...this.cacheStats,
+      hitRate: `${hitRate}%`,
+      isConnected: this.isConnected,
+      total: total
     };
+  }
+
+  /**
+   * Clear all cache statistics
+   */
+  clearStats() {
+    this.cacheStats = {
+      hits: 0,
+      misses: 0,
+      sets: 0,
+      deletes: 0,
+      errors: 0
+    };
+  }
+
+  /**
+   * Health check
+   */
+  async healthCheck() {
+    if (!this.isConnected) {
+      return { status: 'error', message: 'Redis not connected' };
+    }
+
+    try {
+      const result = await this.redisClient.ping();
+      return { status: 'healthy', message: 'Redis connected', response: result };
+    } catch (error) {
+      return { status: 'error', message: 'Redis health check failed', error: error.message };
+    }
   }
 
   /**
    * Close Redis connection
    */
   async close() {
-    if (!this.client) {
-      return;
-    }
-    
-    try {
-      await this.client.quit();
-      console.log('🔌 Redis connection closed');
-    } catch (error) {
-      console.error('Redis close error:', error);
+    if (this.redisClient) {
+      await this.redisClient.quit();
+      this.isConnected = false;
     }
   }
 }

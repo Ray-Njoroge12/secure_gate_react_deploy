@@ -32,6 +32,10 @@ import { requestLogger, errorLogger } from './config/logger.js';
 import { performanceMonitoring } from './middleware/performanceMonitoring.js';
 import { auditLogging, authAuditLogging, securityAuditLogging, dataAccessAuditLogging } from './middleware/auditLogging.js';
 
+// Import cache middleware
+import cacheMiddleware from './middleware/cacheMiddleware.js';
+import { ROUTE_CACHE_CONFIG } from './config/cacheConfig.js';
+
 // Import routes
 import createCacheRoutes from './routes/cacheRoutes.js';
 import rateLimitRoutes from './routes/rateLimitRoutes.js';
@@ -43,6 +47,7 @@ import visitorRoutes from './routes/visitorRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import consentRoutes from './routes/consentRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
+import dsrRoutes from './routes/dsrRoutes.js';
 import preDeploymentValidationRoutes from './routes/preDeploymentValidationRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
@@ -148,6 +153,34 @@ app.use('/api', apiVersioning({
   logVersionUsage: true
 }));
 
+// Setup cache middleware for specific routes
+app.use('/api/visitors', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/visitors']));
+app.use('/api/users/profile', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/users/profile']));
+app.use('/api/admin/stats', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/stats']));
+app.use('/api/admin/dashboard', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/dashboard']));
+app.use('/api/health', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/health']));
+app.use('/api/system/info', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/system/info']));
+
+// Setup cache invalidation middleware for write operations
+app.use('/api/visitors', cacheMiddleware.createInvalidationMiddleware({
+  patterns: [
+    (req) => {
+      if (req.method === 'POST') return 'cache:GET:/api/visitors*';
+      if (req.method === 'PUT' || req.method === 'DELETE') return 'cache:GET:/api/visitors/*';
+      return null;
+    }
+  ]
+}));
+
+app.use('/api/users', cacheMiddleware.createInvalidationMiddleware({
+  patterns: [
+    (req) => {
+      if (req.method === 'PUT') return 'cache:GET:/api/users/profile*';
+      return null;
+    }
+  ]
+}));
+
 // Versioned API routes
 app.use('/api/v1', v1Routes);
 app.use('/api/v2', v2Routes);
@@ -167,6 +200,7 @@ app.use('/api/visitors', visitorRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/consent', consentRoutes);
 app.use('/api/compliance', complianceRoutes);
+app.use('/api/dsr', dsrRoutes);
 app.use('/api/pre-deployment', preDeploymentValidationRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/health', healthRoutes);
@@ -176,6 +210,23 @@ app.use('/api/invite', visitorRoutes);
 
 // API Documentation (Swagger)
 app.use('/api-docs', swaggerMiddleware.serve, swaggerMiddleware.setup);
+
+// Cache statistics endpoint
+app.get('/api/cache/stats', (req, res) => {
+  res.json({
+    cache: cacheMiddleware.getStats(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Cache health check endpoint
+app.get('/api/cache/health', async (req, res) => {
+  const health = await cacheMiddleware.healthCheck();
+  res.json({
+    ...health,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Health check endpoints
 app.get('/health', (req, res) => {

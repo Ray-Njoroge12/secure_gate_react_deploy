@@ -1,13 +1,10 @@
 // client/src/pages/resident/AddVisitor.jsx
 import React, { useState, useEffect } from "react";
-import logger from 'utils/logger';
 import { useNavigate } from "react-router-dom";
 import { createVisitor, createPass } from "../../services/visitorService";
-import { useError } from "../../contexts/ErrorContext";
-import { useLoading } from "../../contexts/LoadingContext";
-import { Button, Input, Card, Badge, ValidatedForm } from "../../components/ui";
-import ValidatedInput from "../../components/ui/ValidatedInput";
-import { commonRules } from "../../utils/validationRules";
+import { handleApiError } from "../../utils/errorMapper";
+import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay } from "../../components/ui";
+import ConsentForm from "../../components/ConsentForm";
 import { 
   User, 
   Phone, 
@@ -18,14 +15,12 @@ import {
   QrCode,
   CheckCircle,
   ArrowLeft,
-  Loader2
+  Loader2,
+  Shield
 } from "lucide-react";
 
 const AddVisitor = () => {
   const navigate = useNavigate();
-  const { handleError, handleSuccess, handleApiError, handleValidationError, clearAllErrors } = useError();
-  const { setLoading, isLoading } = useLoading();
-  
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -35,6 +30,12 @@ const AddVisitor = () => {
     purpose: "",
     generatePassImmediately: true,
   });
+  const [consentData, setConsentData] = useState({
+    given: false,
+    timestamp: null,
+    type: 'data_processing',
+    version: '1.0'
+  });
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -42,7 +43,7 @@ const AddVisitor = () => {
       // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (!isLoading('addVisitor')) {
+        if (!loading) {
           handleSubmit(e);
         }
       }
@@ -51,16 +52,14 @@ const AddVisitor = () => {
         e.preventDefault();
         resetForm();
       }
-      // Escape to clear errors
-      if (e.key === 'Escape') {
-        clearAllErrors();
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isLoading, clearAllErrors]);
-  
+  }, [loading]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
 
   const validateForm = () => {
@@ -99,6 +98,11 @@ const AddVisitor = () => {
       errors.purpose = "Purpose of visit is required";
     }
     
+    // Consent validation
+    if (!consentData.given) {
+      errors.consent = "Consent is required to process visitor data";
+    }
+    
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -107,12 +111,13 @@ const AddVisitor = () => {
     e.preventDefault();
     
     if (!validateForm()) {
-      handleValidationError(validationErrors, 'Add Visitor Form');
+      setError("Please fix the validation errors below");
       return;
     }
 
-    setLoading('addVisitor', true, { message: 'Creating visitor...' });
-    clearAllErrors();
+    setLoading(true);
+    setError("");
+    setSuccess(null);
 
     try {
       // Create visitor
@@ -123,14 +128,19 @@ const AddVisitor = () => {
         dateOfVisit: formData.dateOfVisit,
         time: formData.time,
         purpose: formData.purpose.trim(),
+        // Include consent data
+        consent_given: consentData.given,
+        consent_timestamp: consentData.timestamp,
+        consent_type: consentData.type,
+        consent_version: consentData.version
       };
 
       if (process.env.NODE_ENV === 'development') {
-        logger.debug('[DEBUG] Sending visitor data:', visitorData);
+        console.log('[DEBUG] Sending visitor data:', visitorData);
       }
       const visitorResponse = await createVisitor(visitorData);
       if (process.env.NODE_ENV === 'development') {
-        logger.debug('[DEBUG] Visitor response:', visitorResponse);
+        console.log('[DEBUG] Visitor response:', visitorResponse);
       }
       
       let passResponse = null;
@@ -139,13 +149,13 @@ const AddVisitor = () => {
           passResponse = await createPass(visitorResponse.id);
         } catch (passError) {
           if (process.env.NODE_ENV === 'development') {
-            logger.warn('[WARN] Pass generation failed:', passError);
+            console.warn('[WARN] Pass generation failed:', passError);
           }
         }
       }
 
-      handleSuccess('Visitor created successfully!', {
-        context: 'Add Visitor',
+      setSuccess({
+        message: 'Visitor created successfully!',
         data: {
           visitor: visitorResponse,
           pass: passResponse,
@@ -164,19 +174,20 @@ const AddVisitor = () => {
           purpose: "",
           generatePassImmediately: true,
         });
-        setValidationErrors({});
-      }, 2000);
+        setSuccess(null);
+      }, 5000);
 
     } catch (err) {
-      logger.error('Visitor creation error:', err);
-      logger.error('Error details:', {
+      console.error('Visitor creation error:', err);
+      console.error('Error details:', {
         message: err.message,
         status: err.status,
         response: err.response
       });
-      handleApiError(err, 'Add Visitor');
+      const errorMessage = handleApiError(err, 'Visitor creation');
+      setError(errorMessage);
     } finally {
-      setLoading('addVisitor', false);
+      setLoading(false);
     }
   };
 
@@ -199,7 +210,8 @@ const AddVisitor = () => {
       purpose: "",
       generatePassImmediately: true,
     });
-    clearAllErrors();
+    setError("");
+    setSuccess(null);
     setValidationErrors({});
   };
 
@@ -211,8 +223,7 @@ const AddVisitor = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/dashboard/resident')}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Go back to resident dashboard"
+              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-slate-300" />
             </button>
@@ -237,43 +248,40 @@ const AddVisitor = () => {
                 </h3>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <ValidatedInput
-                    name="name"
+                  <Input
                     label="Full Name"
                     placeholder="Enter visitor's full name"
                     value={formData.name}
-                    onChange={(value) => handleInputChange('name', value)}
-                    disabled={isLoading('addVisitor')}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    disabled={loading}
                     required
-                    validationRules={[commonRules.requiredName]}
+                    error={validationErrors.name}
                     icon={<User className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                   />
 
-                  <ValidatedInput
-                    name="phone"
+                  <Input
                     label="Phone Number"
                     placeholder="0xxxxxxxxx"
                     value={formData.phone}
-                    onChange={(value) => handleInputChange('phone', value)}
-                    disabled={isLoading('addVisitor')}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    disabled={loading}
                     required
-                    validationRules={[commonRules.requiredPhone]}
-                    helpText="Format: 0xxxxxxxxx (10 digits)"
+                    error={validationErrors.phone}
+                    helperText="Format: 0xxxxxxxxx (10 digits)"
                     icon={<Phone className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                   />
                 </div>
 
-                <ValidatedInput
-                  name="email"
+                <Input
                   label="Email Address"
                   type="email"
                   placeholder="visitor@example.com (optional)"
                   value={formData.email}
-                  onChange={(value) => handleInputChange('email', value)}
-                  disabled={isLoading('addVisitor')}
-                  validationRules={[commonRules.emailFormat]}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  disabled={loading}
+                  error={validationErrors.email}
                   icon={<Mail className="w-4 h-4" />}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                 />
@@ -287,42 +295,39 @@ const AddVisitor = () => {
                 </h3>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <ValidatedInput
-                    name="dateOfVisit"
+                  <Input
                     label="Date of Visit"
                     type="date"
                     value={formData.dateOfVisit}
-                    onChange={(value) => handleInputChange('dateOfVisit', value)}
-                    disabled={isLoading('addVisitor')}
+                    onChange={(e) => handleInputChange('dateOfVisit', e.target.value)}
+                    disabled={loading}
                     required
-                    validationRules={[commonRules.requiredDate]}
+                    error={validationErrors.dateOfVisit}
                     icon={<Calendar className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white"
                   />
 
-                  <ValidatedInput
-                    name="time"
+                  <Input
                     label="Time of Visit"
                     type="time"
                     value={formData.time}
-                    onChange={(value) => handleInputChange('time', value)}
-                    disabled={isLoading('addVisitor')}
+                    onChange={(e) => handleInputChange('time', e.target.value)}
+                    disabled={loading}
                     required
-                    validationRules={[(value) => commonRules.requiredTime(value, formData.dateOfVisit)]}
+                    error={validationErrors.time}
                     icon={<Clock className="w-4 h-4" />}
                     className="bg-slate-700/50 border-slate-600 text-white"
                   />
                 </div>
 
-                <ValidatedInput
-                  name="purpose"
+                <Input
                   label="Purpose of Visit"
                   placeholder="e.g., visit, delivery, meeting, maintenance"
                   value={formData.purpose}
-                  onChange={(value) => handleInputChange('purpose', value)}
-                  disabled={isLoading('addVisitor')}
+                  onChange={(e) => handleInputChange('purpose', e.target.value)}
+                  disabled={loading}
                   required
-                  validationRules={[commonRules.requiredName]}
+                  error={validationErrors.purpose}
                   icon={<FileText className="w-4 h-4" />}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
                 />
@@ -352,6 +357,29 @@ const AddVisitor = () => {
                 </div>
               </div>
 
+              {/* Consent Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Data Processing Consent
+                </h3>
+                
+                <ConsentForm
+                  onConsentChange={setConsentData}
+                  required={true}
+                  consentType="data_processing"
+                  showDetails={true}
+                  className="bg-slate-700/30 rounded-lg p-4 border border-slate-600"
+                />
+                
+                {validationErrors.consent && (
+                  <div className="text-red-400 text-sm flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    {validationErrors.consent}
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Button
@@ -365,10 +393,10 @@ const AddVisitor = () => {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isLoading('addVisitor')}
+                  disabled={loading}
                   className="flex-1 sm:flex-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 min-h-[44px]"
                 >
-                  {isLoading('addVisitor') ? (
+                  {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       Creating...
@@ -386,7 +414,19 @@ const AddVisitor = () => {
         </Card>
       </div>
 
-      {/* Error and Success messages are now handled by ErrorContext */}
+      {/* Error Display */}
+      <ErrorDisplay
+        error={error}
+        onClose={() => setError("")}
+        type="error"
+        title="Creation Failed"
+      />
+
+      {/* Success Display */}
+      <SuccessDisplay
+        success={success}
+        onClose={() => setSuccess(null)}
+      />
     </div>
   );
 };

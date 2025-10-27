@@ -1,0 +1,348 @@
+# Alert Rules for Secure Gate Access Control System
+# This file defines the conditions that trigger alerts
+
+groups:
+  # System and Infrastructure Alerts
+  - name: system.rules
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: high
+          service: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://securegate.com/docs/alerts/high-cpu-usage"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: high
+          service: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://securegate.com/docs/alerts/high-memory-usage"
+
+      # High disk usage
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 10m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is above 90% for more than 10 minutes on {{ $labels.instance }}"
+          runbook_url: "https://securegate.com/docs/alerts/high-disk-usage"
+
+      # Service down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.job }} is down on {{ $labels.instance }}"
+          runbook_url: "https://securegate.com/docs/alerts/service-down"
+
+  # Database Alerts
+  - name: database.rules
+    rules:
+      # Database connection failures
+      - alert: DatabaseConnectionFailure
+        expr: pg_stat_database_numbackends{datname="secure_gate"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection failure"
+          description: "No active connections to secure_gate database for more than 2 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/database-connection-failure"
+
+      # High database connections
+      - alert: HighDatabaseConnections
+        expr: pg_stat_database_numbackends{datname="secure_gate"} > 80
+        for: 5m
+        labels:
+          severity: high
+          service: database
+        annotations:
+          summary: "High database connections"
+          description: "Database has more than 80 active connections for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/high-database-connections"
+
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: rate(pg_stat_database_blk_read_time{datname="secure_gate"}[5m]) > 1000
+        for: 10m
+        labels:
+          severity: medium
+          service: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Average query time is above 1000ms for more than 10 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/slow-database-queries"
+
+      # Database replication lag
+      - alert: DatabaseReplicationLag
+        expr: pg_replication_lag > 60
+        for: 5m
+        labels:
+          severity: high
+          service: database
+        annotations:
+          summary: "Database replication lag"
+          description: "Database replication lag is above 60 seconds for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/database-replication-lag"
+
+      # Database size growth
+      - alert: DatabaseSizeGrowth
+        expr: increase(pg_database_size_bytes{datname="secure_gate"}[1h]) > 1073741824  # 1GB
+        for: 1h
+        labels:
+          severity: medium
+          service: database
+        annotations:
+          summary: "Rapid database size growth"
+          description: "Database size increased by more than 1GB in the last hour"
+          runbook_url: "https://securegate.com/docs/alerts/database-size-growth"
+
+  # Application Alerts
+  - name: application.rules
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: high
+          service: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/high-error-rate"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: medium
+          service: application
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 1 second for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/high-response-time"
+
+      # Low throughput
+      - alert: LowThroughput
+        expr: rate(http_requests_total[5m]) < 10
+        for: 10m
+        labels:
+          severity: medium
+          service: application
+        annotations:
+          summary: "Low throughput detected"
+          description: "Request rate is below 10 requests per second for more than 10 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/low-throughput"
+
+      # Application memory leak
+      - alert: ApplicationMemoryLeak
+        expr: increase(process_resident_memory_bytes[1h]) > 536870912  # 512MB
+        for: 1h
+        labels:
+          severity: high
+          service: application
+        annotations:
+          summary: "Possible memory leak detected"
+          description: "Application memory increased by more than 512MB in the last hour"
+          runbook_url: "https://securegate.com/docs/alerts/application-memory-leak"
+
+      # Failed health checks
+      - alert: HealthCheckFailure
+        expr: up{job="secure-gate-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: application
+        annotations:
+          summary: "Health check failure"
+          description: "Application health check is failing for more than 2 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/health-check-failure"
+
+  # Security Alerts
+  - name: security.rules
+    rules:
+      # High rate of failed login attempts
+      - alert: HighFailedLoginRate
+        expr: rate(http_requests_total{endpoint="/api/auth/login",status="401"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: high
+          service: security
+        annotations:
+          summary: "High rate of failed login attempts"
+          description: "More than 10 failed login attempts per second for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/high-failed-login-rate"
+
+      # Suspicious IP activity
+      - alert: SuspiciousIPActivity
+        expr: rate(http_requests_total{status=~"4.."}[5m]) by (source_ip) > 50
+        for: 5m
+        labels:
+          severity: high
+          service: security
+        annotations:
+          summary: "Suspicious IP activity detected"
+          description: "IP {{ $labels.source_ip }} is generating more than 50 4xx errors per second"
+          runbook_url: "https://securegate.com/docs/alerts/suspicious-ip-activity"
+
+      # Rate limit violations
+      - alert: RateLimitViolations
+        expr: rate(http_requests_total{status="429"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: medium
+          service: security
+        annotations:
+          summary: "High rate of rate limit violations"
+          description: "More than 5 rate limit violations per second for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/rate-limit-violations"
+
+      # SSL certificate expiration
+      - alert: SSLCertificateExpiring
+        expr: (ssl_cert_not_after - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: high
+          service: security
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in less than 30 days"
+          runbook_url: "https://securegate.com/docs/alerts/ssl-certificate-expiring"
+
+      # Unauthorized access attempts
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(http_requests_total{status="403"}[5m]) > 20
+        for: 5m
+        labels:
+          severity: high
+          service: security
+        annotations:
+          summary: "High rate of unauthorized access attempts"
+          description: "More than 20 unauthorized access attempts per second for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/unauthorized-access-attempts"
+
+  # Cache Alerts
+  - name: cache.rules
+    rules:
+      # Redis connection failure
+      - alert: RedisConnectionFailure
+        expr: redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: cache
+        annotations:
+          summary: "Redis connection failure"
+          description: "Redis is not accessible for more than 2 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/redis-connection-failure"
+
+      # Low cache hit rate
+      - alert: LowCacheHitRate
+        expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) < 0.8
+        for: 10m
+        labels:
+          severity: medium
+          service: cache
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is below 80% for more than 10 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/low-cache-hit-rate"
+
+      # High Redis memory usage
+      - alert: HighRedisMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: high
+          service: cache
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is above 90% for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/high-redis-memory-usage"
+
+  # Backup Alerts
+  - name: backup.rules
+    rules:
+      # Backup failure
+      - alert: BackupFailure
+        expr: backup_last_success_timestamp < (time() - 86400)  # 24 hours
+        for: 1h
+        labels:
+          severity: high
+          service: backup
+        annotations:
+          summary: "Backup failure"
+          description: "No successful backup in the last 24 hours"
+          runbook_url: "https://securegate.com/docs/alerts/backup-failure"
+
+      # Backup size anomaly
+      - alert: BackupSizeAnomaly
+        expr: abs(backup_size_bytes - backup_size_bytes offset 1d) / backup_size_bytes offset 1d > 0.5
+        for: 1h
+        labels:
+          severity: medium
+          service: backup
+        annotations:
+          summary: "Backup size anomaly"
+          description: "Backup size changed by more than 50% compared to yesterday"
+          runbook_url: "https://securegate.com/docs/alerts/backup-size-anomaly"
+
+  # Monitoring Alerts
+  - name: monitoring.rules
+    rules:
+      # Prometheus target down
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: high
+          service: monitoring
+        annotations:
+          summary: "Prometheus target is down"
+          description: "Prometheus target {{ $labels.job }} is down for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/prometheus-target-down"
+
+      # Grafana service down
+      - alert: GrafanaServiceDown
+        expr: up{job="grafana"} == 0
+        for: 5m
+        labels:
+          severity: medium
+          service: monitoring
+        annotations:
+          summary: "Grafana service is down"
+          description: "Grafana service is down for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/grafana-service-down"
+
+      # Alertmanager service down
+      - alert: AlertmanagerServiceDown
+        expr: up{job="alertmanager"} == 0
+        for: 5m
+        labels:
+          severity: high
+          service: monitoring
+        annotations:
+          summary: "Alertmanager service is down"
+          description: "Alertmanager service is down for more than 5 minutes"
+          runbook_url: "https://securegate.com/docs/alerts/alertmanager-service-down"
