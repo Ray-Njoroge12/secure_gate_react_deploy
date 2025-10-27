@@ -5,11 +5,11 @@
 
 import React, { useState, useEffect } from 'react';
 import logger from 'utils/logger';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Alert, AlertDescription } from './ui/alert';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
+import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/Tabs';
+import { Alert, AlertDescription } from './ui/Alert';
 import { 
   Server, 
   Activity, 

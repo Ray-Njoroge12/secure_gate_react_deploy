@@ -168,11 +168,33 @@ class EnhancedSessionManager {
           return next();
         }
 
-        // Regenerate session ID to prevent fixation attacks
-        await sessionSecurityService.regenerateSession(req, 'login');
+        // TIMEOUT PROTECTION: Prevent hanging on Redis connection issues
+        const TIMEOUT_MS = 5000; // 5 seconds maximum
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Session operation timeout')), TIMEOUT_MS)
+        );
 
-        // Initialize secure session
-        await sessionSecurityService.initializeSession(req, req.user);
+        try {
+          // Regenerate session ID to prevent fixation attacks (with timeout)
+          await Promise.race([
+            sessionSecurityService.regenerateSession(req, 'login'),
+            timeoutPromise
+          ]);
+
+          // Initialize secure session (with timeout)
+          await Promise.race([
+            sessionSecurityService.initializeSession(req, req.user),
+            timeoutPromise
+          ]);
+        } catch (timeoutError) {
+          console.warn('Session initialization timed out, continuing without session:', timeoutError.message);
+          loggingService.logSecurity('Session timeout - continuing without session', {
+            error: timeoutError.message,
+            userId: req.user?.id,
+            correlationId: req.correlationId
+          });
+          // Continue without failing the login
+        }
 
         next();
       } catch (error) {

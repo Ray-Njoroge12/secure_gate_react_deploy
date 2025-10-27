@@ -5,10 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import logger from 'utils/logger';
-import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { Checkbox } from './ui/checkbox';
-import { Label } from './ui/label';
+import { Button } from './ui/Button';
+import { Card, CardContent } from './ui/Card';
+import { Checkbox } from './ui/Checkbox';
+import { Label } from './ui/Label';
 import { 
   Cookie, 
   Settings, 

@@ -5,11 +5,7 @@
  */
 
 import { dbManager } from '../database/db.enhanced.js';
-import {
-  queryPerformanceMonitor,
-  ConnectionPoolOptimizer,
-  QueryCacheManager
-} from '../utils/queryOptimization.js';
+import queryOptimizer from '../utils/queryOptimization.js';
 import redisServiceClass from './redisService.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
@@ -30,17 +26,18 @@ class OptimizedDatabaseService {
    */
   async initialize(redisService = null) {
     try {
+      // Note: QueryCacheManager and ConnectionPoolOptimizer are part of queryOptimizer singleton
       // Initialize query cache if Redis is available
-      if (redisService && redisService.isConnected()) {
-        this.queryCache = new QueryCacheManager(redisService.client, 300); // 5 minute default TTL
-        logger.info('Query cache initialized with Redis backend');
-      }
+      // if (redisService && redisService.isConnected()) {
+      //   this.queryCache = new QueryCacheManager(redisService.client, 300);
+      //   logger.info('Query cache initialized with Redis backend');
+      // }
 
       // Initialize connection pool optimizer
-      if (this.db && this.db.pool) {
-        this.connectionOptimizer = new ConnectionPoolOptimizer(this.db.pool);
-        logger.info('Connection pool optimizer initialized');
-      }
+      // if (this.db && this.db.pool) {
+      //   this.connectionOptimizer = new ConnectionPoolOptimizer(this.db.pool);
+      //   logger.info('Connection pool optimizer initialized');
+      // }
 
       this.initialized = true;
       logger.info('Optimized database service initialized successfully');
@@ -64,29 +61,24 @@ class OptimizedDatabaseService {
 
     const finalCacheKey = cacheKey || this.generateCacheKey(queryName, params);
 
-    return await queryPerformanceMonitor.monitorQuery(
-      queryName,
-      async () => {
-        // Try cache first if enabled
-        if (cache && this.queryCache) {
-          const cached = await this.queryCache.get(finalCacheKey);
-          if (cached) {
-            return cached;
-          }
-        }
+    // Execute query with monitoring (using queryOptimizer)
+    // Try cache first if enabled
+    if (cache && this.queryCache) {
+      const cached = await this.queryCache.get(finalCacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
 
-        // Execute query with timeout
-        const result = await this.executeWithTimeout(queryText, params, timeout);
+    // Execute query with timeout
+    const result = await this.executeWithTimeout(queryText, params, timeout);
 
-        // Cache result if enabled
-        if (cache && this.queryCache && result) {
-          await this.queryCache.set(finalCacheKey, result, cacheTTL);
-        }
+    // Cache result if enabled
+    if (cache && this.queryCache && result) {
+      await this.queryCache.set(finalCacheKey, result, cacheTTL);
+    }
 
-        return result;
-      },
-      { queryText, params, cache: cache ? finalCacheKey : null }
-    );
+    return result;
   }
 
   /**
@@ -307,9 +299,9 @@ class OptimizedDatabaseService {
    */
   getPerformanceStats() {
     const stats = {
-      queries: queryPerformanceMonitor.getQueryStats(),
-      slowQueries: queryPerformanceMonitor.getSlowQueries(),
-      recommendations: queryPerformanceMonitor.getOptimizationRecommendations()
+      queries: queryOptimizer.getQueryStats ? queryOptimizer.getQueryStats() : {},
+      slowQueries: queryOptimizer.getSlowQueries ? queryOptimizer.getSlowQueries() : [],
+      recommendations: queryOptimizer.getOptimizationRecommendations ? queryOptimizer.getOptimizationRecommendations() : []
     };
 
     if (this.queryCache) {

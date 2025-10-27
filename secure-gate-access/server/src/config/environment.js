@@ -13,7 +13,7 @@
  */
 
 import crypto from 'crypto';
-import { SecretsManagerService } from '../services/secretsManagerService.js';
+import secretsManagerService from '../services/secretsManagerService.js';
 
 class EnvironmentConfig {
   constructor() {
@@ -23,7 +23,7 @@ class EnvironmentConfig {
 
     // Initialize secrets manager for production
     this.secretsManager = this.isProduction && !this.isTest 
-      ? new SecretsManagerService() 
+      ? secretsManagerService 
       : null;
     
     this.secretsLoaded = false;
@@ -207,6 +207,19 @@ class EnvironmentConfig {
     const twilioToken = process.env.TWILIO_AUTH_TOKEN;
     if (twilioSid && !twilioToken) {
       this.warnings.push('TWILIO_ACCOUNT_SID set but TWILIO_AUTH_TOKEN missing');
+    }
+
+    // Africa's Talking Configuration
+    const atUsername = process.env.AT_USERNAME;
+    const atApiKey = process.env.AT_API_KEY;
+    if (atUsername && !atApiKey) {
+      this.warnings.push('AT_USERNAME set but AT_API_KEY missing');
+    }
+
+    // SMS Provider validation
+    const smsProvider = process.env.SMS_PROVIDER;
+    if (smsProvider && !['twilio', 'africastalking'].includes(smsProvider)) {
+      this.warnings.push(`Invalid SMS_PROVIDER: ${smsProvider}. Must be 'twilio' or 'africastalking'`);
     }
 
     // Redis Configuration (for rate limiting)
@@ -411,7 +424,5 @@ class EnvironmentConfig {
     };
   }
 }
-
-export default EnvironmentConfig;
 
 export default EnvironmentConfig;

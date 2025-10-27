@@ -102,9 +102,9 @@ class UserService {
     }
 
     try {
-      // Get user by username using parameterized query
+      // Get user by username OR email using parameterized query
       const result = await this.db.query(
-        'SELECT id, username, email, password_hash, role, created_at FROM users WHERE username = $1',
+        'SELECT id, username, email, password_hash, role, created_at FROM users WHERE username = $1 OR email = $1',
         [username]
       );
 

@@ -1,0 +1,73 @@
+{
+  "tests": [
+    {
+      "testName": "Smoke Test",
+      "count": 300,
+      "min": 0.9961250000014843,
+      "max": 42.86275000000023,
+      "mean": 9.112663336666868,
+      "median": 7.850041999998211,
+      "p95": 20.381333999999995,
+      "p99": 28.947000000000116,
+      "successRate": 33,
+      "errorRate": 67,
+      "requestsPerSecond": 4.944701752072654,
+      "totalDuration": 60.671,
+      "passed": false
+    },
+    {
+      "testName": "Load Test",
+      "count": 3270,
+      "min": 0.7824169999948936,
+      "max": 233.9753330000094,
+      "mean": 4.323173490214004,
+      "median": 3.179833999995026,
+      "p95": 7.9152500000054715,
+      "p99": 21.575708000003942,
+      "successRate": 0,
+      "errorRate": 100,
+      "requestsPerSecond": 45.75666410130833,
+      "totalDuration": 71.465,
+      "passed": false
+    },
+    {
+      "testName": "Stress Test",
+      "count": 16971,
+      "min": 0.4774160000088159,
+      "max": 170.34999999997672,
+      "mean": 3.8503003474748647,
+      "median": 1.120334000006551,
+      "p95": 10.481208000011975,
+      "p99": 79.44899999999325,
+      "successRate": 0,
+      "errorRate": 100,
+      "requestsPerSecond": 280.59587976588074,
+      "totalDuration": 60.482,
+      "passed": false
+    },
+    {
+      "testName": "Spike Test",
+      "count": 2800,
+      "min": 0.5036250000121072,
+      "max": 115.29629199998453,
+      "mean": 9.654804614999687,
+      "median": 4.05283299999428,
+      "p95": 50.71662500000093,
+      "p99": 86.21770800001104,
+      "successRate": 0,
+      "errorRate": 100,
+      "requestsPerSecond": 55.054169370219626,
+      "totalDuration": 50.859,
+      "passed": false
+    }
+  ],
+  "summary": {
+    "totalTests": 4,
+    "passed": 0,
+    "failed": 4,
+    "duration": 252.566,
+    "overallStatus": "FAIL"
+  },
+  "startTime": 1760369553679,
+  "endTime": 1760369806245
+}

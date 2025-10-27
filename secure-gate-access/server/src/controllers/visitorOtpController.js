@@ -12,7 +12,8 @@ const verifyOtp = async (req, res) => {
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
     
-    if (visitor.status !== 'PENDING') return respondError(res, 422, 'Visitor already verified or checked in');
+    // Allow both PENDING and OTP_SENT status for verification
+    if (visitor.status !== 'PENDING' && visitor.status !== 'OTP_SENT') return respondError(res, 422, 'Visitor already verified or checked in');
     
     if (visitor.otp !== otp) {
       await req.audit?.('visitor.otp.verify', 'visitor', String(id), { outcome: 'fail', message: 'Invalid OTP provided' });

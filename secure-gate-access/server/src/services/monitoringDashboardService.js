@@ -6,7 +6,7 @@
 
 import EventEmitter from 'events';
 import loggingService from './loggingService.js';
-// import { performanceMonitor } from '../middleware/performanceMiddleware.js';
+import { performanceMonitor } from '../middleware/performanceMiddleware.js';
 import optimizedDb from './optimizedDatabaseService.js';
 
 /**
@@ -194,18 +194,22 @@ class MonitoringDashboardService extends EventEmitter {
    * Collect application-level metrics
    */
   async collectApplicationMetrics() {
-    // Get performance metrics if available
-    if (typeof performanceMonitor !== 'undefined' && performanceMonitor) {
-      const perfMetrics = performanceMonitor.getMetrics();
+    try {
+      // Get performance metrics from imported performanceMonitor
+      if (performanceMonitor) {
+        const perfMetrics = performanceMonitor.getMetrics();
 
-      this.metrics.application = {
-        totalRequests: perfMetrics.summary?.totalRequests || 0,
-        errorRate: perfMetrics.summary?.errorRate || 0,
-        averageResponseTime: perfMetrics.summary?.averageResponseTime || 0,
-        activeRequests: perfMetrics.summary?.activeRequests || 0,
-        slowRequests: perfMetrics.slowRequests?.length || 0,
-        alerts: perfMetrics.alerts?.length || 0
-      };
+        this.metrics.application = {
+          totalRequests: perfMetrics.overall?.requests || 0,
+          errorRate: parseFloat(perfMetrics.overall?.errorRate) || 0,
+          averageResponseTime: parseFloat(perfMetrics.overall?.averageResponseTime) || 0,
+          activeRequests: 0, // Not available in current metrics
+          slowRequests: perfMetrics.overall?.slowRequests || 0,
+          alerts: 0 // Not available in current metrics
+        };
+      }
+    } catch (error) {
+      loggingService.logError('Error collecting application metrics', { error: error.message });
     }
   }
 
