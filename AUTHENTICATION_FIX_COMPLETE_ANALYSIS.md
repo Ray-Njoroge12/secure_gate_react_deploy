@@ -270,3 +270,4 @@ curl -X POST http://localhost:5001/api/auth/register ...
 **Recommendation**: Use local backend approach for faster testing, then rebuild Docker image once everything is validated.
 
 
+
