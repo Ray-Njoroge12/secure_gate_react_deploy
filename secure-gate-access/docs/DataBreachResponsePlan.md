@@ -579,3 +579,4 @@ Email: claims@cyberinsurance.co.ke
 *This plan is effective as of October 11, 2025, and supersedes all previous versions.*
 
 
+

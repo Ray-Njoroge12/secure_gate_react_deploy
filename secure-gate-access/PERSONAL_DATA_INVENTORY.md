@@ -368,3 +368,4 @@ The Secure Gate Access Control System demonstrates **strong data protection foun
 *This document is reviewed quarterly and updated as necessary to maintain compliance with Kenya DPA 2019 and evolving privacy regulations.*
 
 
+

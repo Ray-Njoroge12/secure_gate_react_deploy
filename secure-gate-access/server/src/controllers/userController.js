@@ -6,6 +6,7 @@ import { ErrorHelper, asyncHandler } from '../middleware/errorHandler.js';
 import { ResponseUtil, sanitizeUser } from '../utils/responseUtils.js';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import loggingService from '../services/loggingService.js';
+import { encryptUserData, decryptUserData } from '../utils/encryptionHelper.js';
 // bcrypt will be imported dynamically
 
 /**
@@ -30,7 +31,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
   // Check if user exists
   const existingRes = await dbManager.query(
-    'SELECT id, email, role, name, phone, profile_pic, notify_email, notify_sms, created_at FROM users WHERE email = $1',
+    'SELECT id, email, email_encrypted, role, name, phone, phone_encrypted, profile_pic, notify_email, notify_sms, created_at FROM users WHERE email = $1',
     [email]
   );
 
@@ -38,28 +39,47 @@ export const updateProfile = asyncHandler(async (req, res) => {
     throw ErrorHelper.notFound('User', email);
   }
 
-  const existing = existingRes.rows[0];
+  const existing = await decryptUserData(existingRes.rows[0]);
 
-  // Update user profile
+  // Prepare updated data with encryption
+  const updateData = {
+    phone: phone || existing.phone || null
+  };
+  
+  const encrypted = await encryptUserData(updateData);
+
+  // Update user profile with encrypted fields
   await dbManager.query(
-    'UPDATE users SET name = $1, phone = $2, profile_pic = $3, notify_email = $4, notify_sms = $5 WHERE email = $6',
+    `UPDATE users SET 
+      name = $1, 
+      phone = $2, 
+      phone_encrypted = $3,
+      profile_pic = $4, 
+      notify_email = $5, 
+      notify_sms = $6,
+      encryption_version = $7,
+      encrypted_at = NOW()
+    WHERE email = $8`,
     [
       name || existing.name || null,
-      phone || existing.phone || null,
+      updateData.phone,
+      encrypted.phone_encrypted,
       profilePic || existing.profile_pic || null,
       notify_email !== undefined ? notify_email : existing.notify_email,
       notify_sms !== undefined ? notify_sms : existing.notify_sms,
+      'v1',
       email
     ]
   );
 
   // Get updated user data
   const updatedRes = await dbManager.query(
-    'SELECT id, email, role, name, phone, profile_pic, notify_email, notify_sms, created_at FROM users WHERE email = $1',
+    'SELECT id, email, email_encrypted, role, name, phone, phone_encrypted, profile_pic, notify_email, notify_sms, created_at FROM users WHERE email = $1',
     [email]
   );
 
-  return ResponseUtil.updated(res, sanitizeUser(updatedRes.rows[0]), 'Profile updated successfully');
+  const decryptedUser = await decryptUserData(updatedRes.rows[0]);
+  return ResponseUtil.updated(res, sanitizeUser(decryptedUser), 'Profile updated successfully');
 });
 
 // Register user with enhanced password security - Updated with standardized error handling
@@ -94,17 +114,32 @@ export const registerUser = asyncHandler(async (req, res) => {
   // Hash password using Argon2
   const hash = await passwordService.hashPassword(password);
 
-  // Create user with secure password hash
+  // Encrypt personal data
+  const encrypted = await encryptUserData({ email, phone });
+
+  // Create user with secure password hash and encrypted data
   const result = await dbManager.query(
-    `INSERT INTO users (email, username, role, password_hash, verified, phone, area, house, notify_email, notify_sms)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-		 RETURNING id, email, username, role, phone, area, house, notify_email, notify_sms, verified, created_at`,
-    [email, username, normalizedRole, hash, false, phone || null, area || null, house || null,
-		 notify_email !== undefined ? notify_email : true,
-		 notify_sms !== undefined ? notify_sms : false]
+    `INSERT INTO users (
+      email, email_encrypted,
+      username, role, password_hash, verified, 
+      phone, phone_encrypted,
+      area, house, notify_email, notify_sms,
+      encryption_version, encrypted_at
+    )
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+		 RETURNING id, email, email_encrypted, username, role, phone, phone_encrypted, area, house, notify_email, notify_sms, verified, created_at`,
+    [
+      email, encrypted.email_encrypted,
+      username, normalizedRole, hash, false,
+      phone || null, encrypted.phone_encrypted,
+      area || null, house || null,
+		  notify_email !== undefined ? notify_email : true,
+		  notify_sms !== undefined ? notify_sms : false,
+      'v1'
+    ]
   );
 
-  const newUser = result.rows[0];
+  const newUser = await decryptUserData(result.rows[0]);
 
   // Log security event
   await auditLog('USER_REGISTERED', newUser.id, {
@@ -127,9 +162,9 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Email and password required' });
     }
 
-    // Get user from database
+    // Get user from database (include encrypted fields)
     const result = await dbManager.query(
-      'SELECT id, email, username, role, password_hash, phone, area, house, verified FROM users WHERE email=$1',
+      'SELECT id, email, email_encrypted, username, role, password_hash, phone, phone_encrypted, area, house, verified FROM users WHERE email=$1',
       [email]
     );
 
@@ -324,16 +359,19 @@ export const loginUser = async (req, res) => {
       path: '/api/auth/refresh'
     });
 
+    // Decrypt user data before returning
+    const decryptedUser = await decryptUserData(user);
+    
     // Remove sensitive data
-    delete user.password_hash;
+    delete decryptedUser.password_hash;
 
     res.json({
       success: true,
       accessToken: tokens.accessToken,
       tokenType: tokens.tokenType,
       expiresIn: tokens.expiresIn,
-      role: user.role,
-      user: user
+      role: decryptedUser.role,
+      user: decryptedUser
     });
 
   } catch (err) {
@@ -371,9 +409,9 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    // Get current user data
+    // Get current user data (including encrypted fields)
     const result = await dbManager.query(
-      'SELECT id, email, username, role, verified FROM users WHERE id=$1',
+      'SELECT id, email, email_encrypted, username, role, phone, phone_encrypted, verified FROM users WHERE id=$1',
       [decoded.userId]
     );
 
@@ -384,7 +422,7 @@ export const refreshToken = async (req, res) => {
       });
     }
 
-    const user = result.rows[0];
+    const user = await decryptUserData(result.rows[0]);
 
     // Generate new token pair (invalidates old refresh token)
     const tokens = tokenService.generateTokens({

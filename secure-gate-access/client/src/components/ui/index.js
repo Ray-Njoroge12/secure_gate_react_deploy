@@ -41,6 +41,11 @@ export { default as SearchResults } from './SearchResults.jsx'; // Added for Tas
 export { default as Pagination } from './Pagination.jsx'; // Added for Task 3.3
 export { default as BrowserCompatibility } from './BrowserCompatibility.jsx'; // Added for Task 3.4
 export { default as BrowserCompatibilityWarning } from './BrowserCompatibilityWarning.jsx'; // Added for Task 3.4
+export { Alert, AlertTitle, AlertDescription } from './Alert.jsx';
+export { Checkbox } from './Checkbox.jsx';
+export { Label } from './Label.jsx';
+export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './Select.jsx';
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs.jsx';
 
 // Enhanced Loading States (Task 2.6)
 export { default as EnhancedLoading } from './EnhancedLoading.jsx';

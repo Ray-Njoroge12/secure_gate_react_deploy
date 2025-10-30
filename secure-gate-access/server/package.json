@@ -52,6 +52,7 @@
     "node": ">=18 <19"
   },
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.908.0",
     "@aws-sdk/client-secrets-manager": "^3.908.0",
     "africastalking": "^0.7.7",
     "argon2": "^0.44.0",

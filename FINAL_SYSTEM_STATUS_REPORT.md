@@ -181,3 +181,4 @@ The Secure Gate Access Control System is **NOT READY for deployment or testing**
 
 The system requires immediate attention to the authentication hanging issue before any further testing or deployment can proceed.
 
+
