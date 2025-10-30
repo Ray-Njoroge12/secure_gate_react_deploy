@@ -82,3 +82,5 @@ ALTER TABLE visitors DROP COLUMN IF EXISTS consent_given;
 
 
 
+
+
