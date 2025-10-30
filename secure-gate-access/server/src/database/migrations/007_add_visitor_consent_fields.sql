@@ -81,3 +81,4 @@ ALTER TABLE visitors DROP COLUMN IF EXISTS consent_timestamp;
 ALTER TABLE visitors DROP COLUMN IF EXISTS consent_given;
 
 
+

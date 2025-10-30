@@ -267,3 +267,4 @@ The email integration is **technically complete and ready** but **blocked by con
 
 *To enable email functionality, follow the setup guide and configure actual SMTP credentials with your chosen email service provider.*
 
+
