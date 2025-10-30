@@ -72,3 +72,5 @@ cleanup-analysis-*/
 # Temporary files
 *.tmp
 *.temp
+artifacts/cleanup_archive/
+cold-storage/
