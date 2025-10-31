@@ -1,0 +1,54 @@
+# Production Environment Variables for Vercel Backend
+# Copy these to your Vercel Environment Variables settings
+
+# Environment
+NODE_ENV=production
+
+# Database Configuration (Use Vercel Postgres or external database)
+DATABASE_URL=your-postgres-connection-string
+
+# Security Configuration
+JWT_SECRET=your-super-secure-jwt-secret-at-least-32-characters-long
+JWT_REFRESH_SECRET=your-super-secure-refresh-secret-at-least-32-characters-long
+SESSION_SECRET=your-super-secure-session-secret-at-least-32-characters-long
+
+# Frontend Configuration
+FRONTEND_URL=https://secure-gate-react-deploy.vercel.app
+API_BASE_URL=https://secure-gate-react-deploy.vercel.app
+
+# CORS Configuration
+CORS_ORIGIN=https://secure-gate-react-deploy.vercel.app
+
+# Mailgun Configuration (Production)
+EMAIL_PROVIDER=mailgun
+MAILGUN_API_KEY=your-mailgun-api-key
+MAILGUN_DOMAIN=mg.secure-gate-react-deploy.vercel.app
+MAILGUN_BASE_URL=https://api.mailgun.net
+EMAIL_FROM=noreply@mg.secure-gate-react-deploy.vercel.app
+EMAIL_FROM_NAME=Secure Gate Access
+
+# SMTP Configuration (Backup)
+SMTP_HOST=smtp.mailgun.org
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=postmaster@mg.secure-gate-react-deploy.vercel.app
+SMTP_PASS=your-smtp-password
+
+# Notification Configuration
+ENABLE_EMAIL_NOTIFICATIONS=true
+ENABLE_SMS_NOTIFICATIONS=true
+
+# SMS Configuration (Keep existing Africa's Talking)
+SMS_PROVIDER=africastalking
+AT_USERNAME=securelabstest
+AT_API_KEY=your-africastalking-api-key
+AT_SENDER_ID=SecureGate
+
+# Security Settings
+ENFORCE_HTTPS=true
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Logging
+LOG_LEVEL=info
+ENABLE_MONITORING=true

@@ -1,0 +1,44 @@
+{
+  "name": "secure-gate-react-deploy",
+  "version": 2,
+  "builds": [
+    {
+      "src": "secure-gate-access/client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    },
+    {
+      "src": "secure-gate-access/server/server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/secure-gate-access/server/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/secure-gate-access/client/build/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "REACT_APP_API_URL": "@react_app_api_url",
+    "REACT_APP_BASE_URL": "@react_app_base_url",
+    "MAILGUN_API_KEY": "@mailgun_api_key",
+    "MAILGUN_DOMAIN": "@mailgun_domain",
+    "JWT_SECRET": "@jwt_secret",
+    "DATABASE_URL": "@database_url"
+  },
+  "installCommand": "cd secure-gate-access/client && npm install && cd ../server && npm install",
+  "buildCommand": "cd secure-gate-access/client && npm run build:production",
+  "outputDirectory": "secure-gate-access/client/build",
+  "functions": {
+    "secure-gate-access/server/server.js": {
+      "maxDuration": 30
+    }
+  }
+}
