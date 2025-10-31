@@ -1,0 +1,10 @@
+{
+  "name": "secure-gate-react-deploy",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd secure-gate-access/client && npm install && npm run build",
+    "start": "cd secure-gate-access/client && npm start"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
