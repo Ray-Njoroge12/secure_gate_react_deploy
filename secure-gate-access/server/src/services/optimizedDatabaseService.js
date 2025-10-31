@@ -10,6 +10,17 @@ import redisServiceClass from './redisService.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
 
+// Temporary fix: Create a mock queryPerformanceMonitor to prevent errors
+const queryPerformanceMonitor = {
+  monitorQuery: async (name, queryFn) => {
+    // Just execute the query without monitoring for now
+    return await queryFn();
+  },
+  reset: () => {
+    // No-op
+  }
+};
+
 /**
  * Optimized Database Service with Performance Monitoring
  */
