@@ -1,20 +1,5 @@
 {
-  "name": "secure-gate-react-deploy",
-  "version": 2,
-  "buildCommand": "cd secure-gate-access/client && npm run build:production",
+  "buildCommand": "cd secure-gate-access/client && npm run build",
   "outputDirectory": "secure-gate-access/client/build",
-  "installCommand": "cd secure-gate-access/client && npm install",
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  "installCommand": "cd secure-gate-access/client && npm install"
 }
