@@ -1,0 +1,66 @@
+{
+  "domain": {
+    "vercelAccess": {
+      "status": 404,
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-length": "79",
+        "content-type": "text/plain; charset=utf-8",
+        "date": "Fri, 31 Oct 2025 10:44:17 GMT",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+        "x-vercel-error": "NOT_FOUND",
+        "x-vercel-id": "cpt1::9ctjb-1761907457788-b52b46a74160"
+      },
+      "accessible": false
+    },
+    "ssl": {
+      "valid": true
+    },
+    "apiRouting": {
+      "status": 404,
+      "working": false
+    }
+  },
+  "mailgun": {
+    "configuration": {
+      "domain": "sandboxcd6106b9f4d54da78846462008c1678b.mailgun.org",
+      "apiKeyPresent": true,
+      "provider": "mailgun",
+      "isSandbox": true
+    }
+  },
+  "configuration": {
+    "vercel": {
+      "present": true,
+      "hasRoutes": true,
+      "hasBuildCommand": true,
+      "hasOutputDirectory": true
+    },
+    "production": {
+      "present": true,
+      "apiUrl": "https://secure-gate-react-deploy.vercel.app",
+      "correctDomain": true
+    }
+  },
+  "criticalPaths": {
+    "build": {
+      "present": true,
+      "hasIndex": true,
+      "hasAssets": true,
+      "fileCount": 6
+    },
+    "package": {
+      "present": true,
+      "hasBuildScript": true,
+      "hasProductionBuild": true,
+      "proxy": "http://localhost:5000"
+    }
+  },
+  "security": {
+    "cors": {
+      "present": true,
+      "hasCorrectDomain": true
+    }
+  }
+}
