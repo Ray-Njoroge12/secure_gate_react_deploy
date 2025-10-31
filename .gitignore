@@ -63,11 +63,30 @@ ehthumbs.db
 Thumbs.db
 # Cleanup artifacts
 .cleanup-backups/
+cleanup-analysis-*/
 cleanup-log.json
 
 # Archive directories (created during cleanup)
 docs/archive/
-cleanup-analysis-*/
+
+# Large archive files
+*.tar.gz
+*.tgz
+*.tar
+*.zip
+*.7z
+*.rar
+
+# Backup directories and files
+*backup*/
+*backup*
+pre-cleanup-backup-*
+pre_cleanup_backup_*
+pre_analysis_*
+system_snapshot_*
+repo_snapshot_*
+archived_files_*
+cleanup_archive_artifacts/
 
 # Temporary files
 *.tmp
