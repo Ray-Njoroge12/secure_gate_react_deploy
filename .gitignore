@@ -4,8 +4,10 @@ node_modules
 .env.local
 .env.development
 .env.test
-.env.production
 .env.production.local
+
+# Allow specific production config (no secrets)
+!secure-gate-access/client/.env.production
 
 # Dependencies
 */node_modules/
