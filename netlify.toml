@@ -1,0 +1,16 @@
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/:splat"
+  status = 200
+  force = true
+
+[build.environment]
+  NODE_VERSION = "18"
