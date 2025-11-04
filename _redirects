@@ -1,0 +1,5 @@
+# API redirects to backend ALB in af-south-1 for ODPC compliance
+/api/* http://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/:splat 200!
+
+# SPA fallback
+/* /index.html 200
