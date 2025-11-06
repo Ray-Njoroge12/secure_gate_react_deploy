@@ -1,5 +1,30 @@
-# API proxy via Netlify functions to backend ALB in af-south-1 for ODPC compliance
-/api/* /.netlify/functions/api 200
+# API proxy to backend ALB in af-south-1 for ODPC compliance
+# ✅ SECURITY: Now using HTTPS for all backend communication
+# IMPORTANT: More specific rules must come FIRST (order matters!)
+
+# Auth endpoints - preserve /api/auth/* path
+/api/auth/* https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/auth/:splat 200
+
+# Visitors endpoints - preserve /api/visitors/* path
+/api/visitors/* https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/visitors/:splat 200
+
+# MFA endpoints - preserve /api/mfa/* path
+/api/mfa/* https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/mfa/:splat 200
+
+# Users endpoints - preserve /api/users/* path
+/api/users/* https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/users/:splat 200
+
+# Privacy/Compliance endpoints - preserve paths
+/api/privacy/* https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/privacy/:splat 200
+/api/consent/* https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/consent/:splat 200
+
+# Legacy endpoints - strip /api prefix for backward compatibility
+/api/register https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/register 200
+/api/login https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/login 200
+/api/profile https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/profile 200
+/api/users https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/users 200
+/api/health https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/health 200
+/api/* https://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/:splat 200
 
 # SPA fallback for all other routes
 /* /index.html 200
