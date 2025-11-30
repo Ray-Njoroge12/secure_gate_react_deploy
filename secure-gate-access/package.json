@@ -1,0 +1,19 @@
+{
+  "name": "secure-gate-access",
+  "version": "1.0.0",
+  "description": "Secure Gate Access Control System - Monorepo Root",
+  "private": true,
+  "scripts": {
+    "start": "cd server && npm start",
+    "install:server": "cd server && npm install",
+    "install:client": "cd client && npm install",
+    "install:all": "npm run install:server && npm run install:client",
+    "build:client": "cd client && npm run build",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm start",
+    "postinstall": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
