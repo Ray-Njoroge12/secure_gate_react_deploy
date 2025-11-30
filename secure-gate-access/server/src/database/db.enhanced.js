@@ -20,19 +20,29 @@ class DatabaseManager extends EventEmitter {
   constructor(config = {}) {
     super();
 
+    // Support DATABASE_URL (Render provides this) or individual PG* variables
+    const connectionString = process.env.DATABASE_URL;
+    
     this.config = {
-      // Connection config
-      user: process.env.PGUSER || 'postgres',
-      host: process.env.PGHOST || 'localhost',
-      database: process.env.PGDATABASE || 'secure_gate',
-      password: process.env.PGPASSWORD || 'postgres',
-      port: Number(process.env.PGPORT) || 5432,
+      // Use DATABASE_URL if provided, otherwise use individual variables
+      ...(connectionString ? { connectionString } : {
+        user: process.env.PGUSER || 'postgres',
+        host: process.env.PGHOST || 'localhost',
+        database: process.env.PGDATABASE || 'secure_gate',
+        password: process.env.PGPASSWORD || 'postgres',
+        port: Number(process.env.PGPORT) || 5432,
+      }),
+
+      // SSL required for Render PostgreSQL (and most cloud providers)
+      ssl: process.env.NODE_ENV === 'production' 
+        ? { rejectUnauthorized: false } 
+        : false,
 
       // Pool configuration with enhanced stability
       max: Number(process.env.PGPOOL_MAX) || 20, // Max connections
       min: Number(process.env.PGPOOL_MIN) || 2,  // Min connections to keep open
       idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || 30000,
-      connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 5000,
+      connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 10000, // Increased for cloud latency
 
       // Enhanced stability features
       acquireTimeoutMillis: Number(process.env.PGPOOL_ACQUIRE_TIMEOUT) || 10000,
