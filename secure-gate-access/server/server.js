@@ -27,8 +27,8 @@ import { correlationIdMiddleware, requestLoggingMiddleware } from './src/middlew
 // Enhanced error monitoring imports
 import { createErrorMonitoring, createEnhancedErrorHandler } from './integration/error-monitoring-integration.js';
 
-// Validate environment and get configuration
-const envValidation = EnvironmentConfig.validateAndReport();
+// Validate environment and get configuration (must await async function)
+const envValidation = await EnvironmentConfig.validateAndReport();
 if (!envValidation.isValid && process.env.NODE_ENV === 'production') {
   console.error('🚨 Server startup blocked due to configuration errors');
   process.exit(1);
