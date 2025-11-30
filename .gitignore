@@ -44,9 +44,22 @@ audit-*.json
 *.cert
 *.crt
 *secret*
+# Allow secret-related code files (no actual secrets)
 !secure-gate-access/server/src/services/secretsManagerService.js
+!secure-gate-access/server/src/services/secretRotationService.js
+!secure-gate-access/server/src/services/secretAuditService.js
+!secure-gate-access/server/src/services/secretManagementService.js
+!secure-gate-access/server/src/routes/secretManagementRoutes.js
 !secure-gate-access/server/SECRETS_MANAGEMENT.md
 *backup*
+# Allow backup-related code files (no actual backups)
+!secure-gate-access/server/src/services/backupService.js
+!secure-gate-access/server/src/services/mockBackupService.js
+!secure-gate-access/server/src/services/backupIntegrityVerificationService.js
+!secure-gate-access/server/src/jobs/backupJob.js
+!secure-gate-access/server/src/jobs/backupScheduler.js
+!secure-gate-access/server/src/routes/backupDrRoutes.js
+!secure-gate-access/server/src/routes/backupRoutes.js
 # Allow deployment scripts
 !*-database-backups.sh
 !*-monitoring.sh
