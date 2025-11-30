@@ -151,13 +151,13 @@ class HealthMonitoringIntegration {
       gracefulShutdown('uncaughtException');
     });
 
-    // Handle unhandled promise rejections
+    // Handle unhandled promise rejections - LOGGING ONLY, let server.js decide on action
     process.on('unhandledRejection', (reason, promise) => {
-      loggingService.logAPI('error', 'Unhandled promise rejection', null, {
+      loggingService.logAPI('warn', 'Unhandled promise rejection (health monitoring)', null, {
         reason: reason?.toString(),
         promise: promise?.toString()
       });
-      gracefulShutdown('unhandledRejection');
+      // DO NOT call gracefulShutdown - server.js handles this with smart classification
     });
 
     loggingService.logAPI('info', 'Graceful shutdown handlers registered');

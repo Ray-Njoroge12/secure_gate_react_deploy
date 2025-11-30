@@ -6,7 +6,22 @@
 import loggingService from '../services/loggingService.js';
 import { randomUUID } from 'crypto';
 import { dbManager } from '../database/db.enhanced.js';
-const pool = dbManager.pool;
+
+// Helper function to get pool dynamically (handles lazy initialization)
+const getPool = () => {
+  if (!dbManager.pool) {
+    throw new Error('Database pool not initialized');
+  }
+  return dbManager.pool;
+};
+// Alias for convenience - calls getPool() on every access
+const pool = { 
+  get query() { return getPool().query.bind(getPool()); },
+  get totalCount() { return getPool()?.totalCount; },
+  get idleCount() { return getPool()?.idleCount; },
+  get waitingCount() { return getPool()?.waitingCount; },
+  get options() { return getPool()?.options; }
+};
 
 /**
  * Simple health check service

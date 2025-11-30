@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
-import { useSearchData } from "../../hooks/useSearch";
 import AppShell from "../../layouts/AppShell";
 import StatsCard from "../../components/StatsCard";
 import Table from "../../components/Table";
@@ -47,16 +46,18 @@ export default function AdminDashboard() {
         e.preventDefault();
         navigate('/dashboard/admin/settings');
       }
-      // Ctrl/Cmd + R to refresh (reloads page)
+      // Ctrl/Cmd + R to refresh
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
-        window.location.reload();
+        if (!loadingMetrics) {
+          loadMetrics();
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [navigate]);
+  }, [loadingMetrics, navigate]);
 
   // Audit logs state
   const [logs, setLogs] = useState([]);

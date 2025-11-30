@@ -1,5 +1,12 @@
 import { dbManager } from '../database/db.enhanced.js';
-const pool = dbManager.pool;
+
+// Helper to safely get pool
+const getPool = () => {
+  if (!dbManager.pool) {
+    throw new Error('Database pool not initialized');
+  }
+  return dbManager.pool;
+};
 
 /**
  * Execute a database transaction with automatic rollback on error
@@ -8,6 +15,7 @@ const pool = dbManager.pool;
  * @returns {Promise} Result of the callback function
  */
 export async function withTransaction(callback, options = {}) {
+  const pool = getPool();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
