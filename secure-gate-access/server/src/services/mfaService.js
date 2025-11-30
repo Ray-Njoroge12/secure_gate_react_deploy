@@ -15,7 +15,7 @@ import crypto from 'crypto';
 import loggingService from './loggingService.js';
 import emailService from './emailService.js';
 import smsService from './smsService.js';
-import databaseService from './databaseService.js';
+import databaseService from './optimizedDatabaseService.js';
 
 class MFAService {
   constructor() {
@@ -526,31 +526,88 @@ class MFAService {
   }
 
   /**
-   * Encrypt secret
+   * Encrypt secret with modern crypto API (Node.js 17+ compatible)
+   * Uses crypto.createCipheriv instead of deprecated createCipher
    */
   encryptSecret(secret) {
+    // Validate encryption key exists
+    if (!process.env.MFA_ENCRYPTION_KEY || process.env.MFA_ENCRYPTION_KEY.length < 32) {
+      throw new Error('MFA_ENCRYPTION_KEY must be at least 32 characters');
+    }
+
     const algorithm = 'aes-256-gcm';
-    const key = crypto.scryptSync(process.env.MFA_ENCRYPTION_KEY || 'default-key', 'salt', 32);
-    const iv = crypto.randomBytes(16);
     
-    const cipher = crypto.createCipher(algorithm, key);
+    // Generate random salt (store with ciphertext)
+    const salt = crypto.randomBytes(16);
+    
+    // Derive key using scrypt with random salt
+    const key = crypto.scryptSync(
+      process.env.MFA_ENCRYPTION_KEY,
+      salt,
+      32  // 32 bytes = 256 bits for AES-256
+    );
+    
+    // Generate random IV (Initialization Vector)
+    const iv = crypto.randomBytes(16);  // 16 bytes = 128 bits
+    
+    // Create cipher with algorithm, key, AND iv (modern API)
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    
+    // Encrypt the secret
     let encrypted = cipher.update(secret, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     
-    return iv.toString('hex') + ':' + encrypted;
+    // Get authentication tag (required for GCM mode)
+    const authTag = cipher.getAuthTag();
+    
+    // Return format: salt:iv:ciphertext:authTag
+    return `${salt.toString('hex')}:${iv.toString('hex')}:${encrypted}:${authTag.toString('hex')}`;
   }
 
   /**
-   * Decrypt secret
+   * Decrypt secret with modern crypto API (Node.js 17+ compatible)
+   * Uses crypto.createDecipheriv instead of deprecated createDecipher
    */
   decryptSecret(encryptedSecret) {
+    // Validate encryption key exists
+    if (!process.env.MFA_ENCRYPTION_KEY || process.env.MFA_ENCRYPTION_KEY.length < 32) {
+      throw new Error('MFA_ENCRYPTION_KEY must be at least 32 characters');
+    }
+
     const algorithm = 'aes-256-gcm';
-    const key = crypto.scryptSync(process.env.MFA_ENCRYPTION_KEY || 'default-key', 'salt', 32);
     
-    const [ivHex, encrypted] = encryptedSecret.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
+    // Parse encrypted data
+    const parts = encryptedSecret.split(':');
     
-    const decipher = crypto.createDecipher(algorithm, key);
+    // Handle both old format (2 parts) and new format (4 parts) for migration
+    if (parts.length === 2) {
+      // Old format detected - attempt legacy decryption (will likely fail)
+      throw new Error('Encrypted data is in legacy format. MFA re-setup required.');
+    }
+    
+    if (parts.length !== 4) {
+      throw new Error('Invalid encrypted data format');
+    }
+    
+    const salt = Buffer.from(parts[0], 'hex');
+    const iv = Buffer.from(parts[1], 'hex');
+    const encrypted = parts[2];
+    const authTag = Buffer.from(parts[3], 'hex');
+    
+    // Derive key using same salt
+    const key = crypto.scryptSync(
+      process.env.MFA_ENCRYPTION_KEY,
+      salt,
+      32
+    );
+    
+    // Create decipher with algorithm, key, AND iv (modern API)
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    
+    // Set auth tag for integrity verification (required for GCM)
+    decipher.setAuthTag(authTag);
+    
+    // Decrypt the secret
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     
@@ -614,6 +671,41 @@ class MFAService {
     const [local, domain] = email.split('@');
     const maskedLocal = local.length > 2 ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] : local;
     return `${maskedLocal}@${domain}`;
+  }
+
+  /**
+   * Disable MFA for user (remove secrets and backup codes)
+   */
+  async disableMFA(userId) {
+    try {
+      // Delete TOTP secrets
+      await databaseService.query(
+        'DELETE FROM user_mfa_secrets WHERE user_id = $1',
+        [userId]
+      );
+
+      // Delete backup codes
+      await databaseService.query(
+        'DELETE FROM user_backup_codes WHERE user_id = $1',
+        [userId]
+      );
+
+      // Clear any active attempts/lockouts
+      this.attempts.delete(userId);
+      this.lockouts.delete(userId);
+
+      loggingService.logInfo('MFA disabled for user', {
+        userId
+      });
+
+      return true;
+
+    } catch (error) {
+      loggingService.logError('Failed to disable MFA', error, {
+        userId
+      });
+      throw error;
+    }
   }
 
   /**

@@ -542,6 +542,47 @@ class EnhancedHealthMonitoring {
 
     return results;
   }
+
+  /**
+   * Mark the service as shutting down for graceful shutdown
+   * This method was missing and causing errors during shutdown
+   * Added: November 21, 2025
+   */
+  markShuttingDown() {
+    this.healthMetrics.currentStatus = 'shutting_down';
+    this.isShuttingDown = true;
+    
+    loggingService.logInfo('Service marked as shutting down', {
+      timestamp: new Date().toISOString(),
+      uptime: Date.now() - this.startTime,
+      totalRequests: this.healthMetrics.totalRequests
+    });
+    
+    // Update all health checks to return 'shutting_down' status
+    healthCheck.registerCheck('shutdown', () => ({
+      status: 'unhealthy',
+      details: 'Service is shutting down gracefully',
+      isShuttingDown: true
+    }));
+    
+    return true;
+  }
+
+  /**
+   * Check if service is shutting down
+   * Helper method to check shutdown status
+   */
+  checkShutdownStatus() {
+    return this.isShuttingDown === true;
+  }
+
+  /**
+   * Reset shutdown status (for testing purposes)
+   */
+  resetShutdownStatus() {
+    this.isShuttingDown = false;
+    this.healthMetrics.currentStatus = 'unknown';
+  }
 }
 
 // Export singleton instance

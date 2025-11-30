@@ -61,7 +61,6 @@ export { default as LiveRegion } from '../ui/LiveRegion';
 export { default as BrowserCompatibility } from '../BrowserCompatibility';
 export { default as BrowserCompatibilityWarning } from '../BrowserCompatibilityWarning';
 export { default as OptimizedImage } from '../ui/OptimizedImage';
-export { default as PerformanceDashboard } from '../PerformanceDashboard';
 
 // Loading States Integration Bundle
 export {

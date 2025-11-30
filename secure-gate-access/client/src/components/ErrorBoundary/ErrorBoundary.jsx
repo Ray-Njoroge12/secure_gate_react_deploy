@@ -97,17 +97,18 @@ class ErrorBoundary extends Component {
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
       url: window.location.href,
-      userId: this.getCurrentUserId(),
+      // NOTE: userId removed to avoid PII in error logs (Kenya DPA compliance)
+      // Backend can identify user from httpOnly cookie session
       retryCount: this.state.retryCount
     };
 
     try {
-      // Send to backend logging service
+      // Send to backend logging service using httpOnly cookies
       await fetch('/api/logs/error', {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.getAuthToken()}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(errorData)
       });
@@ -116,22 +117,9 @@ class ErrorBoundary extends Component {
     }
   };
 
-  getCurrentUserId = () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user'));
-      return user?.id || null;
-    } catch {
-      return null;
-    }
-  };
-
-  getAuthToken = () => {
-    try {
-      return localStorage.getItem('token') || null;
-    } catch {
-      return null;
-    }
-  };
+  // NOTE: getCurrentUserId and getAuthToken removed - no longer needed
+  // Auth is handled via httpOnly cookies (credentials: 'include')
+  // User identification is done server-side from session
 
   handleRetry = async () => {
     this.setState({ isRetrying: true });

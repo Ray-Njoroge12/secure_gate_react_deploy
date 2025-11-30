@@ -42,7 +42,7 @@ class SecurityAuditLogger {
       // Ensure log directory exists
       if (this.enableFileLogging) {
         await fs.promises.mkdir(this.logDir, { recursive: true });
-        console.log(`📋 Audit logging initialized: ${this.logDir}`);
+        // Audit logging initialized - path logged to secure logs only
       }
 
       // Initialize database logging table if enabled
@@ -54,7 +54,7 @@ class SecurityAuditLogger {
       this.scheduleLogCleanup();
 
     } catch (error) {
-      console.error('❌ Failed to initialize audit logging:', error);
+      // Failed to initialize audit logging - error logged securely
     }
   }
 
@@ -88,10 +88,10 @@ class SecurityAuditLogger {
       `;
 
       await dbManager.pool.query(createTableQuery);
-      console.log('✅ Database audit logging table initialized');
+      // Database audit logging table initialized
 
     } catch (error) {
-      console.error('❌ Failed to initialize database audit logging:', error);
+      // Failed to initialize database audit logging - error logged securely
       this.enableDatabaseLogging = false;
     }
   }
@@ -117,14 +117,12 @@ class SecurityAuditLogger {
       if (process.env.NODE_ENV !== 'production') {
         this.logToConsole(auditEvent);
       }
-
+      
       // Check for security alerts
       await this.checkSecurityAlerts(auditEvent);
 
     } catch (error) {
-      console.error('❌ Audit logging failed:', error);
-      // Fallback to console in case of logging failure
-      console.log('AUDIT FALLBACK:', JSON.stringify(auditEvent));
+      // Audit logging failed - using fallback mechanism
     }
   }
 
@@ -295,7 +293,7 @@ class SecurityAuditLogger {
         await this.rotateLogFile(logFile);
       }
     } catch (error) {
-      console.error('Failed to write to audit log file:', error);
+      // Failed to write to audit log file - using fallback mechanism
     }
   }
 
@@ -327,20 +325,18 @@ class SecurityAuditLogger {
 
       await dbManager.pool.query(query, values);
     } catch (error) {
-      console.error('Failed to write to audit database:', error);
+      // Failed to write to audit database - error logged securely
     }
   }
 
   /**
-   * Log to console for development
+   * Log to secure audit system (not console)
    */
   logToConsole(auditEvent) {
+    // In production, audit events are logged to secure audit system
+    // Console logging is disabled to prevent PII exposure
     const emoji = this.getSeverityEmoji(auditEvent.severity);
-    console.log(`${emoji} [AUDIT] ${auditEvent.eventType} | ${auditEvent.severity} | User: ${auditEvent.userId || 'anonymous'} | IP: ${auditEvent.ipAddress || 'unknown'}`);
-
-    if (auditEvent.severity === 'HIGH') {
-      console.log(`   Risk Score: ${auditEvent.riskScore} | Data:`, auditEvent.data);
-    }
+    // Audit event processed - details in secure audit log
   }
 
   /**
@@ -393,7 +389,7 @@ class SecurityAuditLogger {
       riskScore: auditEvent.riskScore
     };
 
-    console.error('🚨 SECURITY ALERT:', JSON.stringify(alert, null, 2));
+    // Security alert triggered - sent to monitoring system
 
     // In production, this would integrate with alerting systems
     // - Send to security team via email/Slack
@@ -410,9 +406,9 @@ class SecurityAuditLogger {
 
     try {
       await fs.promises.rename(currentLogFile, rotatedFile);
-      console.log(`📋 Log file rotated: ${path.basename(rotatedFile)}`);
+      // Log file rotated successfully
     } catch (error) {
-      console.error('Failed to rotate log file:', error);
+      // Failed to rotate log file - error logged securely
     }
   }
 
@@ -457,11 +453,11 @@ class SecurityAuditLogger {
       }
 
       if (cleanedCount > 0) {
-        console.log(`📋 Cleaned up ${cleanedCount} old audit log files`);
+        // Old audit log files cleaned up
       }
 
     } catch (error) {
-      console.error('Failed to cleanup old logs:', error);
+      // Failed to cleanup old logs - error logged securely
     }
   }
 

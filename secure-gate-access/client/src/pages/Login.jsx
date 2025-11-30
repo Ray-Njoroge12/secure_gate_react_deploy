@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.js";
+import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
 import { handleApiError } from "../utils/errorMapper.js";
 import AuthLayout from "../layouts/AuthLayout.jsx";
@@ -56,6 +56,18 @@ export default function LoginPage() {
 
     try {
       const result = await login(email, password, remember);
+      
+      // Check if MFA is required
+      if (result.mfaRequired) {
+        // Redirect to MFA verification page
+        navigate('/mfa/verify', {
+          state: {
+            userId: result.userId,
+            username: result.username
+          }
+        });
+        return;
+      }
       
       // Redirect to intended page or dashboard based on role
       const from = location.state?.from?.pathname;
@@ -139,7 +151,10 @@ export default function LoginPage() {
   }, [isAuthenticated, user, navigate, location]);
 
   return (
-    <AuthLayout title={showForgot ? "Reset Password" : "Sign In"}>
+    <AuthLayout 
+      title={showForgot ? "Reset Password" : "Welcome Back"} 
+      subtitle={showForgot ? "Enter your email and we'll send you a reset link" : "Sign in to your SecureGate account"}
+    >
 
       {showForgot ? (
         <form onSubmit={handleForgotPassword} className="space-y-6">
@@ -153,7 +168,7 @@ export default function LoginPage() {
               placeholder="Enter your email"
               value={resetEmail}
               onChange={(e) => setResetEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full h-11 px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               required
               aria-required="true"
               aria-describedby="resetEmail-help"
@@ -189,7 +204,7 @@ export default function LoginPage() {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full h-11 px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
               required
               aria-required="true"
               autoComplete="email"
@@ -207,7 +222,7 @@ export default function LoginPage() {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                className="w-full h-11 px-4 py-3 pr-12 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 required
                 aria-required="true"
                 autoComplete="current-password"
@@ -259,10 +274,17 @@ export default function LoginPage() {
                 ref={buttonRef}
                 type="submit" 
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                className="w-full flex justify-center items-center h-12 px-4 border border-transparent rounded-lg shadow-md text-base font-semibold text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 {loading ? "Signing in..." : "Sign In"}
               </button>
+              
+              {/* Keyboard Shortcuts Hint */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-xs text-gray-500 text-center">
+                  💡 <span className="font-medium">Tip:</span> Press <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 border border-gray-300 rounded">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 border border-gray-300 rounded">Enter</kbd> to sign in
+                </p>
+              </div>
         </form>
       )}
 

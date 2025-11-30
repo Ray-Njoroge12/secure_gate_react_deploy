@@ -2,10 +2,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "./ui";
+import { useAuth } from "../contexts/AuthContext";
+import ThemeToggle from "./ui/ThemeToggle.jsx";
+import NotificationBell from "./ui/NotificationBell.jsx";
 
 export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
-  const role = localStorage.getItem("role") || "guest";
-  const [profilePic, setProfilePic] = useState(null);
+  const { user } = useAuth(); // Get user from AuthContext instead of localStorage
+  const role = user?.role || "guest";
+  const [profilePic, setProfilePic] = useState(user?.profilePic || null);
   const navigate = useNavigate();
   const topbarRef = useRef(null);
 
@@ -40,24 +44,21 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
     }
   }, []);
 
+  // Update profile pic when user changes
   useEffect(() => {
-    setProfilePic(localStorage.getItem("profilePic"));
-    window.addEventListener("profilePicChanged", () => {
-      setProfilePic(localStorage.getItem("profilePic"));
-    });
-    return () => window.removeEventListener("profilePicChanged", () => {});
-  }, []);
+    setProfilePic(user?.profilePic || null);
+  }, [user]);
 
   const handleProfileClick = () => {
-    if (role === "resident") navigate("/pages/resident/Settings");
-    else if (role === "guard") navigate("/dashboard/guard/Settings");
+    if (role === "resident") navigate("/dashboard/resident/settings");
+    else if (role === "guard") navigate("/dashboard/guard/settings");
     else if (role === "admin") navigate("/dashboard/admin/settings");
   };
 
   return (
     <header 
       ref={topbarRef}
-      className="bg-slate-800 border-b border-slate-700 px-6 py-3 flex items-center justify-between sticky top-0 z-40" 
+      className="topbar bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between sticky top-0 z-40" 
       role="banner"
       aria-label="Page header"
     >
@@ -65,7 +66,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
         {/* Mobile Menu Toggle Button */}
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="md:hidden p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={sidebarOpen}
           aria-controls="main-navigation"
@@ -85,7 +86,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
           </svg>
         </button>
         
-        <h1 className="text-lg font-semibold text-slate-200 m-0">
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-200 m-0">
           {title}
         </h1>
         <Badge variant="info" size="sm" aria-label={`Current role: ${getRoleDisplayName(role)}`}>
@@ -94,6 +95,12 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
       </div>
       
       <div className="flex items-center gap-3">
+        {/* Theme Toggle */}
+        <ThemeToggle size="small" />
+        
+        {/* Notifications */}
+        <NotificationBell />
+        
         <button
           className="profile-btn focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
           onClick={handleProfileClick}
@@ -101,7 +108,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
           title="Profile Settings"
         >
           <div className="w-10 h-10 relative">
-            <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-green-600 hover:border-green-500 transition-colors">
+            <div className="w-full h-full rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-green-600 hover:border-green-500 transition-colors">
               {(profilePic && profilePic !== "") ? (
                 <img 
                   src={profilePic} 
@@ -128,7 +135,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
         {onLogout && (
           <button
             onClick={onLogout}
-            className="p-2 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Logout from application"
             title="Logout"
           >

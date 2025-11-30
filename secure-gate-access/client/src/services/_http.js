@@ -6,14 +6,16 @@ import { API_ENDPOINTS } from '../constants/endpoints.js';
 
 /**
  * Build standard headers for API requests
+ * SECURITY: Tokens are now sent via httpOnly cookies automatically
+ * No manual Authorization header needed
  * @param {Object} extra - Additional headers to include
- * @returns {Object} Headers object with Authorization if token exists
+ * @returns {Object} Headers object
  */
 export function buildHeaders(extra = {}) {
-  const token = localStorage.getItem('token');
+  // SECURITY FIX: No longer using localStorage for tokens
+  // Tokens are now sent automatically via httpOnly cookies
   return {
     'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra
   };
 }
@@ -48,6 +50,7 @@ export async function parseApiResponse(res) {
 export async function apiCall(url, options = {}) {
   const opts = {
     method: 'GET',
+    credentials: 'include', // ✅ SECURITY FIX: Send httpOnly cookies
     headers: buildHeaders(),
     ...options,
     headers: {

@@ -1,13 +1,13 @@
 // client/src/pages/resident/GeneratePass.jsx
 import React, { useState, useEffect } from "react";
-import Sidebar from "../../components/Sidebar";
-import Topbar from "../../components/Topbar";
+import { PageHeader, Card, Button, EmptyState } from "../../components/ui";
 import { getMyVisitors, createPass } from "../../services/passService";
 import logger from 'utils/logger';
+import { QrCode, RefreshCw, Send, Copy, CheckCircle } from 'lucide-react';
 
 export default function GeneratePass(){
-  const onLogout = ()=> { localStorage.removeItem("role"); window.location.href = "/"; };
   const [visitors, setVisitors] = useState([]);
+  const [copied, setCopied] = useState(false);
   const [selectedVisitor, setSelectedVisitor] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -81,109 +81,195 @@ export default function GeneratePass(){
     setError('');
   };
 
-  return (
-    <div className="grid grid-cols-[260px_1fr] min-h-screen">
-      <Sidebar role="resident" />
-      <div>
-        <Topbar title="Generate Pass" onLogout={onLogout} />
-        <main className="flex-1 overflow-y-auto bg-slate-900 p-6">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-brand p-6">
-            <h3 style={{marginTop:0}}>Generate QR Pass for Approved Visitor</h3>
-            
-            {error && (
-              <div style={{color: 'red', marginBottom: 16, padding: 12, backgroundColor: '#ffeaea', borderRadius: 4}}>
-                {error}
-              </div>
-            )}
+  const handleCopyLink = () => {
+    if (result?.inviteLink) {
+      navigator.clipboard.writeText(result.inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
-            <form onSubmit={generatePass} style={{display:"grid", gap:12, marginTop:12}}>
-              <select 
-                className="input" 
-                value={selectedVisitor} 
-                onChange={e => setSelectedVisitor(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Select an approved visitor...</option>
-                {visitors.map(visitor => (
-                  <option key={visitor.id} value={visitor.id}>
-                    {visitor.name} - {visitor.phone} ({visitor.purpose})
-                  </option>
-                ))}
-              </select>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader 
+        title="Generate Pass"
+        subtitle="Create QR passes for approved visitors"
+        icon={<QrCode className="w-6 h-6 text-green-600" />}
+        showBack={true}
+        backTo="/dashboard/resident"
+      />
+      
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {visitors.length === 0 && !error && !result && (
+          <Card className="p-8 text-center">
+            <EmptyState
+              variant="visitors"
+              title="No Approved Visitors"
+              description="You need to add and approve visitors before generating passes"
+              actionLabel="Add Visitor"
+              onAction={() => window.location.href = '/resident/quick-invite'}
+            />
+          </Card>
+        )}
+
+        {/* Visitor Selection */}
+        {visitors.length > 0 && !result && (
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Select Visitor
+            </h2>
+            
+            <form onSubmit={generatePass} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Approved Visitor
+                </label>
+                <select 
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                  value={selectedVisitor} 
+                  onChange={e => setSelectedVisitor(e.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">Select a visitor...</option>
+                  {visitors.map(visitor => (
+                    <option key={visitor.id} value={visitor.id}>
+                      {visitor.name} - {visitor.phone} ({visitor.purpose || 'Visit'})
+                    </option>
+                  ))}
+                </select>
+              </div>
               
-              <div style={{display:"flex", gap:10}}>
-                <button type="button" className="btn" onClick={reset} disabled={loading}>
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={reset} 
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
                   Reset
-                </button>
-                <button className="btn primary" type="submit" disabled={loading || !selectedVisitor}>
-                  {loading ? 'Generating...' : 'Generate Pass'}
-                </button>
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={loading || !selectedVisitor}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="w-4 h-4 mr-2" />
+                      Generate Pass
+                    </>
+                  )}
+                </Button>
               </div>
             </form>
+          </Card>
+        )}
 
-            {visitors.length === 0 && !error && (
-              <div style={{marginTop: 16, padding: 12, backgroundColor: '#f0f0f0', borderRadius: 4}}>
-                No approved visitors found. Please add and approve visitors first.
-              </div>
-            )}
-
-            {result && (
-              <div style={{marginTop:16}}>
-                <div className="bg-slate-800 rounded-lg border border-slate-700 shadow-brand p-6">
-                  <h4 style={{marginTop: 0}}>Pass Generated for {result.visitorName}</h4>
-                  <div style={{display:"flex", gap:16, alignItems:"flex-start", flexWrap: "wrap"}}>
-                    <div style={{minWidth: 200}}>
-                      {result.qrDataUrl ? (
-                        <img 
-                          src={result.qrDataUrl} 
-                          alt="QR Code" 
-                          style={{width: 200, height: 200, border: '1px solid #ddd'}}
-                        />
-                      ) : (
-                        <div style={{width:200, height:200, backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #ddd'}}>
-                          QR Code
-                        </div>
-                      )}
+        {/* Success Result */}
+        {result && (
+          <Card className="overflow-hidden">
+            {/* Success Header */}
+            <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white text-center">
+              <CheckCircle className="w-12 h-12 mx-auto mb-2" />
+              <h2 className="text-xl font-bold">Pass Generated!</h2>
+              <p className="text-green-100">For {result.visitorName}</p>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                {/* QR Code */}
+                <div className="flex-shrink-0">
+                  {result.qrDataUrl ? (
+                    <img 
+                      src={result.qrDataUrl} 
+                      alt="QR Code" 
+                      className="w-48 h-48 rounded-xl border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-gray-200">
+                      <QrCode className="w-16 h-16 text-gray-400" />
                     </div>
-                    <div style={{flex: 1, minWidth: 250}}>
-                      <div className="kpi">Pass ID: {result.passId}</div>
-                      <div className="kpi">Visitor ID: {result.visitorId}</div>
-                      {result.plainOtp && (
-                        <div className="kpi">OTP: {result.plainOtp}</div>
-                      )}
-                      <div className="kpi-sub">
-                        Expires: {new Date(result.expiresAt).toLocaleString()}
-                      </div>
-                      <div className="kvi-sub">
-                        Phone: {result.maskedPhone}
-                      </div>
-                      {result.inviteLink && (
-                        <div style={{marginTop:12}}>
-                          <div className="kpi-sub">Invite Link:</div>
-                          <input 
-                            type="text" 
-                            value={result.inviteLink} 
-                            readOnly 
-                            style={{width: '100%', marginTop: 4, fontSize: '12px'}}
-                            onClick={e => e.target.select()}
-                          />
-                        </div>
-                      )}
-                      <div style={{marginTop:16}}>
-                        <button 
-                          className="btn primary" 
-                          onClick={() => alert("Invite sent to visitor via email/SMS (automated)")}
-                        >
-                          Notification Sent
-                        </button>
-                      </div>
-                    </div>
+                  )}
+                </div>
+                
+                {/* Details */}
+                <div className="flex-1 text-center md:text-left">
+                  <div className="space-y-2 mb-4">
+                    <p className="text-sm text-gray-500">Pass ID</p>
+                    <p className="font-mono text-lg font-semibold">{result.passId}</p>
                   </div>
+                  
+                  {result.plainOtp && (
+                    <div className="space-y-1 mb-4">
+                      <p className="text-sm text-gray-500">OTP Code</p>
+                      <p className="font-mono text-2xl font-bold text-green-600">{result.plainOtp}</p>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-1 mb-4">
+                    <p className="text-sm text-gray-500">Expires</p>
+                    <p className="text-gray-700">{new Date(result.expiresAt).toLocaleString()}</p>
+                  </div>
+                  
+                  {result.inviteLink && (
+                    <div className="space-y-2 mb-4">
+                      <p className="text-sm text-gray-500">Invite Link</p>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={result.inviteLink} 
+                          readOnly 
+                          className="flex-1 px-3 py-2 text-sm bg-gray-100 rounded-lg border border-gray-200"
+                          onClick={e => e.target.select()}
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={handleCopyLink}
+                          className="flex-shrink-0"
+                        >
+                          {copied ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-        </main>
+              
+              {/* Actions */}
+              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+                <Button
+                  variant="outline"
+                  onClick={reset}
+                  className="flex-1"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Generate Another
+                </Button>
+                <Button
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                  onClick={() => window.location.href = '/dashboard/resident'}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

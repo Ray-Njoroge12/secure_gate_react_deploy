@@ -7,16 +7,16 @@
  */
 
 import React, { Suspense, lazy, useEffect, useRef } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext.js";
-import { ErrorProvider } from "./contexts/ErrorContext.jsx";
-import { NavigationProvider } from "./contexts/NavigationContext.jsx";
-import { LoadingProvider } from "./contexts/LoadingContext.jsx"; // Added for Task 2.6
-import { SearchProvider } from "./contexts/SearchContext.jsx"; // Added for Task 3.3
-import { BrowserCompatibilityProvider } from "./contexts/BrowserCompatibilityContext.jsx"; // Added for Task 3.4
+import { Routes, Route, Navigate } from "react-router-dom";
+import RootProvider from "./contexts/RootProvider.jsx";
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
+import "./styles.css"; // Additional app styles
+// BUG-003 FIX: httpInterceptor removed - using httpOnly cookies instead
+// import "./utils/httpInterceptor.js"; // HTTP interceptor for automatic auth headers
 import Loading from "./components/ui/Loading.jsx";
+import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
+import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
 import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
 import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
@@ -24,6 +24,8 @@ import ToastContainer from "./components/ToastContainer.jsx";
 import ErrorQueue from "./components/ErrorQueue.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
 import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
+import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
+import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
 
 /**
  * Lazy load all page components for better build performance
@@ -38,6 +40,11 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
 const ProtectedRoute = lazy(() => import("./routes/ProtectedRoute.jsx"));
 
+// Security and Privacy pages - MFA and Data Privacy
+const MFASetup = lazy(() => import("./pages/MFASetup.jsx"));
+const MFAVerify = lazy(() => import("./pages/MFAVerify.jsx"));
+const PrivacyDashboard = lazy(() => import("./pages/PrivacyDashboard.jsx"));
+
 // Resident pages - Visitor management functionality for residents
 const BulkInvite = lazy(() => import("./pages/resident/BulkInvite.jsx"));
 const BulkInviteWizard = lazy(() => import("./pages/resident/BulkInviteWizard.jsx")); // Added for Task 2.3
@@ -47,15 +54,26 @@ const AddVisitor = lazy(() => import("./pages/resident/AddVisitor.jsx"));
 const AddVisitorWizard = lazy(() => import("./pages/resident/AddVisitorWizard.jsx")); // Added for Task 2.3
 const GeneratePass = lazy(() => import("./pages/resident/GeneratePass.jsx"));
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
+const FavoriteVisitors = lazy(() => import("./pages/resident/FavoriteVisitors.jsx")); // Added for Task 2.3
 
 // Guard pages - Security and access control for guards
 const GuardDashboard = lazy(() => import("./pages/guard/GuardDashboard.jsx"));
 const ManualCheck = lazy(() => import("./pages/guard/ManualCheck.jsx"));
 const ScanQR = lazy(() => import("./pages/guard/ScanQR.jsx"));
+const GuardSettings = lazy(() => import("./pages/guard/Settings.jsx"));
+const GuardVisitorHistory = lazy(() => import("./pages/guard/VisitorHistory.jsx"));
+const WalkInRegistration = lazy(() => import("./pages/guard/WalkInRegistration.jsx"));
+const IncidentList = lazy(() => import("./pages/guard/IncidentList.jsx"));
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
 const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
+const AdminSettings = lazy(() => import("./pages/admin/Settings.jsx"));
+const AdminOperations = lazy(() => import("./pages/admin/AdminOperationsDashboard.jsx"));
+const WatchlistManagement = lazy(() => import("./pages/admin/WatchlistManagement.jsx"));
+const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
+const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
+const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
 
 /**
  * Main App component that renders the entire application
@@ -92,62 +110,32 @@ function App() {
   useEffect(() => {
     // Initialize keyboard navigation features
     initializeAllKeyboardFeatures();
-
-    const handleKeyDown = (e) => {
-      // Ctrl/Cmd + K to focus search (if available)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        const searchInput = document.querySelector('input[type="search"], input[type="text"]');
-        if (searchInput) {
-          searchInput.focus();
-        }
-      }
-      // Ctrl/Cmd + H to go to home/dashboard
-      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
-        e.preventDefault();
-        const role = localStorage.getItem('role');
-        if (role) {
-          window.location.href = `/dashboard/${role}`;
-        } else {
-          window.location.href = '/login';
-        }
-      }
-      // Ctrl/Cmd + L to logout
-      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
-        e.preventDefault();
-        localStorage.clear();
-        window.location.href = '/login';
-      }
-      // Ctrl/Cmd + B to toggle sidebar
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        const sidebarToggle = document.querySelector('[aria-label*="menu"]');
-        if (sidebarToggle) {
-          sidebarToggle.click();
-        }
-      }
-    };
-
-    const app = appRef.current;
-    if (app) {
-      app.addEventListener('keydown', handleKeyDown);
-      return () => app.removeEventListener('keydown', handleKeyDown);
-    }
+    // BUG-002 FIX: Removed localStorage-based keyboard shortcuts
+    // Now handled by GlobalKeyboardShortcuts component inside RootProvider
   }, []);
 
   return (
-    <div ref={appRef}>
-            <ErrorProvider>
-              <AuthProvider>
-                <LoadingProvider> {/* Added for Task 2.6 */}
-                  <SearchProvider> {/* Added for Task 3.3 */}
-                    <BrowserCompatibilityProvider> {/* Added for Task 3.4 */}
-                      <Router>
-                        <NavigationProvider>
-            <ErrorBoundary level="page">
-              <NetworkErrorBoundary>
-                <AuthErrorBoundary>
-                  <Suspense fallback={<Loading />}>
+    <AppErrorBoundary>
+      <div ref={appRef}>
+        <RootProvider>
+          {/* Global Styles & Animations */}
+          <GlobalStyles />
+          
+          {/* BUG-002 FIX: Global Keyboard Shortcuts (uses AuthContext, no localStorage) */}
+          <GlobalKeyboardShortcuts />
+          
+          {/* Skip to Main Content - Accessibility */}
+          <SkipLink mainContentId="main-content" />
+          
+          {/* Session Timeout Warning - Global */}
+          <SessionTimeoutWarning 
+            warningTime={5 * 60 * 1000}  // 5 minutes before expiry
+            sessionTimeout={30 * 60 * 1000}  // 30 minutes total session
+          />
+          <ErrorBoundary level="page">
+            <NetworkErrorBoundary>
+              <AuthErrorBoundary>
+                <Suspense fallback={<Loading />}>
             <Routes>
             {/* Default route - redirect to login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
@@ -161,6 +149,27 @@ function App() {
             {/* Privacy and Terms routes */}
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
+
+            {/* MFA routes - Multi-Factor Authentication */}
+            <Route
+              path="/mfa/setup"
+              element={
+                <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                  <MFASetup />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/mfa/verify" element={<MFAVerify />} />
+
+            {/* Privacy Dashboard - Kenya DPA Compliance */}
+            <Route
+              path="/privacy"
+              element={
+                <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                  <PrivacyDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Guest invitation routes */}
             <Route path="/invite/:inviteCode" element={<GuestInvite />} />
@@ -231,6 +240,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/resident/favorite-visitors"
+              element={
+                <ProtectedRoute allowedRoles={["resident"]}>
+                  <FavoriteVisitors />
+                </ProtectedRoute>
+              }
+            />
             {/* Legacy redirects for backward compatibility */}
             <Route path="/pages/resident/AddVisitor" element={<Navigate to="/resident/add-visitor" replace />} />
             <Route path="/pages/resident/GeneratePass" element={<Navigate to="/resident/generate-pass" replace />} />
@@ -266,7 +283,7 @@ function App() {
               path="/dashboard/guard/visitor-history"
               element={
                 <ProtectedRoute allowedRoles={["guard"]}>
-                  <VisitorHistory />
+                  <GuardVisitorHistory />
                 </ProtectedRoute>
               }
             />
@@ -274,7 +291,23 @@ function App() {
               path="/dashboard/guard/settings"
               element={
                 <ProtectedRoute allowedRoles={["guard"]}>
-                  <GuardDashboard />
+                  <GuardSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/guard/walk-in"
+              element={
+                <ProtectedRoute allowedRoles={["guard"]}>
+                  <WalkInRegistration />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/guard/incidents"
+              element={
+                <ProtectedRoute allowedRoles={["guard"]}>
+                  <IncidentList />
                 </ProtectedRoute>
               }
             />
@@ -324,7 +357,55 @@ function App() {
               path="/dashboard/admin/settings"
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminDashboard />
+                  <AdminSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminOperations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/security"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <WatchlistManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/incidents"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <IncidentManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/audit-logs"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AdminOperations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/residents"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <ManageResidents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/guards"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <ManageGuards />
                 </ProtectedRoute>
               }
             />
@@ -336,18 +417,14 @@ function App() {
               </AuthErrorBoundary>
             </NetworkErrorBoundary>
           </ErrorBoundary>
-                        <ToastContainer />
-                        <ErrorQueue />
-                        <BrowserCompatibilityWarning /> {/* Added for Task 3.4 */}
-                        </NavigationProvider>
-                      </Router>
-                      </BrowserCompatibilityProvider> {/* Closed for Task 3.4 */}
-                    </SearchProvider> {/* Closed for Task 3.3 */}
-                    </LoadingProvider> {/* Closed for Task 2.6 */}
-                </AuthProvider>
-              </ErrorProvider>
-    </div>
+          <ToastContainer />
+          <ErrorQueue />
+          <BrowserCompatibilityWarning />
+        </RootProvider>
+      </div>
+    </AppErrorBoundary>
   );
 }
 
 export default App;
+// Cache clear trigger - Fri Nov  7 18:10:34 EAT 2025

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
-import { EnhancedBreadcrumbs } from "./ui";
+import { EnhancedBreadcrumbs, BottomNav, FAB } from "./ui";
 import { useNavigation } from "../contexts/NavigationContext";
 
 export default function Layout({ title, right, children, role, showBreadcrumbs = true }) {
@@ -48,11 +48,17 @@ export default function Layout({ title, right, children, role, showBreadcrumbs =
           )}
           
           {/* Page Content */}
-          <div className="px-6 pb-6">
+          <div className="px-6 pb-24 md:pb-6">
             {children}
           </div>
         </main>
       </div>
+      
+      {/* Mobile Bottom Navigation */}
+      {role && <BottomNav role={role} />}
+      
+      {/* Floating Action Button */}
+      {role && <FAB role={role} />}
     </div>
   );
 }

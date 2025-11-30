@@ -363,6 +363,24 @@ export function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
+// Backwards-compatible aliases expected by Day 3 tests
+export async function measureResponseTime(fn, ...args) {
+  return measureExecutionTime(fn, ...args);
+}
+
+export async function measureMemoryUsage(fn) {
+  const tracker = new MemoryTracker();
+  tracker.snapshot('before');
+  const result = fn ? await fn() : undefined;
+  tracker.snapshot('after');
+
+  return {
+    result,
+    snapshots: tracker.getSnapshots(),
+    delta: tracker.getDelta()
+  };
+}
+
 // Export all helpers
 export default {
   measureExecutionTime,
@@ -372,5 +390,7 @@ export default {
   ThroughputMeasurer,
   benchmark,
   assertPerformance,
-  formatBytes
+  formatBytes,
+  measureResponseTime,
+  measureMemoryUsage
 };

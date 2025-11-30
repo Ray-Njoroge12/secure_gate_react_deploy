@@ -177,7 +177,7 @@ export const corsConfig = {
       process.env.CLIENT_ORIGIN,
       process.env.FRONTEND_URL,
       // Add production domains
-      'https://yourdomain.com',
+      'https://secure-gate-react-deploy.vercel.app',
       'https://www.yourdomain.com'
     ].filter(Boolean), // Remove undefined values
 

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import logger from 'utils/logger';
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
 import { bulkInvite } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
 import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay } from "../../components/ui";
@@ -22,29 +24,41 @@ import {
 
 const BulkInviteWizard = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const role = useCurrentRole();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
   const [inviteData, setInviteData] = useState(null);
+  const [useCustomTime, setUseCustomTime] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  // Pre-set time options for events
+  const timePresets = [
+    { label: '10:00 AM', value: '10:00', icon: '☀️' },
+    { label: '2:00 PM', value: '14:00', icon: '🌤️' },
+    { label: '6:00 PM', value: '18:00', icon: '🌆' },
+    { label: '8:00 PM', value: '20:00', icon: '🌃' },
+  ];
 
   // Wizard steps configuration
   const steps = [
     {
       title: "Event Information",
-      description: "Enter details about the event or gathering",
+      description: "Tell us about your event - we'll create a link guests can use to register",
       validate: (data) => {
         const errors = {};
-        if (!data.eventName?.trim()) errors.eventName = "Event name is required";
-        if (!data.date?.trim()) errors.date = "Event date is required";
-        if (!data.time?.trim()) errors.time = "Event time is required";
-        if (!data.numGuests || data.numGuests < 1) errors.numGuests = "Number of guests must be at least 1";
+        if (!data.eventName?.trim()) errors.eventName = "Please give your event a name";
+        if (!data.date?.trim()) errors.date = "When is your event?";
+        if (!data.time?.trim()) errors.time = "What time does it start?";
+        if (!data.numGuests || data.numGuests < 1) errors.numGuests = "How many guests are you expecting?";
         
         return Object.keys(errors).length === 0 ? true : errors;
       }
     },
     {
-      title: "Guest Information",
-      description: "Add guest details via CSV upload or manual entry",
+      title: "Guest List",
+      description: "Optional: Add your guest list now, or share the link and let them register themselves",
       validate: (data) => {
         const errors = {};
         if (!data.guestData || data.guestData.length === 0) {
@@ -178,51 +192,95 @@ const BulkInviteWizard = () => {
       case 0: // Event Information
         return (
           <div className="space-y-6">
+            {/* Event Name */}
             <div>
               <Input
-                label="Event Name"
+                label="🎯 Event Name"
                 value={stepData.eventName || ""}
                 onChange={(e) => updateStepData({ eventName: e.target.value })}
-                placeholder="e.g., Birthday Party, Meeting, Conference"
+                placeholder="e.g., Birthday Party, Dinner, Pool Party"
                 required
                 icon={<Calendar className="w-4 h-4" />}
+                helperText="Give your event a memorable name"
               />
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Input
-                  label="Event Date"
-                  type="date"
-                  value={stepData.date || ""}
-                  onChange={(e) => updateStepData({ date: e.target.value })}
-                  required
-                  icon={<Calendar className="w-4 h-4" />}
-                />
-              </div>
-              <div>
-                <Input
-                  label="Event Time"
-                  type="time"
-                  value={stepData.time || ""}
-                  onChange={(e) => updateStepData({ time: e.target.value })}
-                  required
-                  icon={<Clock className="w-4 h-4" />}
-                />
+            {/* Event Date */}
+            <div>
+              <Input
+                label="📅 Event Date"
+                type="date"
+                value={stepData.date || ""}
+                onChange={(e) => updateStepData({ date: e.target.value })}
+                required
+                icon={<Calendar className="w-4 h-4" />}
+                min={new Date().toISOString().split('T')[0]}
+                helperText="When is your event?"
+              />
+            </div>
+
+            {/* Time Selection with Presets */}
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-3">
+                🕐 Event Time *
+              </label>
+              <div className="space-y-3">
+                {/* Quick Time Chips */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {timePresets.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => {
+                        updateStepData({ time: preset.value });
+                        setUseCustomTime(false);
+                      }}
+                      className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                        stepData.time === preset.value && !useCustomTime
+                          ? 'border-green-500 bg-green-500/10 text-green-400'
+                          : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{preset.icon}</div>
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Time Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setUseCustomTime(!useCustomTime)}
+                  className="text-sm text-brand-400 hover:text-brand-300 underline"
+                >
+                  {useCustomTime ? '← Back to quick select' : '⏰ Choose a specific time'}
+                </button>
+
+                {/* Custom Time Input */}
+                {useCustomTime && (
+                  <Input
+                    type="time"
+                    value={stepData.time || ""}
+                    onChange={(e) => updateStepData({ time: e.target.value })}
+                    icon={<Clock className="w-4 h-4" />}
+                  />
+                )}
               </div>
             </div>
             
+            {/* Expected Guests */}
             <div>
               <Input
-                label="Expected Number of Guests"
+                label="👥 Expected Number of Guests"
                 type="number"
                 value={stepData.numGuests || ""}
                 onChange={(e) => updateStepData({ numGuests: parseInt(e.target.value) || 0 })}
-                placeholder="5"
+                placeholder="10"
                 min="1"
                 max="50"
                 required
                 icon={<Users className="w-4 h-4" />}
+                helperText="Maximum 50 guests per event"
               />
             </div>
           </div>
@@ -392,13 +450,13 @@ const BulkInviteWizard = () => {
     }
   };
 
-  const onLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
+  const onLogout = async () => {
+    await logout();
+    navigate("/login");
   };
 
   return (
-    <AppShell role={localStorage.getItem('role')} title="Bulk Invite" onLogout={onLogout}>
+    <AppShell role={role} title="Bulk Invite" onLogout={onLogout}>
       <PageHeader
         title="Bulk Invite"
         subtitle="Create multiple visitor invitations for events and gatherings"
@@ -419,63 +477,123 @@ const BulkInviteWizard = () => {
       {error && <ErrorDisplay message={error} onDismiss={() => setError("")} />}
       {success && <SuccessDisplay message={success} onDismiss={() => setSuccess(null)} />}
 
-      {/* Generated Invitations Display */}
+      {/* Generated Invitations Display - Enhanced */}
       {inviteData && (
-        <Card className="mb-6">
-          <Card.Header>
-            <Card.Title className="text-slate-200">Generated Invitations</Card.Title>
+        <Card className="mb-6 border-2 border-green-500">
+          <Card.Header className="bg-green-500/10">
+            <Card.Title className="text-green-400 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Your Event Link is Ready!
+            </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-4">
-              <div className="text-center">
-                <CheckCircle className="w-12 h-12 text-brand-500 mx-auto mb-2" />
-                <p className="text-slate-200 mb-4">
-                  Successfully created {inviteData.guests?.length || 0} invitations!
+            <div className="space-y-6">
+              {/* Success Message */}
+              <div className="text-center py-4">
+                <div className="text-6xl mb-3">🎉</div>
+                <h3 className="text-xl font-semibold text-slate-200 mb-2">
+                  {inviteData.guests?.length || 0} guests can now register!
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Share this link with your guests so they can add their details
                 </p>
               </div>
               
-              <div className="bg-slate-800 p-4 rounded-lg">
-                <h4 className="text-slate-200 font-medium mb-2">Invitation Link:</h4>
-                <div className="flex items-center space-x-2">
+              {/* Link Display */}
+              <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
+                <label className="text-xs text-slate-400 mb-2 block">🔗 Your Event Registration Link</label>
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={inviteData.inviteLink || ''}
                     readOnly
-                    className="flex-1 px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 text-sm"
+                    onClick={(e) => e.target.select()}
+                    className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm font-mono"
                   />
                   <Button
-                    variant="outline"
+                    variant={copySuccess ? "success" : "outline"}
                     size="sm"
                     onClick={() => {
                       navigator.clipboard.writeText(inviteData.inviteLink);
-                      setSuccess("Invitation link copied to clipboard!");
+                      setCopySuccess(true);
+                      setSuccess("✅ Link copied!");
+                      setTimeout(() => setCopySuccess(false), 2000);
                     }}
                   >
-                    <Copy className="w-4 h-4" />
+                    {copySuccess ? '✅' : <Copy className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
               
-              <div className="flex justify-center space-x-3">
+              {/* Share Actions */}
+              <div>
+                <p className="text-sm text-slate-400 mb-3 text-center">Share via:</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* WhatsApp */}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const text = `Join my event! Register here: ${inviteData.inviteLink}`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                    }}
+                    className="bg-green-600/10 border-green-600 hover:bg-green-600/20 text-green-400"
+                  >
+                    <span className="text-xl mr-2">📱</span>
+                    WhatsApp
+                  </Button>
+                  
+                  {/* SMS */}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const text = `Join my event! Register: ${inviteData.inviteLink}`;
+                      window.open(`sms:?body=${encodeURIComponent(text)}`);
+                    }}
+                    className="bg-blue-600/10 border-blue-600 hover:bg-blue-600/20 text-blue-400"
+                  >
+                    <span className="text-xl mr-2">💬</span>
+                    SMS
+                  </Button>
+                  
+                  {/* Email */}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const subject = 'Event Invitation';
+                      const body = `You're invited! Please register here: ${inviteData.inviteLink}`;
+                      window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                    }}
+                    className="bg-purple-600/10 border-purple-600 hover:bg-purple-600/20 text-purple-400"
+                  >
+                    <span className="text-xl mr-2">✉️</span>
+                    Email
+                  </Button>
+                  
+                  {/* Copy Link */}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(inviteData.inviteLink);
+                      setCopySuccess(true);
+                      setSuccess("✅ Link copied to clipboard!");
+                      setTimeout(() => setCopySuccess(false), 2000);
+                    }}
+                    className="bg-slate-700/50 border-slate-600 hover:bg-slate-700 text-slate-300"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+
+              {/* Preview Button */}
+              <div className="text-center pt-2">
                 <Button
                   variant="primary"
-                  onClick={() => {
-                    const link = inviteData.inviteLink;
-                    if (link) {
-                      window.open(link, '_blank');
-                    }
-                  }}
+                  onClick={() => window.open(inviteData.inviteLink, '_blank')}
+                  className="w-full md:w-auto"
                 >
-                  Open Invitation Page
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    navigator.clipboard.writeText(inviteData.inviteLink);
-                    setSuccess("Invitation link copied to clipboard!");
-                  }}
-                >
-                  Copy Link
+                  👁️ Preview Registration Page
                 </Button>
               </div>
             </div>

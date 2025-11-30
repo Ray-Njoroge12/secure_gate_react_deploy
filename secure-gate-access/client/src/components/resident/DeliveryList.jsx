@@ -1,0 +1,177 @@
+/**
+ * DeliveryList Component
+ * Phase 2.1: Resident view of their deliveries
+ * 
+ * Privacy: Shows only user's own deliveries
+ */
+
+import React, { useState, useEffect } from 'react';
+import deliveryService from '../../services/deliveryService';
+
+const DeliveryList = () => {
+  const [deliveries, setDeliveries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    loadDeliveries();
+  }, [filter]);
+
+  const loadDeliveries = async () => {
+    try {
+      setLoading(true);
+      const status = filter === 'all' ? undefined : filter;
+      const response = await deliveryService.getMyDeliveries({ status });
+      setDeliveries(response.data || []);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load deliveries');
+      console.error('Load deliveries error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCollect = async (deliveryId) => {
+    try {
+      await deliveryService.collectDelivery(deliveryId, 'Self');
+      loadDeliveries();
+    } catch (err) {
+      setError('Failed to mark as collected');
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-KE', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      pending_collection: 'bg-yellow-100 text-yellow-800',
+      notified: 'bg-blue-100 text-blue-800',
+      collected: 'bg-green-100 text-green-800',
+      returned: 'bg-gray-100 text-gray-800',
+      expired: 'bg-red-100 text-red-800'
+    };
+    
+    const labels = {
+      pending_collection: 'Pending',
+      notified: 'Notified',
+      collected: 'Collected',
+      returned: 'Returned',
+      expired: 'Expired'
+    };
+
+    return (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || 'bg-gray-100'}`}>
+        {labels[status] || status}
+      </span>
+    );
+  };
+
+  if (loading && deliveries.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="h-20 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow">
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900">📦 My Deliveries</h2>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="text-sm border-gray-300 rounded-md shadow-sm"
+          >
+            <option value="all">All Deliveries</option>
+            <option value="pending_collection">Pending</option>
+            <option value="collected">Collected</option>
+          </select>
+        </div>
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border-l-4 border-red-400">
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      <div className="divide-y divide-gray-200">
+        {deliveries.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <span className="text-4xl">📭</span>
+            <p className="mt-2">No deliveries found</p>
+          </div>
+        ) : (
+          deliveries.map((delivery) => (
+            <div key={delivery.id} className="p-4 hover:bg-gray-50">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">
+                      {delivery.carrier_name}
+                    </span>
+                    {getStatusBadge(delivery.status)}
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {delivery.package_description || 'Package'}
+                    {' • '}
+                    <span className="capitalize">{delivery.package_size}</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Received: {formatDate(delivery.created_at)}
+                  </p>
+                  {delivery.collected_at && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Collected: {formatDate(delivery.collected_at)}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {delivery.has_photo && (
+                    <button
+                      onClick={() => window.open(`/api/deliveries/${delivery.id}/photo`, '_blank')}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      📷 View Photo
+                    </button>
+                  )}
+                  {delivery.status === 'pending_collection' && (
+                    <button
+                      onClick={() => handleCollect(delivery.id)}
+                      className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
+                    >
+                      Mark Collected
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Privacy Notice */}
+      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+        <p>🔒 Privacy: Only you can see your deliveries. Photos auto-delete 30 days after collection.</p>
+      </div>
+    </div>
+  );
+};
+
+export default DeliveryList;

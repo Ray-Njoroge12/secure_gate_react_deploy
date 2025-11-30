@@ -110,8 +110,8 @@ export function generateKenyanPhone(carrier = 'random') {
     prefix = pool[Math.floor(Math.random() * pool.length)];
   }
 
-  // Generate remaining 6 digits
-  const number = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  // Generate remaining 7 digits so total matches +254[17]\d{8}
+  const number = String(Math.floor(Math.random() * 10000000)).padStart(7, '0');
   
   return `+254${prefix}${number}`;
 }
@@ -154,6 +154,11 @@ export function generateNairobiAddress(type = 'random') {
     house,
     fullAddress: `${house}, ${area}, Nairobi`
   };
+}
+
+// Backwards-compatible alias for tests
+export function generateKenyanAddress(type = 'random') {
+  return generateNairobiAddress(type);
 }
 
 /**
@@ -318,6 +323,7 @@ export default {
   generateKenyanPhone,
   generateKenyanID,
   generateNairobiAddress,
+  generateKenyanAddress,
   generateRealisticTimestamp,
   generateBusinessHoursTimestamp,
   generateVisitPurpose,

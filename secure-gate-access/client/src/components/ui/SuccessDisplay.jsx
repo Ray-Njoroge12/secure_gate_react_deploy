@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { CheckCircle, Copy, ExternalLink, QrCode, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { CheckCircle, Copy, ExternalLink, QrCode, X, MessageCircle, Share2 } from 'lucide-react';
 
 const SuccessDisplay = ({ 
   success, 
@@ -7,6 +7,8 @@ const SuccessDisplay = ({
   className = '' 
 }) => {
   const successRef = useRef(null);
+  const [copied, setCopied] = useState(false);
+  const [whatsappSent, setWhatsappSent] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -41,7 +43,72 @@ const SuccessDisplay = ({
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    // You could add a toast notification here
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Share via WhatsApp
+  const shareViaWhatsApp = () => {
+    if (!success.data?.inviteLink) return;
+    
+    const visitorName = success.data.visitor?.name || 'Guest';
+    const visitDate = success.data.visitor?.dateOfVisit 
+      ? new Date(success.data.visitor.dateOfVisit).toLocaleDateString('en-KE', { 
+          weekday: 'long', 
+          month: 'long', 
+          day: 'numeric' 
+        })
+      : 'your scheduled date';
+    
+    const message = encodeURIComponent(
+      `🏠 You're invited!\n\n` +
+      `Hi ${visitorName}! You've been invited to visit.\n\n` +
+      `📅 Date: ${visitDate}\n\n` +
+      `Tap the link below to get your digital pass:\n` +
+      `${success.data.inviteLink}\n\n` +
+      `Show this pass at the gate for entry. ✅`
+    );
+    
+    const whatsappUrl = `https://wa.me/?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+    setWhatsappSent(true);
+    setTimeout(() => setWhatsappSent(false), 3000);
+  };
+
+  // Share via WhatsApp to specific phone
+  const shareViaWhatsAppDirect = () => {
+    if (!success.data?.inviteLink || !success.data?.visitor?.phone) return;
+    
+    const visitorName = success.data.visitor?.name || 'Guest';
+    const visitDate = success.data.visitor?.dateOfVisit 
+      ? new Date(success.data.visitor.dateOfVisit).toLocaleDateString('en-KE', { 
+          weekday: 'long', 
+          month: 'long', 
+          day: 'numeric' 
+        })
+      : 'your scheduled date';
+    
+    // Format phone number for WhatsApp (remove leading 0, add 254 for Kenya)
+    let phoneNumber = success.data.visitor.phone.replace(/\s/g, '');
+    if (phoneNumber.startsWith('0')) {
+      phoneNumber = '254' + phoneNumber.substring(1);
+    } else if (phoneNumber.startsWith('+')) {
+      phoneNumber = phoneNumber.substring(1);
+    }
+    
+    const message = encodeURIComponent(
+      `🏠 You're invited!\n\n` +
+      `Hi ${visitorName}! You've been invited to visit.\n\n` +
+      `📅 Date: ${visitDate}\n\n` +
+      `Tap the link below to get your digital pass:\n` +
+      `${success.data.inviteLink}\n\n` +
+      `Show this pass at the gate for entry. ✅`
+    );
+    
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+    setWhatsappSent(true);
+    setTimeout(() => setWhatsappSent(false), 3000);
   };
 
   return (
@@ -69,8 +136,8 @@ const SuccessDisplay = ({
                 )}
                 
                 {success.data.inviteLink && (
-                  <div className="bg-green-100 rounded p-3">
-                    <p className="text-sm font-medium mb-2">Invite Link:</p>
+                  <div className="bg-green-100 rounded p-3 space-y-3">
+                    <p className="text-sm font-medium">Invite Link:</p>
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
@@ -85,6 +152,32 @@ const SuccessDisplay = ({
                         title="Copy link"
                       >
                         <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    {copied && (
+                      <p className="text-xs text-green-600">✓ Copied to clipboard!</p>
+                    )}
+                    
+                    {/* WhatsApp Share Buttons */}
+                    <div className="border-t border-green-200 pt-3 mt-2 space-y-2">
+                      <p className="text-xs font-medium text-green-700">Share via WhatsApp:</p>
+                      
+                      {success.data.visitor?.phone && (
+                        <button
+                          onClick={shareViaWhatsAppDirect}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg font-medium transition-colors"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          {whatsappSent ? '✓ Opening WhatsApp...' : `Send to ${success.data.visitor.name}`}
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={shareViaWhatsApp}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 text-sm rounded-lg border border-green-300 transition-colors"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Share (choose contact)
                       </button>
                     </div>
                   </div>

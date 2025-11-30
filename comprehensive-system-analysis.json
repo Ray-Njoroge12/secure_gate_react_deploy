@@ -1,0 +1,475 @@
+{
+  "timestamp": "2025-11-12T02:07:06.012Z",
+  "analyses": {
+    "frontendStructure": {
+      "packageJson": {
+        "name": "secure-gate-client",
+        "version": "1.0.0",
+        "dependencies": [
+          "axios",
+          "es6-promise",
+          "intersection-observer",
+          "lucide-react",
+          "react",
+          "react-dom",
+          "react-qr-code",
+          "react-router-dom",
+          "react-scripts",
+          "resize-observer-polyfill",
+          "url-polyfill",
+          "whatwg-fetch"
+        ],
+        "devDependencies": [
+          "@axe-core/react",
+          "@craco/craco",
+          "@lhci/cli",
+          "@tailwindcss/postcss",
+          "@testing-library/dom",
+          "@testing-library/jest-dom",
+          "@testing-library/react",
+          "@testing-library/user-event",
+          "autoprefixer",
+          "cross-env",
+          "jest-axe",
+          "postcss",
+          "puppeteer",
+          "tailwindcss",
+          "web-vitals",
+          "webpack-bundle-analyzer"
+        ],
+        "scripts": {
+          "start": "react-scripts start",
+          "build": "react-scripts build",
+          "vercel-build": "npm run build:production",
+          "build:fast": "cross-env GENERATE_SOURCEMAP=false CI=true INLINE_RUNTIME_CHUNK=false IMAGE_INLINE_SIZE_LIMIT=0 TSC_COMPILE_ON_ERROR=true react-scripts build",
+          "build:production": "cross-env GENERATE_SOURCEMAP=false CI=true INLINE_RUNTIME_CHUNK=false IMAGE_INLINE_SIZE_LIMIT=0 DISABLE_ESLINT_PLUGIN=true TSC_COMPILE_ON_ERROR=true react-scripts build",
+          "test": "react-scripts test",
+          "eject": "react-scripts eject",
+          "analyze": "npm run build:fast && npx source-map-explorer 'build/static/js/*.js'",
+          "clean:cache": "rm -rf node_modules/.cache && rm -rf build",
+          "test:performance": "npm run build:fast && node scripts/run-performance-tests.js",
+          "test:performance:watch": "npm run build:fast && node scripts/run-performance-tests.js --watch",
+          "test:performance:report": "npm run build:fast && node scripts/run-performance-tests.js --report",
+          "lighthouse": "npm run build:fast && npx lighthouse http://localhost:3000 --output=html --output-path=./lighthouse-report.html --chrome-flags='--headless'"
+        },
+        "proxy": "http://localhost:3001"
+      },
+      "srcStructure": {
+        "totalFiles": 293,
+        "components": 97,
+        "pages": 49,
+        "services": 8,
+        "utils": 29,
+        "context": 2,
+        "hooks": 17
+      },
+      "publicStructure": {
+        "files": [
+          "favicon.ico",
+          "index.html",
+          "manifest.json",
+          "offline.html",
+          "service-worker.js"
+        ],
+        "hasIndexHtml": true,
+        "hasManifest": true
+      },
+      "configFiles": {},
+      "issues": []
+    },
+    "backendStructure": {
+      "packageJson": {
+        "name": "secure-gate-server",
+        "version": "1.0.0",
+        "dependencies": [
+          "@aws-sdk/client-kms",
+          "@aws-sdk/client-secrets-manager",
+          "africastalking",
+          "argon2",
+          "axios-cookiejar-support",
+          "bcryptjs",
+          "compression",
+          "connect-redis",
+          "cookie-parser",
+          "cors",
+          "dotenv",
+          "express",
+          "express-rate-limit",
+          "express-session",
+          "express-slow-down",
+          "form-data",
+          "handlebars",
+          "helmet",
+          "joi",
+          "jsonwebtoken",
+          "mailgun.js",
+          "memorystore",
+          "morgan",
+          "node-fetch",
+          "node-pg-migrate",
+          "nodemailer",
+          "pg",
+          "qrcode",
+          "redis",
+          "socket.io",
+          "speakeasy",
+          "swagger-jsdoc",
+          "swagger-ui-express",
+          "tough-cookie",
+          "twilio",
+          "uuid",
+          "winston",
+          "winston-daily-rotate-file"
+        ],
+        "devDependencies": [
+          "@faker-js/faker",
+          "@playwright/test",
+          "audit",
+          "axios",
+          "eslint-plugin-security",
+          "jest",
+          "k6",
+          "npm-audit-resolver",
+          "playwright",
+          "supertest"
+        ],
+        "scripts": {
+          "start": "node server.js",
+          "dev": "node --inspect server.js",
+          "test": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand",
+          "test:coverage": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --coverage",
+          "test:watch": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --watch",
+          "test:unit": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.unit.cjs --runInBand",
+          "test:unit:coverage": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.unit.cjs --runInBand --coverage",
+          "test:unit:watch": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.unit.cjs --runInBand --watch",
+          "test:integration": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.integration.cjs --runInBand --detectOpenHandles",
+          "test:integration:verbose": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.integration.cjs --runInBand --verbose",
+          "test:integration:coverage": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.integration.cjs --runInBand --coverage",
+          "test:e2e": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.e2e.cjs --runInBand",
+          "test:e2e:coverage": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config jest.config.e2e.cjs --runInBand --coverage",
+          "test:playwright": "npx playwright test",
+          "test:playwright:headed": "npx playwright test --headed",
+          "test:playwright:ui": "npx playwright test --ui",
+          "test:playwright:debug": "npx playwright test --debug",
+          "test:playwright:report": "npx playwright show-report",
+          "test:playwright:install": "npx playwright install",
+          "test:manual": "node tests/manual/execute-manual-tests.js",
+          "test:manual:run": "node tests/manual/run-manual-tests.js",
+          "test:manual:report": "open tests/results/manual-test-report.html",
+          "test:performance": "node tests/performance/run-performance-tests.js",
+          "test:performance:comprehensive": "node tests/performance/comprehensive-performance-test.js",
+          "test:performance:monitor": "node tests/performance/monitor-dashboard.js",
+          "test:performance:load": "k6 run tests/performance/load-test.js",
+          "test:performance:stress": "k6 run tests/performance/stress-test.js",
+          "test:performance:spike": "k6 run tests/performance/spike-test.js",
+          "test:security": "node tests/security/run-security-audit.js",
+          "test:security:audit": "node tests/security/security-audit.js",
+          "test:security:vulnerability": "node tests/security/vulnerability-tests.js",
+          "test:security:npm": "npm audit",
+          "test:all": "npm run test:integration && npm run test:e2e && npm run test:manual && npm run test:performance && npm run test:security",
+          "optimize:database": "node scripts/optimize-database.js",
+          "setup:env": "node scripts/setup-env.js",
+          "setup:env:generate": "node scripts/setup-env.js --generate",
+          "validate:env": "node src/config/validateEnv.js",
+          "db:migrate": "node scripts/migrate.js",
+          "db:seed": "node scripts/seed.js",
+          "test:seed": "node tests/seeds/index.js seed",
+          "test:cleanup": "node tests/seeds/index.js cleanup",
+          "test:reset": "node tests/seeds/index.js reset"
+        },
+        "main": "server.js",
+        "type": "module"
+      },
+      "srcStructure": {
+        "totalFiles": 226,
+        "routes": 55,
+        "services": 83,
+        "middleware": 29,
+        "models": 1,
+        "controllers": 14,
+        "config": 11,
+        "database": 3
+      },
+      "serverFile": "server.js",
+      "issues": []
+    },
+    "duplicateFiles": {
+      "totalFiles": 705,
+      "duplicateFileNames": 38,
+      "duplicates": [
+        {
+          "fileName": "index.js",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/ErrorBoundary/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/bundles/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/common/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/icons/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/ui/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/design-system/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/polyfills/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v1/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v2/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/tests/helpers/index.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/tests/seeds/index.js"
+          ],
+          "count": 12
+        },
+        {
+          "fileName": "Settings.jsx",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/pages/admin/Settings.jsx",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/pages/guard/Settings.jsx",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/pages/resident/Settings.jsx"
+          ],
+          "count": 3
+        },
+        {
+          "fileName": "logger.js",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/utils/logger.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/config/logger.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/utils/logger.js"
+          ],
+          "count": 3
+        },
+        {
+          "fileName": "adminRoutes.js",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/adminRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v1/adminRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v2/adminRoutes.js"
+          ],
+          "count": 3
+        },
+        {
+          "fileName": "guardRoutes.js",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/guardRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v1/guardRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v2/guardRoutes.js"
+          ],
+          "count": 3
+        },
+        {
+          "fileName": "incidentRoutes.js",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/incidentRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v1/incidentRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v2/incidentRoutes.js"
+          ],
+          "count": 3
+        },
+        {
+          "fileName": "residentRoutes.js",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/residentRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v1/residentRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v2/residentRoutes.js"
+          ],
+          "count": 3
+        },
+        {
+          "fileName": "visitorRoutes.js",
+          "paths": [
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v1/visitorRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/v2/visitorRoutes.js",
+            "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/visitorRoutes.js"
+          ],
+          "count": 3
+        }
+      ]
+    },
+    "importExportIssues": {
+      "totalFiles": 300,
+      "issues": [
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/AuthContext.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/Card.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/ErrorBoundary.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/ErrorContext.test.js",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/Input.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/LoadingContext.test.js",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/LoadingContext.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/LoadingStates.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/NavigationContext.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/SearchContext.test.js",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/Skeleton.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/loadingIntegration.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/useApiCall.test.js",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/useFormValidation.test.js",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/useLoadingState.test.js",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/__tests__/user-flows.test.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/BrowserCompatibility.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/BrowserCompatibilityWarning.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/ErrorBoundary/AuthErrorBoundary.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        },
+        {
+          "type": "MISSING_EXTENSION",
+          "severity": "LOW",
+          "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/components/ErrorBoundary/ErrorBoundary.jsx",
+          "line": 1,
+          "issue": "Import without file extension"
+        }
+      ]
+    },
+    "configurationMismatches": {
+      "ports": {
+        "frontend": {
+          "defaultPort": 3000,
+          "proxy": "http://localhost:3001"
+        },
+        "backend": {
+          "port": "5000",
+          "nodeEnv": "development"
+        }
+      },
+      "environment": {
+        "frontend": {},
+        "backend": {}
+      },
+      "mismatches": [
+        {
+          "type": "PORT_MISMATCH",
+          "severity": "HIGH",
+          "message": "Frontend proxy port (3001) doesn't match backend port (undefined)"
+        }
+      ]
+    },
+    "criticalCodeIssues": {
+      "totalIssues": 0,
+      "criticalIssues": 0,
+      "highIssues": 0,
+      "issues": []
+    },
+    "buildRuntimeCheck": {
+      "issues": [],
+      "recommendations": [
+        "Run npm install in both frontend and backend directories",
+        "Check for build errors in console logs",
+        "Verify all environment variables are set correctly",
+        "Ensure all required dependencies are installed"
+      ]
+    }
+  },
+  "summary": {
+    "criticalIssues": 0,
+    "highIssues": 1,
+    "totalIssues": 21,
+    "recommendations": [
+      "🔧 Fix configuration mismatches"
+    ]
+  }
+}

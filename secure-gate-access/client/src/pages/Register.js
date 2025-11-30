@@ -5,6 +5,8 @@ import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } fro
 import { useError } from "../contexts/ErrorContext.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator.jsx';
+import phoneValidator from '../utils/phoneValidator.js';
 import logger from 'utils/logger';
 
 export default function RegistrationPage() {
@@ -23,7 +25,8 @@ export default function RegistrationPage() {
     role: 'resident',
     residentialArea: '',
     phone: '',
-    houseNumber: ''
+    houseNumber: '',
+    consent: false
   });
 
   const [errors, setErrors] = useState({});
@@ -40,7 +43,7 @@ export default function RegistrationPage() {
           if (isBulkRegistration) {
             handleBulkRegister(e);
           } else {
-            handleSubmit(e);
+            handleRegister(e);
           }
         }
       }
@@ -131,8 +134,10 @@ export default function RegistrationPage() {
 
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)';
     }
 
     if (formData.confirmPassword !== formData.password) {
@@ -145,8 +150,11 @@ export default function RegistrationPage() {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^0\d{9}$/.test(formData.phone.trim())) {
-      newErrors.phone = 'Phone must be in format 0xxxxxxxxx (10 digits starting with 0)';
+    } else {
+      const phoneError = phoneValidator.getErrorMessage(formData.phone.trim(), 'KE');
+      if (phoneError) {
+        newErrors.phone = phoneError;
+      }
     }
 
     if (formData.role === 'resident' && !formData.houseNumber.trim()) {
@@ -169,6 +177,9 @@ export default function RegistrationPage() {
     }
 
     try {
+      // Convert phone number to international format for backend
+      const internationalPhone = phoneValidator.toInternational(formData.phone.trim(), 'KE');
+      
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -177,7 +188,7 @@ export default function RegistrationPage() {
           email: formData.email,
           role: formData.role,
           area: formData.residentialArea,
-          phone: formData.phone,
+          phone: internationalPhone,
           house: formData.role === "resident" ? formData.houseNumber : "", // Backend expects 'house' field
           password: formData.password,
         }),
@@ -276,7 +287,7 @@ export default function RegistrationPage() {
       setShowOtpSection(true);
       setSuccess("Registration submitted. Please check your email/SMS for the OTP and verify to view your QR code.");
     } catch (err) {
-      logger.error('Bulk registration failed', err, { inviteId });
+      logger.error('Bulk registration failed', err, { inviteCode });
       // Friendly messages per status
       if (err.status === 410) {
         handleError('This invitation has expired. Please contact the host for a new link.', {
@@ -524,13 +535,23 @@ export default function RegistrationPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full mt-4 min-h-[44px] px-4 py-3 text-white border-none rounded-md text-base font-semibold ${
+              className={`w-full mt-4 flex justify-center items-center h-12 px-4 border-none rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${
                 loading 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-green-600 hover:bg-green-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
+                  : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
               }`}
             >
-              {loading ? 'Registering...' : 'Register for Event'}
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Registering...
+                </>
+              ) : (
+                'Register for Event'
+              )}
             </button>
           </form>
 
@@ -667,6 +688,7 @@ export default function RegistrationPage() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
+          <PasswordStrengthIndicator password={formData.password} />
           {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
         </div>
 
@@ -674,15 +696,52 @@ export default function RegistrationPage() {
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
             Confirm Password
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            placeholder="Confirm your password"
-            value={formData.confirmPassword}
-            onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-            required
-          />
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type="password"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+              className={`w-full px-3 py-2 pr-10 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${
+                formData.confirmPassword && formData.password
+                  ? formData.confirmPassword === formData.password
+                    ? 'border-green-300 bg-green-50'
+                    : 'border-red-300 bg-red-50'
+                  : 'border-gray-300'
+              }`}
+              required
+            />
+            {formData.confirmPassword && formData.password && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                {formData.confirmPassword === formData.password ? (
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+            )}
+          </div>
+          {formData.confirmPassword && formData.password && formData.confirmPassword !== formData.password && (
+            <p className="text-red-600 text-sm mt-1 flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Passwords do not match
+            </p>
+          )}
+          {formData.confirmPassword && formData.password && formData.confirmPassword === formData.password && (
+            <p className="text-green-600 text-sm mt-1 flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Passwords match
+            </p>
+          )}
           {errors.confirmPassword && <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>}
         </div>
 
@@ -710,13 +769,23 @@ export default function RegistrationPage() {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+          className={`w-full flex justify-center items-center h-12 px-4 border border-transparent rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${
             loading
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500'
+              : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
           }`}
         >
-          {loading ? 'Creating Account...' : 'Create Account'}
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating Account...
+            </>
+          ) : (
+            'Create Account'
+          )}
         </button>
       </form>
 

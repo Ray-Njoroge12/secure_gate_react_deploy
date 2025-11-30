@@ -107,23 +107,28 @@ class ErrorReporter {
 
   /**
    * Get current user information
+   * A0.5: Removed localStorage access for security
+   * User info should come from AuthContext, not localStorage
+   * Error reports don't need user PII for debugging
    */
   getUserInfo() {
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        return {
-          id: user.id,
-          role: user.role,
-          email: user.email
-        };
-      }
-    } catch (error) {
-      logger.warn('Failed to parse user info from localStorage', error);
+    // Return minimal non-PII info for error tracking
+    // AuthContext manages user state securely via httpOnly cookies
+    return {
+      timestamp: new Date().toISOString(),
+      sessionId: this.generateSessionId()
+    };
+  }
+
+  /**
+   * Generate a temporary session ID for error correlation
+   * (not tied to auth, just for grouping errors from same session)
+   */
+  generateSessionId() {
+    if (!window.__errorReportingSessionId) {
+      window.__errorReportingSessionId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    
-    return null;
+    return window.__errorReportingSessionId;
   }
 
   /**
@@ -137,9 +142,9 @@ class ErrorReporter {
       cookieEnabled: navigator.cookieEnabled,
       onLine: navigator.onLine,
       screen: {
-        width: screen.width,
-        height: screen.height,
-        colorDepth: screen.colorDepth
+        width: window.screen.width,
+        height: window.screen.height,
+        colorDepth: window.screen.colorDepth
       },
       viewport: {
         width: window.innerWidth,
@@ -261,19 +266,11 @@ class ErrorReporter {
 
   /**
    * Get authentication token
+   * A0.5: REMOVED - Authentication uses httpOnly cookies only
+   * Error reporting service should not have access to auth tokens
+   * Server-side logging handles authenticated error reports
    */
-  getAuthToken() {
-    try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        return user.token;
-      }
-    } catch (error) {
-      logger.warn('Failed to get auth token', error);
-    }
-    return null;
-  }
+  // Method removed for security - tokens never accessible to JavaScript
 
   /**
    * Flush error queue

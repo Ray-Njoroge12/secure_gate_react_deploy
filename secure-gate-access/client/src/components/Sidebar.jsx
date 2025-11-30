@@ -62,7 +62,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
         `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
           isActive 
             ? "bg-brand-600 text-white shadow-sm" 
-            : "text-slate-300 hover:bg-slate-700 hover:text-white"
+            : "text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
         }`
       }
       aria-label={`Navigate to ${children}`}
@@ -75,7 +75,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
             <Badge 
               variant="outline" 
               size="sm" 
-              className="ml-2 text-xs bg-slate-600 border-slate-500 text-slate-200"
+              className="ml-2 text-xs bg-gray-100 dark:bg-slate-600 border-gray-300 dark:border-slate-500 text-gray-600 dark:text-slate-200"
               aria-label={`${badge} badge`}
             >
               {badge}
@@ -83,7 +83,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
           )}
         </div>
         {description && (
-          <p className="text-xs text-slate-400 mt-0.5 truncate">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">
             {description}
           </p>
         )}
@@ -147,6 +147,17 @@ const navigationConfig = {
       )
     },
     { 
+      path: "/resident/favorite-visitors", 
+      label: "Favorites",
+      description: "Quick invite frequent guests",
+      badge: "New",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      )
+    },
+    { 
       path: "/resident/settings", 
       label: "Settings",
       icon: (
@@ -191,6 +202,33 @@ const navigationConfig = {
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    },
+    { 
+      path: "/dashboard/guard/walk-in", 
+      label: "Walk-in Registration",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+        </svg>
+      )
+    },
+    { 
+      path: "/dashboard/guard/incidents", 
+      label: "Incidents",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      )
+    },
+    { 
+      path: "/dashboard/guard/analytics", 
+      label: "Analytics",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       )
     }
@@ -238,6 +276,24 @@ const navigationConfig = {
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      )
+    },
+    { 
+      path: "/dashboard/admin/incidents", 
+      label: "Incidents",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      )
+    },
+    { 
+      path: "/dashboard/admin/integrations", 
+      label: "Integrations",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
         </svg>
       )
     },
@@ -316,7 +372,7 @@ const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
         ref={sidebarRef}
         className={`
           flex flex-col h-full fixed md:relative z-50 w-64
-          bg-slate-900 border-r border-slate-700 p-6
+          bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 p-6
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
@@ -331,7 +387,7 @@ const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-slate-200">SecureGate</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-200">SecureGate</h2>
         </div>
         
         {role && (
@@ -368,7 +424,7 @@ const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
       </nav>
 
       {/* Logout Button */}
-      <div className="mt-auto pt-4 border-t border-slate-700">
+      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-slate-700">
         <Button 
           variant="outline" 
           className="w-full justify-center min-h-[44px]"

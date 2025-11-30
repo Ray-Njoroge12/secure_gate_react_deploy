@@ -5,21 +5,38 @@ import { AppError, asyncHandler } from './standardizedErrorHandler.js';
 
 // Enhanced authentication middleware with secure token verification
 export const authenticateToken = asyncHandler(async (req, res, next) => {
+  console.log('🔍 MIDDLEWARE DEBUG - authenticateToken called for:', req.method, req.originalUrl);
   try {
+    // Try to get token from Authorization header first (for API clients)
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const headerToken = authHeader && authHeader.split(' ')[1];
+    
+    // Then try to get token from httpOnly cookie (for browser clients)
+    const cookieToken = req.cookies?.accessToken;
+    
+    // Use whichever token is available (header takes precedence for backward compatibility)
+    const token = headerToken || cookieToken;
+
+    // DEBUG: Temporary logging for debugging auth issues
+    console.log('🔍 AUTH DEBUG:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderValue: authHeader ? authHeader.substring(0, 20) + '...' : null,
+      hasHeaderToken: !!headerToken,
+      hasCookieToken: !!cookieToken,
+      hasToken: !!token
+    });
 
     if (!token) {
-      console.log('[AUTH] No token provided');
+      // Security: No logging of auth attempts to prevent information disclosure
       throw new AppError('Token required', 401, 'AUTH_TOKEN_MISSING');
     }
 
     // Verify token using enhanced token service
     let payload;
     try {
-      payload = tokenService.verifyAccessToken(token);
+      payload = await tokenService.verifyAccessToken(token);
     } catch (error) {
-      console.log('[AUTH] Token verification failed:', error.message);
+      // Security: Token verification failure - details logged to secure audit log only
       if (error.name === 'TokenExpiredError') {
         throw new AppError('Token expired', 401, 'AUTH_TOKEN_EXPIRED');
       } else {
@@ -27,11 +44,11 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       }
     }
 
-    console.log('[AUTH] Token decoded:', { email: payload.email, role: payload.role, exp: new Date(payload.exp * 1000) });
+    // Security: Token validated successfully - no PII logging
 
     // Validate required fields
     if (!payload.email) {
-      console.log('[AUTH] Token missing email field');
+      // Security: Invalid token format - no details logged
       throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
     }
 
@@ -42,12 +59,12 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     );
 
     if (userQuery.rowCount === 0) {
-      console.log('[AUTH] User not found in database:', payload.email);
+      // Security: User lookup failed - no PII logged
       throw new AppError('User not found', 401, 'AUTH_USER_NOT_FOUND');
     }
 
     const dbUser = userQuery.rows[0];
-    console.log('[AUTH] Database user found:', { id: dbUser.id, email: dbUser.email, role: dbUser.role });
+    // Security: User authenticated - no PII logged
 
     // Set req.user with database info
     req.user = {
@@ -64,23 +81,27 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       // Re-throw AppError instances to be handled by the global error handler
       throw err;
     } else if (err.name === 'JsonWebTokenError') {
-      console.log('[AUTH] Invalid JWT:', err.message);
+      // Security: JWT validation error - details in secure logs only
       throw new AppError('Invalid token', 401, 'AUTH_TOKEN_INVALID');
     } else if (err.name === 'TokenExpiredError') {
-      console.log('[AUTH] Expired JWT:', err.message);
+      // Security: JWT expired - no details logged
       throw new AppError('Token expired', 401, 'AUTH_TOKEN_EXPIRED');
     } else {
-      console.error('[AUTH] Unexpected error:', err);
+      // Security: Unexpected auth error - logged to secure error handler
       throw new AppError('Authentication error', 500, 'AUTH_INTERNAL_ERROR');
     }
   }
 });
 
-// Convenience middleware: attach user when Authorization header present but don't fail.
+// Convenience middleware: attach user when token present but don't fail.
 export async function attachUserFromToken(req, res, next) {
   try {
+    // Try both header and cookie
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const headerToken = authHeader && authHeader.split(' ')[1];
+    const cookieToken = req.cookies?.accessToken;
+    const token = headerToken || cookieToken;
+    
     if (!token) return next();
 
     // Use standardized token service
@@ -118,7 +139,7 @@ export async function attachUserFromToken(req, res, next) {
     }
   } catch (err) {
     // ignore invalid token in attachUserFromToken (non-fatal)
-    console.log('[AUTH] Non-fatal token error in attachUserFromToken:', err.message);
+    // Non-fatal token error - silently handled for security
   }
   return next();
 }

@@ -31,6 +31,10 @@ module.exports = {
     '/coverage/',
     '/dist/'
   ],
+  moduleNameMapper: {
+    '^vitest$': '<rootDir>/tests/helpers/vitestShim.js',
+    '^(.*/)?src/database/db\\.enhanced\\.js$': '<rootDir>/tests/mocks/dbManagerStub.js'
+  },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   verbose: true,
   testTimeout: 5000

@@ -68,35 +68,71 @@ class EnvironmentConfig {
 
     try {
       console.log('🔐 Loading secrets from AWS Secrets Manager...');
+      console.log(`   Prefix: ${process.env.SECRETS_PREFIX || 'secure-gate'}`);
       
+      // Use short logical names - secretsManagerService will add the prefix
       const secretNames = [
-        'secure-gate/jwt-secret',
-        'secure-gate/jwt-refresh-secret',
-        'secure-gate/session-secret',
-        'secure-gate/database-password'
+        'jwt-secret',
+        'jwt-refresh-secret',
+        'session-secret',
+        'database-password',
+        'redis-password',
+        'mailgun-api-key',
+        'africastalking-api-key',
+        'encryption-key'
       ];
 
       const secrets = await this.secretsManager.getSecrets(secretNames);
       
       // Override environment variables with secrets from AWS
-      if (secrets['secure-gate/jwt-secret']) {
-        process.env.JWT_SECRET = secrets['secure-gate/jwt-secret'];
+      // Core authentication secrets
+      if (secrets['jwt-secret']) {
+        process.env.JWT_SECRET = secrets['jwt-secret'];
+        console.log('   ✓ JWT_SECRET loaded from AWS');
       }
-      if (secrets['secure-gate/jwt-refresh-secret']) {
-        process.env.JWT_REFRESH_SECRET = secrets['secure-gate/jwt-refresh-secret'];
+      if (secrets['jwt-refresh-secret']) {
+        process.env.JWT_REFRESH_SECRET = secrets['jwt-refresh-secret'];
+        console.log('   ✓ JWT_REFRESH_SECRET loaded from AWS');
       }
-      if (secrets['secure-gate/session-secret']) {
-        process.env.SESSION_SECRET = secrets['secure-gate/session-secret'];
+      if (secrets['session-secret']) {
+        process.env.SESSION_SECRET = secrets['session-secret'];
+        console.log('   ✓ SESSION_SECRET loaded from AWS');
       }
-      if (secrets['secure-gate/database-password']) {
-        process.env.PGPASSWORD = secrets['secure-gate/database-password'];
+      
+      // Database secrets
+      if (secrets['database-password']) {
+        process.env.PGPASSWORD = secrets['database-password'];
+        console.log('   ✓ PGPASSWORD loaded from AWS');
+      }
+      
+      // Redis secrets
+      if (secrets['redis-password']) {
+        process.env.REDIS_PASSWORD = secrets['redis-password'];
+        console.log('   ✓ REDIS_PASSWORD loaded from AWS');
+      }
+      
+      // External service API keys
+      if (secrets['mailgun-api-key']) {
+        process.env.MAILGUN_API_KEY = secrets['mailgun-api-key'];
+        console.log('   ✓ MAILGUN_API_KEY loaded from AWS');
+      }
+      if (secrets['africastalking-api-key']) {
+        process.env.AT_API_KEY = secrets['africastalking-api-key'];
+        console.log('   ✓ AT_API_KEY loaded from AWS');
+      }
+      
+      // Encryption key
+      if (secrets['encryption-key']) {
+        process.env.ENCRYPTION_KEY = secrets['encryption-key'];
+        console.log('   ✓ ENCRYPTION_KEY loaded from AWS');
       }
 
-      console.log('✅ Secrets loaded successfully from AWS');
+      console.log('✅ Secrets loaded successfully from AWS Secrets Manager');
       this.secretsLoaded = true;
     } catch (error) {
-      console.warn('⚠️  Failed to load secrets from AWS, falling back to environment variables');
+      console.warn('⚠️  Failed to load secrets from AWS Secrets Manager');
       console.warn(`   Error: ${error.message}`);
+      console.warn('   Falling back to environment variables');
       this.secretsLoaded = true; // Mark as loaded to prevent retries
     }
   }
@@ -324,10 +360,21 @@ class EnvironmentConfig {
    * Get validated security configuration
    */
   getSecurityConfig() {
+    // SECURITY: No fallback secrets allowed - must be set in environment
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
+    if (!process.env.JWT_REFRESH_SECRET) {
+      throw new Error('JWT_REFRESH_SECRET environment variable is required');
+    }
+    if (!process.env.SESSION_SECRET && this.isProduction) {
+      throw new Error('SESSION_SECRET environment variable is required in production');
+    }
+    
     return {
-      jwtSecret: process.env.JWT_SECRET || 'fallback-jwt-secret-change-me',
-      jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-change-me',
-      sessionSecret: process.env.SESSION_SECRET || 'fallback-session-secret-change-me',
+      jwtSecret: process.env.JWT_SECRET,
+      jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
+      sessionSecret: process.env.SESSION_SECRET || this.generateSecureSecret(32), // Only generate for development
       enforceHttps: process.env.ENFORCE_HTTPS === 'true',
       secureCookies: process.env.SECURE_COOKIES === 'true' || this.isProduction,
       trustProxy: process.env.TRUST_PROXY === 'true' || this.isProduction,

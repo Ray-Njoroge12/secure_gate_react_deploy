@@ -22,9 +22,6 @@ export { default as utilities } from './utilities';
 // Design system guidelines
 export { default as guidelines } from './guidelines';
 
-// Design system showcase component
-export { default as DesignSystemShowcase } from './DesignSystemShowcase';
-
 // Re-export specific items to avoid conflicts
 export { colors, typography, spacing, borderRadius, shadows, breakpoints, zIndex, transitions } from './tokens';
 export { generateCSSCustomProperties } from './theme';

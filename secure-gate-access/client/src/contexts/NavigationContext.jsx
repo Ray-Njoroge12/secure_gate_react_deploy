@@ -23,7 +23,8 @@ const NAVIGATION_ACTIONS = {
   ADD_NAVIGATION_HISTORY: 'ADD_NAVIGATION_HISTORY',
   SET_CURRENT_ROUTE: 'SET_CURRENT_ROUTE',
   SET_NAVIGATION_STATE: 'SET_NAVIGATION_STATE',
-  CLEAR_NAVIGATION: 'CLEAR_NAVIGATION'
+  CLEAR_NAVIGATION: 'CLEAR_NAVIGATION',
+  SET_PAGE_TITLE: 'SET_PAGE_TITLE'
 };
 
 // Initial state
@@ -39,7 +40,8 @@ const initialState = {
     depth: 0
   },
   userRole: null,
-  customBreadcrumbs: null
+  customBreadcrumbs: null,
+  pageTitle: ''
 };
 
 // Navigation reducer
@@ -102,6 +104,12 @@ function navigationReducer(state, action) {
         userRole: state.userRole
       };
 
+    case NAVIGATION_ACTIONS.SET_PAGE_TITLE:
+      return {
+        ...state,
+        pageTitle: action.payload
+      };
+
     default:
       return state;
   }
@@ -154,6 +162,15 @@ export function NavigationProvider({ children, userRole = null }) {
       });
     }
   }, [state.currentRoute]);
+
+  // Update document title when pageTitle changes
+  useEffect(() => {
+    if (state.pageTitle) {
+      document.title = `${state.pageTitle} | Secure Gate Access`;
+    } else {
+      document.title = 'Secure Gate Access System';
+    }
+  }, [state.pageTitle]);
 
   // Navigation utilities
   const setBreadcrumbs = useCallback((breadcrumbs) => {
@@ -233,6 +250,13 @@ export function NavigationProvider({ children, userRole = null }) {
     });
   }, []);
 
+  const setPageTitle = useCallback((title) => {
+    dispatch({
+      type: NAVIGATION_ACTIONS.SET_PAGE_TITLE,
+      payload: title
+    });
+  }, []);
+
   // Get navigation analytics
   const getNavigationAnalytics = useCallback(() => {
     const history = state.navigationHistory;
@@ -294,6 +318,31 @@ export function NavigationProvider({ children, userRole = null }) {
     return suggestions;
   }, [state.currentRoute, userRole]);
 
+  // Get parent path for back navigation
+  const getParentPath = useCallback(() => {
+    const currentPath = location.pathname;
+    
+    // Handle root paths
+    if (currentPath === '/' || currentPath === '') {
+      return null;
+    }
+    
+    // Remove trailing slash if exists
+    const cleanPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
+    
+    // Split path into segments and remove the last one
+    const pathSegments = cleanPath.split('/').filter(segment => segment !== '');
+    
+    if (pathSegments.length <= 1) {
+      return '/'; // Go to root if only one segment
+    }
+    
+    // Rebuild parent path
+    const parentPath = '/' + pathSegments.slice(0, -1).join('/');
+    
+    return parentPath;
+  }, [location.pathname]);
+
   const contextValue = {
     // State
     breadcrumbs: state.breadcrumbs,
@@ -302,6 +351,7 @@ export function NavigationProvider({ children, userRole = null }) {
     previousRoute: state.previousRoute,
     navigationState: state.navigationState,
     userRole: state.userRole,
+    pageTitle: state.pageTitle,
 
     // Actions
     setBreadcrumbs,
@@ -314,10 +364,12 @@ export function NavigationProvider({ children, userRole = null }) {
     goToBreadcrumb,
     clearNavigation,
     setNavigationState,
+    setPageTitle,
 
     // Utilities
     getNavigationAnalytics,
     getBreadcrumbPath,
+    getParentPath,
     canAccessRoute,
     getSuggestedRoutes
   };

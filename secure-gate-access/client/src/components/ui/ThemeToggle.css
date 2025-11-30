@@ -1,0 +1,384 @@
+/**
+ * @fileoverview Theme Toggle Component Styles
+ * @description Beautiful, accessible dark mode toggle with smooth animations
+ * @author Secure Gate Access Team
+ * @version 1.0.0
+ */
+
+/* ============================================================
+   Theme Toggle Button
+   ============================================================ */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2, 0.5rem);
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity var(--transition-fast, 150ms) ease;
+}
+
+.theme-toggle:hover {
+  opacity: 0.8;
+}
+
+.theme-toggle:focus {
+  outline: none;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--color-primary, #3B82F6);
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+
+/* Track */
+.theme-toggle__track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-gray-200, #E5E7EB);
+  border-radius: 9999px;
+  transition: background-color var(--transition-normal, 200ms) ease;
+}
+
+[data-theme="dark"] .theme-toggle__track {
+  background: var(--color-gray-700, #374151);
+}
+
+/* Thumb */
+.theme-toggle__thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-theme="dark"] .theme-toggle__thumb {
+  background: var(--color-gray-800, #1F2937);
+}
+
+/* Icons */
+.theme-toggle__icon {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.5) rotate(-30deg);
+  transition: all var(--transition-normal, 200ms) ease;
+}
+
+.theme-toggle__icon.active {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.theme-toggle__icon--sun {
+  color: var(--color-warning, #F59E0B);
+}
+
+.theme-toggle__icon--moon {
+  color: var(--color-primary-light, #60A5FA);
+}
+
+/* Label */
+.theme-toggle__label {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--color-text, #1F2937);
+}
+
+[data-theme="dark"] .theme-toggle__label {
+  color: var(--color-text-inverse, #F9FAFB);
+}
+
+/* ============================================================
+   Size Variants
+   ============================================================ */
+
+/* Small */
+.theme-toggle--small .theme-toggle__track {
+  width: 40px;
+  height: 22px;
+  padding: 2px;
+}
+
+.theme-toggle--small .theme-toggle__thumb {
+  width: 18px;
+  height: 18px;
+}
+
+[data-theme="dark"] .theme-toggle--small .theme-toggle__thumb {
+  transform: translateX(18px);
+}
+
+.theme-toggle--small .theme-toggle__icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Medium (default) */
+.theme-toggle--medium .theme-toggle__track {
+  width: 52px;
+  height: 28px;
+  padding: 3px;
+}
+
+.theme-toggle--medium .theme-toggle__thumb {
+  width: 22px;
+  height: 22px;
+}
+
+[data-theme="dark"] .theme-toggle--medium .theme-toggle__thumb {
+  transform: translateX(24px);
+}
+
+.theme-toggle--medium .theme-toggle__icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Large */
+.theme-toggle--large .theme-toggle__track {
+  width: 64px;
+  height: 34px;
+  padding: 4px;
+}
+
+.theme-toggle--large .theme-toggle__thumb {
+  width: 26px;
+  height: 26px;
+}
+
+[data-theme="dark"] .theme-toggle--large .theme-toggle__thumb {
+  transform: translateX(30px);
+}
+
+.theme-toggle--large .theme-toggle__icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================================
+   Theme Dropdown
+   ============================================================ */
+
+.theme-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1, 0.25rem);
+}
+
+.theme-dropdown__label {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--color-text-secondary, #6B7280);
+}
+
+[data-theme="dark"] .theme-dropdown__label {
+  color: var(--color-gray-400, #9CA3AF);
+}
+
+.theme-dropdown__select {
+  padding: var(--spacing-2, 0.5rem) var(--spacing-3, 0.75rem);
+  font-size: var(--font-size-base, 1rem);
+  border: 1px solid var(--color-gray-300, #D1D5DB);
+  border-radius: var(--radius-md, 0.375rem);
+  background: white;
+  color: var(--color-text, #1F2937);
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms) ease;
+}
+
+[data-theme="dark"] .theme-dropdown__select {
+  background: var(--color-gray-800, #1F2937);
+  border-color: var(--color-gray-600, #4B5563);
+  color: var(--color-text-inverse, #F9FAFB);
+}
+
+.theme-dropdown__select:hover {
+  border-color: var(--color-primary, #3B82F6);
+}
+
+.theme-dropdown__select:focus {
+  outline: none;
+  border-color: var(--color-primary, #3B82F6);
+  box-shadow: 0 0 0 3px var(--color-primary-alpha, rgba(59, 130, 246, 0.2));
+}
+
+/* ============================================================
+   Theme Radio Group
+   ============================================================ */
+
+.theme-radio-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.theme-radio-group__legend {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: 600;
+  color: var(--color-text, #1F2937);
+  margin-bottom: var(--spacing-3, 0.75rem);
+}
+
+[data-theme="dark"] .theme-radio-group__legend {
+  color: var(--color-text-inverse, #F9FAFB);
+}
+
+.theme-radio-group__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2, 0.5rem);
+}
+
+@media (min-width: 640px) {
+  .theme-radio-group__options {
+    flex-direction: row;
+  }
+}
+
+.theme-radio-group__option {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3, 0.75rem);
+  padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
+  border: 2px solid var(--color-gray-200, #E5E7EB);
+  border-radius: var(--radius-lg, 0.5rem);
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms) ease;
+  flex: 1;
+  min-width: 0;
+}
+
+[data-theme="dark"] .theme-radio-group__option {
+  border-color: var(--color-gray-700, #374151);
+  background: var(--color-gray-800, #1F2937);
+}
+
+.theme-radio-group__option:hover {
+  border-color: var(--color-primary-light, #60A5FA);
+  background: var(--color-gray-50, #F9FAFB);
+}
+
+[data-theme="dark"] .theme-radio-group__option:hover {
+  border-color: var(--color-primary, #3B82F6);
+  background: var(--color-gray-700, #374151);
+}
+
+.theme-radio-group__option.active {
+  border-color: var(--color-primary, #3B82F6);
+  background: var(--color-primary-alpha, rgba(59, 130, 246, 0.1));
+}
+
+[data-theme="dark"] .theme-radio-group__option.active {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.theme-radio-group__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.theme-radio-group__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md, 0.375rem);
+  background: var(--color-gray-100, #F3F4F6);
+  color: var(--color-text-secondary, #6B7280);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .theme-radio-group__icon {
+  background: var(--color-gray-700, #374151);
+  color: var(--color-gray-300, #D1D5DB);
+}
+
+.theme-radio-group__option.active .theme-radio-group__icon {
+  background: var(--color-primary, #3B82F6);
+  color: white;
+}
+
+.theme-radio-group__content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.theme-radio-group__label {
+  font-size: var(--font-size-base, 1rem);
+  font-weight: 600;
+  color: var(--color-text, #1F2937);
+}
+
+[data-theme="dark"] .theme-radio-group__label {
+  color: var(--color-text-inverse, #F9FAFB);
+}
+
+.theme-radio-group__description {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-secondary, #6B7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .theme-radio-group__description {
+  color: var(--color-gray-400, #9CA3AF);
+}
+
+/* ============================================================
+   Focus Styles for Accessibility
+   ============================================================ */
+
+.theme-radio-group__option:has(.theme-radio-group__input:focus-visible) {
+  outline: 2px solid var(--color-primary, #3B82F6);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Animation Keyframes
+   ============================================================ */
+
+@keyframes theme-toggle-pop {
+  0% {
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.theme-toggle:active .theme-toggle__thumb {
+  animation: theme-toggle-pop 0.2s ease;
+}
+
+/* ============================================================
+   Reduced Motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle__thumb,
+  .theme-toggle__icon,
+  .theme-radio-group__option {
+    transition: none;
+  }
+  
+  .theme-toggle:active .theme-toggle__thumb {
+    animation: none;
+  }
+}

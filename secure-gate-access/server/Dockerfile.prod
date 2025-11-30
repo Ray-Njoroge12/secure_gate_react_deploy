@@ -1,6 +1,9 @@
 # Multi-stage build for production
 FROM node:18-alpine AS builder
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 # Set working directory
 WORKDIR /app
 

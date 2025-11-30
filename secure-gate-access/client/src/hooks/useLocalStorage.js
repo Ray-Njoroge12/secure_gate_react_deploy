@@ -68,22 +68,6 @@ export const useLocalStorage = (key, initialValue = null) => {
 };
 
 /**
- * Hook for managing authentication token in localStorage
- * @returns {[string|null, function, function]} [token, setToken, removeToken]
- */
-export const useAuthToken = () => {
-  return useLocalStorage('token');
-};
-
-/**
- * Hook for managing user role in localStorage
- * @returns {[string|null, function, function]} [role, setRole, removeRole]
- */
-export const useUserRole = () => {
-  return useLocalStorage('role');
-};
-
-/**
  * Hook for managing user preferences/settings
  * @param {string} preferenceKey - Specific preference key
  * @param {*} defaultValue - Default value for the preference

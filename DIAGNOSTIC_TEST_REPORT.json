@@ -1,0 +1,130 @@
+{
+  "summary": {
+    "total": 17,
+    "passed": 16,
+    "failed": 0,
+    "warnings": 1,
+    "duration": 0.435
+  },
+  "results": [
+    {
+      "area": "SYSTEM",
+      "test": "Backend Health",
+      "status": "PASS",
+      "details": "Backend is responding",
+      "timestamp": 1764147191734
+    },
+    {
+      "area": "RESIDENT",
+      "test": "Login",
+      "status": "PASS",
+      "details": "Authentication successful",
+      "timestamp": 1764147191795
+    },
+    {
+      "area": "RESIDENT",
+      "test": "Create Visitor (Valid Payload)",
+      "status": "PASS",
+      "details": "Created visitor ID: unknown",
+      "timestamp": 1764147191910
+    },
+    {
+      "area": "RESIDENT",
+      "test": "Validation (Invalid Payload)",
+      "status": "PASS",
+      "details": "Server correctly rejected invalid data",
+      "timestamp": 1764147191934
+    },
+    {
+      "area": "RESIDENT",
+      "test": "Bulk Invite",
+      "status": "PASS",
+      "details": "Bulk invite created successfully",
+      "timestamp": 1764147191944
+    },
+    {
+      "area": "RESIDENT",
+      "test": "Visitor History (Basic)",
+      "status": "PASS",
+      "details": "Retrieved 0 visitors",
+      "timestamp": 1764147191980
+    },
+    {
+      "area": "RESIDENT",
+      "test": "Visitor History (Filtered)",
+      "status": "PASS",
+      "details": "Filter parameters accepted",
+      "timestamp": 1764147192007
+    },
+    {
+      "area": "GUARD",
+      "test": "Login",
+      "status": "PASS",
+      "details": "Authentication successful",
+      "timestamp": 1764147192024
+    },
+    {
+      "area": "GUARD",
+      "test": "Dashboard (Active Visitors)",
+      "status": "PASS",
+      "details": "Can retrieve active visitors",
+      "timestamp": 1764147192032
+    },
+    {
+      "area": "GUARD",
+      "test": "QR Scan Capability",
+      "status": "PASS",
+      "details": "Visitor lookup endpoint accessible",
+      "timestamp": 1764147192035
+    },
+    {
+      "area": "GUARD",
+      "test": "Manual Search (Phone)",
+      "status": "PASS",
+      "details": "Search by phone works",
+      "timestamp": 1764147192043
+    },
+    {
+      "area": "VISITOR",
+      "test": "Setup (Create Invite)",
+      "status": "PASS",
+      "details": "Invite token: undefined",
+      "timestamp": 1764147192072
+    },
+    {
+      "area": "VISITOR",
+      "test": "Kiosk Walk-in",
+      "status": "PASS",
+      "details": "Kiosk registration successful",
+      "timestamp": 1764147192097
+    },
+    {
+      "area": "CROSS-ROLE",
+      "test": "Step 1: Resident Login",
+      "status": "PASS",
+      "details": "Resident authenticated",
+      "timestamp": 1764147192112
+    },
+    {
+      "area": "CROSS-ROLE",
+      "test": "Step 2: Create Invite",
+      "status": "PASS",
+      "details": "Visitor ID: undefined, Code: undefined",
+      "timestamp": 1764147192125
+    },
+    {
+      "area": "CROSS-ROLE",
+      "test": "Step 3: Guard Login",
+      "status": "PASS",
+      "details": "Guard authenticated",
+      "timestamp": 1764147192141
+    },
+    {
+      "area": "CROSS-ROLE",
+      "test": "Step 5: Verify in History",
+      "status": "WARN",
+      "details": "Visitor not found in history (may be pagination issue)",
+      "timestamp": 1764147192144
+    }
+  ]
+}

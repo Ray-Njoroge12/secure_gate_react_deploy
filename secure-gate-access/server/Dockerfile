@@ -10,8 +10,8 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including dev dependencies for build)
-RUN npm install --only=production && npm cache clean --force
+# Install dependencies (all dependencies for development)
+RUN npm install && npm cache clean --force
 
 # Copy source code
 COPY . .
@@ -21,6 +21,9 @@ RUN rm -rf tests/ scripts/ reports/ || true
 
 # Stage 2: Production stage
 FROM node:18-alpine AS production
+
+# Install curl for health checks
+RUN apk add --no-cache curl
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -32,8 +35,8 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm install --only=production && npm cache clean --force
+# Install all dependencies (needed for development mode)
+RUN npm install && npm cache clean --force
 
 # Copy application code from builder stage
 COPY --from=builder /usr/src/app/src ./src
@@ -50,9 +53,9 @@ USER nodejs
 # Expose port
 EXPOSE 5000
 
-# Health check
+# Health check using Node.js with correct endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
 # Start the application
 CMD ["node", "server.js"]

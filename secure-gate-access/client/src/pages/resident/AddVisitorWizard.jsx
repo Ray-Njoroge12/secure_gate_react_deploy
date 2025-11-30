@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import logger from 'utils/logger';
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
 import { createVisitor, createPass } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
 import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay } from "../../components/ui";
@@ -23,34 +25,46 @@ import {
 
 const AddVisitorWizard = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const role = useCurrentRole();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
   const [generatedPass, setGeneratedPass] = useState(null);
+  const [useCustomTime, setUseCustomTime] = useState(false);
+
+  // Pre-set time options for quick selection
+  const timePresets = [
+    { label: '9:00 AM', value: '09:00', icon: '☀️' },
+    { label: '12:00 PM', value: '12:00', icon: '🌤️' },
+    { label: '3:00 PM', value: '15:00', icon: '⛅' },
+    { label: '6:00 PM', value: '18:00', icon: '🌆' },
+  ];
 
   // Wizard steps configuration
   const steps = [
     {
       title: "Visitor Information",
-      description: "Enter the visitor's basic contact details",
+      description: "Who's visiting? We'll send them the pass details.",
       validate: (data) => {
         const errors = {};
-        if (!data.name?.trim()) errors.name = "Name is required";
-        if (!data.phone?.trim()) errors.phone = "Phone number is required";
-        if (!data.email?.trim()) errors.email = "Email is required";
-        else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = "Invalid email format";
+        if (!data.name?.trim()) errors.name = "Please enter the visitor's name";
+        if (!data.phone?.trim()) errors.phone = "Phone number is needed to send the pass";
+        else if (!/^[0-9+\-\s()]+$/.test(data.phone)) errors.phone = "Please enter a valid phone number";
+        if (!data.email?.trim()) errors.email = "Email is needed to send the pass";
+        else if (!/\S+@\S+\.\S+/.test(data.email)) errors.email = "Please enter a valid email address";
         
         return Object.keys(errors).length === 0 ? true : errors;
       }
     },
     {
       title: "Visit Details",
-      description: "Specify when and why the visitor is coming",
+      description: "When are they coming? (You can change this later if plans change)",
       validate: (data) => {
         const errors = {};
-        if (!data.dateOfVisit?.trim()) errors.dateOfVisit = "Visit date is required";
-        if (!data.time?.trim()) errors.time = "Visit time is required";
-        if (!data.purpose?.trim()) errors.purpose = "Purpose of visit is required";
+        if (!data.dateOfVisit?.trim()) errors.dateOfVisit = "Please select a visit date";
+        if (!data.time?.trim()) errors.time = "Please choose a time";
+        // Purpose is now optional for quick invites
         
         return Object.keys(errors).length === 0 ? true : errors;
       }
@@ -193,39 +207,81 @@ const AddVisitorWizard = () => {
       case 1: // Visit Details
         return (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Input
-                  label="Visit Date"
-                  type="date"
-                  value={stepData.dateOfVisit || ""}
-                  onChange={(e) => updateStepData({ dateOfVisit: e.target.value })}
-                  required
-                  icon={<Calendar className="w-4 h-4" />}
-                />
-              </div>
-              <div>
-                <Input
-                  label="Visit Time"
-                  type="time"
-                  value={stepData.time || ""}
-                  onChange={(e) => updateStepData({ time: e.target.value })}
-                  required
-                  icon={<Clock className="w-4 h-4" />}
-                />
+            {/* Date Selection */}
+            <div>
+              <Input
+                label="📅 Visit Date"
+                type="date"
+                value={stepData.dateOfVisit || ""}
+                onChange={(e) => updateStepData({ dateOfVisit: e.target.value })}
+                required
+                icon={<Calendar className="w-4 h-4" />}
+                min={new Date().toISOString().split('T')[0]}
+                helperText="Select today or a future date"
+              />
+            </div>
+
+            {/* Time Selection with Presets */}
+            <div>
+              <label className="block text-sm font-medium text-slate-200 mb-3">
+                🕐 Visit Time *
+              </label>
+              <div className="space-y-3">
+                {/* Quick Time Chips */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {timePresets.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => {
+                        updateStepData({ time: preset.value });
+                        setUseCustomTime(false);
+                      }}
+                      className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                        stepData.time === preset.value && !useCustomTime
+                          ? 'border-green-500 bg-green-500/10 text-green-400'
+                          : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{preset.icon}</div>
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Time Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setUseCustomTime(!useCustomTime)}
+                  className="text-sm text-brand-400 hover:text-brand-300 underline"
+                >
+                  {useCustomTime ? '← Back to quick select' : '⏰ Choose a specific time'}
+                </button>
+
+                {/* Custom Time Input */}
+                {useCustomTime && (
+                  <Input
+                    type="time"
+                    value={stepData.time || ""}
+                    onChange={(e) => updateStepData({ time: e.target.value })}
+                    icon={<Clock className="w-4 h-4" />}
+                  />
+                )}
               </div>
             </div>
+
+            {/* Purpose - Now Optional */}
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-2">
-                Purpose of Visit
+                📝 Purpose of Visit <span className="text-slate-400 text-xs">(Optional)</span>
               </label>
               <textarea
                 value={stepData.purpose || ""}
                 onChange={(e) => updateStepData({ purpose: e.target.value })}
-                placeholder="Describe the purpose of the visit..."
-                className="w-full min-h-[100px] px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                required
+                placeholder="e.g., Family visit, Delivery, Contractor work... (optional)"
+                className="w-full min-h-[80px] px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
+              <p className="text-xs text-slate-400 mt-1">This helps security know what to expect</p>
             </div>
           </div>
         );
@@ -360,13 +416,13 @@ const AddVisitorWizard = () => {
     }
   };
 
-  const onLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
+  const onLogout = async () => {
+    await logout();
+    navigate("/login");
   };
 
   return (
-    <AppShell role={localStorage.getItem('role')} title="Add Visitor" onLogout={onLogout}>
+    <AppShell role={role} title="Add Visitor" onLogout={onLogout}>
       <PageHeader
         title="Add Visitor"
         subtitle="Create a new visitor invitation with a multi-step process"

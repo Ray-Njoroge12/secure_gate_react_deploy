@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button } from '../../components/ui';
+import { Card, Button, PageHeader } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
+import IncidentModal from '../../components/guard/IncidentModal'; // Phase G4
+import { getStatusChipClass } from '../../utils/statusColors'; // Phase A8
+import { Search, QrCode } from 'lucide-react';
 
 const ManualCheck = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [incidentModal, setIncidentModal] = useState({ isOpen: false, visitor: null }); // Phase G4
   const { handleError, handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
 
@@ -41,10 +45,9 @@ const ManualCheck = () => {
       setLoading('manualCheck', true, { message: 'Searching visitors...' });
       clearAllErrors();
       
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/visitors', {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -76,11 +79,10 @@ const ManualCheck = () => {
   const handleCheckIn = async (visitorId) => {
     try {
       setLoading('checkIn', true, { message: 'Checking in visitor...' });
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/visitors/${visitorId}/check-in`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -108,11 +110,10 @@ const ManualCheck = () => {
   const handleCheckOut = async (visitorId) => {
     try {
       setLoading('checkOut', true, { message: 'Checking out visitor...' });
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/visitors/${visitorId}/check-out`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -137,32 +138,28 @@ const ManualCheck = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'VERIFIED': return 'bg-blue-100 text-blue-800';
-      case 'CHECKED_IN': return 'bg-green-100 text-green-800';
-      case 'CHECKED_OUT': return 'bg-gray-100 text-gray-800';
-      case 'REVOKED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Removed getStatusColor - now using consistent statusColors utility
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Manual Check</h1>
-          <p className="text-gray-600 mt-1">Search and verify visitors manually</p>
-        </div>
-        <Button
-          onClick={() => window.location.href = '/dashboard/guard/scan-qr'}
-          variant="outline"
-        >
-          QR Scanner
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader 
+        title="Manual Check"
+        subtitle="Search and verify visitors manually"
+        icon={<Search className="w-6 h-6 text-blue-600" />}
+        showBack={true}
+        backTo="/dashboard/guard"
+        actions={
+          <Button
+            onClick={() => window.location.href = '/dashboard/guard/scan-qr'}
+            variant="outline"
+          >
+            <QrCode className="w-4 h-4 mr-2" />
+            QR Scanner
+          </Button>
+        }
+      />
 
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       <Card>
         <Card.Header>
           <Card.Title>Search Visitors</Card.Title>
@@ -189,46 +186,90 @@ const ManualCheck = () => {
       {searchResults.length > 0 && (
         <Card>
           <Card.Header>
-            <Card.Title>Search Results ({searchResults.length})</Card.Title>
+            <Card.Title className="flex items-center">
+              <span className="text-lg md:text-xl">Search Results</span>
+              <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
+                {searchResults.length}
+              </span>
+            </Card.Title>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-4">
+            {/* PHASE B6: Optimized Mobile Card Layout */}
+            <div className="space-y-3 md:space-y-4">
               {searchResults.map(visitor => (
-                <div key={visitor.id} className="border border-gray-200 rounded-lg p-4">
+                <div key={visitor.id} className="bg-white border-2 border-gray-200 rounded-xl p-4 md:p-5 hover:border-blue-300 hover:shadow-md transition-all">
+                  {/* Header with Status */}
                   <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{visitor.name}</h3>
-                      <p className="text-sm text-gray-600">Phone: {visitor.phone || 'N/A'}</p>
-                      <p className="text-sm text-gray-600">Invite Code: {visitor.invite_code}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 text-base md:text-lg truncate">
+                        {visitor.name}
+                      </h3>
+                      <div className="space-y-1 mt-1">
+                        <p className="text-sm text-gray-600 flex items-center">
+                          <span className="mr-2">📱</span>
+                          {visitor.phone || 'No phone'}
+                        </p>
+                        <p className="text-xs md:text-sm text-gray-500 flex items-center">
+                          <span className="mr-2">🎫</span>
+                          Code: <span className="font-mono ml-1">{visitor.invite_code}</span>
+                        </p>
+                      </div>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(visitor.status)}`}>
+                    <span className={getStatusChipClass(visitor.status, 'sm')}>
                       {visitor.status}
                     </span>
                   </div>
                   
-                  <div className="flex gap-2">
+                  {/* Host and Purpose Info */}
+                  {(visitor.host_name || visitor.purpose) && (
+                    <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-1">
+                      {visitor.host_name && (
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">🏠 Host:</span> {visitor.host_name}
+                        </p>
+                      )}
+                      {visitor.purpose && (
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">📝 Purpose:</span> {visitor.purpose}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Action Buttons - Mobile Optimized */}
+                  <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2">
                     {visitor.status === 'VERIFIED' && (
                       <Button
                         size="sm"
+                        className="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-bold"
                         onClick={() => handleCheckIn(visitor.id)}
                         disabled={isLoading('checkIn')}
                       >
-                        {isLoading('checkIn') ? 'Checking In...' : 'Check In'}
+                        <span className="mr-1">✅</span>
+                        Check In
                       </Button>
                     )}
                     {visitor.status === 'CHECKED_IN' && (
                       <Button
                         size="sm"
                         variant="outline"
+                        className="w-full md:w-auto border-orange-300 text-orange-600 hover:bg-orange-50 font-bold"
                         onClick={() => handleCheckOut(visitor.id)}
                         disabled={isLoading('checkOut')}
                       >
-                        {isLoading('checkOut') ? 'Checking Out...' : 'Check Out'}
+                        <span className="mr-1">🚪</span>
+                        Check Out
                       </Button>
                     )}
-                    {visitor.status === 'PENDING' && (
-                      <span className="text-sm text-gray-500">Visitor needs to complete registration first</span>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="w-full md:w-auto text-gray-600 hover:bg-gray-100"
+                      onClick={() => setIncidentModal({ isOpen: true, visitor })}
+                    >
+                      <span className="mr-1">⚠️</span>
+                      Report
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -247,6 +288,20 @@ const ManualCheck = () => {
           </Card.Content>
         </Card>
       )}
+
+      {/* Phase G4: Incident Modal */}
+      <IncidentModal
+        isOpen={incidentModal.isOpen}
+        visitor={incidentModal.visitor}
+        onClose={(result) => {
+          if (result?.success) {
+            // Show success notification
+            alert(result.message || 'Incident logged successfully');
+          }
+          setIncidentModal({ isOpen: false, visitor: null });
+        }}
+      />
+      </div>
     </div>
   );
 };

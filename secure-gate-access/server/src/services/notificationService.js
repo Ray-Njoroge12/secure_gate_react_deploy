@@ -90,6 +90,17 @@ const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'smtp'; // 'smtp' or 'mailg
  * Send email using configured provider (SMTP or Mailgun API)
  */
 async function sendEmail(to, subject, html, text = null) {
+  // Feature flag checks
+  if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
+    console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
+    return false;
+  }
+  
+  if (process.env.ENABLE_EMAIL_NOTIFICATIONS !== 'true') {
+    console.log('Email notifications are disabled via ENABLE_EMAIL_NOTIFICATIONS flag');
+    return false;
+  }
+
   if (EMAIL_PROVIDER === 'mailgun' && mailgunClient) {
     return await sendEmailViaMailgun(to, subject, html, text);
   } else if (transporter && process.env.SMTP_HOST) {
@@ -361,6 +372,17 @@ export async function sendInviteEmail(to, subject, html) {
 }
 
 export async function sendSms(to, text) {
+  // Feature flag checks
+  if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
+    console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
+    return false;
+  }
+  
+  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
+    console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
+    return false;
+  }
+
   const smsProvider = process.env.SMS_PROVIDER || 'twilio'; // default to twilio for backward compatibility
   
   if (smsProvider === 'africastalking' && !atClient) {

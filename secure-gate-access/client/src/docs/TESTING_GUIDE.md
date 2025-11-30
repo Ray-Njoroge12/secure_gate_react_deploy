@@ -279,9 +279,7 @@ describe('API Utilities', () => {
     await expect(api.get('/test')).rejects.toThrow('Network error');
   });
 
-  test('includes authorization header when token exists', async () => {
-    localStorage.setItem('token', 'test-token');
-    
+  test('sends cookies with authenticated requests', async () => {
     fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
@@ -293,8 +291,8 @@ describe('API Utilities', () => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-token',
       },
+      credentials: 'include',
     });
   });
 });

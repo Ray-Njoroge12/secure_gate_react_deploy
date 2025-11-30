@@ -345,6 +345,32 @@ export function generateTimeSeriesData(days = 30, options = {}) {
 }
 
 /**
+ * High-level bulk test data helper used by validation tests
+ * @param {string} type - 'users' or 'visitors'
+ * @param {number} count - Number of records
+ * @param {Object} options - Optional generation options
+ * @returns {Object} { type, count, items }
+ */
+export function createBulkTestData(type, count, options = {}) {
+  let items = [];
+
+  if (type === 'users') {
+    items = generateBulkUsers(count, options);
+  } else if (type === 'visitors') {
+    items = generateBulkVisitors(count, options);
+  } else {
+    // Fallback: default to users for unknown types
+    items = generateBulkUsers(count, options);
+  }
+
+  return {
+    type,
+    count,
+    items
+  };
+}
+
+/**
  * Export dataset to JSON file format
  * @param {Object} dataset - Dataset to export
  * @param {string} filename - Filename (without extension)
@@ -364,6 +390,7 @@ export default {
   generateBulkUsers,
   generateBulkVisitors,
   generatePerformanceTestDataset,
+  createBulkTestData,
   generateCSVData,
   generateLoadTestScenario,
   generateTimeSeriesData,

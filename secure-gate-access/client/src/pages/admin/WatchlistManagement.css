@@ -1,0 +1,346 @@
+/**
+ * @file WatchlistManagement.css
+ * @description Styles for watchlist management interface
+ */
+
+.watchlist-management {
+  padding: 24px;
+  background: #f9fafb;
+  min-height: 100vh;
+}
+
+.watchlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.watchlist-header h1 {
+  font-size: 32px;
+  color: #111827;
+  margin: 0 0 8px 0;
+  font-weight: 700;
+}
+
+/* Tabs */
+.watchlist-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #374151;
+  background: #f9fafb;
+}
+
+.tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+/* Tables */
+.entries-table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.entries-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.entries-table thead {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.entries-table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.entries-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.2s;
+}
+
+.entries-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.entries-table tbody tr.inactive {
+  opacity: 0.5;
+}
+
+.entries-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #111827;
+}
+
+.entry-type-badge {
+  font-size: 24px;
+}
+
+.entry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.entry-info strong {
+  color: #111827;
+}
+
+.entry-info small {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* Severity Badges */
+.severity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.severity-badge.severity-critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.severity-badge.severity-high {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.severity-badge.severity-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.severity-badge.severity-low {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.reason-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-sm.btn-edit {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-sm.btn-edit:hover {
+  background: #e5e7eb;
+}
+
+.btn-sm.btn-toggle {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-sm.btn-toggle:hover {
+  background: #bfdbfe;
+}
+
+.btn-sm.btn-delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-sm.btn-delete:hover {
+  background: #fecaca;
+}
+
+/* Match Cards */
+.matches-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.match-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #ef4444;
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.match-score {
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.match-details p {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.match-details strong {
+  color: #111827;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.empty-state p {
+  color: #6b7280;
+  font-size: 16px;
+  margin: 0 0 20px 0;
+}
+
+/* Loading */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f4f6;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .watchlist-management {
+    padding: 16px;
+  }
+
+  .watchlist-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .btn-create {
+    width: 100%;
+  }
+
+  .entries-table-container {
+    overflow-x: auto;
+  }
+
+  .entries-table {
+    min-width: 800px;
+  }
+
+  .matches-list {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .btn-sm {
+    width: 100%;
+  }
+}

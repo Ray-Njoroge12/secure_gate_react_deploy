@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-11-12T16:28:06.489Z",
+  "analysis": {
+    "criticalIssues": [
+      {
+        "issue": "Backend not accessible",
+        "impact": "Complete system failure",
+        "recommendation": "Verify Docker containers are running and backend service is started"
+      }
+    ],
+    "warnings": [
+      {
+        "test": "Empty payload",
+        "issue": "Validation not working as expected",
+        "expected": "Status 400",
+        "actual": "Status NaN",
+        "impact": "Potential security vulnerability"
+      },
+      {
+        "test": "Missing email",
+        "issue": "Validation not working as expected",
+        "expected": "Status 400",
+        "actual": "Status NaN",
+        "impact": "Potential security vulnerability"
+      },
+      {
+        "test": "Invalid email format",
+        "issue": "Validation not working as expected",
+        "expected": "Status 400",
+        "actual": "Status NaN",
+        "impact": "Potential security vulnerability"
+      },
+      {
+        "test": "Weak password",
+        "issue": "Validation not working as expected",
+        "expected": "Status 400",
+        "actual": "Status NaN",
+        "impact": "Potential security vulnerability"
+      },
+      {
+        "test": "Invalid role",
+        "issue": "Validation not working as expected",
+        "expected": "Status 400",
+        "actual": "Status NaN",
+        "impact": "Potential security vulnerability"
+      },
+      {
+        "test": "Malformed JSON handling",
+        "issue": "Server did not return expected 400 status for invalid JSON",
+        "statusCode": null
+      }
+    ],
+    "recommendations": [],
+    "testResults": []
+  }
+}

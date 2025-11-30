@@ -14,37 +14,45 @@ export const RATE_LIMIT_PROFILES = {
   // Public endpoints - lenient for normal usage
   PUBLIC: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200,
+    max: process.env.NODE_ENV === 'production' ? 200 : 500, // Environment-aware
     message: 'Too many requests from this IP, please try again later.',
     skipSuccessfulRequests: false,
-    skipFailedRequests: false
+    skipFailedRequests: false,
+    standardHeaders: true,
+    legacyHeaders: false
   },
 
   // Authentication endpoints - moderate protection
   AUTH: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20,
+    max: process.env.NODE_ENV === 'production' ? 20 : 100, // Environment-aware
     message: 'Too many authentication attempts, please try again later.',
     skipSuccessfulRequests: true, // Don't count successful logins
-    skipFailedRequests: false
+    skipFailedRequests: false,
+    standardHeaders: true,
+    legacyHeaders: false
   },
 
   // Admin endpoints - strict protection
   ADMIN: {
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 50,
+    max: process.env.NODE_ENV === 'production' ? 50 : 200, // Environment-aware
     message: 'Too many admin requests, please try again later.',
     skipSuccessfulRequests: false,
-    skipFailedRequests: false
+    skipFailedRequests: false,
+    standardHeaders: true,
+    legacyHeaders: false
   },
 
   // Sensitive operations - very strict
   SENSITIVE: {
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 5,
+    max: process.env.NODE_ENV === 'production' ? 5 : 20, // Environment-aware
     message: 'Too many requests to sensitive endpoint, please try again later.',
     skipSuccessfulRequests: false,
-    skipFailedRequests: false
+    skipFailedRequests: false,
+    standardHeaders: true,
+    legacyHeaders: false
   },
 
   // DDoS protection - aggressive

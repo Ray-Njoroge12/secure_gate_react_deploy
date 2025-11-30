@@ -45,7 +45,7 @@ try {
   
   console.log('');
   console.log('🎉 Integration is working! You can now:');
-  console.log('1. Update your .env.africastalking file with this username');
+  console.log('1. Update your .env.local file with this username');
   console.log('2. Run the full integration test');
   console.log('3. Deploy to production when ready');
   

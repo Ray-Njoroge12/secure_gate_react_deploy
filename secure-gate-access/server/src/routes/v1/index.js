@@ -1,5 +1,5 @@
 import express from 'express';
-import authRoutes from './authRoutes.js';
+import authRoutes from '../authRoutes.js';
 import adminRoutes from './adminRoutes.js';
 import visitorRoutes from './visitorRoutes.js';
 import guardRoutes from './guardRoutes.js';

@@ -80,7 +80,7 @@ class PerformanceMonitor {
         observer.observe({ entryTypes: ['paint'] });
         this.observers.push(observer);
       } catch (error) {
-        console.warn('Performance monitoring: FCP measurement failed', error);
+        logger.warn('Performance monitoring: FCP measurement failed', error);
       }
     }
   }
@@ -104,7 +104,7 @@ class PerformanceMonitor {
         observer.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.push(observer);
       } catch (error) {
-        console.warn('Performance monitoring: LCP measurement failed', error);
+        logger.warn('Performance monitoring: LCP measurement failed', error);
       }
     }
   }
@@ -132,7 +132,7 @@ class PerformanceMonitor {
         observer.observe({ entryTypes: ['first-input'] });
         this.observers.push(observer);
       } catch (error) {
-        console.warn('Performance monitoring: FID measurement failed', error);
+        logger.warn('Performance monitoring: FID measurement failed', error);
       }
     }
   }
@@ -184,7 +184,7 @@ class PerformanceMonitor {
         observer.observe({ entryTypes: ['layout-shift'] });
         this.observers.push(observer);
       } catch (error) {
-        console.warn('Performance monitoring: CLS measurement failed', error);
+        logger.warn('Performance monitoring: CLS measurement failed', error);
       }
     }
   }
@@ -212,7 +212,7 @@ class PerformanceMonitor {
         observer.observe({ entryTypes: ['navigation'] });
         this.observers.push(observer);
       } catch (error) {
-        console.warn('Performance monitoring: TTFB measurement failed', error);
+        logger.warn('Performance monitoring: TTFB measurement failed', error);
       }
     }
   }
@@ -236,7 +236,7 @@ class PerformanceMonitor {
       
       // Check against budget
       if (totalSize > PERFORMANCE_BUDGETS.BUNDLE_SIZE) {
-        console.warn(`Performance budget exceeded: Bundle size ${totalSize} bytes exceeds limit of ${PERFORMANCE_BUDGETS.BUNDLE_SIZE} bytes`);
+        logger.warn(`Performance budget exceeded: Bundle size ${totalSize} bytes exceeds limit of ${PERFORMANCE_BUDGETS.BUNDLE_SIZE} bytes`);
       }
     }
   }
@@ -256,7 +256,7 @@ class PerformanceMonitor {
       
       // Check against budget
       if (memory.usedJSHeapSize > PERFORMANCE_BUDGETS.MEMORY_USAGE) {
-        console.warn(`Performance budget exceeded: Memory usage ${memory.usedJSHeapSize} bytes exceeds limit of ${PERFORMANCE_BUDGETS.MEMORY_USAGE} bytes`);
+        logger.warn(`Performance budget exceeded: Memory usage ${memory.usedJSHeapSize} bytes exceeds limit of ${PERFORMANCE_BUDGETS.MEMORY_USAGE} bytes`);
       }
     }
   }
@@ -301,7 +301,7 @@ class PerformanceMonitor {
           entries.forEach(entry => {
             // Log slow operations
             if (entry.duration > 100) { // More than 100ms
-              console.warn(`Slow operation detected: ${entry.name} took ${entry.duration}ms`);
+              logger.warn(`Slow operation detected: ${entry.name} took ${entry.duration}ms`);
             }
           });
         });
@@ -309,7 +309,7 @@ class PerformanceMonitor {
         observer.observe({ entryTypes: ['measure', 'navigation', 'resource'] });
         this.observers.push(observer);
       } catch (error) {
-        console.warn('Performance monitoring: Performance observer setup failed', error);
+        logger.warn('Performance monitoring: Performance observer setup failed', error);
       }
     }
   }
@@ -324,7 +324,7 @@ class PerformanceMonitor {
     }
     
     // Log locally
-    console.log(`Performance metric: ${name} = ${value}`);
+    logger.info(`Performance metric: ${name} = ${value}`);
   }
 
   /**
@@ -346,7 +346,7 @@ class PerformanceMonitor {
         })
       });
     } catch (error) {
-      console.warn('Failed to send performance metrics to analytics', error);
+      logger.warn('Failed to send performance metrics to analytics', error);
     }
   }
 
@@ -403,7 +403,7 @@ class PerformanceMonitor {
       try {
         observer.disconnect();
       } catch (error) {
-        console.warn('Error disconnecting performance observer', error);
+        logger.warn('Error disconnecting performance observer', error);
       }
     });
     this.observers = [];
@@ -431,7 +431,7 @@ export class PerformanceTracker {
       try {
         performance.measure(name, startMark, endMark);
       } catch (error) {
-        console.warn(`Performance measurement failed: ${name}`, error);
+        logger.warn(`Performance measurement failed: ${name}`, error);
       }
     }
   }

@@ -14,7 +14,7 @@ export const stringEdgeCases = {
   tab: '\t',
   newline: '\n',
   carriageReturn: '\r',
-  mixed Whitespace: ' \t\n\r ',
+  'mixed Whitespace': ' \t\n\r ',
 
   // Very short
   singleChar: 'a',
@@ -185,6 +185,33 @@ export const numericEdgeCases = {
 };
 
 /**
+ * Return a flat list of invalid email patterns for tests
+ * @returns {Array<string>} Invalid email patterns
+ */
+export function getInvalidEmailPatterns() {
+  return [
+    emailEdgeCases.noAt,
+    emailEdgeCases.multipleAt,
+    emailEdgeCases.noDomain,
+    emailEdgeCases.noLocal,
+    emailEdgeCases.spaces,
+    emailEdgeCases.specialCharsInvalid,
+    emailEdgeCases.missingTld,
+    emailEdgeCases.dotStart,
+    emailEdgeCases.dotEnd,
+    emailEdgeCases.doubleDot
+  ];
+}
+
+/**
+ * Return boundary string values for tests
+ * @returns {Array<string>} Boundary strings
+ */
+export function getBoundaryStrings() {
+  return Object.values(stringEdgeCases);
+}
+
+/**
  * Generate invalid user data
  * @param {string} invalidField - Field to make invalid
  * @returns {Object} User object with invalid data
@@ -348,6 +375,8 @@ export default {
   phoneEdgeCases,
   dateEdgeCases,
   numericEdgeCases,
+  getInvalidEmailPatterns,
+  getBoundaryStrings,
   generateInvalidUser,
   generateInvalidVisitor,
   generateMalformedJSON,

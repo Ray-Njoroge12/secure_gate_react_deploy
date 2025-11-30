@@ -69,7 +69,8 @@ export function useCurrentBreakpoint() {
 }
 
 // Utility to get responsive classes based on screen size
-export function getResponsiveClasses(classMap) {
+// Note: This is a hook since it uses useCurrentBreakpoint
+export function useResponsiveClasses(classMap) {
   const breakpoint = useCurrentBreakpoint();
   return classMap[breakpoint] || classMap.default || '';
 }

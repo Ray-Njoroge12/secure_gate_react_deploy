@@ -2,22 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom utilities for the secure gate system */
+/* Import Design System (Typography, Colors, Spacing) */
+@import './styles/design-system.css';
+
+/* Custom utilities for the secure gate system - UNIFIED LIGHT THEME */
 @layer utilities {
   .bg-app {
-    @apply bg-slate-900;
+    @apply bg-gray-50; /* Light theme main background */
   }
   .bg-panel {
-    @apply bg-slate-800;
+    @apply bg-white; /* White cards/panels */
   }
   .text-app {
-    @apply text-slate-100;
+    @apply text-gray-900; /* Dark text on light backgrounds */
   }
   .text-muted {
-    @apply text-slate-400;
+    @apply text-gray-600; /* WCAG AA compliant secondary text */
   }
   .border-app {
-    @apply border-slate-700;
+    @apply border-gray-200; /* Light borders */
   }
 }
 

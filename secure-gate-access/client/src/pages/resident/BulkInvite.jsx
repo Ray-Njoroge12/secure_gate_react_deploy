@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { bulkInvite } from "../../services/visitorService";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
-import { Button, Input, Card, Badge } from "../../components/ui";
+import { Button, Input, Card, PageHeader } from "../../components/ui";
 import { 
   Users, 
   Calendar, 
@@ -19,7 +19,16 @@ import {
 
 const BulkInvite = () => {
   const navigate = useNavigate();
-  const { handleError, handleSuccess, handleApiError, handleValidationError, clearAllErrors } = useError();
+  const [currentStep, setCurrentStep] = useState(1); 
+  const [file, setFile] = useState(null);
+  const [parsedData, setParsedData] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [errors, setErrors] = useState([]);
+  const [success, setSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const fileInputRef = React.createRef(null);
+  const { handleError, handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
   
   const [formData, setFormData] = useState({
@@ -28,32 +37,6 @@ const BulkInvite = () => {
     time: "",
     numGuests: 5
   });
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ctrl/Cmd + S to save
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (!isLoading('bulkInvite')) {
-          handleSubmit(e);
-        }
-      }
-      // Ctrl/Cmd + R to reset
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        resetForm();
-      }
-      // Escape to clear errors
-      if (e.key === 'Escape') {
-        clearAllErrors();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isLoading, clearAllErrors]);
-  
   const [csvText, setCsvText] = useState("");
   const [parsedGuests, setParsedGuests] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
@@ -141,6 +124,20 @@ const BulkInvite = () => {
     }));
   }, []);
 
+  const handleFileUpload = (e) => {
+    const uploadedFile = e.target.files[0];
+    if (uploadedFile) {
+      setFile(uploadedFile);
+      parseCsv(uploadedFile);
+      // Automatically move to step 2 after successful parse
+      setTimeout(() => {
+        if (errors.length === 0) {
+          setCurrentStep(2);
+        }
+      }, 500);
+    }
+  };
+
   const handleCsvFile = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -180,53 +177,103 @@ const BulkInvite = () => {
     return errors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    const selectedData = parsedData.filter(v => selectedRows.includes(v.id));
     
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      handleValidationError(errors, 'Bulk Invite Form');
+    if (selectedData.length === 0) {
+      handleError('Please select at least one visitor to invite');
       return;
     }
 
-    setLoading('bulkInvite', true, { message: 'Creating bulk invitation...' });
+    setIsUploading(true);
+    setUploadProgress(0);
     clearAllErrors();
+    setCurrentStep(3); 
 
     try {
-      const numGuests = csvText.trim().length > 0 ? parsedGuests.length : formData.numGuests;
+      setLoading('bulkInvite', true, { message: 'Processing invitations...' });
       
-      const result = await bulkInvite({
-        eventName: formData.eventName.trim(),
-        date: formData.date.trim(),
-        time: formData.time.trim(),
-        numGuests
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      const response = await fetch('/api/visitors/bulk-invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ visitors: selectedData }),
       });
 
-      handleSuccess('Bulk invitation created successfully!', {
-        context: 'Bulk Invite',
-        data: result
-      });
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
-      // Reset form after success
-      setTimeout(() => {
-        setFormData({
-          eventName: "",
-          date: "",
-          time: "",
-          numGuests: 5
-        });
-        setCsvText("");
-        setParsedGuests([]);
-        setCsvErrors([]);
-        setCsvInfo("");
-      }, 10000);
-
+      if (response.ok) {
+        const data = await response.json();
+        setSuccess(true);
+        setTimeout(() => {
+          navigate('/resident/visitor-history');
+        }, 3000);
+      } else {
+        const error = await response.json();
+        handleError(error.message || 'Failed to send invitations');
+        setCurrentStep(2); 
+      }
     } catch (err) {
       handleApiError(err, 'Bulk Invite');
+      setCurrentStep(2); 
     } finally {
+      setIsUploading(false);
       setLoading('bulkInvite', false);
     }
   };
+
+  const toggleRowSelection = (id) => {
+    setSelectedRows(prev => 
+      prev.includes(id) 
+        ? prev.filter(rowId => rowId !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleAllSelection = () => {
+    const validRows = parsedData.filter(d => !d.hasError).map(d => d.id);
+    setSelectedRows(prev => 
+      prev.length === validRows.length ? [] : validRows
+    );
+  };
+
+  const nextStep = () => {
+    if (currentStep < 3) setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
+
+  const StepIndicator = () => (
+    <div className="flex items-center justify-center mb-6 md:mb-8">
+      {[1, 2, 3].map((step) => (
+        <div key={step} className="flex items-center">
+          <div className={`
+            w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-base
+            ${currentStep >= step 
+              ? 'bg-green-500 text-white' 
+              : 'bg-gray-200 text-gray-500'}
+          `}>
+            {currentStep > step ? '✓' : step}
+          </div>
+          {step < 3 && (
+            <div className={`w-12 md:w-20 h-1 mx-2 ${
+              currentStep > step ? 'bg-green-500' : 'bg-gray-200'
+            }`} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -243,6 +290,7 @@ const BulkInvite = () => {
     setParsedGuests([]);
     setCsvErrors([]);
     setCsvInfo("");
+    setSuccess(null);
     clearAllErrors();
   };
 
@@ -250,254 +298,244 @@ const BulkInvite = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const stepSubtitles = {
+    1: 'Upload your visitor list',
+    2: 'Review and confirm visitors',
+    3: 'Sending invitations...'
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard/resident')}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-slate-300" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Bulk Invite</h1>
-              <p className="text-slate-400">Create invitations for multiple guests at once</p>
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader 
+        title="Bulk Invite"
+        subtitle={stepSubtitles[currentStep]}
+        icon={<Users className="w-6 h-6 text-green-600" />}
+        showBack={true}
+        backTo="/dashboard/resident"
+      />
+
+      <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8 space-y-6">
+      {/* PHASE B3: Step Indicator */}
+      <StepIndicator />
+
+      {/* Step 1: Upload CSV */}
+      {currentStep === 1 && (
+        <Card>
+          <Card.Header className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+            <Card.Title className="flex items-center">
+              <span className="text-2xl mr-3">📁</span>
+              Step 1: Upload CSV File
+            </Card.Title>
+          </Card.Header>
+          <Card.Content>
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCsvFile}
+                  disabled={isLoading('bulkInvite')}
+                  className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer"
+                />
+                
+                <textarea
+                  value={csvText}
+                  onChange={(e) => {
+                    setCsvText(e.target.value);
+                    parseCsv(e.target.value);
+                  }}
+                  placeholder={`Paste CSV here (headers optional)\nname,email,phone\nJohn Doe,john@example.com,0712345678`}
+                  rows={6}
+                  disabled={isLoading('bulkInvite')}
+                  className="w-full p-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                
+                <p className="text-xs text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                  📄 <strong>Required columns:</strong> name, email. Phone optional (format 0xxxxxxxxx).<br/>
+                  ⚠️ Duplicates by email are removed. Max 50 guests.
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Form Section */}
-          <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
-            <Card.Content className="p-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Event Details */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Event Details
-                  </h3>
-                  
-                  <Input
-                    label="Event Name"
-                    placeholder="e.g., Birthday Party, Company Meeting"
-                    value={formData.eventName}
-                    onChange={(e) => handleInputChange('eventName', e.target.value)}
-                    disabled={loading}
-                    required
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
-                  />
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      label="Date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => handleInputChange('date', e.target.value)}
-                      disabled={loading}
-                      required
-                      icon={<Calendar className="w-4 h-4" />}
-                      className="bg-slate-700/50 border-slate-600 text-white"
-                    />
-                    
-                    <Input
-                      label="Time"
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => handleInputChange('time', e.target.value)}
-                      disabled={loading}
-                      required
-                      icon={<Clock className="w-4 h-4" />}
-                      className="bg-slate-700/50 border-slate-600 text-white"
-                    />
-                  </div>
-                  
-                  <Input
-                    label="Number of Guests"
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={csvText.trim() ? parsedGuests.length : formData.numGuests}
-                    onChange={(e) => handleInputChange('numGuests', Number(e.target.value))}
-                    disabled={loading || csvText.trim().length > 0}
-                    required
-                    className="bg-slate-700/50 border-slate-600 text-white"
-                  />
-                </div>
+            {/* Show parsed data count */}
+            {file && parsedData.length > 0 && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-800 font-medium">
+                  ✅ Found {parsedData.length} visitor{parsedData.length !== 1 ? 's' : ''} in your file
+                </p>
+                <Button 
+                  className="mt-3 w-full md:w-auto"
+                  onClick={() => setCurrentStep(2)}
+                >
+                  Review Visitors →
+                </Button>
+              </div>
+            )}
+          </Card.Content>
+        </Card>
+      )}
 
-                {/* CSV Upload */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Upload className="w-5 h-5" />
-                    Guest List (Optional)
-                  </h3>
-                  
-                  <div className="space-y-3">
-                    <input
-                      type="file"
-                      accept=".csv"
-                      onChange={handleCsvFile}
-                      disabled={loading}
-                      className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-slate-300 hover:file:bg-slate-600"
-                    />
-                    
-                    <textarea
-                      value={csvText}
-                      onChange={(e) => {
-                        setCsvText(e.target.value);
-                        parseCsv(e.target.value);
-                      }}
-                      placeholder={`Paste CSV here (headers optional)\nname,email,phone\nJohn Doe,john@example.com,0712345678`}
-                      rows={6}
-                      disabled={loading}
-                      className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    />
-                    
-                    <p className="text-xs text-slate-400">
-                      Required columns: name, email. Phone optional (format 0xxxxxxxxx).<br/>
-                      Duplicates by email are removed. Max 50 guests.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-4">
-                  <Button
-                    type="button"
-                    onClick={resetForm}
-                    disabled={loading}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    Clear Form
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isLoading('bulkInvite')}
-                    className="flex-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                  >
-                    {isLoading('bulkInvite') ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Create Bulk Invitation
-                      </>
+      {/* Step 2: Review & Select */}
+      {currentStep === 2 && (
+        <Card>
+          <Card.Header className="bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
+            <div className="flex items-center justify-between">
+              <Card.Title className="flex items-center">
+                <span className="text-2xl mr-3">👥</span>
+                Step 2: Review Visitors
+              </Card.Title>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="selectAll"
+                  checked={selectedRows.length === parsedData.filter(d => !d.hasError).length}
+                  onChange={toggleAllSelection}
+                  className="w-4 h-4 text-green-600 rounded"
+                />
+                <label htmlFor="selectAll" className="text-sm font-medium text-gray-700">
+                  Select All
+                </label>
+              </div>
+            </div>
+          </Card.Header>
+          <Card.Content>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {parsedData.map((visitor) => (
+                <div 
+                  key={visitor.id}
+                  className={`p-3 md:p-4 border rounded-lg ${
+                    visitor.hasError 
+                      ? 'border-red-300 bg-red-50'
+                      : selectedRows.includes(visitor.id)
+                      ? 'border-green-300 bg-green-50'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {!visitor.hasError && (
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.includes(visitor.id)}
+                        onChange={() => toggleRowSelection(visitor.id)}
+                        className="w-5 h-5 mt-0.5 text-green-600 rounded"
+                      />
                     )}
-                  </Button>
-                </div>
-              </form>
-            </Card.Content>
-          </Card>
-
-          {/* Preview Section */}
-          <div className="space-y-6">
-            {/* Guest Preview */}
-            {csvText.trim() && (
-              <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
-                <Card.Content className="p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Guest Preview ({parsedGuests.length})
-                  </h3>
-                  
-                  {csvInfo && (
-                    <div className="bg-yellow-900/20 border border-yellow-600/30 text-yellow-300 p-3 rounded-lg mb-4 text-sm">
-                      {csvInfo}
-                    </div>
-                  )}
-                  
-                  {parsedGuests.length > 0 ? (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {parsedGuests.map((guest, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg">
-                          <div>
-                            <p className="text-white font-medium">{guest.name}</p>
-                            <p className="text-slate-400 text-sm">{guest.email}</p>
-                          </div>
-                          <div className="text-slate-400 text-sm">
-                            {guest.phone || '-'}
-                          </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{visitor.name}</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        📱 {visitor.phone}
+                        {visitor.email && ` • ✉️ ${visitor.email}`}
+                      </div>
+                      {visitor.date && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          📅 {visitor.date}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-slate-400 text-sm">No valid guests parsed yet.</p>
-                  )}
-                  
-                  {csvErrors.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="text-red-400 font-medium mb-2 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" />
-                        CSV Issues ({csvErrors.length})
-                      </h4>
-                      <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-3 max-h-32 overflow-y-auto">
-                        {csvErrors.map((err, i) => (
-                          <p key={i} className="text-red-300 text-sm">
-                            Row {err.index}: {err.message}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </Card.Content>
-              </Card>
-            )}
-
-            {/* Success Display */}
-            {success && (
-              <Card className="bg-green-900/20 border-green-600/30">
-                <Card.Content className="p-6">
-                  <h3 className="text-lg font-semibold text-green-300 mb-4 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5" />
-                    Invitation Created!
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <div className="bg-slate-800/50 rounded-lg p-4">
-                      <p className="text-white font-medium">{success.data.eventName || success.data.event_name}</p>
-                      <p className="text-slate-400 text-sm">
-                        {success.data.date} at {success.data.time} | Max Guests: {success.data.numGuests || success.data.num_guests}
-                      </p>
-                    </div>
-                    
-                    <div className="bg-slate-800/50 rounded-lg p-4">
-                      <p className="text-white font-medium mb-2">Share this link with your guests:</p>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={success.data.inviteLink || success.data.invite_link}
-                          readOnly
-                          className="flex-1 text-xs bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
-                          onClick={(e) => e.target.select()}
-                        />
-                        <button
-                          onClick={() => copyToClipboard(success.data.inviteLink || success.data.invite_link)}
-                          className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-                          title="Copy link"
-                        >
-                          <Copy className="w-4 h-4 text-slate-300" />
-                        </button>
-                      </div>
+                      )}
+                      {visitor.hasError && (
+                        <div className="text-xs text-red-600 mt-2 font-medium">
+                          ⚠️ Missing required information
+                        </div>
+                      )}
                     </div>
                   </div>
-                </Card.Content>
-              </Card>
-            )}
-          </div>
-        </div>
-      </div>
+                </div>
+              ))}
+            </div>
 
+            <div className="mt-6 flex flex-col md:flex-row gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(1)}
+                className="md:flex-1"
+              >
+                ← Back to Upload
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={selectedRows.length === 0 || isUploading}
+                className="md:flex-1"
+              >
+                Send {selectedRows.length} Invitation{selectedRows.length !== 1 ? 's' : ''} →
+              </Button>
+            </div>
+          </Card.Content>
+        </Card>
+      )}
+
+      {/* Step 3: Confirmation */}
+      {currentStep === 3 && (
+        <Card>
+          <Card.Header className="bg-gradient-to-r from-purple-50 to-purple-100 border-b border-purple-200">
+            <Card.Title className="flex items-center">
+              <span className="text-2xl mr-3">🚀</span>
+              Step 3: Sending Invitations
+            </Card.Title>
+          </Card.Header>
+          <Card.Content className="py-8">
+            {isUploading ? (
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mb-4"></div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Processing your invitations...
+                </h3>
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600">
+                  {uploadProgress}% complete
+                </p>
+              </div>
+            ) : success ? (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  All invitations sent successfully!
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Your visitors will receive their invitation details via SMS/email
+                </p>
+                <div className="flex flex-col md:flex-row gap-3 justify-center">
+                  <Button
+                    onClick={() => navigate('/resident/visitor-history')}
+                    className="md:w-auto"
+                  >
+                    View Visitor History
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFile(null);
+                      setParsedData([]);
+                      setErrors([]);
+                      setSuccess(false);
+                      setCurrentStep(1);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    className="md:w-auto"
+                  >
+                    Upload Another File
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-gray-600">Preparing to send invitations...</p>
+              </div>
+            )}
+          </Card.Content>
+        </Card>
+      )}
       {/* Error and Success messages are now handled by ErrorContext */}
+      </div>
     </div>
   );
 };

@@ -7,6 +7,11 @@ export const PASS_STATUS = {
   CHECKED_OUT: 'checked_out',
   EXPIRED: 'expired',
   REVOKED: 'revoked',
+  
+  // Phase 3: Walk-in approval flow statuses
+  PENDING_APPROVAL: 'pending_approval', // Walk-in visitor waiting for resident approval
+  APPROVED: 'approved',                 // Resident approved entry
+  REJECTED: 'rejected'                  // Resident rejected entry
 };
 
 export default { PASS_STATUS };

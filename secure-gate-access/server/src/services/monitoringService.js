@@ -20,8 +20,8 @@ class MonitoringService {
       host: process.env.PGHOST || process.env.DB_HOST || 'localhost',
       port: process.env.PGPORT || process.env.DB_PORT || 5432,
       database: process.env.PGDATABASE || process.env.DB_NAME || 'secure_gate',
-      user: process.env.PGUSER || process.env.DB_USER || 'secure_gate_user',
-      password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'secure_gate_password',
+      user: process.env.PGUSER || process.env.DB_USER || 'postgres',  // Standardized to postgres
+      password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'postgres',  // Standardized default
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     };
     

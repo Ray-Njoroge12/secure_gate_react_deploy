@@ -45,6 +45,10 @@ audit-*.json
 *.crt
 *secret*
 *backup*
+# Allow deployment scripts
+!*-database-backups.sh
+!*-monitoring.sh
+!db-backup-config.sh
 .env-backup/
 server/scripts/generate-secrets.js
 secure-gate-access/.env
@@ -95,3 +99,4 @@ cleanup_archive_artifacts/
 *.temp
 artifacts/cleanup_archive/
 cold-storage/
+.vercel

@@ -760,23 +760,28 @@ export const sanitizeInput = (input) => {
 
 ```javascript
 // src/utils/auth.js
-export const secureTokenStorage = {
-  setToken: (token) => {
-    // Store in httpOnly cookie if possible
-    // Otherwise use secure storage
-    if (window.crypto && window.crypto.subtle) {
-      // Use Web Crypto API for encryption
-      localStorage.setItem('token', token);
+export const authClient = {
+  login: async (credentials) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // httpOnly cookies for auth
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      throw new Error('Login failed');
     }
+
+    return response.json();
   },
-  
-  getToken: () => {
-    return localStorage.getItem('token');
+
+  logout: async () => {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
   },
-  
-  removeToken: () => {
-    localStorage.removeItem('token');
-  }
 };
 ```
 
