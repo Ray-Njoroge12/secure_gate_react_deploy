@@ -286,7 +286,9 @@ export const createSpeedLimit = (config, options = {}) => {
         if (condition(req)) return true;
       }
       return false;
-    }
+    },
+    // Suppress delayMs validation warning (we're using legacy behavior intentionally)
+    validate: { delayMs: false }
   };
 
   return slowDown(speedConfig);
