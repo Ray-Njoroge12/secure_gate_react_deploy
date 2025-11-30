@@ -1,7 +1,15 @@
 import { dbManager } from './db.enhanced.js';
-const pool = dbManager.pool;
+
+// Helper to safely get pool
+const getPool = () => {
+  if (!dbManager.pool) {
+    throw new Error('Database pool not initialized - call dbManager.initializeAsync() first');
+  }
+  return dbManager.pool;
+};
 
 const run = async () => {
+  const pool = getPool();
   const client = await pool.connect();
   try {
     console.log('Initializing database...');

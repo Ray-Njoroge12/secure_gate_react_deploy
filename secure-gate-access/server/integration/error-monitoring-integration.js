@@ -113,13 +113,21 @@ class ErrorMonitoringIntegration {
       });
     });
 
-    // Listen for unhandled promise rejections
+    // Listen for unhandled promise rejections - LOGGING ONLY
+    // The main server.js handler decides whether to exit or continue
     process.on('unhandledRejection', (reason, promise) => {
-      this.handleCriticalError('unhandled_rejection', reason, {
-        severity: 'critical',
-        category: 'system',
-        promise: promise?.toString()
-      });
+      // Only log for metrics, don't treat as critical (let server.js decide)
+      const errorMessage = reason?.message || String(reason);
+      const isConnectionError = /connection|timeout|econnreset|etimedout/i.test(errorMessage);
+      
+      if (!isConnectionError) {
+        // Only escalate non-connection errors
+        this.handleCriticalError('unhandled_rejection', reason, {
+          severity: 'warning', // Downgraded from critical
+          category: 'system',
+          promise: promise?.toString()
+        });
+      }
     });
 
     // Listen for warning events

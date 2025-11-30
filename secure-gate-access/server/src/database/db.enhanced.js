@@ -23,6 +23,21 @@ class DatabaseManager extends EventEmitter {
     // Support DATABASE_URL (Render provides this) or individual PG* variables
     const connectionString = process.env.DATABASE_URL;
     
+    // Log which connection method is being used (without exposing credentials)
+    if (connectionString) {
+      // Parse DATABASE_URL to show connection info without password
+      try {
+        const url = new URL(connectionString);
+        console.log(`📊 Database: Using DATABASE_URL (host: ${url.hostname}, db: ${url.pathname.slice(1)})`);
+        console.log(`📊 Database: SSL required for cloud deployment`);
+      } catch {
+        console.log('📊 Database: Using DATABASE_URL connection string');
+      }
+    } else {
+      console.log(`📊 Database: Using individual PG* variables (host: ${process.env.PGHOST || 'localhost'})`);
+      console.warn('⚠️ DATABASE_URL not set - this may cause issues on Render');
+    }
+    
     this.config = {
       // Use DATABASE_URL if provided, otherwise use individual variables
       ...(connectionString ? { connectionString } : {
@@ -33,21 +48,28 @@ class DatabaseManager extends EventEmitter {
         port: Number(process.env.PGPORT) || 5432,
       }),
 
-      // SSL required for Render PostgreSQL (and most cloud providers)
-      ssl: process.env.NODE_ENV === 'production' 
+      // SSL configuration for cloud providers
+      // Render, Railway, Heroku all require SSL
+      ssl: process.env.DATABASE_URL || process.env.NODE_ENV === 'production' 
         ? { rejectUnauthorized: false } 
         : false,
 
-      // Pool configuration with enhanced stability
-      max: Number(process.env.PGPOOL_MAX) || 20, // Max connections
-      min: Number(process.env.PGPOOL_MIN) || 2,  // Min connections to keep open
-      idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || 30000,
-      connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 10000, // Increased for cloud latency
+      // Pool configuration optimized for cloud environments (especially Render)
+      max: Number(process.env.PGPOOL_MAX) || 5, // Reduced for cloud free tiers
+      min: Number(process.env.PGPOOL_MIN) || 0,  // Allow pool to go to 0 when idle
+      idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || 10000, // 10s idle timeout
+      connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 60000, // 60s for cloud cold starts
+      
+      // Statement timeout to prevent hanging queries
+      statement_timeout: Number(process.env.PGPOOL_STATEMENT_TIMEOUT) || 30000,
+      query_timeout: Number(process.env.PGPOOL_QUERY_TIMEOUT) || 30000,
 
-      // Enhanced stability features
-      acquireTimeoutMillis: Number(process.env.PGPOOL_ACQUIRE_TIMEOUT) || 10000,
+      // Enhanced stability features for cloud
       keepAlive: true,
       keepAliveInitialDelayMillis: Number(process.env.PGPOOL_KEEPALIVE_DELAY) || 10000,
+      
+      // Allow pooling to handle connection drops gracefully
+      allowExitOnIdle: true,
 
       // Custom config overrides
       ...config
@@ -56,12 +78,14 @@ class DatabaseManager extends EventEmitter {
     this.pool = null;
     this.isConnected = false;
     this.connectionAttempts = 0;
-    this.maxConnectionAttempts = Number(process.env.PGPOOL_MAX_RETRY) || 5;
-    this.retryDelay = Number(process.env.PGPOOL_RETRY_DELAY) || 2000; // Start with 2 seconds
-    this.maxRetryDelay = Number(process.env.PGPOOL_MAX_RETRY_DELAY) || 30000; // Max 30 seconds
+    this.maxConnectionAttempts = Number(process.env.PGPOOL_MAX_RETRY) || 10; // More retries for cloud
+    this.retryDelay = Number(process.env.PGPOOL_RETRY_DELAY) || 5000; // Start with 5 seconds
+    this.maxRetryDelay = Number(process.env.PGPOOL_MAX_RETRY_DELAY) || 60000; // Max 60 seconds
+    this.initializationPromise = null;
+    this.isInitialized = false;
 
     // Health monitoring
-    this.healthCheckInterval = Number(process.env.PGPOOL_HEALTH_INTERVAL) || 30000; // 30 seconds
+    this.healthCheckInterval = Number(process.env.PGPOOL_HEALTH_INTERVAL) || 120000; // 2 minutes for cloud
     this.healthTimer = null;
     this.lastHealthCheck = null;
     this.consecutiveFailures = 0;
@@ -76,19 +100,93 @@ class DatabaseManager extends EventEmitter {
       responseTimes: []
     };
 
-    this.initialize();
+    // Don't auto-initialize in constructor - let it be called explicitly
+    // This prevents unhandled promise rejections during module load
+    // this.initialize(); // REMOVED - call initializeAsync() instead
   }
 
-  async initialize() {
-    try {
-      await this.connect();
-      await this.ensureIndexes();
-      this.startHealthMonitoring();
-      // Database manager initialized successfully
-    } catch (error) {
-      console.error('❌ Failed to initialize database manager:', error.message);
-      this.emit('error', error);
+  /**
+   * Async initialization that can be awaited
+   * This should be called from server.js after environment is loaded
+   */
+  async initializeAsync() {
+    if (this.isInitialized) {
+      return true;
     }
+    
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = this._doInitialize();
+    return this.initializationPromise;
+  }
+
+  async _doInitialize() {
+    const maxAttempts = this.maxConnectionAttempts;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`🔄 Database connection attempt ${attempt}/${maxAttempts}...`);
+        await this.connect();
+        
+        // Only try to ensure indexes if connection succeeded
+        try {
+          await this.ensureIndexes();
+        } catch (indexError) {
+          console.warn('⚠️ Index creation failed (non-critical):', indexError.message);
+        }
+        
+        this.startHealthMonitoring();
+        this.isInitialized = true;
+        console.log('✅ Database manager initialized successfully');
+        return true;
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Database connection attempt ${attempt} failed:`, error.message);
+        
+        // Provide specific diagnostics for common issues
+        if (error.message.includes('timeout')) {
+          console.error('💡 Timeout error - possible causes:');
+          console.error('   - Database server not reachable (check host/port)');
+          console.error('   - Firewall blocking connection');
+          console.error('   - Database cold start (Render free tier)');
+          console.error('   - SSL handshake issues');
+        } else if (error.message.includes('ECONNREFUSED')) {
+          console.error('💡 Connection refused - database server not accepting connections');
+        } else if (error.message.includes('ENOTFOUND')) {
+          console.error('💡 Host not found - check DATABASE_URL hostname');
+        } else if (error.message.includes('authentication')) {
+          console.error('💡 Authentication failed - check DATABASE_URL credentials');
+        }
+        
+        if (attempt < maxAttempts) {
+          const delay = Math.min(this.retryDelay * Math.pow(1.5, attempt - 1), this.maxRetryDelay);
+          console.log(`⏳ Waiting ${Math.round(delay/1000)}s before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    // All attempts failed
+    console.error(`❌ Failed to initialize database after ${maxAttempts} attempts`);
+    console.error('🔧 Troubleshooting steps:');
+    console.error('   1. Verify DATABASE_URL is set correctly in Render environment');
+    console.error('   2. Check if PostgreSQL database is running and accessible');
+    console.error('   3. Ensure database is in the same region as your Render service');
+    console.error('   4. Try increasing PGPOOL_CONN_TIMEOUT (current: 60000ms)');
+    
+    this.emit('initializationFailed', { error: lastError, attempts: maxAttempts });
+    
+    // In production, we might want to continue without DB and let health checks fail
+    // This allows the server to start and potentially recover
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DB_FAILURE === 'true') {
+      console.warn('⚠️ Running without database connection (ALLOW_DB_FAILURE=true)');
+      return false;
+    }
+    
+    throw lastError;
   }
 
   async ensureIndexes() {
@@ -140,12 +238,14 @@ class DatabaseManager extends EventEmitter {
       this.metrics.errors++;
       this.consecutiveFailures++;
 
-      console.error('❌ Database connection error:', err.message);
+      console.error('❌ Database pool error:', err.message);
       this.emit('connectionError', { error: err, client, metrics: this.metrics });
 
-      // Auto-reconnect on connection errors
+      // Auto-reconnect on connection errors (wrapped in catch to prevent unhandled rejections)
       if (err.code === 'ECONNRESET' || err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
-        this.handleConnectionLoss();
+        this.handleConnectionLoss().catch(reconnectErr => {
+          console.error('❌ Auto-reconnection failed:', reconnectErr.message);
+        });
       }
     });
 
@@ -162,14 +262,31 @@ class DatabaseManager extends EventEmitter {
   }
 
   async testConnection() {
+    const timeout = this.config.connectionTimeoutMillis || 60000;
+    
     try {
-      const client = await this.pool.connect();
-      const result = await client.query('SELECT NOW() as connection_time, version() as db_version');
-      client.release();
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Connection test timed out after ${timeout}ms`));
+        }, timeout);
+      });
+      
+      // Race the connection against the timeout
+      const connectionPromise = (async () => {
+        const client = await this.pool.connect();
+        const result = await client.query('SELECT NOW() as connection_time, version() as db_version');
+        client.release();
+        return result;
+      })();
+      
+      const result = await Promise.race([connectionPromise, timeoutPromise]);
 
       this.isConnected = true;
       this.lastHealthCheck = new Date();
 
+      console.log('✅ Database connection test passed');
+      
       // Database connection test successful
       this.emit('connectionTest', { 
         success: true, 
@@ -221,30 +338,39 @@ class DatabaseManager extends EventEmitter {
       clearInterval(this.healthTimer);
     }
 
-    this.healthTimer = setInterval(async () => {
-      try {
-        const startTime = Date.now();
-        await this.testConnection();
-        const responseTime = Date.now() - startTime;
+    console.log(`🏥 Starting database health monitoring (interval: ${this.healthCheckInterval}ms)`);
 
-        // Track response times for metrics
-        this.metrics.responseTimes.push(responseTime);
-        if (this.metrics.responseTimes.length > 100) {
-          this.metrics.responseTimes.shift(); // Keep only last 100 measurements
+    this.healthTimer = setInterval(() => {
+      // Wrap in IIFE to ensure all promise rejections are caught
+      (async () => {
+        try {
+          const startTime = Date.now();
+          await this.testConnection();
+          const responseTime = Date.now() - startTime;
+
+          // Track response times for metrics
+          this.metrics.responseTimes.push(responseTime);
+          if (this.metrics.responseTimes.length > 100) {
+            this.metrics.responseTimes.shift(); // Keep only last 100 measurements
+          }
+
+          this.metrics.avgResponseTime = this.metrics.responseTimes.reduce((a, b) => a + b, 0) / this.metrics.responseTimes.length;
+
+          this.emit('healthCheck', {
+            success: true,
+            responseTime,
+            avgResponseTime: this.metrics.avgResponseTime
+          });
+
+        } catch (error) {
+          this.emit('healthCheck', { success: false, error });
+          console.warn('⚠️ Database health check failed:', error.message);
+          // Don't rethrow - this is periodic monitoring, not critical path
         }
-
-        this.metrics.avgResponseTime = this.metrics.responseTimes.reduce((a, b) => a + b, 0) / this.metrics.responseTimes.length;
-
-        this.emit('healthCheck', {
-          success: true,
-          responseTime,
-          avgResponseTime: this.metrics.avgResponseTime
-        });
-
-      } catch (error) {
-        this.emit('healthCheck', { success: false, error });
-        console.warn('⚠️ Health check failed:', error.message);
-      }
+      })().catch(err => {
+        // Safety net - should never reach here, but prevents unhandled rejection
+        console.error('⚠️ Unexpected health check error:', err.message);
+      });
     }, this.healthCheckInterval);
   }
 
@@ -419,8 +545,8 @@ process.on('uncaughtException', async (error) => {
 });
 
 process.on('unhandledRejection', async (reason, promise) => {
-  console.error('💥 Unhandled rejection at:', promise, 'reason:', reason);
-  // Don't exit on unhandled rejection, but log it
+  // Only log, don't take action - let server.js handle this
+  console.error('� [DB] Unhandled rejection detected:', reason?.message || reason);
 });
 
 // Export connection status for health checks

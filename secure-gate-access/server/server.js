@@ -40,7 +40,8 @@ console.log('🔐 Environment validation passed - starting secure server...');
 
 import app from './src/app.js';
 import { dbManager } from './src/database/db.enhanced.js';
-const pool = dbManager.pool;
+// Don't extract pool here - it's null until initializeAsync() is called
+// Access dbManager.pool dynamically when needed
 import monitoringDashboard from './src/services/monitoringDashboardService.js';
 
 // Import WebSocket service for Phase 2.3 real-time features
@@ -58,19 +59,40 @@ process.on('unhandledRejection', (reason, promise) => {
     stack: reason?.stack || 'No stack trace available'
   });
   
-  // Only exit for critical database or security errors
+  // Determine if this is a critical error that requires shutdown
   if (reason && reason.message) {
     const message = reason.message.toLowerCase();
+    
+    // Non-critical errors that should NOT cause shutdown
+    const nonCriticalPatterns = [
+      'connection timeout',
+      'connection terminated',
+      'connection refused',
+      'econnreset',
+      'etimedout',
+      'redis',
+      'cache'
+    ];
+    
+    const isNonCritical = nonCriticalPatterns.some(pattern => message.includes(pattern));
+    
+    if (isNonCritical) {
+      console.warn('⚠️ Non-critical connection error - server continues running');
+      console.warn('💡 This may be a temporary network issue or database connectivity problem');
+      return; // Don't exit
+    }
+    
+    // Critical errors that require shutdown
     if (message.includes('critical:') || 
-        message.includes('security') || 
-        message.includes('authentication failed')) {
+        message.includes('security breach') || 
+        message.includes('authentication system failed')) {
       console.error('🚨 Critical error detected - shutting down for safety');
       process.exit(1);
     }
   }
   
-  // For monitoring/non-critical errors, log but continue running
-  console.warn('⚠️ Non-critical error handled - server continues running');
+  // For unknown errors, log but continue
+  console.warn('⚠️ Unknown error handled - server continues running');
 });
 
 // Enhanced error handling for uncaught exceptions
@@ -228,7 +250,11 @@ async function checkPortAvailability(port) {
 // Validate database connectivity
 async function validateDatabaseConnection() {
   try {
-    const client = await pool.connect();
+    if (!dbManager.pool) {
+      console.warn('⚠️ Database pool not initialized yet');
+      return false;
+    }
+    const client = await dbManager.pool.connect();
     await client.query('SELECT 1');
     client.release();
     console.log('✅ Database connection validated');
@@ -251,17 +277,29 @@ async function startServer() {
     }
     console.log(`✅ Port ${PORT} is available`);
 
-    // Validate database before starting server
-    const dbConnected = await validateDatabaseConnection();
-    if (!dbConnected) {
-      console.error('🚨 Server startup blocked - database connection failed');
-      process.exit(1);
+    // Initialize the database connection first
+    console.log('🔄 Initializing database connection...');
+    try {
+      await dbManager.initializeAsync();
+      console.log('✅ Database connection established');
+    } catch (dbError) {
+      console.error('❌ Database initialization failed:', dbError.message);
+      
+      // In production with DATABASE_URL, this is critical
+      if (process.env.DATABASE_URL) {
+        console.error('🚨 Cannot connect to Render PostgreSQL - check DATABASE_URL');
+        console.error('💡 Ensure the database is created and connection details are correct');
+      }
+      
+      // Allow server to start without DB for health checks in some cases
+      if (process.env.ALLOW_DB_FAILURE !== 'true') {
+        console.error('� Server startup blocked - database connection required');
+        console.error('💡 Set ALLOW_DB_FAILURE=true to start without database');
+        process.exit(1);
+      } else {
+        console.warn('⚠️ Starting server without database connection (ALLOW_DB_FAILURE=true)');
+      }
     }
-
-    // Initialize the enhanced database manager used by controllers
-    console.log('🔄 Initializing enhanced database manager...');
-    await dbManager.initialize();
-    console.log('✅ Enhanced database manager initialized for controllers');
 
     // Initialize monitoring dashboard
     console.log('📊 Starting monitoring dashboard service...');
@@ -331,17 +369,12 @@ async function startServer() {
         
         // Step 4: Close database connections
         console.log('🔄 Closing database connections...');
-        await new Promise((resolve, reject) => {
-          pool.end((err) => {
-            if (err) {
-              console.error('❌ Error closing database pool:', err.message);
-              reject(err);
-            } else {
-              console.log('✅ Database connections closed');
-              resolve();
-            }
-          });
-        });
+        try {
+          await dbManager.disconnect();
+          console.log('✅ Database connections closed');
+        } catch (dbErr) {
+          console.error('❌ Error closing database pool:', dbErr.message);
+        }
         
         // Step 5: Final cleanup
         loggingService.logInfo('Server shutdown complete', {
@@ -367,30 +400,8 @@ async function startServer() {
   }
 }
 
-// Enhanced error handling for stability
-process.on('unhandledRejection', (reason, promise) => {
-  loggingService.logError('Unhandled Promise Rejection', reason, {
-    promise: promise.toString(),
-    stack: reason?.stack,
-    correlationId: 'process-error'
-  });
-
-  // Don't exit in development, just log
-  if (process.env.NODE_ENV === 'production') {
-    console.error('💥 Unhandled Promise Rejection in production - initiating graceful shutdown');
-    process.exit(1);
-  }
-});
-
-process.on('uncaughtException', (error) => {
-  loggingService.logError('Uncaught Exception', error, {
-    stack: error.stack,
-    correlationId: 'process-error'
-  });
-
-  console.error('💥 Uncaught Exception:', error);
-  process.exit(1);
-});
+// NOTE: Error handlers are defined at the top of this file (lines 52-100)
+// Do NOT add duplicate handlers here - they cause conflicts and unexpected shutdowns
 
 startServer();
 // touch
