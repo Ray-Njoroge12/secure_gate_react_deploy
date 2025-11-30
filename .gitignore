@@ -44,6 +44,8 @@ audit-*.json
 *.cert
 *.crt
 *secret*
+!secure-gate-access/server/src/services/secretsManagerService.js
+!secure-gate-access/server/SECRETS_MANAGEMENT.md
 *backup*
 # Allow deployment scripts
 !*-database-backups.sh

@@ -21,8 +21,11 @@ class EnvironmentConfig {
     this.isDevelopment = process.env.NODE_ENV === 'development';
     this.isTest = process.env.NODE_ENV === 'test';
 
-    // Initialize secrets manager for production
-    this.secretsManager = this.isProduction && !this.isTest 
+    // Determine if AWS Secrets Manager should be used (explicit opt-in)
+    this.useAwsSecrets = process.env.USE_AWS_SECRETS === 'true';
+
+    // Initialize secrets manager for production when explicitly enabled
+    this.secretsManager = this.isProduction && !this.isTest && this.useAwsSecrets
       ? secretsManagerService 
       : null;
     
