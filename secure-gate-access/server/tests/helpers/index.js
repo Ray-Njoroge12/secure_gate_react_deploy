@@ -19,6 +19,15 @@ import * as securityHelpers from './securityHelpers.js';
 import * as validationHelpers from './validationHelpers.js';
 import * as errorHelpers from './errorHelpers.js';
 
+// High-level convenience wrappers expected by some tests
+export function createTestDB() {
+  return dbHelpers.getTestPool();
+}
+
+export async function makeAuthRequest(app, method, path, token, data = null) {
+  return apiHelpers.makeAuthenticatedRequest(app, method, path, token, data);
+}
+
 // Re-export all helpers
 export * from './testUtils.js';
 export * from './dbHelpers.js';
@@ -66,5 +75,7 @@ export default {
   ...performanceHelpers,
   ...securityHelpers,
   ...validationHelpers,
-  ...errorHelpers
+  ...errorHelpers,
+  createTestDB,
+  makeAuthRequest
 };

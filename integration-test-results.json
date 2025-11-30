@@ -1,0 +1,96 @@
+{
+  "timestamp": "2025-11-11T15:17:48.204Z",
+  "test_environment": {
+    "frontend_url": "http://localhost:3000",
+    "backend_url": "http://localhost:3001/api",
+    "test_type": "comprehensive_integration"
+  },
+  "test_summary": {
+    "total": 14,
+    "passed": 11,
+    "failed": 3,
+    "success_rate": "78.6%"
+  },
+  "test_results": [
+    {
+      "test": "Backend server healthy",
+      "status": "PASS",
+      "details": "Status: healthy, Uptime: 6653s"
+    },
+    {
+      "test": "Frontend server accessible",
+      "status": "PASS",
+      "details": "Content-Type: text/html; charset=utf-8"
+    },
+    {
+      "test": "Database connectivity functional",
+      "status": "FAIL",
+      "details": "Request failed with status code 201"
+    },
+    {
+      "test": "User registration successful",
+      "status": "FAIL",
+      "details": "User ID: 31"
+    },
+    {
+      "test": "User login successful",
+      "status": "PASS",
+      "details": "Token received: true"
+    },
+    {
+      "test": "Token validation functional",
+      "status": "PASS",
+      "details": "Authenticated requests work"
+    },
+    {
+      "test": "CORS preflight successful",
+      "status": "PASS",
+      "details": "OPTIONS requests handled correctly"
+    },
+    {
+      "test": "Cross-origin requests allowed",
+      "status": "PASS",
+      "details": "Allow-Origin: http://localhost:3000"
+    },
+    {
+      "test": "Security headers present",
+      "status": "PASS",
+      "details": "Security headers configured"
+    },
+    {
+      "test": "Backend response time acceptable",
+      "status": "PASS",
+      "details": "Response time: 3ms"
+    },
+    {
+      "test": "Concurrent requests handled",
+      "status": "PASS",
+      "details": "5/5 requests successful"
+    },
+    {
+      "test": "Error handling works",
+      "status": "PASS",
+      "details": "Invalid endpoint returns: 404"
+    },
+    {
+      "test": "Complete user journey works",
+      "status": "FAIL",
+      "details": "Registration: false, Login: false, Auth: false"
+    },
+    {
+      "test": "All system components available",
+      "status": "PASS",
+      "details": "Frontend: fulfilled, Backend: fulfilled"
+    }
+  ],
+  "system_status": "INTEGRATED",
+  "recommendations": [
+    "Address failed test cases before production deployment",
+    "Fix: Database connectivity functional - Request failed with status code 201",
+    "Fix: User registration successful - User ID: 31",
+    "Fix: Complete user journey works - Registration: false, Login: false, Auth: false",
+    "Implement comprehensive error monitoring and alerting",
+    "Set up database backup and recovery procedures",
+    "Configure production-grade security settings"
+  ]
+}

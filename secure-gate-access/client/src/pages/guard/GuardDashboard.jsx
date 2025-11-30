@@ -1,5 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import logger from 'utils/logger';
+import { useAuth } from "../../contexts/AuthContext";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
 import AppShell from "../../layouts/AppShell";
 import { Card, Button, Badge, SearchFilter, SearchResults, Pagination } from "../../components/ui";
 import Table from "../../components/Table";
@@ -11,22 +14,38 @@ import notificationService from "../../services/notificationService";
 import { useSearchData } from "../../hooks/useSearch";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
+import DashboardKPIs from "../../components/guard/DashboardKPIs"; // Phase G3
+import QuickFilters from "../../components/guard/QuickFilters"; // Phase G3
+import PendingApprovalsQueue from "../../components/guard/PendingApprovalsQueue"; // Phase G3
+import PanicButton from "../../components/guard/PanicButton"; // Phase 1.1: Emergency Panic Button
+import EmergencyAlertBanner from "../../components/guard/EmergencyAlertBanner"; // Phase 1.1: Emergency Alerts
+import RecentVisitors from "../../components/guard/RecentVisitors"; // Phase 1.3: Recent Visitors
+import PendingDeliveries from "../../components/guard/PendingDeliveries"; // Phase 2.1: Delivery Management
+import { getStatusChipClass, getStatusIcon } from "../../utils/statusColors"; // Phase A8
+// Phase 3: Privacy-First Features
+import OfflineIndicator from "../../components/common/OfflineIndicator";
+import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
+import OnboardingTour from "../../components/common/OnboardingTour";
+import QuickActionMenu from "../../components/common/QuickActionMenu";
 
 export default function GuardDashboard() {
-  const onLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
-  };
+  const { logout } = useAuth();
+  const role = useCurrentRole();
   const location = useLocation();
   const navigate = useNavigate();
-  const role = localStorage.getItem('role') || 'guard';
   const { handleError, handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
+  
+  const onLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
   
   const [active, setActive] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [toastFilter, setToastFilter] = useState(()=> localStorage.getItem('toastFilter') || 'all'); // all|info|warning|error
   const [showFilters, setShowFilters] = useState(false);
+  const [activeQuickFilter, setActiveQuickFilter] = useState('all'); // Phase G3: Quick filter state
   const toastRef = React.useRef(null);
 
   // Search and filter configuration
@@ -71,27 +90,29 @@ export default function GuardDashboard() {
       // Ctrl/Cmd + R to refresh
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
-        if (!loading) {
-          fetchActiveVisitors();
+        if (!isLoading('guardDashboard')) {
+          fetchActive();
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loading, navigate]);
+  }, [isLoading, navigate]);
 
   function statusChip(s){
-    const color = s==='ON_PREMISE' ? '#10b981' : s==='CONFIRMED' ? '#3b82f6' : s==='EXITED' ? '#6b7280' : s==='REVOKED' ? '#ef4444' : '#9ca3af';
-    return <span style={{background:color, color:'#fff', padding:'2px 8px', borderRadius:12, fontSize:12}}>{s||'-'}</span>;
+    // Phase A8: Using consistent status colors
+    return <span className={getStatusChipClass(s, 'sm')}>{getStatusIcon(s)} {s||'-'}</span>;
   }
 
   async function fetchActive() {
     try {
       setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
       clearAllErrors();
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/visitors/active', { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const res = await fetch('/api/visitors/active', { 
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed');
       setActive(json.data || []);
@@ -151,9 +172,12 @@ export default function GuardDashboard() {
 
   async function postAction(id, action) {
   const url = `/api/visitors/${id}/${action}`;
-  const token = localStorage.getItem('token');
-  const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-  const res = await fetch(url, { method: 'POST', headers });
+  const headers = { 'Content-Type': 'application/json' };
+  const res = await fetch(url, { 
+    method: 'POST', 
+    credentials: 'include',
+    headers 
+  });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Action failed');
     await fetchActive();
@@ -189,7 +213,7 @@ export default function GuardDashboard() {
   };
   
   const onRevoke = async (id) => { 
-    if (!confirm('Revoke this visitor?')) return; 
+    if (!window.confirm('Revoke this visitor?')) return; 
     try { 
       await postAction(id, 'revoke');
       notificationService.warning('Visitor Revoked', `Visitor ${id} has been revoked`);
@@ -197,6 +221,32 @@ export default function GuardDashboard() {
     } catch(e){ 
       notificationService.error('Revoke Failed', e.message);
     } 
+  };
+
+  // Phase G3: KPI filter click handler
+  const handleKPIClick = (filterId) => {
+    setActiveQuickFilter(filterId);
+    // Apply filter based on KPI clicked
+    const filterMap = {
+      'on_premise': { status: 'on_premise' },
+      'arriving': { fromDate: new Date().toISOString().split('T')[0], toDate: new Date().toISOString().split('T')[0] },
+      'pending': { status: 'pending_approval' },
+      'denied': { status: 'rejected', fromDate: new Date().toISOString().split('T')[0], toDate: new Date().toISOString().split('T')[0] }
+    };
+    // This would trigger a refetch with the filter - for now just set the active filter state
+  };
+
+  // Phase G3: Quick filter handler
+  const handleQuickFilterChange = (filter) => {
+    setActiveQuickFilter(filter.id);
+    // In a full implementation, this would fetch filtered data from API
+    // For now, we'll use the existing client-side filtering
+  };
+
+  // Phase G3: Clear filter handler
+  const handleClearFilter = () => {
+    setActiveQuickFilter('all');
+    clearFilters();
   };
 
   let panel = (
@@ -219,30 +269,97 @@ export default function GuardDashboard() {
         ))}
       </div>
 
-      {/* Quick Actions - Mobile First */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <QuickActionTile
-          href="/dashboard/guard/ScanQR"
-          icon={
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 16h4m-4 0h4m-4 0v4m-4-4h4m-4 0h4" />
-            </svg>
-          }
-          title="Scan QR"
-          subtitle="Quick check-in"
-          color="bg-blue-500"
-        />
-        <QuickActionTile
-          href="/dashboard/guard/ManualCheck"
-          icon={
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-            </svg>
-          }
-          title="Manual Check"
-          subtitle="ID verification"
-          color="bg-green-500"
-        />
+      {/* PHASE A4: Emphasize Scan QR and Manual Check - Mobile First */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 mb-6">
+        {/* Primary: Scan QR */}
+        <div
+          data-tour="scan-qr"
+          onClick={() => navigate('/dashboard/guard/scan-qr')}
+          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all shadow-lg text-white"
+        >
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-xl flex items-center justify-center mb-2">
+              <svg className="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 16h4m-4 0h4m-4 0v4m-4-4h4m-4 0h4" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-base md:text-lg">Scan QR</h3>
+            <p className="text-xs md:text-sm text-blue-100 mt-1">Quick check-in</p>
+          </div>
+        </div>
+        
+        {/* Secondary: Manual Check */}
+        <div
+          data-tour="manual-check"
+          onClick={() => navigate('/dashboard/guard/manual-check')}
+          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all shadow-lg text-white"
+        >
+          <div className="flex flex-col items-center text-center">
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-xl flex items-center justify-center mb-2">
+              <svg className="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="font-bold text-base md:text-lg">Manual Check</h3>
+            <p className="text-xs md:text-sm text-green-100 mt-1">Search visitor</p>
+          </div>
+        </div>
+
+        {/* Tertiary: Walk-In (less emphasis) */}
+        <div
+          onClick={() => navigate('/dashboard/guard/walk-in')}
+          className="bg-white border-2 border-purple-200 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all col-span-2 md:col-span-1"
+        >
+          <div className="flex md:flex-col items-center md:text-center">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-3 md:mr-0 md:mb-2">
+              <svg className="w-6 h-6 md:w-8 md:h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            </div>
+            <div className="flex-1 md:flex-none">
+              <h3 className="font-semibold text-gray-900 text-sm md:text-base">Walk-In Registration</h3>
+              <p className="text-xs text-gray-600 md:mt-1">New visitor</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Mobile Tip */}
+      <div className="md:hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <p className="text-xs text-blue-800">
+          <span className="font-semibold">💡 Tip:</span> Use Scan QR for fastest check-ins
+        </p>
+      </div>
+
+      {/* Phase G3: Dashboard KPIs */}
+      <DashboardKPIs onFilterClick={handleKPIClick} />
+
+      {/* Phase G3: Quick Filters */}
+      <QuickFilters 
+        activeFilter={activeQuickFilter}
+        onFilterChange={handleQuickFilterChange}
+        onClearFilter={handleClearFilter}
+      />
+
+      {/* Phase G3: Pending Approvals Queue */}
+      <div data-tour="expected-visitors">
+        <PendingApprovalsQueue />
+      </div>
+
+      {/* Phase 1.3: Recent Visitors Quick Lookup */}
+      <RecentVisitors 
+        onSelectVisitor={(visitor) => {
+          // Navigate to check-in with visitor pre-selected
+          navigate('/dashboard/guard/manual-check', { 
+            state: { selectedVisitor: visitor }
+          });
+        }}
+        className="mb-6"
+      />
+
+      {/* Phase 2.1: Pending Deliveries */}
+      <div className="mb-6">
+        <PendingDeliveries />
       </div>
 
       {/* Search and Filters */}
@@ -316,25 +433,35 @@ export default function GuardDashboard() {
           <div className="md:hidden">
             {/* Mobile Cards */}
             {filteredActive.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="text-center py-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <p>
-                  {isSearching || hasFilters ? 'No visitors found' : 'No active visitors'}
-                </p>
-                {(isSearching || hasFilters) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSearchTerm('');
-                      clearFilters();
-                    }}
-                    className="mt-2"
-                  >
-                    Clear search and filters
-                  </Button>
+                {/* PHASE A5: Improved empty state messages */}
+                {isSearching || hasFilters ? (
+                  <div>
+                    <p className="text-gray-900 font-medium mb-1">No visitors match your criteria</p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Try adjusting your search or filters
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchTerm('');
+                        clearFilters();
+                      }}
+                    >
+                      Clear all filters
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-900 font-medium mb-1">No active visitors right now</p>
+                    <p className="text-sm text-gray-600">
+                      Visitors will appear here when they check in
+                    </p>
+                  </div>
                 )}
               </div>
             ) : (
@@ -349,25 +476,35 @@ export default function GuardDashboard() {
           <div className="hidden md:block">
             {/* Desktop Table */}
             {filteredActive.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="text-center py-8">
+                <svg className="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <p className="mt-2">
-                  {isSearching || hasFilters ? 'No visitors found' : 'No active visitors'}
-                </p>
-                {(isSearching || hasFilters) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSearchTerm('');
-                      clearFilters();
-                    }}
-                    className="mt-2"
-                  >
-                    Clear search and filters
-                  </Button>
+                {/* PHASE A5: Improved empty state messages - Desktop */}
+                {isSearching || hasFilters ? (
+                  <div>
+                    <p className="text-gray-900 font-medium mb-1">No visitors match your criteria</p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Try adjusting your search or filters
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearchTerm('');
+                        clearFilters();
+                      }}
+                    >
+                      Clear all filters
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-900 font-medium mb-1">No active visitors right now</p>
+                    <p className="text-sm text-gray-600">
+                      Visitors will appear here when they check in
+                    </p>
+                  </div>
                 )}
               </div>
             ) : (
@@ -410,11 +547,13 @@ export default function GuardDashboard() {
   );
 
   function getStatusCount(status) {
+    if (!Array.isArray(active)) return 0;
     return active.filter(v => v.status === status).length;
   }
 
   // Get filtered status counts
   function getFilteredStatusCount(status) {
+    if (!Array.isArray(filteredActive)) return 0;
     return filteredActive.filter(v => v.status === status).length;
   }
   if (location.pathname === "/dashboard/guard/ManualCheck" || location.pathname === "/dashboard/guard/manual-check") panel = <ManualCheck />;
@@ -423,8 +562,41 @@ export default function GuardDashboard() {
   else if (location.pathname === "/dashboard/guard/VisitorHistory" || location.pathname === "/dashboard/guard/history") panel = <VisitorHistory />;
 
   return (
-    <AppShell role={localStorage.getItem('role')} title="Guard Station" onLogout={onLogout}>
-      {panel}
+    <AppShell role={role} title="Guard Station" onLogout={onLogout}>
+      {/* Phase 4: Onboarding Tour for Guards */}
+      <OnboardingTour 
+        role="guard" 
+        onComplete={() => logger.debug('Guard tour completed')}
+      />
+      
+      {/* Phase 3: Offline Indicator */}
+      <OfflineIndicator position="top-right" />
+      
+      {/* Phase 3: Community Announcements */}
+      <AnnouncementsBanner showDismiss={true} className="mb-4" />
+      
+      {/* Phase 1.1: Emergency Alert Banner - Shows when there are active emergencies */}
+      <EmergencyAlertBanner userRole={role} className="mb-4" />
+      
+      {/* Main Content */}
+      <main id="main-content">
+        {panel}
+      </main>
+      
+      {/* Phase 4: Mobile Quick Action Menu */}
+      <QuickActionMenu 
+        role="guard"
+        showOnlyMobile={true}
+      />
+      
+      {/* Phase 1.1: Floating Panic Button - Always visible for quick access */}
+      <div data-tour="panic-button">
+        <PanicButton 
+          floating={true}
+          size="large"
+          onStateChange={(state) => logger.debug('Panic button state:', state)}
+        />
+      </div>
     </AppShell>
   );
 }
@@ -476,7 +648,7 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role }) {
           <div className="text-sm text-gray-500">Host: {visitor.host ? mask(visitor.host) : '-'}</div>
         </div>
         <div className="flex-shrink-0">
-          {statusChip(visitor.status)}
+          <span className={getStatusChipClass(visitor.status, 'sm')}>{getStatusIcon(visitor.status)} {visitor.status||'-'}</span>
         </div>
       </div>
       

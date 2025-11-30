@@ -1,0 +1,332 @@
+/**
+ * OPTIMIZED QR CODE SERVICE - Phase 2.3 with Performance Improvements
+ * Handles QR code generation, validation, and management with timeout protection
+ */
+
+import QRCode from 'qrcode';
+import { randomUUID } from 'crypto';
+import jwt from 'jsonwebtoken';
+import { dbManager } from '../database/db.enhanced.js';
+
+// Query timeout wrapper
+const withTimeout = async (queryPromise, timeoutMs = 5000) => {
+  return Promise.race([
+    queryPromise,
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database query timeout')), timeoutMs)
+    )
+  ]);
+};
+
+class OptimizedQRCodeService {
+  constructor() {
+    this.defaultOptions = {
+      errorCorrectionLevel: 'M',
+      type: 'image/png',
+      quality: 0.92,
+      margin: 1,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      },
+      width: 256
+    };
+  }
+
+  /**
+   * Generate QR code for visitor invitation with timeout protection
+   */
+  async generateVisitorQR(visitorData, options = {}) {
+    try {
+      const qrId = randomUUID();
+      const expirationTime = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours
+
+      // Create secure payload
+      const payload = {
+        qrId: qrId,
+        visitorId: visitorData.id,
+        type: 'visitor_invite',
+        name: visitorData.name,
+        phone: visitorData.phone,
+        purpose: visitorData.purpose,
+        validFrom: visitorData.date_of_visit,
+        expiresAt: expirationTime.toISOString(),
+        timestamp: new Date().toISOString()
+      };
+
+      // Generate JWT token with timeout
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+      const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
+
+      // Generate QR code data URL with timeout
+      const qrData = JSON.stringify({
+        token: token,
+        qrId: qrId,
+        type: 'visitor_access'
+      });
+
+      const qrCodeOptions = { ...this.defaultOptions, ...options };
+      
+      // Wrap QR generation with timeout
+      const qrCodeDataURL = await Promise.race([
+        QRCode.toDataURL(qrData, qrCodeOptions),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('QR code generation timeout')), 3000)
+        )
+      ]);
+
+      // Store QR code data in database with timeout
+      const qrRecord = await withTimeout(
+        dbManager.query(
+          `INSERT INTO qr_codes (qr_id, visitor_id, token, data_url, expires_at, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW())
+           RETURNING qr_id, expires_at, status, created_at`,
+          [qrId, visitorData.id, token, qrCodeDataURL, expirationTime, 'active']
+        ),
+        2000
+      );
+
+      return {
+        success: true,
+        data: {
+          qrId: qrId,
+          qrCodeUrl: qrCodeDataURL,
+          token: token,
+          expiresAt: expirationTime,
+          visitor: {
+            id: visitorData.id,
+            name: visitorData.name,
+            purpose: visitorData.purpose
+          }
+        }
+      };
+
+    } catch (error) {
+      console.error('[QRCodeService] generateVisitorQR error:', error);
+      
+      if (error.message === 'Database query timeout' || error.message === 'QR code generation timeout') {
+        return {
+          success: false,
+          error: 'Request timeout - please try again',
+          code: 408
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Failed to generate QR code',
+        code: 500
+      };
+    }
+  }
+
+  /**
+   * Validate QR code with timeout protection
+   */
+  async validateQR(qrData, options = {}) {
+    try {
+      let parsedData;
+      try {
+        parsedData = JSON.parse(qrData);
+      } catch {
+        return {
+          success: false,
+          error: 'Invalid QR code format',
+          code: 400
+        };
+      }
+
+      const { token, qrId } = parsedData;
+      if (!token || !qrId) {
+        return {
+          success: false,
+          error: 'Missing required QR code data',
+          code: 400
+        };
+      }
+
+      // Verify JWT token
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+      let payload;
+      try {
+        payload = jwt.verify(token, jwtSecret);
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Invalid or expired QR code',
+          code: 401
+        };
+      }
+
+      // Check QR code in database with timeout
+      const qrResult = await withTimeout(
+        dbManager.query(
+          'SELECT qr_id, visitor_id, status, expires_at FROM qr_codes WHERE qr_id = $1',
+          [qrId]
+        ),
+        2000
+      );
+
+      if (qrResult.rows.length === 0) {
+        return {
+          success: false,
+          error: 'QR code not found',
+          code: 404
+        };
+      }
+
+      const qrRecord = qrResult.rows[0];
+      
+      // Check expiration
+      if (new Date() > new Date(qrRecord.expires_at)) {
+        return {
+          success: false,
+          error: 'QR code has expired',
+          code: 410
+        };
+      }
+
+      // Check status
+      if (qrRecord.status !== 'active') {
+        return {
+          success: false,
+          error: 'QR code is not active',
+          code: 403
+        };
+      }
+
+      // Get visitor data with timeout
+      const visitorResult = await withTimeout(
+        dbManager.query(
+          'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',
+          [qrRecord.visitor_id]
+        ),
+        2000
+      );
+
+      if (visitorResult.rows.length === 0) {
+        return {
+          success: false,
+          error: 'Associated visitor not found',
+          code: 404
+        };
+      }
+
+      const visitor = visitorResult.rows[0];
+
+      return {
+        success: true,
+        data: {
+          qrId: qrRecord.qr_id,
+          visitor: visitor,
+          payload: payload,
+          validUntil: qrRecord.expires_at
+        }
+      };
+
+    } catch (error) {
+      console.error('[QRCodeService] validateQR error:', error);
+      
+      if (error.message === 'Database query timeout') {
+        return {
+          success: false,
+          error: 'Request timeout - please try again',
+          code: 408
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Failed to validate QR code',
+        code: 500
+      };
+    }
+  }
+
+  /**
+   * Get QR code statistics with timeout protection
+   */
+  async getQRStats(visitorId) {
+    try {
+      const statsResult = await withTimeout(
+        dbManager.query(
+          `SELECT 
+             COUNT(*) as total_generated,
+             COUNT(CASE WHEN status = 'active' THEN 1 END) as active_count,
+             COUNT(CASE WHEN status = 'used' THEN 1 END) as used_count,
+             MAX(created_at) as last_generated
+           FROM qr_codes 
+           WHERE visitor_id = $1`,
+          [visitorId]
+        ),
+        2000
+      );
+
+      if (statsResult.rows.length === 0) {
+        return {
+          success: true,
+          data: {
+            total_generated: 0,
+            active_count: 0,
+            used_count: 0,
+            last_generated: null
+          }
+        };
+      }
+
+      return {
+        success: true,
+        data: {
+          ...statsResult.rows[0],
+          total_generated: parseInt(statsResult.rows[0].total_generated, 10),
+          active_count: parseInt(statsResult.rows[0].active_count, 10),
+          used_count: parseInt(statsResult.rows[0].used_count, 10)
+        }
+      };
+
+    } catch (error) {
+      console.error('[QRCodeService] getQRStats error:', error);
+      
+      if (error.message === 'Database query timeout') {
+        return {
+          success: false,
+          error: 'Request timeout - please try again',
+          code: 408
+        };
+      }
+      
+      return {
+        success: false,
+        error: 'Failed to get QR stats',
+        code: 500
+      };
+    }
+  }
+
+  /**
+   * Deactivate QR code
+   */
+  async deactivateQR(qrId) {
+    try {
+      await withTimeout(
+        dbManager.query(
+          'UPDATE qr_codes SET status = $1, updated_at = NOW() WHERE qr_id = $2',
+          ['inactive', qrId]
+        ),
+        2000
+      );
+
+      return { success: true };
+    } catch (error) {
+      console.error('[QRCodeService] deactivateQR error:', error);
+      return {
+        success: false,
+        error: 'Failed to deactivate QR code',
+        code: 500
+      };
+    }
+  }
+}
+
+// Export singleton instance
+export default new OptimizedQRCodeService();

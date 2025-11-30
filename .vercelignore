@@ -1,0 +1,20 @@
+# Ignore everything except what we need for frontend deployment
+*
+
+# Only include essential files for React frontend deployment
+!secure-gate-access/
+!secure-gate-access/client/
+!secure-gate-access/client/**
+!package.json
+!vercel.json
+
+# Exclude backend server files
+secure-gate-access/server/
+
+# Exclude node_modules (will be installed fresh)
+secure-gate-access/client/node_modules/
+
+# Exclude build directory (will be built fresh)
+secure-gate-access/client/build/
+!vercel.json
+!secure-gate-access/

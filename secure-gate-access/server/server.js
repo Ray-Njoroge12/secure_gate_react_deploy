@@ -6,7 +6,14 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-dotenv.config({ path: join(__dirname, '.env') });
+// Load environment files in priority order:
+// 1. .env.local (gitignored, contains secrets) - highest priority
+// 2. .env (tracked, contains defaults only) - fallback
+dotenv.config({ path: join(__dirname, '.env.local') }); // Secrets (dev)
+dotenv.config({ path: join(__dirname, '.env') }); // Defaults
+
+// Load console override for production safety (MUST BE FIRST)
+import './src/config/consoleOverride.js';
 
 // Import and validate environment configuration FIRST
 import EnvironmentConfig from './src/config/environment.js';
@@ -35,6 +42,9 @@ import app from './src/app.js';
 import { dbManager } from './src/database/db.enhanced.js';
 const pool = dbManager.pool;
 import monitoringDashboard from './src/services/monitoringDashboardService.js';
+
+// Import WebSocket service for Phase 2.3 real-time features
+import webSocketService from './src/services/websocketService.js';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
@@ -196,15 +206,22 @@ async function checkPortAvailability(port) {
   const { createServer } = await import('net');
   return new Promise((resolve) => {
     const server = createServer();
-    server.listen(port, (err) => {
-      if (err) {
+    
+    server.listen(port, '0.0.0.0', () => {
+      // Port is available - we can bind to it
+      server.close(() => resolve(true));
+    });
+    
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        // Port is in use
         resolve(false);
       } else {
-        server.once('close', () => resolve(true));
-        server.close();
+        // Other error, assume port is available
+        console.warn(`Port check warning: ${err.message}`);
+        resolve(true);
       }
     });
-    server.on('error', () => resolve(false));
   });
 }
 
@@ -271,6 +288,11 @@ async function startServer() {
         timestamp: new Date().toISOString()
       });
     });
+
+    // Initialize WebSocket service for Phase 2.3 real-time features
+    console.log('🔌 Initializing WebSocket service for real-time features...');
+    webSocketService.initialize(server);
+    console.log('✅ WebSocket service initialized successfully');
 
     // Enhanced graceful shutdown handling
     const gracefulShutdown = async (signal) => {

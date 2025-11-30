@@ -23,12 +23,6 @@ const AuthErrorFallback = ({
   }
 
   const handleLogin = () => {
-    // Clear any stored auth data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('refreshToken');
-    
-    // Redirect to login
     window.location.href = '/login';
   };
 

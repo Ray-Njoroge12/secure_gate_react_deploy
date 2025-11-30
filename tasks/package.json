@@ -1,0 +1,16 @@
+{
+  "name": "tasks",
+  "version": "1.0.0",
+  "main": "TEST_EXECUTION_RUNNER.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "node-fetch": "^3.3.2"
+  }
+}

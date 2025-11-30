@@ -11,14 +11,17 @@ import { successResponse, createdResponse, validationErrorResponse, unauthorized
 const router = express.Router();
 
 // Rate limiting for authentication endpoints (more aggressive)
+// Skip in development/test mode to allow testing
+const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs for auth endpoints
+  max: isDev ? 100 : 5, // Higher limit in dev, strict in production
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Skip rate limiting for health endpoints
+    // Skip rate limiting in development mode or for health endpoints
+    if (isDev) return true;
     return req.path === '/health' || req.path === '/api/health';
   }
 });
@@ -108,26 +111,26 @@ const authLimiter = rateLimit({
  *               $ref: '#/components/schemas/Error'
  */
 // User registration
-// TEMPORARY FIX: Rate limiter and audit disabled for debugging
-router.post('/register', /* authLimiter, attachRequestAudit, */ asyncHandler(async (req, res) => {
+// BUG-001 FIX: Rate limiter re-enabled for production security
+router.post('/register', authLimiter, attachRequestAudit(), asyncHandler(async (req, res) => {
   const { username, email, password, role } = req.body;
   
-  // Add detailed logging for debugging
-  console.log('📝 Registration request:', {
+  // BUG-006 FIX: Using proper logging service instead of console.log
+  loggingService.info('Registration request received', {
     username,
     email,
     role,
-    passwordLength: password ? password.length : 0,
     requestId: req.requestId
   });
   
   // Validate required fields
   if (!username || !email || !password || !role) {
-    console.log('❌ Validation failed - missing fields:', {
-      username: !!username,
-      email: !!email,
-      password: !!password,
-      role: !!role
+    loggingService.warn('Registration validation failed - missing fields', {
+      hasUsername: !!username,
+      hasEmail: !!email,
+      hasPassword: !!password,
+      hasRole: !!role,
+      requestId: req.requestId
     });
     throw new AppError('Missing required fields', 400, 'VALIDATION_ERROR', {
       missing: { username: !username, email: !email, password: !password, role: !role }
@@ -152,7 +155,7 @@ router.post('/register', /* authLimiter, attachRequestAudit, */ asyncHandler(asy
   }
 
   // Create user
-  console.log('🔄 Attempting to create user...');
+  loggingService.info('Attempting to create user', { username, email, role, requestId: req.requestId });
   const user = await userService.createUser({
     username,
     email,
@@ -160,11 +163,11 @@ router.post('/register', /* authLimiter, attachRequestAudit, */ asyncHandler(asy
     role
   });
 
-  console.log('✅ User created successfully:', {
-    id: user.id,
+  loggingService.info('User created successfully', {
+    userId: user.id,
     username: user.username,
-    email: user.email,
-    role: user.role
+    role: user.role,
+    requestId: req.requestId
   });
 
   // Success response using standardized format
@@ -254,20 +257,22 @@ router.post('/register', /* authLimiter, attachRequestAudit, */ asyncHandler(asy
  *         $ref: '#/components/responses/RateLimitError'
  */
 // User login
-// TEMPORARY FIX: Rate limiter and audit disabled for debugging
-router.post('/login', /* authLimiter, attachRequestAudit, */ asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
+// BUG-001 FIX: Rate limiter re-enabled for production security
+router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req, res) => {
+  // Accept either username or email field for login
+  const { username, email, password } = req.body;
+  const userIdentifier = username || email;
   
-  if (!username || !password) {
-    throw new AppError('Username and password required', 400, 'VALIDATION_ERROR', {
-      missing: { username: !username, password: !password }
+  if (!userIdentifier || !password) {
+    throw new AppError('Username/email and password required', 400, 'VALIDATION_ERROR', {
+      missing: { userIdentifier: !userIdentifier, password: !password }
     });
   }
 
   // Authenticate user
   let user;
   try {
-    user = await userService.authenticateUser(username, password);
+    user = await userService.authenticateUser(userIdentifier, password);
   } catch (authError) {
     // Handle authentication errors (invalid credentials, account locked, etc.)
     if (authError.message.includes('Invalid credentials') || 
@@ -286,16 +291,36 @@ router.post('/login', /* authLimiter, attachRequestAudit, */ asyncHandler(async 
   const accessToken = tokenService.generateAccessToken(user);
   const refreshToken = tokenService.generateRefreshToken(user);
 
-  // Success response using standardized format
+  // BUG-008 FIX: Set tokens as httpOnly cookies instead of returning in body
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Set access token cookie
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: isProduction, // HTTPS only in production
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+    path: '/'
+  });
+
+  // Set refresh token cookie
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
+  });
+
+  // Success response - tokens are now in httpOnly cookies, not in body
   successResponse(res, {
     user: {
       id: user.id,
       username: user.username,
       email: user.email,
       role: user.role
-    },
-    accessToken,
-    refreshToken
+    }
+    // BUG-008 FIX: accessToken and refreshToken removed from body
   }, 'Login successful');
 }));
 
@@ -357,7 +382,7 @@ router.post('/login', /* authLimiter, attachRequestAudit, */ asyncHandler(async 
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Token refresh
-router.post('/refresh', attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/refresh', attachRequestAudit(), asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   
   if (!refreshToken) {
@@ -408,9 +433,24 @@ router.post('/refresh', attachRequestAudit, asyncHandler(async (req, res) => {
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // User logout
-router.post('/logout', authenticateToken, attachRequestAudit, asyncHandler(async (req, res) => {
-  // In a real implementation, you would invalidate the token
-  // For now, we'll just return success
+router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(async (req, res) => {
+  // BUG-008 FIX: Clear httpOnly cookies on logout
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    path: '/'
+  });
+  
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'strict',
+    path: '/'
+  });
+
   successResponse(res, {}, 'Logout successful');
 }));
 
@@ -452,7 +492,7 @@ router.post('/logout', authenticateToken, attachRequestAudit, asyncHandler(async
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // Get current user profile
-router.get('/profile', authenticateToken, attachRequestAudit, asyncHandler(async (req, res) => {
+router.get('/profile', authenticateToken, attachRequestAudit(), asyncHandler(async (req, res) => {
   const user = req.user;
   successResponse(res, {
     user: {
@@ -462,6 +502,37 @@ router.get('/profile', authenticateToken, attachRequestAudit, asyncHandler(async
       role: user.role
     }
   }, 'Profile retrieved successfully');
+}));
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current authenticated user
+ *     description: Returns the currently authenticated user based on httpOnly cookie session
+ *     tags: [Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: User data retrieved successfully
+ *       401:
+ *         description: Not authenticated
+ */
+// BUG-004 FIX: Add /me endpoint for session validation (used by AuthContext)
+router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    throw new AppError('Not authenticated', 401, 'NOT_AUTHENTICATED');
+  }
+  successResponse(res, {
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role
+    }
+  }, 'User retrieved successfully');
 }));
 
 export default router;

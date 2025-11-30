@@ -180,6 +180,10 @@ export const SearchProvider = ({ children, options = {} }) => {
 
   // Search data with current state
   const searchData = useCallback((data, searchFields, filterFields) => {
+    // Ensure data is an array to prevent "data is not iterable" error
+    if (!Array.isArray(data)) {
+      return [];
+    }
     let result = [...data];
 
     // Apply search

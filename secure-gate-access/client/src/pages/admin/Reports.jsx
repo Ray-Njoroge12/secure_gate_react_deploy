@@ -30,8 +30,10 @@ export default function Reports(){
   };
   const exportJson = async () => {
     const q = buildQuery();
-  const token = localStorage.getItem('token');
-  const res = await fetch(`/api/visitors/reports?${q}&format=json`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  const res = await fetch(`/api/visitors/reports?${q}&format=json`, { 
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' }
+  });
     const data = await res.json();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -42,11 +44,10 @@ export default function Reports(){
     try{
       setLoading(true); setError('');
       const q = buildQuery();
-      const token = localStorage.getItem('token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = { 'Content-Type': 'application/json' };
       const [resRows, resAgg] = await Promise.all([
-        fetch(`/api/visitors/reports?${q}&format=json`, { headers }),
-        fetch(`/api/visitors/reports?${q}&mode=aggregates`, { headers })
+        fetch(`/api/visitors/reports?${q}&format=json`, { credentials: 'include', headers }),
+        fetch(`/api/visitors/reports?${q}&mode=aggregates`, { credentials: 'include', headers })
       ]);
       const [jsonRows, jsonAgg] = await Promise.all([resRows.json(), resAgg.json()]);
       if(!jsonRows.success) throw new Error(jsonRows.error||'Failed');

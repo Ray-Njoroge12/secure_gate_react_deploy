@@ -426,6 +426,16 @@ export function assertValidSchema(data, schema) {
   }
 }
 
+/**
+ * Assert schema
+ * @param {Object} data - Data to validate
+ * @param {Object} schema - Schema definition
+ * @returns {Object} Schema validation result
+ */
+export function assertSchema(data, schema) {
+  return validateSchema(data, schema);
+}
+
 // Export all helpers
 export default {
   // Object comparison
@@ -462,5 +472,6 @@ export default {
   // Assert helpers
   assertEqual,
   assertContains,
-  assertValidSchema
+  assertValidSchema,
+  assertSchema
 };

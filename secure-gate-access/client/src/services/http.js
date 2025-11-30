@@ -1,3 +1,32 @@
+
+// Integration-specific error handling
+const handleIntegrationError = (error) => {
+  // Handle CORS errors
+  if (error.message.includes('CORS')) {
+    error.message = 'Connection blocked by CORS policy. Check server configuration.';
+    error.integration = 'cors';
+  }
+  
+  // Handle validation errors
+  if (error.status === 422 && error.data?.errors) {
+    error.integration = 'validation';
+    error.validationErrors = error.data.errors;
+  }
+  
+  // Handle authentication errors
+  if (error.status === 401) {
+    error.integration = 'auth';
+  }
+  
+  // Handle network errors
+  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    error.message = 'Network error. Check if backend server is running.';
+    error.integration = 'network';
+  }
+  
+  return error;
+};
+
 /**
  * HTTP Service
  * 
@@ -35,6 +64,7 @@ export const apiCall = async (url, options = {}) => {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // SECURITY: Send httpOnly cookies with every request
   };
 
   const config = {
@@ -44,6 +74,7 @@ export const apiCall = async (url, options = {}) => {
       ...defaultOptions.headers,
       ...options.headers,
     },
+    credentials: options.credentials || defaultOptions.credentials, // Ensure credentials are always included
   };
 
   // Don't stringify FormData
@@ -62,7 +93,7 @@ export const apiCall = async (url, options = {}) => {
       error.status = response.status;
       error.response = response;
       error.data = errorData;
-      throw error;
+      throw handleIntegrationError(error);
     }
 
     const contentType = response.headers.get('content-type');

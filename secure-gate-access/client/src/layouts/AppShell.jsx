@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
+import { BottomNav, FAB } from '../components/ui';
 import { NavigationProvider } from '../contexts/NavigationContext';
 
 export default function AppShell({ 
@@ -13,13 +14,17 @@ export default function AppShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const appShellRef = useRef(null);
 
-  const handleLogout = onLogout || (() => {
-    // Default logout behavior
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    localStorage.removeItem("admin_token");
-    sessionStorage.removeItem("admin_token");
-    window.location.href = "/login";
+  const handleLogout = onLogout || (async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error', error);
+    } finally {
+      window.location.href = "/login";
+    }
   });
 
   const toggleSidebar = () => {
@@ -66,7 +71,7 @@ export default function AppShell({
 
   return (
     <NavigationProvider>
-      <div ref={appShellRef} className="min-h-screen bg-slate-900 flex">
+      <div ref={appShellRef} className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
         {/* Skip Navigation Link */}
         <a 
           href="#main-content" 
@@ -90,12 +95,19 @@ export default function AppShell({
             sidebarOpen={sidebarOpen}
           />
           
-          <main id="main-content" className={`flex-1 overflow-y-auto bg-slate-900 ${className}`} role="main">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <main id="main-content" className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-slate-900 ${className}`} role="main">
+            {/* Add bottom padding on mobile for bottom nav */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-6">
               {children}
             </div>
           </main>
         </div>
+        
+        {/* Mobile Bottom Navigation */}
+        <BottomNav role={role} />
+        
+        {/* Floating Action Button */}
+        <FAB role={role} />
       </div>
     </NavigationProvider>
   );

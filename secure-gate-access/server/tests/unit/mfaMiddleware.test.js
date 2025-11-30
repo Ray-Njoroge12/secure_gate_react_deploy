@@ -1,13 +1,13 @@
-const { describe, it, expect, beforeEach, afterEach, jest } = require('@jest/globals');
-const mfaMiddleware = require('../../src/middleware/mfaMiddleware');
-const MFAService = require('../../src/services/mfaService');
-const TokenService = require('../../src/services/tokenService');
-const User = require('../../src/models/User');
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import mfaMiddleware from '../../src/middleware/mfaMiddleware.js';
+import mfaService from '../../src/services/mfaService.js';
+import loggingService from '../../src/services/loggingService.js';
+import rateLimitService from '../../src/services/rateLimitService.js';
 
 // Mock dependencies
-jest.mock('../../src/services/mfaService');
-jest.mock('../../src/services/tokenService');
-jest.mock('../../src/models/User');
+jest.mock('../../src/services/mfaService.js');
+jest.mock('../../src/services/loggingService.js');
+jest.mock('../../src/services/rateLimitService.js');
 
 describe('MFA Middleware', () => {
   let req, res, next;

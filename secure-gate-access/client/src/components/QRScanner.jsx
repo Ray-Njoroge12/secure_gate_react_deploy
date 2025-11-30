@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import logger from 'utils/logger';
 import { Card, Button } from './ui';
+import { Flashlight, FlashlightOff } from 'lucide-react';
 
 const QRScanner = ({ onScan, onError, onClose }) => {
   const videoRef = useRef(null);
@@ -10,6 +11,8 @@ const QRScanner = ({ onScan, onError, onClose }) => {
   const [error, setError] = useState(null);
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState(null);
+  const [flashlightOn, setFlashlightOn] = useState(false);
+  const [flashlightSupported, setFlashlightSupported] = useState(false);
   const streamRef = useRef(null);
   const previousActiveElement = useRef(null);
 
@@ -95,6 +98,20 @@ const QRScanner = ({ onScan, onError, onClose }) => {
         videoRef.current.play();
       }
 
+      // Check if flashlight/torch is supported
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        try {
+          const capabilities = track.getCapabilities();
+          if (capabilities && capabilities.torch) {
+            setFlashlightSupported(true);
+          }
+        } catch (e) {
+          // Torch not supported
+          setFlashlightSupported(false);
+        }
+      }
+
       // Start scanning loop
       scanLoop();
     } catch (err) {
@@ -131,9 +148,30 @@ const QRScanner = ({ onScan, onError, onClose }) => {
 
   const stopScanning = () => {
     setIsScanning(false);
+    setFlashlightOn(false);
+    setFlashlightSupported(false);
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
+    }
+  };
+
+  // Toggle flashlight/torch
+  const toggleFlashlight = async () => {
+    if (!streamRef.current) return;
+    
+    const track = streamRef.current.getVideoTracks()[0];
+    if (!track) return;
+    
+    try {
+      const newState = !flashlightOn;
+      await track.applyConstraints({
+        advanced: [{ torch: newState }]
+      });
+      setFlashlightOn(newState);
+    } catch (err) {
+      logger.error('Error toggling flashlight:', err);
+      setFlashlightSupported(false);
     }
   };
 
@@ -254,9 +292,31 @@ const QRScanner = ({ onScan, onError, onClose }) => {
               className="hidden"
             />
             {isScanning && (
-              <div className="absolute inset-0 border-2 border-blue-500 rounded-lg">
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white rounded"></div>
-              </div>
+              <>
+                <div className="absolute inset-0 border-2 border-blue-500 rounded-lg">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white rounded"></div>
+                </div>
+                
+                {/* Flashlight Toggle Button */}
+                {flashlightSupported && (
+                  <button
+                    onClick={toggleFlashlight}
+                    className={`absolute top-3 right-3 p-3 rounded-full transition-all shadow-lg ${
+                      flashlightOn 
+                        ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500' 
+                        : 'bg-gray-800 bg-opacity-70 text-white hover:bg-opacity-90'
+                    }`}
+                    title={flashlightOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                    aria-label={flashlightOn ? 'Turn off flashlight' : 'Turn on flashlight'}
+                  >
+                    {flashlightOn ? (
+                      <Flashlight className="w-5 h-5" />
+                    ) : (
+                      <FlashlightOff className="w-5 h-5" />
+                    )}
+                  </button>
+                )}
+              </>
             )}
           </div>
 

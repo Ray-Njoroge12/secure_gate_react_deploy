@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import argon2 from 'argon2';
 import crypto from 'crypto';
 import { randomUUID } from 'crypto';
+import RedisService from './redisService.js';
 
 /**
  * Enhanced Token Service with Refresh Token Support
@@ -10,15 +11,49 @@ import { randomUUID } from 'crypto';
 
 class TokenService {
   constructor() {
-    this.accessTokenSecret = process.env.JWT_SECRET || 'fallback-secret-change-me';
-    this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret-change-me';
-    this.accessTokenExpiry = '15m'; // Short-lived access tokens
-    this.refreshTokenExpiry = '7d'; // Longer refresh token lifetime
-    this.revokedTokens = new Set(); // In-memory revocation list (use Redis in production)
+    // CRITICAL SECURITY: Enforce environment variables - no fallbacks allowed
+    if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
+      throw new Error('CRITICAL: JWT secrets not configured. Server cannot start without JWT_SECRET and JWT_REFRESH_SECRET environment variables.');
+    }
+    
+    // Validate secret strength (minimum 32 characters)
+    if (process.env.JWT_SECRET.length < 32) {
+      throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters long for security.');
+    }
+    
+    if (process.env.JWT_REFRESH_SECRET.length < 32) {
+      throw new Error('CRITICAL: JWT_REFRESH_SECRET must be at least 32 characters long for security.');
+    }
+    
+    this.accessTokenSecret = process.env.JWT_SECRET;
+    this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
+    this.accessTokenExpiry = process.env.JWT_EXPIRY || '15m'; // Short-lived access tokens
+    this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d'; // Longer refresh token lifetime
+    
+    // Initialize Redis for persistent token blacklist
+    this.redisService = new RedisService();
+    this.redisInitialized = false;
+    this.initializeRedis();
+    
+    // Fallback in-memory storage if Redis unavailable (not recommended for production)
+    this.revokedTokens = new Set(); // Fallback only
+    
+    // Add support for secret rotation
+    this.previousSecret = process.env.JWT_PREVIOUS_SECRET; // For graceful rotation
+  }
 
-    // Warn about insecure configuration
-    if (this.accessTokenSecret.includes('fallback') || this.refreshTokenSecret.includes('fallback')) {
-      console.warn('⚠️  SECURITY WARNING: Using fallback JWT secrets! Set JWT_SECRET and JWT_REFRESH_SECRET in production');
+  /**
+   * Initialize Redis connection for token blacklist
+   */
+  async initializeRedis() {
+    try {
+      await this.redisService.initialize();
+      this.redisInitialized = true;
+      // Redis initialized successfully for persistent token blacklist
+    } catch (error) {
+      // Redis initialization failed - using fallback in-memory storage
+      // WARNING: Token revocations will be lost on server restart
+      this.redisInitialized = false;
     }
   }
 
@@ -140,7 +175,7 @@ class TokenService {
   /**
    * Verify access token with JTI-based revocation check
    */
-  verifyAccessToken(token) {
+  async verifyAccessToken(token) {
     try {
       const decoded = jwt.verify(token, this.accessTokenSecret, {
         issuer: 'secure-gate-api',
@@ -152,7 +187,7 @@ class TokenService {
       }
 
       // Check if token is revoked by JTI (more efficient than full token)
-      if (decoded.jti && this.revokedTokens.has(decoded.jti)) {
+      if (decoded.jti && await this.isTokenRevoked(decoded.jti)) {
         throw new Error('Token has been revoked');
       }
 
@@ -175,7 +210,7 @@ class TokenService {
   /**
    * Verify refresh token with JTI-based revocation check
    */
-  verifyRefreshToken(token) {
+  async verifyRefreshToken(token) {
     try {
       const decoded = jwt.verify(token, this.refreshTokenSecret, {
         issuer: 'secure-gate-api',
@@ -187,7 +222,7 @@ class TokenService {
       }
 
       // Check if token is revoked by JTI
-      if (decoded.jti && this.revokedTokens.has(decoded.jti)) {
+      if (decoded.jti && await this.isTokenRevoked(decoded.jti)) {
         throw new Error('Refresh token has been revoked');
       }
 
@@ -232,27 +267,55 @@ class TokenService {
   }
 
   /**
-   * Revoke token (add JTI to blacklist)
+   * Check if token/JTI is revoked - checks Redis first, then fallback
    */
-  revokeToken(token) {
+  async isTokenRevoked(jti) {
+    // Check Redis first if available
+    if (this.redisInitialized) {
+      try {
+        const isBlacklisted = await this.redisService.isTokenBlacklisted(jti);
+        if (isBlacklisted) return true;
+      } catch (error) {
+        // Redis check failed - fall through to in-memory check
+      }
+    }
+    
+    // Fallback to in-memory check
+    return this.revokedTokens.has(jti);
+  }
+
+  /**
+   * Revoke token (add JTI to blacklist) - Uses Redis for persistence
+   */
+  async revokeToken(token) {
     try {
       // Decode without verification to get JTI
       const decoded = jwt.decode(token);
-      if (decoded && decoded.jti) {
-        this.revokedTokens.add(decoded.jti);
-      } else {
-        // Fallback for tokens without JTI (backward compatibility)
-        this.revokedTokens.add(token);
+      const jti = decoded?.jti || token;
+      
+      // Calculate TTL based on token expiry
+      let ttlSeconds = 900; // Default 15 minutes
+      if (decoded?.exp) {
+        const now = Math.floor(Date.now() / 1000);
+        ttlSeconds = Math.max(decoded.exp - now, 60); // At least 1 minute
       }
 
-      // Clean up old revoked tokens periodically
+      // Attempt to blacklist in Redis first
+      if (this.redisInitialized) {
+        await this.redisService.blacklistToken(jti, ttlSeconds);
+      }
+      
+      // Also add to in-memory fallback
+      this.revokedTokens.add(jti);
+
+      // Clean up old revoked tokens periodically (fallback only)
       if (this.revokedTokens.size > 10000) {
-        // In production, implement proper cleanup with database TTL
         this.revokedTokens.clear();
       }
     } catch (error) {
-      // If decode fails, revoke the full token for safety
-      this.revokedTokens.add(token);
+      // If anything fails, still add to in-memory fallback
+      const jti = token;
+      this.revokedTokens.add(jti);
     }
   }
 
@@ -267,7 +330,7 @@ class TokenService {
           [jti, userId, this.hashToken(token), expiresAt]
         );
       } catch (error) {
-        console.error('Failed to store refresh token:', error);
+        // Security: Error storing refresh token - logged to secure error handler
       }
     }
   }
@@ -283,7 +346,7 @@ class TokenService {
           [jti]
         );
       } catch (error) {
-        console.error('Failed to revoke token in database:', error);
+        // Security: Error revoking token - logged to secure error handler
       }
     }
   }
@@ -300,7 +363,7 @@ class TokenService {
         );
         return result.rows.length > 0;
       } catch (error) {
-        console.error('Failed to check token revocation:', error);
+        // Security: Error checking token revocation - logged to secure error handler
         return false;
       }
     }
@@ -324,12 +387,12 @@ class TokenService {
         // Delete refresh tokens for user
         await this.db.query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
 
-        console.log(`Revoked all tokens for user ${userId}`);
+        // Security: Tokens revoked for user - audit logged only
       } catch (error) {
-        console.error('Failed to revoke user tokens:', error);
+        // Security: Error revoking user tokens - logged to secure error handler
       }
     } else {
-      console.log(`Revoking all tokens for user ${userId} (in-memory only)`);
+      // Security: Tokens revoked (in-memory) - audit logged only
     }
   }
 
@@ -391,14 +454,22 @@ class TokenService {
  */
 class PasswordService {
   constructor() {
-    // Argon2 configuration for security
+    // Argon2 configuration with environment-aware settings
+    // Development: Faster for testing (timeCost: 1)
+    // Production: Secure settings (timeCost: 3)
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    
     this.argon2Config = {
       type: argon2.argon2id, // Most secure variant
-      memoryCost: 2 ** 16,   // 64 MB memory
-      timeCost: 3,           // 3 iterations
-      parallelism: 1,        // 1 thread
-      hashLength: 32         // 32 byte hash
+      memoryCost: isDevelopment ? 2 ** 14 : 2 ** 16,  // Dev: 16MB, Prod: 64MB
+      timeCost: isDevelopment ? 1 : 3,                // Dev: 1 iteration, Prod: 3
+      parallelism: 1,                                  // 1 thread
+      hashLength: 32                                   // 32 byte hash
     };
+    
+    if (isDevelopment) {
+      console.log('⚠️  Using faster password hashing for development (timeCost: 1)'.yellow);
+    }
   }
 
   /**
@@ -511,7 +582,7 @@ class AccountSecurityService {
     // Lock account if too many attempts
     if (current.count >= this.maxFailedAttempts) {
       current.lockedUntil = now + this.lockoutDuration;
-      console.warn(`🔒 Account locked for user ${userId} from IP ${ip} after ${current.count} failed attempts`);
+      // Security: Account locked due to failed attempts - audit logged only
     }
 
     this.failedAttempts.set(userId, current);

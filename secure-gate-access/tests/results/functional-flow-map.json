@@ -1,0 +1,139 @@
+{
+  "summary": {
+    "total": 10,
+    "passed": 3,
+    "failed": 3,
+    "bypassed": 4,
+    "functionalScore": 33,
+    "duration": 1069
+  },
+  "phases": [
+    {
+      "name": "User Signup",
+      "weight": 0.25,
+      "tests": [
+        {
+          "name": "Signup Endpoint Availability",
+          "status": "passed",
+          "duration": 341,
+          "result": {
+            "available": true,
+            "url": "http://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/auth/register",
+            "method": "POST"
+          },
+          "timestamp": "2025-11-06T11:18:23.108Z"
+        },
+        {
+          "name": "User Signup Request",
+          "status": "failed",
+          "duration": 144,
+          "error": "Signup failed: 404 - Route POST /api/auth/register not found",
+          "timestamp": "2025-11-06T11:18:23.256Z"
+        }
+      ]
+    },
+    {
+      "name": "User Login",
+      "weight": 0.25,
+      "tests": [
+        {
+          "name": "Login Endpoint Availability",
+          "status": "passed",
+          "duration": 165,
+          "result": {
+            "available": true,
+            "url": "http://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/auth/login",
+            "method": "POST"
+          },
+          "timestamp": "2025-11-06T11:18:23.421Z"
+        },
+        {
+          "name": "User Login Request",
+          "status": "failed",
+          "duration": 145,
+          "error": "Login failed: 404 - Route POST /api/auth/login not found",
+          "timestamp": "2025-11-06T11:18:23.566Z"
+        }
+      ]
+    },
+    {
+      "name": "Visitor Invitation",
+      "weight": 0.15,
+      "tests": [
+        {
+          "name": "All Invitation Tests",
+          "status": "bypassed",
+          "reason": "No authentication token available",
+          "timestamp": "2025-11-06T11:18:23.566Z"
+        }
+      ]
+    },
+    {
+      "name": "Visitor Registration",
+      "weight": 0.15,
+      "tests": [
+        {
+          "name": "Visitor Registration Endpoint",
+          "status": "passed",
+          "duration": 135,
+          "result": {
+            "available": true,
+            "url": "http://secure-gate-alb-148297441.af-south-1.elb.amazonaws.com/api/visitors/register",
+            "method": "POST"
+          },
+          "timestamp": "2025-11-06T11:18:23.701Z"
+        },
+        {
+          "name": "Register Visitor",
+          "status": "failed",
+          "duration": 134,
+          "error": "Registration failed: 404 - Route POST /api/visitors/register not found",
+          "timestamp": "2025-11-06T11:18:23.835Z"
+        }
+      ]
+    },
+    {
+      "name": "OTP Generation",
+      "weight": 0.1,
+      "tests": [
+        {
+          "name": "All OTP Tests",
+          "status": "bypassed",
+          "reason": "No registered visitor available",
+          "timestamp": "2025-11-06T11:18:23.835Z"
+        }
+      ]
+    },
+    {
+      "name": "QR Code Generation",
+      "weight": 0.15,
+      "tests": [
+        {
+          "name": "All QR Tests",
+          "status": "bypassed",
+          "reason": "No registered visitor available",
+          "timestamp": "2025-11-06T11:18:23.835Z"
+        }
+      ]
+    },
+    {
+      "name": "QR Code Scanning",
+      "weight": 0.2,
+      "tests": [
+        {
+          "name": "All Scan Tests",
+          "status": "bypassed",
+          "reason": "No QR code available",
+          "timestamp": "2025-11-06T11:18:23.835Z"
+        }
+      ]
+    }
+  ],
+  "testData": {
+    "hasAuthToken": false,
+    "hasVisitorInvitation": false,
+    "hasRegisteredVisitor": false,
+    "hasQRCode": false
+  },
+  "timestamp": "2025-11-06T11:18:23.836Z"
+}

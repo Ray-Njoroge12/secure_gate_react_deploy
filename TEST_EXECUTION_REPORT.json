@@ -1,0 +1,88 @@
+{
+  "summary": {
+    "total": 11,
+    "passed": 1,
+    "failed": 10,
+    "blocked": 0,
+    "duration": 311.818
+  },
+  "results": [
+    {
+      "testId": "R-01",
+      "description": "Resident Login with MFA",
+      "status": "pass",
+      "error": null,
+      "timestamp": 1764064681922
+    },
+    {
+      "testId": "R-02",
+      "description": "AddVisitor Single Invite (Happy Path)",
+      "status": "fail",
+      "error": "Element not found: [data-test-id=\"cta-invite-visitor\"], a[href*=\"/add-visitor\"], button:has-text(\"Invite Visitor\")",
+      "timestamp": 1764064711927
+    },
+    {
+      "testId": "R-03",
+      "description": "AddVisitor Validation",
+      "status": "fail",
+      "error": "expected null not to be null",
+      "timestamp": 1764064713775
+    },
+    {
+      "testId": "R-04",
+      "description": "BulkInvite Wizard - Valid CSV",
+      "status": "fail",
+      "error": "Element not found: button:has-text(\"Review\"), button:has-text(\"Next\")",
+      "timestamp": 1764064744517
+    },
+    {
+      "testId": "R-06",
+      "description": "VisitorHistory Filters & Mobile Cards",
+      "status": "fail",
+      "error": "expected null not to be null",
+      "timestamp": 1764064745301
+    },
+    {
+      "testId": "G-01",
+      "description": "Guard Login & Dashboard",
+      "status": "fail",
+      "error": "expected null not to be null",
+      "timestamp": 1764064788184
+    },
+    {
+      "testId": "G-02",
+      "description": "ScanQR - Valid Code",
+      "status": "fail",
+      "error": "Element not found: a[href*=\"/scan\"], button:has-text(\"Scan QR\")",
+      "timestamp": 1764064818187
+    },
+    {
+      "testId": "G-04",
+      "description": "ManualCheck - Search & Actions",
+      "status": "fail",
+      "error": "Element not found: input[name=\"search\"], #search-input",
+      "timestamp": 1764064848414
+    },
+    {
+      "testId": "V-01",
+      "description": "VisitorInvitePage - Valid Invite",
+      "status": "fail",
+      "error": "expected null not to be null",
+      "timestamp": 1764064849655
+    },
+    {
+      "testId": "V-03",
+      "description": "SelfCheckInKiosk - Walk-In Flow",
+      "status": "fail",
+      "error": "Element not found: button:has-text(\"Walk-in\")",
+      "timestamp": 1764064879955
+    },
+    {
+      "testId": "X-01",
+      "description": "Resident Invite → Guard Scan → Visitor History",
+      "status": "fail",
+      "error": "Element not found: input[name=\"name\"]",
+      "timestamp": 1764064948345
+    }
+  ]
+}

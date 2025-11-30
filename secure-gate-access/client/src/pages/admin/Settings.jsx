@@ -1,17 +1,361 @@
-import React from "react";
-import Sidebar from "../../components/Sidebar";
-import Topbar from "../../components/Topbar";
+import React, { useState } from "react";
+import { PageHeader, ThemeRadioGroup } from "../../components/ui";
+import { useTheme } from "../../contexts/ThemeContext";
+import NotificationSettings from "../../components/settings/NotificationSettings";
+import { 
+  Settings as SettingsIcon, 
+  Bell, 
+  Shield, 
+  Building, 
+  Eye,
+  Users,
+  Key,
+  Database,
+  Mail
+} from 'lucide-react';
+import "../../styles.css";
 
 export default function Settings() {
+  const { theme, resolvedTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState("system");
+  const [systemSettings, setSystemSettings] = useState({
+    siteName: "SecureGate Estate",
+    maxVisitorsPerResident: 10,
+    visitorExpiryHours: 24,
+    requireOTP: true,
+    autoApproveFrequentVisitors: false,
+    maintenanceMode: false
+  });
+  const [securitySettings, setSecuritySettings] = useState({
+    sessionTimeout: 30,
+    maxLoginAttempts: 5,
+    enforcePasswordPolicy: true,
+    require2FA: false,
+    ipWhitelisting: false
+  });
+  const [emailSettings, setEmailSettings] = useState({
+    smtpHost: "",
+    smtpPort: 587,
+    smtpUser: "",
+    enableSSL: true
+  });
+
+  const handleSave = (section, e) => {
+    e.preventDefault();
+    // API call to save settings
+    fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ section, data: 
+        section === 'system' ? systemSettings :
+        section === 'security' ? securitySettings :
+        emailSettings
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert(`${section} settings saved successfully!`);
+      } else {
+        alert('Failed to save settings');
+      }
+    })
+    .catch(() => alert('Failed to save settings'));
+  };
+
+  const tabs = [
+    { key: "system", label: "System", icon: <Building size={16} /> },
+    { key: "security", label: "Security", icon: <Shield size={16} /> },
+    { key: "notifications", label: "Notifications", icon: <Bell size={16} /> },
+    { key: "email", label: "Email", icon: <Mail size={16} /> },
+    { key: "appearance", label: "Appearance", icon: <Eye size={16} /> },
+  ];
+
+  const inputClass = "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+
   return (
-    <div className="grid grid-cols-[260px_1fr] min-h-screen">
-      <Sidebar />
-      <div>
-        <Topbar title="Settings" onLogout={() => { localStorage.clear(); window.location.href="/login"; }} />
-        <main className="flex-1 overflow-y-auto bg-slate-900 p-6">
-          <h3>Settings</h3>
-          <p>Configure policies, notification channels, and admin details (server-side).</p>
-        </main>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <PageHeader 
+        title="Admin Settings"
+        subtitle="Configure system-wide settings and preferences"
+        icon={<SettingsIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
+        showBack={true}
+        backTo="/dashboard/admin"
+      />
+      
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 space-x-1 overflow-x-auto pb-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
+                  activeTab === tab.key 
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* System Settings */}
+          {activeTab === "system" && (
+            <form onSubmit={(e) => handleSave("system", e)} className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Configuration</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Site Name</label>
+                    <input 
+                      type="text" 
+                      value={systemSettings.siteName}
+                      onChange={(e) => setSystemSettings({...systemSettings, siteName: e.target.value})}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Max Visitors per Resident</label>
+                    <input 
+                      type="number" 
+                      value={systemSettings.maxVisitorsPerResident}
+                      onChange={(e) => setSystemSettings({...systemSettings, maxVisitorsPerResident: parseInt(e.target.value)})}
+                      className={inputClass}
+                      min="1"
+                      max="50"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Visitor Pass Expiry (hours)</label>
+                    <input 
+                      type="number" 
+                      value={systemSettings.visitorExpiryHours}
+                      onChange={(e) => setSystemSettings({...systemSettings, visitorExpiryHours: parseInt(e.target.value)})}
+                      className={inputClass}
+                      min="1"
+                      max="168"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-4">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.requireOTP}
+                      onChange={(e) => setSystemSettings({...systemSettings, requireOTP: e.target.checked})}
+                      className="w-5 h-5 text-green-600 rounded"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Require OTP Verification</span>
+                      <p className="text-sm text-gray-500">Visitors must verify via OTP before entry</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.autoApproveFrequentVisitors}
+                      onChange={(e) => setSystemSettings({...systemSettings, autoApproveFrequentVisitors: e.target.checked})}
+                      className="w-5 h-5 text-green-600 rounded"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Auto-approve Frequent Visitors</span>
+                      <p className="text-sm text-gray-500">Skip approval for visitors with 5+ successful visits</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg cursor-pointer border border-red-200 dark:border-red-800">
+                    <input 
+                      type="checkbox" 
+                      checked={systemSettings.maintenanceMode}
+                      onChange={(e) => setSystemSettings({...systemSettings, maintenanceMode: e.target.checked})}
+                      className="w-5 h-5 text-red-600 rounded"
+                    />
+                    <div>
+                      <span className="font-medium text-red-700 dark:text-red-400">Maintenance Mode</span>
+                      <p className="text-sm text-red-600 dark:text-red-300">Disable visitor check-ins (for system maintenance)</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <button type="submit" className="btn primary">Save System Settings</button>
+            </form>
+          )}
+
+          {/* Security Settings */}
+          {activeTab === "security" && (
+            <form onSubmit={(e) => handleSave("security", e)} className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Security Configuration</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Session Timeout (minutes)</label>
+                    <input 
+                      type="number" 
+                      value={securitySettings.sessionTimeout}
+                      onChange={(e) => setSecuritySettings({...securitySettings, sessionTimeout: parseInt(e.target.value)})}
+                      className={inputClass}
+                      min="5"
+                      max="480"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Max Login Attempts</label>
+                    <input 
+                      type="number" 
+                      value={securitySettings.maxLoginAttempts}
+                      onChange={(e) => setSecuritySettings({...securitySettings, maxLoginAttempts: parseInt(e.target.value)})}
+                      className={inputClass}
+                      min="3"
+                      max="10"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6 space-y-4">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={securitySettings.enforcePasswordPolicy}
+                      onChange={(e) => setSecuritySettings({...securitySettings, enforcePasswordPolicy: e.target.checked})}
+                      className="w-5 h-5 text-green-600 rounded"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Enforce Strong Passwords</span>
+                      <p className="text-sm text-gray-500">Require 8+ characters with uppercase, lowercase, number, and symbol</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={securitySettings.require2FA}
+                      onChange={(e) => setSecuritySettings({...securitySettings, require2FA: e.target.checked})}
+                      className="w-5 h-5 text-green-600 rounded"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Require 2FA for Admins</span>
+                      <p className="text-sm text-gray-500">Mandatory two-factor authentication for admin accounts</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={securitySettings.ipWhitelisting}
+                      onChange={(e) => setSecuritySettings({...securitySettings, ipWhitelisting: e.target.checked})}
+                      className="w-5 h-5 text-green-600 rounded"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">IP Whitelisting</span>
+                      <p className="text-sm text-gray-500">Restrict admin access to specific IP addresses</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <button type="submit" className="btn primary">Save Security Settings</button>
+            </form>
+          )}
+
+          {/* Notification Settings */}
+          {activeTab === "notifications" && (
+            <div className="space-y-6">
+              <NotificationSettings />
+            </div>
+          )}
+
+          {/* Email Settings */}
+          {activeTab === "email" && (
+            <form onSubmit={(e) => handleSave("email", e)} className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Email Configuration</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className={labelClass}>SMTP Host</label>
+                    <input 
+                      type="text" 
+                      value={emailSettings.smtpHost}
+                      onChange={(e) => setEmailSettings({...emailSettings, smtpHost: e.target.value})}
+                      className={inputClass}
+                      placeholder="smtp.example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>SMTP Port</label>
+                    <input 
+                      type="number" 
+                      value={emailSettings.smtpPort}
+                      onChange={(e) => setEmailSettings({...emailSettings, smtpPort: parseInt(e.target.value)})}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>SMTP Username</label>
+                    <input 
+                      type="text" 
+                      value={emailSettings.smtpUser}
+                      onChange={(e) => setEmailSettings({...emailSettings, smtpUser: e.target.value})}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={emailSettings.enableSSL}
+                      onChange={(e) => setEmailSettings({...emailSettings, enableSSL: e.target.checked})}
+                      className="w-5 h-5 text-green-600 rounded"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900 dark:text-white">Enable SSL/TLS</span>
+                      <p className="text-sm text-gray-500">Use secure connection for email sending</p>
+                    </div>
+                  </label>
+                </div>
+                
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Note:</strong> For security, SMTP password should be configured via environment variables (SMTP_PASSWORD).
+                  </p>
+                </div>
+              </div>
+              
+              <button type="submit" className="btn primary">Save Email Settings</button>
+            </form>
+          )}
+
+          {/* Appearance Settings */}
+          {activeTab === "appearance" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Appearance</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Choose how SecureGate looks to you.
+                </p>
+              </div>
+              <ThemeRadioGroup />
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>
+                  {theme === 'system' && <span className="ml-1 text-gray-500">(following system preference)</span>}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

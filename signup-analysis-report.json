@@ -1,0 +1,2080 @@
+{
+  "timestamp": "2025-11-12T15:29:39.695Z",
+  "backend": {
+    "routes": [
+      {
+        "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/routes/authRoutes.js",
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/register"
+          },
+          {
+            "method": "POST",
+            "path": "/login"
+          },
+          {
+            "method": "GET",
+            "path": "/me"
+          },
+          {
+            "method": "POST",
+            "path": "/logout"
+          },
+          {
+            "method": "POST",
+            "path": "/refresh"
+          },
+          {
+            "method": "POST",
+            "path": "/logout"
+          },
+          {
+            "method": "GET",
+            "path": "/profile"
+          }
+        ],
+        "hasRegister": true,
+        "hasSignup": false,
+        "hasValidation": true,
+        "hasEmailVerification": true,
+        "hasPhoneValidation": false,
+        "issues": [
+          "Contains TODO comments - incomplete implementation"
+        ]
+      }
+    ],
+    "services": [
+      {
+        "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/services/userService.js",
+        "hasCreateUser": true,
+        "hasValidation": true,
+        "hasEncryption": true,
+        "hasEmailHandling": true,
+        "hasPhoneHandling": false,
+        "issues": [
+          "Uses console.log instead of proper logging"
+        ]
+      },
+      {
+        "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/services/emailService.js",
+        "isStub": true,
+        "hasRealImplementation": false,
+        "issues": [
+          "Email service is a stub - needs real implementation"
+        ]
+      }
+    ],
+    "validation": [
+      {
+        "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/server/src/validation/authValidation.js",
+        "hasEmailValidation": true,
+        "hasPasswordValidation": true,
+        "hasPhoneValidation": true,
+        "issues": []
+      }
+    ],
+    "middleware": [],
+    "tests": [],
+    "issues": []
+  },
+  "frontend": {
+    "components": [],
+    "pages": [
+      {
+        "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/pages/Login.jsx",
+        "hasLoginForm": true,
+        "hasErrorHandling": true,
+        "hasValidation": false,
+        "issues": []
+      },
+      {
+        "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/pages/Register.js",
+        "hasSignupForm": true,
+        "hasPhoneField": true,
+        "hasEmailField": true,
+        "hasPasswordField": true,
+        "hasValidation": true,
+        "hasErrorHandling": true,
+        "issues": []
+      }
+    ],
+    "contexts": [
+      {
+        "file": "/Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client/src/contexts/AuthContext.js",
+        "hasLogin": true,
+        "hasRegister": true,
+        "hasErrorHandling": true,
+        "issues": []
+      }
+    ],
+    "services": [],
+    "issues": []
+  },
+  "email": {
+    "implementation": "STUB",
+    "status": "NOT_IMPLEMENTED",
+    "hasTemplates": true,
+    "hasMailgun": false,
+    "hasSMTP": false,
+    "issues": [
+      "Email service is not implemented - only stub exists",
+      "Email service uses console.log instead of actual email sending"
+    ]
+  },
+  "phone": {
+    "validation": [
+      {
+        "file": "/server/src/middleware/complianceMiddleware.js",
+        "content": "'email', 'phone', 'firstName', 'lastName',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/transportSecurity.js",
+        "content": "'microphone=()',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/securityHeaders.js",
+        "content": "'microphone=(), ' +",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/validationMiddleware.js",
+        "content": "phone: Joi.string().pattern(/^\\+?[1-9]\\d{1,14}$/).messages({",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/validationMiddleware.js",
+        "content": "phone: Joi.string().pattern(/^(\\+?[1-9]\\d{1,14}|0[0-9]{9,10})$/).optional().allow('').messages({",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/validationMiddleware.js",
+        "content": "phone: Joi.string().pattern(/^\\+?[1-9]\\d{1,14}$/).optional().allow('').messages({",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/validationMiddleware.js",
+        "content": "phone: Joi.string().pattern(/^(\\+?[1-9]\\d{1,14}|0[0-9]{9,10})$/).optional().allow('').messages({",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/validationMiddleware.js",
+        "content": "* Sanitize phone numbers to standard format",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/middleware/validationMiddleware.js",
+        "content": "phone: (input) => {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/database/init.js",
+        "content": "phone TEXT,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/database/init.js",
+        "content": "phone TEXT,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/swagger.js",
+        "content": "phone: {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/swagger.js",
+        "content": "description: 'Visitor phone number'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/swagger.js",
+        "content": "phone: {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/swagger.js",
+        "content": "description: 'Resident phone number'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/swagger.js",
+        "content": "phone: {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/swagger.js",
+        "content": "description: 'Guard phone number'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/securityConfig.js",
+        "content": "// Microphone access - disabled by default",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/config/securityConfig.js",
+        "content": "microphone: [],",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "const USER_ENCRYPTED_FIELDS = ['email', 'phone'];",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "const VISITOR_ENCRYPTED_FIELDS = ['name', 'phone', 'email', 'id_number', 'vehicle_plate'];",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "phone_encrypted: userData.phone ? await encryptionService.encrypt(userData.phone) : null,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "// Decrypt phone (prefer encrypted, fallback to plaintext)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "if (user.phone_encrypted) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "decrypted.phone = await encryptionService.decrypt(user.phone_encrypted);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "console.error('Failed to decrypt user phone:', error.message);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "delete decrypted.phone_encrypted;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "phone_encrypted: visitorData.phone ? await encryptionService.encrypt(visitorData.phone) : null,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "// Decrypt phone",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "if (visitor.phone_encrypted) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "decrypted.phone = await encryptionService.decrypt(visitor.phone_encrypted);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "console.error('Failed to decrypt visitor phone:', error.message);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "delete decrypted.phone_encrypted;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "* Hash phone for search/lookup purposes",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "* @param {string} phone - Phone to hash",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "export function hashPhone(phone) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/encryptionHelper.js",
+        "content": "return encryptionService.hash(phone);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/tokenHelper.js",
+        "content": "export async function sendSmsOtp(phone, otp) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/tokenHelper.js",
+        "content": "if (!phone) return false;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/tokenHelper.js",
+        "content": "const msg = await client.messages.create({ body: `Your Secure Gate OTP is ${otp}`, from, to: phone });",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/tokenHelper.js",
+        "content": "const phone = process.env.ADMIN_PHONE || '';",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/utils/tokenHelper.js",
+        "content": "else if (phone) await sendSms(phone, text);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/templates/email-templates.js",
+        "content": "<li>Verify your phone number with the OTP code</li>",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/templates/email-templates.js",
+        "content": "<li>Provide your personal details (name, email, phone)</li>",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/templates/email-templates.js",
+        "content": "<li>Verify your phone number with the OTP code</li>",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/events/dashboardEvents.js",
+        "content": "phone: visitorData.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/events/dashboardEvents.js",
+        "content": "phone: inviteData.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "const { name, phone, email, dateOfVisit, time, purpose } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, created_by)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "[name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING', createdBy]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "[name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING']",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "if (phone && notify_sms && (process.env.ENABLE_SMS_NOTIFICATIONS === 'true')) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "await sendSmsGeneric(phone, `You have been invited. Complete here: ${inviteLink}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "const { name, phone, email, idNumber, vehiclePlate, expectedTime } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "if (!name || !phone) return respond(res, { success: false, error: 'Name and phone required', code: 400 });",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, status)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "[name || null, phone || null, email || null, null, bulk.date, bulk.time, 'PENDING']",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`UPDATE visitors SET name=$1, phone=$2, email=$3, id_number=$4, vehicle_plate=$5, expected_time=$6,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "[name, phone, email || null, idNumber || null, vehiclePlate || null, expectedTs, otpHash, otpExpiresAt, qrCodeData, visitor.id]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "if (phone && notify_sms) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "deliveries.push(sendSmsOtp(phone, otp));",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "metadata: { channels: { email: !!email, phone: !!phone } }",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "const vis = (await pool.query(`SELECT id, name, phone, email, status, qr_code, date_of_visit, time_of_visit FROM visitors WHERE id=$1`, [v.id])).rows[0];",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "`SELECT id, email, phone, status, otp_resend_count, otp_last_resend",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "if (v.phone && notify_sms) deliveries.push(sendSmsOtp(v.phone, otp));",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "metadata: { channels: { email: !!v.email, phone: !!v.phone } }",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController.js",
+        "content": "[v.id, delivered ? 'multi' : 'none', delivered, JSON.stringify({ channels: { email: !!v.email, phone: !!v.phone } })]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorOtpController.js",
+        "content": "const vRes = await dbManager.query('SELECT id, phone, email, status, name FROM visitors WHERE id = $1', [id]);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorOtpController.js",
+        "content": "// await sendSms(visitor.phone, `Your verification code is: ${otp}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/dashboardController.js",
+        "content": "SELECT id, name, phone, email, status, created_at",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-minimal.js",
+        "content": "const { name, phone, email, dateOfVisit, time, purpose } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-minimal.js",
+        "content": "phone: phone || null,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-minimal.js",
+        "content": "phone: \"+1234567890\",",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-minimal.js",
+        "content": "phone: \"+1234567891\",",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "const { name, phone, email, dateOfVisit, time, purpose } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "text: `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, created_by)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "values: [name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING', req.user.email]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "text: `INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "values: [name || null, phone || null, email || null, purpose, dateOfVisit, time, inviteCode, 'PENDING']",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "if (phone && notify_sms && (process.env.ENABLE_SMS_NOTIFICATIONS === 'true')) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "await sendSmsGeneric(phone, `You have been invited. Complete here: ${inviteLink}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorController-optimized.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "const { email, name, phone, profilePic, notify_email, notify_sms } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "'SELECT id, email, email_encrypted, role, name, phone, phone_encrypted, profile_pic, notify_email, notify_sms, created_at FROM users WHERE email = $1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "phone: phone || existing.phone || null",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "phone = $2,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "phone_encrypted = $3,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "updateData.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "encrypted.phone_encrypted,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "'SELECT id, email, email_encrypted, role, name, phone, phone_encrypted, profile_pic, notify_email, notify_sms, created_at FROM users WHERE email = $1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "const { email, username, role, password, phone, area, house, notify_email, notify_sms } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "const encrypted = await encryptUserData({ email, phone });",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "phone, phone_encrypted,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "RETURNING id, email, email_encrypted, username, role, phone, phone_encrypted, area, house, notify_email, notify_sms, verified, created_at`,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "phone || null, encrypted.phone_encrypted,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "'SELECT id, email, email_encrypted, username, role, password_hash, phone, phone_encrypted, area, house, verified FROM users WHERE email=$1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/userController.js",
+        "content": "'SELECT id, email, email_encrypted, username, role, phone, phone_encrypted, verified FROM users WHERE id=$1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "const { name, phone, email, dateOfVisit, time, purpose } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "phone: phone ? sanitizeInput(phone) : null,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, created_by)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "[sanitizedData.name, sanitizedData.phone, sanitizedData.email, sanitizedData.purpose,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "[sanitizedData.name, sanitizedData.phone, sanitizedData.email, sanitizedData.purpose,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "if (sanitizedData.phone && notify_sms && (process.env.ENABLE_SMS_NOTIFICATIONS === 'true')) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "await sendSmsGeneric(sanitizedData.phone, `You have been invited. Complete here: ${inviteLink}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController-optimized.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/adminController.js",
+        "content": "'SELECT id, name, phone, email, status, created_at FROM visitors ORDER BY created_at DESC LIMIT 10'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorCheckInController.js",
+        "content": "const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorCheckInController.js",
+        "content": "phone: visitor.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorCheckInController.js",
+        "content": "const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorCheckInController.js",
+        "content": "const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE invite_code = $1', [inviteCode]);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorAdminController.js",
+        "content": "SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorAdminController.js",
+        "content": "SELECT id, name, phone, email, purpose, status, check_in, check_out, created_at",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "const { name, phone, email, dateOfVisit, time, purpose } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "phone: phone ? sanitizeInput(phone) : null,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status, created_by)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "[sanitizedData.name || null, sanitizedData.phone || null, sanitizedData.email || null, sanitizedData.purpose, sanitizedData.dateOfVisit, sanitizedData.time, inviteCode, 'PENDING', createdBy]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, invite_code, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "[sanitizedData.name || null, sanitizedData.phone || null, sanitizedData.email || null, sanitizedData.purpose, sanitizedData.dateOfVisit, sanitizedData.time, inviteCode, 'PENDING']",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "phone: visitor.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "if (phone && notify_sms && (process.env.ENABLE_SMS_NOTIFICATIONS === 'true')) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "await sendSmsGeneric(phone, `You have been invited. Complete here: ${inviteLink}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "const { name, phone, email, idNumber, vehiclePlate, expectedTime } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "if (!name || !phone) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "console.log(`[${requestId}] Validation failed: Missing name or phone`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "console.log(`[${requestId}] Name: ${name}, Phone: ${phone}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "return handleValidationError(res, 'Name and phone required');",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "`INSERT INTO visitors (name, phone, email, purpose, date_of_visit, time_of_visit, status)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "[name || null, phone || null, email || null, null, bulk.date, bulk.time, 'PENDING']",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "`UPDATE visitors SET name=$1, phone=$2, email=$3, id_number=$4, vehicle_plate=$5, expected_time=$6,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "[name, phone, email || null, idNumber || null, vehiclePlate || null, expectedTs, otp, qrCodeData, visitor.id]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "if (phone && notify_sms) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "console.log(`[${requestId}] Adding SMS OTP delivery for: ${phone}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "deliveries.push(sendSmsOtp(phone, otp));",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "await req.audit?.('otp.deliver', 'visitor', String(visitor.id), { channels: { email: !!email, phone: !!phone }, outcome: delivered ? 'success' : 'fail', message: delivered ? 'OTP delivered' : 'OTP delivery failed' });",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/controllers/visitorInviteController.js",
+        "content": "`SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v1/adminRoutes.js",
+        "content": "let query = 'SELECT id, name, email, phone, role, created_at FROM users';",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v1/adminRoutes.js",
+        "content": "'SELECT id, name, email, phone, role, created_at FROM users WHERE id = $1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v1/adminRoutes.js",
+        "content": "*               phone:",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v1/adminRoutes.js",
+        "content": "const { name, email, phone, role } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v1/adminRoutes.js",
+        "content": "phone = COALESCE($3, phone),",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v1/adminRoutes.js",
+        "content": "RETURNING id, name, email, phone, role, created_at, updated_at`,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v1/adminRoutes.js",
+        "content": "[name, email, phone, role, id]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/authRoutes.simple.js",
+        "content": "const { username, name, email, password, role, phoneNumber, phone, residentialArea, area, houseNumber, house } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/authRoutes.simple.js",
+        "content": "const userPhone = phoneNumber || phone;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/authRoutes.simple.js",
+        "content": "phoneNumber: userPhone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/authRoutes-simple.js",
+        "content": "const { name, username, email, password, role, area, phone, house } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/authRoutes-simple.js",
+        "content": "phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v2/visitorRoutes.js",
+        "content": "*         description: Search by name or phone",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v2/visitorRoutes.js",
+        "content": "*           enum: [name, phone, created_at, visit_date]",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v2/visitorRoutes.js",
+        "content": "conditions.push(`(name ILIKE $${++paramCount} OR phone ILIKE $${++paramCount})`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v2/visitorRoutes.js",
+        "content": "const allowedSortFields = ['name', 'phone', 'created_at', 'visit_date'];",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v2/adminRoutes.js",
+        "content": "*                           phone:",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v2/adminRoutes.js",
+        "content": "id, name, email, phone, role,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/v2/adminRoutes.js",
+        "content": "id, name, email, phone, role,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*               - phone",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*               phone:",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*                 description: Visitor's phone number",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*                   phone: \"+254712345678\"",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*         description: Search by visitor name, phone, or email",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*                     phone: \"+254712345678\"",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*     description: Verify the OTP code sent to visitor's phone for access",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/visitorRoutes.js",
+        "content": "*     description: Resend OTP code to visitor's phone",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/complianceRoutes.js",
+        "content": "'Personal identification information (name, email, phone)',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/complianceRoutes.js",
+        "content": "'Visitor information (name, email, phone, visit purpose)',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/complianceRoutes.js",
+        "content": "phone: '+254-XXX-XXXX'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "*               phone:",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "const { name, email, phone, area, house } = req.body;",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "if (phone) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "updateFields.push(`phone = $${paramCount++}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "updateValues.push(phone);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "phone = NULL,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "'SELECT username, email, phone, area, house, created_at FROM users WHERE id = $1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/dsrRoutes.js",
+        "content": "'SELECT name, phone, email, purpose, date_of_visit, time_of_visit FROM visitors WHERE created_by = (SELECT email FROM users WHERE id = $1)',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/adminRoutes.js",
+        "content": "*                               phone: { type: string }",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/adminRoutes.js",
+        "content": "*                     phone: \"+254712345678\"",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/qrCodeRoutes.js",
+        "content": "'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/routes/qrCodeRoutes.js",
+        "content": "phone: visitor.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/qrCodeService-optimized.js",
+        "content": "phone: visitorData.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/qrCodeService-optimized.js",
+        "content": "'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/incidentTriageService.js",
+        "content": "phone: '+254-700-000-001',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/incidentTriageService.js",
+        "content": "phone: '+254-700-000-002',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/incidentTriageService.js",
+        "content": "phone: '+254-700-000-003',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/incidentTriageService.js",
+        "content": "phone: '+254-700-000-004',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/incidentTriageService.js",
+        "content": "teamPhone: team.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/qrCodeService.js",
+        "content": "phone: visitorData.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/qrCodeService.js",
+        "content": "`SELECT id, name, phone, email, purpose, status, date_of_visit, time_of_visit",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/complianceReportingService.js",
+        "content": "phone: '+254-700-000-003'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/complianceReportingService.js",
+        "content": "phone: '+254-700-000-004'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/complianceReportingService.js",
+        "content": "phone: '+254-700-000-005'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/complianceReportingService.js",
+        "content": "phone: '+254-20-221-1490'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/complianceReportingService.js",
+        "content": "phone: '+32-2-283-19-00'",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/performanceService.js",
+        "content": "name: 'idx_visitors_phone',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/performanceService.js",
+        "content": "columns: 'phone',",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "async sendSMSOTP(userId, phoneNumber) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "await smsService.sendOTP(phoneNumber, otp);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "phoneNumber: this.maskPhoneNumber(phoneNumber),",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "phoneNumber: this.maskPhoneNumber(phoneNumber)",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "* Mask phone number for logging",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "maskPhoneNumber(phoneNumber) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "if (!phoneNumber) return 'N/A';",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/mfaService.js",
+        "content": "return phoneNumber.replace(/(\\d{3})\\d{4}(\\d{4})/, '$1****$2');",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/smsService.js",
+        "content": "async sendOTP(phone, otp) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/smsService.js",
+        "content": "console.log(`[SMS STUB] Would send OTP ${otp} to ${phone}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/smsService.js",
+        "content": "async send(phone, message) {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/smsService.js",
+        "content": "console.log(`[SMS STUB] Would send SMS to ${phone}: ${message}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/notificationService.js",
+        "content": "to: [visitorData.phone],",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/notificationService.js",
+        "content": "to: visitorData.phone",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/notificationService.js",
+        "content": "console.log(`Visitor invitation SMS sent via ${smsProvider} to ${visitorData.phone}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/notificationService.js",
+        "content": "to: [visitorData.phone],",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/notificationService.js",
+        "content": "to: visitorData.phone",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/notificationService.js",
+        "content": "console.log(`OTP verification SMS sent via ${smsProvider} to ${visitorData.phone}`);",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/optimizedDatabaseService.js",
+        "content": "`SELECT al.*, v.first_name, v.last_name, v.phone, v.status as visitor_status,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/optimizedDatabaseService.js",
+        "content": "`SELECT al.*, v.first_name, v.last_name, v.phone",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/optimizedDatabaseService.js",
+        "content": "v.resident_id, v.first_name, v.last_name, v.phone,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/optimizedDatabaseService.js",
+        "content": "`INSERT INTO visitors (resident_id, first_name, last_name, phone, purpose, expiry_time, qr_code, otp_code, status) VALUES ${placeholders}`,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/rollbackAlertingService.js",
+        "content": "{ level: 3, delay: 900000, channels: ['pagerduty', 'email', 'phone'] } // 15 minutes",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/rollbackAlertingService.js",
+        "content": "phone: {",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/services/rollbackAlertingService.js",
+        "content": "case 'phone':",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/validation/authValidation.js",
+        "content": "phone: Joi.string()",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/validation/authValidation.js",
+        "content": "phone: Joi.string()",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/validation/visitorValidation.js",
+        "content": "// Kenya phone number validation",
+        "hasValidation": true
+      },
+      {
+        "file": "/server/src/validation/visitorValidation.js",
+        "content": "phone: kenyaPhoneSchema,",
+        "hasValidation": false
+      },
+      {
+        "file": "/server/src/validation/visitorValidation.js",
+        "content": "phone: Joi.string()",
+        "hasValidation": false
+      },
+      {
+        "file": "/client/src/contexts/AuthContext.js",
+        "content": "phone: userData.phoneNumber, // Backend expects 'phone' not 'phoneNumber'",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/constants/validation.js",
+        "content": "PHONE_INVALID: 'Please enter a valid phone number',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/integrationValidation.js",
+        "content": "phone: userData.phoneNumber || userData.phone,",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/validationRules.js",
+        "content": "phone: (value, options = {}) => {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/validationRules.js",
+        "content": "case 'phone':",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/validationRules.js",
+        "content": "phone: [",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/validationRules.js",
+        "content": "createValidationRule('phone')",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/validationRules.js",
+        "content": "// Check if value is a valid phone number",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/validationRules.js",
+        "content": "requiredPhone: (value) => validationFunctions.phone(value),",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/responsive.js",
+        "content": "xs: 360,  // Mobile phones",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/responsive.js",
+        "content": "sm: 640,  // Large phones / small tablets",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/responsive.js",
+        "content": "xs: 160,  // Small phones",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/utils/responsive.js",
+        "content": "sm: 180,  // Large phones",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/styles/theme.js",
+        "content": "phone: '+1-555-GATE-001',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/components/ui/SearchFilter.jsx",
+        "content": "*   searchFields={['name', 'email', 'phone']}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/components/ui/SearchBar.jsx",
+        "content": "*   searchFields={['name', 'email', 'phone']}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/components/ConsentForm.jsx",
+        "content": "'Collection and storage of personal information (name, phone, email)',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/__tests__/user-flows.test.jsx",
+        "content": "const phoneInput = screen.getByLabelText(/phone number/i);",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/__tests__/user-flows.test.jsx",
+        "content": "await user.type(phoneInput, '0123456789');",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/hooks/useAdvancedValidation.js",
+        "content": "PHONE: 'phone',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/hooks/useAdvancedValidation.js",
+        "content": "phone: (value, options = {}) => {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/hooks/useAdvancedValidation.js",
+        "content": "const phoneRegex = /^0\\d{9}$/;",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/hooks/useAdvancedValidation.js",
+        "content": "if (!phoneRegex.test(value)) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "phone: '',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "if (!formData.phone.trim() && !formData.email.trim()) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "setError('Please provide either phone number or email address.');",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "phone: formData.phone.trim(),",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "setFormData({ name: '', phone: '', email: '' });",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "{visitor.phone && (",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "<span>{visitor.phone}</span>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "name=\"phone\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "value={formData.phone}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/GuestInvite.jsx",
+        "content": "helperText=\"Provide either phone number or email for notifications\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorEnhanced.jsx",
+        "content": "phone: \"\",",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorEnhanced.jsx",
+        "content": "name=\"phone\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorEnhanced.jsx",
+        "content": "validationType=\"phone\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "phone: \"\",",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "if (!formData.phone.trim()) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "errors.phone = \"Phone number is required\";",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "} else if (!/^0\\d{9}$/.test(formData.phone.trim())) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "errors.phone = \"Phone must be in format 0xxxxxxxxx (10 digits)\";",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "phone: formData.phone.trim(),",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "phone: \"\",",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "phone: \"\",",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "value={formData.phone}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "onChange={(e) => handleInputChange('phone', e.target.value)}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitor.jsx",
+        "content": "error={validationErrors.phone}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/VisitorHistory.jsx",
+        "content": "const searchFields = ['name', 'phone', 'email', 'status'];",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/VisitorHistory.jsx",
+        "content": "render: (value, row) => row.name || mask(row.phone) || \"Unknown\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/VisitorHistory.jsx",
+        "content": "placeholder=\"Search visitors by name, phone, email, or status...\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorWizard.jsx",
+        "content": "if (!data.phone?.trim()) errors.phone = \"Phone number is required\";",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorWizard.jsx",
+        "content": "phone: allStepData[0]?.phone || \"\",",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorWizard.jsx",
+        "content": "value={stepData.phone || \"\"}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorWizard.jsx",
+        "content": "onChange={(e) => updateStepData({ phone: e.target.value })}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/AddVisitorWizard.jsx",
+        "content": "<p className=\"text-slate-200\">{allStepData[0]?.phone || 'Not provided'}</p>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/VisitorHistoryEnhanced.jsx",
+        "content": "const searchFields = ['name', 'phone', 'email', 'status'];",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/VisitorHistoryEnhanced.jsx",
+        "content": "{(row.name || row.phone || 'U')[0].toUpperCase()}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/VisitorHistoryEnhanced.jsx",
+        "content": "{row.name || mask(row.phone) || \"Unknown\"}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "const phoneOk = (v) => !v || /^0\\d{9}$/.test((v || \"\").trim());",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "if ([\"name\", \"email\", \"phone\"].some(h => headerCells.includes(h))) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "idxPhone = headerCells.indexOf(\"phone\");",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "let phone = idxPhone >= 0 ? cells[idxPhone] : (cells[2] || \"\");",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "phone = (phone || \"\").trim();",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "if (!phoneOk(phone)) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "errors.push({ index: i - startIndex + 1, message: `Invalid phone (expected 0xxxxxxxxx): ${phone}` });",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "guests.push({ name, email, phone });",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "placeholder={`Paste CSV here (headers optional)\\nname,email,phone\\nJohn Doe,john@example.com,0712345678`}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInvite.jsx",
+        "content": "{guest.phone || '-'}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/Settings.jsx",
+        "content": "const [profile, setProfile] = useState({ name: \"\", phone: \"\", email: \"\", area: \"\", house: \"\" });",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/Settings.jsx",
+        "content": "<input type=\"text\" placeholder=\"Phone\" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={inputClass} />",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/GeneratePass.jsx",
+        "content": "{visitor.name} - {visitor.phone} ({visitor.purpose})",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInviteWizard.jsx",
+        "content": "const [name, email, phone = \"\"] = line.split(\",\").map(s => s.trim());",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInviteWizard.jsx",
+        "content": "guests.push({ name, email, phone });",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInviteWizard.jsx",
+        "content": "{guest.phone && (",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/resident/BulkInviteWizard.jsx",
+        "content": "<div className=\"text-slate-500 text-sm\">{guest.phone}</div>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/FormWizardDemo.jsx",
+        "content": "<Input type=\"tel\" placeholder=\"Enter phone number\" />",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/FormWizardDemo.jsx",
+        "content": "id: 'phone',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/FormWizardDemo.jsx",
+        "content": "placeholder: 'Enter your phone number'",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/FormWizardDemo.jsx",
+        "content": "<p className=\"text-slate-200\">{allStepData[0]?.phone || 'Not provided'}</p>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/admin/Reports.jsx",
+        "content": "<td>{r.id}</td><td>{r.name||''}</td><td>{r.phone||''}</td><td>{r.email||''}</td><td>{r.host||''}</td><td>{r.status||''}</td><td>{r.date_of_visit||''}</td><td>{r.time_of_visit||''}</td><td>{r.check_in_time||''}</td><td>{r.check_out_time||''}</td>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "phone: '',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "if (!formData.phone.trim()) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "newErrors.phone = 'Phone number is required';",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "} else if (!/^0\\d{9}$/.test(formData.phone.trim())) {",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "newErrors.phone = 'Phone must be in format 0xxxxxxxxx (10 digits starting with 0)';",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "phone: formData.phone,",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "phone: bulkFormData.visitorPhone.trim(),",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "<label htmlFor=\"phone\" className=\"block text-sm font-medium text-gray-700 mb-2\">",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "id=\"phone\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "placeholder=\"Enter phone number\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "value={formData.phone}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/Register.js",
+        "content": "{errors.phone && <p className=\"text-red-600 text-sm mt-1\">{errors.phone}</p>}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "phone: '',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "phone: [",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "createRule(RULE_TYPES.PHONE, { message: 'Please enter a valid phone number (0xxxxxxxxx)' })",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "name=\"phone\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "value={values.phone}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "onChange={(value) => handleFieldChange('phone', value)}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "onBlur={() => handleFieldBlur('phone')}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/ValidationDemo.jsx",
+        "content": "onFocus={() => handleFieldFocus('phone')}",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/guard/ManualCheck.jsx",
+        "content": "// Filter visitors by search term (name, phone, or invite code)",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/guard/ManualCheck.jsx",
+        "content": "visitor.phone?.includes(searchTerm) ||",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/guard/ManualCheck.jsx",
+        "content": "placeholder=\"Search by name, phone, or invite code...\"",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/guard/ManualCheck.jsx",
+        "content": "<p className=\"text-sm text-gray-600\">Phone: {visitor.phone || 'N/A'}</p>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/guard/Settings.jsx",
+        "content": "const [profile, setProfile] = useState({ name: \"\", email: \"\", phone: \"\" });",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/guard/Settings.jsx",
+        "content": "localStorage.setItem(\"profilePhone\", profile.phone);",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/guard/Settings.jsx",
+        "content": "<input className=\"input\" placeholder=\"Phone\" value={profile.phone} onChange={e=>setProfile({...profile, phone:e.target.value})} style={{marginBottom:8, background:'var(--bg)', color:'var(--text)'}} />",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/MFASetup.jsx",
+        "content": "<li>Download Google Authenticator on your phone</li>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/MFASetup.jsx",
+        "content": "These backup codes can be used to access your account if you lose your phone.",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "if (!data.phone?.trim()) errors.phone = 'Phone number is required';",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "if (!data.workPhone?.trim()) errors.workPhone = 'Work phone is required';",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "if (!data.emergencyPhone?.trim()) errors.emergencyPhone = 'Emergency contact phone is required';",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "id: 'phone',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "placeholder: 'Enter your phone number'",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "placeholder: 'Enter your work phone number'",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "placeholder: 'Enter emergency contact phone'",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/RegistrationWizard.jsx",
+        "content": "<p className=\"text-slate-200\">{allStepData[0]?.phone || 'Not provided'}</p>",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/pages/MFAVerify.jsx",
+        "content": "'Lost your phone? Use a backup code →'",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/design-system/theme.js",
+        "content": "phone: '+1-555-GATE-001',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/design-system/theme.js",
+        "content": "phone: '+1-555-GATE-001',",
+        "context": "frontend"
+      },
+      {
+        "file": "/client/src/services/visitorService.js",
+        "content": "phone: v.phone,",
+        "context": "frontend"
+      }
+    ],
+    "identification": [],
+    "issues": []
+  },
+  "duplicates": [
+    {
+      "pattern": "Register",
+      "files": [
+        "/archived_duplicates/RegisterNew.js",
+        "/client/src/pages/Register.js"
+      ],
+      "count": 2
+    },
+    {
+      "pattern": "auth",
+      "files": [
+        "/tests/phase1-authentication-test.js",
+        "/server/tests/unit/authMiddleware.test.js",
+        "/server/tests/integration/auth.integration.test.js",
+        "/server/tests/auth.test.js",
+        "/server/tests/helpers/authHelpers.js",
+        "/server/src/middleware/authMiddleware.js",
+        "/server/src/routes/authRoutes.js",
+        "/server/src/routes/authRoutes.simple.js",
+        "/server/src/routes/authRoutes-simple.js",
+        "/server/src/validation/authValidation.js",
+        "/playbooks/security/authentication_failure.yml"
+      ],
+      "count": 11
+    },
+    {
+      "pattern": "Auth",
+      "files": [
+        "/server/src/middleware/websocketAuth.js",
+        "/client/src/contexts/AuthContext.js",
+        "/client/src/contexts/__tests__/AuthContext.test.jsx",
+        "/client/src/components/ErrorBoundary/AuthErrorBoundary.css",
+        "/client/src/components/ErrorBoundary/AuthErrorBoundary.jsx",
+        "/client/src/__tests__/AuthContext.test.jsx",
+        "/client/src/layouts/AuthLayout.jsx"
+      ],
+      "count": 7
+    }
+  ],
+  "unused": [
+    {
+      "file": "archived_duplicates/AddVisitorNew.jsx",
+      "reason": "File in archived_duplicates folder"
+    },
+    {
+      "file": "archived_duplicates/BulkInviteNew.jsx",
+      "reason": "File in archived_duplicates folder"
+    },
+    {
+      "file": "archived_duplicates/ForgotPasswordPage.js",
+      "reason": "File in archived_duplicates folder"
+    },
+    {
+      "file": "archived_duplicates/ForgotPasswordPage_backup.js",
+      "reason": "File in archived_duplicates folder"
+    },
+    {
+      "file": "archived_duplicates/RegisterNew.js",
+      "reason": "File in archived_duplicates folder"
+    },
+    {
+      "file": "/server/tests/integration/backup-service.test.js",
+      "reason": "Appears to be old/backup test file"
+    }
+  ],
+  "critical_gaps": [
+    {
+      "type": "EMAIL_SERVICE",
+      "severity": "HIGH",
+      "description": "Email service is not implemented - signup confirmation emails will not work",
+      "impact": "Users cannot verify their email addresses during signup"
+    },
+    {
+      "type": "PHONE_IDENTIFICATION",
+      "severity": "MEDIUM",
+      "description": "No phone number identification/formatting library found",
+      "impact": "Phone numbers may not be properly formatted or validated by country"
+    },
+    {
+      "type": "DUPLICATE_FILES",
+      "severity": "LOW",
+      "description": "Found 3 sets of duplicate files",
+      "impact": "Code maintenance issues and potential confusion"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "EMAIL",
+      "title": "Implement Email Service",
+      "description": "Replace email service stub with actual implementation",
+      "actions": [
+        "Choose email provider (Mailgun, SendGrid, AWS SES)",
+        "Install required dependencies (nodemailer, etc.)",
+        "Update emailService.js with real implementation",
+        "Add email templates and configuration",
+        "Test email delivery in development and production"
+      ]
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "PHONE",
+      "title": "Add Phone Number Validation Library",
+      "description": "Install and configure phone number validation library",
+      "actions": [
+        "Install libphonenumber-js or google-libphonenumber",
+        "Add phone validation to backend validation schemas",
+        "Add phone formatting to frontend forms",
+        "Test phone validation with various country formats"
+      ]
+    },
+    {
+      "priority": "LOW",
+      "category": "CLEANUP",
+      "title": "Clean Up Duplicate and Unused Files",
+      "description": "Remove or consolidate duplicate files and clean up unused code",
+      "actions": [
+        "Review duplicate files and merge or remove as appropriate",
+        "Remove files from archived_duplicates folder if no longer needed",
+        "Update imports and references after file removal",
+        "Run tests to ensure no functionality is broken"
+      ]
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "ERROR_HANDLING",
+      "title": "Improve Error Handling and Logging",
+      "description": "Enhance error handling throughout the signup flow",
+      "actions": [
+        "Add comprehensive error logging in backend services",
+        "Improve user-friendly error messages in frontend",
+        "Add validation error details from backend to frontend",
+        "Test error scenarios (network failures, validation errors, etc.)"
+      ]
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "TESTING",
+      "title": "Comprehensive End-to-End Testing",
+      "description": "Create thorough tests for the entire signup flow",
+      "actions": [
+        "Create integration tests for signup API endpoints",
+        "Add frontend component tests for signup forms",
+        "Create end-to-end tests covering full user journey",
+        "Test email delivery and phone validation scenarios"
+      ]
+    }
+  ]
+}

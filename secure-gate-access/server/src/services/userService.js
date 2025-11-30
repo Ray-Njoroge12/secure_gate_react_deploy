@@ -1,6 +1,7 @@
 import { passwordService, accountSecurity } from './tokenService.js';
 import { db } from '../database/db.enhanced.js';
 import { AppError } from '../middleware/standardizedErrorHandler.js';
+import crypto from 'crypto';
 
 /**
  * User Service with SQL Injection Protection
@@ -13,7 +14,14 @@ class UserService {
   }
 
   /**
-   * Create a new user with proper input validation and SQL injection protection
+   * Generate email verification token
+   */
+  generateEmailVerificationToken() {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  /**
+   * Create a new user with email verification
    */
   async createUser(userData) {
     const { username, email, password, role } = userData;
@@ -61,17 +69,21 @@ class UserService {
       // Hash password securely
       const hashedPassword = await passwordService.hashPassword(password);
 
-      // Create user with parameterized query
+      // Generate email verification token
+      const emailVerificationToken = this.generateEmailVerificationToken();
+      const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // Create user with email verification fields
       const result = await this.db.query(
-        `INSERT INTO users (username, email, password_hash, role, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, NOW(), NOW()) 
-         RETURNING id, username, email, role, created_at`,
-        [username, email, hashedPassword, role]
+        `INSERT INTO users (username, email, password_hash, role, email_verification_token, email_verification_expires, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) 
+         RETURNING id, username, email, role, email_verification_token, created_at`,
+        [username, email, hashedPassword, role, emailVerificationToken, emailVerificationExpires]
       );
 
       const user = result.rows[0];
       
-      // Remove password hash from response
+      // Remove password hash from response but keep verification token for email sending
       delete user.password_hash;
 
       return user;
@@ -88,10 +100,110 @@ class UserService {
   }
 
   /**
+   * Verify email verification token
+   */
+  async verifyEmailToken(token) {
+    try {
+      const result = await this.db.query(
+        `SELECT id, username, email, email_verification_expires 
+         FROM users 
+         WHERE email_verification_token = $1 AND email_verified_at IS NULL`,
+        [token]
+      );
+
+      if (result.rows.length === 0) {
+        throw new AppError('Invalid or already used verification token', 400, 'INVALID_TOKEN');
+      }
+
+      const user = result.rows[0];
+
+      // Check if token has expired
+      if (new Date() > new Date(user.email_verification_expires)) {
+        throw new AppError('Verification token has expired', 400, 'TOKEN_EXPIRED');
+      }
+
+      // Mark email as verified
+      await this.db.query(
+        `UPDATE users 
+         SET email_verified_at = NOW(), email_verification_token = NULL, email_verification_expires = NULL, updated_at = NOW()
+         WHERE id = $1`,
+        [user.id]
+      );
+
+      return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        verified: true
+      };
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(`Email verification failed: ${error.message}`, 500, 'INTERNAL_ERROR');
+    }
+  }
+
+  /**
+   * Resend email verification token
+   */
+  async resendEmailVerification(email) {
+    try {
+      // Find user by email who hasn't verified yet
+      const userResult = await this.db.query(
+        `SELECT id, username, email 
+         FROM users 
+         WHERE email = $1 AND email_verified_at IS NULL`,
+        [email]
+      );
+
+      if (userResult.rows.length === 0) {
+        throw new AppError('User not found or email already verified', 400, 'USER_NOT_FOUND');
+      }
+
+      const user = userResult.rows[0];
+
+      // Generate new verification token
+      const emailVerificationToken = this.generateEmailVerificationToken();
+      const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // Update user with new token
+      await this.db.query(
+        `UPDATE users 
+         SET email_verification_token = $1, email_verification_expires = $2, updated_at = NOW()
+         WHERE id = $3`,
+        [emailVerificationToken, emailVerificationExpires, user.id]
+      );
+
+      return {
+        ...user,
+        email_verification_token: emailVerificationToken
+      };
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError(`Failed to resend verification email: ${error.message}`, 500, 'INTERNAL_ERROR');
+    }
+  }
+
+  /**
    * Authenticate user with proper SQL injection protection
    */
   async authenticateUser(username, password) {
+    // DEBUG: Log exact parameters received
+    console.log('🔍 USERSERVICE DEBUG - authenticateUser called with:', {
+      username: username,
+      usernameType: typeof username,
+      password: password ? '[PRESENT]' : '[MISSING]',
+      passwordType: typeof password
+    });
+    
     if (!username || !password) {
+      console.log('🔍 USERSERVICE DEBUG - Validation failed:', {
+        usernameEmpty: !username,
+        passwordEmpty: !password
+      });
       throw new Error('Username and password required');
     }
 
@@ -102,11 +214,23 @@ class UserService {
     }
 
     try {
-      // Get user by username OR email using parameterized query
+      // DEBUG: Temporary logging
+      console.log('🔍 USERSERVICE DEBUG - Looking up user:', username);
+      
+      // Get user by username OR email using parameterized query, including email verification status
       const result = await this.db.query(
-        'SELECT id, username, email, password_hash, role, created_at FROM users WHERE username = $1 OR email = $1',
+        'SELECT id, username, email, password_hash, role, created_at, email_verified_at FROM users WHERE username = $1 OR email = $1',
         [username]
       );
+
+      console.log('🔍 USERSERVICE DEBUG - Query result rows:', result.rows.length);
+      if (result.rows.length > 0) {
+        console.log('🔍 USERSERVICE DEBUG - Found user:', { 
+          id: result.rows[0].id, 
+          username: result.rows[0].username, 
+          email: result.rows[0].email 
+        });
+      }
 
       if (result.rows.length === 0) {
         // Record failed attempt even for non-existent users (security)
@@ -116,13 +240,29 @@ class UserService {
 
       const user = result.rows[0];
 
+      // DEBUG: Temporary logging
+      console.log('🔍 USERSERVICE DEBUG - Password verification for user:', user.username);
+      console.log('🔍 USERSERVICE DEBUG - Has password hash:', !!user.password_hash);
+      console.log('🔍 USERSERVICE DEBUG - Password hash length:', user.password_hash?.length);
+
       // Verify password
       const isValidPassword = await passwordService.verifyPassword(password, user.password_hash);
+      
+      console.log('🔍 USERSERVICE DEBUG - Password verification result:', isValidPassword);
       
       if (!isValidPassword) {
         // Record failed attempt
         accountSecurity.recordFailedAttempt(username, 'unknown');
         throw new Error('Invalid credentials');
+      }
+
+      // Check if email is verified (skip in development if EMAIL_VERIFICATION_REQUIRED=false)
+      const requireEmailVerification = process.env.EMAIL_VERIFICATION_REQUIRED !== 'false';
+      if (requireEmailVerification && !user.email_verified_at) {
+        throw new AppError('Please verify your email address before logging in. Check your inbox for the verification link.', 403, 'EMAIL_NOT_VERIFIED', {
+          email: user.email,
+          requiresVerification: true
+        });
       }
 
       // Clear failed attempts on successful login
@@ -428,6 +568,206 @@ class UserService {
       throw new Error(`Failed to get user statistics: ${error.message}`);
     }
   }
+
+  /**
+   * Generate password reset token
+   */
+  generatePasswordResetToken() {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  /**
+   * Request password reset - Generate token and store in database
+   */
+  async requestPasswordReset(email) {
+    if (!email) {
+      throw new Error('Email is required');
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error('Invalid email format');
+    }
+
+    try {
+      // Check if user exists
+      const userCheck = await this.db.query(
+        'SELECT id, username, email, verified FROM users WHERE email = $1',
+        [email]
+      );
+
+      // Always return success to prevent email enumeration attacks
+      if (userCheck.rows.length === 0) {
+        console.log(`Password reset requested for non-existent email: ${email}`);
+        return {
+          success: true,
+          message: 'If this email exists, a password reset link has been sent.'
+        };
+      }
+
+      const user = userCheck.rows[0];
+
+      // Generate reset token and expiration (1 hour from now)
+      const resetToken = this.generatePasswordResetToken();
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      // Store reset token in database
+      await this.db.query(
+        `UPDATE users 
+         SET password_reset_token = $1, 
+             password_reset_expires = $2, 
+             password_reset_used_at = NULL,
+             updated_at = NOW() 
+         WHERE id = $3`,
+        [resetToken, resetExpires, user.id]
+      );
+
+      console.log(`Password reset token generated for user: ${user.email}`);
+
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email
+        },
+        resetToken: resetToken,
+        expiresAt: resetExpires
+      };
+    } catch (error) {
+      throw new Error(`Password reset request failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Verify password reset token
+   */
+  async verifyResetToken(token) {
+    if (!token) {
+      throw new Error('Reset token is required');
+    }
+
+    try {
+      const result = await this.db.query(
+        `SELECT id, username, email, password_reset_expires, password_reset_used_at 
+         FROM users 
+         WHERE password_reset_token = $1`,
+        [token]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('Invalid reset token');
+      }
+
+      const user = result.rows[0];
+
+      // Check if token has been used
+      if (user.password_reset_used_at) {
+        throw new Error('Reset token has already been used');
+      }
+
+      // Check if token has expired
+      const now = new Date();
+      if (new Date(user.password_reset_expires) < now) {
+        throw new Error('Reset token has expired');
+      }
+
+      return {
+        valid: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email
+        }
+      };
+    } catch (error) {
+      throw new Error(`Token verification failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Reset password using valid token
+   */
+  async resetPasswordWithToken(token, newPassword) {
+    if (!token || !newPassword) {
+      throw new Error('Reset token and new password are required');
+    }
+
+    // Check password strength
+    const strengthCheck = passwordService.checkPasswordStrength(newPassword);
+    if (strengthCheck.strength === 'weak') {
+      throw new Error(`Password is too weak: ${strengthCheck.message}`);
+    }
+
+    try {
+      // First verify the token is valid
+      const tokenVerification = await this.verifyResetToken(token);
+      
+      if (!tokenVerification.valid) {
+        throw new Error('Invalid or expired reset token');
+      }
+
+      const userId = tokenVerification.user.id;
+
+      // Hash the new password
+      const newPasswordHash = await passwordService.hashPassword(newPassword);
+
+      // Update password and mark token as used
+      const result = await this.db.query(
+        `UPDATE users 
+         SET password_hash = $1, 
+             password_reset_used_at = NOW(),
+             updated_at = NOW()
+         WHERE id = $2 
+         RETURNING id, username, email`,
+        [newPasswordHash, userId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('Failed to update password');
+      }
+
+      const user = result.rows[0];
+      console.log(`Password successfully reset for user: ${user.email}`);
+
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email
+        }
+      };
+    } catch (error) {
+      throw new Error(`Password reset failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Clean up expired password reset tokens (maintenance function)
+   */
+  async cleanupExpiredResetTokens() {
+    try {
+      const result = await this.db.query(
+        `UPDATE users 
+         SET password_reset_token = NULL, 
+             password_reset_expires = NULL,
+             updated_at = NOW()
+         WHERE password_reset_expires < NOW() 
+         AND password_reset_token IS NOT NULL
+         RETURNING COUNT(*) as cleaned_count`
+      );
+
+      const cleanedCount = result.rows[0]?.cleaned_count || 0;
+      console.log(`Cleaned up ${cleanedCount} expired password reset tokens`);
+
+      return { cleanedCount };
+    } catch (error) {
+      throw new Error(`Token cleanup failed: ${error.message}`);
+    }
+  }
+
 }
 
 // Export singleton instance

@@ -1,0 +1,2590 @@
+{
+  "timestamp": "2025-11-26T18:37:24.891Z",
+  "summary": {
+    "backendRouteFiles": 47,
+    "totalBackendRoutes": 395,
+    "totalServices": 88,
+    "totalPages": 38,
+    "totalUIComponents": 67,
+    "totalHooks": 21,
+    "securityScore": 100,
+    "featureScore": 100,
+    "realtimeScore": 99
+  },
+  "routes": {
+    "backend": [
+      {
+        "file": "adminAnalyticsRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/overview"
+          },
+          {
+            "method": "GET",
+            "path": "/visitors"
+          },
+          {
+            "method": "GET",
+            "path": "/incidents"
+          },
+          {
+            "method": "GET",
+            "path": "/guards"
+          },
+          {
+            "method": "GET",
+            "path": "/residents"
+          }
+        ],
+        "count": 5
+      },
+      {
+        "file": "adminRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "GET",
+            "path": "/audit-logs"
+          },
+          {
+            "method": "POST",
+            "path": "/backup/trigger"
+          }
+        ],
+        "count": 3
+      },
+      {
+        "file": "approvalRoutes.js",
+        "routes": [],
+        "count": 0
+      },
+      {
+        "file": "authRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/register"
+          },
+          {
+            "method": "POST",
+            "path": "/login"
+          },
+          {
+            "method": "GET",
+            "path": "/me"
+          },
+          {
+            "method": "POST",
+            "path": "/logout"
+          },
+          {
+            "method": "POST",
+            "path": "/refresh"
+          },
+          {
+            "method": "POST",
+            "path": "/logout"
+          },
+          {
+            "method": "GET",
+            "path": "/profile"
+          }
+        ],
+        "count": 7
+      },
+      {
+        "file": "backupDrRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "POST",
+            "path": "/full"
+          },
+          {
+            "method": "POST",
+            "path": "/incremental"
+          },
+          {
+            "method": "GET",
+            "path": "/history"
+          },
+          {
+            "method": "GET",
+            "path": "/statistics"
+          },
+          {
+            "method": "GET",
+            "path": "/dr/status"
+          },
+          {
+            "method": "GET",
+            "path": "/dr/recovery-history"
+          },
+          {
+            "method": "GET",
+            "path": "/dr/statistics"
+          },
+          {
+            "method": "GET",
+            "path": "/dr/health-checks"
+          },
+          {
+            "method": "GET",
+            "path": "/dr/health-statistics"
+          },
+          {
+            "method": "POST",
+            "path": "/dr/test-failover"
+          },
+          {
+            "method": "GET",
+            "path": "/dr/configuration"
+          },
+          {
+            "method": "PUT",
+            "path": "/dr/configuration"
+          },
+          {
+            "method": "POST",
+            "path": "/cleanup"
+          }
+        ],
+        "count": 14
+      },
+      {
+        "file": "backupRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/full"
+          },
+          {
+            "method": "POST",
+            "path": "/incremental"
+          },
+          {
+            "method": "POST",
+            "path": "/data"
+          },
+          {
+            "method": "POST",
+            "path": "/restore"
+          },
+          {
+            "method": "GET",
+            "path": "/list"
+          },
+          {
+            "method": "POST",
+            "path": "/cleanup"
+          },
+          {
+            "method": "GET",
+            "path": "/statistics"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          }
+        ],
+        "count": 8
+      },
+      {
+        "file": "cacheRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "GET",
+            "path": "/stats"
+          },
+          {
+            "method": "DELETE",
+            "path": "/pattern/:pattern"
+          },
+          {
+            "method": "DELETE",
+            "path": "/key/:key"
+          },
+          {
+            "method": "DELETE",
+            "path": "/all"
+          },
+          {
+            "method": "POST",
+            "path": "/warm"
+          },
+          {
+            "method": "GET",
+            "path": "/sessions/stats"
+          },
+          {
+            "method": "POST",
+            "path": "/sessions/logout-user"
+          },
+          {
+            "method": "POST",
+            "path": "/reset-stats"
+          }
+        ],
+        "count": 9
+      },
+      {
+        "file": "chaosRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/service-failure"
+          },
+          {
+            "method": "POST",
+            "path": "/network-latency"
+          },
+          {
+            "method": "POST",
+            "path": "/network-packet-loss"
+          },
+          {
+            "method": "POST",
+            "path": "/network-connectivity"
+          },
+          {
+            "method": "POST",
+            "path": "/cpu-stress"
+          },
+          {
+            "method": "POST",
+            "path": "/memory-stress"
+          },
+          {
+            "method": "POST",
+            "path": "/disk-stress"
+          },
+          {
+            "method": "POST",
+            "path": "/api-throttling"
+          },
+          {
+            "method": "POST",
+            "path": "/request-dropping"
+          },
+          {
+            "method": "POST",
+            "path": "/malformed-data"
+          },
+          {
+            "method": "GET",
+            "path": "/experiments"
+          },
+          {
+            "method": "GET",
+            "path": "/experiments/history"
+          },
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "GET",
+            "path": "/reports"
+          },
+          {
+            "method": "POST",
+            "path": "/reports/generate"
+          },
+          {
+            "method": "GET",
+            "path": "/status"
+          }
+        ],
+        "count": 16
+      },
+      {
+        "file": "checkInRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/"
+          }
+        ],
+        "count": 1
+      },
+      {
+        "file": "checkOutRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/"
+          }
+        ],
+        "count": 1
+      },
+      {
+        "file": "complianceRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "POST",
+            "path": "/dsar"
+          },
+          {
+            "method": "POST",
+            "path": "/deletion"
+          },
+          {
+            "method": "POST",
+            "path": "/portability"
+          },
+          {
+            "method": "POST",
+            "path": "/consent"
+          },
+          {
+            "method": "GET",
+            "path": "/cookie-policy"
+          },
+          {
+            "method": "GET",
+            "path": "/privacy-policy"
+          }
+        ],
+        "count": 7
+      },
+      {
+        "file": "consentRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/required"
+          },
+          {
+            "method": "POST",
+            "path": "/give"
+          },
+          {
+            "method": "POST",
+            "path": "/withdraw"
+          },
+          {
+            "method": "GET",
+            "path": "/history"
+          },
+          {
+            "method": "GET",
+            "path": "/check"
+          },
+          {
+            "method": "GET",
+            "path": "/statistics"
+          },
+          {
+            "method": "GET",
+            "path": "/types"
+          }
+        ],
+        "count": 7
+      },
+      {
+        "file": "dashboardRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/stats"
+          },
+          {
+            "method": "GET",
+            "path": "/metrics/realtime"
+          },
+          {
+            "method": "GET",
+            "path": "/activity-feed"
+          },
+          {
+            "method": "GET",
+            "path": "/notifications"
+          },
+          {
+            "method": "PUT",
+            "path": "/notifications/:id/read"
+          },
+          {
+            "method": "GET",
+            "path": "/analytics/visitors"
+          }
+        ],
+        "count": 6
+      },
+      {
+        "file": "dataPrivacyRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/my-data"
+          },
+          {
+            "method": "GET",
+            "path": "/export"
+          },
+          {
+            "method": "POST",
+            "path": "/request-deletion"
+          },
+          {
+            "method": "POST",
+            "path": "/withdraw-consent"
+          },
+          {
+            "method": "GET",
+            "path": "/consent-status"
+          },
+          {
+            "method": "GET",
+            "path": "/retention-policy"
+          }
+        ],
+        "count": 6
+      },
+      {
+        "file": "databaseHealthRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "GET",
+            "path": "/health/detailed"
+          },
+          {
+            "method": "GET",
+            "path": "/health/report"
+          },
+          {
+            "method": "GET",
+            "path": "/status/pool"
+          },
+          {
+            "method": "GET",
+            "path": "/alerts"
+          },
+          {
+            "method": "POST",
+            "path": "/health/check"
+          },
+          {
+            "method": "DELETE",
+            "path": "/alerts"
+          }
+        ],
+        "count": 7
+      },
+      {
+        "file": "databaseUpdateRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/update-status"
+          }
+        ],
+        "count": 1
+      },
+      {
+        "file": "disasterRecoveryValidationRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/backup-integrity/verify"
+          },
+          {
+            "method": "GET",
+            "path": "/backup-integrity/status"
+          },
+          {
+            "method": "GET",
+            "path": "/backup-integrity/verification-results"
+          },
+          {
+            "method": "POST",
+            "path": "/restore-testing/execute-drill"
+          },
+          {
+            "method": "GET",
+            "path": "/restore-testing/status"
+          },
+          {
+            "method": "GET",
+            "path": "/restore-testing/drill-results"
+          },
+          {
+            "method": "GET",
+            "path": "/sla-monitoring/status"
+          },
+          {
+            "method": "GET",
+            "path": "/sla-monitoring/measurements"
+          },
+          {
+            "method": "GET",
+            "path": "/continuous-monitoring/status"
+          },
+          {
+            "method": "GET",
+            "path": "/continuous-monitoring/dashboard-updates"
+          },
+          {
+            "method": "POST",
+            "path": "/failover-validation/execute-drill"
+          },
+          {
+            "method": "GET",
+            "path": "/failover-validation/status"
+          },
+          {
+            "method": "GET",
+            "path": "/failover-validation/drill-results"
+          },
+          {
+            "method": "POST",
+            "path": "/audit-evidence/collect"
+          },
+          {
+            "method": "GET",
+            "path": "/audit-evidence/status"
+          },
+          {
+            "method": "GET",
+            "path": "/audit-evidence/collection"
+          },
+          {
+            "method": "GET",
+            "path": "/overall-status"
+          }
+        ],
+        "count": 17
+      },
+      {
+        "file": "drRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "POST",
+            "path": "/failover"
+          },
+          {
+            "method": "GET",
+            "path": "/drills"
+          },
+          {
+            "method": "POST",
+            "path": "/drills/schedule"
+          },
+          {
+            "method": "POST",
+            "path": "/drills/:drillId/execute"
+          },
+          {
+            "method": "GET",
+            "path": "/drills/:drillId/report"
+          },
+          {
+            "method": "GET",
+            "path": "/drills/types"
+          },
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "POST",
+            "path": "/replication/start"
+          },
+          {
+            "method": "POST",
+            "path": "/replication/stop"
+          },
+          {
+            "method": "GET",
+            "path": "/replication/status"
+          },
+          {
+            "method": "GET",
+            "path": "/lessons-learned"
+          },
+          {
+            "method": "GET",
+            "path": "/recommendations"
+          }
+        ],
+        "count": 14
+      },
+      {
+        "file": "dsrRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/data-export"
+          },
+          {
+            "method": "PUT",
+            "path": "/profile"
+          },
+          {
+            "method": "DELETE",
+            "path": "/account"
+          },
+          {
+            "method": "POST",
+            "path": "/restrict-processing"
+          },
+          {
+            "method": "GET",
+            "path": "/export-portable"
+          },
+          {
+            "method": "POST",
+            "path": "/object-processing"
+          },
+          {
+            "method": "POST",
+            "path": "/withdraw-consent"
+          },
+          {
+            "method": "GET",
+            "path": "/requests"
+          }
+        ],
+        "count": 8
+      },
+      {
+        "file": "guardAnalyticsRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/"
+          }
+        ],
+        "count": 1
+      },
+      {
+        "file": "guardIncidentRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/"
+          },
+          {
+            "method": "GET",
+            "path": "/"
+          },
+          {
+            "method": "PUT",
+            "path": "/:id/resolve"
+          }
+        ],
+        "count": 3
+      },
+      {
+        "file": "guardRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/dashboard"
+          },
+          {
+            "method": "POST",
+            "path": "/visitors/:id/checkin"
+          },
+          {
+            "method": "POST",
+            "path": "/visitors/:id/checkout"
+          },
+          {
+            "method": "GET",
+            "path": "/visitors/active"
+          }
+        ],
+        "count": 4
+      },
+      {
+        "file": "healthRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/"
+          },
+          {
+            "method": "GET",
+            "path": "/detailed"
+          },
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "GET",
+            "path": "/health-checks"
+          },
+          {
+            "method": "POST",
+            "path": "/restart-monitoring"
+          },
+          {
+            "method": "POST",
+            "path": "/stop-monitoring"
+          },
+          {
+            "method": "POST",
+            "path": "/start-monitoring"
+          },
+          {
+            "method": "GET",
+            "path": "/database"
+          },
+          {
+            "method": "GET",
+            "path": "/memory"
+          },
+          {
+            "method": "GET",
+            "path": "/cpu"
+          }
+        ],
+        "count": 10
+      },
+      {
+        "file": "incidentRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/"
+          },
+          {
+            "method": "GET",
+            "path": "/:id"
+          },
+          {
+            "method": "GET",
+            "path": "/category/:category"
+          },
+          {
+            "method": "GET",
+            "path": "/severity/:severity"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/resolve"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/execute-playbook"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/containment"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/collect-evidence"
+          },
+          {
+            "method": "GET",
+            "path": "/:id/evidence"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/generate-report"
+          },
+          {
+            "method": "GET",
+            "path": "/:id/reports"
+          },
+          {
+            "method": "GET",
+            "path": "/status/detection"
+          },
+          {
+            "method": "GET",
+            "path": "/status/triage"
+          },
+          {
+            "method": "GET",
+            "path": "/status/playbooks"
+          },
+          {
+            "method": "GET",
+            "path": "/status/forensics"
+          },
+          {
+            "method": "GET",
+            "path": "/status/reporting"
+          },
+          {
+            "method": "POST",
+            "path": "/webhook"
+          }
+        ],
+        "count": 17
+      },
+      {
+        "file": "incidentWorkflowRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/queue"
+          },
+          {
+            "method": "GET",
+            "path": "/stats"
+          },
+          {
+            "method": "PUT",
+            "path": "/:id/status"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/assign"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/escalate"
+          },
+          {
+            "method": "GET",
+            "path": "/:id/comments"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/comments"
+          },
+          {
+            "method": "GET",
+            "path": "/:id/history"
+          },
+          {
+            "method": "GET",
+            "path": "/:id/sla"
+          }
+        ],
+        "count": 9
+      },
+      {
+        "file": "integrationsRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/webhooks"
+          },
+          {
+            "method": "POST",
+            "path": "/webhooks"
+          },
+          {
+            "method": "PUT",
+            "path": "/webhooks/:id"
+          },
+          {
+            "method": "DELETE",
+            "path": "/webhooks/:id"
+          },
+          {
+            "method": "POST",
+            "path": "/webhooks/:id/test"
+          },
+          {
+            "method": "GET",
+            "path": "/automations"
+          },
+          {
+            "method": "POST",
+            "path": "/automations"
+          },
+          {
+            "method": "PUT",
+            "path": "/automations/:id"
+          },
+          {
+            "method": "DELETE",
+            "path": "/automations/:id"
+          },
+          {
+            "method": "GET",
+            "path": "/api-keys"
+          },
+          {
+            "method": "POST",
+            "path": "/api-keys"
+          },
+          {
+            "method": "DELETE",
+            "path": "/api-keys/:id"
+          },
+          {
+            "method": "GET",
+            "path": "/sites"
+          },
+          {
+            "method": "POST",
+            "path": "/sites"
+          },
+          {
+            "method": "PUT",
+            "path": "/sites/:id"
+          },
+          {
+            "method": "GET",
+            "path": "/sites/:id/switch"
+          }
+        ],
+        "count": 16
+      },
+      {
+        "file": "loadBalancerRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "GET",
+            "path": "/servers"
+          },
+          {
+            "method": "GET",
+            "path": "/servers/:serverId"
+          },
+          {
+            "method": "POST",
+            "path": "/servers/:serverId/health-check"
+          },
+          {
+            "method": "PUT",
+            "path": "/servers/:serverId/toggle"
+          },
+          {
+            "method": "PUT",
+            "path": "/servers/:serverId/config"
+          },
+          {
+            "method": "GET",
+            "path": "/healthy-servers"
+          },
+          {
+            "method": "GET",
+            "path": "/statistics"
+          },
+          {
+            "method": "PUT",
+            "path": "/algorithm"
+          },
+          {
+            "method": "GET",
+            "path": "/algorithms"
+          },
+          {
+            "method": "PUT",
+            "path": "/sticky-sessions"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "POST",
+            "path": "/test-server"
+          },
+          {
+            "method": "GET",
+            "path": "/sessions"
+          }
+        ],
+        "count": 14
+      },
+      {
+        "file": "loggingRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/stats"
+          },
+          {
+            "method": "GET",
+            "path": "/files"
+          },
+          {
+            "method": "GET",
+            "path": "/file/:filename"
+          },
+          {
+            "method": "POST",
+            "path": "/search"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "POST",
+            "path": "/cleanup"
+          },
+          {
+            "method": "POST",
+            "path": "/reset-stats"
+          },
+          {
+            "method": "GET",
+            "path": "/dashboard"
+          },
+          {
+            "method": "POST",
+            "path": "/test"
+          }
+        ],
+        "count": 9
+      },
+      {
+        "file": "mfaRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/setup"
+          },
+          {
+            "method": "POST",
+            "path": "/verify-setup"
+          },
+          {
+            "method": "POST",
+            "path": "/verify"
+          },
+          {
+            "method": "POST",
+            "path": "/disable"
+          },
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "POST",
+            "path": "/regenerate-backup-codes"
+          }
+        ],
+        "count": 6
+      },
+      {
+        "file": "monitoringRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "GET",
+            "path": "/dashboard"
+          },
+          {
+            "method": "GET",
+            "path": "/alerts"
+          },
+          {
+            "method": "POST",
+            "path": "/thresholds"
+          },
+          {
+            "method": "POST",
+            "path": "/start"
+          },
+          {
+            "method": "POST",
+            "path": "/stop"
+          },
+          {
+            "method": "GET",
+            "path": "/stream"
+          },
+          {
+            "method": "GET",
+            "path": "/historical"
+          }
+        ],
+        "count": 9
+      },
+      {
+        "file": "notificationRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/preferences"
+          },
+          {
+            "method": "PUT",
+            "path": "/preferences"
+          },
+          {
+            "method": "POST",
+            "path": "/push/subscribe"
+          },
+          {
+            "method": "DELETE",
+            "path": "/push/unsubscribe"
+          },
+          {
+            "method": "GET",
+            "path": "/:recipientType/:recipientId/logs"
+          },
+          {
+            "method": "POST",
+            "path": "/track"
+          },
+          {
+            "method": "GET",
+            "path": "/recent"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/read"
+          },
+          {
+            "method": "POST",
+            "path": "/read-all"
+          }
+        ],
+        "count": 9
+      },
+      {
+        "file": "penetrationRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/external-attack"
+          },
+          {
+            "method": "POST",
+            "path": "/webapp-security"
+          },
+          {
+            "method": "POST",
+            "path": "/privilege-escalation"
+          },
+          {
+            "method": "POST",
+            "path": "/lateral-movement"
+          },
+          {
+            "method": "POST",
+            "path": "/data-exfiltration"
+          },
+          {
+            "method": "POST",
+            "path": "/mitm-attack"
+          },
+          {
+            "method": "POST",
+            "path": "/replay-attack"
+          },
+          {
+            "method": "POST",
+            "path": "/rate-limit-bypass"
+          },
+          {
+            "method": "GET",
+            "path": "/tests"
+          },
+          {
+            "method": "GET",
+            "path": "/tests/history"
+          },
+          {
+            "method": "GET",
+            "path": "/vulnerabilities"
+          },
+          {
+            "method": "GET",
+            "path": "/mitigations"
+          },
+          {
+            "method": "GET",
+            "path": "/compliance/score"
+          },
+          {
+            "method": "GET",
+            "path": "/compliance/score/:standard"
+          },
+          {
+            "method": "POST",
+            "path": "/compliance/report"
+          },
+          {
+            "method": "GET",
+            "path": "/compliance/reports"
+          },
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "GET",
+            "path": "/status"
+          }
+        ],
+        "count": 18
+      },
+      {
+        "file": "performanceRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "GET",
+            "path": "/cache"
+          },
+          {
+            "method": "POST",
+            "path": "/cache/clear"
+          },
+          {
+            "method": "GET",
+            "path": "/database"
+          },
+          {
+            "method": "GET",
+            "path": "/endpoints"
+          },
+          {
+            "method": "GET",
+            "path": "/slow-queries"
+          },
+          {
+            "method": "POST",
+            "path": "/reset"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "GET",
+            "path": "/recommendations"
+          }
+        ],
+        "count": 10
+      },
+      {
+        "file": "preDeploymentValidationRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/load-stress-test/run"
+          },
+          {
+            "method": "GET",
+            "path": "/load-stress-test/results"
+          },
+          {
+            "method": "GET",
+            "path": "/load-stress-test/metrics"
+          },
+          {
+            "method": "POST",
+            "path": "/pipeline-validation/run"
+          },
+          {
+            "method": "GET",
+            "path": "/pipeline-validation/results"
+          },
+          {
+            "method": "GET",
+            "path": "/pipeline-validation/status"
+          },
+          {
+            "method": "POST",
+            "path": "/blue-green-deployment/run"
+          },
+          {
+            "method": "GET",
+            "path": "/blue-green-deployment/results"
+          },
+          {
+            "method": "GET",
+            "path": "/blue-green-deployment/status"
+          },
+          {
+            "method": "POST",
+            "path": "/final-validation/run"
+          },
+          {
+            "method": "GET",
+            "path": "/final-validation/results"
+          },
+          {
+            "method": "GET",
+            "path": "/final-validation/status"
+          },
+          {
+            "method": "POST",
+            "path": "/comprehensive-validation/run"
+          }
+        ],
+        "count": 13
+      },
+      {
+        "file": "qrCodeRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/generate/:visitorId"
+          },
+          {
+            "method": "POST",
+            "path": "/validate"
+          },
+          {
+            "method": "POST",
+            "path": "/checkin"
+          },
+          {
+            "method": "GET",
+            "path": "/visitor/:visitorId"
+          },
+          {
+            "method": "GET",
+            "path": "/analytics"
+          },
+          {
+            "method": "POST",
+            "path": "/cleanup"
+          }
+        ],
+        "count": 6
+      },
+      {
+        "file": "rateLimitRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/stats"
+          },
+          {
+            "method": "GET",
+            "path": "/alerts"
+          },
+          {
+            "method": "POST",
+            "path": "/clear"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          }
+        ],
+        "count": 4
+      },
+      {
+        "file": "residentRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/dashboard"
+          },
+          {
+            "method": "GET",
+            "path": "/visitors"
+          },
+          {
+            "method": "POST",
+            "path": "/visitors"
+          },
+          {
+            "method": "GET",
+            "path": "/favorites"
+          },
+          {
+            "method": "GET",
+            "path": "/favorites/top"
+          },
+          {
+            "method": "GET",
+            "path": "/favorites/search"
+          },
+          {
+            "method": "GET",
+            "path": "/favorites/:id"
+          },
+          {
+            "method": "POST",
+            "path": "/favorites"
+          },
+          {
+            "method": "PUT",
+            "path": "/favorites/:id"
+          },
+          {
+            "method": "DELETE",
+            "path": "/favorites/:id"
+          },
+          {
+            "method": "POST",
+            "path": "/favorites/:id/record-visit"
+          }
+        ],
+        "count": 11
+      },
+      {
+        "file": "rollbackRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/snapshot"
+          },
+          {
+            "method": "POST",
+            "path": "/execute"
+          },
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "GET",
+            "path": "/history"
+          },
+          {
+            "method": "GET",
+            "path": "/active"
+          },
+          {
+            "method": "GET",
+            "path": "/:id"
+          },
+          {
+            "method": "POST",
+            "path": "/log"
+          },
+          {
+            "method": "GET",
+            "path": "/logs/query"
+          },
+          {
+            "method": "GET",
+            "path": "/traces"
+          },
+          {
+            "method": "GET",
+            "path": "/compliance"
+          },
+          {
+            "method": "GET",
+            "path": "/alerts"
+          },
+          {
+            "method": "POST",
+            "path": "/alerts/resolve"
+          }
+        ],
+        "count": 12
+      },
+      {
+        "file": "secretManagementRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "GET",
+            "path": "/health"
+          },
+          {
+            "method": "GET",
+            "path": "/:path"
+          },
+          {
+            "method": "POST",
+            "path": "/:path"
+          },
+          {
+            "method": "PUT",
+            "path": "/:path"
+          },
+          {
+            "method": "DELETE",
+            "path": "/:path"
+          },
+          {
+            "method": "POST",
+            "path": "/:path/rotate"
+          },
+          {
+            "method": "GET",
+            "path": "/:path/metadata"
+          },
+          {
+            "method": "GET",
+            "path": "/list/:path"
+          },
+          {
+            "method": "GET",
+            "path": "/rotation/history"
+          },
+          {
+            "method": "GET",
+            "path": "/rotation/queue"
+          },
+          {
+            "method": "GET",
+            "path": "/audit/events"
+          },
+          {
+            "method": "GET",
+            "path": "/audit/statistics"
+          },
+          {
+            "method": "POST",
+            "path": "/generate"
+          },
+          {
+            "method": "POST",
+            "path": "/cache/clear"
+          }
+        ],
+        "count": 15
+      },
+      {
+        "file": "securityMonitoringRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/siem/send-log"
+          },
+          {
+            "method": "GET",
+            "path": "/siem/status"
+          },
+          {
+            "method": "GET",
+            "path": "/siem/alerts"
+          },
+          {
+            "method": "POST",
+            "path": "/threat-intelligence/check-entity"
+          },
+          {
+            "method": "GET",
+            "path": "/threat-intelligence/status"
+          },
+          {
+            "method": "GET",
+            "path": "/threat-intelligence/blocked-entities"
+          },
+          {
+            "method": "POST",
+            "path": "/alerts/send"
+          },
+          {
+            "method": "GET",
+            "path": "/alerts/status"
+          },
+          {
+            "method": "GET",
+            "path": "/alerts"
+          },
+          {
+            "method": "POST",
+            "path": "/incident-response/process-incident"
+          },
+          {
+            "method": "GET",
+            "path": "/incident-response/status"
+          },
+          {
+            "method": "GET",
+            "path": "/incident-response/incidents"
+          },
+          {
+            "method": "POST",
+            "path": "/vulnerability-scanning/execute-scan"
+          },
+          {
+            "method": "GET",
+            "path": "/vulnerability-scanning/status"
+          },
+          {
+            "method": "GET",
+            "path": "/vulnerability-scanning/vulnerabilities"
+          },
+          {
+            "method": "GET",
+            "path": "/overall-status"
+          }
+        ],
+        "count": 16
+      },
+      {
+        "file": "securityRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/headers"
+          },
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "GET",
+            "path": "/audit"
+          },
+          {
+            "method": "POST",
+            "path": "/headers/test"
+          },
+          {
+            "method": "POST",
+            "path": "/scan"
+          },
+          {
+            "method": "GET",
+            "path": "/compliance"
+          }
+        ],
+        "count": 6
+      },
+      {
+        "file": "sessionRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/metrics"
+          },
+          {
+            "method": "GET",
+            "path": "/user/:userId"
+          },
+          {
+            "method": "DELETE",
+            "path": "/user/:userId/session/:sessionId"
+          },
+          {
+            "method": "DELETE",
+            "path": "/user/:userId/all"
+          },
+          {
+            "method": "POST",
+            "path": "/current/regenerate"
+          },
+          {
+            "method": "GET",
+            "path": "/current/status"
+          },
+          {
+            "method": "POST",
+            "path": "/current/extend"
+          },
+          {
+            "method": "POST",
+            "path": "/reset-metrics"
+          }
+        ],
+        "count": 8
+      },
+      {
+        "file": "sseRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/test"
+          },
+          {
+            "method": "GET",
+            "path": "/guards"
+          }
+        ],
+        "count": 2
+      },
+      {
+        "file": "systemRoutes.js",
+        "routes": [
+          {
+            "method": "GET",
+            "path": "/info"
+          },
+          {
+            "method": "GET",
+            "path": "/status"
+          },
+          {
+            "method": "GET",
+            "path": "/database/health"
+          },
+          {
+            "method": "GET",
+            "path": "/database/users/count"
+          },
+          {
+            "method": "GET",
+            "path": "/database/tables"
+          }
+        ],
+        "count": 5
+      },
+      {
+        "file": "userRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/register"
+          },
+          {
+            "method": "POST",
+            "path": "/login"
+          },
+          {
+            "method": "POST",
+            "path": "/logout"
+          },
+          {
+            "method": "POST",
+            "path": "/auth/refresh"
+          },
+          {
+            "method": "PUT",
+            "path": "/profile"
+          }
+        ],
+        "count": 5
+      },
+      {
+        "file": "visitorPublicRoutes.js",
+        "routes": [],
+        "count": 0
+      },
+      {
+        "file": "visitorRoutes.js",
+        "routes": [
+          {
+            "method": "POST",
+            "path": "/"
+          },
+          {
+            "method": "GET",
+            "path": "/"
+          },
+          {
+            "method": "POST",
+            "path": "/:visitorId/pass"
+          },
+          {
+            "method": "POST",
+            "path": "/bulk-invite"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/check-in"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/check-out"
+          },
+          {
+            "method": "POST",
+            "path": "/walk-in"
+          },
+          {
+            "method": "GET",
+            "path": "/walk-ins/today"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/verify-otp"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/resend-otp"
+          },
+          {
+            "method": "POST",
+            "path": "/:id/quick-action"
+          },
+          {
+            "method": "GET",
+            "path": "/bulk-invite/:inviteCode"
+          },
+          {
+            "method": "POST",
+            "path": "/complete/:inviteCode"
+          },
+          {
+            "method": "POST",
+            "path": "/self-checkin/:inviteCode"
+          },
+          {
+            "method": "GET",
+            "path": "/active"
+          },
+          {
+            "method": "GET",
+            "path": "/report"
+          },
+          {
+            "method": "DELETE",
+            "path": "/:visitorId/revoke"
+          },
+          {
+            "method": "GET",
+            "path": "/reports"
+          },
+          {
+            "method": "GET",
+            "path": "/invite/:inviteCode"
+          },
+          {
+            "method": "POST",
+            "path": "/verify-otp"
+          }
+        ],
+        "count": 20
+      }
+    ],
+    "frontend": []
+  },
+  "services": [
+    {
+      "name": "alertingService",
+      "file": "alertingService.js",
+      "size": 9318,
+      "sizeKB": 9
+    },
+    {
+      "name": "apiMobileSecurityService",
+      "file": "apiMobileSecurityService.js",
+      "size": 37969,
+      "sizeKB": 37
+    },
+    {
+      "name": "apmService",
+      "file": "apmService.js",
+      "size": 10243,
+      "sizeKB": 10
+    },
+    {
+      "name": "applicationFaultService",
+      "file": "applicationFaultService.js",
+      "size": 30696,
+      "sizeKB": 30
+    },
+    {
+      "name": "auditEvidenceCollectionService",
+      "file": "auditEvidenceCollectionService.js",
+      "size": 27292,
+      "sizeKB": 27
+    },
+    {
+      "name": "auditLogger",
+      "file": "auditLogger.js",
+      "size": 14563,
+      "sizeKB": 14
+    },
+    {
+      "name": "auditService",
+      "file": "auditService.js",
+      "size": 533,
+      "sizeKB": 1
+    },
+    {
+      "name": "auditTraceabilityService",
+      "file": "auditTraceabilityService.js",
+      "size": 27510,
+      "sizeKB": 27
+    },
+    {
+      "name": "automatedFailoverValidationService",
+      "file": "automatedFailoverValidationService.js",
+      "size": 29668,
+      "sizeKB": 29
+    },
+    {
+      "name": "automatedIncidentResponseService",
+      "file": "automatedIncidentResponseService.js",
+      "size": 33759,
+      "sizeKB": 33
+    },
+    {
+      "name": "automationService",
+      "file": "automationService.js",
+      "size": 10575,
+      "sizeKB": 10
+    },
+    {
+      "name": "backupIntegrityVerificationService",
+      "file": "backupIntegrityVerificationService.js",
+      "size": 24552,
+      "sizeKB": 24
+    },
+    {
+      "name": "backupService",
+      "file": "backupService.js",
+      "size": 18923,
+      "sizeKB": 18
+    },
+    {
+      "name": "blueGreenDeploymentService",
+      "file": "blueGreenDeploymentService.js",
+      "size": 18394,
+      "sizeKB": 18
+    },
+    {
+      "name": "centralizedLoggingService",
+      "file": "centralizedLoggingService.js",
+      "size": 15897,
+      "sizeKB": 16
+    },
+    {
+      "name": "chaosReportingService",
+      "file": "chaosReportingService.js",
+      "size": 29633,
+      "sizeKB": 29
+    },
+    {
+      "name": "chaosService",
+      "file": "chaosService.js",
+      "size": 33073,
+      "sizeKB": 32
+    },
+    {
+      "name": "complianceReportingService",
+      "file": "complianceReportingService.js",
+      "size": 23645,
+      "sizeKB": 23
+    },
+    {
+      "name": "complianceService",
+      "file": "complianceService.js",
+      "size": 3460,
+      "sizeKB": 3
+    },
+    {
+      "name": "connectionPoolService",
+      "file": "connectionPoolService.js",
+      "size": 13491,
+      "sizeKB": 13
+    },
+    {
+      "name": "continuousMonitoringReportingService",
+      "file": "continuousMonitoringReportingService.js",
+      "size": 26339,
+      "sizeKB": 26
+    },
+    {
+      "name": "continuousVulnerabilityScanningService",
+      "file": "continuousVulnerabilityScanningService.js",
+      "size": 34971,
+      "sizeKB": 34
+    },
+    {
+      "name": "dashboardMetrics",
+      "file": "dashboardMetrics.js",
+      "size": 10292,
+      "sizeKB": 10
+    },
+    {
+      "name": "databaseHealthService",
+      "file": "databaseHealthService.js",
+      "size": 8753,
+      "sizeKB": 9
+    },
+    {
+      "name": "databaseService",
+      "file": "databaseService.js",
+      "size": 7644,
+      "sizeKB": 7
+    },
+    {
+      "name": "deploymentPipelineValidationService",
+      "file": "deploymentPipelineValidationService.js",
+      "size": 19562,
+      "sizeKB": 19
+    },
+    {
+      "name": "disasterRecoveryService",
+      "file": "disasterRecoveryService.js",
+      "size": 21242,
+      "sizeKB": 21
+    },
+    {
+      "name": "drDrillService",
+      "file": "drDrillService.js",
+      "size": 28566,
+      "sizeKB": 28
+    },
+    {
+      "name": "drService",
+      "file": "drService.js",
+      "size": 18817,
+      "sizeKB": 18
+    },
+    {
+      "name": "emailService",
+      "file": "emailService.js",
+      "size": 5009,
+      "sizeKB": 5
+    },
+    {
+      "name": "encryptionService",
+      "file": "encryptionService.js",
+      "size": 11185,
+      "sizeKB": 11
+    },
+    {
+      "name": "enhancedHealthService",
+      "file": "enhancedHealthService.js",
+      "size": 17249,
+      "sizeKB": 17
+    },
+    {
+      "name": "favoriteVisitorService",
+      "file": "favoriteVisitorService.js",
+      "size": 9102,
+      "sizeKB": 9
+    },
+    {
+      "name": "finalComplianceReportingService",
+      "file": "finalComplianceReportingService.js",
+      "size": 43766,
+      "sizeKB": 43
+    },
+    {
+      "name": "finalGoNoGoValidationService",
+      "file": "finalGoNoGoValidationService.js",
+      "size": 32873,
+      "sizeKB": 32
+    },
+    {
+      "name": "forensicsService",
+      "file": "forensicsService.js",
+      "size": 24222,
+      "sizeKB": 24
+    },
+    {
+      "name": "gdprComplianceService",
+      "file": "gdprComplianceService.js",
+      "size": 45257,
+      "sizeKB": 44
+    },
+    {
+      "name": "haService",
+      "file": "haService.js",
+      "size": 20103,
+      "sizeKB": 20
+    },
+    {
+      "name": "incidentDetectionService",
+      "file": "incidentDetectionService.js",
+      "size": 22768,
+      "sizeKB": 22
+    },
+    {
+      "name": "incidentTriageService",
+      "file": "incidentTriageService.js",
+      "size": 22727,
+      "sizeKB": 22
+    },
+    {
+      "name": "internalThreatService",
+      "file": "internalThreatService.js",
+      "size": 40010,
+      "sizeKB": 39
+    },
+    {
+      "name": "iso27001CertificationService",
+      "file": "iso27001CertificationService.js",
+      "size": 37442,
+      "sizeKB": 37
+    },
+    {
+      "name": "kenyaDPAAuditService",
+      "file": "kenyaDPAAuditService.js",
+      "size": 29082,
+      "sizeKB": 28
+    },
+    {
+      "name": "loadBalancerHealthService",
+      "file": "loadBalancerHealthService.js",
+      "size": 15047,
+      "sizeKB": 15
+    },
+    {
+      "name": "loadBalancerService",
+      "file": "loadBalancerService.js",
+      "size": 14024,
+      "sizeKB": 14
+    },
+    {
+      "name": "loadStressTestingService",
+      "file": "loadStressTestingService.js",
+      "size": 18880,
+      "sizeKB": 18
+    },
+    {
+      "name": "loggingService",
+      "file": "loggingService.js",
+      "size": 17847,
+      "sizeKB": 17
+    },
+    {
+      "name": "memoryCacheService",
+      "file": "memoryCacheService.js",
+      "size": 5892,
+      "sizeKB": 6
+    },
+    {
+      "name": "mfaService",
+      "file": "mfaService.js",
+      "size": 19079,
+      "sizeKB": 19
+    },
+    {
+      "name": "mockBackupService",
+      "file": "mockBackupService.js",
+      "size": 15142,
+      "sizeKB": 15
+    },
+    {
+      "name": "monitoringDashboardService",
+      "file": "monitoringDashboardService.js",
+      "size": 16167,
+      "sizeKB": 16
+    },
+    {
+      "name": "monitoringService",
+      "file": "monitoringService.js",
+      "size": 14342,
+      "sizeKB": 14
+    },
+    {
+      "name": "networkChaosService",
+      "file": "networkChaosService.js",
+      "size": 29300,
+      "sizeKB": 29
+    },
+    {
+      "name": "notificationService",
+      "file": "notificationService.js",
+      "size": 13779,
+      "sizeKB": 13
+    },
+    {
+      "name": "optimizedDatabaseService",
+      "file": "optimizedDatabaseService.js",
+      "size": 11343,
+      "sizeKB": 11
+    },
+    {
+      "name": "owaspValidationService",
+      "file": "owaspValidationService.js",
+      "size": 44230,
+      "sizeKB": 43
+    },
+    {
+      "name": "penetrationComplianceService",
+      "file": "penetrationComplianceService.js",
+      "size": 36748,
+      "sizeKB": 36
+    },
+    {
+      "name": "penetrationTestingService",
+      "file": "penetrationTestingService.js",
+      "size": 34249,
+      "sizeKB": 33
+    },
+    {
+      "name": "performanceService",
+      "file": "performanceService.js",
+      "size": 18842,
+      "sizeKB": 18
+    },
+    {
+      "name": "qrCodeService-optimized",
+      "file": "qrCodeService-optimized.js",
+      "size": 8448,
+      "sizeKB": 8
+    },
+    {
+      "name": "qrCodeService",
+      "file": "qrCodeService.js",
+      "size": 9423,
+      "sizeKB": 9
+    },
+    {
+      "name": "realtimeAlertingService",
+      "file": "realtimeAlertingService.js",
+      "size": 26657,
+      "sizeKB": 26
+    },
+    {
+      "name": "redisCacheService",
+      "file": "redisCacheService.js",
+      "size": 18656,
+      "sizeKB": 18
+    },
+    {
+      "name": "redisService",
+      "file": "redisService.js",
+      "size": 12083,
+      "sizeKB": 12
+    },
+    {
+      "name": "reportService",
+      "file": "reportService.js",
+      "size": 13177,
+      "sizeKB": 13
+    },
+    {
+      "name": "resourceStressService",
+      "file": "resourceStressService.js",
+      "size": 30880,
+      "sizeKB": 30
+    },
+    {
+      "name": "responsePlaybookService",
+      "file": "responsePlaybookService.js",
+      "size": 24447,
+      "sizeKB": 24
+    },
+    {
+      "name": "restoreService",
+      "file": "restoreService.js",
+      "size": 23160,
+      "sizeKB": 23
+    },
+    {
+      "name": "restoreTestingDrillValidationService",
+      "file": "restoreTestingDrillValidationService.js",
+      "size": 27912,
+      "sizeKB": 27
+    },
+    {
+      "name": "rollbackAlertingService",
+      "file": "rollbackAlertingService.js",
+      "size": 24160,
+      "sizeKB": 24
+    },
+    {
+      "name": "rollbackService",
+      "file": "rollbackService.js",
+      "size": 29294,
+      "sizeKB": 29
+    },
+    {
+      "name": "secretAuditService",
+      "file": "secretAuditService.js",
+      "size": 10931,
+      "sizeKB": 11
+    },
+    {
+      "name": "secretManagementService",
+      "file": "secretManagementService.js",
+      "size": 13086,
+      "sizeKB": 13
+    },
+    {
+      "name": "secretRotationService",
+      "file": "secretRotationService.js",
+      "size": 14686,
+      "sizeKB": 14
+    },
+    {
+      "name": "secretsManagerService",
+      "file": "secretsManagerService.js",
+      "size": 6434,
+      "sizeKB": 6
+    },
+    {
+      "name": "securityMonitoringService",
+      "file": "securityMonitoringService.js",
+      "size": 12871,
+      "sizeKB": 13
+    },
+    {
+      "name": "sessionSecurityService",
+      "file": "sessionSecurityService.js",
+      "size": 16501,
+      "sizeKB": 16
+    },
+    {
+      "name": "siemIntegrationService",
+      "file": "siemIntegrationService.js",
+      "size": 25810,
+      "sizeKB": 25
+    },
+    {
+      "name": "slaComplianceMonitoringService",
+      "file": "slaComplianceMonitoringService.js",
+      "size": 21851,
+      "sizeKB": 21
+    },
+    {
+      "name": "smsService",
+      "file": "smsService.js",
+      "size": 406,
+      "sizeKB": 0
+    },
+    {
+      "name": "threatIntelligenceService",
+      "file": "threatIntelligenceService.js",
+      "size": 30644,
+      "sizeKB": 30
+    },
+    {
+      "name": "tokenService",
+      "file": "tokenService.js",
+      "size": 18591,
+      "sizeKB": 18
+    },
+    {
+      "name": "userService",
+      "file": "userService.js",
+      "size": 22883,
+      "sizeKB": 22
+    },
+    {
+      "name": "vaultService",
+      "file": "vaultService.js",
+      "size": 12030,
+      "sizeKB": 12
+    },
+    {
+      "name": "visitorService",
+      "file": "visitorService.js",
+      "size": 0,
+      "sizeKB": 0
+    },
+    {
+      "name": "vulnerabilityScanService",
+      "file": "vulnerabilityScanService.js",
+      "size": 12182,
+      "sizeKB": 12
+    },
+    {
+      "name": "webhookService",
+      "file": "webhookService.js",
+      "size": 7638,
+      "sizeKB": 7
+    },
+    {
+      "name": "websocketService",
+      "file": "websocketService.js",
+      "size": 12408,
+      "sizeKB": 12
+    }
+  ],
+  "components": {
+    "pages": [
+      {
+        "role": "resident",
+        "pages": [
+          "AddVisitor.jsx",
+          "AddVisitorWizard.jsx",
+          "BulkInvite.jsx",
+          "BulkInviteWizard.jsx",
+          "FavoriteVisitors.jsx",
+          "GeneratePass.jsx",
+          "QuickInvite.jsx",
+          "ResidentApprovalsPanel.jsx",
+          "ResidentDashboard.jsx",
+          "Settings.jsx",
+          "VisitorHistory.jsx",
+          "VisitorHistoryWithFilters.jsx"
+        ],
+        "count": 12
+      },
+      {
+        "role": "guard",
+        "pages": [
+          "GuardAnalytics.jsx",
+          "GuardDashboard.jsx",
+          "IncidentList.jsx",
+          "ManualCheck.jsx",
+          "ScanQR.jsx",
+          "Settings.jsx",
+          "VisitorHistory.jsx",
+          "WalkInRegistration.jsx"
+        ],
+        "count": 8
+      },
+      {
+        "role": "admin",
+        "pages": [
+          "AccessControl.jsx",
+          "AdminDashboard.jsx",
+          "AdminOperationsDashboard.jsx",
+          "IncidentDetailModal.jsx",
+          "IncidentManagement.jsx",
+          "IncidentWorkflowDashboard.jsx",
+          "IntegrationsHub.jsx",
+          "ManageGuards.jsx",
+          "ManageResidents.jsx",
+          "PolicyManagement.jsx",
+          "Reports.jsx",
+          "RoleManagement.jsx",
+          "Settings.jsx",
+          "SiteManagement.jsx",
+          "VisitorLog.jsx",
+          "WatchlistManagement.jsx"
+        ],
+        "count": 16
+      },
+      {
+        "role": "public",
+        "pages": [
+          "SelfCheckInKiosk.jsx",
+          "VisitorInvitePage.jsx"
+        ],
+        "count": 2
+      }
+    ],
+    "ui": [
+      "AccessibleButton.jsx",
+      "AccessibleFormField.jsx",
+      "AccessibleModal.jsx",
+      "AdvancedSkeleton.jsx",
+      "AdvancedValidatedInput.jsx",
+      "Alert.jsx",
+      "Badge.jsx",
+      "BottomNav.jsx",
+      "Breadcrumbs.jsx",
+      "BrowserCompatibility.jsx",
+      "BrowserCompatibilityWarning.jsx",
+      "Button.jsx",
+      "Card.jsx",
+      "Checkbox.jsx",
+      "Dropdown.jsx",
+      "EmptyState.jsx",
+      "EnhancedBreadcrumbs.jsx",
+      "EnhancedFormWizard.jsx",
+      "EnhancedInput.jsx",
+      "EnhancedLoading.jsx",
+      "ErrorAlert.jsx",
+      "ErrorBoundary.jsx",
+      "ErrorDisplay.jsx",
+      "ErrorQueue.jsx",
+      "FAB.jsx",
+      "FilterPanel.jsx",
+      "FlowNavigation.jsx",
+      "FormField.jsx",
+      "FormStep.jsx",
+      "FormWizard.jsx",
+      "Input.jsx",
+      "KeyboardShortcuts.jsx",
+      "Label.jsx",
+      "LiveRegion.jsx",
+      "Loading.jsx",
+      "LoadingStates.jsx",
+      "LoadingStatesIntegration.jsx",
+      "LoadingStatesManager.jsx",
+      "Modal.jsx",
+      "NavigationAnalytics.jsx",
+      "NavigationFlow.jsx",
+      "NotificationBell.jsx",
+      "OptimizedImage.jsx",
+      "PageHeader.jsx",
+      "PageLayout.jsx",
+      "Pagination.jsx",
+      "Progress.jsx",
+      "ProgressiveDisclosure.jsx",
+      "ProgressiveLoading.jsx",
+      "ResponsiveTable.jsx",
+      "SearchBar.jsx",
+      "SearchFilter.jsx",
+      "SearchResults.jsx",
+      "Select.jsx",
+      "Skeleton.jsx",
+      "SuccessAnimation.jsx",
+      "SuccessDisplay.jsx",
+      "Tabs.jsx",
+      "ThemeToggle.jsx",
+      "Toast.jsx",
+      "Tooltip.jsx",
+      "ValidatedForm.jsx",
+      "ValidatedFormField.jsx",
+      "ValidatedInput.jsx",
+      "ValidationSummary.jsx",
+      "VirtualList.jsx",
+      "index.js"
+    ],
+    "hooks": [
+      "useAccessibility.js",
+      "useAdvancedValidation.js",
+      "useApiCall.js",
+      "useApiForm.js",
+      "useAsync.js",
+      "useBrowserCompatibility.js",
+      "useCurrentRole.js",
+      "useDebounce.js",
+      "useErrorHandler.js",
+      "useFormValidation.js",
+      "useFormWizard.js",
+      "useLoadingState.js",
+      "useLoadingStates.js",
+      "useLocalStorage.js",
+      "usePagination.js",
+      "usePerformanceMonitor.js",
+      "usePerformanceMonitoring.js",
+      "usePushNotifications.js",
+      "useSearch.js",
+      "useVisitorEvents.js",
+      "useWebSocket.js"
+    ]
+  },
+  "realtime": {
+    "websocket": true,
+    "sse": true,
+    "pushNotifications": true
+  },
+  "security": {
+    "authentication": true,
+    "authorization": true,
+    "rateLimit": true,
+    "csrf": true,
+    "mfa": true
+  },
+  "features": {
+    "darkMode": true,
+    "favorites": true,
+    "notifications": true,
+    "qrCode": true,
+    "analytics": true
+  },
+  "issues": [],
+  "recommendations": [
+    "Add VAPID keys to environment variables for push notifications"
+  ]
+}

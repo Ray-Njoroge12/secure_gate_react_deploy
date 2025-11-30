@@ -1,5 +1,5 @@
-const { describe, it, expect, beforeEach, afterEach, jest } = require('@jest/globals');
-const validationMiddleware = require('../../src/middleware/validationMiddleware');
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { ValidationSchemas, validateRequest, SanitizeUtil, CustomValidators } from '../../src/middleware/validationMiddleware.js';
 
 describe('Validation Middleware', () => {
   let req, res, next;

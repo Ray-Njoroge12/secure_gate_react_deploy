@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createVisitor, createPass } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
-import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay } from "../../components/ui";
+import logger from "../../utils/logger";
+import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay, PageHeader } from "../../components/ui";
 import ConsentForm from "../../components/ConsentForm";
 import { 
   User, 
@@ -16,8 +17,25 @@ import {
   CheckCircle,
   ArrowLeft,
   Loader2,
-  Shield
+  Shield,
+  ChevronDown
 } from "lucide-react";
+
+// Common visit purposes for quick selection
+const VISIT_PURPOSES = [
+  { value: '', label: 'Select purpose...', icon: '📋' },
+  { value: 'Social Visit', label: 'Social Visit', icon: '👋' },
+  { value: 'Family Visit', label: 'Family Visit', icon: '👨‍👩‍👧' },
+  { value: 'Delivery', label: 'Delivery', icon: '📦' },
+  { value: 'Maintenance/Repair', label: 'Maintenance/Repair', icon: '🔧' },
+  { value: 'Cleaning Service', label: 'Cleaning Service', icon: '🧹' },
+  { value: 'Business Meeting', label: 'Business Meeting', icon: '💼' },
+  { value: 'Construction Work', label: 'Construction Work', icon: '🏗️' },
+  { value: 'Healthcare Visit', label: 'Healthcare Visit', icon: '⚕️' },
+  { value: 'Real Estate Viewing', label: 'Real Estate Viewing', icon: '🏠' },
+  { value: 'Event/Party', label: 'Event/Party', icon: '🎉' },
+  { value: 'Custom', label: 'Other (specify)', icon: '✏️' },
+];
 
 const AddVisitor = () => {
   const navigate = useNavigate();
@@ -28,14 +46,22 @@ const AddVisitor = () => {
     dateOfVisit: "",
     time: "",
     purpose: "",
+    customPurpose: "",
     generatePassImmediately: true,
   });
+  const [showCustomPurpose, setShowCustomPurpose] = useState(false);
   const [consentData, setConsentData] = useState({
     given: false,
     timestamp: null,
     type: 'data_processing',
     version: '1.0'
   });
+
+  // State declarations must come before useEffect
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -57,10 +83,6 @@ const AddVisitor = () => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [loading]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
 
   const validateForm = () => {
     const errors = {};
@@ -94,7 +116,11 @@ const AddVisitor = () => {
       errors.time = "Time of visit is required";
     }
     
-    if (!formData.purpose.trim()) {
+    // Purpose validation - check both dropdown and custom
+    const effectivePurpose = formData.purpose === 'Custom' 
+      ? formData.customPurpose.trim() 
+      : formData.purpose.trim();
+    if (!effectivePurpose) {
       errors.purpose = "Purpose of visit is required";
     }
     
@@ -120,6 +146,11 @@ const AddVisitor = () => {
     setSuccess(null);
 
     try {
+      // Determine the effective purpose (dropdown or custom)
+      const effectivePurpose = formData.purpose === 'Custom' 
+        ? formData.customPurpose.trim() 
+        : formData.purpose.trim();
+
       // Create visitor
       const visitorData = {
         name: formData.name.trim(),
@@ -127,7 +158,7 @@ const AddVisitor = () => {
         email: formData.email.trim(),
         dateOfVisit: formData.dateOfVisit,
         time: formData.time,
-        purpose: formData.purpose.trim(),
+        purpose: effectivePurpose,
         // Include consent data
         consent_given: consentData.given,
         consent_timestamp: consentData.timestamp,
@@ -136,11 +167,11 @@ const AddVisitor = () => {
       };
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('[DEBUG] Sending visitor data:', visitorData);
+        logger.debug('Sending visitor data:', visitorData);
       }
       const visitorResponse = await createVisitor(visitorData);
       if (process.env.NODE_ENV === 'development') {
-        console.log('[DEBUG] Visitor response:', visitorResponse);
+        logger.debug('Visitor response:', visitorResponse);
       }
       
       let passResponse = null;
@@ -149,7 +180,7 @@ const AddVisitor = () => {
           passResponse = await createPass(visitorResponse.id);
         } catch (passError) {
           if (process.env.NODE_ENV === 'development') {
-            console.warn('[WARN] Pass generation failed:', passError);
+            logger.warn('Pass generation failed:', passError);
           }
         }
       }
@@ -194,6 +225,11 @@ const AddVisitor = () => {
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
+    // Handle purpose dropdown - show custom input when "Custom" is selected
+    if (field === 'purpose') {
+      setShowCustomPurpose(value === 'Custom');
+    }
+    
     // Clear field-specific validation error
     if (validationErrors[field]) {
       setValidationErrors(prev => ({ ...prev, [field]: null }));
@@ -208,47 +244,41 @@ const AddVisitor = () => {
       dateOfVisit: "",
       time: "",
       purpose: "",
+      customPurpose: "",
       generatePassImmediately: true,
     });
+    setShowCustomPurpose(false);
     setError("");
     setSuccess(null);
     setValidationErrors({});
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard/resident')}
-              className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-slate-300" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Create Visitor</h1>
-              <p className="text-slate-400">Add a new visitor and generate access credentials</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader 
+        title="Create Visitor"
+        subtitle="Add a new visitor and generate access credentials"
+        icon={<User className="w-6 h-6 text-green-600" />}
+        showBack={true}
+        backTo="/dashboard/resident"
+      />
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+      <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8">
+        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <Card.Content className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Personal Information */}
+          <form onSubmit={handleSubmit} data-test-id="add-visitor-form" className="space-y-6">
+            {/* PHASE B1: Section 1 - Visitor Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
+              <h3 className="font-semibold text-gray-900 text-base md:text-lg flex items-center gap-2 mb-4">
+                <User className="w-5 h-5 text-gray-500" />
+                Visitor Information
+              </h3>
+              
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Personal Information
-                </h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
+                    data-test-id="visitor-name"
                     label="Full Name"
                     placeholder="Enter visitor's full name"
                     value={formData.name}
@@ -257,10 +287,11 @@ const AddVisitor = () => {
                     required
                     error={validationErrors.name}
                     icon={<User className="w-4 h-4" />}
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
+                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
                   />
 
                   <Input
+                    data-test-id="visitor-phone"
                     label="Phone Number"
                     placeholder="0xxxxxxxxx"
                     value={formData.phone}
@@ -270,11 +301,12 @@ const AddVisitor = () => {
                     error={validationErrors.phone}
                     helperText="Format: 0xxxxxxxxx (10 digits)"
                     icon={<Phone className="w-4 h-4" />}
-                    className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
+                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
 
                 <Input
+                  data-test-id="visitor-email"
                   label="Email Address"
                   type="email"
                   placeholder="visitor@example.com (optional)"
@@ -283,104 +315,148 @@ const AddVisitor = () => {
                   disabled={loading}
                   error={validationErrors.email}
                   icon={<Mail className="w-4 h-4" />}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
+                  className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
                 />
               </div>
+            </div>
 
-              {/* Visit Details */}
+            {/* PHASE B1: Section 2 - Visit Details */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
+              <h3 className="font-semibold text-gray-900 text-base md:text-lg flex items-center gap-2 mb-4">
+                <Calendar className="w-5 h-5 text-gray-500" />
+                Visit Details
+              </h3>
+              
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Visit Details
-                </h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
+                    data-test-id="visit-date"
                     label="Date of Visit"
                     type="date"
+                    name="dateOfVisit"
                     value={formData.dateOfVisit}
                     onChange={(e) => handleInputChange('dateOfVisit', e.target.value)}
                     disabled={loading}
                     required
                     error={validationErrors.dateOfVisit}
                     icon={<Calendar className="w-4 h-4" />}
-                    className="bg-slate-700/50 border-slate-600 text-white"
+                    className="bg-white border-gray-300 text-gray-900 focus:border-green-500 focus:ring-green-500"
                   />
-
+                  
                   <Input
+                    data-test-id="visit-time"
                     label="Time of Visit"
                     type="time"
+                    name="time"
                     value={formData.time}
                     onChange={(e) => handleInputChange('time', e.target.value)}
                     disabled={loading}
                     required
                     error={validationErrors.time}
                     icon={<Clock className="w-4 h-4" />}
-                    className="bg-slate-700/50 border-slate-600 text-white"
+                    className="bg-white border-gray-300 text-gray-900 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
+                
+                {/* Purpose Dropdown */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    <FileText className="w-4 h-4 inline mr-2 text-gray-400" />
+                    Purpose of Visit <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      data-test-id="visit-purpose"
+                      value={formData.purpose}
+                      onChange={(e) => handleInputChange('purpose', e.target.value)}
+                      disabled={loading}
+                      className={`w-full px-4 py-3 rounded-lg border appearance-none bg-white ${
+                        validationErrors.purpose 
+                          ? 'border-red-300 bg-red-50' 
+                          : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                      } focus:outline-none focus:ring-2 focus:ring-green-500/20 pr-10`}
+                    >
+                      {VISIT_PURPOSES.map((purpose) => (
+                        <option key={purpose.value} value={purpose.value}>
+                          {purpose.icon} {purpose.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                  {validationErrors.purpose && (
+                    <p className="text-red-500 text-sm">{validationErrors.purpose}</p>
+                  )}
+                </div>
 
-                <Input
-                  label="Purpose of Visit"
-                  placeholder="e.g., visit, delivery, meeting, maintenance"
-                  value={formData.purpose}
-                  onChange={(e) => handleInputChange('purpose', e.target.value)}
-                  disabled={loading}
-                  required
-                  error={validationErrors.purpose}
-                  icon={<FileText className="w-4 h-4" />}
-                  className="bg-slate-700/50 border-slate-600 text-white placeholder-slate-400"
-                />
+                {/* Custom Purpose Input (shown when "Custom" is selected) */}
+                {showCustomPurpose && (
+                  <Input
+                    data-test-id="custom-purpose"
+                    label="Specify Purpose"
+                    name="customPurpose"
+                    value={formData.customPurpose}
+                    onChange={(e) => handleInputChange('customPurpose', e.target.value)}
+                    disabled={loading}
+                    required
+                    error={validationErrors.purpose}
+                    placeholder="Enter the purpose of visit"
+                    icon={<FileText className="w-4 h-4" />}
+                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
+                  />
+                )}
               </div>
+            </div>
 
-              {/* QR Pass Option */}
-              <div className="bg-slate-700/30 rounded-lg p-4 border border-slate-600">
-                <div className="flex items-start gap-3">
+            {/* PHASE B1: Section 3 - Options & Consent */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
+              <h3 className="font-semibold text-gray-900 text-base md:text-lg flex items-center gap-2 mb-4">
+                <Shield className="w-5 h-5 text-gray-500" />
+                Options & Consent
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-start md:items-center gap-3 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <input
                     type="checkbox"
                     id="generatePass"
+                    name="generatePassImmediately"
                     checked={formData.generatePassImmediately}
                     onChange={(e) => handleInputChange('generatePassImmediately', e.target.checked)}
                     disabled={loading}
-                    className="mt-1 h-4 w-4 text-green-600 bg-slate-800 border-slate-600 rounded focus:ring-green-500"
+                    className="w-4 h-4 mt-1 md:mt-0 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
                   />
-                  <div className="flex-1">
-                    <label htmlFor="generatePass" className="flex items-center gap-2 text-sm font-medium text-slate-200">
-                      <QrCode className="w-4 h-4" />
-                      Generate QR pass immediately
-                      <Badge variant="info" size="sm">Recommended</Badge>
-                    </label>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Auto-approve and create access pass without manual review
+                  <label htmlFor="generatePass" className="text-sm text-gray-700 cursor-pointer flex-1">
+                    <div className="flex items-center gap-2">
+                      <QrCode className="w-4 h-4 text-gray-500" />
+                      <span className="font-medium text-sm md:text-base">Generate QR Pass Immediately</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Creates a QR code pass that the visitor can use for quick check-in
                     </p>
-                  </div>
+                  </label>
                 </div>
-              </div>
-
-              {/* Consent Section */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Data Processing Consent
-                </h3>
                 
+                {/* Consent Form */}
                 <ConsentForm
+                  consentData={consentData}
                   onConsentChange={setConsentData}
                   required={true}
                   consentType="data_processing"
                   showDetails={true}
-                  className="bg-slate-700/30 rounded-lg p-4 border border-slate-600"
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                 />
                 
                 {validationErrors.consent && (
-                  <div className="text-red-400 text-sm flex items-center gap-2">
+                  <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg border border-red-200 flex items-center gap-2">
                     <Shield className="w-4 h-4" />
                     {validationErrors.consent}
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Action Buttons */}
+            {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Button
                   type="button"
@@ -393,8 +469,9 @@ const AddVisitor = () => {
                 </Button>
                 <Button
                   type="submit"
+                  data-test-id="submit-invite"
                   disabled={loading}
-                  className="flex-1 sm:flex-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 min-h-[44px]"
+                  className="flex-1 sm:flex-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg transition-all duration-200 min-h-[44px]"
                 >
                   {loading ? (
                     <>

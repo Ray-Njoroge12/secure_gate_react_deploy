@@ -152,10 +152,9 @@ const EnhancedBreadcrumbs = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [currentBreadcrumbs.length]);
 
-  if (!currentBreadcrumbs.length) return null;
-
-  // Determine which breadcrumbs to display
+  // Determine which breadcrumbs to display (must be before early returns)
   const displayBreadcrumbs = useMemo(() => {
+    if (!currentBreadcrumbs.length) return [];
     if (!collapsible || currentBreadcrumbs.length <= maxItems) {
       return currentBreadcrumbs;
     }
@@ -171,12 +170,15 @@ const EnhancedBreadcrumbs = ({
     return currentBreadcrumbs;
   }, [currentBreadcrumbs, maxItems, collapsible, isCollapsed]);
 
-  // Calculate progress if enabled
+  // Calculate progress if enabled (must be before early returns)
   const progress = useMemo(() => {
-    if (!showProgress) return null;
+    if (!showProgress || !currentBreadcrumbs.length) return null;
     const currentIndex = currentBreadcrumbs.findIndex(crumb => crumb.isCurrent);
     return currentIndex >= 0 ? ((currentIndex + 1) / currentBreadcrumbs.length) * 100 : 0;
   }, [currentBreadcrumbs, showProgress]);
+
+  // Early return after all hooks
+  if (!currentBreadcrumbs.length) return null;
 
   return (
     <div className={`breadcrumbs-container ${className}`}>

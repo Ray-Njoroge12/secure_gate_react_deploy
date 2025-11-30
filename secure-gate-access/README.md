@@ -132,3 +132,42 @@ client/src/
 - Testing & Build:
   - Frontend tests cover aggregates rendering and SSE toasts.
   - CRA build remains green.
+
+## System & Frontend Developments Summary (Canonical)
+
+### High-Level Architecture
+
+The system consists of a hardened Express/PostgreSQL backend, a React SPA frontend, and a thin integration layer for real-time updates (SSE) and notifications. The backend exposes a visitor lifecycle API (invite → check-in → check-out/revoke), while the frontend provides role-specific dashboards for residents, guards, and admins.
+
+### Security & Authentication Model
+
+- Authentication is backed by strong JWT secrets and a dedicated **session/auth layer** on the server.
+- **JWTs are managed server-side and delivered via secure, httpOnly cookies**; the frontend never stores tokens in `localStorage` or `sessionStorage`.
+- Logout and session invalidation are handled via backend endpoints (e.g. `POST /api/auth/logout`) plus cookie clearing; the client only triggers the flow.
+- PII in logs, SSE streams, and reports is minimized and masked (emails/phones obfuscated; OTPs never exposed).
+
+### Frontend Product Surface (Post-Cleanup)
+
+- **Resident flows**: create/manage visitors, bulk invites, guest QR handling.
+- **Guard dashboard**: real-time SSE toasts, severity filtering, active visitor counts.
+- **Admin reports**: aggregate reporting with safe host summaries and CSV/JSON export.
+- Demo/dev-only dashboards (performance/load balancer/backup DR, etc.), mockups, and historical demo pages have been **removed** from the shipping bundle for production readiness.
+
+### Frontend Optimization & UX Improvements
+
+- React routes are lazy-loaded and code-split to keep the initial bundle small.
+- Shared services and utilities (e.g. `_http.js`, `errorMapper.js`) centralize HTTP behavior and user-facing error messages.
+- The design system and stylesheets define a consistent, accessible visual language; UI/UX audit work has been applied to core screens, and the remaining improvements are tracked in `tasks/`.
+
+### Testing & Verification
+
+- Backend and frontend tests cover the core visitor lifecycle, Guard SSE behavior, and Admin reporting UI.
+- CRA production builds are green and aligned with the current auth model (cookie-based, no token storage in the client).
+- Historical audit/testing reports have been consolidated into this README and the canonical frontend docs under `secure-gate-access/client/src/docs/`.
+
+### Where to Learn More
+
+- **Root system/infrastructure overview**: see the repository-level `README.md`.
+- **Frontend developer docs** (API usage, deployment, testing, performance, browser support, components): see `secure-gate-access/client/src/docs/` and `secure-gate-access/client/docs/ARCHITECTURE_DECISIONS.md`.
+- **Design system & styles**: see `secure-gate-access/client/src/design-system/README.md` and `secure-gate-access/client/src/styles/*.md`.
+- **Ongoing work & pre-production notes**: see `tasks/todo.md`, `tasks/dev.md`, and `tasks/steps.md`.

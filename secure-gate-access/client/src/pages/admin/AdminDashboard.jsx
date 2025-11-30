@@ -1,16 +1,28 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
+import { useSearchData } from "../../hooks/useSearch";
 import AppShell from "../../layouts/AppShell";
 import StatsCard from "../../components/StatsCard";
 import Table from "../../components/Table";
 import { SearchFilter, Pagination } from "../../components/ui";
 import { getMetrics, getAuditLogs } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
+import OfflineIndicator from "../../components/common/OfflineIndicator";
+import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
+import AnnouncementsAdmin from "../../components/admin/AnnouncementsAdmin";
+import PrivacyDashboard from "../../components/settings/PrivacyDashboard";
+// Phase 4: Onboarding Tour
+import OnboardingTour from "../../components/common/OnboardingTour";
+// Phase 4: Analytics Dashboard
+import AnalyticsDashboard from "../../components/admin/AnalyticsDashboard";
 import logger from 'utils/logger';
-import { useSearchData } from "../../hooks/useSearch";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const role = useCurrentRole();
 
   // Metrics state
   const [metrics, setMetrics] = useState({ invitesActive: 0, invitesExpired: 0, checkinsToday: 0, failedOtps: 0, invitesByStatus: [] });
@@ -35,18 +47,16 @@ export default function AdminDashboard() {
         e.preventDefault();
         navigate('/dashboard/admin/settings');
       }
-      // Ctrl/Cmd + R to refresh
+      // Ctrl/Cmd + R to refresh (reloads page)
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
-        if (!loadingMetrics) {
-          loadMetrics();
-        }
+        window.location.reload();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loadingMetrics, navigate]);
+  }, [navigate]);
 
   // Audit logs state
   const [logs, setLogs] = useState([]);
@@ -125,7 +135,10 @@ export default function AdminDashboard() {
     loadLogs();
   }, [page, limit]);
 
-  const onLogout = () => { localStorage.clear(); window.location.href = "/login"; };
+  const onLogout = async () => { 
+    await logout(); 
+    navigate("/login"); 
+  };
 
   const auditHeaders = ["Time", "User", "Action", "Entity", "Details", "IP"];
   const auditRows = filteredLogs.map(l => [
@@ -138,9 +151,21 @@ export default function AdminDashboard() {
   ]);
 
   return (
-    <AppShell role={localStorage.getItem('role') || 'admin'} title="Admin Dashboard" onLogout={onLogout}>
+    <AppShell role={role} title="Admin Dashboard" onLogout={onLogout}>
+      {/* Phase 4: Onboarding Tour for Admins */}
+      <OnboardingTour 
+        role="admin" 
+        onComplete={() => logger.debug('Admin tour completed')}
+      />
+      
+      {/* Phase 3: Offline Indicator */}
+      <OfflineIndicator position="top-right" />
+      
+      {/* Phase 3: Community Announcements */}
+      <AnnouncementsBanner showDismiss={true} className="mb-4" />
+      
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div data-tour="admin-metrics" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <StatsCard title="Active Invites" value={String(metrics.invitesActive || 0)} loading={loadingMetrics} />
         <StatsCard title="Expired Invites" value={String(metrics.invitesExpired || 0)} loading={loadingMetrics} />
         <StatsCard title="Check-ins Today" value={String(metrics.checkinsToday || 0)} loading={loadingMetrics} />
@@ -154,7 +179,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Audit Logs Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div data-tour="audit-logs" className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex flex-row items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">Audit Logs</h3>
           <div className="flex items-center gap-2">
@@ -247,6 +272,29 @@ export default function AdminDashboard() {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Phase 3: Community Announcements Admin */}
+      <div data-tour="announcements" className="mt-6">
+        <AnnouncementsAdmin />
+      </div>
+
+      {/* Phase 4: Analytics Dashboard */}
+      <div data-tour="analytics" className="mt-6">
+        <AnalyticsDashboard />
+      </div>
+
+      {/* Phase 3: Privacy Dashboard (Admin View) */}
+      <div className="mt-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Privacy & Data Management</h3>
+            <p className="text-sm text-gray-600 mt-1">System-wide privacy controls and data subject request management</p>
+          </div>
+          <div className="p-6">
+            <PrivacyDashboard isAdmin={true} />
+          </div>
         </div>
       </div>
     </AppShell>

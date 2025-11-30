@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import logger from 'utils/logger';
-import { Button, SearchFilter, SearchResults, Pagination, ResponsiveTable } from "../../components/ui";
-import { RefreshCw, Download, Filter } from "lucide-react";
+import { Button, SearchFilter, SearchResults, Pagination, ResponsiveTable, Card, PageHeader } from "../../components/ui";
+import { RefreshCw, Download, Filter, Clock } from "lucide-react";
 import { useSearchData } from "../../hooks/useSearch";
 
 function mask(value) {
@@ -84,9 +84,13 @@ export default function VisitorHistory() {
   async function fetchMine() {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      // Use httpOnly cookies for authentication
       const res = await fetch('/api/visitors', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       const json = await res.json();
       if (json?.success) setRows(json.data || []);
@@ -214,70 +218,90 @@ export default function VisitorHistory() {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-200">Visitor History</h2>
-          <p className="text-sm text-slate-400 mt-1">
-            View and manage visitor records
-          </p>
+  // PHASE B4: Mobile Card Component
+  const VisitorCard = ({ visitor }) => (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900">{visitor.name}</h3>
+          <p className="text-sm text-gray-600">📱 {visitor.phone || 'No phone'}</p>
         </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          visitor.status === 'checked_in' ? 'bg-green-100 text-green-800' :
+          visitor.status === 'checked_out' ? 'bg-gray-100 text-gray-800' :
+          visitor.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+          'bg-red-100 text-red-800'
+        }`}>
+          {visitor.status}
+        </span>
+      </div>
+      
+      <div className="space-y-1 text-sm text-gray-600">
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            variant="outline"
-            size="sm"
-            icon={<Filter className="w-4 h-4" />}
-          >
-            {showFilters ? 'Hide' : 'Show'} Filters
+          <span className="text-gray-400">📅</span>
+          <span>{new Date(visitor.check_in).toLocaleDateString()}</span>
+        </div>
+        {visitor.check_out && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400">⏰</span>
+            <span>{visitor.check_out}</span>
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-3 flex gap-2">
+        {visitor.status === 'pending' && (
+          <Button size="sm" variant="outline" className="flex-1">
+            Resend Invite
           </Button>
-          <div className="relative group">
+        )}
+        <Button size="sm" variant="ghost" className="flex-1">
+          View Details
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader 
+        title="Visitor History"
+        subtitle="View and manage visitor records"
+        icon={<Clock className="w-6 h-6 text-green-600" />}
+        showBack={true}
+        backTo="/dashboard/resident"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowFilters(!showFilters)}
+              variant="outline"
+              size="sm"
+            >
+              <Filter className="w-4 h-4 mr-1" />
+              Filters
+            </Button>
             <Button
               onClick={() => handleExport('csv')}
               variant="outline"
               size="sm"
-              icon={<Download className="w-4 h-4" />}
               disabled={!hasResults}
             >
+              <Download className="w-4 h-4 mr-1" />
               Export
             </Button>
-            <div className="absolute right-0 top-full mt-1 w-32 bg-slate-800 border border-slate-600 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <div className="p-1">
-                <button
-                  onClick={() => handleExport('csv')}
-                  className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 rounded"
-                >
-                  Export as CSV
-                </button>
-                <button
-                  onClick={() => handleExport('json')}
-                  className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 rounded"
-                >
-                  Export as JSON
-                </button>
-                <button
-                  onClick={() => handleExport('pdf')}
-                  className="w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 rounded"
-                >
-                  Export as PDF
-                </button>
-              </div>
-            </div>
+            <Button
+              onClick={fetchMine}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
-          <Button
-            onClick={fetchMine}
-            disabled={loading}
-            variant="outline"
-            size="sm"
-            icon={<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />}
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {/* Advanced Search and Filters */}
       <SearchFilter
         data={rows}
@@ -368,6 +392,16 @@ export default function VisitorHistory() {
           )}
         </div>
       )}
+      
+      {/* Mobile Card View */}
+      {hasResults && (
+        <div className="space-y-4 md:hidden">
+          {filteredRows.map((visitor, index) => (
+            <VisitorCard key={index} visitor={visitor} />
+          ))}
+        </div>
+      )}
+      </div>
     </div>
   );
 }

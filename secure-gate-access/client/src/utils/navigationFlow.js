@@ -186,9 +186,6 @@ export function useSessionTimeout() {
     };
 
     const handleSessionExpiry = () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('role');
       navigate('/login?reason=session_expired');
     };
 

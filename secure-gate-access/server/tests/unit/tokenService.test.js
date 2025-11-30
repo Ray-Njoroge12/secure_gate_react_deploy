@@ -18,17 +18,32 @@ const mockArgon2 = {
   verify: jest.fn()
 };
 
-jest.unstable_mockModule('argon2', () => ({ default: mockArgon2 }));
+const mockRedisService = {
+  initialize: jest.fn().mockResolvedValue(true),
+  isTokenBlacklisted: jest.fn().mockResolvedValue(false),
+  blacklistToken: jest.fn().mockResolvedValue(true)
+};
 
-// Import services after mocking
-const { tokenService, passwordService, accountSecurity } = await import('../../../src/services/tokenService.js');
+jest.unstable_mockModule('argon2', () => ({ default: mockArgon2 }));
+jest.unstable_mockModule('../../src/services/redisService.js', () => ({ 
+  default: jest.fn(() => mockRedisService) 
+}));
+
+// Set JWT secrets BEFORE importing (TokenService constructor validates these)
+process.env.JWT_SECRET = 'test-jwt-secret-for-unit-tests-min-32-chars';
+process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-unit-tests-min-32-chars';
+process.env.NODE_ENV = 'test';
+
+// Import services after mocking and env setup
+const { tokenService, passwordService, accountSecurity } = await import('../../src/services/tokenService.js');
 
 describe('TokenService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     tokenService.clearRevokedTokens();
-    process.env.JWT_SECRET = 'test-secret';
-    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+    // Ensure secrets are 32+ characters (required by TokenService constructor)
+    process.env.JWT_SECRET = 'test-jwt-secret-for-unit-tests-min-32-chars';
+    process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-unit-tests-min-32-chars';
     process.env.NODE_ENV = 'test';
   });
 

@@ -1,0 +1,59 @@
+# Netlify deployments
+.netlify/
+
+# Logs and large files that might cause issues
+logs/
+*.log
+*.log.gz
+
+# Node modules
+node_modules/
+.npm
+
+# Test files and docs that aren't needed for production
+tests/
+docs/
+*.test.js
+*.spec.js
+
+# Development and analysis files
+ANALYSIS_*.md
+BACKEND_*.md
+BROWSER_*.md
+CLEANUP_*.md
+COMPREHENSIVE_*.md
+CRITICAL_*.md
+DAY4_*.md
+DEPLOYMENT_*.md
+FINAL_*.md
+FRONTEND_*.md
+ISSUE_*.md
+PHASE*.md
+PRIORITY_*.md
+PRODUCTION_*.md
+SESSION_*.md
+SYSTEM_*.md
+TESTING_*.md
+USER_*.md
+VISUAL_*.md
+*.sh
+*.md
+
+# Keep only essential files for the React app
+!README.md
+!package.json
+!netlify.toml
+
+# Build artifacts we don't need
+.cleanup-backups/
+cleanup-analysis-*/
+quarantine/
+
+# Keep the React build files
+!index.html
+!static/
+!asset-manifest.json
+!favicon.ico
+!manifest.json
+!service-worker.js
+!offline.html

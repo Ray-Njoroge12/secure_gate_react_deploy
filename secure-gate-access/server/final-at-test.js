@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: join(__dirname, '.env.africastalking') });
+dotenv.config({ path: join(__dirname, '.env.local') });
 
 // Override the sender ID if it's empty
 if (!process.env.AT_SENDER_ID || process.env.AT_SENDER_ID.trim() === '') {

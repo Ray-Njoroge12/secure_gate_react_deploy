@@ -14,16 +14,7 @@ describe('HTTP Service', () => {
   });
 
   describe('buildHeaders', () => {
-    test('should build headers with token from localStorage', () => {
-      localStorage.setItem('token', 'test-token-123');
-      const headers = buildHeaders();
-      
-      expect(headers['Content-Type']).toBe('application/json');
-      expect(headers.Authorization).toBe('Bearer test-token-123');
-    });
-
-    test('should build headers without token when not logged in', () => {
-      localStorage.removeItem('token');
+    test('should build headers with default Content-Type', () => {
       const headers = buildHeaders();
       
       expect(headers['Content-Type']).toBe('application/json');
@@ -38,12 +29,10 @@ describe('HTTP Service', () => {
       expect(headers['Content-Type']).toBe('application/json');
     });
 
-    test('should not override token with extra headers', () => {
-      localStorage.setItem('token', 'real-token');
-      const headers = buildHeaders({ Authorization: 'Bearer fake-token' });
+    test('should allow overriding Authorization via extra headers', () => {
+      const headers = buildHeaders({ Authorization: 'Bearer custom-token' });
       
-      // Extra headers should be added after, so they would override
-      expect(headers.Authorization).toBe('Bearer fake-token');
+      expect(headers.Authorization).toBe('Bearer custom-token');
     });
   });
 
@@ -271,41 +260,4 @@ describe('HTTP Service', () => {
     });
   });
 
-  describe('Authentication', () => {
-    test('should include Authorization header when token exists', async () => {
-      localStorage.setItem('token', 'auth-token-123');
-      
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: jest.fn().mockResolvedValue({ data: 'success' })
-      });
-
-      await http.get('/api/protected');
-      
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/protected',
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            Authorization: 'Bearer auth-token-123'
-          })
-        })
-      );
-    });
-
-    test('should not include Authorization header when no token', async () => {
-      localStorage.removeItem('token');
-      
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: jest.fn().mockResolvedValue({ data: 'success' })
-      });
-
-      await http.get('/api/public');
-      
-      const callArgs = global.fetch.mock.calls[0][1];
-      expect(callArgs.headers.Authorization).toBeUndefined();
-    });
-  });
 });

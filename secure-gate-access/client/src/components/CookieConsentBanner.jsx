@@ -80,26 +80,23 @@ const CookieConsentBanner = () => {
       localStorage.setItem('cookieConsent', JSON.stringify(consentData));
       localStorage.setItem('cookieConsentDate', new Date().toISOString());
       
-      // Send to backend if user is authenticated
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          await fetch('/api/compliance/consent', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              type: 'all',
-              granted: true,
-              version: '1.0',
-              preferences: consentData
-            })
-          });
-        } catch (error) {
-          logger.error('Failed to save consent to backend:', error);
-        }
+      // Send to backend if user is authenticated (uses httpOnly cookies)
+      try {
+        await fetch('/api/compliance/consent', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'all',
+            granted: true,
+            version: '1.0',
+            preferences: consentData
+          })
+        });
+      } catch (error) {
+        logger.error('Failed to save consent to backend:', error);
       }
       
       setShowBanner(false);

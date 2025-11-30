@@ -1,0 +1,113 @@
+{
+  "timestamp": "2025-11-11T18:06:39.473Z",
+  "backend_url": "http://localhost:3001",
+  "test_summary": {
+    "total": 20,
+    "passed": 15,
+    "failed": 5,
+    "success_rate": "75.0%"
+  },
+  "test_results": [
+    {
+      "test": "Health endpoint responds",
+      "status": "PASS",
+      "details": "Status: healthy"
+    },
+    {
+      "test": "Info endpoint responds",
+      "status": "FAIL",
+      "details": "Request failed with status code 404"
+    },
+    {
+      "test": "Status endpoint responds",
+      "status": "FAIL",
+      "details": "Request failed with status code 404"
+    },
+    {
+      "test": "User registration",
+      "status": "PASS",
+      "details": "User registered successfully"
+    },
+    {
+      "test": "User login",
+      "status": "PASS",
+      "details": "Login successful"
+    },
+    {
+      "test": "Invalid login rejection",
+      "status": "PASS",
+      "details": "Invalid credentials rejected"
+    },
+    {
+      "test": "Database connection",
+      "status": "FAIL",
+      "details": "Request failed with status code 404"
+    },
+    {
+      "test": "User count query",
+      "status": "FAIL",
+      "details": "Request failed with status code 404"
+    },
+    {
+      "test": "Database tables query",
+      "status": "FAIL",
+      "details": "Request failed with status code 404"
+    },
+    {
+      "test": "CORS headers present",
+      "status": "PASS",
+      "details": "CORS preflight handling"
+    },
+    {
+      "test": "Multiple requests handling",
+      "status": "PASS",
+      "details": "Rapid requests handled successfully"
+    },
+    {
+      "test": "Invalid endpoint handling",
+      "status": "PASS",
+      "details": "Returns appropriate 404 for invalid endpoints"
+    },
+    {
+      "test": "Malformed JSON handling",
+      "status": "PASS",
+      "details": "Rejects malformed JSON properly"
+    },
+    {
+      "test": "SQL injection protection",
+      "status": "PASS",
+      "details": "SQL injection attempts blocked"
+    },
+    {
+      "test": "XSS protection",
+      "status": "PASS",
+      "details": "XSS attempts handled properly"
+    },
+    {
+      "test": "Missing field validation",
+      "status": "PASS",
+      "details": "Properly validates required fields"
+    },
+    {
+      "test": "Data type validation",
+      "status": "PASS",
+      "details": "Validates data types properly"
+    },
+    {
+      "test": "Oversized request handling",
+      "status": "PASS",
+      "details": "Handles oversized requests appropriately"
+    },
+    {
+      "test": "Response time < 1000ms",
+      "status": "PASS",
+      "details": "Response time: 2ms"
+    },
+    {
+      "test": "Concurrent request handling",
+      "status": "PASS",
+      "details": "10 concurrent requests: 10/10 successful"
+    }
+  ],
+  "system_status": "PARTIAL"
+}

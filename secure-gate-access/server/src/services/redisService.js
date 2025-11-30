@@ -345,6 +345,59 @@ class RedisService extends EventEmitter {
   }
 
   /**
+   * Add token to blacklist with TTL matching token expiry
+   */
+  async blacklistToken(token, expirySeconds) {
+    const key = `token:blacklist:${token}`;
+    return await this.set(key, { revokedAt: new Date().toISOString() }, expirySeconds);
+  }
+
+  /**
+   * Check if token is blacklisted
+   */
+  async isTokenBlacklisted(token) {
+    const key = `token:blacklist:${token}`;
+    return await this.exists(key);
+  }
+
+  /**
+   * Remove token from blacklist (for testing/recovery)
+   */
+  async removeFromBlacklist(token) {
+    const key = `token:blacklist:${token}`;
+    return await this.delete(key);
+  }
+
+  /**
+   * Get count of blacklisted tokens
+   */
+  async getBlacklistedTokenCount() {
+    if (this.usingFallback) {
+      // Fallback doesn't support pattern matching easily
+      return 0;
+    }
+
+    if (!this.isConnected) {
+      return 0;
+    }
+
+    try {
+      const keys = await this.client.keys('token:blacklist:*');
+      return keys.length;
+    } catch (error) {
+      console.error('[REDIS] Error counting blacklisted tokens:', error.message);
+      return 0;
+    }
+  }
+
+  /**
+   * Clear all blacklisted tokens (admin operation)
+   */
+  async clearAllBlacklistedTokens() {
+    return await this.deletePattern('token:blacklist:*');
+  }
+
+  /**
    * Health check
    */
   async healthCheck() {

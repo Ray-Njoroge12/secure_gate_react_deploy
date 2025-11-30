@@ -72,9 +72,9 @@ const ComplianceManager = () => {
       setLoading(true);
       const response = await fetch(`/api/compliance/${type}`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ requestType: type })
       });
@@ -102,9 +102,9 @@ const ComplianceManager = () => {
       const consentPromises = Object.entries(consentData).map(([type, granted]) =>
         fetch('/api/compliance/consent', {
           method: 'POST',
+          credentials: 'include',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             type,

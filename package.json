@@ -1,10 +1,10 @@
 {
-  "name": "secure-gate-react-deploy",
-  "version": "1.0.0",
-  "scripts": {
-    "build": "cd secure-gate-access/client && npm install && npm run build",
-    "start": "cd secure-gate-access/client && npm start"
+  "dependencies": {
+    "axios": "^1.13.2"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "chai": "^6.2.1",
+    "puppeteer": "^24.29.1",
+    "serve": "^14.2.5"
+  }
 }
