@@ -9,6 +9,9 @@ import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator.j
 import phoneValidator from '../utils/phoneValidator.js';
 import logger from 'utils/logger';
 
+// API base URL for cross-site deployment (Netlify frontend + Render backend)
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
 export default function RegistrationPage() {
   const navigate = useNavigate();
   const { inviteCode } = useParams();
@@ -180,7 +183,7 @@ export default function RegistrationPage() {
       // Convert phone number to international format for backend
       const internationalPhone = phoneValidator.toInternational(formData.phone.trim(), 'KE');
       
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
