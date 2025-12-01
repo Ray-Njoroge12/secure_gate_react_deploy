@@ -8,6 +8,7 @@ import Table from "../../components/Table";
 import { SearchFilter, Pagination } from "../../components/ui";
 import { getMetrics, getAuditLogs } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
+import { useSearchData } from "../../hooks/useSearch";
 import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
 import AnnouncementsAdmin from "../../components/admin/AnnouncementsAdmin";
@@ -46,12 +47,10 @@ export default function AdminDashboard() {
         e.preventDefault();
         navigate('/dashboard/admin/settings');
       }
-      // Ctrl/Cmd + R to refresh
+      // Ctrl/Cmd + R to refresh - reload page
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
-        if (!loadingMetrics) {
-          loadMetrics();
-        }
+        window.location.reload();
       }
     };
 

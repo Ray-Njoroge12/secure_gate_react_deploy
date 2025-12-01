@@ -115,3 +115,6 @@ cleanup_archive_artifacts/
 artifacts/cleanup_archive/
 cold-storage/
 .vercel
+
+# Local Netlify folder
+.netlify
