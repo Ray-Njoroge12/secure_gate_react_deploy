@@ -5,6 +5,9 @@ import { useError } from "../contexts/ErrorContext.jsx";
 import { handleApiError } from "../utils/errorMapper.js";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 
+// API base URL for cross-site deployment (Netlify frontend + Render backend)
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,9 +102,10 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include', // Include cookies for cross-site
         body: JSON.stringify({ email: resetEmail }),
       });
 

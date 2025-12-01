@@ -350,11 +350,11 @@ export const loginUser = async (req, res) => {
       tokenId: tokens.tokenId
     });
 
-    // Set secure refresh token cookie
+    // Set secure refresh token cookie (cross-site compatible)
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none', // Required for Netlify + Render cross-site
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/api/auth/refresh'
     });
@@ -431,11 +431,11 @@ export const refreshToken = async (req, res) => {
       role: user.role
     });
 
-    // Set new refresh token cookie
+    // Set new refresh token cookie (cross-site compatible)
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none', // Required for Netlify + Render cross-site
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/api/auth/refresh'
     });

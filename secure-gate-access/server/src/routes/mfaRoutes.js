@@ -105,18 +105,18 @@ router.post('/verify', asyncHandler(async (req, res) => {
   const { tokenService } = await import('../services/tokenService.js');
   const { accessToken, refreshToken, expiresIn } = tokenService.generateTokens(user);
   
-  // Set httpOnly cookies for security
+  // Set httpOnly cookies for security (cross-site compatible for Netlify + Render)
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true, // Required for sameSite: 'none'
+    sameSite: 'none', // Required for cross-site cookies
     maxAge: 15 * 60 * 1000 // 15 minutes
   });
   
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true,
+    sameSite: 'none',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/api/auth/refresh'
   });
