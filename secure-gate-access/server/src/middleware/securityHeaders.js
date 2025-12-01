@@ -246,6 +246,14 @@ export const csrfProtection = (req, res, next) => {
 
 // Generate CSRF token for session
 export const generateCSRFToken = (req, res, next) => {
+  // Defensive check: skip CSRF token generation if session is not available
+  // This can happen on health check requests or before session middleware runs
+  if (!req.session) {
+    // Session not initialized - skip CSRF for this request
+    // This is safe for GET requests which don't need CSRF protection
+    return next();
+  }
+  
   if (!req.session.csrfToken) {
     req.session.csrfToken = require('crypto').randomBytes(32).toString('hex');
   }
