@@ -335,6 +335,27 @@ class LoggingService {
     logger.logWithCorrelation('debug', message, meta, correlationId);
   }
 
+  // Alias methods for convenience (allows both loggingService.info() and loggingService.logInfo())
+  info(message, meta = {}, correlationId = null) {
+    return this.logInfo(message, meta, correlationId);
+  }
+
+  error(message, errorOrMeta = null, meta = {}, correlationId = null) {
+    // Handle both error(message, error, meta) and error(message, meta) signatures
+    if (errorOrMeta instanceof Error) {
+      return this.logError(message, errorOrMeta, meta, correlationId);
+    }
+    return this.logError(message, null, errorOrMeta || {}, meta);
+  }
+
+  warn(message, meta = {}, correlationId = null) {
+    return this.logWarning(message, meta, correlationId);
+  }
+
+  debug(message, meta = {}, correlationId = null) {
+    return this.logDebug(message, meta, correlationId);
+  }
+
   /**
    * Specialized logging methods
    */
