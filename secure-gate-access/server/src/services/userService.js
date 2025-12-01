@@ -70,15 +70,16 @@ class UserService {
       const hashedPassword = await passwordService.hashPassword(password);
 
       // Generate email verification token
-      const emailVerificationToken = this.generateEmailVerificationToken();
-      const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const verificationToken = this.generateEmailVerificationToken();
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       // Create user with email verification fields
+      // Uses column names matching render_init.sql schema: verification_token, verification_expires
       const result = await this.db.query(
-        `INSERT INTO users (username, email, password_hash, role, email_verification_token, email_verification_expires, created_at, updated_at) 
+        `INSERT INTO users (username, email, password_hash, role, verification_token, verification_expires, created_at, updated_at) 
          VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) 
-         RETURNING id, username, email, role, email_verification_token, created_at`,
-        [username, email, hashedPassword, role, emailVerificationToken, emailVerificationExpires]
+         RETURNING id, username, email, role, verification_token, created_at`,
+        [username, email, hashedPassword, role, verificationToken, verificationExpires]
       );
 
       const user = result.rows[0];
@@ -104,10 +105,11 @@ class UserService {
    */
   async verifyEmailToken(token) {
     try {
+      // Uses column names matching render_init.sql schema
       const result = await this.db.query(
-        `SELECT id, username, email, email_verification_expires 
+        `SELECT id, username, email, verification_expires 
          FROM users 
-         WHERE email_verification_token = $1 AND email_verified_at IS NULL`,
+         WHERE verification_token = $1 AND verified = false`,
         [token]
       );
 
@@ -118,14 +120,14 @@ class UserService {
       const user = result.rows[0];
 
       // Check if token has expired
-      if (new Date() > new Date(user.email_verification_expires)) {
+      if (new Date() > new Date(user.verification_expires)) {
         throw new AppError('Verification token has expired', 400, 'TOKEN_EXPIRED');
       }
 
-      // Mark email as verified
+      // Mark email as verified - uses verified column instead of email_verified_at
       await this.db.query(
         `UPDATE users 
-         SET email_verified_at = NOW(), email_verification_token = NULL, email_verification_expires = NULL, updated_at = NOW()
+         SET verified = true, verification_token = NULL, verification_expires = NULL, updated_at = NOW()
          WHERE id = $1`,
         [user.id]
       );
@@ -153,7 +155,7 @@ class UserService {
       const userResult = await this.db.query(
         `SELECT id, username, email 
          FROM users 
-         WHERE email = $1 AND email_verified_at IS NULL`,
+         WHERE email = $1 AND verified = false`,
         [email]
       );
 
@@ -164,20 +166,20 @@ class UserService {
       const user = userResult.rows[0];
 
       // Generate new verification token
-      const emailVerificationToken = this.generateEmailVerificationToken();
-      const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const verificationToken = this.generateEmailVerificationToken();
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // Update user with new token
+      // Update user with new token - uses column names matching render_init.sql schema
       await this.db.query(
         `UPDATE users 
-         SET email_verification_token = $1, email_verification_expires = $2, updated_at = NOW()
+         SET verification_token = $1, verification_expires = $2, updated_at = NOW()
          WHERE id = $3`,
-        [emailVerificationToken, emailVerificationExpires, user.id]
+        [verificationToken, verificationExpires, user.id]
       );
 
       return {
         ...user,
-        email_verification_token: emailVerificationToken
+        verification_token: verificationToken
       };
     } catch (error) {
       if (error instanceof AppError) {
@@ -191,19 +193,7 @@ class UserService {
    * Authenticate user with proper SQL injection protection
    */
   async authenticateUser(username, password) {
-    // DEBUG: Log exact parameters received
-    console.log('🔍 USERSERVICE DEBUG - authenticateUser called with:', {
-      username: username,
-      usernameType: typeof username,
-      password: password ? '[PRESENT]' : '[MISSING]',
-      passwordType: typeof password
-    });
-    
     if (!username || !password) {
-      console.log('🔍 USERSERVICE DEBUG - Validation failed:', {
-        usernameEmpty: !username,
-        passwordEmpty: !password
-      });
       throw new Error('Username and password required');
     }
 
@@ -214,23 +204,11 @@ class UserService {
     }
 
     try {
-      // DEBUG: Temporary logging
-      console.log('🔍 USERSERVICE DEBUG - Looking up user:', username);
-      
-      // Get user by username OR email using parameterized query, including email verification status
+      // Get user by username OR email using parameterized query
       const result = await this.db.query(
-        'SELECT id, username, email, password_hash, role, created_at, email_verified_at FROM users WHERE username = $1 OR email = $1',
+        'SELECT id, username, email, password_hash, role, created_at, verified FROM users WHERE username = $1 OR email = $1',
         [username]
       );
-
-      console.log('🔍 USERSERVICE DEBUG - Query result rows:', result.rows.length);
-      if (result.rows.length > 0) {
-        console.log('🔍 USERSERVICE DEBUG - Found user:', { 
-          id: result.rows[0].id, 
-          username: result.rows[0].username, 
-          email: result.rows[0].email 
-        });
-      }
 
       if (result.rows.length === 0) {
         // Record failed attempt even for non-existent users (security)
@@ -240,15 +218,8 @@ class UserService {
 
       const user = result.rows[0];
 
-      // DEBUG: Temporary logging
-      console.log('🔍 USERSERVICE DEBUG - Password verification for user:', user.username);
-      console.log('🔍 USERSERVICE DEBUG - Has password hash:', !!user.password_hash);
-      console.log('🔍 USERSERVICE DEBUG - Password hash length:', user.password_hash?.length);
-
       // Verify password
       const isValidPassword = await passwordService.verifyPassword(password, user.password_hash);
-      
-      console.log('🔍 USERSERVICE DEBUG - Password verification result:', isValidPassword);
       
       if (!isValidPassword) {
         // Record failed attempt
@@ -258,7 +229,7 @@ class UserService {
 
       // Check if email is verified (skip in development if EMAIL_VERIFICATION_REQUIRED=false)
       const requireEmailVerification = process.env.EMAIL_VERIFICATION_REQUIRED !== 'false';
-      if (requireEmailVerification && !user.email_verified_at) {
+      if (requireEmailVerification && !user.verified) {
         throw new AppError('Please verify your email address before logging in. Check your inbox for the verification link.', 403, 'EMAIL_NOT_VERIFIED', {
           email: user.email,
           requiresVerification: true
