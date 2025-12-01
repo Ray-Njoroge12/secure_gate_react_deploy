@@ -1,6 +1,9 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import logger from 'utils/logger';
 
+// API base URL for cross-site deployment (Netlify frontend + Render backend)
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
 export const AuthContext = createContext();
 
 // Custom hook to use auth context
@@ -24,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = async () => {
     // Check if user is authenticated by calling a protected endpoint
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
         method: 'GET',
         credentials: 'include' // Include cookies
       });
@@ -46,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
   // login(email, password, remember=false)
   const login = async (email, password, remember = false) => {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: 'include', // Include cookies in request
@@ -84,7 +87,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       // Call logout endpoint to clear httpOnly cookies and server session
-      await fetch('/api/auth/logout', {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
