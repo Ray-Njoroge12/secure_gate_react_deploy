@@ -120,7 +120,8 @@ export const AuthProvider = ({ children }) => {
       };
 
       // BUG-005 FIX: Changed from /api/register to /api/auth/register
-      const response = await fetch('/api/auth/register', {
+      // Use API_BASE_URL for cross-site deployment (Netlify frontend + Render backend)
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
