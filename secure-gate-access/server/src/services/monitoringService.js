@@ -4,11 +4,11 @@
  * Provides comprehensive system monitoring and alerting capabilities
  */
 
-import { Pool } from 'pg';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import db from '../database/db.enhanced.js';
 import logger, { performanceLogger, logHealthCheck, logSystemMetrics } from '../config/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,28 +16,6 @@ const __dirname = path.dirname(__filename);
 
 class MonitoringService {
   constructor() {
-    // Use DATABASE_URL if available (Render, Heroku, etc.), otherwise individual vars
-    const connectionString = process.env.DATABASE_URL;
-    
-    this.dbConfig = connectionString 
-      ? { 
-          connectionString,
-          ssl: { rejectUnauthorized: false },
-          max: 2, // Minimal pool for monitoring only
-          idleTimeoutMillis: 10000
-        }
-      : {
-          host: process.env.PGHOST || process.env.DB_HOST || 'localhost',
-          port: process.env.PGPORT || process.env.DB_PORT || 5432,
-          database: process.env.PGDATABASE || process.env.DB_NAME || 'secure_gate',
-          user: process.env.PGUSER || process.env.DB_USER || 'postgres',
-          password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'postgres',
-          ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-          max: 2, // Minimal pool for monitoring only
-          idleTimeoutMillis: 10000
-        };
-    
-    this.pool = new Pool(this.dbConfig);
     this.metrics = new Map();
     this.alerts = new Map();
     this.healthChecks = new Map();
@@ -199,28 +177,24 @@ class MonitoringService {
    */
   async checkDatabaseHealth() {
     try {
-      const client = await this.pool.connect();
-      
       // Test basic query
       const startTime = Date.now();
-      await client.query('SELECT 1');
+      await db.query('SELECT 1');
       const queryTime = Date.now() - startTime;
-      
+
       // Get connection count
-      const connectionResult = await client.query(`
-        SELECT count(*) as connections 
-        FROM pg_stat_activity 
+      const connectionResult = await db.query(`
+        SELECT count(*) as connections
+        FROM pg_stat_activity
         WHERE datname = current_database()
       `);
-      
-      const connections = parseInt(connectionResult.rows[0].connections);
-      const maxConnections = this.pool.options.max || 20;
-      const connectionPercentage = (connections / maxConnections) * 100;
-      
-      client.release();
 
-      const status = queryTime > 1000 || connectionPercentage > this.thresholds.dbConnections 
-        ? 'warning' 
+      const connections = parseInt(connectionResult.rows[0].connections);
+      const maxConnections = 20; // Default max connections
+      const connectionPercentage = (connections / maxConnections) * 100;
+
+      const status = queryTime > 1000 || connectionPercentage > this.thresholds.dbConnections
+        ? 'warning'
         : 'healthy';
 
       return {
@@ -385,8 +359,6 @@ class MonitoringService {
    */
   async storeMetrics() {
     try {
-      const client = await this.pool.connect();
-      
       const metrics = Array.from(this.metrics.entries()).map(([key, value]) => ({
         metric_name: key,
         metric_value: value,
@@ -394,13 +366,11 @@ class MonitoringService {
       }));
 
       if (metrics.length > 0) {
-        await client.query(`
+        await db.query(`
           INSERT INTO performance_metrics (metric_name, metric_value, timestamp)
           VALUES ${metrics.map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`).join(', ')}
         `, metrics.flatMap(m => [m.metric_name, m.metric_value, m.timestamp]));
       }
-
-      client.release();
 
     } catch (error) {
       logger.error('Failed to store metrics in database:', error);
@@ -456,9 +426,7 @@ class MonitoringService {
    */
   async storeAlert(alertData) {
     try {
-      const client = await this.pool.connect();
-      
-      await client.query(`
+      await db.query(`
         INSERT INTO system_health (component, status, message, response_time_ms, error_count, last_check)
         VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT (component) DO UPDATE SET
@@ -474,8 +442,6 @@ class MonitoringService {
         alertData.details.duration || 0,
         alertData.details.errorCount || 1
       ]);
-
-      client.release();
 
     } catch (error) {
       logger.error('Failed to store alert in database:', error);
@@ -519,26 +485,23 @@ class MonitoringService {
    */
   async getMetrics(startTime, endTime, metricNames = null) {
     try {
-      const client = await this.pool.connect();
-      
       let query = `
         SELECT metric_name, metric_value, timestamp
         FROM performance_metrics
         WHERE timestamp BETWEEN $1 AND $2
       `;
-      
+
       const params = [startTime, endTime];
-      
+
       if (metricNames && metricNames.length > 0) {
         query += ` AND metric_name = ANY($3)`;
         params.push(metricNames);
       }
-      
+
       query += ` ORDER BY timestamp DESC`;
-      
-      const result = await client.query(query, params);
-      client.release();
-      
+
+      const result = await db.query(query, params);
+
       return result.rows;
 
     } catch (error) {
@@ -552,27 +515,24 @@ class MonitoringService {
    */
   async getHealthCheckHistory(component = null, limit = 100) {
     try {
-      const client = await this.pool.connect();
-      
       let query = `
         SELECT component, status, message, response_time_ms, error_count, last_check
         FROM system_health
         WHERE 1=1
       `;
-      
+
       const params = [];
-      
+
       if (component) {
         query += ` AND component = $1`;
         params.push(component);
       }
-      
+
       query += ` ORDER BY last_check DESC LIMIT $${params.length + 1}`;
       params.push(limit);
-      
-      const result = await client.query(query, params);
-      client.release();
-      
+
+      const result = await db.query(query, params);
+
       return result.rows;
 
     } catch (error) {
@@ -586,7 +546,7 @@ class MonitoringService {
    */
   async close() {
     this.stop();
-    await this.pool.end();
+    // Database connection is managed by the db module
   }
 }
 

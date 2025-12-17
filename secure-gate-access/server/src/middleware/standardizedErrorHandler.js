@@ -121,12 +121,17 @@ export const errorHandler = (err, req, res, next) => {
     timestamp: new Date().toISOString()
   };
   
-  // Add details only in development
-  if (process.env.NODE_ENV === 'development') {
-    errorResponse.error.details = err.details || {
-      stack: err.stack,
-      originalError: err.code
-    };
+  // SECURITY FIX: Never expose stack traces in API responses
+  // Stack traces are logged to console, not sent to client
+  // Only include safe, operational details if provided
+  if (err.details && err.isOperational) {
+    // Remove any sensitive information from details
+    const safeDetails = { ...err.details };
+    delete safeDetails.stack;
+    delete safeDetails.originalError;
+    if (Object.keys(safeDetails).length > 0) {
+      errorResponse.error.details = safeDetails;
+    }
   }
   
   // Add request ID if available

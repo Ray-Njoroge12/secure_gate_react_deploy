@@ -1,6 +1,13 @@
 // client/src/components/ui/index.js
 import React from 'react';
 
+// Phase 1: Enhanced UI Components (UI/UX Roadmap)
+export { default as FloatingLabelInput } from './FloatingLabelInput.jsx';
+export { default as GradientButton } from './GradientButton.jsx';
+export { default as GradientCard } from './GradientCard.jsx';
+export { default as StatCard } from './StatCard.jsx';
+
+// Existing Components
 export { default as Button } from './Button.jsx';
 export { default as Input } from './Input.jsx';
 export { default as Card } from './Card.jsx';
@@ -54,6 +61,7 @@ export { default as ThemeToggle, ThemeDropdown, ThemeRadioGroup } from './ThemeT
 export { default as NotificationBell } from './NotificationBell.jsx'; // Real-time Notifications
 export { Alert, AlertTitle, AlertDescription } from './Alert.jsx';
 export { Checkbox } from './Checkbox.jsx';
+export { default as IconButton } from './IconButton.jsx';
 export { Label } from './Label.jsx';
 export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './Select.jsx';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs.jsx';

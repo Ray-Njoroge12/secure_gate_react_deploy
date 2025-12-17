@@ -62,10 +62,11 @@ const Card = ({
     lg: 'p-8'
   };
 
+  // Theme-aware variant classes
   const variantClasses = {
-    outlined: 'border-slate-700',
-    elevated: 'shadow-lg border-slate-600',
-    flat: 'shadow-none border-slate-700'
+    outlined: 'border-gray-200 dark:border-slate-700',
+    elevated: 'shadow-lg border-gray-200 dark:border-slate-600',
+    flat: 'shadow-none border-gray-200 dark:border-slate-700'
   };
 
   const sizeClasses = {
@@ -74,10 +75,11 @@ const Card = ({
     lg: 'p-8'
   };
   
+  // Theme-aware card classes
   const cardClasses = `
-    bg-slate-800 rounded-lg border ${variantClasses[variant]} shadow-brand 
-    ${hover ? 'hover:border-slate-600 transition-colors duration-200' : ''}
-    ${onClick ? 'cursor-pointer hover:shadow-md' : ''}
+    bg-white dark:bg-slate-800 rounded-lg border ${variantClasses[variant]} shadow-sm
+    ${hover ? 'hover:border-gray-300 dark:hover:border-slate-600 hover:shadow-md dark:hover:shadow-lg transition-all duration-200' : ''}
+    ${onClick ? 'cursor-pointer hover:shadow-md dark:hover:shadow-lg' : ''}
     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
     ${paddingClasses[padding]}
     ${sizeClasses[size]}
@@ -108,13 +110,13 @@ const Card = ({
 };
 
 const CardHeader = ({ children, className = '' }) => (
-  <div className={`px-6 py-4 border-b border-slate-700 ${className}`}>
+  <div className={`px-6 py-4 border-b border-gray-200 dark:border-slate-700 ${className}`}>
     {children}
   </div>
 );
 
 const CardTitle = ({ children, className = '' }) => (
-  <h3 className={`text-lg font-semibold text-slate-200 ${className}`}>
+  <h3 className={`text-lg font-semibold text-gray-900 dark:text-slate-200 ${className}`}>
     {children}
   </h3>
 );
@@ -126,7 +128,7 @@ const CardContent = ({ children, className = '' }) => (
 );
 
 const CardFooter = ({ children, className = '' }) => (
-  <div className={`px-6 py-4 border-t border-slate-700 ${className}`}>
+  <div className={`px-6 py-4 border-t border-gray-200 dark:border-slate-700 ${className}`}>
     {children}
   </div>
 );

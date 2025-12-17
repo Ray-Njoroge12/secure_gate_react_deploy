@@ -44,18 +44,18 @@ const Pagination = memo(({
   size = 'md',
   ...props
 }) => {
-  // Size variants
+  // Size variants - ensuring minimum 44x44px touch targets on mobile
   const sizeClasses = {
     sm: {
-      button: 'px-2 py-1 text-xs',
-      icon: 'w-3 h-3'
-    },
-    md: {
-      button: 'px-3 py-2 text-sm',
+      button: 'px-3 py-2 min-w-[40px] min-h-[40px] text-xs',
       icon: 'w-4 h-4'
     },
+    md: {
+      button: 'px-3 py-2 min-w-[44px] min-h-[44px] text-sm',
+      icon: 'w-5 h-5'
+    },
     lg: {
-      button: 'px-4 py-3 text-base',
+      button: 'px-4 py-3 min-w-[48px] min-h-[48px] text-base',
       icon: 'w-5 h-5'
     }
   };

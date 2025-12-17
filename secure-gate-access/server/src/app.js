@@ -59,6 +59,7 @@ import notificationRoutes from './routes/notificationRoutes.js'; // Phase V3: No
 import adminAnalyticsRoutes from './routes/adminAnalyticsRoutes.js'; // Phase A1: Analytics
 import incidentWorkflowRoutes from './routes/incidentWorkflowRoutes.js'; // Phase A4: Incident Workflow
 import integrationsRoutes from './routes/integrationsRoutes.js'; // Phase A5: Integrations
+import announcementsRoutes from './routes/announcementsRoutes.js'; // Announcements
 import consentRoutes from './routes/consentRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import dsrRoutes from './routes/dsrRoutes.js';
@@ -83,7 +84,7 @@ const app = express();
 app.disable('x-powered-by');
 
 // Add debug middleware at the very start
-app.use(debugMiddleware('APP_START'));
+// app.use(debugMiddleware('APP_START')); // Disabled for production
 
 // Initialize transport security
 initializeTransportSecurity();
@@ -127,35 +128,58 @@ app.use(securityAuditLogging); // Security event audit logging
 app.use(dataAccessAuditLogging); // Data access audit logging
 
 // Add debug middleware after disabling audit middleware
-app.use(debugMiddleware('AFTER_DISABLED_AUDIT'));
+// app.use(debugMiddleware('AFTER_DISABLED_AUDIT')); // Disabled for production
 
 // CORS configuration with secure whitelist
 // Uses CLIENT_ORIGIN (primary) + ADDITIONAL_ORIGINS (comma-separated list)
+// Production: Set CLIENT_ORIGIN to your production domain
 const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
 const additionalOriginsStr = process.env.ADDITIONAL_ORIGINS || '';
 const additionalOrigins = additionalOriginsStr 
   ? additionalOriginsStr.split(',').map(o => o.trim()).filter(Boolean)
   : [];
 
+// Build allowed origins list
 const allowedOrigins = [clientOrigin, ...additionalOrigins];
 
-console.log('🌐 CORS Origins:', allowedOrigins);
+// Production safety check - warn if only localhost is configured
+if (process.env.NODE_ENV === 'production' && clientOrigin.includes('localhost')) {
+  console.warn('⚠️  WARNING: CORS is configured with localhost in production!');
+  console.warn('⚠️  Set CLIENT_ORIGIN environment variable to your production domain.');
+}
+
+// Log CORS configuration (hide in production for security)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('🌐 CORS Origins:', allowedOrigins);
+} else {
+  console.log('🌐 CORS configured with', allowedOrigins.length, 'allowed origins');
+}
 
 const corsConfig = cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) {
+      // In production, you may want to restrict this
+      if (process.env.CORS_ALLOW_NO_ORIGIN === 'false') {
+        return callback(new Error('CORS policy: Origin header required'));
+      }
+      return callback(null, true);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      // Log blocked origins in development for debugging
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('🚫 CORS blocked origin:', origin);
+      }
       callback(new Error('CORS policy violation: Origin not allowed'));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID', 'X-CSRF-Token'],
-  exposedHeaders: ['X-CSRF-Token', 'X-Request-ID'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID', 'X-CSRF-Token', 'API-Version'],
+  exposedHeaders: ['X-CSRF-Token', 'X-Request-ID', 'API-Version', 'API-Version-Status'],
   maxAge: 86400 // Cache preflight for 24 hours
 });
 
@@ -187,14 +211,14 @@ if (process.env.NODE_ENV !== 'development' || process.env.ENABLE_RATE_LIMIT === 
 }
 
 // Debug before body parsing
-app.use(debugMiddleware('BEFORE_BODY_PARSING'));
+// app.use(debugMiddleware('BEFORE_BODY_PARSING')); // Disabled for production
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Debug after body parsing
-app.use(debugMiddleware('AFTER_BODY_PARSING'));
+// app.use(debugMiddleware('AFTER_BODY_PARSING')); // Disabled for production
 
 // Compression
 app.use(compression());
@@ -203,7 +227,7 @@ app.use(compression());
 app.use(securityAuditMiddleware);
 
 // Debug before audit logger
-app.use(debugMiddleware('BEFORE_AUDIT_LOGGER'));
+// app.use(debugMiddleware('BEFORE_AUDIT_LOGGER')); // Disabled for production
 
 // Audit logging middleware
 app.use(auditLogger({
@@ -215,7 +239,7 @@ app.use(auditLogger({
 }));
 
 // Debug after audit logger
-app.use(debugMiddleware('AFTER_AUDIT_LOGGER'));
+// app.use(debugMiddleware('AFTER_AUDIT_LOGGER')); // Disabled for production
 
 // Response middleware
 app.use(responseMiddleware);
@@ -228,32 +252,35 @@ app.use('/api', apiVersioning({
 }));
 
 // Setup cache middleware for specific routes
-app.use('/api/visitors', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/visitors']));
-app.use('/api/users/profile', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/users/profile']));
-app.use('/api/admin/stats', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/stats']));
-app.use('/api/admin/dashboard', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/dashboard']));
-app.use('/api/health', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/health']));
-app.use('/api/system/info', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/system/info']));
+// NOTE: Redis caching disabled - cache middleware causing startup issues, needs investigation
+// TODO: Fix cacheMiddleware.createMiddleware compatibility with ROUTE_CACHE_CONFIG
+// app.use('/api/admin/stats', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/stats']));
+// app.use('/api/admin/dashboard', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/dashboard']));
+// app.use('/api/health', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/health']));
+// app.use('/api/system/info', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/system/info']));
+// app.use('/api/visitors', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/visitors']));
+// app.use('/api/users/profile', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/users/profile']));
 
 // Setup cache invalidation middleware for write operations
-app.use('/api/visitors', cacheMiddleware.createInvalidationMiddleware({
-  patterns: [
-    (req) => {
-      if (req.method === 'POST') return 'cache:GET:/api/visitors*';
-      if (req.method === 'PUT' || req.method === 'DELETE') return 'cache:GET:/api/visitors/*';
-      return null;
-    }
-  ]
-}));
+// NOTE: Disabled until Redis is properly configured
+// app.use('/api/visitors', cacheMiddleware.createInvalidationMiddleware({
+//   patterns: [
+//     (req) => {
+//       if (req.method === 'POST') return 'cache:GET:/api/visitors*';
+//       if (req.method === 'PUT' || req.method === 'DELETE') return 'cache:GET:/api/visitors/*';
+//       return null;
+//     }
+//   ]
+// }));
 
-app.use('/api/users', cacheMiddleware.createInvalidationMiddleware({
-  patterns: [
-    (req) => {
-      if (req.method === 'PUT') return 'cache:GET:/api/users/profile*';
-      return null;
-    }
-  ]
-}));
+// app.use('/api/users', cacheMiddleware.createInvalidationMiddleware({
+//   patterns: [
+//     (req) => {
+//       if (req.method === 'PUT') return 'cache:GET:/api/users/profile*';
+//       return null;
+//     }
+//   ]
+// }));
 
 // Versioned API routes
 app.use('/api/v1', v1Routes);
@@ -279,9 +306,9 @@ app.use('/api', systemRoutes); // System info, status, database health routes
 // app.use('/api/guards', guardRoutes); // Removed - placeholder implementation
 
 // Debug before auth routes
-app.use('/api/auth', debugMiddleware('BEFORE_AUTH_ROUTES'));
+// app.use('/api/auth', debugMiddleware('BEFORE_AUTH_ROUTES')); // Disabled for production
 app.use('/api/auth', authRoutes);
-app.use('/api/auth', debugMiddleware('AFTER_AUTH_ROUTES'));
+// app.use('/api/auth', debugMiddleware('AFTER_AUTH_ROUTES')); // Disabled for production
 
 // MFA routes
 app.use('/api/mfa', mfaRoutes);
@@ -312,6 +339,31 @@ app.use('/api/admin/incidents', incidentWorkflowRoutes);
 
 // Phase A5: Multi-Site & Integrations routes (requires auth + admin role)
 app.use('/api/admin', integrationsRoutes);
+
+// Announcements routes (requires auth)
+app.use('/api/announcements', announcementsRoutes);
+
+// Guard SSE endpoint (stub for real-time updates)
+app.get('/api/ws/guards', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  
+  // Send initial heartbeat
+  res.write('event: heartbeat\ndata: {"status":"connected"}\n\n');
+  
+  // Keep connection alive with periodic heartbeats
+  const heartbeat = setInterval(() => {
+    res.write('event: heartbeat\ndata: {"timestamp":"' + new Date().toISOString() + '"}\n\n');
+  }, 30000);
+  
+  // Clean up on disconnect
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    res.end();
+  });
+});
 
 // API Documentation (Swagger)
 app.use('/api-docs', swaggerMiddleware.serve, swaggerMiddleware.setup);

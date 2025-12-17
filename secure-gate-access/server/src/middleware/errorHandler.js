@@ -128,6 +128,7 @@ export const requestIdMiddleware = (req, res, next) => {
 export const globalErrorHandler = (err, req, res, next) => {
   // Generate request ID if not present
   const requestId = req.requestId || uuidv4();
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // Default error response structure
   const errorResponse = {
@@ -149,15 +150,21 @@ export const globalErrorHandler = (err, req, res, next) => {
     errorResponse.error.code = err.code;
     errorResponse.error.message = err.message;
 
-    if (err.details && process.env.NODE_ENV !== 'production') {
-      errorResponse.error.details = err.details;
+    // SECURITY: Only include details in non-production environments
+    // In production, sensitive details should not be exposed to clients
+    if (err.details && err.isOperational && !isProduction) {
+      const safeDetails = { ...err.details };
+      delete safeDetails.stack;
+      errorResponse.error.details = safeDetails;
     }
   } else if (err.name === 'ValidationError') {
     // Mongoose/Joi validation errors
     statusCode = 400;
     errorResponse.error.code = ERROR_CODES.VALIDATION_INVALID_FORMAT;
     errorResponse.error.message = 'Validation failed';
-    errorResponse.error.details = err.details || err.message;
+    if (!isProduction) {
+      errorResponse.error.details = err.details || err.message;
+    }
   } else if (err.code === '23505') {
     // PostgreSQL unique constraint violation
     statusCode = 409;
@@ -179,8 +186,9 @@ export const globalErrorHandler = (err, req, res, next) => {
       user: req.user?.id || 'anonymous'
     });
 
-    // Don't expose internal error details in production
-    if (process.env.NODE_ENV !== 'production') {
+    // SECURITY: Include error details only in non-production for debugging
+    // In production, never expose stack traces or internal error details to clients
+    if (!isProduction) {
       errorResponse.error.details = {
         message: err.message,
         stack: err.stack

@@ -489,4 +489,69 @@ router.post('/test', authenticateToken, requireRole(['admin', 'super_admin']), a
   }
 });
 
+/**
+ * @route POST /api/logs/error
+ * @desc Log frontend errors (from ErrorBoundary)
+ * @access Public (uses httpOnly cookies for user identification)
+ */
+router.post('/error', async (req, res) => {
+  try {
+    const { errorId, message, stack, componentStack, timestamp, userAgent, url, retryCount } = req.body;
+
+    // Validate required fields
+    if (!errorId || !message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: errorId and message are required'
+      });
+    }
+
+    // Get user from session/cookie if available (optional - don't fail if not authenticated)
+    const userId = req.user?.id || 'anonymous';
+
+    // Log the error using logging service
+    loggingService.logError('Frontend Error', new Error(message), {
+      errorId,
+      componentStack: componentStack?.substring(0, 1000), // Limit size
+      frontendUrl: url,
+      userAgent: userAgent?.substring(0, 500), // Limit size
+      timestamp,
+      retryCount,
+      userId,
+      source: 'frontend-error-boundary',
+      correlationId: req.correlationId
+    });
+
+    // Audit log (don't include PII per Kenya DPA)
+    logAuditEvent('frontend.error.logged', {
+      errorId,
+      hasStack: !!stack,
+      hasComponentStack: !!componentStack,
+      retryCount,
+      source: 'error-boundary'
+    }, req);
+
+    res.json({
+      success: true,
+      data: {
+        errorId,
+        logged: true,
+        message: 'Error has been logged successfully'
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    // Don't fail the frontend if logging fails
+    loggingService.logError('Failed to log frontend error', error, {
+      correlationId: req.correlationId
+    });
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to log error'
+    });
+  }
+});
+
 export default router;

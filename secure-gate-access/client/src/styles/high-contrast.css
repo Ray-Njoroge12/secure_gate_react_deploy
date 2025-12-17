@@ -1,0 +1,321 @@
+/**
+ * High Contrast Mode Styles
+ * WCAG 2.1 AAA compliant (7:1 minimum contrast ratio)
+ * 
+ * Usage: Applied when html.high-contrast class is present
+ */
+
+/* ==========================================================================
+   High Contrast Mode - Base
+   ========================================================================== */
+
+html.high-contrast {
+  /* Force high contrast colors */
+  --hc-bg: #000000;
+  --hc-bg-elevated: #1a1a1a;
+  --hc-text: #ffffff;
+  --hc-text-muted: #e0e0e0;
+  --hc-border: #ffffff;
+  --hc-focus: #ffff00; /* Yellow for maximum visibility */
+  --hc-link: #00ffff; /* Cyan for links */
+  --hc-error: #ff6b6b;
+  --hc-success: #00ff00;
+  --hc-warning: #ffff00;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Global Overrides
+   ========================================================================== */
+
+html.high-contrast body {
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+}
+
+/* Enhanced borders - 3px instead of 1px */
+html.high-contrast *,
+html.high-contrast *::before,
+html.high-contrast *::after {
+  border-color: var(--hc-border) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Focus States
+   ========================================================================== */
+
+/* Extra visible focus ring - 4px */
+html.high-contrast *:focus-visible {
+  outline: 4px solid var(--hc-focus) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 6px rgba(255, 255, 0, 0.3) !important;
+}
+
+html.high-contrast .skip-link:focus {
+  background-color: var(--hc-focus) !important;
+  color: #000000 !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Text
+   ========================================================================== */
+
+html.high-contrast h1,
+html.high-contrast h2,
+html.high-contrast h3,
+html.high-contrast h4,
+html.high-contrast h5,
+html.high-contrast h6 {
+  color: var(--hc-text) !important;
+}
+
+html.high-contrast p,
+html.high-contrast span,
+html.high-contrast label,
+html.high-contrast li {
+  color: var(--hc-text) !important;
+}
+
+html.high-contrast a {
+  color: var(--hc-link) !important;
+  text-decoration: underline !important;
+}
+
+html.high-contrast a:hover {
+  background-color: var(--hc-link) !important;
+  color: #000000 !important;
+}
+
+/* Placeholder text */
+html.high-contrast ::placeholder {
+  color: var(--hc-text-muted) !important;
+  opacity: 1 !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Buttons
+   ========================================================================== */
+
+html.high-contrast button,
+html.high-contrast [role="button"] {
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+  border: 3px solid var(--hc-text) !important;
+}
+
+html.high-contrast button:hover,
+html.high-contrast [role="button"]:hover {
+  background-color: var(--hc-text) !important;
+  color: var(--hc-bg) !important;
+}
+
+/* Primary buttons */
+html.high-contrast button[class*="primary"],
+html.high-contrast button[class*="bg-green"],
+html.high-contrast .btn-primary {
+  background-color: var(--hc-text) !important;
+  color: var(--hc-bg) !important;
+  border: 3px solid var(--hc-text) !important;
+}
+
+html.high-contrast button[class*="primary"]:hover,
+html.high-contrast button[class*="bg-green"]:hover {
+  background-color: var(--hc-focus) !important;
+  color: var(--hc-bg) !important;
+}
+
+/* Danger buttons */
+html.high-contrast button[class*="danger"],
+html.high-contrast button[class*="bg-red"] {
+  background-color: var(--hc-error) !important;
+  color: #000000 !important;
+  border: 3px solid var(--hc-error) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Form Elements
+   ========================================================================== */
+
+html.high-contrast input,
+html.high-contrast textarea,
+html.high-contrast select {
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+  border: 3px solid var(--hc-text) !important;
+}
+
+html.high-contrast input:focus,
+html.high-contrast textarea:focus,
+html.high-contrast select:focus {
+  border-color: var(--hc-focus) !important;
+}
+
+/* Checkbox and radio */
+html.high-contrast input[type="checkbox"],
+html.high-contrast input[type="radio"],
+html.high-contrast [role="checkbox"] {
+  border: 3px solid var(--hc-text) !important;
+  background-color: var(--hc-bg) !important;
+}
+
+html.high-contrast input[type="checkbox"]:checked,
+html.high-contrast input[type="radio"]:checked,
+html.high-contrast [role="checkbox"][aria-checked="true"] {
+  background-color: var(--hc-success) !important;
+  border-color: var(--hc-success) !important;
+}
+
+/* Labels */
+html.high-contrast label {
+  color: var(--hc-text) !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Cards & Containers
+   ========================================================================== */
+
+html.high-contrast .card,
+html.high-contrast [class*="card"],
+html.high-contrast [class*="panel"],
+html.high-contrast [class*="modal"] {
+  background-color: var(--hc-bg-elevated) !important;
+  border: 3px solid var(--hc-text) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Tables
+   ========================================================================== */
+
+html.high-contrast table {
+  border: 3px solid var(--hc-text) !important;
+}
+
+html.high-contrast th,
+html.high-contrast td {
+  border: 2px solid var(--hc-text) !important;
+  color: var(--hc-text) !important;
+}
+
+html.high-contrast th {
+  background-color: var(--hc-bg-elevated) !important;
+}
+
+html.high-contrast tr:nth-child(even) {
+  background-color: var(--hc-bg-elevated) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Status Colors
+   ========================================================================== */
+
+html.high-contrast .status-success,
+html.high-contrast [class*="text-green"],
+html.high-contrast [class*="bg-green"] {
+  color: var(--hc-success) !important;
+}
+
+html.high-contrast .status-error,
+html.high-contrast [class*="text-red"],
+html.high-contrast [class*="bg-red"] {
+  color: var(--hc-error) !important;
+}
+
+html.high-contrast .status-warning,
+html.high-contrast [class*="text-amber"],
+html.high-contrast [class*="text-yellow"] {
+  color: var(--hc-warning) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Icons
+   ========================================================================== */
+
+html.high-contrast svg {
+  color: currentColor !important;
+}
+
+html.high-contrast svg path,
+html.high-contrast svg circle,
+html.high-contrast svg rect {
+  stroke: currentColor !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Navigation
+   ========================================================================== */
+
+html.high-contrast nav,
+html.high-contrast [role="navigation"] {
+  background-color: var(--hc-bg) !important;
+  border: 3px solid var(--hc-text) !important;
+}
+
+html.high-contrast nav a,
+html.high-contrast [role="navigation"] a {
+  color: var(--hc-text) !important;
+  border-bottom: 2px solid transparent !important;
+}
+
+html.high-contrast nav a:hover,
+html.high-contrast [role="navigation"] a:hover {
+  border-bottom-color: var(--hc-focus) !important;
+}
+
+html.high-contrast nav a[aria-current="page"],
+html.high-contrast [role="navigation"] a.active {
+  background-color: var(--hc-text) !important;
+  color: var(--hc-bg) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Badges
+   ========================================================================== */
+
+html.high-contrast .badge,
+html.high-contrast [class*="badge"] {
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+  border: 2px solid var(--hc-text) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Tooltips
+   ========================================================================== */
+
+html.high-contrast [role="tooltip"],
+html.high-contrast .tooltip {
+  background-color: var(--hc-text) !important;
+  color: var(--hc-bg) !important;
+  border: 2px solid var(--hc-bg) !important;
+}
+
+/* ==========================================================================
+   High Contrast Mode - Scrollbars
+   ========================================================================== */
+
+html.high-contrast ::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+html.high-contrast ::-webkit-scrollbar-track {
+  background: var(--hc-bg);
+  border: 2px solid var(--hc-text);
+}
+
+html.high-contrast ::-webkit-scrollbar-thumb {
+  background: var(--hc-text);
+  border: 2px solid var(--hc-bg);
+}
+
+/* ==========================================================================
+   High Contrast Mode - Reduced Motion Support
+   ========================================================================== */
+
+html.high-contrast.reduce-motion *,
+html.high-contrast.reduce-motion *::before,
+html.high-contrast.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}

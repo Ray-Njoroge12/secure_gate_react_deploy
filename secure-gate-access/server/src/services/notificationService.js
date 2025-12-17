@@ -3,6 +3,7 @@ import Twilio from 'twilio';
 import AfricasTalking from 'africastalking';
 import Mailgun from 'mailgun.js';
 import FormData from 'form-data';
+import whatsappService from './whatsappService.js';
 import { 
     visitorInviteTemplate, 
     bulkInviteTemplate, 
@@ -224,16 +225,50 @@ export async function sendOtpVerificationEmail(visitorData, otpCode, expiryMinut
 }
 
 /**
- * Send visitor invitation SMS
+ * Send visitor invitation SMS/WhatsApp
+ * Supports: twilio, africastalking, whatsapp
  */
 export async function sendVisitorInviteSms(visitorData, residentData, inviteLink) {
-  const smsProvider = process.env.SMS_PROVIDER || 'twilio'; // default to twilio for backward compatibility
+  const smsProvider = process.env.SMS_PROVIDER || 'twilio';
   
-  if (smsProvider === 'africastalking' && !atClient) {
-    console.warn('Africa\'s Talking SMS not configured');
+  // Feature flag check
+  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
+    console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
     return false;
   }
   
+  // WhatsApp provider (recommended)
+  if (smsProvider === 'whatsapp') {
+    if (!whatsappService.isConfigured()) {
+      console.warn('WhatsApp service not configured');
+      return false;
+    }
+    
+    try {
+      const result = await whatsappService.sendVisitorInvitation(visitorData, residentData, inviteLink);
+      if (result.success) {
+        metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
+        console.log(`Visitor invitation sent via WhatsApp to ${visitorData.phone}`);
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      metrics.notifications_whatsapp_failed = (metrics.notifications_whatsapp_failed || 0) + 1;
+      console.error('WhatsApp send failed:', err?.message || err);
+      return false;
+    }
+  }
+  
+  // Africa's Talking provider
+  if (smsProvider === 'africastalking') {
+    if (!atClient) {
+      console.warn('Africa\'s Talking SMS not configured');
+      return false;
+    }
+  }
+  
+  // Twilio provider
   if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
     console.warn('Twilio SMS not configured');
     return false;
@@ -256,17 +291,17 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
 
     if (smsProvider === 'africastalking') {
       // Africa's Talking implementation
-        const smsOptions = {
-          to: [visitorData.phone],
-          message: message
-        };
-        
-        // Only add 'from' if sender ID is configured
-        if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-          smsOptions.from = process.env.AT_SENDER_ID;
-        }
-        
-        const result = await atClient.send(smsOptions);
+      const smsOptions = {
+        to: [visitorData.phone],
+        message: message
+      };
+      
+      // Only add 'from' if sender ID is configured
+      if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
+        smsOptions.from = process.env.AT_SENDER_ID;
+      }
+      
+      const result = await atClient.send(smsOptions);
       
       if (result.SMSMessageData.Recipients[0].status !== 'Success') {
         throw new Error(result.SMSMessageData.Recipients[0].statusCode);
@@ -291,16 +326,48 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
 }
 
 /**
- * Send OTP verification SMS
+ * Send OTP verification SMS/WhatsApp
+ * Supports: twilio, africastalking, whatsapp
  */
 export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes = 15) {
-  const smsProvider = process.env.SMS_PROVIDER || 'twilio'; // default to twilio for backward compatibility
+  const smsProvider = process.env.SMS_PROVIDER || 'twilio';
   
+  // Feature flag check
+  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
+    console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
+    return false;
+  }
+  
+  // WhatsApp provider (recommended)
+  if (smsProvider === 'whatsapp') {
+    if (!whatsappService.isConfigured()) {
+      console.warn('WhatsApp service not configured');
+      return false;
+    }
+    
+    try {
+      const result = await whatsappService.sendOtpVerification(visitorData, otpCode, expiryMinutes);
+      if (result.success) {
+        metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
+        console.log(`OTP verification sent via WhatsApp to ${visitorData.phone}`);
+        return true;
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      metrics.notifications_whatsapp_failed = (metrics.notifications_whatsapp_failed || 0) + 1;
+      console.error('WhatsApp OTP send failed:', err?.message || err);
+      return false;
+    }
+  }
+  
+  // Africa's Talking provider
   if (smsProvider === 'africastalking' && !atClient) {
     console.warn('Africa\'s Talking SMS not configured');
     return false;
   }
   
+  // Twilio provider
   if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
     console.warn('Twilio SMS not configured');
     return false;
@@ -318,17 +385,17 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
 
     if (smsProvider === 'africastalking') {
       // Africa's Talking implementation
-        const smsOptions = {
-          to: [visitorData.phone],
-          message: message
-        };
-        
-        // Only add 'from' if sender ID is configured
-        if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-          smsOptions.from = process.env.AT_SENDER_ID;
-        }
-        
-        const result = await atClient.send(smsOptions);
+      const smsOptions = {
+        to: [visitorData.phone],
+        message: message
+      };
+      
+      // Only add 'from' if sender ID is configured
+      if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
+        smsOptions.from = process.env.AT_SENDER_ID;
+      }
+      
+      const result = await atClient.send(smsOptions);
       
       if (result.SMSMessageData.Recipients[0].status !== 'Success') {
         throw new Error(result.SMSMessageData.Recipients[0].statusCode);

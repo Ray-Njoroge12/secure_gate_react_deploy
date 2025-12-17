@@ -152,6 +152,7 @@ class UserService {
   async resendEmailVerification(email) {
     try {
       // Find user by email who hasn't verified yet
+      // Uses column names matching render_init.sql schema
       const userResult = await this.db.query(
         `SELECT id, username, email 
          FROM users 
@@ -204,7 +205,8 @@ class UserService {
     }
 
     try {
-      // Get user by username OR email using parameterized query
+      // Get user by username OR email using parameterized query, including email verification status
+      // Uses column names matching render_init.sql schema: verified instead of email_verified_at
       const result = await this.db.query(
         'SELECT id, username, email, password_hash, role, created_at, verified FROM users WHERE username = $1 OR email = $1',
         [username]
@@ -228,6 +230,7 @@ class UserService {
       }
 
       // Check if email is verified (skip in development if EMAIL_VERIFICATION_REQUIRED=false)
+      // Uses verified column (boolean) instead of email_verified_at (timestamp) per render_init.sql schema
       const requireEmailVerification = process.env.EMAIL_VERIFICATION_REQUIRED !== 'false';
       if (requireEmailVerification && !user.verified) {
         throw new AppError('Please verify your email address before logging in. Check your inbox for the verification link.', 403, 'EMAIL_NOT_VERIFIED', {

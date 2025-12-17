@@ -1,0 +1,365 @@
+/**
+ * Gradient Card Styles
+ * Enhanced card component with gradient backgrounds and animations
+ */
+
+/* Base Card */
+.gradient-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-xl, 16px);
+  transition: all var(--transition-normal, 200ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+  overflow: hidden;
+}
+
+/* Padding Variants */
+.gradient-card--padding-none {
+  padding: 0;
+}
+
+.gradient-card--padding-sm {
+  padding: var(--space-md, 16px);
+}
+
+.gradient-card--padding-md {
+  padding: var(--space-lg, 24px);
+}
+
+.gradient-card--padding-lg {
+  padding: var(--space-xl, 32px);
+}
+
+/* Shadow */
+.gradient-card--shadow {
+  box-shadow: var(--shadow-sm, 0 1px 3px 0 rgb(0 0 0 / 0.1));
+}
+
+/* Border */
+.gradient-card--border {
+  border: 1px solid var(--color-border-primary, #e2e8f0);
+}
+
+/* Hoverable */
+.gradient-card--hoverable:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1));
+}
+
+/* Clickable */
+.gradient-card--clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.gradient-card--clickable:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.gradient-card--clickable:focus-visible {
+  outline: 3px solid var(--color-brand-500, #10b981);
+  outline-offset: 2px;
+}
+
+/* Primary Variant (Green Gradient) */
+.gradient-card--primary {
+  background: linear-gradient(135deg, 
+    var(--color-brand-50, #ecfdf5), 
+    var(--color-brand-100, #d1fae5)
+  );
+  border-color: var(--color-brand-200, #a7f3d0);
+}
+
+.gradient-card--primary.gradient-card--hoverable:hover {
+  background: linear-gradient(135deg, 
+    var(--color-brand-100, #d1fae5), 
+    var(--color-brand-200, #a7f3d0)
+  );
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15);
+}
+
+/* Secondary Variant (Blue Gradient) */
+.gradient-card--secondary {
+  background: linear-gradient(135deg, 
+    var(--color-accent-50, #eff6ff), 
+    var(--color-accent-100, #dbeafe)
+  );
+  border-color: var(--color-accent-200, #bfdbfe);
+}
+
+.gradient-card--secondary.gradient-card--hoverable:hover {
+  background: linear-gradient(135deg, 
+    var(--color-accent-100, #dbeafe), 
+    var(--color-accent-200, #bfdbfe)
+  );
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+}
+
+/* Success Variant */
+.gradient-card--success {
+  background: linear-gradient(135deg, 
+    var(--color-success-50, #ecfdf5), 
+    var(--color-success-100, #d1fae5)
+  );
+  border-color: var(--color-success-200, #a7f3d0);
+}
+
+.gradient-card--success.gradient-card--hoverable:hover {
+  background: linear-gradient(135deg, 
+    var(--color-success-100, #d1fae5), 
+    var(--color-success-200, #a7f3d0)
+  );
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15);
+}
+
+/* Info Variant */
+.gradient-card--info {
+  background: linear-gradient(135deg, 
+    var(--color-info-50, #eff6ff), 
+    var(--color-info-100, #dbeafe)
+  );
+  border-color: var(--color-info-200, #bfdbfe);
+}
+
+.gradient-card--info.gradient-card--hoverable:hover {
+  background: linear-gradient(135deg, 
+    var(--color-info-100, #dbeafe), 
+    var(--color-info-200, #bfdbfe)
+  );
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+}
+
+/* Warning Variant */
+.gradient-card--warning {
+  background: linear-gradient(135deg, 
+    var(--color-warning-50, #fffbeb), 
+    var(--color-warning-100, #fef3c7)
+  );
+  border-color: var(--color-warning-200, #fde68a);
+}
+
+.gradient-card--warning.gradient-card--hoverable:hover {
+  background: linear-gradient(135deg, 
+    var(--color-warning-100, #fef3c7), 
+    var(--color-warning-200, #fde68a)
+  );
+  box-shadow: 0 12px 24px rgba(245, 158, 11, 0.15);
+}
+
+/* Danger Variant */
+.gradient-card--danger {
+  background: linear-gradient(135deg, 
+    var(--color-error-50, #fef2f2), 
+    var(--color-error-100, #fee2e2)
+  );
+  border-color: var(--color-error-200, #fecaca);
+}
+
+.gradient-card--danger.gradient-card--hoverable:hover {
+  background: linear-gradient(135deg, 
+    var(--color-error-100, #fee2e2), 
+    var(--color-error-200, #fecaca)
+  );
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.15);
+}
+
+/* Neutral Variant */
+.gradient-card--neutral {
+  background: var(--color-card-bg, #ffffff);
+  border-color: var(--color-border-primary, #e2e8f0);
+}
+
+.gradient-card--neutral.gradient-card--hoverable:hover {
+  background: var(--color-secondary-50, #f8fafc);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+}
+
+/* Card Sections */
+.gradient-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md, 16px);
+  padding-bottom: var(--space-md, 16px);
+  border-bottom: 1px solid var(--color-border-primary, #e2e8f0);
+}
+
+.gradient-card__body {
+  flex: 1;
+}
+
+.gradient-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-md, 16px);
+  padding-top: var(--space-md, 16px);
+  border-top: 1px solid var(--color-border-primary, #e2e8f0);
+}
+
+/* Card Title */
+.gradient-card__title {
+  font-size: var(--text-xl, 1.25rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text-primary, #0f172a);
+  margin: 0;
+}
+
+/* Card Description */
+.gradient-card__description {
+  font-size: var(--text-base, 1rem);
+  line-height: 1.5;
+  color: var(--color-text-secondary, #475569);
+  margin: var(--space-sm, 8px) 0 0 0;
+}
+
+/* Card Icon */
+.gradient-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg, 12px);
+  background: linear-gradient(135deg, 
+    var(--color-brand-50, #ecfdf5), 
+    var(--color-brand-100, #d1fae5)
+  );
+  margin-bottom: var(--space-md, 16px);
+}
+
+.gradient-card__icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--color-brand-600, #059669);
+}
+
+/* Shimmer Effect for Loading */
+.gradient-card--loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-card--loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .gradient-card--padding-sm {
+    padding: var(--space-sm, 12px);
+  }
+
+  .gradient-card--padding-md {
+    padding: var(--space-md, 16px);
+  }
+
+  .gradient-card--padding-lg {
+    padding: var(--space-lg, 24px);
+  }
+
+  .gradient-card__title {
+    font-size: var(--text-lg, 1.125rem);
+  }
+
+  .gradient-card__description {
+    font-size: var(--text-small, 0.875rem);
+  }
+
+  .gradient-card__icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .gradient-card__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .gradient-card,
+  .gradient-card--hoverable:hover,
+  .gradient-card--clickable:active {
+    transition: none;
+    transform: none;
+  }
+
+  .gradient-card--loading::before {
+    animation: none;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .gradient-card--neutral {
+    background: var(--color-card-bg, #1e293b);
+    border-color: var(--color-border-primary, #334155);
+  }
+
+  .gradient-card--neutral.gradient-card--hoverable:hover {
+    background: var(--color-secondary-800, #1e293b);
+  }
+
+  .gradient-card__header,
+  .gradient-card__footer {
+    border-color: var(--color-border-primary, #334155);
+  }
+
+  .gradient-card__title {
+    color: var(--color-text-primary, #f8fafc);
+  }
+
+  .gradient-card__description {
+    color: var(--color-text-secondary, #cbd5e1);
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .gradient-card {
+    border-width: 2px;
+  }
+
+  .gradient-card--clickable:focus-visible {
+    outline-width: 4px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .gradient-card {
+    background: white !important;
+    border: 1px solid black !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  .gradient-card--hoverable:hover,
+  .gradient-card--clickable:active {
+    transform: none !important;
+  }
+}

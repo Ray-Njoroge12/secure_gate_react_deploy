@@ -1,0 +1,447 @@
+/**
+ * Micro-interaction Animations
+ * Enhances UX with subtle, purposeful animations
+ * All animations respect prefers-reduced-motion
+ */
+
+/* ==========================================================================
+   Base Animation Settings
+   ========================================================================== */
+
+:root {
+  --animation-fast: 150ms;
+  --animation-normal: 200ms;
+  --animation-slow: 300ms;
+  --animation-very-slow: 500ms;
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ==========================================================================
+   Button Ripple Effect
+   ========================================================================== */
+
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(0);
+  animation: ripple-effect var(--animation-slow) ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ripple-effect {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Success Checkmark Animation
+   ========================================================================== */
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #10b981;
+  stroke-miterlimit: 10;
+  animation: checkmark-fill var(--animation-slow) ease-in-out var(--animation-slow) forwards,
+             checkmark-scale var(--animation-normal) ease-in-out var(--animation-very-slow) both;
+}
+
+.success-checkmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #10b981;
+  fill: none;
+  animation: checkmark-stroke var(--animation-slow) var(--easing-default) forwards;
+}
+
+.success-checkmark__check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: checkmark-stroke var(--animation-normal) var(--easing-default) var(--animation-slow) forwards;
+}
+
+@keyframes checkmark-stroke {
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes checkmark-fill {
+  100% {
+    box-shadow: inset 0 0 0 30px rgba(16, 185, 129, 0.1);
+  }
+}
+
+@keyframes checkmark-scale {
+  0%, 100% {
+    transform: none;
+  }
+  50% {
+    transform: scale3d(1.1, 1.1, 1);
+  }
+}
+
+/* ==========================================================================
+   Input Focus Animation
+   ========================================================================== */
+
+.input-focus-animate {
+  transition: border-color var(--animation-fast) var(--easing-default),
+              box-shadow var(--animation-fast) var(--easing-default),
+              transform var(--animation-fast) var(--easing-default);
+}
+
+.input-focus-animate:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+/* ==========================================================================
+   Validation Feedback Animations
+   ========================================================================== */
+
+/* Error shake */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake var(--animation-slow) var(--easing-default);
+}
+
+/* Success slide-in */
+@keyframes slide-in-success {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-success-slide {
+  animation: slide-in-success var(--animation-normal) var(--easing-default);
+}
+
+/* Error slide-in */
+@keyframes slide-in-error {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-error-slide {
+  animation: slide-in-error var(--animation-normal) var(--easing-default);
+}
+
+/* ==========================================================================
+   Checkbox/Toggle Spring Animation
+   ========================================================================== */
+
+.checkbox-spring {
+  transition: transform var(--animation-normal) var(--easing-spring),
+              background-color var(--animation-fast) var(--easing-default);
+}
+
+.checkbox-spring:active {
+  transform: scale(0.9);
+}
+
+.checkbox-spring .checkmark-icon {
+  transition: transform var(--animation-normal) var(--easing-spring),
+              opacity var(--animation-fast) var(--easing-default);
+  transform: scale(0);
+  opacity: 0;
+}
+
+.checkbox-spring.checked .checkmark-icon {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Toggle switch */
+.toggle-switch {
+  transition: background-color var(--animation-normal) var(--easing-default);
+}
+
+.toggle-switch .toggle-knob {
+  transition: transform var(--animation-normal) var(--easing-spring);
+}
+
+.toggle-switch.active .toggle-knob {
+  transform: translateX(100%);
+}
+
+/* ==========================================================================
+   Page Transition Animations
+   ========================================================================== */
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes page-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition-fade {
+  animation: page-fade-in var(--animation-normal) var(--easing-default);
+}
+
+.page-transition-slide {
+  animation: page-slide-up var(--animation-slow) var(--easing-default);
+}
+
+/* ==========================================================================
+   Status Badge Animations
+   ========================================================================== */
+
+@keyframes badge-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.badge-animate {
+  transition: all var(--animation-normal) var(--easing-default);
+}
+
+.badge-animate.active {
+  animation: badge-pulse 2s infinite;
+}
+
+/* Status change */
+@keyframes status-change {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.status-change {
+  animation: status-change var(--animation-slow) var(--easing-spring);
+}
+
+/* ==========================================================================
+   Toast Notification Animations
+   ========================================================================== */
+
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.toast-enter {
+  animation: toast-slide-in var(--animation-slow) var(--easing-default);
+}
+
+.toast-exit {
+  animation: toast-slide-out var(--animation-normal) var(--easing-default);
+}
+
+/* ==========================================================================
+   Skeleton Shimmer Effect
+   ========================================================================== */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #334155 25%,
+    #475569 50%,
+    #334155 75%
+  );
+  background-size: 200% 100%;
+}
+
+/* ==========================================================================
+   Counter Animation
+   ========================================================================== */
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.counter-animate {
+  animation: count-up var(--animation-normal) var(--easing-default);
+}
+
+/* ==========================================================================
+   Hover Effects
+   ========================================================================== */
+
+.hover-lift {
+  transition: transform var(--animation-fast) var(--easing-default),
+              box-shadow var(--animation-fast) var(--easing-default);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hover-scale {
+  transition: transform var(--animation-fast) var(--easing-default);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-glow {
+  transition: box-shadow var(--animation-normal) var(--easing-default);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+/* ==========================================================================
+   Loading Spinner Animations
+   ========================================================================== */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   Reduced Motion Support
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .ripple,
+  .success-checkmark,
+  .skeleton-shimmer,
+  .badge-animate.active {
+    animation: none !important;
+  }
+}
+
+/* Also respect the reduce-motion class */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}

@@ -371,24 +371,41 @@ function sanitizeHeaders(headers) {
 
 /**
  * Log audit event to database
+ * Updated to match render_init.sql audit_logs schema:
+ * - action VARCHAR(100) NOT NULL
+ * - resource VARCHAR(100) NOT NULL
+ * - user_id INTEGER
+ * - user_role VARCHAR(50)
+ * - request_id VARCHAR(100)
+ * - ip_address INET
+ * - user_agent TEXT
+ * - details JSONB
+ * - timestamp, created_at
  */
 async function logAuditEvent(auditData) {
   try {
     const query = `
       INSERT INTO audit_logs (
-        id, user_id, action, entity_type, entity_id, details, ip_address, created_at
+        action, resource, user_id, user_role, request_id, 
+        ip_address, user_agent, details, timestamp, created_at
       ) VALUES (
-        DEFAULT, $1, $2, $3, $4, $5, $6, NOW()
+        $1, $2, $3, $4, $5, 
+        $6, $7, $8, NOW(), NOW()
       )
     `;
     
+    // Ensure resource is never null (required by render_init.sql schema)
+    const resource = auditData.request?.path || auditData.request?.url || 'unknown';
+    
     const values = [
-      auditData.user?.id || null,
-      auditData.event || 'unknown',
-      auditData.entityType || 'system',
-      auditData.entityId || null,
+      auditData.event || 'unknown',                    // action (NOT NULL)
+      resource.substring(0, 100),                      // resource (NOT NULL, VARCHAR(100))
+      auditData.user?.id || null,                      // user_id
+      auditData.user?.role || null,                    // user_role
+      auditData.requestId || null,                     // request_id
+      auditData.user?.ip || '127.0.0.1',               // ip_address
+      auditData.user?.userAgent || null,               // user_agent
       JSON.stringify({
-        requestId: auditData.requestId,
         timestamp: auditData.timestamp,
         level: auditData.level,
         user: auditData.user,
@@ -396,8 +413,7 @@ async function logAuditEvent(auditData) {
         response: auditData.response,
         performance: auditData.performance,
         metadata: auditData.metadata
-      }),
-      auditData.user?.ip || '127.0.0.1'
+      })                                               // details (JSONB)
     ];
     
     await dbManager.query(query, values);

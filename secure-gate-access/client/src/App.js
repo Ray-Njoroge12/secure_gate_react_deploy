@@ -23,6 +23,7 @@ import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx"
 import ToastContainer from "./components/ToastContainer.jsx";
 import ErrorQueue from "./components/ErrorQueue.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
+import CookieConsentBanner from "./components/CookieConsentBanner.jsx"; // Privacy: Cookie consent for KDPA compliance
 import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
@@ -420,6 +421,7 @@ function App() {
           <ToastContainer />
           <ErrorQueue />
           <BrowserCompatibilityWarning />
+          <CookieConsentBanner />
         </RootProvider>
       </div>
     </AppErrorBoundary>

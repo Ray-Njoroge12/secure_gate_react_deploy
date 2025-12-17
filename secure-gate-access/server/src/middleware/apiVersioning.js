@@ -187,21 +187,14 @@ const addVersionHeaders = (res, version) => {
 
 /**
  * Main API versioning middleware
+ * Re-enabled: December 16, 2025 - Production readiness fix
  */
 export const apiVersioning = (options = {}) => {
-  // NUCLEAR BYPASS FOR PHASE 2 COMPLETION - Skip all versioning logic
-  return (req, res, next) => {
-    console.log('🚨 API Versioning bypassed for:', req.method, req.path);
-    next();
-  };
-  
-  // ORIGINAL CODE DISABLED:
-  /*
   const {
     defaultVersion = DEFAULT_VERSION,
     supportedVersions = SUPPORTED_VERSIONS,
     strictMode = false, // If true, reject requests without version
-    logVersionUsage = true
+    logVersionUsage = process.env.NODE_ENV !== 'production' // Only log in dev by default
   } = options;
 
   return (req, res, next) => {
@@ -210,7 +203,7 @@ export const apiVersioning = (options = {}) => {
       const requestedVersion = extractVersion(req);
       const version = requestedVersion || defaultVersion;
       
-      // Validate version
+      // Validate version - only enforce if strictMode or explicit version requested
       if (!isVersionSupported(version)) {
         if (strictMode || requestedVersion) {
           throw new AppError(
@@ -224,6 +217,12 @@ export const apiVersioning = (options = {}) => {
             }
           );
         }
+        // If not strict mode and no explicit version, use default silently
+        req.apiVersion = defaultVersion;
+        req.apiVersionInfo = getVersionInfo(defaultVersion);
+        req.isVersionDeprecated = false;
+        addVersionHeaders(res, defaultVersion);
+        return next();
       }
       
       // Check if version is sunset
@@ -247,7 +246,7 @@ export const apiVersioning = (options = {}) => {
       // Add version headers to response
       addVersionHeaders(res, version);
       
-      // Log version usage
+      // Log version usage (only in development or if explicitly enabled)
       if (logVersionUsage) {
         logger.info('API version usage', {
           version,
@@ -274,7 +273,6 @@ export const apiVersioning = (options = {}) => {
       next(error);
     }
   };
-  */
 };
 
 /**

@@ -3,7 +3,8 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
 import { handleApiError } from "../utils/errorMapper.js";
-import AuthLayout from "../layouts/AuthLayout.jsx";
+import { FloatingLabelInput, GradientButton, GradientCard, Checkbox } from "../components/ui";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle, KeyRound } from "lucide-react";
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -22,7 +23,36 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const buttonRef = useRef(null);
+
+  // Validation functions
+  const validateEmail = (value) => {
+    if (!value) {
+      setEmailError("Email is required");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setEmailError("Please enter a valid email");
+      return false;
+    }
+    setEmailError("");
+    return true;
+  };
+
+  const validatePassword = (value) => {
+    if (!value) {
+      setPasswordError("Password is required");
+      return false;
+    }
+    if (value.length < 6) {
+      setPasswordError("Password must be at least 6 characters");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -41,6 +71,8 @@ export default function LoginPage() {
       // Escape to clear errors
       if (e.key === 'Escape') {
         clearAllErrors();
+        setEmailError("");
+        setPasswordError("");
       }
     };
 
@@ -53,6 +85,14 @@ export default function LoginPage() {
     e.preventDefault();
     clearAllErrors();
     setMessage("");
+    
+    // Validate inputs
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+    
+    if (!isEmailValid || !isPasswordValid) {
+      return;
+    }
 
     if (loading) return; // prevent double submit
     setLoading(true);
@@ -72,17 +112,27 @@ export default function LoginPage() {
         return;
       }
       
-      // Redirect to intended page or dashboard based on role
-      const from = location.state?.from?.pathname;
-      if (from && from !== '/login') {
-        navigate(from, { replace: true });
-      } else {
-        // Default redirects based on role
-        if (result.user.role === "admin") navigate("/dashboard/admin");
-        else if (result.user.role === "guard") navigate("/dashboard/guard");
-        else if (result.user.role === "resident") navigate("/dashboard/resident");
-        else navigate("/");
-      }
+      // Success animation before redirect
+      handleSuccess("Login successful! Redirecting...", {
+        context: 'Login',
+        title: 'Welcome Back!',
+        autoClose: true,
+        autoCloseDelay: 1500
+      });
+      
+      // Redirect after short delay for animation
+      setTimeout(() => {
+        const from = location.state?.from?.pathname;
+        if (from && from !== '/login') {
+          navigate(from, { replace: true });
+        } else {
+          // Default redirects based on role
+          if (result.user.role === "admin") navigate("/dashboard/admin");
+          else if (result.user.role === "guard") navigate("/dashboard/guard");
+          else if (result.user.role === "resident") navigate("/dashboard/resident");
+          else navigate("/");
+        }
+      }, 1500);
     } catch (err) {
       handleError(err, { 
         context: 'Login',
@@ -100,6 +150,12 @@ export default function LoginPage() {
     e.preventDefault();
     clearAllErrors();
     setMessage("");
+
+    if (!validateEmail(resetEmail)) {
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
@@ -128,6 +184,7 @@ export default function LoginPage() {
         autoCloseDelay: 3000
       });
       setShowForgot(false);
+      setResetEmail("");
     } catch (err) {
       handleError(err, {
         context: 'Password Reset',
@@ -135,6 +192,8 @@ export default function LoginPage() {
         showRecoveryActions: true,
         onRetry: () => handleForgotPassword(e)
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -155,151 +214,199 @@ export default function LoginPage() {
   }, [isAuthenticated, user, navigate, location]);
 
   return (
-    <AuthLayout 
-      title={showForgot ? "Reset Password" : "Welcome Back"} 
-      subtitle={showForgot ? "Enter your email and we'll send you a reset link" : "Sign in to your SecureGate account"}
-    >
-
-      {showForgot ? (
-        <form onSubmit={handleForgotPassword} className="space-y-6">
-          <div>
-            <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              id="resetEmail"
-              type="email"
-              placeholder="Enter your email"
-              value={resetEmail}
-              onChange={(e) => setResetEmail(e.target.value)}
-              className="w-full h-11 px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              required
-              aria-required="true"
-              aria-describedby="resetEmail-help"
-            />
-            <p id="resetEmail-help" className="mt-1 text-sm text-gray-500">We'll send you a password reset link</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo and Title */}
+        <div className="text-center mb-8 animate-fade-in-down">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg mb-4">
+            <Shield className="w-8 h-8 text-white" />
           </div>
-          
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-          >
-            {loading ? "Sending..." : "Send Reset Link"}
-          </button>
-          
-          <button
-            type="button"
-            className="w-full min-h-[44px] text-center text-brand-600 hover:text-brand-500 text-sm font-medium px-2 py-2"
-            onClick={() => setShowForgot(false)}
-          >
-            Back to Sign In
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-11 px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              required
-              aria-required="true"
-              autoComplete="email"
-            />
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            {showForgot ? "Reset Password" : "Welcome Back"}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300">
+            {showForgot 
+              ? "Enter your email and we'll send you a reset link" 
+              : "Sign in to your SecureGate account"}
+          </p>
+        </div>
+        
+        {/* Main Card */}
+        <GradientCard className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          {showForgot ? (
+            /* Password Reset Form */
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <FloatingLabelInput
+                id="resetEmail"
+                type="email"
+                label="Email Address"
+                value={resetEmail}
+                onChange={(e) => {
+                  setResetEmail(e.target.value);
+                  if (e.target.value) validateEmail(e.target.value);
+                }}
+                onBlur={(e) => validateEmail(e.target.value)}
+                error={emailError}
+                icon={<Mail className="w-5 h-5" />}
+                required
+                autoFocus
+              />
+              
+              <div className="space-y-3">
+                <GradientButton
+                  type="submit"
+                  variant="primary"
+                  loading={loading}
+                  disabled={loading || !resetEmail}
+                  className="w-full"
+                  icon={<ArrowRight className="w-5 h-5" />}
+                >
+                  {loading ? "Sending..." : "Send Reset Link"}
+                </GradientButton>
+                
+                <button
+                  type="button"
+                  className="w-full text-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 text-sm font-medium py-2 transition-colors"
+                  onClick={() => {
+                    setShowForgot(false);
+                    setEmailError("");
+                    setResetEmail("");
+                  }}
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* Login Form */
+            <form onSubmit={handleLogin} className="space-y-6">
+              <FloatingLabelInput
+                id="email"
+                type="email"
+                label="Email Address"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) validateEmail(e.target.value);
+                }}
+                onBlur={(e) => validateEmail(e.target.value)}
+                error={emailError}
+                icon={<Mail className="w-5 h-5" />}
+                required
+                autoComplete="email"
+                autoFocus
+              />
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <input
+              <FloatingLabelInput
                 id="password"
                 type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
+                label="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-11 px-4 py-3 pr-12 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) validatePassword(e.target.value);
+                }}
+                onBlur={(e) => validatePassword(e.target.value)}
+                error={passwordError}
+                icon={<Lock className="w-5 h-5" />}
                 required
-                aria-required="true"
                 autoComplete="current-password"
+                endIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors p-2 -m-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                }
               />
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px]"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                aria-pressed={showPassword}
-              >
-                {showPassword ? (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464a1.995 1.995 0 00-2.83 0L5.636 8.464m4.242 1.414L9.88 9.88m-4.242-4.242L7.05 7.05m1.414 1.414l4.242 4.242" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.543 7-1.275 4.057-5.066 7-9.543 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                aria-describedby="remember-help"
-              />
-              <span className="ml-2 text-sm text-gray-700">Remember me</span>
-            </label>
-            
-            <button
-              type="button"
-              className="min-h-[44px] min-w-[44px] text-sm text-brand-600 hover:text-brand-500 font-medium px-2 py-1"
-              onClick={() => setShowForgot(true)}
-              aria-label="Reset your password"
-            >
-              Forgot password?
-            </button>
-          </div>
-
-              <button 
-                ref={buttonRef}
-                type="submit" 
-                disabled={loading}
-                className="w-full flex justify-center items-center h-12 px-4 border border-transparent rounded-lg shadow-md text-base font-semibold text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </button>
-              
-              {/* Keyboard Shortcuts Hint */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-500 text-center">
-                  💡 <span className="font-medium">Tip:</span> Press <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 border border-gray-300 rounded">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 border border-gray-300 rounded">Enter</kbd> to sign in
-                </p>
+              <div className="flex items-center justify-between">
+                <Checkbox
+                  id="remember-me"
+                  label="Remember me"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                
+                <button
+                  type="button"
+                  className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
+                  onClick={() => {
+                    setShowForgot(true);
+                    setEmailError("");
+                    setPasswordError("");
+                  }}
+                >
+                  Forgot password?
+                </button>
               </div>
-        </form>
-      )}
 
-      <div className="mt-6 text-center">
-        <span className="text-sm text-gray-600">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-brand-600 hover:text-brand-500 font-medium">
-            Sign up
-          </Link>
-        </span>
+              <div className="space-y-3">
+                <GradientButton
+                  ref={buttonRef}
+                  type="submit"
+                  variant="primary"
+                  loading={loading}
+                  disabled={loading || !email || !password}
+                  className="w-full"
+                  icon={loading ? null : <ArrowRight className="w-5 h-5" />}
+                >
+                  {loading ? "Signing in..." : "Sign In"}
+                </GradientButton>
+
+                {/* Security Features */}
+                <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center">
+                    <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
+                    SSL Secured
+                  </span>
+                  <span className="flex items-center">
+                    <KeyRound className="w-3 h-3 mr-1 text-green-500" />
+                    2FA Available
+                  </span>
+                </div>
+              </div>
+            </form>
+          )}
+        </GradientCard>
+        
+        {/* Sign Up Link */}
+        {!showForgot && (
+          <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              Don't have an account?{" "}
+              <Link 
+                to="/register" 
+                className="text-green-600 hover:text-green-700 font-semibold transition-colors"
+              >
+                Sign up
+              </Link>
+            </span>
+          </div>
+        )}
+
+        {/* Keyboard Shortcuts Hint */}
+        <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            💡 Press{" "}
+            <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded">
+              Ctrl
+            </kbd>{" "}
+            +{" "}
+            <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded">
+              Enter
+            </kbd>{" "}
+            to sign in
+          </p>
+        </div>
       </div>
-    </AuthLayout>
+    </div>
   );
 }

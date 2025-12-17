@@ -77,10 +77,10 @@ const MFAVerify = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         {/* Card */}
-        <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 shadow-2xl rounded-2xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6 text-center">
             <div className="inline-block p-3 bg-white bg-opacity-20 rounded-full mb-3">
@@ -119,10 +119,10 @@ const MFAVerify = () => {
             <div className="mb-6 text-center">
               {!useBackupCode ? (
                 <>
-                  <p className="text-gray-700 mb-2">
+                  <p className="text-gray-700 dark:text-gray-300 mb-2">
                     Open your authenticator app and enter the 6-digit code
                   </p>
-                  <div className="flex items-center justify-center text-xs text-gray-500">
+                  <div className="flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -130,7 +130,7 @@ const MFAVerify = () => {
                   </div>
                 </>
               ) : (
-                <p className="text-gray-700">
+                <p className="text-gray-700 dark:text-gray-300">
                   Enter one of your 8-character backup codes
                 </p>
               )}

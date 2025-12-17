@@ -129,12 +129,54 @@ export const browserDetection = {
    */
   getFeatureSupport() {
     return {
-      // ES6+ Features
-      arrowFunctions: (() => { try { eval('() => {}'); return true; } catch(e) { return false; } })(),
-      templateLiterals: (() => { try { eval('`test`'); return true; } catch(e) { return false; } })(),
-      destructuring: (() => { try { eval('const {a} = {}'); return true; } catch(e) { return false; } })(),
-      spreadOperator: (() => { try { eval('[...[]]'); return true; } catch(e) { return false; } })(),
-      asyncAwait: (() => { try { eval('async () => {}'); return true; } catch(e) { return false; } })(),
+      // ES6+ Features - using safe feature detection without eval
+      arrowFunctions: (() => {
+        try {
+          // Test arrow function support safely
+          const arrow = () => {};
+          return typeof arrow === 'function';
+        } catch(e) {
+          return false;
+        }
+      })(),
+      templateLiterals: (() => {
+        try {
+          // Test template literal support safely
+          const test = `template`;
+          return typeof test === 'string' && test === 'template';
+        } catch(e) {
+          return false;
+        }
+      })(),
+      destructuring: (() => {
+        try {
+          // Test destructuring support safely
+          const obj = {a: 1};
+          const {a} = obj;
+          return a === 1;
+        } catch(e) {
+          return false;
+        }
+      })(),
+      spreadOperator: (() => {
+        try {
+          // Test spread operator support safely
+          const arr = [1, 2];
+          const spread = [...arr];
+          return Array.isArray(spread) && spread.length === 2;
+        } catch(e) {
+          return false;
+        }
+      })(),
+      asyncAwait: (() => {
+        try {
+          // Test async/await support safely
+          const asyncFn = async () => {};
+          return typeof asyncFn === 'function' && asyncFn.constructor.name === 'AsyncFunction';
+        } catch(e) {
+          return false;
+        }
+      })(),
       
       // Web APIs
       fetch: typeof fetch !== 'undefined',

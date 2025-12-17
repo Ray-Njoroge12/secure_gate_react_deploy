@@ -22,6 +22,9 @@ import EmergencyAlertBanner from "../../components/guard/EmergencyAlertBanner"; 
 import RecentVisitors from "../../components/guard/RecentVisitors"; // Phase 1.3: Recent Visitors
 import PendingDeliveries from "../../components/guard/PendingDeliveries"; // Phase 2.1: Delivery Management
 import { getStatusChipClass, getStatusIcon } from "../../utils/statusColors"; // Phase A8
+// Enhanced UI Components (merged from GuardDashboardEnhanced)
+import LiveConnectionStatus from "../../components/common/LiveConnectionStatus";
+import VisitorDetailsModal from "../../components/guard/VisitorDetailsModal";
 // Phase 3: Privacy-First Features
 import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
@@ -46,6 +49,8 @@ export default function GuardDashboard() {
   const [toastFilter, setToastFilter] = useState(()=> localStorage.getItem('toastFilter') || 'all'); // all|info|warning|error
   const [showFilters, setShowFilters] = useState(false);
   const [activeQuickFilter, setActiveQuickFilter] = useState('all'); // Phase G3: Quick filter state
+  const [isConnected, setIsConnected] = useState(true); // Live connection status
+  const [selectedVisitor, setSelectedVisitor] = useState(null); // Visitor details modal
   const toastRef = React.useRef(null);
 
   // Search and filter configuration
@@ -130,7 +135,13 @@ export default function GuardDashboard() {
     let es;
     try {
       es = new EventSource('/api/ws/guards', { withCredentials: false });
+      
+      // Track connection status
+      es.onopen = () => setIsConnected(true);
+      es.onerror = () => setIsConnected(false);
+      
       const onEvt = (evt) => {
+        setIsConnected(true); // Receiving events means we're connected
         try {
           const data = JSON.parse(evt.data||'{}');
           // Minimal toast based on severity; never show PII
@@ -150,7 +161,9 @@ export default function GuardDashboard() {
       es.addEventListener('visitor.check_out', onEvt);
       es.addEventListener('visitor.revoked', onEvt);
       es.addEventListener('visitor.self_check_in', onEvt);
-    } catch {}
+    } catch {
+      setIsConnected(false);
+    }
     return () => { try { es && es.close(); } catch {} };
   }, []);
 
@@ -251,6 +264,17 @@ export default function GuardDashboard() {
 
   let panel = (
     <div className="space-y-6">
+      {/* Enhanced: Live Connection Status Header */}
+      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 mb-4">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">Guard Station</h2>
+          <LiveConnectionStatus isConnected={isConnected} showLabel={true} />
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          {active.length} active visitor{active.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+      
       {/* Live toasts (severity-based) */}
       <div data-testid="toasts" ref={toastRef} className="fixed top-16 right-4 flex flex-col gap-2 z-50 max-w-sm max-h-80 overflow-y-auto">
         <div className="flex gap-2 justify-end mb-1">
@@ -317,8 +341,8 @@ export default function GuardDashboard() {
               </svg>
             </div>
             <div className="flex-1 md:flex-none">
-              <h3 className="font-semibold text-gray-900 text-sm md:text-base">Walk-In Registration</h3>
-              <p className="text-xs text-gray-600 md:mt-1">New visitor</p>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm md:text-base">Walk-In Registration</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-300 md:mt-1">New visitor</p>
             </div>
           </div>
         </div>
@@ -411,7 +435,7 @@ export default function GuardDashboard() {
             />
           </div>
           {(isSearching || hasFilters) && (
-            <div className="mt-4 text-sm text-gray-600">
+            <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
               Showing {filteredActive.length} of {active.length} visitors
               {searchTerm && ` for "${searchTerm}"`}
             </div>
@@ -441,7 +465,7 @@ export default function GuardDashboard() {
                 {isSearching || hasFilters ? (
                   <div>
                     <p className="text-gray-900 font-medium mb-1">No visitors match your criteria</p>
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                       Try adjusting your search or filters
                     </p>
                     <Button
@@ -458,7 +482,7 @@ export default function GuardDashboard() {
                 ) : (
                   <div>
                     <p className="text-gray-900 font-medium mb-1">No active visitors right now</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       Visitors will appear here when they check in
                     </p>
                   </div>
@@ -467,7 +491,15 @@ export default function GuardDashboard() {
             ) : (
               <div className="space-y-3">
                 {filteredActive.map(v => (
-                  <VisitorCard key={v.id} visitor={v} onCheckIn={onCheckIn} onCheckOut={onCheckOut} onRevoke={onRevoke} role={role} />
+                  <VisitorCard 
+                    key={v.id} 
+                    visitor={v} 
+                    onCheckIn={onCheckIn} 
+                    onCheckOut={onCheckOut} 
+                    onRevoke={onRevoke} 
+                    role={role}
+                    onViewDetails={() => setSelectedVisitor(v)}
+                  />
                 ))}
               </div>
             )}
@@ -484,7 +516,7 @@ export default function GuardDashboard() {
                 {isSearching || hasFilters ? (
                   <div>
                     <p className="text-gray-900 font-medium mb-1">No visitors match your criteria</p>
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
                       Try adjusting your search or filters
                     </p>
                     <Button
@@ -501,7 +533,7 @@ export default function GuardDashboard() {
                 ) : (
                   <div>
                     <p className="text-gray-900 font-medium mb-1">No active visitors right now</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       Visitors will appear here when they check in
                     </p>
                   </div>
@@ -597,6 +629,22 @@ export default function GuardDashboard() {
           onStateChange={(state) => logger.debug('Panic button state:', state)}
         />
       </div>
+      
+      {/* Enhanced: Visitor Details Modal */}
+      {selectedVisitor && (
+        <VisitorDetailsModal
+          visitor={selectedVisitor}
+          onClose={() => setSelectedVisitor(null)}
+          onCheckIn={onCheckIn}
+          onCheckOut={onCheckOut}
+          onVerify={(id) => {
+            // Handle verify action
+            notificationService.success('Verified', 'Visitor has been verified');
+            fetchActive();
+          }}
+          onDeny={onRevoke}
+        />
+      )}
     </AppShell>
   );
 }
@@ -635,13 +683,16 @@ function StatusBadge({ label, value, color }) {
   );
 }
 
-function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role }) {
+function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDetails }) {
   const canCheckIn = visitor.status === 'CONFIRMED';
   const canCheckOut = visitor.status === 'ON_PREMISE' || (visitor.check_in_time && !visitor.check_out_time);
   const canRevoke = visitor.status !== 'REVOKED';
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+    <div 
+      className="border border-gray-200 rounded-lg p-4 space-y-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
+      onClick={() => onViewDetails?.()}
+    >
       <div className="flex justify-between items-start">
         <div>
           <div className="font-medium text-gray-900">{visitor.name || `#${visitor.id}`}</div>
@@ -658,7 +709,7 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role }) {
       </div>
 
       {(['guard','admin'].includes(role)) && (
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
           <Button size="sm" className="flex-1" onClick={()=>onCheckIn(visitor.id)} disabled={!canCheckIn}>
             Check-in
           </Button>

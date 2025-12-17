@@ -52,7 +52,7 @@ const ResidentApprovalsPanel = () => {
 
     if (!token) return;
 
-    const socketUrl = process.env.REACT_APP_WS_URL || 'http://localhost:5000';
+    const socketUrl = process.env.REACT_APP_WS_URL;
     const newSocket = io(socketUrl, {
       auth: { token },
       transports: ['websocket', 'polling']

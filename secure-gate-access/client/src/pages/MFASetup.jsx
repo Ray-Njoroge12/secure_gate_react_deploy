@@ -104,14 +104,14 @@ const MFASetup = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             🔐 Enable Two-Factor Authentication
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
             Add an extra layer of security to your account
           </p>
         </div>
@@ -147,7 +147,7 @@ const MFASetup = () => {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white shadow-lg rounded-lg p-8">
+        <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-8">
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
@@ -167,7 +167,7 @@ const MFASetup = () => {
           {step === 1 && loading && (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-600">Setting up MFA...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-300">Setting up MFA...</p>
             </div>
           )}
 
