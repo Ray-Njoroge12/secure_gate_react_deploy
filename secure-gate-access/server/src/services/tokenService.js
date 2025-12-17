@@ -245,9 +245,9 @@ class TokenService {
   /**
    * Refresh access token using refresh token
    */
-  refreshAccessToken(refreshToken, userPayload) {
+  async refreshAccessToken(refreshToken, userPayload) {
     try {
-      const decoded = this.verifyRefreshToken(refreshToken);
+      const decoded = await this.verifyRefreshToken(refreshToken);
 
       // Validate that userPayload matches token subject for security
       if (userPayload.id && decoded.sub && userPayload.id.toString() !== decoded.sub) {
@@ -255,7 +255,7 @@ class TokenService {
       }
 
       // Revoke old refresh token by JTI
-      this.revokeToken(refreshToken);
+      await this.revokeToken(refreshToken);
 
       // Generate new token pair with same user data
       const tokens = this.generateTokens(userPayload);
@@ -424,7 +424,7 @@ class TokenService {
     }
 
     const secret = type === 'access' ? this.accessTokenSecret : this.refreshTokenSecret;
-    const jti = this.generateJTI();
+    const jti = randomUUID();
 
     const payload = {
       ...userPayload,

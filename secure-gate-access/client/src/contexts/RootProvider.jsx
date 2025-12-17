@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthContext.js';
 import { ErrorProvider } from './ErrorContext.jsx';
 import { NavigationProvider } from './NavigationContext.jsx';
@@ -16,6 +17,28 @@ import { BrowserCompatibilityProvider } from './BrowserCompatibilityContext.jsx'
 import { ThemeProvider } from './ThemeContext.jsx';
 import { ToastProvider } from './ToastContext.jsx';
 import { UndoProvider } from './UndoContext.jsx';
+
+/**
+ * React Query client configuration
+ * - staleTime: 30 seconds before data is considered stale
+ * - gcTime: 5 minutes before inactive data is garbage collected
+ * - retry: 2 retries on failure
+ * - refetchOnWindowFocus: true to keep data fresh
+ */
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000, // 30 seconds
+      gcTime: 5 * 60 * 1000, // 5 minutes (formerly cacheTime)
+      retry: 2,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 /**
  * Root Provider Component
@@ -43,25 +66,27 @@ import { UndoProvider } from './UndoContext.jsx';
 export const RootProvider = ({ children }) => {
   return (
     <ErrorProvider>
-      <ThemeProvider>
-        <BrowserCompatibilityProvider>
-          <AuthProvider>
-            <LoadingProvider>
-              <ToastProvider position="top-right" maxVisible={4}>
-                <UndoProvider maxHistory={10}>
-                  <SearchProvider>
-                    <Router>
-                      <NavigationProvider>
-                        {children}
-                      </NavigationProvider>
-                    </Router>
-                  </SearchProvider>
-                </UndoProvider>
-              </ToastProvider>
-            </LoadingProvider>
-          </AuthProvider>
-        </BrowserCompatibilityProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <BrowserCompatibilityProvider>
+            <AuthProvider>
+              <LoadingProvider>
+                <ToastProvider position="top-right" maxVisible={4}>
+                  <UndoProvider maxHistory={10}>
+                    <SearchProvider>
+                      <Router>
+                        <NavigationProvider>
+                          {children}
+                        </NavigationProvider>
+                      </Router>
+                    </SearchProvider>
+                  </UndoProvider>
+                </ToastProvider>
+              </LoadingProvider>
+            </AuthProvider>
+          </BrowserCompatibilityProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorProvider>
   );
 };

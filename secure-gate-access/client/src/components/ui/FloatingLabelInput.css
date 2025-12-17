@@ -1,0 +1,328 @@
+/**
+ * Floating Label Input Styles
+ * Enhanced input component with animated floating label
+ */
+
+/* Wrapper */
+.floating-input-wrapper {
+  width: 100%;
+  margin-bottom: var(--space-md, 16px);
+}
+
+/* Container */
+.floating-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--color-input-bg, #ffffff);
+  border: 2px solid var(--color-border-primary, #e2e8f0);
+  border-radius: var(--radius-lg, 12px);
+  transition: all var(--transition-normal, 200ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+  min-height: 56px;
+}
+
+/* Container States */
+.floating-input-container:hover:not(.floating-input--error):not(.floating-input--disabled) {
+  border-color: var(--color-border-secondary, #cbd5e1);
+  box-shadow: 0 0 0 1px rgba(203, 213, 225, 0.1);
+}
+
+.floating-input--focused {
+  border-color: var(--color-brand-500, #10b981);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.floating-input--error {
+  border-color: var(--color-error-500, #ef4444);
+  background-color: var(--color-error-50, #fef2f2);
+}
+
+.floating-input--success {
+  border-color: var(--color-success-500, #10b981);
+}
+
+.floating-input--disabled {
+  background-color: var(--color-secondary-100, #f1f5f9);
+  border-color: var(--color-border-primary, #e2e8f0);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Icons */
+.floating-input__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary, #94a3b8);
+  transition: color var(--transition-fast, 150ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.floating-input__icon--left {
+  padding-left: var(--space-md, 16px);
+  padding-right: var(--space-sm, 8px);
+}
+
+.floating-input__icon--right {
+  padding-left: var(--space-sm, 8px);
+  padding-right: var(--space-md, 16px);
+  min-width: 40px;
+}
+
+.floating-input__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.floating-input--focused .floating-input__icon {
+  color: var(--color-brand-500, #10b981);
+}
+
+/* Status Icons */
+.floating-input__status-icon {
+  width: 20px;
+  height: 20px;
+  animation: statusIconAppear 0.3s var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.floating-input__status-icon--error {
+  color: var(--color-error-500, #ef4444);
+}
+
+.floating-input__status-icon--success {
+  color: var(--color-success-500, #10b981);
+  animation: successPulse 0.6s var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+@keyframes statusIconAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Field Container */
+.floating-input__field {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+}
+
+/* Input */
+.floating-input__input {
+  width: 100%;
+  height: 100%;
+  padding: 24px 16px 8px 16px;
+  border: none;
+  background: transparent;
+  font-size: var(--text-base, 1rem);
+  line-height: 1.5;
+  color: var(--color-text-primary, #0f172a);
+  outline: none;
+  transition: padding var(--transition-normal, 200ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.floating-input__input--with-left-icon {
+  padding-left: 0;
+}
+
+.floating-input__input--with-right-icon {
+  padding-right: 0;
+}
+
+.floating-input__input::placeholder {
+  color: var(--color-text-muted, #64748b);
+  opacity: 0;
+  transition: opacity var(--transition-fast, 150ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.floating-input__input:focus::placeholder {
+  opacity: 1;
+}
+
+.floating-input__input:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-disabled, #94a3b8);
+}
+
+/* Prevent autofill background */
+.floating-input__input:-webkit-autofill,
+.floating-input__input:-webkit-autofill:hover,
+.floating-input__input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--color-input-bg, #ffffff) inset;
+  -webkit-text-fill-color: var(--color-text-primary, #0f172a);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Label */
+.floating-input__label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--text-base, 1rem);
+  color: var(--color-text-muted, #64748b);
+  pointer-events: none;
+  transition: all var(--transition-normal, 200ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+  background-color: transparent;
+  padding: 0 4px;
+  cursor: text;
+  user-select: none;
+}
+
+.floating-input__input--with-left-icon + .floating-input__label {
+  left: 0;
+}
+
+/* Floating State */
+.floating-input__label--float {
+  top: 12px;
+  transform: translateY(0);
+  font-size: var(--text-small, 0.875rem);
+  color: var(--color-brand-500, #10b981);
+  font-weight: 500;
+}
+
+.floating-input--error .floating-input__label--float {
+  color: var(--color-error-500, #ef4444);
+}
+
+.floating-input--success .floating-input__label--float {
+  color: var(--color-success-500, #10b981);
+}
+
+/* Required Indicator */
+.floating-input__required {
+  color: var(--color-error-500, #ef4444);
+  margin-left: 2px;
+}
+
+/* Messages */
+.floating-input__message {
+  margin-top: var(--space-sm, 8px);
+  padding-left: var(--space-md, 16px);
+  font-size: var(--text-small, 0.875rem);
+  line-height: 1.5;
+}
+
+.floating-input__error {
+  color: var(--color-error-600, #dc2626);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs, 4px);
+  animation: errorSlideIn 0.3s var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.floating-input__helper {
+  color: var(--color-text-muted, #64748b);
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .floating-input-container {
+    min-height: 52px;
+  }
+
+  .floating-input__field {
+    min-height: 52px;
+  }
+
+  .floating-input__input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 22px 12px 8px 12px;
+  }
+
+  .floating-input__label {
+    left: 12px;
+  }
+
+  .floating-input__input--with-left-icon + .floating-input__label {
+    left: 0;
+  }
+
+  .floating-input__icon--left {
+    padding-left: var(--space-sm, 12px);
+  }
+
+  .floating-input__icon--right {
+    padding-right: var(--space-sm, 12px);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .floating-input-container,
+  .floating-input__icon,
+  .floating-input__input,
+  .floating-input__label {
+    transition: none;
+  }
+
+  .floating-input__status-icon,
+  .floating-input__error {
+    animation: none;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .floating-input-container {
+    background-color: var(--color-input-bg, #1e293b);
+    border-color: var(--color-border-primary, #334155);
+  }
+
+  .floating-input__input {
+    color: var(--color-text-primary, #f8fafc);
+  }
+
+  .floating-input__input:-webkit-autofill,
+  .floating-input__input:-webkit-autofill:hover,
+  .floating-input__input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-input-bg, #1e293b) inset;
+    -webkit-text-fill-color: var(--color-text-primary, #f8fafc);
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .floating-input-container {
+    border-width: 3px;
+  }
+
+  .floating-input--focused {
+    border-width: 3px;
+  }
+}
+
+/* Focus Visible (Keyboard Navigation) */
+.floating-input__input:focus-visible {
+  outline: 2px solid var(--color-brand-500, #10b981);
+  outline-offset: 2px;
+  border-radius: var(--radius-md, 8px);
+}

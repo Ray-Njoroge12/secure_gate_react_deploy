@@ -62,3 +62,22 @@ coverage/
 # Uploads
 uploads/
 temp-uploads/
+
+# =============================================================================
+# Security: Session/Cookie files (added by verified cleanup)
+# =============================================================================
+*cookies*.txt
+*_cookies.txt
+cookies.txt
+*_cookie.txt
+*_token.txt
+*.token
+admin_login.json
+
+# Test artifacts
+test-results/*.json
+test-results/*.txt
+
+# Debug files
+*.log
+logs/*.log

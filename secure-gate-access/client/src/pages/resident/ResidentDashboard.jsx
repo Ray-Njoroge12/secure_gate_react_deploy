@@ -18,6 +18,8 @@ import BulkInvite from "./BulkInvite";
 import VisitorHistory from "./VisitorHistory";
 import GeneratePass from "./GeneratePass";
 import Settings from "./Settings";
+import QuickInvite from "./QuickInvite"; // Quick invite flow
+import ResidentApprovalsPanel from "./ResidentApprovalsPanel"; // Walk-in approvals
 // Phase 3: Privacy-First Features
 import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
@@ -25,11 +27,18 @@ import PrivacyDashboard from "../../components/settings/PrivacyDashboard";
 // Phase 3: UI/UX Improvements
 import OnboardingTour from "../../components/common/OnboardingTour";
 import QuickActionMenu from "../../components/common/QuickActionMenu";
+// Phase 5: Dashboard Widget Customization
+import DashboardWidgetCustomizer, { useWidgetConfig } from "../../components/resident/DashboardWidgetCustomizer";
+import { Settings as SettingsIcon } from 'lucide-react';
 
 const DashboardHome = () => {
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
   const { loading, startLoading, stopLoading, setLoadingError } = useLoadingState();
+  
+  // Widget customization state
+  const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
+  const { isWidgetVisible, refreshConfig, getVisibleWidgets } = useWidgetConfig();
   
   // Real-time visitor events
   const { 
@@ -50,28 +59,28 @@ const DashboardHome = () => {
     }
   });
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - Using consistent /resident/... paths
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Ctrl/Cmd + A to add visitor
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
-        window.location.href = '/dashboard/resident/add-visitor';
+        window.location.href = '/resident/add-visitor';
       }
       // Ctrl/Cmd + G to generate pass
       if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
         e.preventDefault();
-        window.location.href = '/dashboard/resident/generate-pass';
+        window.location.href = '/resident/generate-pass';
       }
       // Ctrl/Cmd + B to bulk invite
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
-        window.location.href = '/dashboard/resident/bulk-invite';
+        window.location.href = '/resident/bulk-invite';
       }
       // Ctrl/Cmd + H to visitor history
       if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
         e.preventDefault();
-        window.location.href = '/dashboard/resident/visitor-history';
+        window.location.href = '/resident/visitor-history';
       }
       // Ctrl/Cmd + R to refresh
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
@@ -172,17 +181,25 @@ const DashboardHome = () => {
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="bg-green-50 rounded-lg p-2">
             <div className="text-2xl font-bold text-green-600">{todayExpected}</div>
-            <div className="text-xs text-gray-600">Expected</div>
+            <div className="text-xs text-gray-600 dark:text-gray-300">Expected</div>
           </div>
           <div className="bg-blue-50 rounded-lg p-2">
             <div className="text-2xl font-bold text-blue-600">{onPremises}</div>
-            <div className="text-xs text-gray-600">On Site</div>
+            <div className="text-xs text-gray-600 dark:text-gray-300">On Site</div>
           </div>
           <div className="bg-amber-50 rounded-lg p-2">
             <div className="text-2xl font-bold text-amber-600">{todayActive}</div>
-            <div className="text-xs text-gray-600">Checked In</div>
+            <div className="text-xs text-gray-600 dark:text-gray-300">Checked In</div>
           </div>
         </div>
+        {/* Mobile Customize Button */}
+        <button
+          onClick={() => setShowWidgetCustomizer(true)}
+          className="mt-3 flex items-center justify-center gap-2 w-full py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+        >
+          <SettingsIcon className="w-4 h-4" />
+          Customize Dashboard
+        </button>
       </div>
 
       {/* Hero Section with Gradient Background - Desktop */}
@@ -190,27 +207,39 @@ const DashboardHome = () => {
         data-tour="dashboard-stats"
         className="hidden md:block bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-8 mb-6"
       >
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Welcome back! 👋
-          </h1>
-          <p className="text-lg text-gray-600">
-            {upcomingInvites.length > 0 
-              ? `You have ${upcomingInvites.length} upcoming visitor${upcomingInvites.length > 1 ? 's' : ''} this week`
-              : 'Manage your visitor invitations and access'}
-          </p>
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Welcome back! 👋
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
+              {upcomingInvites.length > 0 
+                ? `You have ${upcomingInvites.length} upcoming visitor${upcomingInvites.length > 1 ? 's' : ''} this week`
+                : 'Manage your visitor invitations and access'}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowWidgetCustomizer(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors border border-green-200 dark:border-slate-600"
+            title="Customize dashboard widgets"
+          >
+            <SettingsIcon className="w-4 h-4" />
+            Customize
+          </button>
         </div>
         
         {/* Quick Stats Grid */}
+        {isWidgetVisible('stats') && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsData.map((stat, index) => (
             <div key={index} className="bg-white/80 backdrop-blur-sm border border-green-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="text-2xl mb-1">{stat.icon}</div>
               <div className="text-3xl font-bold text-green-600">{stat.value}</div>
-              <div className="text-sm text-gray-600">{stat.label}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">{stat.label}</div>
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* Primary CTA - Quick Invite (Simplified Flow) */}
@@ -236,6 +265,7 @@ const DashboardHome = () => {
       {/* Data Cards with Improved Empty States */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Upcoming Invites */}
+        {isWidgetVisible('upcoming-invites') && (
         <Card className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <Card.Content className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -259,7 +289,7 @@ const DashboardHome = () => {
                 <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 border-l-4 border-green-500 rounded-lg hover:bg-gray-100 transition-colors">
                   <div>
                     <div className="font-medium text-gray-900">👤 {invite.name}</div>
-                    <div className="text-sm text-gray-600">📅 {invite.time}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-300">📅 {invite.time}</div>
                   </div>
                   <div className="flex gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -279,8 +309,10 @@ const DashboardHome = () => {
           )}
           </Card.Content>
         </Card>
+        )}
 
         {/* Recent Visitors */}
+        {isWidgetVisible('recent-visitors') && (
         <Card className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <Card.Content className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -300,16 +332,18 @@ const DashboardHome = () => {
                     <div className="font-medium text-gray-900">👤 {visitor.name}</div>
                     <div className="text-sm text-green-600">✅ Checked in</div>
                   </div>
-                  <div className="text-sm text-gray-600">🕐 {visitor.checkedInAt}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-300">🕐 {visitor.checkedInAt}</div>
                 </div>
               ))}
             </div>
           )}
           </Card.Content>
         </Card>
+        )}
       </div>
 
       {/* Real-time Activity Feed */}
+      {isWidgetVisible('live-feed') && (
       <div className="mt-6">
         <LiveStatsBar 
           stats={liveStats}
@@ -326,13 +360,17 @@ const DashboardHome = () => {
           onClear={clearEvents}
         />
       </div>
+      )}
 
       {/* Phase 4.3: Visitor Insights Analytics */}
+      {isWidgetVisible('insights') && (
       <div className="mt-8">
         <VisitorInsights />
       </div>
+      )}
 
       {/* PHASE A3: Clarified Quick Actions - Mobile Optimized */}
+      {isWidgetVisible('quick-actions') && (
       <div data-tour="quick-actions" className="mt-6 md:mt-8">
         <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -476,6 +514,14 @@ const DashboardHome = () => {
 
       </div>
       </div>
+      )}
+
+      {/* Dashboard Widget Customizer Modal */}
+      <DashboardWidgetCustomizer
+        isOpen={showWidgetCustomizer}
+        onClose={() => setShowWidgetCustomizer(false)}
+        onSave={refreshConfig}
+      />
     </div>
   );
 };
@@ -498,6 +544,8 @@ export default function ResidentDashboard() {
   else if (location.pathname === "/resident/visitor-history") panel = <VisitorHistory />;
   else if (location.pathname === "/resident/bulk-invite") panel = <BulkInvite />;
   else if (location.pathname === "/resident/settings") panel = <Settings />;
+  else if (location.pathname === "/resident/quick-invite") panel = <QuickInvite />;
+  else if (location.pathname === "/resident/approvals") panel = <ResidentApprovalsPanel />;
   // Phase 2 Routes
   else if (location.pathname === "/resident/deliveries") panel = <DeliveryList />;
   else if (location.pathname === "/resident/auto-approval") panel = <AutoApprovalRules />;

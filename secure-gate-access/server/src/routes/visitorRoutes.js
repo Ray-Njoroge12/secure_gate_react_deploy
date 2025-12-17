@@ -194,7 +194,7 @@ router.post('/',
 router.get('/',
   attachUserFromToken,
   attachRequestAudit,
-  CacheMiddleware.createMiddleware({ ttl: 300 }),
+  // CacheMiddleware.createMiddleware({ ttl: 300 }), // Temporarily disabled for debugging
   getMyVisitors
 );
 router.post('/:visitorId/pass', attachUserFromToken, attachRequestAudit, createPass);

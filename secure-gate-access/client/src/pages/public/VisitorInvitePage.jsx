@@ -358,9 +358,9 @@ const VisitorInvitePage = () => {
   // Render confirmation flow for new invites
   if (needsConfirmation || showConfirmation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
         <div className="max-w-lg mx-auto p-4 md:py-12 py-6">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-center">
               <h1 className="text-2xl font-bold text-white mb-1">You're Invited! 🎉</h1>
@@ -372,31 +372,31 @@ const VisitorInvitePage = () => {
             <div className="p-6 space-y-6">
               {/* Visit Summary */}
               <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Visit Details</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Visit Details</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Date:</span>
-                    <span className="font-medium text-gray-900">{formatDate(visitor.dateOfVisit)}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Date:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{formatDate(visitor.dateOfVisit)}</span>
                   </div>
                   {visitor.timeOfVisit && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Time:</span>
-                      <span className="font-medium text-gray-900">{formatTime(visitor.timeOfVisit)}</span>
+                      <span className="text-gray-600 dark:text-gray-300">Time:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatTime(visitor.timeOfVisit)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Location:</span>
-                    <span className="font-medium text-gray-900">{estateInfo?.name || 'Estate'}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Location:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{estateInfo?.name || 'Estate'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Additional Info (Optional) */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900">Complete Your Details <span className="text-gray-400 font-normal text-sm">(optional)</span></h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Complete Your Details <span className="text-gray-400 dark:text-gray-500 font-normal text-sm">(optional)</span></h3>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Purpose of Visit</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose of Visit</label>
                   <select
                     value={additionalInfo.purpose}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, purpose: e.target.value }))}
@@ -413,7 +413,7 @@ const VisitorInvitePage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle License Plate</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vehicle License Plate</label>
                   <input
                     type="text"
                     value={additionalInfo.vehiclePlate}
@@ -421,11 +421,11 @@ const VisitorInvitePage = () => {
                     placeholder="KAA 123A"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Required for vehicle entry</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Required for vehicle entry</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name</label>
                   <input
                     type="text"
                     value={additionalInfo.company}
@@ -449,7 +449,7 @@ const VisitorInvitePage = () => {
                     }}
                     className="w-5 h-5 mt-0.5 text-green-600 rounded border-gray-300 focus:ring-green-500"
                   />
-                  <label htmlFor="consent" className="text-sm text-gray-700 cursor-pointer">
+                  <label htmlFor="consent" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                     <span className="font-medium">I consent to SecureGate processing my personal data</span>
                     <span className="text-gray-600"> for visitor management and security purposes in accordance with the </span>
                     <Link to="/privacy-policy" className="text-blue-600 underline" target="_blank">Privacy Policy</Link>.
@@ -486,7 +486,7 @@ const VisitorInvitePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       <div className="max-w-2xl mx-auto p-4 md:py-12 py-6">
         <div className="bg-white rounded-xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 md:p-8 text-white text-center">

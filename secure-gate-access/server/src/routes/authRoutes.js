@@ -7,6 +7,8 @@ import attachRequestAudit from '../middleware/auditLogger.js';
 import loggingService from '../services/loggingService.js';
 import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.js';
 import { successResponse, createdResponse, validationErrorResponse, unauthorizedResponse, internalErrorResponse } from '../utils/responseFormatter.js';
+import { validatePasswordResetRequest, validatePasswordReset } from '../validation/authValidation.js';
+import emailService from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -535,5 +537,75 @@ router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
     }
   }, 'User retrieved successfully');
 }));
+
+// Password reset request - non-enumerating endpoint
+router.post(
+  '/forgot-password',
+  authLimiter,
+  attachRequestAudit(),
+  validatePasswordResetRequest,
+  asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    // Always return a generic success message to avoid email enumeration
+    const genericMessage = 'If this email exists in our system, a password reset link has been sent.';
+
+    try {
+      const result = await userService.requestPasswordReset(email);
+
+      // Only attempt to send an email when we have a concrete user and token
+      if (result && result.user && result.resetToken) {
+        try {
+          await emailService.sendPasswordResetEmail(
+            result.user.email,
+            result.user.username,
+            result.resetToken
+          );
+        } catch (emailError) {
+          // Log email failures but do not change the generic client response
+          loggingService.error('Password reset email send failed', {
+            error: emailError.message,
+            requestId: req.requestId
+          });
+        }
+      }
+
+      successResponse(res, {}, genericMessage);
+    } catch (error) {
+      // Log internal error but avoid leaking details to the client
+      loggingService.error('Password reset request failed', {
+        error: error.message,
+        requestId: req.requestId
+      });
+
+      successResponse(res, {}, genericMessage);
+    }
+  })
+);
+
+// Password reset using token
+router.post(
+  '/reset-password',
+  authLimiter,
+  attachRequestAudit(),
+  validatePasswordReset,
+  asyncHandler(async (req, res) => {
+    const { token, password } = req.body;
+
+    try {
+      await userService.resetPasswordWithToken(token, password);
+
+      successResponse(res, {}, 'Password reset successful. You can now log in with your new password.');
+    } catch (error) {
+      // Log details server-side, return safe error to client
+      loggingService.error('Password reset with token failed', {
+        error: error.message,
+        requestId: req.requestId
+      });
+
+      throw new AppError('Invalid or expired reset token, or password does not meet security requirements.', 400, 'PASSWORD_RESET_FAILED');
+    }
+  })
+);
 
 export default router;

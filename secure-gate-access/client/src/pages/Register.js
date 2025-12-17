@@ -328,14 +328,14 @@ export default function RegistrationPage() {
 
   if (isBulkRegistration) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-white rounded-lg p-8 shadow-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-white dark:bg-slate-800 rounded-lg p-8 shadow-md">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Event Registration</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Event Registration</h1>
             {inviteDetails && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
                 <h3 className="text-lg font-semibold text-brand-600 mb-2">{inviteDetails.eventName}</h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   Date: {inviteDetails.date} | Time: {inviteDetails.time}
                 </p>
               </div>
@@ -359,7 +359,7 @@ export default function RegistrationPage() {
           {/* OTP verification section */}
           {showOtpSection && (
             <div className="mb-4 p-4 border border-gray-200 rounded-md bg-white">
-              <div className="font-semibold mb-2 text-gray-700">Verify your OTP</div>
+              <div className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Verify your OTP</div>
               <div className="flex gap-2 mb-2">
                 <input
                   type="text"
@@ -426,7 +426,7 @@ export default function RegistrationPage() {
           <form onSubmit={handleBulkRegister} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
                 <input
                   type="text"
                   value={bulkFormData.name}
@@ -440,7 +440,7 @@ export default function RegistrationPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
                 <input
                   type="tel"
                   value={bulkFormData.visitorPhone}
@@ -455,7 +455,7 @@ export default function RegistrationPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address *</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Email Address *</label>
               <input
                 type="email"
                 value={bulkFormData.visitorEmail}
@@ -470,7 +470,7 @@ export default function RegistrationPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">ID Number</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">ID Number</label>
                 <input
                   type="text"
                   value={bulkFormData.idNumber}
@@ -482,7 +482,7 @@ export default function RegistrationPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Vehicle Plate Number</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Vehicle Plate Number</label>
                 <input
                   type="text"
                   value={bulkFormData.vehiclePlate}
@@ -495,7 +495,7 @@ export default function RegistrationPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Purpose of Visit *</label>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Purpose of Visit *</label>
               <select
                 value={bulkFormData.purpose}
                 onChange={e => setBulkFormData(prev => ({ ...prev, purpose: e.target.value }))}
@@ -522,7 +522,7 @@ export default function RegistrationPage() {
                 required
                 className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
               />
-              <label htmlFor="bulkPrivacyTerms" className="text-sm text-gray-600">
+              <label htmlFor="bulkPrivacyTerms" className="text-sm text-gray-600 dark:text-gray-300">
                 I agree to the{' '}
                 <Link to="/privacy-policy" target="_blank" className="text-green-600 hover:text-green-500 underline">
                   Privacy Policy

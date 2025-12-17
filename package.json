@@ -11,9 +11,11 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@byterover/cipher": "^0.3.0",
     "axios": "^1.13.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "chai": "^6.2.1",
     "puppeteer": "^24.29.1",
     "serve": "^14.2.5"

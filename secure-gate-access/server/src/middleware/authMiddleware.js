@@ -105,7 +105,7 @@ export async function attachUserFromToken(req, res, next) {
     if (!token) return next();
 
     // Use standardized token service
-    const payload = tokenService.verifyAccessToken(token);
+    const payload = await tokenService.verifyAccessToken(token);
 
     // Support both legacy and new token structures
     const userIdentifier = payload.email || payload.sub || payload.userId;
