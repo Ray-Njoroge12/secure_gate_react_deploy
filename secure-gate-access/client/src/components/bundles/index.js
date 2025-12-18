@@ -55,7 +55,6 @@ export { default as LoadingStatesManager } from '../ui/LoadingStatesManager';
 
 // Utility Components Bundle - Helper and utility components
 export { default as QRCodeDisplay } from '../QRCodeDisplay';
-export { default as LazyRoute } from '../LazyRoute';
 export { default as KeyboardShortcuts } from '../ui/KeyboardShortcuts';
 export { default as LiveRegion } from '../ui/LiveRegion';
 export { default as BrowserCompatibility } from '../BrowserCompatibility';
