@@ -59,14 +59,8 @@ import notificationRoutes from './routes/notificationRoutes.js'; // Phase V3: No
 import adminAnalyticsRoutes from './routes/adminAnalyticsRoutes.js'; // Phase A1: Analytics
 import incidentWorkflowRoutes from './routes/incidentWorkflowRoutes.js'; // Phase A4: Incident Workflow
 import integrationsRoutes from './routes/integrationsRoutes.js'; // Phase A5: Integrations
-import announcementsRoutes from './routes/announcementsRoutes.js'; // Announcements
-import consentRoutes from './routes/consentRoutes.js';
-import complianceRoutes from './routes/complianceRoutes.js';
-import dsrRoutes from './routes/dsrRoutes.js';
-import preDeploymentValidationRoutes from './routes/preDeploymentValidationRoutes.js';
-import backupRoutes from './routes/backupRoutes.js';
-import healthRoutes from './routes/healthRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
+import announcementsRoutes from './routes/announcementsRoutes.js'; // Announcements
 
 
 
