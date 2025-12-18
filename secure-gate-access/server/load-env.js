@@ -5,6 +5,11 @@
  * environment variables are available at import time.
  * 
  * Usage: node --import ./load-env.js server.js
+ * 
+ * Configuration:
+ * - Development: .env file (gitignored, contains secrets)
+ * - Production: Environment variables set via Render dashboard
+ * - Template: .env.example (committed, documentation only)
  */
 
 import dotenv from 'dotenv';
@@ -15,23 +20,13 @@ import { existsSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment files in priority order:
-// 1. .env.local (gitignored, contains secrets) - highest priority
-// 2. .env (tracked, contains defaults only) - fallback
-
-const envLocalPath = join(__dirname, '.env.local');
 const envPath = join(__dirname, '.env');
 
-if (existsSync(envLocalPath)) {
-  console.log('📝 Loading .env.local (secrets)...');
-  dotenv.config({ path: envLocalPath });
-} else {
-  console.warn('⚠️  .env.local not found - using .env defaults only');
-}
-
 if (existsSync(envPath)) {
-  console.log('📝 Loading .env (defaults)...');
+  console.log('📝 Loading environment from .env...');
   dotenv.config({ path: envPath });
+} else if (process.env.NODE_ENV !== 'production') {
+  console.warn('⚠️  .env not found - copy .env.example to .env and configure');
 }
 
 console.log('✅ Environment variables loaded');
