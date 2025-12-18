@@ -66,6 +66,10 @@ import emergencyRoutes from './routes/emergencyRoutes.js'; // Phase 1.1: Emergen
 import qrCodeRoutes from './routes/qrCodeRoutes.js'; // Phase 2.3: QR code operations
 import syncRoutes from './routes/syncRoutes.js'; // Phase 3.1: Offline sync
 import autoApprovalRoutes from './routes/autoApprovalRoutes.js'; // Phase 2.2: Auto-approval rules
+import dsrRoutes from './routes/dsrRoutes.js'; // Kenya DPA: Data Subject Rights
+import consentRoutes from './routes/consentRoutes.js'; // Kenya DPA: Consent Management
+import sseRoutes from './routes/sseRoutes.js'; // Real-time: Server-Sent Events
+import databaseHealthRoutes from './routes/databaseHealthRoutes.js'; // Infrastructure: DB Health
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -336,6 +340,18 @@ app.use('/api/sync', syncRoutes);
 
 // Phase 2.2: Auto-approval rules routes (requires auth)
 app.use('/api/auto-approval', autoApprovalRoutes);
+
+// Kenya DPA: Data Subject Rights routes (requires auth)
+app.use('/api/dsr', dsrRoutes);
+
+// Kenya DPA: Consent Management routes (requires auth)
+app.use('/api/consent', consentRoutes);
+
+// Real-time: Server-Sent Events routes
+app.use('/api/sse', sseRoutes);
+
+// Infrastructure: Database Health routes
+app.use('/api/db', databaseHealthRoutes);
 
 // Guard SSE endpoint (stub for real-time updates)
 app.get('/api/ws/guards', (req, res) => {

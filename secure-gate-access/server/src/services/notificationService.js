@@ -17,11 +17,8 @@ import {
     checkinReminderSmsTemplate
 } from '../templates/sms-templates.js';
 
-let metrics = {};
-try {
-  const m = await import('../utils/metrics.js');
-  metrics = m.metrics || {};
-} catch {}
+// Simple in-memory metrics counter (no external dependencies)
+const metrics = {};
 
 // SMTP Configuration
 const smtpConfig = {
