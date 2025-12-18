@@ -6,7 +6,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
-import QRCodeService from '../services/qrCodeService-optimized.js';
+import QRCodeService from '../services/qrCodeService.js';
 import WebSocketService from '../services/websocketService.js';
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError } from '../utils/respond.js';

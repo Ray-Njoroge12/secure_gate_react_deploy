@@ -47,3 +47,11 @@ export const getIncidents = (params = {}) => {
 export const createIncident = (data) => http.post(`${API_BASE}/incidents`, data);
 export const updateIncident = (id, data) => http.put(`${API_BASE}/incidents/${id}`, data);
 export const deleteIncident = (id) => http.delete(`${API_BASE}/incidents/${id}`);
+
+// === Users Management (for useAdminData hook) ===
+export const getUsers = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/users${queryString ? `?${queryString}` : ''}`);
+};
+export const updateUser = (id, data) => http.put(`${API_BASE}/users/${id}`, data);
+export const deleteUser = (id) => http.delete(`${API_BASE}/users/${id}`);
