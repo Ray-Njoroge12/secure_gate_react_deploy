@@ -75,6 +75,20 @@ const WatchlistManagement = lazy(() => import("./pages/admin/WatchlistManagement
 const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
 const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
 const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
+const AccessControl = lazy(() => import("./pages/admin/AccessControl.jsx"));
+const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
+const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
+const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
+
+// Public visitor pages - Accessible via token URL
+const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
+const SelfCheckInKiosk = lazy(() => import("./pages/public/SelfCheckInKiosk.jsx"));
+
+// Resident additional pages
+const QuickInvite = lazy(() => import("./pages/resident/QuickInvite.jsx"));
+
+// Guard additional pages
+const GuardAnalytics = lazy(() => import("./pages/guard/GuardAnalytics.jsx"));
 
 /**
  * Main App component that renders the entire application
@@ -174,6 +188,10 @@ function App() {
 
             {/* Guest invitation routes */}
             <Route path="/invite/:inviteCode" element={<GuestInvite />} />
+            
+            {/* Public visitor pages - Token-based access */}
+            <Route path="/v/:token" element={<VisitorInvitePage />} />
+            <Route path="/kiosk" element={<SelfCheckInKiosk />} />
 
             {/* Resident routes */}
             <Route
@@ -249,6 +267,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/resident/quick-invite"
+              element={
+                <ProtectedRoute allowedRoles={["resident"]}>
+                  <QuickInvite />
+                </ProtectedRoute>
+              }
+            />
             {/* Legacy redirects for backward compatibility */}
             <Route path="/pages/resident/AddVisitor" element={<Navigate to="/resident/add-visitor" replace />} />
             <Route path="/pages/resident/GeneratePass" element={<Navigate to="/resident/generate-pass" replace />} />
@@ -309,6 +335,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["guard"]}>
                   <IncidentList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/guard/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["guard", "admin"]}>
+                  <GuardAnalytics />
                 </ProtectedRoute>
               }
             />
@@ -407,6 +441,38 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["admin"]}>
                   <ManageGuards />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/access-control"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <AccessControl />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/visitor-log"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <VisitorLog />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/integrations"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <IntegrationsHub />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/sites"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <SiteManagement />
                 </ProtectedRoute>
               }
             />

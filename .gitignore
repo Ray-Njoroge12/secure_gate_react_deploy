@@ -118,3 +118,18 @@ cold-storage/
 
 # Local Netlify folder
 .netlify
+
+# Build artifacts
+static/
+data/
+secure-gate-access/client/build/
+
+# Log files
+*.log
+*-audit.json
+secure-gate-access/server/logs/
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal

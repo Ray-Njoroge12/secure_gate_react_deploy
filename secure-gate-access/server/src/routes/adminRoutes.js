@@ -1,8 +1,10 @@
 import express from 'express';
 import { getMetrics, getAuditLogs } from '../controllers/adminController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import backupService from '../services/backupService.js';
+import userService from '../services/userService.js';
+import { dbManager } from '../database/db.enhanced.js';
 
 const router = express.Router();
 
@@ -276,6 +278,538 @@ router.post('/backup/trigger', authenticateToken, attachRequestAudit, async (req
         type: 'Backup Error',
         requestId: req.requestId
       }
+    });
+  }
+});
+
+// ==================== USER MANAGEMENT ENDPOINTS ====================
+
+/**
+ * @route GET /api/admin/users
+ * @desc Get all users with optional filtering
+ * @access Private (Admin only)
+ */
+router.get('/users', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { role, status, search, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    let query = 'SELECT id, username, email, role, status, created_at, updated_at FROM users WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+    
+    if (role) {
+      query += ` AND role = $${paramIndex++}`;
+      params.push(role);
+    }
+    if (status) {
+      query += ` AND status = $${paramIndex++}`;
+      params.push(status);
+    }
+    if (search) {
+      query += ` AND (username ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+    
+    // Get total count
+    const countQuery = query.replace('SELECT id, username, email, role, status, created_at, updated_at', 'SELECT COUNT(*)');
+    const countResult = await dbManager.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].count);
+    
+    // Add pagination
+    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    params.push(limit, offset);
+    
+    const result = await dbManager.query(query, params);
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route PUT /api/admin/users/:id
+ * @desc Update a user
+ * @access Private (Admin only)
+ */
+router.put('/users/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, email, role, status } = req.body;
+    
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
+    
+    if (username) {
+      updates.push(`username = $${paramIndex++}`);
+      params.push(username);
+    }
+    if (email) {
+      updates.push(`email = $${paramIndex++}`);
+      params.push(email);
+    }
+    if (role) {
+      updates.push(`role = $${paramIndex++}`);
+      params.push(role);
+    }
+    if (status) {
+      updates.push(`status = $${paramIndex++}`);
+      params.push(status);
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No fields to update'
+      });
+    }
+    
+    updates.push(`updated_at = NOW()`);
+    params.push(id);
+    
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, email, role, status, updated_at`;
+    const result = await dbManager.query(query, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update user',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/admin/users/:id
+ * @desc Delete a user (soft delete by setting status to 'deleted')
+ * @access Private (Admin only)
+ */
+router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Soft delete - set status to 'deleted'
+    const result = await dbManager.query(
+      `UPDATE users SET status = 'deleted', updated_at = NOW() WHERE id = $1 AND status != 'deleted' RETURNING id`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found or already deleted'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user',
+      error: error.message
+    });
+  }
+});
+
+// ==================== RESIDENTS MANAGEMENT ====================
+
+/**
+ * @route GET /api/admin/residents
+ * @desc Get all residents
+ * @access Private (Admin only)
+ */
+router.get('/residents', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const result = await dbManager.query(
+      `SELECT id, username, email, phone, unit_number, status, created_at 
+       FROM users WHERE role = 'resident' AND status != 'deleted' 
+       ORDER BY created_at DESC`
+    );
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching residents:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch residents',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route PUT /api/admin/residents/:id
+ * @desc Update a resident
+ * @access Private (Admin only)
+ */
+router.put('/residents/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, email, phone, unit_number, status } = req.body;
+    
+    const result = await dbManager.query(
+      `UPDATE users SET 
+        username = COALESCE($1, username),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        unit_number = COALESCE($4, unit_number),
+        status = COALESCE($5, status),
+        updated_at = NOW()
+       WHERE id = $6 AND role = 'resident'
+       RETURNING id, username, email, phone, unit_number, status`,
+      [username, email, phone, unit_number, status, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Resident not found' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update resident', error: error.message });
+  }
+});
+
+/**
+ * @route DELETE /api/admin/residents/:id
+ * @desc Delete a resident
+ * @access Private (Admin only)
+ */
+router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await dbManager.query(
+      `UPDATE users SET status = 'deleted', updated_at = NOW() 
+       WHERE id = $1 AND role = 'resident' AND status != 'deleted' 
+       RETURNING id`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Resident not found' });
+    }
+    
+    res.json({ success: true, message: 'Resident deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete resident', error: error.message });
+  }
+});
+
+// ==================== GUARDS MANAGEMENT ====================
+
+/**
+ * @route GET /api/admin/guards
+ * @desc Get all guards
+ * @access Private (Admin only)
+ */
+router.get('/guards', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const result = await dbManager.query(
+      `SELECT id, username, email, phone, status, created_at 
+       FROM users WHERE role = 'guard' AND status != 'deleted' 
+       ORDER BY created_at DESC`
+    );
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching guards:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch guards',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/admin/guards
+ * @desc Add a new guard
+ * @access Private (Admin only)
+ */
+router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { username, email, phone, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username, email, and password are required'
+      });
+    }
+    
+    // Use userService to create guard with proper password hashing
+    const guard = await userService.createUser({
+      username,
+      email,
+      phone,
+      password,
+      role: 'guard'
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Guard created successfully',
+      data: {
+        id: guard.id,
+        username: guard.username,
+        email: guard.email,
+        role: 'guard'
+      }
+    });
+  } catch (error) {
+    console.error('Error creating guard:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create guard',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route PUT /api/admin/guards/:id
+ * @desc Update a guard
+ * @access Private (Admin only)
+ */
+router.put('/guards/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, email, phone, status } = req.body;
+    
+    const result = await dbManager.query(
+      `UPDATE users SET 
+        username = COALESCE($1, username),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        status = COALESCE($4, status),
+        updated_at = NOW()
+       WHERE id = $5 AND role = 'guard'
+       RETURNING id, username, email, phone, status`,
+      [username, email, phone, status, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Guard not found' });
+    }
+    
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update guard', error: error.message });
+  }
+});
+
+/**
+ * @route DELETE /api/admin/guards/:id
+ * @desc Delete a guard
+ * @access Private (Admin only)
+ */
+router.delete('/guards/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await dbManager.query(
+      `UPDATE users SET status = 'deleted', updated_at = NOW() 
+       WHERE id = $1 AND role = 'guard' AND status != 'deleted' 
+       RETURNING id`,
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Guard not found' });
+    }
+    
+    res.json({ success: true, message: 'Guard deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete guard', error: error.message });
+  }
+});
+
+// ==================== VISITOR LOGS ====================
+
+/**
+ * @route GET /api/admin/visitors
+ * @desc Get visitor logs with filtering
+ * @access Private (Admin only)
+ */
+router.get('/visitors', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { status, search, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    let query = `SELECT v.*, u.username as host_name 
+                 FROM visitors v 
+                 LEFT JOIN users u ON v.created_by = u.email 
+                 WHERE 1=1`;
+    const params = [];
+    let paramIndex = 1;
+    
+    if (status) {
+      query += ` AND v.status = $${paramIndex++}`;
+      params.push(status);
+    }
+    if (search) {
+      query += ` AND (v.name ILIKE $${paramIndex} OR v.phone ILIKE $${paramIndex} OR v.email ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+    
+    query += ` ORDER BY v.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    params.push(limit, offset);
+    
+    const result = await dbManager.query(query, params);
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching visitor logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch visitor logs',
+      error: error.message
+    });
+  }
+});
+
+// ==================== ACCESS LOGS ====================
+
+/**
+ * @route GET /api/admin/access-logs
+ * @desc Get access logs
+ * @access Private (Admin only)
+ */
+router.get('/access-logs', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { type, search, page = 1, limit = 50 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Check if access_logs table exists, if not return empty
+    const tableCheck = await dbManager.query(
+      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'access_logs')`
+    );
+    
+    if (!tableCheck.rows[0].exists) {
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Access logs table not configured'
+      });
+    }
+    
+    const result = await dbManager.query(
+      `SELECT * FROM access_logs ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching access logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch access logs',
+      error: error.message
+    });
+  }
+});
+
+// ==================== INCIDENTS ====================
+
+/**
+ * @route GET /api/admin/incidents-list
+ * @desc Get incidents list
+ * @access Private (Admin only)
+ */
+router.get('/incidents-list', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { status, priority, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    // Check if incidents table exists
+    const tableCheck = await dbManager.query(
+      `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'incidents')`
+    );
+    
+    if (!tableCheck.rows[0].exists) {
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Incidents table not configured'
+      });
+    }
+    
+    let query = 'SELECT * FROM incidents WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+    
+    if (status) {
+      query += ` AND status = $${paramIndex++}`;
+      params.push(status);
+    }
+    if (priority) {
+      query += ` AND priority = $${paramIndex++}`;
+      params.push(priority);
+    }
+    
+    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    params.push(limit, offset);
+    
+    const result = await dbManager.query(query, params);
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching incidents:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch incidents',
+      error: error.message
     });
   }
 });

@@ -61,8 +61,11 @@ import incidentWorkflowRoutes from './routes/incidentWorkflowRoutes.js'; // Phas
 import integrationsRoutes from './routes/integrationsRoutes.js'; // Phase A5: Integrations
 import systemRoutes from './routes/systemRoutes.js';
 import announcementsRoutes from './routes/announcementsRoutes.js'; // Announcements
-
-
+import deliveryRoutes from './routes/deliveryRoutes.js'; // Phase 2.1: Delivery management
+import emergencyRoutes from './routes/emergencyRoutes.js'; // Phase 1.1: Emergency/Panic button
+import qrCodeRoutes from './routes/qrCodeRoutes.js'; // Phase 2.3: QR code operations
+import syncRoutes from './routes/syncRoutes.js'; // Phase 3.1: Offline sync
+import autoApprovalRoutes from './routes/autoApprovalRoutes.js'; // Phase 2.2: Auto-approval rules
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -318,6 +321,21 @@ app.use('/api/admin', integrationsRoutes);
 
 // Announcements routes (requires auth)
 app.use('/api/announcements', announcementsRoutes);
+
+// Phase 2.1: Delivery management routes (requires auth)
+app.use('/api/deliveries', deliveryRoutes);
+
+// Phase 1.1: Emergency/Panic button routes (requires auth)
+app.use('/api/emergency', emergencyRoutes);
+
+// Phase 2.3: QR code routes (requires auth)
+app.use('/api/qr', qrCodeRoutes);
+
+// Phase 3.1: Offline sync routes (requires auth)
+app.use('/api/sync', syncRoutes);
+
+// Phase 2.2: Auto-approval rules routes (requires auth)
+app.use('/api/auto-approval', autoApprovalRoutes);
 
 // Guard SSE endpoint (stub for real-time updates)
 app.get('/api/ws/guards', (req, res) => {
