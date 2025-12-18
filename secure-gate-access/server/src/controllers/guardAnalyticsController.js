@@ -6,7 +6,7 @@
 
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError } from '../utils/respond.js';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 /**
  * Get guard operational statistics

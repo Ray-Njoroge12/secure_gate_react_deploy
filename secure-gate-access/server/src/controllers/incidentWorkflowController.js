@@ -5,7 +5,7 @@
  */
 
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 import { evaluateAutomationRules } from '../services/automationService.js';
 import { triggerWebhooks } from '../services/webhookService.js';
 

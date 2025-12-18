@@ -5,7 +5,7 @@
 
 import Mailgun from 'mailgun.js';
 import formData from 'form-data';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 import { emailTemplates } from '../templates/email-templates.js';
 
 class EmailService {

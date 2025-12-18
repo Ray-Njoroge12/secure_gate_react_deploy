@@ -4,7 +4,7 @@
  */
 
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 class PhoneValidator {
   constructor() {

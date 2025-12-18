@@ -68,12 +68,7 @@ import backupRoutes from './routes/backupRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
 
-// Import versioned routes
-import v1Routes from './routes/v1/index.js';
-import v2Routes from './routes/v2/index.js';
 
-// Import API versioning middleware
-import { apiVersioning, getSupportedVersions, getVersionMigrationGuide } from './middleware/apiVersioning.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -244,13 +239,6 @@ app.use(auditLogger({
 // Response middleware
 app.use(responseMiddleware);
 
-// API Versioning middleware
-app.use('/api', apiVersioning({
-  defaultVersion: 'v1',
-  strictMode: false,
-  logVersionUsage: true
-}));
-
 // Setup cache middleware for specific routes
 // NOTE: Redis caching disabled - cache middleware causing startup issues, needs investigation
 // TODO: Fix cacheMiddleware.createMiddleware compatibility with ROUTE_CACHE_CONFIG
@@ -282,13 +270,7 @@ app.use('/api', apiVersioning({
 //   ]
 // }));
 
-// Versioned API routes
-app.use('/api/v1', v1Routes);
-app.use('/api/v2', v2Routes);
 
-// API version information endpoints
-app.get('/api/versions', getSupportedVersions);
-app.get('/api/migration-guide', getVersionMigrationGuide);
 
 // V1: Public visitor routes (NO authentication required - must come before auth middleware)
 // Phase V1: Visitor Invite Landing & Digital Pass
