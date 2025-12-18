@@ -7,7 +7,7 @@
  */
 
 import dbManager from '../database/db.enhanced.js';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 /**
  * Get visitor details by secure token (public endpoint)

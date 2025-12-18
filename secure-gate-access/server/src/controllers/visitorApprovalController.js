@@ -6,7 +6,7 @@
 
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import { PASS_STATUS } from '../constants/statuses.js';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 import websocketService from '../services/websocketService.js';
 
 const dbManager = { query: (text, params) => db.query(text, params) };

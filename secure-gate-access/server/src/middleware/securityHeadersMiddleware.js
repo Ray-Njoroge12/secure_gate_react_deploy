@@ -2,7 +2,7 @@
 import helmet from 'helmet';
 import securityConfig from '../config/securityConfig.js';
 import securityMonitoringService from '../services/securityMonitoringService.js';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 /**
  * Enhanced Security Headers Middleware

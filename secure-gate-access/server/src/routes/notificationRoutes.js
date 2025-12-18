@@ -11,7 +11,7 @@ import {
   updateNotificationPreferences
 } from '../controllers/notificationController.js';
 import { dbManager as db } from '../database/db.enhanced.js';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 

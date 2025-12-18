@@ -9,7 +9,7 @@ import { createObjectCsvWriter } from 'csv-writer';
 import fs from 'fs';
 import path from 'path';
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 const pool = db.pool || db;
 

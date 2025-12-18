@@ -7,7 +7,7 @@
 import crypto from 'crypto';
 import fetch from 'node-fetch';
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 
 const pool = db.pool || db;
 

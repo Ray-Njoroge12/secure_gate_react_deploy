@@ -5,7 +5,7 @@
  */
 
 import RedisService from './redisService.js';
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 import { monitoringConfig } from '../config/securityConfig.js';
 
 // Initialize Redis service instance

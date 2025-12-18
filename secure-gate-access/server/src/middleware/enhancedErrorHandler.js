@@ -1,7 +1,7 @@
 // Enhanced Error Handling Middleware
 // Provides comprehensive error handling, logging, and user-friendly responses
 
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 import { dbManager } from '../database/db.enhanced.js';
 
 // Re-export AppError for compatibility

@@ -6,7 +6,7 @@
 
 import crypto from 'crypto';
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
-import logger from '../utils/logger.js';
+import logger from '../config/logger.js';
 import { testWebhook } from '../services/webhookService.js';
 
 const pool = db.pool || db;
