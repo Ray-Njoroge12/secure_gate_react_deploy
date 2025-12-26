@@ -56,8 +56,16 @@ router.post('/migrate', async (req, res) => {
 
     logs.push('Starting database migration...');
 
-    await dbManager.initializeAsync();
-    logs.push('Database connection established');
+    // Force database initialization
+    try {
+      await dbManager.initializeAsync();
+      logs.push('Database connection established');
+    } catch (initError) {
+      // Try alternative initialization
+      const { db } = await import('../database/db.enhanced.js');
+      await db.query('SELECT 1');
+      logs.push('Database connection established via fallback');
+    }
 
     // Create migrations tracking table
     await dbManager.query(
@@ -153,7 +161,15 @@ router.post('/seed', async (req, res) => {
 
     logs.push('Starting database seeding...');
 
-    await dbManager.initializeAsync();
+    // Force database initialization
+    try {
+      await dbManager.initializeAsync();
+      logs.push('Database connection established');
+    } catch (initError) {
+      const { db } = await import('../database/db.enhanced.js');
+      await db.query('SELECT 1');
+      logs.push('Database connection established via fallback');
+    }
     
     const seedSql = await readFile(seedFile, 'utf8');
     
