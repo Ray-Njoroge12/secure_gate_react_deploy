@@ -335,7 +335,29 @@
   }
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support - Class-based for manual toggle */
+.dark .gradient-button--outline,
+[data-theme="dark"] .gradient-button--outline {
+  color: #34d399;
+  border-color: #10b981;
+}
+
+.dark .gradient-button--outline:hover:not(:disabled),
+[data-theme="dark"] .gradient-button--outline:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.dark .gradient-button--ghost,
+[data-theme="dark"] .gradient-button--ghost {
+  color: #f8fafc;
+}
+
+.dark .gradient-button--ghost:hover:not(:disabled),
+[data-theme="dark"] .gradient-button--ghost:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+/* System preference fallback */
 @media (prefers-color-scheme: dark) {
   .gradient-button--outline {
     color: var(--color-brand-400, #34d399);

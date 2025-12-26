@@ -20,7 +20,7 @@ const attachRequestAudit = auditLoggerFactory();
  *     security:
  *       - bearerAuth: []
  */
-router.post('/rules', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.post('/rules', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
     
@@ -98,7 +98,7 @@ router.get('/rules', authenticateToken, async (req, res) => {
  *     summary: Update an auto-approval rule
  *     tags: [Auto-Approval]
  */
-router.put('/rules/:id', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.put('/rules/:id', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
@@ -129,7 +129,7 @@ router.put('/rules/:id', authenticateToken, attachRequestAudit(), async (req, re
  *     summary: Delete an auto-approval rule
  *     tags: [Auto-Approval]
  */
-router.delete('/rules/:id', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.delete('/rules/:id', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
@@ -290,11 +290,11 @@ router.get('/stats', authenticateToken, async (req, res) => {
  *     summary: Delete all rules (Resident privacy control)
  *     tags: [Auto-Approval]
  */
-router.delete('/rules/all', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.delete('/rules/all', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     
-    const result = await autoApprovalService.deleteAllResidentRules(residentId);
+    const result = await autoApprovalService.deleteAllRules(residentId);
     
     res.json(result);
   } catch (error) {

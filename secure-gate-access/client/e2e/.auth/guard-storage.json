@@ -1,0 +1,35 @@
+{
+  "cookies": [
+    {
+      "name": "accessToken",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3IiwiaWF0IjoxNzY2NzY1OTU2LCJqdGkiOiIyNTRiZTAwMi1kMzc0LTQ2YTktOTdjZS0yMTRiYTZmYzFlOGMiLCJpZCI6NywiZW1haWwiOiJndWFyZDFAc2VjdXJlZ2F0ZS5jb20iLCJyb2xlIjoiZ3VhcmQiLCJ1c2VybmFtZSI6Imd1YXJkMSIsInZlcmlmaWVkIjp0cnVlLCJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY2NzY2ODU2LCJhdWQiOiJzZWN1cmUtZ2F0ZS1jbGllbnQiLCJpc3MiOiJzZWN1cmUtZ2F0ZS1hcGkifQ.k2giYuLWFEbmq_icZ2-LEayFIHrr4KIk6CufGhmxGXs",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1766766856,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "refreshToken",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3IiwiaWF0IjoxNzY2NzY1OTU2LCJqdGkiOiJiNTNhNjNiOS01YjVhLTQ1NDgtOTk1Zi0xNThiYWVhOWNmN2YiLCJlbWFpbCI6Imd1YXJkMUBzZWN1cmVnYXRlLmNvbSIsInR5cGUiOiJyZWZyZXNoIiwiZXhwIjoxNzY3MzcwNzU2LCJhdWQiOiJzZWN1cmUtZ2F0ZS1jbGllbnQiLCJpc3MiOiJzZWN1cmUtZ2F0ZS1hcGkifQ.aL-ZxFl0ybRv3LxWpsGNOQQZg5wZIvfl3EaNRk6OJoM",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1767370756,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:3000",
+      "localStorage": [
+        {
+          "name": "searchState",
+          "value": "{\"searchTerm\":\"\",\"filters\":{},\"sortField\":\"\",\"sortDirection\":\"asc\",\"currentPage\":1,\"pageSize\":10,\"search\":\"\",\"sort\":\"\",\"page\":1}"
+        }
+      ]
+    }
+  ]
+}

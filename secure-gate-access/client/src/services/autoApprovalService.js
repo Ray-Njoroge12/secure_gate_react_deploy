@@ -3,14 +3,14 @@
  * Phase 2.2: API client for Auto-Approval Rules Engine
  */
 
-import api from './api';
+import apiClient from '../utils/apiClient';
 
 const autoApprovalService = {
   /**
    * Get all rules for the current resident
    */
   async getRules() {
-    const response = await api.get('/auto-approval/rules');
+    const response = await apiClient.get('/api/auto-approval/rules');
     return response.data;
   },
 
@@ -18,7 +18,7 @@ const autoApprovalService = {
    * Create a new auto-approval rule
    */
   async createRule(ruleData) {
-    const response = await api.post('/auto-approval/rules', ruleData);
+    const response = await apiClient.post('/api/auto-approval/rules', ruleData);
     return response.data;
   },
 
@@ -26,7 +26,7 @@ const autoApprovalService = {
    * Update an existing rule
    */
   async updateRule(ruleId, updates) {
-    const response = await api.put(`/auto-approval/rules/${ruleId}`, updates);
+    const response = await apiClient.put(`/api/auto-approval/rules/${ruleId}`, updates);
     return response.data;
   },
 
@@ -34,7 +34,7 @@ const autoApprovalService = {
    * Delete a rule
    */
   async deleteRule(ruleId) {
-    const response = await api.delete(`/auto-approval/rules/${ruleId}`);
+    const response = await apiClient.delete(`/api/auto-approval/rules/${ruleId}`);
     return response.data;
   },
 
@@ -42,7 +42,7 @@ const autoApprovalService = {
    * Toggle rule active status
    */
   async toggleRule(ruleId) {
-    const response = await api.post(`/auto-approval/rules/${ruleId}/toggle`);
+    const response = await apiClient.post(`/api/auto-approval/rules/${ruleId}/toggle`);
     return response.data;
   },
 
@@ -50,7 +50,7 @@ const autoApprovalService = {
    * Get approval history
    */
   async getHistory(limit = 20) {
-    const response = await api.get(`/auto-approval/history?limit=${limit}`);
+    const response = await apiClient.get(`/api/auto-approval/history?limit=${limit}`);
     return response.data;
   },
 
@@ -58,7 +58,7 @@ const autoApprovalService = {
    * Get available categories
    */
   async getCategories() {
-    const response = await api.get('/auto-approval/categories');
+    const response = await apiClient.get('/api/auto-approval/categories');
     return response.data;
   },
 
@@ -66,7 +66,7 @@ const autoApprovalService = {
    * Get statistics (Admin)
    */
   async getStats() {
-    const response = await api.get('/auto-approval/stats');
+    const response = await apiClient.get('/api/auto-approval/stats');
     return response.data;
   },
 
@@ -74,7 +74,7 @@ const autoApprovalService = {
    * Delete all rules (Privacy control)
    */
   async deleteAllRules() {
-    const response = await api.delete('/auto-approval/rules/all');
+    const response = await apiClient.delete('/api/auto-approval/rules/all');
     return response.data;
   },
 
@@ -82,7 +82,7 @@ const autoApprovalService = {
    * Export rules (Data portability)
    */
   async exportRules() {
-    const response = await api.get('/auto-approval/export');
+    const response = await apiClient.get('/api/auto-approval/export');
     return response.data;
   }
 };

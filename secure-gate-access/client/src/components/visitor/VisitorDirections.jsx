@@ -176,6 +176,19 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
         </div>
       )}
 
+      {directions?.unitPin && (
+        <div className="p-4 border-b border-gray-200 bg-emerald-50">
+          <h3 className="font-medium text-gray-900 mb-2">Unit PIN</h3>
+          <div className="flex items-center justify-between bg-white border border-emerald-200 rounded-lg px-4 py-3">
+            <span className="font-mono text-lg text-emerald-800">{directions.unitPin}</span>
+            <span className="text-xs text-emerald-700">Show at gate if asked</span>
+          </div>
+          <p className="text-xs text-gray-600 mt-2">
+            This PIN is only shared because your host enabled it for this invite.
+          </p>
+        </div>
+      )}
+
       {/* Share & Actions */}
       <div className="p-4 bg-gray-50">
         <button

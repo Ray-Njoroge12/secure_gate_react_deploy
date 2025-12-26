@@ -77,6 +77,21 @@ router.get(
 );
 
 /**
+ * @route POST /api/public/visitors/:token/confirm
+ * @desc Confirm visit + store consent
+ * @access Public (no auth)
+ * @rateLimit 10 req/min
+ */
+router.post(
+  '/visitors/:token/confirm',
+  visitorTokenLimiter,
+  async (req, res) => {
+    // TODO: Implement confirmVisitorByToken
+    res.status(501).json({ success: false, message: 'Not implemented' });
+  }
+);
+
+/**
  * @route GET /api/public/estate-info
  * @desc Get estate information (gates, directions, contact)
  * @access Public (no auth)
@@ -86,6 +101,21 @@ router.get(
   '/estate-info',
   estateInfoLimiter,
   getEstateInfo
+);
+
+/**
+ * @route GET /api/public/invites/:inviteCode
+ * @desc Look up invite details by invite code (bulk or single)
+ * @access Public (no auth)
+ * @rateLimit 10 req/min
+ */
+router.get(
+  '/invites/:inviteCode',
+  visitorTokenLimiter,
+  async (req, res) => {
+    // TODO: Implement getInviteByCode
+    res.status(501).json({ success: false, message: 'Not implemented' });
+  }
 );
 
 export default router;

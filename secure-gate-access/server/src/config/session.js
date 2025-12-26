@@ -4,8 +4,9 @@
  */
 
 import session from 'express-session';
-import connectRedis from 'connect-redis';
+import { RedisStore } from 'connect-redis';
 import { createClient } from 'redis';
+import createMemoryStore from 'memorystore';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -44,7 +45,6 @@ if (process.env.REDIS_URL || process.env.REDIS_HOST) {
     await redisClient.connect();
 
     // Create Redis session store
-    const RedisStore = connectRedis(session);
     sessionStore = new RedisStore({
       client: redisClient,
       prefix: 'sess:',
@@ -60,7 +60,7 @@ if (process.env.REDIS_URL || process.env.REDIS_HOST) {
 
 // Fall back to memory store if Redis is not available
 if (!sessionStore) {
-  const MemoryStore = require('memorystore')(session);
+  const MemoryStore = createMemoryStore(session);
   sessionStore = new MemoryStore({
     checkPeriod: 86400000, // prune expired entries every 24h
     max: 1000, // max number of sessions

@@ -10,6 +10,7 @@
  */
 
 import { pool } from '../database/connection.js';
+import encryptionService from './encryptionService.js';
 
 /**
  * Get estate gate location (public info)
@@ -91,11 +92,15 @@ export async function addCustomDirections(visitorId, customInstructions, residen
  */
 export async function getVisitorDirections(visitorId, inviteToken) {
   // Verify invite token
+  // Accept either legacy invite_code token or public visitor_token token.
   const visitorCheck = await pool.query(
-    `SELECT v.id, v.invite_code, v.status, u.username as host_name, u.house
+    `SELECT v.id, v.invite_code, v.visitor_token, v.status,
+            v.allow_residence_location, v.unit_pin_encrypted,
+            u.username as host_name, u.house
      FROM visitors v
      JOIN users u ON v.created_by = u.email OR v.created_by::text = u.id::text
-     WHERE v.id = $1 AND v.invite_code = $2`,
+     WHERE v.id = $1
+       AND ($2 = v.invite_code OR $2 = v.visitor_token)`,
     [visitorId, inviteToken]
   );
   
@@ -113,6 +118,10 @@ export async function getVisitorDirections(visitorId, inviteToken) {
     'SELECT custom_instructions FROM visitor_directions WHERE visitor_id = $1',
     [visitorId]
   );
+
+  const unitPin = visitor.allow_residence_location && visitor.unit_pin_encrypted
+    ? await encryptionService.decrypt(visitor.unit_pin_encrypted)
+    : null;
   
   return {
     success: true,
@@ -128,6 +137,8 @@ export async function getVisitorDirections(visitorId, inviteToken) {
       fromCity: estate?.directions_from_city,
       // Custom instructions from host (visible only to this visitor)
       customInstructions: customResult.rows[0]?.custom_instructions,
+      // Optional unit PIN (only when explicitly allowed on invite)
+      unitPin,
       // Host info (minimal)
       hostName: visitor.host_name,
       // Privacy: Don't include exact unit location

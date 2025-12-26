@@ -231,7 +231,10 @@ class UserService {
 
       // Check if email is verified (skip in development if EMAIL_VERIFICATION_REQUIRED=false)
       // Uses verified column (boolean) instead of email_verified_at (timestamp) per render_init.sql schema
-      const requireEmailVerification = process.env.EMAIL_VERIFICATION_REQUIRED !== 'false';
+      const requireEmailVerification =
+        typeof process.env.EMAIL_VERIFICATION_REQUIRED === 'string'
+          ? process.env.EMAIL_VERIFICATION_REQUIRED !== 'false'
+          : process.env.NODE_ENV === 'production';
       if (requireEmailVerification && !user.verified) {
         throw new AppError('Please verify your email address before logging in. Check your inbox for the verification link.', 403, 'EMAIL_NOT_VERIFIED', {
           email: user.email,
@@ -742,7 +745,271 @@ class UserService {
     }
   }
 
+  /**
+   * Export user data for DPA compliance (Kenya DPA 2019)
+   * Provides complete data portability as required by law
+   */
+  async exportUserData(userId) {
+    try {
+      // Get user profile
+      const userResult = await this.db.query(
+        `SELECT id, username, email, role, phone, unit, address, 
+                created_at, updated_at, email_verified, last_login
+         FROM users WHERE id = $1`,
+        [userId]
+      );
+
+      if (userResult.rows.length === 0) {
+        throw new Error('User not found');
+      }
+
+      const user = userResult.rows[0];
+
+      // Get visitors created by user
+      const visitorsResult = await this.db.query(
+        `SELECT id, name, phone, email, purpose, status, invite_code,
+                visit_date, check_in, check_out, created_at
+         FROM visitors WHERE host_id = $1
+         ORDER BY created_at DESC`,
+        [userId]
+      );
+
+      // Get recurring passes
+      const passesResult = await this.db.query(
+        `SELECT id, visitor_name, visitor_phone, visitor_email,
+                valid_from, valid_until, days_of_week, status, created_at
+         FROM recurring_passes WHERE resident_id = $1
+         ORDER BY created_at DESC`,
+        [userId]
+      );
+
+      // Get delivery logs
+      const deliveriesResult = await this.db.query(
+        `SELECT id, carrier, tracking_number, recipient_name,
+                status, received_at, picked_up_at, created_at
+         FROM delivery_logs WHERE recipient_id = $1
+         ORDER BY created_at DESC`,
+        [userId]
+      );
+
+      // Get audit logs related to user
+      const auditLogsResult = await this.db.query(
+        `SELECT action, resource, timestamp, ip_address, user_agent, details
+         FROM audit_logs WHERE user_id = $1
+         ORDER BY timestamp DESC
+         LIMIT 1000`,
+        [userId]
+      );
+
+      return {
+        profile: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          unit: user.unit,
+          address: user.address,
+          emailVerified: user.email_verified,
+          accountCreated: user.created_at,
+          lastLogin: user.last_login
+        },
+        visitors: visitorsResult.rows,
+        recurringPasses: passesResult.rows,
+        deliveries: deliveriesResult.rows,
+        auditLogs: auditLogsResult.rows,
+        exportMetadata: {
+          exportedAt: new Date().toISOString(),
+          exportedBy: userId,
+          recordCounts: {
+            visitors: visitorsResult.rows.length,
+            passes: passesResult.rows.length,
+            deliveries: deliveriesResult.rows.length,
+            auditLogs: auditLogsResult.rows.length
+          }
+        }
+      };
+    } catch (error) {
+      throw new Error(`Data export failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete user data for DPA compliance (Right to be Forgotten)
+   * Deletes personal data while preserving audit trail integrity
+   */
+  async deleteUserData(userId) {
+    try {
+      // Start transaction for data deletion
+      await this.db.query('BEGIN');
+
+      // Delete user's visitors (cascade should handle related records)
+      await this.db.query(
+        `DELETE FROM visitors WHERE host_id = $1`,
+        [userId]
+      );
+
+      // Delete recurring passes
+      await this.db.query(
+        `DELETE FROM recurring_passes WHERE resident_id = $1`,
+        [userId]
+      );
+
+      // Delete delivery logs
+      await this.db.query(
+        `DELETE FROM delivery_logs WHERE recipient_id = $1`,
+        [userId]
+      );
+
+      // Delete rideshare entries
+      await this.db.query(
+        `DELETE FROM rideshare_entries WHERE resident_id = $1`,
+        [userId]
+      );
+
+      // Anonymize audit logs (preserve for compliance but remove PII)
+      await this.db.query(
+        `UPDATE audit_logs 
+         SET details = jsonb_set(
+           COALESCE(details, '{}'::jsonb),
+           '{anonymized}',
+           'true'
+         ),
+         user_id = NULL
+         WHERE user_id = $1`,
+        [userId]
+      );
+
+      // Delete user account
+      const deleteResult = await this.db.query(
+        `DELETE FROM users WHERE id = $1 RETURNING id, email`,
+        [userId]
+      );
+
+      if (deleteResult.rows.length === 0) {
+        throw new Error('User not found');
+      }
+
+      await this.db.query('COMMIT');
+
+      console.log(`User data deleted for user ID: ${userId}`);
+
+      return {
+        success: true,
+        deletedUserId: userId,
+        deletedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      await this.db.query('ROLLBACK');
+      throw new Error(`User deletion failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Anonymize historical records while preserving audit trail
+   * Used when user requests data deletion but historical data must be retained
+   */
+  async anonymizeHistoricalRecords(userId) {
+    try {
+      // Anonymize visitor records (keep for analytics but remove PII)
+      await this.db.query(
+        `UPDATE visitors 
+         SET name = 'Anonymized User',
+             phone = NULL,
+             email = NULL,
+             purpose = 'Historical Record - User Deleted'
+         WHERE host_id = $1 AND status = 'checked_out'`,
+        [userId]
+      );
+
+      console.log(`Historical records anonymized for user ID: ${userId}`);
+
+      return { success: true };
+    } catch (error) {
+      throw new Error(`Anonymization failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Record user consent for DPA compliance
+   */
+  async recordConsent(userId, consentType, consentGiven = true) {
+    try {
+      const result = await this.db.query(
+        `UPDATE users 
+         SET consent_given = $1,
+             consent_timestamp = NOW(),
+             consent_type = $2,
+             updated_at = NOW()
+         WHERE id = $3
+         RETURNING id, consent_given, consent_timestamp`,
+        [consentGiven, consentType, userId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('User not found');
+      }
+
+      // Log consent action in audit trail
+      await this.db.query(
+        `INSERT INTO audit_logs (action, resource, user_id, user_role, request_id, ip_address, details, timestamp, created_at)
+         VALUES ($1, $2, $3, 
+                 (SELECT role FROM users WHERE id = $3),
+                 $4, $5, $6, NOW(), NOW())`,
+        [
+          consentGiven ? 'consent.given' : 'consent.withdrawn',
+          'user_consent',
+          userId,
+          `consent-${Date.now()}`,
+          '127.0.0.1',
+          JSON.stringify({ consentType, consentGiven })
+        ]
+      );
+
+      return {
+        success: true,
+        consent: {
+          userId: result.rows[0].id,
+          consentGiven: result.rows[0].consent_given,
+          consentTimestamp: result.rows[0].consent_timestamp,
+          consentType
+        }
+      };
+    } catch (error) {
+      throw new Error(`Consent recording failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Withdraw user consent for DPA compliance
+   */
+  async withdrawConsent(userId, consentType) {
+    return this.recordConsent(userId, consentType, false);
+  }
+
+  /**
+   * Get user consent status
+   */
+  async getConsentStatus(userId) {
+    try {
+      const result = await this.db.query(
+        `SELECT consent_given, consent_timestamp, consent_type
+         FROM users WHERE id = $1`,
+        [userId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('User not found');
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      throw new Error(`Failed to get consent status: ${error.message}`);
+    }
+  }
+
 }
 
 // Export singleton instance
 export const userService = new UserService();
+export default userService;

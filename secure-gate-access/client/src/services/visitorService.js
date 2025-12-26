@@ -20,7 +20,10 @@ export const getBulkInvite = (inviteCode) => http.get(`${API_BASE}/bulk-invite/$
 export const completeInvite = (inviteCode, guestDetails) => http.post(`${API_BASE}/complete/${inviteCode}`, guestDetails);
 
 // === Shared Links ===
-export const getInviteByCode = (inviteCode) => http.get(`/api/invite/${inviteCode}`);
+export const getInviteByCode = (inviteCode) => http.get(`/api/public/invites/${inviteCode}`);
+
+// === Public Invite Lookup (no auth) ===
+export const getPublicInvite = (inviteCode) => http.get(`/api/public/invites/${inviteCode}`);
 
 // === Optional OTP Support ===
 export const verifyOtp = (email, otp) => http.post('/api/verify-otp', { email, otp });
@@ -32,16 +35,16 @@ export function normalizeVisitor(v) {
     id: v.id,
     name: v.name,
     phone: v.phone,
-    idType: v.id_type || v.idType,
-    idNumber: v.id_number || v.idNumber,
-    residentEmail: v.resident_email || v.residentEmail,
+    idType: v.id_type !== undefined ? v.id_type : v.idType,
+    idNumber: v.id_number !== undefined ? v.id_number : v.idNumber,
+    residentEmail: v.resident_email !== undefined ? v.resident_email : v.residentEmail,
     purpose: v.purpose,
-    dateOfVisit: v.date_of_visit || v.dateOfVisit,
-    timeOfVisit: v.time_of_visit || v.timeOfVisit,
+    dateOfVisit: v.date_of_visit !== undefined ? v.date_of_visit : v.dateOfVisit,
+    timeOfVisit: v.time_of_visit !== undefined ? v.time_of_visit : v.timeOfVisit,
     status: v.status,
-    checkIn: v.check_in || v.checkIn,
-    checkOut: v.check_out || v.checkOut,
-    inviteCode: v.invite_code || v.inviteCode,
-    qrCode: v.qr_code || v.qrCode
+    checkIn: v.check_in !== undefined ? v.check_in : v.checkIn,
+    checkOut: v.check_out !== undefined ? v.check_out : v.checkOut,
+    inviteCode: v.invite_code !== undefined ? v.invite_code : v.inviteCode,
+    qrCode: v.qr_code !== undefined ? v.qr_code : v.qrCode
   };
 }

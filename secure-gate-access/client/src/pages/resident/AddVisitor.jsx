@@ -278,6 +278,7 @@ const AddVisitor = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
+                    name="name"
                     data-test-id="visitor-name"
                     label="Full Name"
                     placeholder="Enter visitor's full name"
@@ -291,6 +292,7 @@ const AddVisitor = () => {
                   />
 
                   <Input
+                    name="phone"
                     data-test-id="visitor-phone"
                     label="Phone Number"
                     placeholder="0xxxxxxxxx"
@@ -306,6 +308,7 @@ const AddVisitor = () => {
                 </div>
 
                 <Input
+                  name="email"
                   data-test-id="visitor-email"
                   label="Email Address"
                   type="email"
@@ -330,10 +333,10 @@ const AddVisitor = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
+                    name="dateOfVisit"
                     data-test-id="visit-date"
                     label="Date of Visit"
                     type="date"
-                    name="dateOfVisit"
                     value={formData.dateOfVisit}
                     onChange={(e) => handleInputChange('dateOfVisit', e.target.value)}
                     disabled={loading}
@@ -344,10 +347,10 @@ const AddVisitor = () => {
                   />
                   
                   <Input
+                    name="time"
                     data-test-id="visit-time"
                     label="Time of Visit"
                     type="time"
-                    name="time"
                     value={formData.time}
                     onChange={(e) => handleInputChange('time', e.target.value)}
                     disabled={loading}
@@ -366,6 +369,7 @@ const AddVisitor = () => {
                   </label>
                   <div className="relative">
                     <select
+                      name="purpose"
                       data-test-id="visit-purpose"
                       value={formData.purpose}
                       onChange={(e) => handleInputChange('purpose', e.target.value)}
@@ -392,9 +396,9 @@ const AddVisitor = () => {
                 {/* Custom Purpose Input (shown when "Custom" is selected) */}
                 {showCustomPurpose && (
                   <Input
+                    name="customPurpose"
                     data-test-id="custom-purpose"
                     label="Specify Purpose"
-                    name="customPurpose"
                     value={formData.customPurpose}
                     onChange={(e) => handleInputChange('customPurpose', e.target.value)}
                     disabled={loading}

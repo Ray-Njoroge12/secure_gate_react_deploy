@@ -80,6 +80,7 @@ const mockResponseUtil = {
 };
 
 const mockSanitizeUser = jest.fn((user) => {
+  if (!user) return undefined;
   const { password_hash, ...clean } = user;
   return clean;
 });
@@ -133,9 +134,16 @@ const {
 describe('userController', () => {
   let mockReq, mockRes;
 
-  beforeEach(() => {
-    // Reset all mocks
+  beforeEach(async () => {
     jest.clearAllMocks();
+    jest.resetModules();
+
+    // Re-implement mockSanitizeUser after clearAllMocks
+    mockSanitizeUser.mockImplementation((user) => {
+      if (!user) return undefined;
+      const { password_hash, ...clean } = user;
+      return clean;
+    });
 
     // Setup mock request
     mockReq = {

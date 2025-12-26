@@ -173,12 +173,18 @@ const VisitorInvitePage = () => {
     const calculateCountdown = () => {
       // Use expiry date or visit date + 24 hours
       let expiryDate;
-      if (visitor.expiresAt) {
+      if (visitor.tokenExpiresAt) {
+        expiryDate = new Date(visitor.tokenExpiresAt);
+      } else if (visitor.expiresAt) {
         expiryDate = new Date(visitor.expiresAt);
       } else if (visitor.dateOfVisit) {
         expiryDate = new Date(visitor.dateOfVisit);
         expiryDate.setHours(23, 59, 59, 999); // End of visit day
       } else {
+        return null;
+      }
+
+      if (Number.isNaN(expiryDate.getTime())) {
         return null;
       }
 
@@ -525,19 +531,29 @@ const VisitorInvitePage = () => {
 
               <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
                 <div className="qr-code-container">
-                  <QRCodeSVG
-                    value={visitor.id.toString()}
-                    size={200}
-                    level="H"
-                    includeMargin={true}
-                    className="qr-code"
-                  />
+                  {/* Use pre-generated QR code from server if available, otherwise generate client-side */}
+                  {visitor.qr_code || visitor.qrCodeDataUrl ? (
+                    <img 
+                      src={visitor.qr_code || visitor.qrCodeDataUrl} 
+                      alt="Visitor QR Code"
+                      className="qr-code mx-auto"
+                      style={{ width: 200, height: 200 }}
+                    />
+                  ) : (
+                    <QRCodeSVG
+                      value={visitor.id.toString()}
+                      size={200}
+                      level="H"
+                      includeMargin={true}
+                      className="qr-code"
+                    />
+                  )}
                 </div>
                 <p className="text-center text-sm text-gray-700 font-medium">
                   📱 Show this QR code at the gate
                 </p>
                 <p className="qr-code-text">
-                  Visit Code: <strong>{visitor.id}</strong>
+                  Visit Code: <strong>{visitor.qrId || visitor.id}</strong>
                 </p>
                 
                 {/* Phase 1.2: Save Pass Button */}

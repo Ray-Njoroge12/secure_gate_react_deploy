@@ -39,7 +39,16 @@ class OptimizedQRCodeService {
   async generateVisitorQR(visitorData, options = {}) {
     try {
       const qrId = randomUUID();
-      const expirationTime = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours
+
+      // Policy A: Expire at end-of-day of the visit date (estate/estate policy)
+      let expirationTime = new Date(Date.now() + (24 * 60 * 60 * 1000)); // fallback
+      if (visitorData?.date_of_visit) {
+        const visitDate = new Date(visitorData.date_of_visit);
+        if (!Number.isNaN(visitDate.getTime())) {
+          expirationTime = new Date(visitDate);
+          expirationTime.setHours(23, 59, 59, 999);
+        }
+      }
 
       // Create secure payload
       const payload = {
@@ -56,7 +65,8 @@ class OptimizedQRCodeService {
 
       // Generate JWT token with timeout
       const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
-      const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' });
+      const expiresInSeconds = Math.max(1, Math.floor((expirationTime.getTime() - Date.now()) / 1000));
+      const token = jwt.sign(payload, jwtSecret, { expiresIn: expiresInSeconds });
 
       // Generate QR code data URL with timeout
       const qrData = JSON.stringify({
@@ -90,7 +100,7 @@ class OptimizedQRCodeService {
         success: true,
         data: {
           qrId: qrId,
-          qrCodeUrl: qrCodeDataURL,
+          qrCodeDataUrl: qrCodeDataURL,
           token: token,
           expiresAt: expirationTime,
           visitor: {
@@ -161,7 +171,7 @@ class OptimizedQRCodeService {
       // Check QR code in database with timeout
       const qrResult = await withTimeout(
         dbManager.query(
-          'SELECT qr_id, visitor_id, status, expires_at FROM qr_codes WHERE qr_id = $1',
+          'SELECT qr_id, visitor_id, status, expires_at, data_url, created_at, scan_count FROM qr_codes WHERE qr_id = $1',
           [qrId]
         ),
         2000
@@ -219,6 +229,7 @@ class OptimizedQRCodeService {
         data: {
           qrId: qrRecord.qr_id,
           visitor: visitor,
+          qrCode: qrRecord,
           payload: payload,
           validUntil: qrRecord.expires_at
         }
@@ -325,6 +336,105 @@ class OptimizedQRCodeService {
         code: 500
       };
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Compatibility wrappers for existing routes (qrCodeRoutes.js)
+  // ---------------------------------------------------------------------------
+
+  async validateQRCode(qrToken) {
+    const validation = await this.validateQR(qrToken);
+    if (!validation.success) {
+      return {
+        valid: false,
+        error: validation.error
+      };
+    }
+
+    return {
+      valid: true,
+      visitor: validation.data.visitor,
+      qrCode: validation.data.qrCode,
+      payload: validation.data.payload,
+      validUntil: validation.data.validUntil
+    };
+  }
+
+  async markQRCodeUsed(qrToken) {
+    let parsed;
+    try {
+      parsed = JSON.parse(qrToken);
+    } catch {
+      return { success: false, error: 'Invalid QR token format' };
+    }
+
+    const qrId = parsed?.qrId;
+    if (!qrId) {
+      return { success: false, error: 'Missing qrId' };
+    }
+
+    await withTimeout(
+      dbManager.query(
+        `UPDATE qr_codes
+         SET status = 'used',
+             scan_count = scan_count + 1,
+             updated_at = NOW()
+         WHERE qr_id = $1`,
+        [qrId]
+      ),
+      2000
+    );
+
+    return { success: true };
+  }
+
+  async getQRCodeByVisitorId(visitorId) {
+    const result = await withTimeout(
+      dbManager.query(
+        `SELECT qr_id as id, visitor_id, status, expires_at, scan_count, created_at
+         FROM qr_codes
+         WHERE visitor_id = $1
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [visitorId]
+      ),
+      2000
+    );
+
+    return result.rows[0] || null;
+  }
+
+  async getQRCodeAnalytics(dateFrom, dateTo) {
+    const result = await withTimeout(
+      dbManager.query(
+        `SELECT
+           COUNT(*)::int AS total,
+           COUNT(CASE WHEN status = 'active' THEN 1 END)::int AS active,
+           COUNT(CASE WHEN status = 'used' THEN 1 END)::int AS used,
+           COUNT(CASE WHEN expires_at < NOW() THEN 1 END)::int AS expired
+         FROM qr_codes
+         WHERE created_at >= $1 AND created_at <= $2`,
+        [dateFrom, dateTo]
+      ),
+      2000
+    );
+
+    return result.rows[0] || { total: 0, active: 0, used: 0, expired: 0 };
+  }
+
+  async cleanupExpiredQRCodes() {
+    const result = await withTimeout(
+      dbManager.query(
+        `UPDATE qr_codes
+         SET status = 'expired',
+             updated_at = NOW()
+         WHERE expires_at < NOW() AND status = 'active'`,
+        []
+      ),
+      5000
+    );
+
+    return result.rowCount || 0;
   }
 }
 

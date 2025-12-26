@@ -70,52 +70,18 @@ router.get('/my-data', authenticateToken, asyncHandler(async (req, res) => {
 router.get('/export', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  // Get complete user data
-  const user = await userService.getUserById(userId);
-  const visitorRecords = await databaseService.query(
-    'SELECT * FROM visitors WHERE created_by = $1',
-    [userId]
-  );
-  const accessLogs = await databaseService.query(
-    'SELECT * FROM access_logs WHERE user_id = $1',
-    [userId]
-  );
-
-  // Create comprehensive export
-  const exportData = {
-    exportMetadata: {
-      exportedAt: new Date().toISOString(),
-      exportedBy: user.email,
-      dataSubject: 'User Personal Data Export',
-      format: 'JSON',
-      version: '1.0'
-    },
-    personalData: {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        last_login: user.last_login
-      },
-      visitorRecords: visitorRecords.rows,
-      accessLogs: accessLogs.rows
-    },
-    legalBasis: 'Kenya Data Protection Act 2019 - Article 39 (Right to Data Portability)',
-    retentionPolicy: {
-      visitorRecords: '365 days',
-      accessLogs: '730 days',
-      auditLogs: '7 years'
-    }
-  };
+  // Use comprehensive export from userService
+  const exportData = await userService.exportUserData(userId);
 
   // Set headers for file download
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', `attachment; filename="personal-data-export-${userId}-${Date.now()}.json"`);
   
-  res.json(exportData);
+  res.json({
+    success: true,
+    legalBasis: 'Kenya Data Protection Act 2019 - Article 39 (Right to Data Portability)',
+    ...exportData
+  });
 }));
 
 /**
@@ -404,7 +370,7 @@ router.post('/delete', authenticateToken, asyncHandler(async (req, res) => {
 
 /**
  * @route   POST /api/privacy/delete-account
- * @desc    Request full account deletion
+ * @desc    Request full account deletion (Right to Erasure - Kenya DPA Article 33)
  * @access  Private
  */
 router.post('/delete-account', authenticateToken, asyncHandler(async (req, res) => {
@@ -415,21 +381,24 @@ router.post('/delete-account', authenticateToken, asyncHandler(async (req, res) 
     throw new AppError('Please confirm account deletion', 400, 'CONFIRMATION_REQUIRED');
   }
 
-  // Create deletion request
-  await databaseService.query(
-    `INSERT INTO data_deletion_requests (user_id, reason, status, requested_at, deletion_type) 
-     VALUES ($1, $2, 'pending', NOW(), 'full_account')`,
-    [userId, reason || 'User requested full account deletion']
-  );
+  // Execute immediate deletion using userService
+  await userService.deleteUserData(userId);
+  await userService.anonymizeHistoricalRecords(userId);
+
+  // Clear authentication token
+  res.clearCookie('token');
 
   res.json({
     success: true,
-    message: 'Account deletion request submitted',
+    message: 'Account and data deleted successfully',
     data: {
-      requestId: Date.now(),
-      status: 'pending',
-      estimatedProcessingTime: '30 days',
-      notes: 'Your account and all associated data will be permanently deleted.'
+      deletedAt: new Date().toISOString(),
+      legalBasis: 'Kenya Data Protection Act 2019 - Article 33 (Right to Erasure)',
+      notes: [
+        'Your account has been permanently deleted.',
+        'Historical records have been anonymized.',
+        'Audit logs preserved for legal compliance (7 years).'
+      ]
     }
   });
 }));
@@ -462,23 +431,49 @@ router.get('/consents', authenticateToken, asyncHandler(async (req, res) => {
 
 /**
  * @route   POST /api/privacy/consents
- * @desc    Update user consent
+ * @desc    Update user consent (Kenya DPA Article 31)
  * @access  Private
  */
 router.post('/consents', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { consentType, granted, timestamp } = req.body;
+  const { consentType, granted } = req.body;
 
-  await databaseService.query(
-    `INSERT INTO consent_log (user_id, consent_type, action, created_at) 
-     VALUES ($1, $2, $3, $4)`,
-    [userId, consentType, granted ? 'granted' : 'withdrawn', timestamp || new Date()]
-  );
+  if (!consentType) {
+    throw new AppError('Consent type is required', 400, 'VALIDATION_ERROR');
+  }
+
+  // Use userService for consent management
+  const result = granted 
+    ? await userService.recordConsent(userId, consentType, true)
+    : await userService.withdrawConsent(userId, consentType);
 
   res.json({
     success: true,
-    message: 'Consent updated successfully',
-    data: { consentType, granted, timestamp }
+    message: granted ? 'Consent granted successfully' : 'Consent withdrawn successfully',
+    data: result.consent
+  });
+}));
+
+/**
+ * @route   GET /api/privacy/consent/:consentType
+ * @desc    Get specific consent status
+ * @access  Private
+ */
+router.get('/consent/:consentType', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { consentType } = req.params;
+
+  const consentStatus = await userService.getConsentStatus(userId);
+
+  res.json({
+    success: true,
+    data: {
+      userId,
+      consentType,
+      consentGiven: consentStatus.consent_given,
+      consentTimestamp: consentStatus.consent_timestamp,
+      currentType: consentStatus.consent_type
+    }
   });
 }));
 

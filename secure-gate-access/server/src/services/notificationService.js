@@ -416,6 +416,67 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
   }
 }
 
+/**
+ * Send delivery registration notification to resident
+ */
+export async function sendDeliveryNotification(residentData, deliveryData) {
+  try {
+    const subject = `📦 New Delivery - ${SITE_NAME}`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>📦 New Delivery Received</h2>
+        <p>Hello ${residentData.name || 'Resident'},</p>
+        <p>A package has been registered for you at the gate.</p>
+        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Carrier:</strong> ${deliveryData.carrierName}</p>
+          <p><strong>Size:</strong> ${deliveryData.packageSize}</p>
+          ${deliveryData.packageDescription ? `<p><strong>Description:</strong> ${deliveryData.packageDescription}</p>` : ''}
+          <p><strong>Received:</strong> ${new Date().toLocaleString()}</p>
+        </div>
+        <p><strong>Action Required:</strong> Please log in to choose how you'd like to receive your package:</p>
+        <ul>
+          <li>🚶 <strong>Pickup at Gate</strong> - Collect it yourself</li>
+          <li>🏠 <strong>Deliver to Residence</strong> - Have a guard bring it to you</li>
+        </ul>
+        <p style="margin-top: 20px;">
+          <a href="${SITE_URL}/resident/deliveries" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">View My Deliveries</a>
+        </p>
+        <p style="color: #666; font-size: 12px; margin-top: 30px;">This is an automated message from ${SITE_NAME}.</p>
+      </div>
+    `;
+
+    const result = await sendEmail(residentData.email, subject, html);
+    
+    if (result) {
+      metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
+      console.log(`Delivery notification email sent to ${residentData.email}`);
+    }
+    
+    return result;
+  } catch (err) {
+    metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
+    console.error('sendDeliveryNotification failed:', err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * Send handoff decision notification (in-app / WebSocket for guards)
+ * This is a lightweight notification since guards are typically on-duty
+ */
+export async function sendHandoffDecisionNotification(deliveryData, preference) {
+  try {
+    const preferenceLabel = preference === 'pickup_at_gate' ? 'Pickup at Gate' : 'Deliver to Residence';
+    console.log(`[Notification] Handoff decision for delivery #${deliveryData.id}: ${preferenceLabel}`);
+    // In production, this would emit a WebSocket event to guard dashboards
+    // For now, we log it and return success
+    return { success: true, preference: preferenceLabel };
+  } catch (err) {
+    console.error('sendHandoffDecisionNotification failed:', err?.message || err);
+    return { success: false, error: err?.message };
+  }
+}
+
 // Legacy functions for backward compatibility
 export async function sendInviteEmail(to, subject, html) {
   try {
@@ -502,5 +563,7 @@ export default {
   sendVisitorInviteEmail,
   sendOtpVerificationEmail,
   sendVisitorInviteSms,
-  sendOtpVerificationSms
+  sendOtpVerificationSms,
+  sendDeliveryNotification,
+  sendHandoffDecisionNotification
 };

@@ -1,4 +1,5 @@
 import helmet from 'helmet';
+import { randomBytes } from 'crypto';
 
 /**
  * Comprehensive security headers configuration
@@ -192,10 +193,22 @@ export const csrfProtection = (req, res, next) => {
     '/api/auth/refresh',
     '/api/health',
     '/api/cache/health',
-    '/api/versions'
+    '/api/versions',
+    // Public (no-auth) visitor flows
+    '/api/public',
+    '/api/visitors/complete',
+    '/api/visitors/self-checkin'
   ];
   
   if (publicEndpoints.some(endpoint => req.path.startsWith(endpoint))) {
+    return next();
+  }
+
+  // OTP endpoints are intentionally public (visitor-side) and should not require CSRF
+  if (req.path === '/api/visitors/verify-otp') {
+    return next();
+  }
+  if (/^\/api\/visitors\/\d+\/(verify-otp|resend-otp)$/.test(req.path)) {
     return next();
   }
   
@@ -255,7 +268,7 @@ export const generateCSRFToken = (req, res, next) => {
   }
   
   if (!req.session.csrfToken) {
-    req.session.csrfToken = require('crypto').randomBytes(32).toString('hex');
+    req.session.csrfToken = randomBytes(32).toString('hex');
   }
   
   // Add CSRF token to response header for client to use

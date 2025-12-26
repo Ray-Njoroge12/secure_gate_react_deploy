@@ -13,6 +13,7 @@ const DeliveryList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     loadDeliveries();
@@ -40,6 +41,25 @@ const DeliveryList = () => {
     } catch (err) {
       setError('Failed to mark as collected');
     }
+  };
+
+  const handleSetHandoff = async (deliveryId, preference) => {
+    try {
+      setUpdatingId(deliveryId);
+      setError(null);
+      await deliveryService.setHandoffPreference(deliveryId, preference);
+      await loadDeliveries();
+    } catch (err) {
+      setError(err?.message || 'Failed to set delivery preference');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const getHandoffLabel = (pref) => {
+    if (pref === 'pickup_at_gate') return 'Pickup at Gate';
+    if (pref === 'deliver_to_residence') return 'Deliver to Residence';
+    return 'Not decided';
   };
 
   const formatDate = (dateString) => {
@@ -150,6 +170,38 @@ const DeliveryList = () => {
                     >
                       📷 View Photo
                     </button>
+                  )}
+                  {delivery.status === 'pending_collection' && (
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-xs text-gray-600">
+                        Handoff: <span className="font-medium">{getHandoffLabel(delivery.handoff_preference)}</span>
+                      </div>
+
+                      {!delivery.handoff_preference && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSetHandoff(delivery.id, 'pickup_at_gate')}
+                            disabled={updatingId === delivery.id}
+                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {updatingId === delivery.id ? 'Saving...' : 'Pickup at Gate'}
+                          </button>
+                          <button
+                            onClick={() => handleSetHandoff(delivery.id, 'deliver_to_residence')}
+                            disabled={updatingId === delivery.id}
+                            className="px-3 py-1 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:opacity-50"
+                          >
+                            {updatingId === delivery.id ? 'Saving...' : 'Deliver to Residence'}
+                          </button>
+                        </div>
+                      )}
+
+                      {delivery.handoff_preference && (
+                        <div className="text-xs text-gray-500">
+                          You can change this later from the delivery details.
+                        </div>
+                      )}
+                    </div>
                   )}
                   {delivery.status === 'pending_collection' && (
                     <button

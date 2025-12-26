@@ -1,0 +1,300 @@
+🚀 API Performance Benchmark
+   Target: http://localhost:5001/api
+   Iterations: 50
+   Concurrent: 10
+
+================================================================================
+Phase 1: Authentication Performance
+================================================================================
+
+🔄 Benchmarking POST /auth/login...
+  ✅ Completed 50/50 requests (0.00% error rate)
+  📊 Latency: min=42ms avg=47.50ms p95=66ms p99=113ms max=113ms
+
+🔄 Benchmarking POST /auth/register...
+  ❌ Request 1 failed: Request failed with status code 400
+  ❌ Request 2 failed: Request failed with status code 400
+  ❌ Request 3 failed: Request failed with status code 400
+  ❌ Request 4 failed: Request failed with status code 400
+  ❌ Request 5 failed: Request failed with status code 400
+  ❌ Request 6 failed: Request failed with status code 400
+  ❌ Request 7 failed: Request failed with status code 400
+  ❌ Request 8 failed: Request failed with status code 400
+  ❌ Request 9 failed: Request failed with status code 400
+  ❌ Request 10 failed: Request failed with status code 400
+  ❌ Request 11 failed: Request failed with status code 400
+  ❌ Request 12 failed: Request failed with status code 400
+  ❌ Request 13 failed: Request failed with status code 400
+  ❌ Request 14 failed: Request failed with status code 400
+  ❌ Request 15 failed: Request failed with status code 400
+  ❌ Request 16 failed: Request failed with status code 400
+  ❌ Request 17 failed: Request failed with status code 400
+  ❌ Request 18 failed: Request failed with status code 400
+  ❌ Request 19 failed: Request failed with status code 400
+  ❌ Request 20 failed: Request failed with status code 400
+  ❌ Request 21 failed: Request failed with status code 400
+  ❌ Request 22 failed: Request failed with status code 400
+  ❌ Request 23 failed: Request failed with status code 400
+  ❌ Request 24 failed: Request failed with status code 400
+  ❌ Request 25 failed: Request failed with status code 400
+  ❌ Request 26 failed: Request failed with status code 400
+  ❌ Request 27 failed: Request failed with status code 400
+  ❌ Request 28 failed: Request failed with status code 400
+  ❌ Request 29 failed: Request failed with status code 400
+  ❌ Request 30 failed: Request failed with status code 400
+  ✅ Completed 0/30 requests (100.00% error rate)
+
+🔐 Obtaining auth tokens...
+
+================================================================================
+Phase 2: Visitor Management Performance
+================================================================================
+
+🔄 Benchmarking GET /visitors...
+  ❌ Request 1 failed: Request failed with status code 401
+  ❌ Request 2 failed: Request failed with status code 401
+  ❌ Request 3 failed: Request failed with status code 401
+  ❌ Request 4 failed: Request failed with status code 401
+  ❌ Request 5 failed: Request failed with status code 401
+  ❌ Request 6 failed: Request failed with status code 401
+  ❌ Request 7 failed: Request failed with status code 401
+  ❌ Request 8 failed: Request failed with status code 401
+  ❌ Request 9 failed: Request failed with status code 401
+  ❌ Request 10 failed: Request failed with status code 401
+  ❌ Request 11 failed: Request failed with status code 401
+  ❌ Request 12 failed: Request failed with status code 401
+  ❌ Request 13 failed: Request failed with status code 401
+  ❌ Request 14 failed: Request failed with status code 401
+  ❌ Request 15 failed: Request failed with status code 401
+  ❌ Request 16 failed: Request failed with status code 401
+  ❌ Request 17 failed: Request failed with status code 401
+  ❌ Request 18 failed: Request failed with status code 401
+  ❌ Request 19 failed: Request failed with status code 401
+  ❌ Request 20 failed: Request failed with status code 401
+  ❌ Request 21 failed: Request failed with status code 401
+  ❌ Request 22 failed: Request failed with status code 401
+  ❌ Request 23 failed: Request failed with status code 401
+  ❌ Request 24 failed: Request failed with status code 401
+  ❌ Request 25 failed: Request failed with status code 401
+  ❌ Request 26 failed: Request failed with status code 401
+  ❌ Request 27 failed: Request failed with status code 401
+  ❌ Request 28 failed: Request failed with status code 401
+  ❌ Request 29 failed: Request failed with status code 401
+  ❌ Request 30 failed: Request failed with status code 401
+  ❌ Request 31 failed: Request failed with status code 401
+  ❌ Request 32 failed: Request failed with status code 401
+  ❌ Request 33 failed: Request failed with status code 401
+  ❌ Request 34 failed: Request failed with status code 401
+  ❌ Request 35 failed: Request failed with status code 401
+  ❌ Request 36 failed: Request failed with status code 401
+  ❌ Request 37 failed: Request failed with status code 401
+  ❌ Request 38 failed: Request failed with status code 401
+  ❌ Request 39 failed: Request failed with status code 401
+  ❌ Request 40 failed: Request failed with status code 401
+  ❌ Request 41 failed: Request failed with status code 401
+  ❌ Request 42 failed: Request failed with status code 401
+  ❌ Request 43 failed: Request failed with status code 401
+  ❌ Request 44 failed: Request failed with status code 401
+  ❌ Request 45 failed: Request failed with status code 401
+  ❌ Request 46 failed: Request failed with status code 401
+  ❌ Request 47 failed: Request failed with status code 401
+  ❌ Request 48 failed: Request failed with status code 401
+  ❌ Request 49 failed: Request failed with status code 401
+  ❌ Request 50 failed: Request failed with status code 401
+  ✅ Completed 0/50 requests (100.00% error rate)
+
+🔄 Benchmarking POST /visitors...
+  ❌ Request 1 failed: Request failed with status code 401
+  ❌ Request 2 failed: Request failed with status code 401
+  ❌ Request 3 failed: Request failed with status code 401
+  ❌ Request 4 failed: Request failed with status code 401
+  ❌ Request 5 failed: Request failed with status code 401
+  ❌ Request 6 failed: Request failed with status code 401
+  ❌ Request 7 failed: Request failed with status code 401
+  ❌ Request 8 failed: Request failed with status code 401
+  ❌ Request 9 failed: Request failed with status code 401
+  ❌ Request 10 failed: Request failed with status code 401
+  ❌ Request 11 failed: socket hang up
+  ❌ Request 12 failed: Error
+  ❌ Request 13 failed: Error
+  ❌ Request 14 failed: Error
+  ❌ Request 15 failed: Error
+  ❌ Request 16 failed: Error
+  ❌ Request 17 failed: Error
+  ❌ Request 18 failed: Error
+  ❌ Request 19 failed: Error
+  ❌ Request 20 failed: Error
+  ❌ Request 21 failed: Error
+  ❌ Request 22 failed: Error
+  ❌ Request 23 failed: Error
+  ❌ Request 24 failed: Error
+  ❌ Request 25 failed: Error
+  ❌ Request 26 failed: Error
+  ❌ Request 27 failed: Error
+  ❌ Request 28 failed: Error
+  ❌ Request 29 failed: Error
+  ❌ Request 30 failed: Error
+  ❌ Request 31 failed: Error
+  ❌ Request 32 failed: Error
+  ❌ Request 33 failed: Error
+  ❌ Request 34 failed: Error
+  ❌ Request 35 failed: Error
+  ❌ Request 36 failed: Error
+  ❌ Request 37 failed: Error
+  ❌ Request 38 failed: Error
+  ❌ Request 39 failed: Error
+  ❌ Request 40 failed: Error
+  ❌ Request 41 failed: Error
+  ❌ Request 42 failed: Error
+  ❌ Request 43 failed: Error
+  ❌ Request 44 failed: Error
+  ❌ Request 45 failed: Error
+  ❌ Request 46 failed: Error
+  ❌ Request 47 failed: Error
+  ❌ Request 48 failed: Error
+  ❌ Request 49 failed: Error
+  ❌ Request 50 failed: Error
+  ✅ Completed 0/50 requests (100.00% error rate)
+
+================================================================================
+Phase 3: Dashboard Performance
+================================================================================
+
+🔄 Benchmarking GET /admin/dashboard...
+  ❌ Request 1 failed: Error
+  ❌ Request 2 failed: Error
+  ❌ Request 3 failed: Error
+  ❌ Request 4 failed: Error
+  ❌ Request 5 failed: Error
+  ❌ Request 6 failed: Error
+  ❌ Request 7 failed: Error
+  ❌ Request 8 failed: Error
+  ❌ Request 9 failed: Error
+  ❌ Request 10 failed: Error
+  ❌ Request 11 failed: Error
+  ❌ Request 12 failed: Error
+  ❌ Request 13 failed: Error
+  ❌ Request 14 failed: Error
+  ❌ Request 15 failed: Error
+  ❌ Request 16 failed: Error
+  ❌ Request 17 failed: Error
+  ❌ Request 18 failed: Error
+  ❌ Request 19 failed: Error
+  ❌ Request 20 failed: Error
+  ❌ Request 21 failed: Error
+  ❌ Request 22 failed: Error
+  ❌ Request 23 failed: Error
+  ❌ Request 24 failed: Error
+  ❌ Request 25 failed: Error
+  ❌ Request 26 failed: Error
+  ❌ Request 27 failed: Error
+  ❌ Request 28 failed: Error
+  ❌ Request 29 failed: Error
+  ❌ Request 30 failed: Error
+  ❌ Request 31 failed: Error
+  ❌ Request 32 failed: Error
+  ❌ Request 33 failed: Error
+  ❌ Request 34 failed: Error
+  ❌ Request 35 failed: Error
+  ❌ Request 36 failed: Error
+  ❌ Request 37 failed: Error
+  ❌ Request 38 failed: Error
+  ❌ Request 39 failed: Error
+  ❌ Request 40 failed: Error
+  ❌ Request 41 failed: Error
+  ❌ Request 42 failed: Error
+  ❌ Request 43 failed: Error
+  ❌ Request 44 failed: Error
+  ❌ Request 45 failed: Error
+  ❌ Request 46 failed: Error
+  ❌ Request 47 failed: Error
+  ❌ Request 48 failed: Error
+  ❌ Request 49 failed: Error
+  ❌ Request 50 failed: Error
+  ✅ Completed 0/50 requests (100.00% error rate)
+
+🔄 Benchmarking GET /resident/dashboard...
+  ❌ Request 1 failed: Error
+  ❌ Request 2 failed: Error
+  ❌ Request 3 failed: Error
+  ❌ Request 4 failed: Error
+  ❌ Request 5 failed: Error
+  ❌ Request 6 failed: Error
+  ❌ Request 7 failed: Error
+  ❌ Request 8 failed: Error
+  ❌ Request 9 failed: Error
+  ❌ Request 10 failed: Error
+  ❌ Request 11 failed: Error
+  ❌ Request 12 failed: Error
+  ❌ Request 13 failed: Error
+  ❌ Request 14 failed: Error
+  ❌ Request 15 failed: Error
+  ❌ Request 16 failed: Error
+  ❌ Request 17 failed: Error
+  ❌ Request 18 failed: Error
+  ❌ Request 19 failed: Error
+  ❌ Request 20 failed: Error
+  ❌ Request 21 failed: Error
+  ❌ Request 22 failed: Error
+  ❌ Request 23 failed: Error
+  ❌ Request 24 failed: Error
+  ❌ Request 25 failed: Error
+  ❌ Request 26 failed: Error
+  ❌ Request 27 failed: Error
+  ❌ Request 28 failed: Error
+  ❌ Request 29 failed: Error
+  ❌ Request 30 failed: Error
+  ❌ Request 31 failed: Error
+  ❌ Request 32 failed: Error
+  ❌ Request 33 failed: Error
+  ❌ Request 34 failed: Error
+  ❌ Request 35 failed: Error
+  ❌ Request 36 failed: Error
+  ❌ Request 37 failed: Error
+  ❌ Request 38 failed: Error
+  ❌ Request 39 failed: Error
+  ❌ Request 40 failed: Error
+  ❌ Request 41 failed: Error
+  ❌ Request 42 failed: Error
+  ❌ Request 43 failed: Error
+  ❌ Request 44 failed: Error
+  ❌ Request 45 failed: Error
+  ❌ Request 46 failed: Error
+  ❌ Request 47 failed: Error
+  ❌ Request 48 failed: Error
+  ❌ Request 49 failed: Error
+  ❌ Request 50 failed: Error
+  ✅ Completed 0/50 requests (100.00% error rate)
+
+================================================================================
+📊 PERFORMANCE BENCHMARK REPORT
+================================================================================
+
+## AUTH Endpoints
+
+✅ login:
+   Success Rate: 100.00%
+   Latency (ms): min=42 avg=47.50 p95=66 p99=113 max=113
+   Throughput: 442.48 req/s
+
+## VISITORS Endpoints
+
+
+## DASHBOARD Endpoints
+
+
+================================================================================
+🎯 OVERALL ASSESSMENT
+
+Average Latency: 47.50ms
+P95 Latency: 66.00ms
+Average Error Rate: 0.00%
+
+📋 Target Compliance:
+  ✅ P95 Latency < 500ms (actual: 66.00ms)
+  ✅ Error Rate < 1% (actual: 0.00%)
+
+✅ PASSED: Performance benchmark
+================================================================================
+
+💾 Results saved to performance-benchmark-results.json

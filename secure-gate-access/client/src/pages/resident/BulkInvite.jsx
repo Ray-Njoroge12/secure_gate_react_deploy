@@ -51,6 +51,8 @@ const BulkInvite = () => {
     
     if (lines.length === 0) {
       setParsedGuests([]);
+      setParsedData([]);
+      setSelectedRows([]);
       setCsvErrors([]);
       setCsvInfo("");
       setFormData(prev => ({ ...prev, numGuests: 5 }));
@@ -116,6 +118,14 @@ const BulkInvite = () => {
     
     const finalGuests = guests.slice(0, MAX);
     setParsedGuests(finalGuests);
+    setParsedData(finalGuests.map((g, idx) => ({
+      id: idx + 1,
+      name: g.name,
+      email: g.email,
+      phone: g.phone,
+      hasError: false
+    })));
+    setSelectedRows(finalGuests.map((_, idx) => idx + 1));
     setCsvErrors(errors);
     setCsvInfo(info);
     setFormData(prev => ({ 
@@ -128,19 +138,20 @@ const BulkInvite = () => {
     const uploadedFile = e.target.files[0];
     if (uploadedFile) {
       setFile(uploadedFile);
-      parseCsv(uploadedFile);
-      // Automatically move to step 2 after successful parse
-      setTimeout(() => {
-        if (errors.length === 0) {
-          setCurrentStep(2);
-        }
-      }, 500);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = String(ev.target?.result || "");
+        setCsvText(text);
+        parseCsv(text);
+      };
+      reader.readAsText(uploadedFile);
     }
   };
 
   const handleCsvFile = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+    setFile(file);
     
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -198,29 +209,21 @@ const BulkInvite = () => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch('/api/visitors/bulk-invite', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ visitors: selectedData }),
+      await bulkInvite({
+        eventName: formData.eventName,
+        date: formData.date,
+        time: formData.time,
+        numGuests: formData.numGuests,
+        guests: selectedData.map(({ name, email, phone }) => ({ name, email, phone }))
       });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (response.ok) {
-        const data = await response.json();
-        setSuccess(true);
-        setTimeout(() => {
-          navigate('/resident/visitor-history');
-        }, 3000);
-      } else {
-        const error = await response.json();
-        handleError(error.message || 'Failed to send invitations');
-        setCurrentStep(2); 
-      }
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/resident/visitor-history');
+      }, 3000);
     } catch (err) {
       handleApiError(err, 'Bulk Invite');
       setCurrentStep(2); 
@@ -358,10 +361,10 @@ const BulkInvite = () => {
             </div>
 
             {/* Show parsed data count */}
-            {file && parsedData.length > 0 && (
+            {parsedData.length > 0 && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <p className="text-green-800 font-medium">
-                  ✅ Found {parsedData.length} visitor{parsedData.length !== 1 ? 's' : ''} in your file
+                  ✅ Found {parsedData.length} visitor{parsedData.length !== 1 ? 's' : ''} in your CSV
                 </p>
                 <Button 
                   className="mt-3 w-full md:w-auto"

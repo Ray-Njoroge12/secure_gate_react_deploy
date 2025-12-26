@@ -28,17 +28,33 @@ import {
   Smartphone,
   Copy,
   Share2,
-  MessageCircle
+  MessageCircle,
+  Contact
 } from "lucide-react";
+import useContactPicker from "../../hooks/useContactPicker";
 
 const QuickInvite = () => {
   const navigate = useNavigate();
+  const { isSupported: contactPickerSupported, pickContact, loading: pickingContact } = useContactPicker();
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     dateOfVisit: "",
     time: "",
+    allowResidenceLocation: false,
+    unitPin: "",
   });
+
+  const handlePickContact = async () => {
+    const contact = await pickContact({ properties: ['name', 'tel'] });
+    if (contact) {
+      setFormData(prev => ({
+        ...prev,
+        name: contact.name || prev.name,
+        phone: contact.phone || prev.phone
+      }));
+    }
+  };
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -131,6 +147,10 @@ const QuickInvite = () => {
         errors.dateOfVisit = "Date cannot be in the past";
       }
     }
+
+    if (formData.allowResidenceLocation && !String(formData.unitPin || '').trim()) {
+      errors.unitPin = "Unit PIN is required when sharing residence details";
+    }
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -156,6 +176,8 @@ const QuickInvite = () => {
         phone: formData.phone.trim().replace(/\s/g, ''),
         dateOfVisit: formData.dateOfVisit,
         time: formData.time || null,
+        allowResidenceLocation: !!formData.allowResidenceLocation,
+        unitPin: formData.allowResidenceLocation ? String(formData.unitPin || '').trim() : undefined,
         // Note: No consent here - visitor will provide it on their page
         generatePassImmediately: false, // Pass generated after visitor confirms
         status: 'pending_confirmation', // Visitor needs to confirm
@@ -172,7 +194,7 @@ const QuickInvite = () => {
         subtitle: `${formData.name} will receive an SMS with their invite link`,
         data: {
           visitor: response,
-          inviteLink: response.inviteLink || `${window.location.origin}/v/${response.visitor_token}`,
+          inviteLink: response.inviteLink || `${window.location.origin}/invite/${response.inviteCode}`,
           visitorId: response.id
         }
       });
@@ -188,9 +210,18 @@ const QuickInvite = () => {
 
   // Handle input changes
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'allowResidenceLocation' && !value) {
+        next.unitPin = '';
+      }
+      return next;
+    });
     if (validationErrors[field]) {
       setValidationErrors(prev => ({ ...prev, [field]: null }));
+    }
+    if (field === 'allowResidenceLocation' && !value && validationErrors.unitPin) {
+      setValidationErrors(prev => ({ ...prev, unitPin: null }));
     }
   };
 
@@ -293,7 +324,7 @@ const QuickInvite = () => {
 
   // Reset form for new invite
   const createAnother = () => {
-    setFormData({ name: "", phone: "", dateOfVisit: "", time: "" });
+    setFormData({ name: "", phone: "", dateOfVisit: "", time: "", allowResidenceLocation: false, unitPin: "" });
     setSuccess(null);
     setSelectedDateChip(null);
     setSelectedTimeChip(null);
@@ -442,6 +473,19 @@ const QuickInvite = () => {
                 </div>
               )}
 
+              {/* Contact Picker - P6 */}
+              {contactPickerSupported && (
+                <button
+                  type="button"
+                  onClick={handlePickContact}
+                  disabled={pickingContact || loading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl border border-gray-200 text-gray-700 transition-all disabled:opacity-50"
+                >
+                  <Contact className="w-5 h-5" />
+                  {pickingContact ? 'Opening contacts...' : 'Pick from Contacts'}
+                </button>
+              )}
+
               {/* Guest Name */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -559,6 +603,45 @@ const QuickInvite = () => {
                     onChange={(e) => handleInputChange('time', e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Share residence details <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <label className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <input
+                    type="checkbox"
+                    checked={!!formData.allowResidenceLocation}
+                    onChange={(e) => handleInputChange('allowResidenceLocation', e.target.checked)}
+                    className="mt-1"
+                    disabled={loading}
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">Allow unit PIN sharing</div>
+                    <div className="text-xs text-gray-600">
+                      If enabled, your guest will see a unit PIN on their pass page. This is optional and can be left off for privacy.
+                    </div>
+                  </div>
+                </label>
+
+                {formData.allowResidenceLocation && (
+                  <div className="space-y-1">
+                    <input
+                      type="text"
+                      value={formData.unitPin}
+                      onChange={(e) => handleInputChange('unitPin', e.target.value)}
+                      placeholder="Unit PIN (e.g. A12)"
+                      className={`w-full px-4 py-3 rounded-xl border ${
+                        validationErrors.unitPin ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                      } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
+                      disabled={loading}
+                    />
+                    {validationErrors.unitPin && (
+                      <p className="text-red-500 text-xs">{validationErrors.unitPin}</p>
+                    )}
+                  </div>
                 )}
               </div>
 

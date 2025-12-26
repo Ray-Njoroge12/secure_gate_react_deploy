@@ -9,6 +9,8 @@ import { rateLimiters, speedLimiters } from './config/rateLimits.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
+import { sessionMiddleware } from './config/session.js';
+
 // Import middleware
 import { attachUserFromToken } from './middleware/authMiddleware.js';
 import auditLogger from './middleware/auditLogger.js';
@@ -70,6 +72,14 @@ import dsrRoutes from './routes/dsrRoutes.js'; // Kenya DPA: Data Subject Rights
 import consentRoutes from './routes/consentRoutes.js'; // Kenya DPA: Consent Management
 import sseRoutes from './routes/sseRoutes.js'; // Real-time: Server-Sent Events
 import databaseHealthRoutes from './routes/databaseHealthRoutes.js'; // Infrastructure: DB Health
+import recurringVisitorRoutes from './routes/recurringVisitorRoutes.js'; // P4: Recurring visitors
+import rideshareRoutes from './routes/rideshareRoutes.js'; // P5: Rideshare quick entry
+import anprRoutes from './routes/anprRoutes.js'; // P7: ANPR/barrier integration
+import whatsappRoutes from './routes/whatsappRoutes.js'; // WhatsApp Business API
+import residentRoutes from './routes/residentRoutes.js'; // Resident features
+import checkInRoutes from './routes/checkInRoutes.js'; // Visitor check-in
+import checkOutRoutes from './routes/checkOutRoutes.js'; // Visitor check-out
+import healthRoutes from './routes/healthRoutes.js'; // Health monitoring
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -182,6 +192,9 @@ const corsConfig = cors({
 // CORS configuration enabled
 app.use(corsConfig);
 app.use(cookieParser());
+
+// Sessions must be initialized before CSRF middleware
+app.use(sessionMiddleware);
 
 // CSRF protection for state-changing operations
 // A0.1: Re-enabled with environment check
@@ -329,6 +342,15 @@ app.use('/api/announcements', announcementsRoutes);
 // Phase 2.1: Delivery management routes (requires auth)
 app.use('/api/deliveries', deliveryRoutes);
 
+// P4: Recurring visitors/daily workers routes (requires auth)
+app.use('/api/recurring-passes', recurringVisitorRoutes);
+
+// P5: Rideshare quick entry routes (requires auth)
+app.use('/api/rideshare', rideshareRoutes);
+
+// P7: ANPR/barrier integration routes (feature-flagged)
+app.use('/api/anpr', anprRoutes);
+
 // Phase 1.1: Emergency/Panic button routes (requires auth)
 app.use('/api/emergency', emergencyRoutes);
 
@@ -352,6 +374,19 @@ app.use('/api/sse', sseRoutes);
 
 // Infrastructure: Database Health routes
 app.use('/api/db', databaseHealthRoutes);
+
+// WhatsApp Business API integration
+app.use('/api/whatsapp', whatsappRoutes);
+
+// Resident features routes
+app.use('/api/resident', residentRoutes);
+
+// Check-in/Check-out operations
+app.use('/api/check-in', checkInRoutes);
+app.use('/api/check-out', checkOutRoutes);
+
+// Health routes (explicit mounting for clarity)
+app.use('/api', healthRoutes);
 
 // Guard SSE endpoint (stub for real-time updates)
 app.get('/api/ws/guards', (req, res) => {

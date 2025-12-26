@@ -166,7 +166,7 @@ const WalkInRegistration = () => {
             <Card.Title>Visitor Information</Card.Title>
           </Card.Header>
           <Card.Content>
-            <form onSubmit={handleRegister} className="space-y-4">
+            <form onSubmit={handleRegister} data-testid="walk-in-form" className="space-y-4">
               {/* Visitor Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -176,6 +176,7 @@ const WalkInRegistration = () => {
                 <input
                   type="text"
                   name="name"
+                  data-testid="walk-in-visitor-name"
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="Enter visitor's full name"
@@ -193,6 +194,7 @@ const WalkInRegistration = () => {
                 <input
                   type="tel"
                   name="phone"
+                  data-testid="walk-in-visitor-phone"
                   value={formData.phone}
                   onChange={handleInputChange}
                   placeholder="e.g., +254712345678"
@@ -210,6 +212,7 @@ const WalkInRegistration = () => {
                 <input
                   type="text"
                   name="residentName"
+                  data-testid="walk-in-resident-name"
                   value={formData.residentName}
                   onChange={handleInputChange}
                   placeholder="Name of resident being visited"
@@ -226,6 +229,7 @@ const WalkInRegistration = () => {
                 </label>
                 <textarea
                   name="purpose"
+                  data-testid="walk-in-purpose"
                   value={formData.purpose}
                   onChange={handleInputChange}
                   placeholder="Reason for visit"
@@ -262,6 +266,7 @@ const WalkInRegistration = () => {
               <div className="flex gap-2 pt-2">
                 <Button
                   type="submit"
+                  data-testid="walk-in-submit"
                   disabled={isLoading('walkInReg')}
                   className="flex-1"
                 >

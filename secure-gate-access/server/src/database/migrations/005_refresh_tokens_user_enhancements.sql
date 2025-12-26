@@ -1,10 +1,22 @@
 -- Migration: API Versioning Support
 -- Description: Add support for API versioning with refresh tokens and enhanced user management
 
+-- Ensure UUID generation is available (used by gen_random_uuid())
+-- Best-effort: some managed DBs restrict CREATE EXTENSION.
+DO $$
+BEGIN
+  BEGIN
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+  EXCEPTION WHEN insufficient_privilege THEN
+    -- continue without pgcrypto (UUID defaults may fail if gen_random_uuid is unavailable)
+    NULL;
+  END;
+END $$;
+
 -- Create refresh_tokens table for v2 API
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token TEXT NOT NULL UNIQUE,
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -61,7 +73,7 @@ CREATE TABLE IF NOT EXISTS api_usage (
     version VARCHAR(10) NOT NULL,
     endpoint VARCHAR(255) NOT NULL,
     method VARCHAR(10) NOT NULL,
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     ip_address INET,
     user_agent TEXT,
     response_time_ms INTEGER,
@@ -89,40 +101,34 @@ CREATE TABLE IF NOT EXISTS api_migration_guides (
 -- Insert migration guide for v1 to v2
 INSERT INTO api_migration_guides (from_version, to_version, guide_data) VALUES
 ('v1', 'v2', '{
-    "breaking_changes": [
-        {
-            "endpoint": "/api/auth/register",
-            "change": "Response format updated with enhanced metadata",
-            "before": {"user": {...}, "token": "..."},
-            "after": {"user": {...}, "token": "...", "refresh_token": "...", "meta": {...}}
-        },
-        {
-            "endpoint": "/api/auth/login",
-            "change": "Added refresh token support and enhanced validation",
-            "before": {"user": {...}, "token": "..."},
-            "after": {"user": {...}, "token": "...", "refresh_token": "...", "meta": {...}}
-        }
-    ],
-    "new_features": [
-        "Refresh token support for enhanced security",
-        "Enhanced password validation",
-        "Account locking mechanism",
-        "User preferences support",
-        "Improved error responses with metadata",
-        "Enhanced admin user management",
-        "Advanced filtering and sorting"
-    ],
-    "migration_steps": [
-        "Update API calls to use v2 endpoints",
-        "Handle new response format with metadata",
-        "Implement refresh token logic",
-        "Update error handling for new error format",
-        "Test thoroughly in staging environment"
-    ],
-    "deprecation_timeline": {
-        "v1_deprecation_date": "2024-12-31T00:00:00Z",
-        "v1_sunset_date": "2025-06-30T00:00:00Z"
+  "breaking_changes": [
+    {
+      "endpoint": "/api/auth/register",
+      "change": "Response format updated",
+      "before": "Returned tokens in response body",
+      "after": "Tokens delivered via httpOnly cookies"
+    },
+    {
+      "endpoint": "/api/auth/login",
+      "change": "Refresh token support + cookie-based auth",
+      "before": "Returned accessToken/refreshToken in body",
+      "after": "Cookies set: accessToken, refreshToken"
     }
+  ],
+  "new_features": [
+    "Refresh token support for enhanced security",
+    "Account locking mechanism",
+    "User preferences support"
+  ],
+  "migration_steps": [
+    "Update API calls to use cookie-based auth",
+    "Ensure CORS credentials are enabled",
+    "Test register/login flows"
+  ],
+  "deprecation_timeline": {
+    "v1_deprecation_date": "2024-12-31T00:00:00Z",
+    "v1_sunset_date": "2025-06-30T00:00:00Z"
+  }
 }')
 ON CONFLICT (from_version, to_version) DO UPDATE SET
     guide_data = EXCLUDED.guide_data,
@@ -143,7 +149,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create function to update user last login
-CREATE OR REPLACE FUNCTION update_user_last_login(user_uuid UUID)
+CREATE OR REPLACE FUNCTION update_user_last_login(user_id INTEGER)
 RETURNS VOID AS $$
 BEGIN
     UPDATE users 
@@ -151,19 +157,19 @@ BEGIN
         failed_login_attempts = 0, 
         account_locked_until = NULL,
         updated_at = NOW()
-    WHERE id = user_uuid;
+    WHERE id = user_id;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Create function to increment failed login attempts
-CREATE OR REPLACE FUNCTION increment_failed_login_attempts(user_uuid UUID)
+CREATE OR REPLACE FUNCTION increment_failed_login_attempts(user_id INTEGER)
 RETURNS VOID AS $$
 DECLARE
     current_attempts INTEGER;
     lock_until TIMESTAMPTZ;
 BEGIN
     SELECT failed_login_attempts INTO current_attempts 
-    FROM users WHERE id = user_uuid;
+    FROM users WHERE id = user_id;
     
     current_attempts := COALESCE(current_attempts, 0) + 1;
     
@@ -176,7 +182,7 @@ BEGIN
     SET failed_login_attempts = current_attempts,
         account_locked_until = lock_until,
         updated_at = NOW()
-    WHERE id = user_uuid;
+    WHERE id = user_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -229,7 +235,7 @@ GROUP BY v.version, v.status, v.deprecation_date, v.sunset_date;
 CREATE OR REPLACE VIEW user_activity_summary AS
 SELECT 
     u.id,
-    u.name,
+    u.username,
     u.email,
     u.role,
     u.last_login,
@@ -243,7 +249,7 @@ SELECT
     COUNT(rt.id) as active_refresh_tokens
 FROM users u
 LEFT JOIN refresh_tokens rt ON u.id = rt.user_id AND rt.expires_at > NOW() AND rt.is_revoked = FALSE
-GROUP BY u.id, u.name, u.email, u.role, u.last_login, u.created_at, u.account_locked_until;
+GROUP BY u.id, u.username, u.email, u.role, u.last_login, u.created_at, u.account_locked_until;
 
 -- Add comments for documentation
 COMMENT ON TABLE refresh_tokens IS 'Stores refresh tokens for v2 API authentication';
@@ -252,8 +258,8 @@ COMMENT ON TABLE api_usage IS 'Logs API usage for analytics and monitoring';
 COMMENT ON TABLE api_migration_guides IS 'Contains migration guides between API versions';
 
 COMMENT ON FUNCTION cleanup_expired_refresh_tokens() IS 'Cleans up expired and revoked refresh tokens';
-COMMENT ON FUNCTION update_user_last_login(UUID) IS 'Updates user last login and resets failed attempts';
-COMMENT ON FUNCTION increment_failed_login_attempts(UUID) IS 'Increments failed login attempts and locks account if needed';
+COMMENT ON FUNCTION update_user_last_login(INTEGER) IS 'Updates user last login and resets failed attempts';
+COMMENT ON FUNCTION increment_failed_login_attempts(INTEGER) IS 'Increments failed login attempts and locks account if needed';
 
 COMMENT ON VIEW api_version_stats IS 'Provides statistics about API version usage';
 COMMENT ON VIEW user_activity_summary IS 'Provides summary of user activity and status';

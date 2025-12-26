@@ -181,4 +181,5 @@ const Button = memo(({
  */
 Button.displayName = 'Button';
 
+export { Button };
 export default Button;

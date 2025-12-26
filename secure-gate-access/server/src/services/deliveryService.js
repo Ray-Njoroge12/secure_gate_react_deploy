@@ -14,7 +14,7 @@ import { pool } from '../database/connection.js';
 import crypto from 'crypto';
 
 // Encryption key (should be from environment in production)
-const ENCRYPTION_KEY = process.env.DELIVERY_ENCRYPTION_KEY || 'delivery-encryption-key-32char!';
+const ENCRYPTION_KEY = process.env.DELIVERY_ENCRYPTION_KEY || 'delivery-encryption-key-32char!!';
 const IV_LENGTH = 16;
 
 /**
@@ -81,11 +81,22 @@ export async function registerDelivery({
       [encryptedTracking, carrierName, recipientId, guardId, packageDescription, packageSize || 'medium', notes, photoExpiresAt]
     );
     
+    // Fetch recipient info for notification
+    const recipientResult = await client.query(
+      'SELECT email, username FROM users WHERE id = $1',
+      [recipientId]
+    );
+    const recipient = recipientResult.rows[0] || {};
+    
     await client.query('COMMIT');
     
     return {
       success: true,
-      delivery: result.rows[0],
+      data: {
+        ...result.rows[0],
+        recipientEmail: recipient.email,
+        recipientName: recipient.username
+      },
       message: 'Delivery registered successfully'
     };
   } catch (error) {
@@ -150,6 +161,8 @@ export async function getResidentDeliveries(residentId, { status, limit = 20, of
       d.package_description,
       d.package_size,
       d.status,
+      d.handoff_preference,
+      d.handoff_decided_at,
       d.notification_sent,
       d.collected_at,
       d.created_at,
@@ -177,6 +190,34 @@ export async function getResidentDeliveries(residentId, { status, limit = 20, of
     ...d,
     trackingNumber: null // Revealed only in detail view
   }));
+}
+
+export async function setDeliveryHandoffPreference(deliveryId, residentId, preference) {
+  const normalized = typeof preference === 'string' ? preference.trim() : '';
+  const allowed = new Set(['pickup_at_gate', 'deliver_to_residence']);
+  if (!allowed.has(normalized)) {
+    return { success: false, error: 'Invalid handoff preference' };
+  }
+
+  const result = await pool.query(
+    `UPDATE deliveries
+     SET handoff_preference = $3,
+         handoff_decided_at = NOW(),
+         handoff_decided_by = $2,
+         updated_at = NOW()
+     WHERE id = $1 AND recipient_id = $2
+     RETURNING id, status, handoff_preference, handoff_decided_at`,
+    [deliveryId, residentId, normalized]
+  );
+
+  if (result.rows.length === 0) {
+    return { success: false, error: 'Delivery not found' };
+  }
+
+  return {
+    success: true,
+    delivery: result.rows[0]
+  };
 }
 
 /**
@@ -327,6 +368,8 @@ export async function getPendingDeliveries(gateId) {
       d.carrier_name,
       d.package_size,
       d.status,
+      d.handoff_preference,
+      d.handoff_decided_at,
       d.created_at,
       u.username as recipient_name,
       u.house as recipient_unit
@@ -343,7 +386,9 @@ export async function getPendingDeliveries(gateId) {
     packageSize: d.package_size,
     recipientName: d.recipient_name,
     recipientUnit: d.recipient_unit,
-    receivedAt: d.created_at
+    receivedAt: d.created_at,
+    handoffPreference: d.handoff_preference,
+    handoffDecidedAt: d.handoff_decided_at
     // Note: No tracking number, no description
   }));
 }
@@ -445,6 +490,7 @@ export default {
   registerDelivery,
   addDeliveryPhoto,
   getResidentDeliveries,
+  setDeliveryHandoffPreference,
   getDeliveryDetail,
   getDeliveryPhoto,
   collectDelivery,

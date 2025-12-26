@@ -10,11 +10,20 @@ import {
 import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
 import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
-import { attachUserFromToken } from '../middleware/authMiddleware.js';
+import { attachUserFromToken, authenticateToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
+
+import { registerWalkIn, getTodayWalkIns } from '../controllers/walkInController.js';
+import {
+  requestApproval,
+  approveVisitor,
+  rejectVisitor,
+  getPendingApprovals,
+  getApprovalHistory
+} from '../controllers/visitorApprovalController.js';
 
 const router = express.Router();
 
@@ -189,6 +198,7 @@ router.post('/',
   visitorCreationLimit,
   attachUserFromToken, 
   // attachRequestAudit, 
+  attachRequestAudit,
   createVisitor
 );
 router.get('/',
@@ -208,6 +218,17 @@ router.post('/bulk-invite',
 // Guard Operations (guard/admin roles required)
 router.post('/:id/check-in', attachUserFromToken, attachRequestAudit, checkInVisitor);
 router.post('/:id/check-out', attachUserFromToken, attachRequestAudit, checkOutVisitor);
+
+// Walk-in registration (guard only) - Phase G2
+router.post('/walk-in', authenticateToken, attachRequestAudit, registerWalkIn);
+router.get('/walk-ins/today', authenticateToken, attachRequestAudit, getTodayWalkIns);
+
+// Approval flow aliases (client compatibility)
+router.post('/:id/request-approval', authenticateToken, attachRequestAudit, requestApproval);
+router.post('/:id/approve', authenticateToken, attachRequestAudit, approveVisitor);
+router.post('/:id/reject', authenticateToken, attachRequestAudit, rejectVisitor);
+router.get('/pending-approvals', authenticateToken, attachRequestAudit, getPendingApprovals);
+router.get('/approval-history', authenticateToken, attachRequestAudit, getApprovalHistory);
 
 /**
  * @swagger

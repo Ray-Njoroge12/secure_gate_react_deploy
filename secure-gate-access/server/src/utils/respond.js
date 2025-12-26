@@ -18,7 +18,8 @@ export function camelize(obj) {
 }
 
 export function respond(res, data) {
-  return res.json({ success: true, data: camelize(data) });
+  const status = arguments.length >= 3 ? arguments[2] : 200;
+  return res.status(status).json({ success: true, data: camelize(data) });
 }
 
 export function respondError(res, code, message) {

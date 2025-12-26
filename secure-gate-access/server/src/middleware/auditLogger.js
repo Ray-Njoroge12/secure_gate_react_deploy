@@ -74,7 +74,24 @@ export const AUDIT_LEVELS = {
 /**
  * Enhanced audit logger middleware
  */
-const auditLogger = (options = {}) => {
+const auditLogger = (...args) => {
+  const options = args[0] ?? {};
+
+  // Support being used directly as Express middleware: auditLogger(req, res, next)
+  // Some routes import this module inconsistently (with and without invoking).
+  if (
+    args.length >= 3 &&
+    args[0] &&
+    args[1] &&
+    typeof args[2] === 'function' &&
+    typeof args[0].method === 'string'
+  ) {
+    const req = args[0];
+    const res = args[1];
+    const next = args[2];
+    return auditLogger({})(req, res, next);
+  }
+
   const {
     logLevel = AUDIT_LEVELS.INFO,
     includeRequestBody = false,
@@ -88,6 +105,43 @@ const auditLogger = (options = {}) => {
     const startTime = Date.now();
     const auditId = uuidv4();
     const requestId = req.requestId || uuidv4();
+
+    // Controller-level audit helper (best-effort)
+    if (!req.audit) {
+      req.audit = async (action, entityType, entityId, details = {}) => {
+        try {
+          const query = `
+            INSERT INTO audit_logs (
+              action, resource, user_id, user_role, request_id,
+              ip_address, user_agent, details, timestamp, created_at
+            ) VALUES (
+              $1, $2, $3, $4, $5,
+              $6, $7, $8, NOW(), NOW()
+            )
+          `;
+
+          const resource = (entityType || req.path || 'unknown').toString().substring(0, 100);
+          const userAgent = req.get?.('User-Agent') || req.headers?.['user-agent'] || null;
+
+          await dbManager.query(query, [
+            String(action || 'unknown').substring(0, 100),
+            resource,
+            req.user?.id || null,
+            req.user?.role || null,
+            requestId,
+            req.ip || '127.0.0.1',
+            userAgent,
+            JSON.stringify({
+              entity_type: entityType || null,
+              entity_id: entityId || null,
+              ...details
+            })
+          ]);
+        } catch {
+          // ignore audit insert failures
+        }
+      };
+    }
     
     // Add audit ID to request for tracking
     req.auditId = auditId;
@@ -207,7 +261,7 @@ const auditLogger = (options = {}) => {
       }
     });
 
-  next();
+    next();
   };
 };
 

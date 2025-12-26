@@ -74,6 +74,28 @@ const PendingDeliveries = () => {
     return icons[size] || '📦';
   };
 
+  const getHandoffBadge = (pref) => {
+    if (pref === 'pickup_at_gate') {
+      return (
+        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+          🚶 Pickup at Gate
+        </span>
+      );
+    }
+    if (pref === 'deliver_to_residence') {
+      return (
+        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+          🏠 Deliver to Residence
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+        ⏳ Awaiting Decision
+      </span>
+    );
+  };
+
   if (loading && deliveries.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow p-4">
@@ -142,6 +164,9 @@ const PendingDeliveries = () => {
                       {' • '}
                       <span className="capitalize">{delivery.packageSize}</span> package
                     </p>
+                    <div className="mt-2">
+                      {getHandoffBadge(delivery.handoffPreference)}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-2">

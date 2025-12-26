@@ -202,11 +202,12 @@ export const useAdvancedValidation = (initialValues = {}, options = {}) => {
 
   // Validate single field
   const validateField = useCallback(async (fieldName, value = values[fieldName], options = {}) => {
+    const allValues = options.allValues || values;
     const rules = validationRules[fieldName] || validatorsRef.current[fieldName] || [];
     if (rules.length === 0) return { isValid: true, errors: [], warnings: [], successes: [] };
 
     // Check cache if enabled
-    const cacheKey = `${fieldName}_${value}_${JSON.stringify(values)}`;
+    const cacheKey = `${fieldName}_${value}_${JSON.stringify(allValues)}`;
     if (enableCaching && validationCache[cacheKey]) {
       return validationCache[cacheKey];
     }
@@ -221,7 +222,7 @@ export const useAdvancedValidation = (initialValues = {}, options = {}) => {
     try {
       // Execute all rules
       for (const rule of rules) {
-        const result = await executeRule(rule, value, fieldName, values);
+        const result = await executeRule(rule, value, fieldName, allValues);
         
         if (result && !result.isValid) {
           if (rule.severity === 'warning') {
@@ -309,18 +310,20 @@ export const useAdvancedValidation = (initialValues = {}, options = {}) => {
   }, [validationRules, values, executeRule, enableCaching, validationCache]);
 
   // Cross-field validation
-  const validateCrossFields = useCallback(async (fieldName, value) => {
+  const validateCrossFields = useCallback(async (fieldName, value, allValues = values) => {
     if (!enableCrossFieldValidation) return;
+
+    const currentValues = allValues || values;
 
     const crossFieldRules = Object.values(crossFieldValidatorsRef.current)
       .filter(rule => rule.dependsOn.includes(fieldName));
 
     for (const rule of crossFieldRules) {
       const dependentField = rule.field;
-      const dependentValue = values[dependentField];
+      const dependentValue = currentValues[dependentField];
       
       if (dependentValue !== undefined) {
-        await validateField(dependentField, dependentValue);
+        await validateField(dependentField, dependentValue, { allValues: currentValues });
       }
     }
   }, [enableCrossFieldValidation, values, validateField]);
@@ -358,6 +361,7 @@ export const useAdvancedValidation = (initialValues = {}, options = {}) => {
 
   // Handle field change
   const handleFieldChange = useCallback((fieldName, value) => {
+    const nextValues = { ...values, [fieldName]: value };
     setValues(prev => ({ ...prev, [fieldName]: value }));
     
     // Clear cache for this field
@@ -381,8 +385,8 @@ export const useAdvancedValidation = (initialValues = {}, options = {}) => {
     }
 
     // Trigger cross-field validation
-    validateCrossFields(fieldName, value);
-  }, [validateOnChange, validationMode, touched, debouncedValidate, validateCrossFields, enableCaching]);
+    validateCrossFields(fieldName, value, nextValues);
+  }, [validateOnChange, validationMode, touched, debouncedValidate, validateCrossFields, enableCaching, values]);
 
   // Handle field blur
   const handleFieldBlur = useCallback((fieldName, value = values[fieldName]) => {

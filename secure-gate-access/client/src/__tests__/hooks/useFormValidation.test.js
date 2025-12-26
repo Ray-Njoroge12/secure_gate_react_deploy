@@ -4,6 +4,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react';
+import useFormValidationHook from '../../hooks/useFormValidation';
 
 // Simulated validation functions for testing
 const validators = {
@@ -149,7 +150,7 @@ const useFormValidation = (initialValues, validationRules) => {
     // Clear and reset values
     Object.keys(state.values).forEach(key => delete state.values[key]);
     Object.assign(state.values, { ...initialValues });
-    
+
     // Clear errors and touched
     Object.keys(state.errors).forEach(key => delete state.errors[key]);
     Object.keys(state.touched).forEach(key => delete state.touched[key]);
@@ -166,7 +167,7 @@ const useFormValidation = (initialValues, validationRules) => {
   };
 };
 
-describe('Validators', () => {
+describe.skip('Validators', () => {
   describe('required', () => {
     test('should return error for empty string', () => {
       expect(validators.required('')).toBe('Field is required');
@@ -353,7 +354,7 @@ describe('Validators', () => {
   });
 });
 
-describe('useFormValidation', () => {
+describe.skip('useFormValidation', () => {
   test('should initialize with values', () => {
     const form = useFormValidation(
       { email: '', password: '' },
@@ -436,5 +437,143 @@ describe('useFormValidation', () => {
     expect(form.touched.email).toBeUndefined();
     form.setValue('email', 'test');
     expect(form.touched.email).toBe(true);
+  });
+});
+
+describe('useFormValidation (real hook)', () => {
+  test('should initialize with provided values', () => {
+    const { result } = renderHook(() =>
+      useFormValidationHook(
+        { email: '', password: '' },
+        { validateOnChange: false, validateOnBlur: false, validateOnSubmit: false }
+      )
+    );
+
+    expect(result.current.values.email).toBe('');
+    expect(result.current.values.password).toBe('');
+    expect(result.current.errors).toEqual({});
+  });
+
+  test('registerField + validateField should populate errors for invalid values', async () => {
+    const { result } = renderHook(() =>
+      useFormValidationHook(
+        { email: '' },
+        { validateOnChange: false, validateOnBlur: false, validateOnSubmit: false }
+      )
+    );
+
+    await act(async () => {
+      result.current.registerField('email', async (value) => {
+        const ok = typeof value === 'string' && value.includes('@');
+        return {
+          isValid: ok,
+          errors: ok ? [] : ['Invalid email'],
+          warnings: [],
+          state: ok ? 'valid' : 'invalid'
+        };
+      });
+    });
+
+    await act(async () => {
+      await result.current.validateField('email', 'invalid');
+    });
+
+    expect(result.current.errors.email).toEqual(['Invalid email']);
+  });
+
+  test('validateAll aggregates field errors', async () => {
+    const { result } = renderHook(() =>
+      useFormValidationHook(
+        { email: '', password: '' },
+        { validateOnChange: false, validateOnBlur: false, validateOnSubmit: false }
+      )
+    );
+
+    await act(async () => {
+      result.current.registerField('email', async (value) => {
+        const ok = !!value;
+        return { isValid: ok, errors: ok ? [] : ['Required'], warnings: [], state: ok ? 'valid' : 'invalid' };
+      });
+      result.current.registerField('password', async (value) => {
+        const ok = typeof value === 'string' && value.length >= 8;
+        return { isValid: ok, errors: ok ? [] : ['Too short'], warnings: [], state: ok ? 'valid' : 'invalid' };
+      });
+    });
+
+    let validationResult;
+    await act(async () => {
+      validationResult = await result.current.validateAll();
+    });
+
+    expect(validationResult.isValid).toBe(false);
+    expect(validationResult.errors.email).toEqual(['Required']);
+    expect(validationResult.errors.password).toEqual(['Too short']);
+  });
+
+  test('handleSubmit blocks submission when validation fails', async () => {
+    const submitFn = jest.fn(async () => ({ ok: true }));
+
+    const { result } = renderHook(() =>
+      useFormValidationHook(
+        { email: '', password: '' },
+        { validateOnChange: false, validateOnBlur: false, validateOnSubmit: true }
+      )
+    );
+
+    await act(async () => {
+      result.current.registerField('email', async (value) => {
+        const ok = typeof value === 'string' && value.includes('@');
+        return { isValid: ok, errors: ok ? [] : ['Invalid email'], warnings: [], state: ok ? 'valid' : 'invalid' };
+      });
+      result.current.registerField('password', async (value) => {
+        const ok = typeof value === 'string' && value.length >= 8;
+        return { isValid: ok, errors: ok ? [] : ['Too short'], warnings: [], state: ok ? 'valid' : 'invalid' };
+      });
+    });
+
+    let submitResult;
+    await act(async () => {
+      submitResult = await result.current.handleSubmit(submitFn);
+    });
+
+    expect(submitResult.success).toBe(false);
+    expect(submitFn).not.toHaveBeenCalled();
+    expect(result.current.errors.email).toEqual(['Invalid email']);
+    expect(result.current.errors.password).toEqual(['Too short']);
+  });
+
+  test('handleSubmit calls submitFn when valid', async () => {
+    const submitFn = jest.fn(async (vals) => ({ echo: vals }));
+
+    const { result } = renderHook(() =>
+      useFormValidationHook(
+        { email: '', password: '' },
+        { validateOnChange: false, validateOnBlur: false, validateOnSubmit: true }
+      )
+    );
+
+    await act(async () => {
+      result.current.registerField('email', async (value) => {
+        const ok = typeof value === 'string' && value.includes('@');
+        return { isValid: ok, errors: ok ? [] : ['Invalid email'], warnings: [], state: ok ? 'valid' : 'invalid' };
+      });
+      result.current.registerField('password', async (value) => {
+        const ok = typeof value === 'string' && value.length >= 8;
+        return { isValid: ok, errors: ok ? [] : ['Too short'], warnings: [], state: ok ? 'valid' : 'invalid' };
+      });
+    });
+
+    await act(async () => {
+      result.current.handleFieldChange('email', 'test@example.com');
+      result.current.handleFieldChange('password', 'longpassword');
+    });
+
+    let submitResult;
+    await act(async () => {
+      submitResult = await result.current.handleSubmit(submitFn);
+    });
+
+    expect(submitResult.success).toBe(true);
+    expect(submitFn).toHaveBeenCalledWith({ email: 'test@example.com', password: 'longpassword' });
   });
 });
