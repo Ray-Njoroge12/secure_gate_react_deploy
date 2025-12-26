@@ -80,6 +80,7 @@ import residentRoutes from './routes/residentRoutes.js'; // Resident features
 import checkInRoutes from './routes/checkInRoutes.js'; // Visitor check-in
 import checkOutRoutes from './routes/checkOutRoutes.js'; // Visitor check-out
 import healthRoutes from './routes/healthRoutes.js'; // Health monitoring
+import setupRoutes from './routes/setup.routes.js'; // One-time database setup
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -289,6 +290,9 @@ app.use(responseMiddleware);
 // V1: Public visitor routes (NO authentication required - must come before auth middleware)
 // Phase V1: Visitor Invite Landing & Digital Pass
 app.use('/api/public', visitorPublicRoutes);
+
+// Setup routes for database migration (NO authentication required - one-time use)
+app.use('/api/setup', setupRoutes);
 
 // Legacy routes (for backward compatibility)
 app.use('/api/cache', createCacheRoutes());
