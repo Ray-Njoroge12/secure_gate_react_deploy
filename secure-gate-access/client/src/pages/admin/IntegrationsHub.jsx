@@ -188,7 +188,7 @@ const IntegrationsHub = () => {
   };
 
   const deleteWebhook = async (id) => {
-    if (!confirm('Delete this webhook?')) return;
+    if (!window.confirm('Delete this webhook?')) return;
     try {
       const response = await fetch(`/api/admin/webhooks/${id}`, {
         method: 'DELETE',
@@ -202,7 +202,7 @@ const IntegrationsHub = () => {
   };
 
   const deleteAutomation = async (id) => {
-    if (!confirm('Delete this automation rule?')) return;
+    if (!window.confirm('Delete this automation rule?')) return;
     try {
       const response = await fetch(`/api/admin/automations/${id}`, {
         method: 'DELETE',
@@ -216,7 +216,7 @@ const IntegrationsHub = () => {
   };
 
   const revokeAPIKey = async (id) => {
-    if (!confirm('Revoke this API key? This cannot be undone.')) return;
+    if (!window.confirm('Revoke this API key? This cannot be undone.')) return;
     try {
       const response = await fetch(`/api/admin/api-keys/${id}`, {
         method: 'DELETE',

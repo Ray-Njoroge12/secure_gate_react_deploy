@@ -1,0 +1,250 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`API Response Snapshots Error Response Schemas should return consistent forbidden error response: forbidden-error-schema 1`] = `
+{
+  "hasCode": true,
+  "hasMessage": true,
+  "hasRequiredRole": true,
+  "hasStatus": true,
+  "statusValue": "error",
+}
+`;
+
+exports[`API Response Snapshots Error Response Schemas should return consistent not found error response: not-found-error-schema 1`] = `
+{
+  "hasCode": true,
+  "hasMessage": true,
+  "hasResource": true,
+  "hasStatus": true,
+  "statusValue": "error",
+}
+`;
+
+exports[`API Response Snapshots Error Response Schemas should return consistent rate limit error response: rate-limit-error-schema 1`] = `
+{
+  "hasCode": true,
+  "hasMessage": true,
+  "hasRetryAfter": true,
+  "hasStatus": true,
+  "statusValue": "error",
+}
+`;
+
+exports[`API Response Snapshots Error Response Schemas should return consistent unauthorized error response: unauthorized-error-schema 1`] = `
+{
+  "hasCode": true,
+  "hasMessage": true,
+  "hasStatus": true,
+  "statusValue": "error",
+}
+`;
+
+exports[`API Response Snapshots Error Response Schemas should return consistent validation error response: validation-error-schema 1`] = `
+{
+  "errorFields": [
+    "field",
+    "message",
+  ],
+  "hasErrors": true,
+  "hasMessage": true,
+  "hasStatus": true,
+  "statusValue": "error",
+}
+`;
+
+exports[`API Response Snapshots Health & System Response Schemas should return consistent health check response: health-check-schema 1`] = `
+{
+  "hasServices": true,
+  "hasStatus": true,
+  "hasTimestamp": true,
+  "hasUptime": true,
+  "hasVersion": true,
+  "serviceNames": [
+    "database",
+    "email",
+    "redis",
+  ],
+}
+`;
+
+exports[`API Response Snapshots Health & System Response Schemas should return consistent metrics response: metrics-response-schema 1`] = `
+{
+  "categories": [
+    "requests",
+    "system",
+    "visitors",
+  ],
+  "hasData": true,
+  "hasStatus": true,
+  "requestFields": [
+    "avgResponseTime",
+    "error",
+    "success",
+    "total",
+  ],
+}
+`;
+
+exports[`API Response Snapshots Pagination Response Schemas should return consistent paginated response structure: paginated-response-schema 1`] = `
+{
+  "hasData": true,
+  "hasItems": true,
+  "hasPagination": true,
+  "hasStatus": true,
+  "paginationFields": [
+    "hasNextPage",
+    "hasPrevPage",
+    "limit",
+    "page",
+    "total",
+    "totalPages",
+  ],
+}
+`;
+
+exports[`API Response Snapshots User API Response Schemas Login Response should return consistent error for invalid credentials: login-invalid-credentials-schema 1`] = `
+{
+  "hasMessage": true,
+  "status": "error",
+  "statusCode": 401,
+}
+`;
+
+exports[`API Response Snapshots User API Response Schemas Login Response should return consistent error for locked account: login-account-locked-schema 1`] = `
+{
+  "hasLockedUntil": true,
+  "hasMessage": true,
+  "hasRemainingTime": true,
+  "status": "error",
+  "statusCode": 423,
+}
+`;
+
+exports[`API Response Snapshots User API Response Schemas Login Response should return consistent success response with tokens: login-success-schema 1`] = `
+{
+  "hasStatus": true,
+  "hasToken": false,
+  "hasUser": false,
+  "statusType": "string",
+}
+`;
+
+exports[`API Response Snapshots User API Response Schemas Registration Response should return consistent error response for duplicate email: registration-duplicate-error-schema 1`] = `
+{
+  "hasMessage": true,
+  "hasStatusCode": true,
+  "messageContains": true,
+}
+`;
+
+exports[`API Response Snapshots User API Response Schemas Registration Response should return consistent success response structure: registration-success-schema 1`] = `
+{
+  "dataFields": [
+    "created_at",
+    "email",
+    "id",
+    "role",
+    "username",
+  ],
+  "hasData": true,
+  "hasMessage": true,
+  "status": "undefined",
+}
+`;
+
+exports[`API Response Snapshots Visitor API Response Schemas should return consistent check-in response: visitor-checkin-schema 1`] = `
+{
+  "dataFields": [
+    "badge_number",
+    "check_in_time",
+    "checked_in_by",
+    "id",
+    "status",
+  ],
+  "hasCheckInTime": true,
+  "hasData": true,
+  "hasMessage": true,
+  "hasStatus": true,
+}
+`;
+
+exports[`API Response Snapshots Visitor API Response Schemas should return consistent check-out response: visitor-checkout-schema 1`] = `
+{
+  "dataFields": [
+    "check_out_time",
+    "checked_out_by",
+    "id",
+    "status",
+    "visit_duration_minutes",
+  ],
+  "hasCheckOutTime": true,
+  "hasData": true,
+  "hasDuration": true,
+  "hasMessage": true,
+  "hasStatus": true,
+}
+`;
+
+exports[`API Response Snapshots Visitor API Response Schemas should return consistent single visitor response: visitor-detail-schema 1`] = `
+{
+  "hasData": true,
+  "hasNestedResident": true,
+  "hasStatus": true,
+  "visitorFields": [
+    "access_code",
+    "actual_arrival",
+    "email",
+    "expected_arrival",
+    "first_name",
+    "id",
+    "last_name",
+    "phone",
+    "purpose",
+    "resident",
+    "status",
+  ],
+}
+`;
+
+exports[`API Response Snapshots Visitor API Response Schemas should return consistent visitor approval response: visitor-approval-schema 1`] = `
+{
+  "dataFields": [
+    "access_code",
+    "approved_at",
+    "approved_by",
+    "id",
+    "qr_code",
+    "status",
+  ],
+  "hasAccessCode": true,
+  "hasData": true,
+  "hasMessage": true,
+  "hasQrCode": true,
+  "hasStatus": true,
+}
+`;
+
+exports[`API Response Snapshots Visitor API Response Schemas should return consistent visitor list response: visitor-list-schema 1`] = `
+{
+  "hasData": true,
+  "hasPagination": true,
+  "hasStatus": true,
+  "hasVisitors": true,
+  "paginationFields": [
+    "limit",
+    "page",
+    "total",
+    "totalPages",
+  ],
+  "visitorFields": [
+    "access_code",
+    "email",
+    "expected_arrival",
+    "first_name",
+    "id",
+    "last_name",
+    "phone",
+    "status",
+  ],
+}
+`;

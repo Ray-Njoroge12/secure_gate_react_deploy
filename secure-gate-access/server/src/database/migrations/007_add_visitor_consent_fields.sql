@@ -19,11 +19,18 @@ CREATE INDEX IF NOT EXISTS idx_visitors_consent_timestamp ON visitors(consent_ti
 CREATE INDEX IF NOT EXISTS idx_visitors_consent_type ON visitors(consent_type);
 
 -- Add constraints
-ALTER TABLE visitors ADD CONSTRAINT chk_consent_timestamp 
-    CHECK (consent_given = FALSE OR consent_timestamp IS NOT NULL);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_consent_timestamp') THEN
+    ALTER TABLE visitors ADD CONSTRAINT chk_consent_timestamp
+      CHECK (consent_given = FALSE OR consent_timestamp IS NOT NULL);
+  END IF;
 
-ALTER TABLE visitors ADD CONSTRAINT chk_consent_withdrawal 
-    CHECK (consent_withdrawn = FALSE OR consent_withdrawn_at IS NOT NULL);
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_consent_withdrawal') THEN
+    ALTER TABLE visitors ADD CONSTRAINT chk_consent_withdrawal
+      CHECK (consent_withdrawn = FALSE OR consent_withdrawn_at IS NOT NULL);
+  END IF;
+END $$;
 
 -- Add comments for documentation
 COMMENT ON COLUMN visitors.consent_given IS 'Whether the visitor has given consent for data processing';
@@ -54,6 +61,7 @@ END;
 $$ language 'plpgsql';
 
 -- Create trigger to automatically set timestamps
+DROP TRIGGER IF EXISTS set_visitor_consent_timestamp ON visitors;
 CREATE TRIGGER set_visitor_consent_timestamp
     BEFORE UPDATE ON visitors
     FOR EACH ROW

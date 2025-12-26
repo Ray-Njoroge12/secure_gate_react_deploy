@@ -3,9 +3,13 @@ import { dbManager } from '../database/db.enhanced.js';
 import { tokenService } from '../services/tokenService.js';
 import { AppError, asyncHandler } from './standardizedErrorHandler.js';
 
+const DEBUG_AUTH = process.env.DEBUG_AUTH === 'true';
+
 // Enhanced authentication middleware with secure token verification
 export const authenticateToken = asyncHandler(async (req, res, next) => {
-  console.log('🔍 MIDDLEWARE DEBUG - authenticateToken called for:', req.method, req.originalUrl);
+  if (DEBUG_AUTH) {
+    console.log('🔍 MIDDLEWARE DEBUG - authenticateToken called for:', req.method, req.originalUrl);
+  }
   try {
     // Try to get token from Authorization header first (for API clients)
     const authHeader = req.headers['authorization'];
@@ -18,13 +22,15 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     const token = headerToken || cookieToken;
 
     // DEBUG: Temporary logging for debugging auth issues
-    console.log('🔍 AUTH DEBUG:', {
-      hasAuthHeader: !!authHeader,
-      authHeaderValue: authHeader ? authHeader.substring(0, 20) + '...' : null,
-      hasHeaderToken: !!headerToken,
-      hasCookieToken: !!cookieToken,
-      hasToken: !!token
-    });
+    if (DEBUG_AUTH) {
+      console.log('🔍 AUTH DEBUG:', {
+        hasAuthHeader: !!authHeader,
+        authHeaderValue: authHeader ? authHeader.substring(0, 20) + '...' : null,
+        hasHeaderToken: !!headerToken,
+        hasCookieToken: !!cookieToken,
+        hasToken: !!token
+      });
+    }
 
     if (!token) {
       // Security: No logging of auth attempts to prevent information disclosure
@@ -155,6 +161,19 @@ export const authorize = (roles) => {
       throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');
     }
     if (roles && !roles.includes(req.user.role)) {
+      throw new AppError('Insufficient permissions', 403, 'AUTH_FORBIDDEN');
+    }
+    next();
+  };
+};
+
+// Role-based access control middleware
+export const requireRole = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');
+    }
+    if (!allowedRoles.includes(req.user.role)) {
       throw new AppError('Insufficient permissions', 403, 'AUTH_FORBIDDEN');
     }
     next();

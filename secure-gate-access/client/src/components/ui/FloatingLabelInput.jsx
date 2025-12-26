@@ -116,6 +116,7 @@ const FloatingLabelInput = ({
             placeholder={isFocused ? placeholder : ''}
             required={required}
             disabled={disabled}
+            data-testid={id ? `input-${id}` : undefined}
             className={`floating-input__input ${leftIcon ? 'floating-input__input--with-left-icon' : ''} ${rightIcon || success || error ? 'floating-input__input--with-right-icon' : ''}`}
             aria-label={label}
             aria-required={required}

@@ -310,7 +310,38 @@
   }
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support - Class-based for manual toggle */
+.dark .stat-card__value,
+[data-theme="dark"] .stat-card__value {
+  color: #f8fafc;
+}
+
+.dark .stat-card__label,
+[data-theme="dark"] .stat-card__label {
+  color: #cbd5e1;
+}
+
+.dark .stat-card__icon,
+[data-theme="dark"] .stat-card__icon {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dark .stat-card__skeleton-icon,
+.dark .stat-card__skeleton-value,
+.dark .stat-card__skeleton-label,
+[data-theme="dark"] .stat-card__skeleton-icon,
+[data-theme="dark"] .stat-card__skeleton-value,
+[data-theme="dark"] .stat-card__skeleton-label {
+  background: linear-gradient(
+    90deg,
+    #334155 0%,
+    #475569 50%,
+    #334155 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* System preference fallback */
 @media (prefers-color-scheme: dark) {
   .stat-card__value {
     color: var(--color-text-primary, #f8fafc);

@@ -87,6 +87,10 @@ const SelfCheckInKiosk = lazy(() => import("./pages/public/SelfCheckInKiosk.jsx"
 // Resident additional pages
 const QuickInvite = lazy(() => import("./pages/resident/QuickInvite.jsx"));
 
+// P4/P5 New Feature Pages - Recurring Passes and Rideshare
+const RecurringPasses = lazy(() => import("./components/resident/RecurringPasses.jsx"));
+const RideshareEntry = lazy(() => import("./components/resident/RideshareEntry.jsx"));
+
 // Guard additional pages
 const GuardAnalytics = lazy(() => import("./pages/guard/GuardAnalytics.jsx"));
 
@@ -272,6 +276,24 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["resident"]}>
                   <QuickInvite />
+                </ProtectedRoute>
+              }
+            />
+            {/* P4: Recurring Passes - Daily workers, caregivers, contractors */}
+            <Route
+              path="/resident/recurring-passes"
+              element={
+                <ProtectedRoute allowedRoles={["resident"]}>
+                  <RecurringPasses />
+                </ProtectedRoute>
+              }
+            />
+            {/* P5: Rideshare Quick Entry - Uber/Bolt/Taxi */}
+            <Route
+              path="/resident/rideshare"
+              element={
+                <ProtectedRoute allowedRoles={["resident"]}>
+                  <RideshareEntry />
                 </ProtectedRoute>
               }
             />

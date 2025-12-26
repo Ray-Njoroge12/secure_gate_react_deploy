@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import deliveryService from '../services/deliveryService.js';
+import { sendDeliveryNotification, sendHandoffDecisionNotification } from '../services/notificationService.js';
 import multer from 'multer';
 
 const router = express.Router();
@@ -36,7 +37,7 @@ const upload = multer({
  *     security:
  *       - bearerAuth: []
  */
-router.post('/', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { role, id: guardId } = req.user;
     
@@ -65,6 +66,14 @@ router.post('/', authenticateToken, attachRequestAudit(), async (req, res) => {
       packageSize,
       notes
     });
+    
+    // Send notification to resident (best-effort, don't fail if notification fails)
+    if (result.success && result.data?.recipientEmail) {
+      sendDeliveryNotification(
+        { email: result.data.recipientEmail, name: result.data.recipientName },
+        { carrierName, packageSize, packageDescription }
+      ).catch(err => console.error('Delivery notification failed:', err));
+    }
     
     res.status(201).json(result);
   } catch (error) {
@@ -239,7 +248,7 @@ router.get('/:id/photo', authenticateToken, async (req, res) => {
  *     summary: Mark delivery as collected
  *     tags: [Deliveries]
  */
-router.post('/:id/collect', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.post('/:id/collect', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: userId, role } = req.user;
     const deliveryId = parseInt(req.params.id);
@@ -286,6 +295,40 @@ router.post('/:id/notify', authenticateToken, async (req, res) => {
 });
 
 /**
+ * Resident chooses how the delivery should be handled
+ * Route: POST /api/deliveries/:id/handoff
+ * Body: { preference: 'pickup_at_gate' | 'deliver_to_residence' }
+ */
+router.post('/:id/handoff', authenticateToken, attachRequestAudit, async (req, res) => {
+  try {
+    const { id: residentId, role } = req.user;
+    const deliveryId = parseInt(req.params.id);
+    const { preference } = req.body;
+
+    if (!['resident', 'admin'].includes(role)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only residents can set delivery handoff preference'
+      });
+    }
+
+    const result = await deliveryService.setDeliveryHandoffPreference(deliveryId, residentId, preference);
+    if (!result.success) {
+      return res.status(result.error === 'Delivery not found' ? 404 : 400).json(result);
+    }
+
+    // Notify guards of resident's decision (best-effort)
+    sendHandoffDecisionNotification({ id: deliveryId }, preference)
+      .catch(err => console.error('Handoff notification failed:', err));
+
+    res.json(result);
+  } catch (error) {
+    console.error('Set handoff preference error:', error);
+    res.status(500).json({ success: false, error: 'Failed to set handoff preference' });
+  }
+});
+
+/**
  * @swagger
  * /api/deliveries/stats:
  *   get:
@@ -323,11 +366,11 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
  *     summary: Delete all delivery history (Resident privacy control)
  *     tags: [Deliveries]
  */
-router.delete('/history', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.delete('/history', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     
-    const result = await deliveryService.deleteResidentDeliveryHistory(residentId);
+    const result = await deliveryService.deleteDeliveryHistory(residentId);
     
     res.json(result);
   } catch (error) {

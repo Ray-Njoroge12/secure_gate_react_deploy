@@ -14,7 +14,7 @@ import { pool } from '../database/connection.js';
 import crypto from 'crypto';
 
 // Encryption key (should be from environment in production)
-const ENCRYPTION_KEY = process.env.RULES_ENCRYPTION_KEY || 'rules-encryption-key-32-chars!';
+const ENCRYPTION_KEY = process.env.RULES_ENCRYPTION_KEY || 'rules-encryption-key-32-chars!!!';
 const IV_LENGTH = 16;
 
 /**

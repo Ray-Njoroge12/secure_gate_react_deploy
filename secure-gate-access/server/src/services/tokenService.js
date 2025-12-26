@@ -400,7 +400,6 @@ class TokenService {
    * Hash token for secure storage (using crypto)
    */
   hashToken(token) {
-    const crypto = require('crypto');
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 

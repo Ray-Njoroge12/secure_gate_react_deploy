@@ -215,15 +215,19 @@ END;
 $$ language 'plpgsql';
 
 -- Create triggers for updated_at timestamps
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_visitors_updated_at ON visitors;
 CREATE TRIGGER update_visitors_updated_at BEFORE UPDATE ON visitors
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_passes_updated_at ON passes;
 CREATE TRIGGER update_passes_updated_at BEFORE UPDATE ON passes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_bulk_invites_updated_at ON bulk_invites;
 CREATE TRIGGER update_bulk_invites_updated_at BEFORE UPDATE ON bulk_invites
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

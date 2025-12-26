@@ -58,6 +58,13 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Backward compatibility: audit_logs may already exist from initial schema with fewer/different columns.
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS resource VARCHAR(100);
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_role VARCHAR(50);
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS request_id VARCHAR(100);
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS user_agent TEXT;
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
 -- Index for audit queries
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action 
 ON audit_logs(action);
@@ -89,6 +96,9 @@ CREATE TABLE IF NOT EXISTS security_events (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Backward compatibility: security_events may already exist from initial schema without a dedicated timestamp column.
+ALTER TABLE security_events ADD COLUMN IF NOT EXISTS timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 
 -- Index for security events
 CREATE INDEX IF NOT EXISTS idx_security_events_type 

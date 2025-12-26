@@ -1,0 +1,62 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - link "Skip to main content" [ref=e4] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - img [ref=e9]
+      - heading "Welcome Back" [level=1] [ref=e11]
+      - paragraph [ref=e12]: Sign in to your SecureGate account
+    - generic [ref=e14]:
+      - generic [ref=e17]:
+        - textbox "Email Address" [active] [ref=e18]:
+          - /placeholder: ""
+        - generic: Email Address*
+      - generic [ref=e21]:
+        - textbox "Password" [ref=e22]:
+          - /placeholder: ""
+        - generic: Password*
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - checkbox "Remember me" [ref=e26]
+          - generic [ref=e29] [cursor=pointer]: Remember me
+        - button "Forgot password?" [ref=e30] [cursor=pointer]
+      - generic [ref=e31]:
+        - button "Sign In" [disabled]:
+          - generic:
+            - generic: Sign In
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - img [ref=e34]
+            - text: SSL Secured
+          - generic [ref=e37]:
+            - img [ref=e38]
+            - text: 2FA Available
+    - generic [ref=e42]:
+      - text: Don't have an account?
+      - link "Sign up" [ref=e43] [cursor=pointer]:
+        - /url: /register
+    - paragraph [ref=e45]: 💡 Press Ctrl + Enter to sign in
+  - generic [ref=e49]:
+    - img [ref=e50]
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - heading "Cookie Consent" [level=3] [ref=e54]
+        - paragraph [ref=e55]:
+          - text: We use cookies to enhance your experience, analyze site traffic, and personalize content. By clicking "Accept All", you consent to our use of cookies. You can customize your preferences or learn more in our
+          - link "Privacy Policy" [ref=e56] [cursor=pointer]:
+            - /url: /privacy-policy
+          - text: .
+      - generic [ref=e57]:
+        - button "Accept All" [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - text: Accept All
+        - button "Reject All" [ref=e61] [cursor=pointer]:
+          - img [ref=e62]
+          - text: Reject All
+        - button "Customize" [ref=e65] [cursor=pointer]:
+          - img [ref=e66]
+          - text: Customize
+```

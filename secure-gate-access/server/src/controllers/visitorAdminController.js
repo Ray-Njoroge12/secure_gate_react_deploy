@@ -69,7 +69,7 @@ const revokeVisitor = async (req, res) => {
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
     
-    await dbManager.query('UPDATE visitors SET status = $1 WHERE id = $2', ['REVOKED', visitorId]);
+    await dbManager.query('UPDATE visitors SET status = $1 WHERE id = $2', [PASS_STATUS.REVOKED, visitorId]);
     
     await req.audit?.('visitor.revoke', 'visitor', String(visitorId), { outcome: 'success', message: 'Visitor access revoked', visitorName: visitor.name });
     respond(res, { message: 'Visitor access revoked successfully' });

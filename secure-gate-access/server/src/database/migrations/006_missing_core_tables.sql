@@ -105,12 +105,15 @@ CREATE INDEX IF NOT EXISTS idx_gates_active ON gates(id) WHERE status = 'active'
 CREATE INDEX IF NOT EXISTS idx_gate_permissions_active ON gate_permissions(id) WHERE is_active = true;
 
 -- Create triggers for updated_at timestamps
+DROP TRIGGER IF EXISTS update_gates_updated_at ON gates;
 CREATE TRIGGER update_gates_updated_at BEFORE UPDATE ON gates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_sessions_updated_at ON sessions;
 CREATE TRIGGER update_sessions_updated_at BEFORE UPDATE ON sessions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_gate_permissions_updated_at ON gate_permissions;
 CREATE TRIGGER update_gate_permissions_updated_at BEFORE UPDATE ON gate_permissions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

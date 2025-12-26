@@ -159,24 +159,31 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_consent_records_updated_at ON consent_records;
 CREATE TRIGGER update_consent_records_updated_at BEFORE UPDATE ON consent_records
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_dsar_requests_updated_at ON dsar_requests;
 CREATE TRIGGER update_dsar_requests_updated_at BEFORE UPDATE ON dsar_requests
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_deletion_requests_updated_at ON deletion_requests;
 CREATE TRIGGER update_deletion_requests_updated_at BEFORE UPDATE ON deletion_requests
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_portability_requests_updated_at ON portability_requests;
 CREATE TRIGGER update_portability_requests_updated_at BEFORE UPDATE ON portability_requests
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_retention_policies_updated_at ON retention_policies;
 CREATE TRIGGER update_retention_policies_updated_at BEFORE UPDATE ON retention_policies
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_privacy_policy_versions_updated_at ON privacy_policy_versions;
 CREATE TRIGGER update_privacy_policy_versions_updated_at BEFORE UPDATE ON privacy_policy_versions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_cookie_policy_versions_updated_at ON cookie_policy_versions;
 CREATE TRIGGER update_cookie_policy_versions_updated_at BEFORE UPDATE ON cookie_policy_versions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

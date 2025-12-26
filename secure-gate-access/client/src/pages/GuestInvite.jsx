@@ -1,11 +1,12 @@
 // client/src/pages/GuestInvite.jsx
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { completeInvite, getBulkInvite } from '../services/visitorService';
-import { handleApiError, mapSuccessMessage } from '../utils/errorMapper';
+import { Calendar, Download } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+
 import QRCodeDisplay from '../components/QRCodeDisplay';
-import { Button, Input, Card, Badge, Loading, StatusAnnouncement } from '../components/ui';
-import { Calendar, Share2, Download } from 'lucide-react';
+import { Badge, Button, Card, Input, Loading, StatusAnnouncement } from '../components/ui';
+import { completeInvite, getPublicInvite } from '../services/visitorService';
+import { handleApiError, mapSuccessMessage } from '../utils/errorMapper';
 
 // Calendar generation utilities
 const generateICSFile = (eventData) => {
@@ -177,35 +178,31 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
 
 export default function GuestInvite() {
   const { inviteCode } = useParams();
-  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
   const [inviteData, setInviteData] = useState(null);
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     email: ''
   });
+  const [consentGiven, setConsentGiven] = useState(false);
   const [visitor, setVisitor] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Load invite details on mount
-  useEffect(() => {
-    if (!inviteCode) {
-      setError('Invalid invitation link.');
-      setLoading(false);
-      return;
-    }
+  const inviteTitle = inviteData?.eventName || inviteData?.event_name || (inviteData?.type === 'single' ? 'Visit' : 'Guest Invitation');
+  const inviteDate = inviteData?.date || inviteData?.dateOfVisit || inviteData?.date_of_visit || '';
+  const inviteTime = inviteData?.time || inviteData?.timeOfVisit || inviteData?.time_of_visit || '';
+  const inviteTotalGuests = inviteData?.numGuests || inviteData?.num_guests;
+  const inviteRemainingSlots = inviteData?.remainingSlots;
 
-    loadInviteData();
-  }, [inviteCode]);
-
-  const loadInviteData = async () => {
+  const loadInviteData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getBulkInvite(inviteCode);
+      const data = await getPublicInvite(inviteCode);
       setInviteData(data);
       setError('');
     } catch (err) {
@@ -217,7 +214,18 @@ export default function GuestInvite() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [inviteCode]);
+
+  // Load invite details on mount
+  useEffect(() => {
+    if (!inviteCode) {
+      setError('Invalid invitation link.');
+      setLoading(false);
+      return;
+    }
+
+    loadInviteData();
+  }, [inviteCode, loadInviteData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -240,6 +248,11 @@ export default function GuestInvite() {
       return;
     }
 
+    if (!consentGiven) {
+      setError('You must agree to the data processing terms to continue.');
+      return;
+    }
+
     setSubmitting(true);
     setError('');
 
@@ -247,7 +260,11 @@ export default function GuestInvite() {
       const result = await completeInvite(inviteCode, {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
-        email: formData.email.trim()
+        email: formData.email.trim(),
+        consent_given: true,
+        consent_timestamp: new Date().toISOString(),
+        consent_type: 'visitor_registration',
+        consent_version: '1.0'
       });
 
       setVisitor(result);
@@ -286,12 +303,19 @@ export default function GuestInvite() {
             {inviteData && (
               <div className="mt-3 xs:mt-4 text-center">
                 <Badge variant="info" className="mb-2 text-xs xs:text-sm">
-                  {inviteData.eventName || inviteData.event_name}
+                  {inviteTitle}
                 </Badge>
                 <div className="text-xs xs:text-sm text-gray-600 space-y-1">
-                  <p>{inviteData.date} at {inviteData.time}</p>
-                  {inviteData.numGuests && (
-                    <p>Up to {inviteData.numGuests} guests</p>
+                  {(inviteDate || inviteTime) && (
+                    <p>
+                      {inviteDate || 'Date TBD'}{inviteTime ? ` at ${inviteTime}` : ''}
+                    </p>
+                  )}
+                  {typeof inviteRemainingSlots === 'number' && (
+                    <p>Slots remaining: {inviteRemainingSlots}</p>
+                  )}
+                  {inviteTotalGuests && (
+                    <p>Up to {inviteTotalGuests} guests</p>
                   )}
                 </div>
               </div>
@@ -307,11 +331,11 @@ export default function GuestInvite() {
                 </Badge>
 
                 {/* Display QR Code */}
-                {visitor.qr_code && (
+                {(visitor.qrCode || visitor.qr_code) && (
                   <div className="flex justify-center w-full">
                     <QRCodeDisplay 
-                      value={visitor.qr_code} 
-                      otp={process.env.NODE_ENV === 'development' ? (visitor.debug_otp || visitor.otp) : visitor.otp}
+                      value={visitor.qrCode || visitor.qr_code}
+                      otp={visitor.debugOtp || visitor.debug_otp || visitor.otp}
                       showCopyButton={true}
                     />
                   </div>
@@ -352,7 +376,7 @@ export default function GuestInvite() {
                 {/* Add to Calendar Button */}
                 {inviteData && (
                   <AddToCalendarButton 
-                    inviteData={inviteData} 
+                    inviteData={{ ...inviteData, date: inviteDate, time: inviteTime, eventName: inviteTitle }}
                     visitorName={visitor.name} 
                   />
                 )}
@@ -424,11 +448,25 @@ export default function GuestInvite() {
                     helperText="Provide either phone number or email for notifications"
                   />
 
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-md">
+                    <input
+                      type="checkbox"
+                      id="consent"
+                      checked={consentGiven}
+                      onChange={(e) => setConsentGiven(e.target.checked)}
+                      disabled={submitting}
+                      className="mt-1 h-4 w-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
+                    />
+                    <label htmlFor="consent" className="text-sm text-gray-600">
+                      I consent to the collection and processing of my personal data for visitor registration and estate access management, in accordance with the Kenya Data Protection Act 2019.
+                    </label>
+                  </div>
+
                   <Button
                     type="submit"
                     variant="primary"
                     size="lg"
-                    disabled={submitting}
+                    disabled={submitting || !consentGiven}
                     loading={submitting}
                     className="w-full min-h-touch"
                   >
@@ -436,11 +474,10 @@ export default function GuestInvite() {
                   </Button>
                 </form>
 
-                {/* Expired/Not Found State */}
                 {!inviteData && !loading && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                     <div className="text-sm text-yellow-700">
-                      ⚠️ This invitation may have expired or is invalid. You can still complete your information above.
+                      This invitation may have expired or is invalid. You can still complete your information above.
                     </div>
                   </div>
                 )}

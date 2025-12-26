@@ -290,11 +290,69 @@
   }
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support - Class-based for manual toggle */
+.dark .floating-input-container,
+[data-theme="dark"] .floating-input-container {
+  background-color: #1e293b;
+  border-color: #475569;
+}
+
+.dark .floating-input-container:hover:not(.floating-input--error):not(.floating-input--disabled),
+[data-theme="dark"] .floating-input-container:hover:not(.floating-input--error):not(.floating-input--disabled) {
+  border-color: #64748b;
+}
+
+.dark .floating-input__input,
+[data-theme="dark"] .floating-input__input {
+  color: #f8fafc;
+}
+
+.dark .floating-input__label,
+[data-theme="dark"] .floating-input__label {
+  color: #94a3b8;
+}
+
+.dark .floating-input__label--float,
+[data-theme="dark"] .floating-input__label--float {
+  color: #10b981;
+}
+
+.dark .floating-input__icon,
+[data-theme="dark"] .floating-input__icon {
+  color: #94a3b8;
+}
+
+.dark .floating-input--focused .floating-input__icon,
+[data-theme="dark"] .floating-input--focused .floating-input__icon {
+  color: #10b981;
+}
+
+.dark .floating-input__helper,
+[data-theme="dark"] .floating-input__helper {
+  color: #94a3b8;
+}
+
+.dark .floating-input__input:-webkit-autofill,
+.dark .floating-input__input:-webkit-autofill:hover,
+.dark .floating-input__input:-webkit-autofill:focus,
+[data-theme="dark"] .floating-input__input:-webkit-autofill,
+[data-theme="dark"] .floating-input__input:-webkit-autofill:hover,
+[data-theme="dark"] .floating-input__input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #1e293b inset;
+  -webkit-text-fill-color: #f8fafc;
+}
+
+.dark .floating-input--error,
+[data-theme="dark"] .floating-input--error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+/* System preference fallback */
 @media (prefers-color-scheme: dark) {
   .floating-input-container {
     background-color: var(--color-input-bg, #1e293b);
-    border-color: var(--color-border-primary, #334155);
+    border-color: var(--color-border-primary, #475569);
   }
 
   .floating-input__input {

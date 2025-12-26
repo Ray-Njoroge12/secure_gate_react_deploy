@@ -437,8 +437,7 @@ class BackupService {
       let stdout = '';
       let stderr = '';
       
-      // Write output to file
-      const fs = require('fs');
+      // Write output to file (using fs imported at module level)
       const writeStream = fs.createWriteStream(outputPath);
       
       docker.stdout.pipe(writeStream);
@@ -507,8 +506,7 @@ class BackupService {
       
       docker.on('close', (code) => {
         if (code === 0) {
-          // Move the backup file to the correct location
-          const fs = require('fs');
+          // Move the backup file to the correct location (using fs imported at module level)
           const sourcePath = path.join(path.dirname(outputPath), 'backup.tar');
           if (fs.existsSync(sourcePath)) {
             fs.renameSync(sourcePath, outputPath);

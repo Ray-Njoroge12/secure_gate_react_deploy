@@ -1,0 +1,34 @@
+{
+  "admin": {
+    "email": "admin@securegate.com",
+    "password": "AdminPass123!",
+    "username": "admin",
+    "role": "admin",
+    "phone": "+254700000000",
+    "unit": "ADMIN"
+  },
+  "guard": {
+    "email": "guard1@securegate.com",
+    "password": "GuardPass123!",
+    "username": "guard1",
+    "role": "guard",
+    "phone": "+254722222222",
+    "unit": "Gate 1"
+  },
+  "resident": {
+    "email": "resident1@securegate.com",
+    "password": "ResidentPass123!",
+    "username": "resident1",
+    "role": "resident",
+    "phone": "+254711111111",
+    "unit": "A-101"
+  },
+  "testUser": {
+    "email": "admin@securegate.com",
+    "password": "AdminPass123!",
+    "username": "admin",
+    "role": "admin",
+    "phone": "+254700000000",
+    "unit": "ADMIN"
+  }
+}

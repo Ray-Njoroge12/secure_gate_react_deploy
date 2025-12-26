@@ -2,6 +2,41 @@
 // Maps HTTP status codes and error messages to user-friendly text
 import logger from './logger';
 
+export const validateResponse = (res, payload = null) => {
+  const status = res?.status ?? 0;
+  const ok = typeof res?.ok === 'boolean' ? res.ok : status >= 200 && status < 300;
+
+  if (payload && typeof payload === 'object' && payload.success === false) {
+    return {
+      ok: false,
+      status,
+      message: payload.message || payload.error || 'Request failed',
+      payload
+    };
+  }
+
+  return {
+    ok,
+    status,
+    message: payload?.message || null,
+    payload
+  };
+};
+
+export const mapErrorMessage = (error) => {
+  if (!error) return 'An unexpected error occurred. Please try again.';
+
+  if (typeof error.userMessage === 'string' && error.userMessage.trim()) {
+    return error.userMessage;
+  }
+
+  if (typeof error.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return 'An unexpected error occurred. Please try again.';
+};
+
 /**
  * Maps HTTP status codes to user-friendly messages
  * @param {number} status - HTTP status code

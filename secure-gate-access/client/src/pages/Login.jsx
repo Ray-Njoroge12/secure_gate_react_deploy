@@ -54,6 +54,24 @@ export default function LoginPage() {
     return true;
   };
 
+  // E2E Test support: Auto-fill from URL params in development mode
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' || process.env.REACT_APP_E2E_TEST === 'true') {
+      const params = new URLSearchParams(window.location.search);
+      const testEmail = params.get('test_email');
+      const testPassword = params.get('test_password');
+      if (testEmail && testPassword) {
+        setEmail(testEmail);
+        setPassword(testPassword);
+        // Auto-submit after a short delay
+        setTimeout(() => {
+          const form = document.querySelector('form');
+          if (form) form.requestSubmit();
+        }, 500);
+      }
+    }
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {

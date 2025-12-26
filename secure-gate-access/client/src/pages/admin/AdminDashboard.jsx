@@ -181,9 +181,11 @@ export default function AdminDashboard() {
       {/* Audit Logs Section */}
       <div data-tour="audit-logs" className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex flex-row items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Audit Logs</h3>
+          <h2 className="text-lg font-semibold text-gray-900">Audit Logs</h2>
           <div className="flex items-center gap-2">
+            <label htmlFor="audit-logs-limit" className="sr-only">Audit logs per page</label>
             <select
+              id="audit-logs-limit"
               value={limit}
               onChange={e => { setLimit(Number(e.target.value)||25); setPage(1); }}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
@@ -289,7 +291,7 @@ export default function AdminDashboard() {
       <div className="mt-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Privacy & Data Management</h3>
+            <h2 className="text-lg font-semibold text-gray-900">Privacy & Data Management</h2>
             <p className="text-sm text-gray-600 mt-1">System-wide privacy controls and data subject request management</p>
           </div>
           <div className="p-6">

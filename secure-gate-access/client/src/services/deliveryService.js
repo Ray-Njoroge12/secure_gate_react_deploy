@@ -3,7 +3,7 @@
  * Phase 2.1: API client for Delivery & Package Management
  */
 
-import api from './api';
+import apiClient from '../utils/apiClient';
 
 const deliveryService = {
   /**
@@ -15,7 +15,7 @@ const deliveryService = {
     if (options.limit) params.append('limit', options.limit);
     if (options.offset) params.append('offset', options.offset);
     
-    const response = await api.get(`/deliveries?${params.toString()}`);
+    const response = await apiClient.get(`/api/deliveries?${params.toString()}`);
     return response.data;
   },
 
@@ -23,7 +23,7 @@ const deliveryService = {
    * Get pending deliveries (Guard view)
    */
   async getPendingDeliveries() {
-    const response = await api.get('/deliveries/pending');
+    const response = await apiClient.get('/api/deliveries/pending');
     return response.data;
   },
 
@@ -31,7 +31,7 @@ const deliveryService = {
    * Get delivery details
    */
   async getDeliveryDetail(deliveryId) {
-    const response = await api.get(`/deliveries/${deliveryId}`);
+    const response = await apiClient.get(`/api/deliveries/${deliveryId}`);
     return response.data;
   },
 
@@ -39,7 +39,7 @@ const deliveryService = {
    * Get delivery photo (recipient only)
    */
   async getDeliveryPhoto(deliveryId) {
-    const response = await api.get(`/deliveries/${deliveryId}/photo`, {
+    const response = await apiClient.get(`/api/deliveries/${deliveryId}/photo`, {
       responseType: 'blob'
     });
     return response.data;
@@ -49,7 +49,7 @@ const deliveryService = {
    * Register a new delivery (Guard action)
    */
   async registerDelivery(deliveryData) {
-    const response = await api.post('/deliveries', deliveryData);
+    const response = await apiClient.post('/api/deliveries', deliveryData);
     return response.data;
   },
 
@@ -60,7 +60,7 @@ const deliveryService = {
     const formData = new FormData();
     formData.append('photo', photoFile);
     
-    const response = await api.post(`/deliveries/${deliveryId}/photo`, formData, {
+    const response = await apiClient.post(`/api/deliveries/${deliveryId}/photo`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -72,7 +72,7 @@ const deliveryService = {
    * Mark delivery as collected
    */
   async collectDelivery(deliveryId, collectedBy) {
-    const response = await api.post(`/deliveries/${deliveryId}/collect`, {
+    const response = await apiClient.post(`/api/deliveries/${deliveryId}/collect`, {
       collectedBy
     });
     return response.data;
@@ -82,7 +82,14 @@ const deliveryService = {
    * Send notification to resident
    */
   async notifyResident(deliveryId) {
-    const response = await api.post(`/deliveries/${deliveryId}/notify`);
+    const response = await apiClient.post(`/api/deliveries/${deliveryId}/notify`);
+    return response.data;
+  },
+
+  async setHandoffPreference(deliveryId, preference) {
+    const response = await apiClient.post(`/api/deliveries/${deliveryId}/handoff`, {
+      preference
+    });
     return response.data;
   },
 
@@ -90,7 +97,7 @@ const deliveryService = {
    * Get delivery statistics (Admin)
    */
   async getStats() {
-    const response = await api.get('/deliveries/stats/overview');
+    const response = await apiClient.get('/api/deliveries/stats/overview');
     return response.data;
   },
 
@@ -98,7 +105,7 @@ const deliveryService = {
    * Delete delivery history (Privacy control)
    */
   async deleteHistory() {
-    const response = await api.delete('/deliveries/history');
+    const response = await apiClient.delete('/api/deliveries/history');
     return response.data;
   }
 };

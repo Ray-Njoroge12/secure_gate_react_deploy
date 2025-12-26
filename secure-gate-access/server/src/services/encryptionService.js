@@ -14,7 +14,11 @@ import { KMSClient, EncryptCommand, DecryptCommand } from '@aws-sdk/client-kms';
 const ENCRYPTION_METHOD = process.env.ENCRYPTION_METHOD || 'local';
 const AWS_KMS_KEY_ID = process.env.AWS_KMS_KEY_ID;
 const AWS_REGION = process.env.AWS_REGION || 'af-south-1';
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || (
+  process.env.NODE_ENV !== 'production'
+    ? (process.env.JWT_SECRET || process.env.SESSION_SECRET)
+    : undefined
+);
 
 // Algorithm for local encryption
 const ALGORITHM = 'aes-256-gcm';
@@ -338,9 +342,14 @@ export function validateEncryptionConfig() {
       break;
     
     case 'local':
-      if (!ENCRYPTION_KEY) {
-        errors.push('ENCRYPTION_KEY is required for local encryption');
-      } else if (ENCRYPTION_KEY.length < 32) {
+      if (!process.env.ENCRYPTION_KEY) {
+        if (process.env.NODE_ENV === 'production') {
+          errors.push('ENCRYPTION_KEY is required for local encryption');
+        } else {
+          warnings.push('ENCRYPTION_KEY not set; using development fallback key');
+        }
+      }
+      if (ENCRYPTION_KEY && ENCRYPTION_KEY.length < 32) {
         errors.push('ENCRYPTION_KEY must be at least 32 characters (256 bits)');
       }
       if (process.env.NODE_ENV === 'production') {

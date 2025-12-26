@@ -3,216 +3,150 @@
  * Tests for phone number validation utility
  */
 
-// Mock libphonenumber-js for isolated testing
-const mockParsePhoneNumber = jest.fn();
-const mockIsValidPhoneNumber = jest.fn();
+import phoneValidator from '../../utils/phoneValidator';
+import { parsePhoneNumber } from 'libphonenumber-js';
 
 jest.mock('libphonenumber-js', () => ({
-  parsePhoneNumber: mockParsePhoneNumber,
-  isValidPhoneNumber: mockIsValidPhoneNumber
+  parsePhoneNumber: jest.fn(),
+  isValidPhoneNumber: jest.fn()
 }));
 
-// Simplified phone validator for testing
-class PhoneValidator {
-  constructor() {
-    this.defaultCountry = 'KE';
-  }
-
-  validateAndFormat(phoneNumber, country = this.defaultCountry) {
-    if (!phoneNumber || typeof phoneNumber !== 'string') {
-      return {
-        isValid: false,
-        error: 'Phone number is required',
-        original: phoneNumber
-      };
-    }
-
-    const cleaned = phoneNumber.trim().replace(/\s+/g, '');
-    
-    // Handle Kenyan local format
-    let processedNumber = cleaned;
-    if (country === 'KE' && cleaned.startsWith('0') && cleaned.length === 10) {
-      processedNumber = '+254' + cleaned.substring(1);
-    }
-
-    // Simple validation regex for E.164 format
-    const e164Regex = /^\+[1-9]\d{6,14}$/;
-    if (!e164Regex.test(processedNumber)) {
-      return {
-        isValid: false,
-        error: 'Invalid phone number format',
-        original: phoneNumber,
-        processed: processedNumber
-      };
-    }
-
-    return {
-      isValid: true,
-      international: processedNumber.replace(/(\+\d{3})(\d{3})(\d{3})(\d{3})/, '$1 $2 $3 $4'),
-      national: processedNumber.replace('+254', '0'),
-      e164: processedNumber,
-      country: country,
-      original: phoneNumber,
-      processed: processedNumber
-    };
-  }
-
-  isValid(phoneNumber, country = this.defaultCountry) {
-    const result = this.validateAndFormat(phoneNumber, country);
-    return result.isValid;
-  }
-
-  formatForDisplay(phoneNumber, format = 'international', country = this.defaultCountry) {
-    const result = this.validateAndFormat(phoneNumber, country);
-    if (!result.isValid) return phoneNumber;
-    
-    switch (format) {
-      case 'national':
-        return result.national;
-      case 'e164':
-        return result.e164;
-      default:
-        return result.international;
-    }
-  }
-
-  extractCountryCode(phoneNumber) {
-    if (!phoneNumber || !phoneNumber.startsWith('+')) return null;
-    
-    const countryCodes = {
-      '254': 'KE',
-      '255': 'TZ',
-      '256': 'UG',
-      '1': 'US',
-      '44': 'GB'
-    };
-
-    for (const [code, country] of Object.entries(countryCodes)) {
-      if (phoneNumber.startsWith('+' + code)) {
-        return { code: '+' + code, country };
-      }
-    }
-    return null;
-  }
-}
-
 describe('PhoneValidator', () => {
-  let validator;
-
   beforeEach(() => {
-    validator = new PhoneValidator();
     jest.clearAllMocks();
   });
 
   describe('validateAndFormat', () => {
     test('should return invalid for empty phone number', () => {
-      const result = validator.validateAndFormat('');
+      const result = phoneValidator.validateAndFormat('');
       expect(result.isValid).toBe(false);
       expect(result.error).toBe('Phone number is required');
     });
 
     test('should return invalid for null input', () => {
-      const result = validator.validateAndFormat(null);
+      const result = phoneValidator.validateAndFormat(null);
       expect(result.isValid).toBe(false);
     });
 
     test('should return invalid for non-string input', () => {
-      const result = validator.validateAndFormat(12345);
+      const result = phoneValidator.validateAndFormat(12345);
       expect(result.isValid).toBe(false);
     });
 
     test('should convert Kenyan local format to international', () => {
-      const result = validator.validateAndFormat('0712345678', 'KE');
+      parsePhoneNumber.mockReturnValue({
+        isValid: () => true,
+        formatInternational: () => '+254 712 345 678',
+        formatNational: () => '0712 345 678',
+        format: () => '+254712345678',
+        country: 'KE'
+      });
+      const result = phoneValidator.validateAndFormat('0712345678', 'KE');
+      expect(parsePhoneNumber).toHaveBeenCalledWith('+254712345678', 'KE');
       expect(result.processed).toBe('+254712345678');
     });
 
     test('should validate international format', () => {
-      const result = validator.validateAndFormat('+254712345678');
+      parsePhoneNumber.mockReturnValue({
+        isValid: () => true,
+        formatInternational: () => '+254 712 345 678',
+        formatNational: () => '0712 345 678',
+        format: () => '+254712345678',
+        country: 'KE'
+      });
+      const result = phoneValidator.validateAndFormat('+254712345678');
       expect(result.isValid).toBe(true);
       expect(result.e164).toBe('+254712345678');
     });
 
     test('should trim whitespace', () => {
-      const result = validator.validateAndFormat('  +254712345678  ');
+      parsePhoneNumber.mockReturnValue({
+        isValid: () => true,
+        formatInternational: () => '+254 712 345 678',
+        formatNational: () => '0712 345 678',
+        format: () => '+254712345678',
+        country: 'KE'
+      });
+      const result = phoneValidator.validateAndFormat('  +254712345678  ');
       expect(result.isValid).toBe(true);
     });
 
     test('should remove internal spaces', () => {
-      const result = validator.validateAndFormat('+254 712 345 678');
+      parsePhoneNumber.mockReturnValue({
+        isValid: () => true,
+        formatInternational: () => '+254 712 345 678',
+        formatNational: () => '0712 345 678',
+        format: () => '+254712345678',
+        country: 'KE'
+      });
+      const result = phoneValidator.validateAndFormat('+254 712 345 678');
       expect(result.isValid).toBe(true);
     });
 
     test('should reject invalid format', () => {
-      const result = validator.validateAndFormat('invalid');
+      parsePhoneNumber.mockImplementation(() => {
+        throw new Error('Parse failed');
+      });
+      const result = phoneValidator.validateAndFormat('invalid');
       expect(result.isValid).toBe(false);
-      expect(result.error).toBe('Invalid phone number format');
+      expect(result.error).toBe('Phone number validation failed');
     });
 
     test('should reject too short numbers', () => {
-      const result = validator.validateAndFormat('+25412');
+      parsePhoneNumber.mockReturnValue({
+        isValid: () => false,
+        formatInternational: () => '+254 12',
+        formatNational: () => '012',
+        format: () => '+25412',
+        country: 'KE'
+      });
+      const result = phoneValidator.validateAndFormat('+25412');
       expect(result.isValid).toBe(false);
     });
   });
 
   describe('isValid', () => {
     test('should return true for valid number', () => {
-      expect(validator.isValid('+254712345678')).toBe(true);
+      parsePhoneNumber.mockReturnValue({
+        isValid: () => true,
+        formatInternational: () => '+254 712 345 678',
+        formatNational: () => '0712 345 678',
+        format: () => '+254712345678',
+        country: 'KE'
+      });
+      expect(phoneValidator.isValid('+254712345678')).toBe(true);
     });
 
     test('should return false for invalid number', () => {
-      expect(validator.isValid('invalid')).toBe(false);
+      parsePhoneNumber.mockImplementation(() => {
+        throw new Error('Parse failed');
+      });
+      expect(phoneValidator.isValid('invalid')).toBe(false);
     });
 
     test('should return false for empty string', () => {
-      expect(validator.isValid('')).toBe(false);
+      expect(phoneValidator.isValid('')).toBe(false);
     });
 
     test('should handle Kenyan local format', () => {
-      expect(validator.isValid('0712345678', 'KE')).toBe(true);
+      parsePhoneNumber.mockReturnValue({
+        isValid: () => true,
+        formatInternational: () => '+254 712 345 678',
+        formatNational: () => '0712 345 678',
+        format: () => '+254712345678',
+        country: 'KE'
+      });
+      expect(phoneValidator.isValid('0712345678', 'KE')).toBe(true);
     });
   });
 
-  describe('formatForDisplay', () => {
-    test('should format as international by default', () => {
-      const formatted = validator.formatForDisplay('+254712345678');
-      expect(formatted).toContain('+254');
-    });
-
-    test('should format as national when specified', () => {
-      const formatted = validator.formatForDisplay('+254712345678', 'national');
-      expect(formatted.startsWith('0')).toBe(true);
-    });
-
-    test('should format as E.164 when specified', () => {
-      const formatted = validator.formatForDisplay('+254712345678', 'e164');
-      expect(formatted).toBe('+254712345678');
-    });
-
+  describe('format', () => {
     test('should return original for invalid number', () => {
-      const formatted = validator.formatForDisplay('invalid');
+      parsePhoneNumber.mockImplementation(() => {
+        throw new Error('Parse failed');
+      });
+      const formatted = phoneValidator.format('invalid');
       expect(formatted).toBe('invalid');
-    });
-  });
-
-  describe('extractCountryCode', () => {
-    test('should extract Kenyan country code', () => {
-      const result = validator.extractCountryCode('+254712345678');
-      expect(result).toEqual({ code: '+254', country: 'KE' });
-    });
-
-    test('should extract US country code', () => {
-      const result = validator.extractCountryCode('+15551234567');
-      expect(result).toEqual({ code: '+1', country: 'US' });
-    });
-
-    test('should return null for number without +', () => {
-      const result = validator.extractCountryCode('254712345678');
-      expect(result).toBeNull();
-    });
-
-    test('should return null for unknown country code', () => {
-      const result = validator.extractCountryCode('+99912345678');
-      expect(result).toBeNull();
     });
   });
 });
@@ -221,7 +155,11 @@ describe('Phone Number Edge Cases', () => {
   let validator;
 
   beforeEach(() => {
-    validator = new PhoneValidator();
+    jest.clearAllMocks();
+    validator = phoneValidator;
+    parsePhoneNumber.mockImplementation(() => {
+      throw new Error('Parse failed');
+    });
   });
 
   test('should handle numbers with dashes', () => {
@@ -250,7 +188,15 @@ describe('Safaricom/Kenya Specific', () => {
   let validator;
 
   beforeEach(() => {
-    validator = new PhoneValidator();
+    jest.clearAllMocks();
+    validator = phoneValidator;
+    parsePhoneNumber.mockReturnValue({
+      isValid: () => true,
+      formatInternational: () => '+254 712 345 678',
+      formatNational: () => '0712 345 678',
+      format: () => '+254712345678',
+      country: 'KE'
+    });
   });
 
   const validKenyanPrefixes = ['07', '01', '+2547', '+2541'];

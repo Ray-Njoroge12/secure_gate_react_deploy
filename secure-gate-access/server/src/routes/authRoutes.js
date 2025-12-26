@@ -295,13 +295,15 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
 
   // BUG-008 FIX: Set tokens as httpOnly cookies instead of returning in body
   const isProduction = process.env.NODE_ENV === 'production';
+  const cookieSameSite = isProduction ? 'none' : 'lax';
+  const cookieSecure = isProduction;
   
   // Set access token cookie
   // For cross-site (Netlify frontend + Render backend), use sameSite: 'none' + secure: true
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
-    secure: true, // Must be true for sameSite: 'none'
-    sameSite: 'none', // Required for cross-site cookies
+    secure: cookieSecure, // Must be true for sameSite: 'none'
+    sameSite: cookieSameSite, // Required for cross-site cookies
     maxAge: 15 * 60 * 1000, // 15 minutes
     path: '/'
   });
@@ -309,8 +311,8 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
   // Set refresh token cookie
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    secure: cookieSecure,
+    sameSite: cookieSameSite,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/'
   });
