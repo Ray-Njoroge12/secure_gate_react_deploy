@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import jsQR from 'jsqr';
 import logger from 'utils/logger';
 import { Card, Button } from './ui';
 import { Flashlight, FlashlightOff } from 'lucide-react';
@@ -16,51 +17,27 @@ const QRScanner = ({ onScan, onError, onClose }) => {
   const streamRef = useRef(null);
   const previousActiveElement = useRef(null);
 
-  // Simple QR code detection using canvas and basic pattern matching
+  /**
+   * QR code detection using production-ready jsQR library
+   * Provides accurate QR code scanning with proper error handling
+   */
   const detectQRCode = (canvas) => {
     const ctx = canvas.getContext('2d');
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    
-    // Simple pattern detection for QR codes (this is a basic implementation)
-    // In a real application, you would use a proper QR code library like jsQR
-    const qrPattern = detectQRPattern(data, canvas.width, canvas.height);
-    
-    if (qrPattern) {
-      return qrPattern;
-    }
-    
-    return null;
-  };
 
-  // Basic QR pattern detection (simplified)
-  const detectQRPattern = (data, width, height) => {
-    // This is a very basic implementation
-    // In production, use a proper QR code library like jsQR
-    const step = 4; // RGBA
-    const threshold = 100;
-    
-    // Look for high contrast patterns that might indicate QR codes
-    let contrastCount = 0;
-    for (let i = 0; i < data.length; i += step) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const brightness = (r + g + b) / 3;
-      
-      if (brightness < threshold) {
-        contrastCount++;
-      }
-    }
-    
-    // If we have enough contrast, assume it might be a QR code
-    if (contrastCount > (data.length / step) * 0.3) {
+    // Use jsQR library for robust QR code detection
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'dontInvert', // Try standard QR codes first (faster)
+    });
+
+    if (code) {
+      logger.info('QR Code detected:', code.data);
       return {
-        data: 'DETECTED_QR_CODE', // This would be the actual QR code data
-        location: { x: 0, y: 0, width: width, height: height }
+        data: code.data,
+        location: code.location
       };
     }
-    
+
     return null;
   };
 
