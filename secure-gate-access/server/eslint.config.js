@@ -21,7 +21,9 @@ export default [
     },
     rules: {
       'no-unused-vars': 'error',
-      'no-console': 'warn',
+      // Phase 3.1: Strict console statement prevention
+      // Allow console.error/warn in development, but log all violations
+      'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
       'prefer-const': 'error',
       'no-var': 'error',
       'eqeqeq': 'error',
