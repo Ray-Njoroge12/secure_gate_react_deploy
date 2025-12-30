@@ -3,12 +3,42 @@
  * Comprehensive privacy policy for Kenya DPA 2019 compliance
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Shield, Eye, Lock, Database, UserCheck, FileText, Clock, Mail } from 'lucide-react';
+import api from '../services/api';
 
 const PrivacyPolicy = () => {
+  const [dpoInfo, setDpoInfo] = useState(null);
+  const [odpcInfo, setOdpcInfo] = useState(null);
+
+  useEffect(() => {
+    const fetchComplianceInfo = async () => {
+      try {
+        const [dpoResponse, odpcResponse] = await Promise.all([
+          api.get('/privacy/dpo'),
+          api.get('/privacy/odpc-registration')
+        ]);
+        setDpoInfo(dpoResponse.data.data);
+        setOdpcInfo(odpcResponse.data.data);
+      } catch (error) {
+        console.error('Failed to fetch compliance information:', error);
+        // Fallback to default values
+        setDpoInfo({
+          name: 'To Be Appointed',
+          email: 'dpo@securegate.com',
+          phone: '+254 700 000 000',
+          office: 'Nairobi, Kenya'
+        });
+        setOdpcInfo({
+          registration_number: 'PENDING',
+          status: 'pending'
+        });
+      }
+    };
+    fetchComplianceInfo();
+  }, []);
   const sections = [
     {
       id: 'introduction',
@@ -322,21 +352,48 @@ const PrivacyPolicy = () => {
           <p>For privacy-related inquiries, please contact us:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h4 className="font-semibold">Data Protection Officer</h4>
-              <p className="text-sm text-gray-600">
-                Email: dpo@securegate.com<br/>
-                Phone: +254 700 000 000<br/>
-                Address: Nairobi, Kenya
-              </p>
+              <h4 className="font-semibold">Data Protection Officer (DPO)</h4>
+              {dpoInfo ? (
+                <>
+                  <p className="text-sm text-gray-600">
+                    <strong>Name:</strong> {dpoInfo.name}<br/>
+                    <strong>Email:</strong> {dpoInfo.email}<br/>
+                    <strong>Phone:</strong> {dpoInfo.phone}<br/>
+                    <strong>Office:</strong> {dpoInfo.office}
+                  </p>
+                  {!dpoInfo.is_appointed && (
+                    <Badge variant="warning" className="text-xs">DPO Appointment Pending</Badge>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">Loading...</p>
+              )}
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold">General Privacy Inquiries</h4>
-              <p className="text-sm text-gray-600">
-                Email: privacy@securegate.com<br/>
-                Phone: +254 700 000 001<br/>
-                Response Time: 72 hours
-              </p>
+              <h4 className="font-semibold">ODPC Registration</h4>
+              {odpcInfo ? (
+                <>
+                  <p className="text-sm text-gray-600">
+                    <strong>Status:</strong> {odpcInfo.status === 'active' ? 'Registered' : 'Pending Registration'}<br/>
+                    <strong>Registration Number:</strong> {odpcInfo.registration_number}<br/>
+                    <strong>Data Controller:</strong> {odpcInfo.data_controller_name}
+                  </p>
+                  {odpcInfo.status === 'pending' && (
+                    <Badge variant="warning" className="text-xs">ODPC Registration Pending</Badge>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">Loading...</p>
+              )}
             </div>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-lg mt-4">
+            <h4 className="font-semibold mb-2">General Privacy Inquiries</h4>
+            <p className="text-sm text-gray-600">
+              Email: privacy@securegate.com<br/>
+              Phone: +254 700 000 001<br/>
+              Response Time: Within 72 hours
+            </p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-800">
