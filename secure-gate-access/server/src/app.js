@@ -58,6 +58,7 @@ import guardAnalyticsRoutes from './routes/guardAnalyticsRoutes.js'; // Phase G5
 import visitorPublicRoutes from './routes/visitorPublicRoutes.js'; // Phase V1: Public visitor invite pages
 import directionsRoutes from './routes/directionsRoutes.js'; // Phase 2.3: Visitor directions
 import notificationRoutes from './routes/notificationRoutes.js'; // Phase V3: Notifications
+import notificationQueueRoutes from './routes/notificationQueueRoutes.js'; // Phase 2.1: Notification Queue Management
 import adminAnalyticsRoutes from './routes/adminAnalyticsRoutes.js'; // Phase A1: Analytics
 import incidentWorkflowRoutes from './routes/incidentWorkflowRoutes.js'; // Phase A4: Incident Workflow
 import integrationsRoutes from './routes/integrationsRoutes.js'; // Phase A5: Integrations
@@ -347,6 +348,9 @@ app.use('/api/guard/analytics', guardAnalyticsRoutes);
 
 // Phase V3: Notification routes (requires auth)
 app.use('/api/notifications', notificationRoutes);
+
+// Phase 2.1: Notification Queue Management routes (requires auth + admin role)
+app.use('/api/admin/notification-queue', notificationQueueRoutes);
 
 // Phase 2.3: Directions routes (mixed auth - some public, some require auth)
 app.use('/api/directions', directionsRoutes);
