@@ -4,101 +4,6 @@ on:
   push:
     branches: [ main, master, develop, temp-*, feature/* ]
   pull_request:
-
-jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: secure_gate
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres" \
-          --health-interval 10s \
-          --health-timeout 5s \
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Cache root deps
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Install root deps
-        run: npm ci
-
-      - name: Install server deps
-        working-directory: secure-gate-access/server
-        run: npm ci
-
-      - name: Create .env for server
-        working-directory: secure-gate-access/server
-        run: |
-          cp .env.example .env
-          echo "PGHOST=localhost" >> .env
-          echo "PGPORT=5432" >> .env
-          echo "PGUSER=postgres" >> .env
-          echo "PGPASSWORD=postgres" >> .env
-          echo "PGDATABASE=secure_gate" >> .env
-          echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
-
-      - name: Wait for Postgres
-        run: |
-          for i in {1..20}; do
-            if pg_isready -h localhost -p 5432 -U postgres; then
-              echo "Postgres is ready"; break; fi; sleep 2; done
-
-      - name: Init database schema
-        working-directory: secure-gate-access/server
-        run: npm run db:init
-        env:
-          PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: secure_gate
-
-      - name: Apply Phase 3 migration (idempotent)
-        working-directory: secure-gate-access/server
-        run: |
-          node -e "(async()=>{const {default:pool}=await import('./src/database/db.js');try{await pool.query(require('fs').readFileSync('./migrations/20250912_phase3_lifecycle_notifications_audit.sql','utf8'));console.log('Migration applied');process.exit(0);}catch(e){console.error('Migration apply error',e.message);process.exit(1);} })();"
-        env:
-          PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: secure_gate
-
-      - name: Run tests (server)
-        working-directory: secure-gate-access/server
-        run: npm test
-        env:
-          PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: secure_gate
-name: CI
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
     branches: [ "**" ]
 
 jobs:
@@ -115,9 +20,9 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: securegate
         options: >-
-          --health-cmd="pg_isready -U postgres" 
-          --health-interval=10s 
-          --health-timeout=5s 
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
           --health-retries=5
 
     env:
@@ -144,25 +49,54 @@ jobs:
           cache-dependency-path: |
             secure-gate-access/server/package-lock.json
 
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            secure-gate-access/server/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
+      - name: Install root dependencies
+        run: npm ci
+
       - name: Install server dependencies
         working-directory: secure-gate-access/server
         run: npm ci
+
+      - name: Create .env for server
+        working-directory: secure-gate-access/server
+        run: |
+          cp .env.example .env
+          echo "PGHOST=localhost" >> .env
+          echo "PGPORT=5432" >> .env
+          echo "PGUSER=postgres" >> .env
+          echo "PGPASSWORD=postgres" >> .env
+          echo "PGDATABASE=securegate" >> .env
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+          echo "ENABLE_EMAIL_NOTIFICATIONS=false" >> .env
+          echo "ENABLE_SMS_NOTIFICATIONS=false" >> .env
+          echo "OTP_DEBUG_ECHO=true" >> .env
 
       - name: Wait for Postgres
         run: |
           for i in {1..20}; do
             if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER"; then
-              echo "Postgres is ready"; break;
+              echo "Postgres is ready";
+              break;
             fi
-            echo "Waiting for Postgres..."; sleep 2;
+            echo "Waiting for Postgres...";
+            sleep 2;
           done
 
-      - name: Initialize schema (init.js)
+      - name: Initialize database schema
         working-directory: secure-gate-access/server
         run: npm run db:init
 
@@ -176,6 +110,6 @@ jobs:
             psql -v ON_ERROR_STOP=1 -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f "$f"
           done
 
-      - name: Run tests
+      - name: Run server tests
         working-directory: secure-gate-access/server
         run: npm test
