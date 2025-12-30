@@ -56,8 +56,9 @@ class DatabaseManager extends EventEmitter {
         : false,
 
       // Pool configuration optimized for cloud environments (especially Render)
-      max: Number(process.env.PGPOOL_MAX) || 5, // Reduced for cloud free tiers
-      min: Number(process.env.PGPOOL_MIN) || 0,  // Allow pool to go to 0 when idle
+      // Phase 3.2: Increased pool size for better performance
+      max: Number(process.env.PGPOOL_MAX) || 20, // Increased from 5 to 20 for production load
+      min: Number(process.env.PGPOOL_MIN) || 5,  // Maintain 5 connections minimum
       idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || 10000, // 10s idle timeout
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 60000, // 60s for cloud cold starts
       
