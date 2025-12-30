@@ -50,6 +50,7 @@
     "setup:env": "node scripts/setup-env.js",
     "setup:env:generate": "node scripts/setup-env.js --generate",
     "validate:env": "node src/config/validateEnv.js",
+    "db:init": "node src/database/init.js",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
     "test:seed": "node tests/seeds/index.js seed",
