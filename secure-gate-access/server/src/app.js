@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { configureSecurityHeaders, csrfProtection, generateCSRFToken } from './middleware/securityHeaders.js';
+import { configureSecurityHeaders, csrfProtection, generateCSRFToken, generateNonce } from './middleware/securityHeaders.js';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
@@ -111,6 +111,8 @@ app.use((req, res, next) => {
 
 app.use(requestIdMiddleware); // Enhanced request ID for tracing and error correlation
 app.use(...transportSecurityStack); // Transport security (HTTPS, HSTS, secure cookies)
+// SECURITY FIX: Generate nonce before CSP headers (removes unsafe-inline)
+app.use(generateNonce); // Generate unique nonce for each request
 // Configure comprehensive security headers
 configureSecurityHeaders(app);
 app.use(customSecurityHeaders); // Custom security headers and cache control
