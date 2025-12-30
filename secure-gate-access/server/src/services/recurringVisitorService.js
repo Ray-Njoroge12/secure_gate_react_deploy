@@ -9,10 +9,11 @@ import argon2 from 'argon2';
 
 /**
  * Generate a unique 6-digit PIN
+ * SECURITY FIX: Use crypto.randomInt() instead of Math.random() for cryptographic security
  * @returns {string} 6-digit numeric PIN
  */
 function generatePin() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 /**

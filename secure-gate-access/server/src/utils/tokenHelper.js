@@ -5,6 +5,7 @@
  */
 
 import EventEmitter from 'events';
+import crypto from 'crypto';
 
 // Event bus for visitor lifecycle events
 class VisitorEventBus extends EventEmitter {
@@ -161,11 +162,12 @@ export const maskPII = {
 };
 
 // OTP helpers
+// SECURITY FIX: Use crypto.randomInt() instead of Math.random() for cryptographic security
 export const generateOTP = (length = 6) => {
   const digits = '0123456789';
   let otp = '';
   for (let i = 0; i < length; i++) {
-    otp += digits[Math.floor(Math.random() * 10)];
+    otp += digits[crypto.randomInt(0, 10)];
   }
   return otp;
 };
@@ -175,11 +177,12 @@ export const validateOTPFormat = (otp) => {
 };
 
 // Token generation helper
+// SECURITY FIX: Use crypto.randomInt() instead of Math.random() for cryptographic security
 export const generateSecureToken = (length = 32) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let token = '';
   for (let i = 0; i < length; i++) {
-    token += chars[Math.floor(Math.random() * chars.length)];
+    token += chars[crypto.randomInt(0, chars.length)];
   }
   return token;
 };
