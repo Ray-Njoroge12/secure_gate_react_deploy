@@ -257,14 +257,32 @@ app.use(auditLogger({
 app.use(responseMiddleware);
 
 // Setup cache middleware for specific routes
-// NOTE: Redis caching disabled - cache middleware causing startup issues, needs investigation
-// TODO: Fix cacheMiddleware.createMiddleware compatibility with ROUTE_CACHE_CONFIG
-// app.use('/api/admin/stats', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/stats']));
-// app.use('/api/admin/dashboard', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/admin/dashboard']));
-// app.use('/api/health', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/health']));
-// app.use('/api/system/info', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/system/info']));
-// app.use('/api/visitors', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/visitors']));
-// app.use('/api/users/profile', cacheMiddleware.createMiddleware(ROUTE_CACHE_CONFIG['/api/users/profile']));
+// PERFORMANCE FIX: Re-enabled Redis caching with corrected configuration
+// Note: Caching is optional - if Redis is not available, requests pass through normally
+try {
+  // Extract strategy from ROUTE_CACHE_CONFIG (config has {strategy, invalidationPatterns})
+  const routes = [
+    '/api/admin/stats',
+    '/api/admin/dashboard',
+    '/api/health',
+    '/api/system/info',
+    '/api/visitors',
+    '/api/users/profile'
+  ];
+
+  routes.forEach(route => {
+    const config = ROUTE_CACHE_CONFIG[route];
+    if (config && config.strategy) {
+      // Pass the strategy object directly to createMiddleware
+      app.use(route, cacheMiddleware.createMiddleware(config.strategy));
+    }
+  });
+
+  console.log('✅ Redis caching middleware enabled for', routes.length, 'routes');
+} catch (error) {
+  console.warn('⚠️ Redis caching not available:', error.message);
+  console.warn('   Application will continue without caching');
+}
 
 // Setup cache invalidation middleware for write operations
 // NOTE: Disabled until Redis is properly configured
