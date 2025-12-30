@@ -25,6 +25,23 @@ const execAsync = promisify(exec);
 class KenyaDPAAuditService {
   constructor() {
     this.config = {
+      dpo: {
+        name: process.env.DPO_NAME || 'To Be Appointed',
+        email: process.env.DPO_EMAIL || 'dpo@securegate.com',
+        phone: process.env.DPO_PHONE || '+254 700 000 000',
+        office: process.env.DPO_OFFICE || 'Data Protection Office, SecureGate HQ',
+        appointed_date: process.env.DPO_APPOINTED_DATE || null,
+        qualifications: process.env.DPO_QUALIFICATIONS || 'Certified Data Protection Professional (CDPP)'
+      },
+      odpc_registration: {
+        registration_number: process.env.ODPC_REGISTRATION_NUMBER || 'PENDING',
+        registration_date: process.env.ODPC_REGISTRATION_DATE || null,
+        renewal_date: process.env.ODPC_RENEWAL_DATE || null,
+        status: process.env.ODPC_REGISTRATION_STATUS || 'pending',
+        controller_category: 'private_sector',
+        data_controller_name: 'SecureGate Access Control System',
+        registration_url: 'https://www.odpc.go.ke/data-controller-registration/'
+      },
       kenya_dpa: {
         enabled: true,
         audit_frequency: 'monthly',
@@ -934,6 +951,186 @@ class KenyaDPAAuditService {
       remediations: this.remediations.length,
       config: this.config
     };
+  }
+
+  /**
+   * Get Data Protection Officer (DPO) information
+   */
+  getDPOInformation() {
+    return {
+      ...this.config.dpo,
+      is_appointed: this.config.dpo.appointed_date !== null,
+      compliance_status: this.config.dpo.appointed_date ? 'compliant' : 'non_compliant',
+      contact_methods: {
+        email: this.config.dpo.email,
+        phone: this.config.dpo.phone,
+        office: this.config.dpo.office
+      }
+    };
+  }
+
+  /**
+   * Get ODPC registration status
+   */
+  getODPCRegistration() {
+    return {
+      ...this.config.odpc_registration,
+      is_registered: this.config.odpc_registration.status === 'active',
+      is_pending: this.config.odpc_registration.status === 'pending',
+      is_expired: this.config.odpc_registration.status === 'expired',
+      compliance_status: this.config.odpc_registration.status === 'active' ? 'compliant' : 'non_compliant',
+      days_until_renewal: this.calculateDaysUntilRenewal()
+    };
+  }
+
+  /**
+   * Calculate days until ODPC registration renewal
+   */
+  calculateDaysUntilRenewal() {
+    if (!this.config.odpc_registration.renewal_date) {
+      return null;
+    }
+
+    const renewalDate = new Date(this.config.odpc_registration.renewal_date);
+    const today = new Date();
+    const diffTime = renewalDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+  }
+
+  /**
+   * Update DPO information
+   * @param {Object} dpoData - DPO information to update
+   */
+  async updateDPOInformation(dpoData) {
+    try {
+      // Validate required fields
+      if (!dpoData.name || !dpoData.email) {
+        throw new Error('DPO name and email are required');
+      }
+
+      // Update DPO configuration
+      this.config.dpo = {
+        ...this.config.dpo,
+        ...dpoData,
+        appointed_date: dpoData.appointed_date || new Date().toISOString()
+      };
+
+      // Log update
+      loggingService.logInfo('DPO information updated', this.config.dpo);
+
+      return {
+        success: true,
+        dpo: this.getDPOInformation()
+      };
+    } catch (error) {
+      loggingService.logError('Failed to update DPO information', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update ODPC registration information
+   * @param {Object} registrationData - ODPC registration data
+   */
+  async updateODPCRegistration(registrationData) {
+    try {
+      // Validate required fields
+      if (!registrationData.registration_number) {
+        throw new Error('ODPC registration number is required');
+      }
+
+      // Calculate renewal date (annual renewal)
+      const registrationDate = registrationData.registration_date
+        ? new Date(registrationData.registration_date)
+        : new Date();
+      const renewalDate = new Date(registrationDate);
+      renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+
+      // Update ODPC registration
+      this.config.odpc_registration = {
+        ...this.config.odpc_registration,
+        ...registrationData,
+        registration_date: registrationDate.toISOString(),
+        renewal_date: renewalDate.toISOString(),
+        status: 'active'
+      };
+
+      // Log update
+      loggingService.logInfo('ODPC registration updated', this.config.odpc_registration);
+
+      return {
+        success: true,
+        registration: this.getODPCRegistration()
+      };
+    } catch (error) {
+      loggingService.logError('Failed to update ODPC registration', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get comprehensive Kenya DPA compliance status
+   */
+  getComplianceStatus() {
+    const dpo = this.getDPOInformation();
+    const odpc = this.getODPCRegistration();
+
+    return {
+      overall_status: dpo.is_appointed && odpc.is_registered ? 'compliant' : 'non_compliant',
+      dpo_compliance: {
+        status: dpo.compliance_status,
+        appointed: dpo.is_appointed,
+        contact: {
+          email: dpo.email,
+          phone: dpo.phone
+        }
+      },
+      odpc_compliance: {
+        status: odpc.compliance_status,
+        registered: odpc.is_registered,
+        registration_number: odpc.registration_number,
+        days_until_renewal: odpc.days_until_renewal
+      },
+      recommendations: this.getComplianceRecommendations(dpo, odpc)
+    };
+  }
+
+  /**
+   * Get compliance recommendations
+   */
+  getComplianceRecommendations(dpo, odpc) {
+    const recommendations = [];
+
+    if (!dpo.is_appointed) {
+      recommendations.push({
+        priority: 'critical',
+        category: 'dpo',
+        message: 'Appoint a Data Protection Officer (DPO) immediately',
+        action: 'Update DPO information in system settings'
+      });
+    }
+
+    if (!odpc.is_registered) {
+      recommendations.push({
+        priority: 'critical',
+        category: 'odpc_registration',
+        message: 'Register with ODPC (Office of the Data Protection Commissioner)',
+        action: 'Complete registration at https://www.odpc.go.ke/data-controller-registration/'
+      });
+    }
+
+    if (odpc.days_until_renewal !== null && odpc.days_until_renewal < 30) {
+      recommendations.push({
+        priority: 'high',
+        category: 'odpc_renewal',
+        message: `ODPC registration renewal due in ${odpc.days_until_renewal} days`,
+        action: 'Renew ODPC registration before expiry'
+      });
+    }
+
+    return recommendations;
   }
 }
 

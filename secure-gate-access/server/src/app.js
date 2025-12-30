@@ -52,6 +52,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js'; // Dashboard routes
 import authRoutes from './routes/authRoutes.js';
 import mfaRoutes from './routes/mfaRoutes.js';
 import dataPrivacyRoutes from './routes/dataPrivacyRoutes.js';
+import kenyaDPARoutes from './routes/kenyaDPARoutes.js'; // Phase 2.3: Kenya DPA compliance (DPO & ODPC)
 import approvalRoutes from './routes/approvalRoutes.js'; // Phase 3: Visitor approval
 import guardIncidentRoutes from './routes/guardIncidentRoutes.js'; // Phase G4: Guard incident reporting
 import guardAnalyticsRoutes from './routes/guardAnalyticsRoutes.js'; // Phase G5: Guard analytics
@@ -336,6 +337,10 @@ app.use('/api/mfa', mfaRoutes);
 
 // Data Privacy routes (Kenya DPA compliance)
 app.use('/api/privacy', dataPrivacyRoutes);
+
+// Phase 2.3: Kenya DPA compliance - DPO & ODPC registration (includes /api/privacy/dpo and /api/admin/compliance routes)
+app.use('/api/privacy', kenyaDPARoutes);
+app.use('/api/admin', kenyaDPARoutes);
 
 // Phase 3: Visitor Approval routes (walk-in approval flow)
 app.use('/api/approvals', approvalRoutes);
