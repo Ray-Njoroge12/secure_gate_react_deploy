@@ -4,53 +4,64 @@ import { randomBytes } from 'crypto';
 /**
  * Comprehensive security headers configuration
  * Implements defense-in-depth security strategy
+ * SECURITY FIX: Removed unsafe-inline, using nonce-based CSP
  */
+
+// Generate nonce middleware - MUST be applied before configureSecurityHeaders
+export const generateNonce = (req, res, next) => {
+  res.locals.nonce = randomBytes(16).toString('base64');
+  next();
+};
 
 export const configureSecurityHeaders = (app) => {
   // Content Security Policy - Prevent XSS attacks
-  app.use(helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: [
-        "'self'", 
-        "'unsafe-inline'", // TODO: Remove and use nonces in production
-        "https://fonts.googleapis.com",
-        "https://cdn.jsdelivr.net"
-      ],
-      scriptSrc: [
-        "'self'",
-        "'unsafe-inline'", // TODO: Remove and use nonces in production
-        "https://cdn.jsdelivr.net",
-        "https://www.google-analytics.com"
-      ],
-      imgSrc: [
-        "'self'", 
-        "data:", 
-        "https:",
-        "blob:"
-      ],
-      connectSrc: [
-        "'self'",
-        "https://api.securegate.com",
-        "wss://api.securegate.com",
-        "https://www.google-analytics.com"
-      ],
-      fontSrc: [
-        "'self'", 
-        "https://fonts.gstatic.com",
-        "data:"
-      ],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-      childSrc: ["'none'"],
-      workerSrc: ["'self'", "blob:"],
-      formAction: ["'self'"],
-      frameAncestors: ["'none'"]
-      // upgradeInsecureRequests and blockAllMixedContent are boolean directives
-      // They're automatically handled by helmet based on environment
-    },
-  }));
+  // SECURITY FIX: Using nonce-based CSP instead of unsafe-inline
+  app.use((req, res, next) => {
+    const cspMiddleware = helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: [
+          "'self'",
+          `'nonce-${res.locals.nonce}'`, // Use nonce instead of unsafe-inline
+          "https://fonts.googleapis.com",
+          "https://cdn.jsdelivr.net"
+        ],
+        scriptSrc: [
+          "'self'",
+          `'nonce-${res.locals.nonce}'`, // Use nonce instead of unsafe-inline
+          "https://cdn.jsdelivr.net",
+          "https://www.google-analytics.com"
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https:",
+          "blob:"
+        ],
+        connectSrc: [
+          "'self'",
+          "https://api.securegate.com",
+          "wss://api.securegate.com",
+          "https://www.google-analytics.com"
+        ],
+        fontSrc: [
+          "'self'",
+          "https://fonts.gstatic.com",
+          "data:"
+        ],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        childSrc: ["'none'"],
+        workerSrc: ["'self'", "blob:"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"]
+        // upgradeInsecureRequests and blockAllMixedContent are boolean directives
+        // They're automatically handled by helmet based on environment
+      },
+    });
+    cspMiddleware(req, res, next);
+  });
   
   // Strict Transport Security - Force HTTPS
   app.use(helmet.hsts({
