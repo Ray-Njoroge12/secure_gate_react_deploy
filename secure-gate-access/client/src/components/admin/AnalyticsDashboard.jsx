@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { exportToPDF, exportToCSV } from '../../utils/exportUtils';
 
 // Sparkline component for inline charts
 const Sparkline = ({ data = [], color = '#10b981', height = 32, width = 100 }) => {
@@ -326,13 +327,29 @@ const StatCard = ({
 /**
  * Analytics Dashboard Component
  */
-const AnalyticsDashboard = ({ 
+const AnalyticsDashboard = ({
   dateRange = '7d',
   onDateRangeChange,
   data = {},
-  loading = false 
+  loading = false,
+  visitorData = [],  // Detailed visitor data for export
+  estateName = 'Secure Gate Access'  // Estate name for branding
 }) => {
   const [selectedRange, setSelectedRange] = useState(dateRange);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showExportMenu && !event.target.closest('.export-menu-container')) {
+        setShowExportMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
 
   // Sample data - in production, this would come from API
   const analyticsData = useMemo(() => ({
@@ -356,6 +373,61 @@ const AnalyticsDashboard = ({
   const handleRangeChange = (range) => {
     setSelectedRange(range);
     onDateRangeChange?.(range);
+  };
+
+  /**
+   * Handle PDF export
+   */
+  const handlePDFExport = () => {
+    setIsExporting(true);
+    try {
+      const dateRangeLabel = ranges.find(r => r.value === selectedRange)?.label || selectedRange;
+
+      exportToPDF({
+        data: analyticsData,
+        dateRange: dateRangeLabel,
+        estateName: estateName,
+        stats: analyticsData.stats,
+        visitorData: visitorData
+      });
+
+      // Optional: Show success toast/notification
+      console.log('PDF exported successfully');
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      // Optional: Show error toast/notification
+    } finally {
+      setIsExporting(false);
+      setShowExportMenu(false);
+    }
+  };
+
+  /**
+   * Handle CSV export
+   * @param {string} type - Type of CSV export (visitors, hourly, purpose, full)
+   */
+  const handleCSVExport = (type = 'visitors') => {
+    setIsExporting(true);
+    try {
+      const dateRangeLabel = ranges.find(r => r.value === selectedRange)?.label || selectedRange;
+
+      exportToCSV({
+        visitorData: visitorData,
+        stats: analyticsData.stats,
+        dateRange: dateRangeLabel,
+        type: type,
+        data: analyticsData
+      });
+
+      // Optional: Show success toast/notification
+      console.log(`CSV (${type}) exported successfully`);
+    } catch (error) {
+      console.error('CSV export failed:', error);
+      // Optional: Show error toast/notification
+    } finally {
+      setIsExporting(false);
+      setShowExportMenu(false);
+    }
   };
 
   const ranges = [
@@ -473,11 +545,57 @@ const AnalyticsDashboard = ({
 
       {/* Export Actions */}
       <div className="flex justify-end gap-3">
-        <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          📊 Export CSV
-        </button>
-        <button className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          📄 Export PDF
+        {/* CSV Export Dropdown */}
+        <div className="relative export-menu-container">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            disabled={isExporting}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isExporting ? '⏳ Exporting...' : '📊 Export CSV'}
+            <span className="text-xs">▼</span>
+          </button>
+
+          {/* CSV Export Dropdown Menu */}
+          {showExportMenu && (
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+              <div className="py-1">
+                <button
+                  onClick={() => handleCSVExport('visitors')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  📋 Visitor Log (Detailed)
+                </button>
+                <button
+                  onClick={() => handleCSVExport('hourly')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  ⏰ Hourly Activity
+                </button>
+                <button
+                  onClick={() => handleCSVExport('purpose')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  🎯 Purpose Distribution
+                </button>
+                <button
+                  onClick={() => handleCSVExport('full')}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  📊 Full Analytics Summary
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* PDF Export Button */}
+        <button
+          onClick={handlePDFExport}
+          disabled={isExporting}
+          className="px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isExporting ? '⏳ Generating...' : '📄 Export PDF Report'}
         </button>
       </div>
     </div>
