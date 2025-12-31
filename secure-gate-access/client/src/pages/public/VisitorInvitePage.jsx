@@ -119,7 +119,7 @@ const VisitorInvitePage = () => {
 
   // Initial load
   useEffect(() => {
-    if (!token || !token.startsWith('vst_')) {
+    if (!token) {
       setError('Invalid invite link');
       setLoading(false);
       return;
