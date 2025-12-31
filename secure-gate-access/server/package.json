@@ -66,6 +66,8 @@
   "dependencies": {
     "@aws-sdk/client-kms": "^3.908.0",
     "@aws-sdk/client-secrets-manager": "^3.908.0",
+    "@sentry/node": "^7.120.4",
+    "@sentry/profiling-node": "^7.120.4",
     "africastalking": "^0.7.7",
     "argon2": "^0.44.0",
     "axios-cookiejar-support": "^6.0.4",
