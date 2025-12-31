@@ -54,6 +54,7 @@
     "resize-observer-polyfill": "^1.5.1",
     "socket.io-client": "^4.8.1",
     "url-polyfill": "^1.1.14",
+    "uuid": "^13.0.0",
     "whatwg-fetch": "^3.6.20"
   },
   "overrides": {
