@@ -6,6 +6,7 @@ export { default as FloatingLabelInput } from './FloatingLabelInput.jsx';
 export { default as GradientButton } from './GradientButton.jsx';
 export { default as GradientCard } from './GradientCard.jsx';
 export { default as StatCard } from './StatCard.jsx';
+export { default as ThemeToggle } from './ThemeToggle.jsx';
 
 // Existing Components
 export { default as Button } from './Button.jsx';
