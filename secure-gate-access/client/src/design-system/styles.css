@@ -223,8 +223,9 @@
   --breakpoint-2xl: 1536px;
 }
 
-/* Dark theme (default) */
-[data-theme="dark"] {
+/* Dark theme (default) - supports both [data-theme="dark"] and .dark for Tailwind compatibility */
+[data-theme="dark"],
+.dark {
   /* Override any dark theme specific values here if needed */
   --color-card-bg: #1e293b;
   --color-card-border: #334155;
