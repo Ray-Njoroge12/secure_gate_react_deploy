@@ -1,0 +1,220 @@
+-- Notification Delivery Tracking Migration
+-- Phase 3.3: Add delivery confirmation and event tracking
+-- Date: 2025-12-30
+
+-- ============================================================================
+-- ADD DELIVERY STATUS COLUMNS TO NOTIFICATIONS TABLE
+-- ============================================================================
+
+-- Add delivery tracking columns if they don't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='notifications' AND column_name='delivery_status') THEN
+    ALTER TABLE notifications ADD COLUMN delivery_status VARCHAR(50);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='notifications' AND column_name='delivery_provider') THEN
+    ALTER TABLE notifications ADD COLUMN delivery_provider VARCHAR(100);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='notifications' AND column_name='delivered_at') THEN
+    ALTER TABLE notifications ADD COLUMN delivered_at TIMESTAMP;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='notifications' AND column_name='failed_at') THEN
+    ALTER TABLE notifications ADD COLUMN failed_at TIMESTAMP;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='notifications' AND column_name='failure_reason') THEN
+    ALTER TABLE notifications ADD COLUMN failure_reason TEXT;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='notifications' AND column_name='message_id') THEN
+    ALTER TABLE notifications ADD COLUMN message_id VARCHAR(255);
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_name='notifications' AND column_name='delivery_metadata') THEN
+    ALTER TABLE notifications ADD COLUMN delivery_metadata JSONB DEFAULT '{}'::jsonb;
+  END IF;
+END $$;
+
+-- Add indexes for delivery tracking
+CREATE INDEX IF NOT EXISTS idx_notifications_delivery_status
+ON notifications(delivery_status);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_message_id
+ON notifications(message_id);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_delivered_at
+ON notifications(delivered_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_provider
+ON notifications(delivery_provider);
+
+COMMENT ON COLUMN notifications.delivery_status IS 'Delivery status: sent, delivered, failed, bounced, undelivered';
+COMMENT ON COLUMN notifications.delivery_provider IS 'Provider: mailgun, twilio, africas_talking, smtp';
+COMMENT ON COLUMN notifications.message_id IS 'Provider message ID for webhook matching';
+COMMENT ON COLUMN notifications.delivery_metadata IS 'Additional delivery data from provider webhooks';
+
+-- ============================================================================
+-- NOTIFICATION DELIVERY EVENTS TABLE
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS notification_delivery_events (
+  id SERIAL PRIMARY KEY,
+  message_id VARCHAR(255) NOT NULL,
+  event_type VARCHAR(100) NOT NULL,
+  provider VARCHAR(100) NOT NULL,
+  event_data JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for delivery events
+CREATE INDEX IF NOT EXISTS idx_delivery_events_message_id
+ON notification_delivery_events(message_id);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_events_event_type
+ON notification_delivery_events(event_type);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_events_provider
+ON notification_delivery_events(provider);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_events_created
+ON notification_delivery_events(created_at DESC);
+
+COMMENT ON TABLE notification_delivery_events IS 'Webhook delivery events from notification providers';
+COMMENT ON COLUMN notification_delivery_events.event_type IS 'Event: delivered, failed, bounced, sent, etc.';
+COMMENT ON COLUMN notification_delivery_events.event_data IS 'Full webhook payload from provider';
+
+-- ============================================================================
+-- DELIVERY STATISTICS VIEW
+-- ============================================================================
+
+CREATE OR REPLACE VIEW notification_delivery_stats AS
+SELECT
+  delivery_provider,
+  delivery_status,
+  COUNT(*) as total_count,
+  COUNT(CASE WHEN delivery_status = 'delivered' THEN 1 END) as delivered_count,
+  COUNT(CASE WHEN delivery_status = 'failed' THEN 1 END) as failed_count,
+  COUNT(CASE WHEN delivery_status = 'bounced' THEN 1 END) as bounced_count,
+  ROUND(
+    COUNT(CASE WHEN delivery_status = 'delivered' THEN 1 END)::numeric /
+    NULLIF(COUNT(*), 0) * 100,
+    2
+  ) as delivery_rate,
+  AVG(EXTRACT(EPOCH FROM (delivered_at - created_at))) as avg_delivery_time_seconds
+FROM notifications
+WHERE created_at >= NOW() - INTERVAL '30 days'
+AND delivery_provider IS NOT NULL
+GROUP BY delivery_provider, delivery_status;
+
+COMMENT ON VIEW notification_delivery_stats IS 'Delivery statistics by provider and status (last 30 days)';
+
+-- ============================================================================
+-- PROVIDER PERFORMANCE VIEW
+-- ============================================================================
+
+CREATE OR REPLACE VIEW provider_performance AS
+SELECT
+  delivery_provider,
+  COUNT(*) as total_sent,
+  COUNT(CASE WHEN delivery_status = 'delivered' THEN 1 END) as delivered,
+  COUNT(CASE WHEN delivery_status IN ('failed', 'bounced') THEN 1 END) as failed,
+  ROUND(
+    COUNT(CASE WHEN delivery_status = 'delivered' THEN 1 END)::numeric /
+    NULLIF(COUNT(*), 0) * 100,
+    2
+  ) as success_rate,
+  AVG(EXTRACT(EPOCH FROM (delivered_at - created_at))) / 60 as avg_delivery_minutes
+FROM notifications
+WHERE created_at >= NOW() - INTERVAL '30 days'
+AND delivery_provider IS NOT NULL
+GROUP BY delivery_provider
+ORDER BY success_rate DESC;
+
+COMMENT ON VIEW provider_performance IS 'Provider performance comparison (last 30 days)';
+
+-- ============================================================================
+-- FAILED DELIVERY NOTIFICATIONS VIEW
+-- ============================================================================
+
+CREATE OR REPLACE VIEW failed_delivery_notifications AS
+SELECT
+  n.id,
+  n.type,
+  n.recipient_email,
+  n.delivery_provider,
+  n.delivery_status,
+  n.failure_reason,
+  n.failed_at,
+  n.created_at,
+  EXTRACT(EPOCH FROM (NOW() - n.failed_at)) / 3600 as hours_since_failure
+FROM notifications n
+WHERE n.delivery_status IN ('failed', 'bounced', 'undelivered')
+AND n.failed_at IS NOT NULL
+ORDER BY n.failed_at DESC;
+
+COMMENT ON VIEW failed_delivery_notifications IS 'Failed notifications requiring attention';
+
+-- ============================================================================
+-- VERIFY MIGRATION
+-- ============================================================================
+
+DO $$
+DECLARE
+    column_count INTEGER;
+    event_table_exists BOOLEAN;
+BEGIN
+    -- Check new columns
+    SELECT COUNT(*) INTO column_count
+    FROM information_schema.columns
+    WHERE table_name = 'notifications'
+    AND column_name IN (
+        'delivery_status',
+        'delivery_provider',
+        'delivered_at',
+        'failed_at',
+        'failure_reason',
+        'message_id',
+        'delivery_metadata'
+    );
+
+    RAISE NOTICE 'Delivery tracking columns added: %', column_count;
+
+    -- Check event table
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_name = 'notification_delivery_events'
+    ) INTO event_table_exists;
+
+    IF event_table_exists THEN
+        RAISE NOTICE 'notification_delivery_events table created: YES';
+    ELSE
+        RAISE NOTICE 'notification_delivery_events table created: NO';
+    END IF;
+END $$;
+
+-- Show delivery statistics
+SELECT * FROM provider_performance;
+
+-- Show recent delivery events
+SELECT
+    provider,
+    event_type,
+    COUNT(*) as count
+FROM notification_delivery_events
+WHERE created_at >= NOW() - INTERVAL '7 days'
+GROUP BY provider, event_type
+ORDER BY provider, count DESC;
+
+RAISE NOTICE '✅ Notification delivery tracking migration complete!';
+RAISE NOTICE '📊 Views created: notification_delivery_stats, provider_performance, failed_delivery_notifications';
+RAISE NOTICE '🔔 Webhook endpoints ready for: Mailgun, Twilio, Africa''s Talking';
