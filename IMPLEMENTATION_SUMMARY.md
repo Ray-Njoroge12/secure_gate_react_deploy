@@ -19,9 +19,9 @@
 | Error ID Generation | ✅ Fixed | 30 min | 🟢 Medium |
 | Dark Mode Support | ✅ Enhanced | 1 hour | 🟡 High |
 
-**Total Implementation Time:** ~5.5 hours  
-**Commits:** 4  
-**Files Modified:** 11  
+**Total Implementation Time:** ~6 hours
+**Commits:** 6
+**Files Modified:** 13
 **New Files Created:** 2
 
 ---
@@ -232,6 +232,17 @@ feat: implement complete dark mode support with theme toggle
 - Cycles through Light → Dark → System themes
 - Keyboard accessible with ARIA labels
 - Export from UI components index
+```
+
+### Commit 4: Theme Component Export Fixes
+```
+fix: add ThemeDropdown and ThemeRadioGroup named exports
+
+- Add ThemeDropdown variant component for dropdown theme selector
+- Add ThemeRadioGroup component for settings page theme selection with radio buttons
+- Fix duplicate ThemeToggle export in index.js
+- Export all three variants (ThemeToggle, ThemeDropdown, ThemeRadioGroup)
+- Resolves build error and ensures production build succeeds
 ```
 
 ---
