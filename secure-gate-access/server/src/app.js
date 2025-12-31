@@ -62,6 +62,7 @@ import visitorPublicRoutes from './routes/visitorPublicRoutes.js'; // Phase V1: 
 import directionsRoutes from './routes/directionsRoutes.js'; // Phase 2.3: Visitor directions
 import notificationRoutes from './routes/notificationRoutes.js'; // Phase V3: Notifications
 import notificationQueueRoutes from './routes/notificationQueueRoutes.js'; // Phase 2.1: Notification Queue Management
+import notificationWebhooks from './routes/notificationWebhooks.js'; // Phase 3.3: Delivery confirmations
 import adminAnalyticsRoutes from './routes/adminAnalyticsRoutes.js'; // Phase A1: Analytics
 import incidentWorkflowRoutes from './routes/incidentWorkflowRoutes.js'; // Phase A4: Incident Workflow
 import integrationsRoutes from './routes/integrationsRoutes.js'; // Phase A5: Integrations
@@ -314,6 +315,9 @@ try {
 // V1: Public visitor routes (NO authentication required - must come before auth middleware)
 // Phase V1: Visitor Invite Landing & Digital Pass
 app.use('/api/public', visitorPublicRoutes);
+
+// Phase 3.3: Notification delivery webhooks (NO authentication - verified by signature)
+app.use('/api/webhooks', notificationWebhooks);
 
 // Setup routes for database migration (NO authentication required - one-time use)
 app.use('/api/setup', setupRoutes);
