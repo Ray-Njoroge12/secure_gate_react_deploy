@@ -11,6 +11,13 @@ import { dirname, join } from 'path';
 
 import { sessionMiddleware } from './config/session.js';
 
+// Phase 4.3: Sentry Error Monitoring
+import {
+  initializeSentry,
+  setupExpressErrorHandling,
+  setupExpressErrorHandler
+} from './config/sentry.js';
+
 // Import middleware
 import { attachUserFromToken } from './middleware/authMiddleware.js';
 import auditLogger from './middleware/auditLogger.js';
@@ -91,6 +98,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
+
+// Phase 4.3: Initialize Sentry for error tracking (must be first!)
+initializeSentry();
 
 // A0.3: Remove X-Powered-By header (prevent server fingerprinting)
 app.disable('x-powered-by');
@@ -239,6 +249,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Compression
 app.use(compression());
+
+// Phase 4.3: Sentry request and tracing handlers (after body parsing, before routes)
+setupExpressErrorHandling(app);
 
 // Security audit middleware
 app.use(securityAuditMiddleware);
@@ -493,6 +506,9 @@ app.get('/api/health', (req, res) => {
     version: process.env.npm_package_version || '1.0.0'
   });
 });
+
+// Phase 4.3: Sentry error handler (must be after routes, before other error handlers)
+setupExpressErrorHandler(app);
 
 // 404 handler (standardized)
 app.use(notFoundHandler);

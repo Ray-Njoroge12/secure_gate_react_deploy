@@ -30,6 +30,8 @@
     "test:a11y": "playwright test accessibility.spec.js"
   },
   "dependencies": {
+    "@sentry/react": "^7.120.4",
+    "@sentry/tracing": "^7.120.4",
     "@tanstack/react-query": "^5.90.12",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
