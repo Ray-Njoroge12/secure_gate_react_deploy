@@ -15,7 +15,9 @@ import rateLimit from 'express-rate-limit';
 import {
   getVisitorByToken,
   getEstateInfo,
-  getVisitorStatus
+  getVisitorStatus,
+  confirmVisitorByToken,
+  getInviteByCode
 } from '../controllers/visitorPublicController.js';
 
 const router = express.Router();
@@ -78,17 +80,14 @@ router.get(
 
 /**
  * @route POST /api/public/visitors/:token/confirm
- * @desc Confirm visit + store consent
+ * @desc Confirm visit + store consent (E2 Enhancement)
  * @access Public (no auth)
  * @rateLimit 10 req/min
  */
 router.post(
   '/visitors/:token/confirm',
   visitorTokenLimiter,
-  async (req, res) => {
-    // TODO: Implement confirmVisitorByToken
-    res.status(501).json({ success: false, message: 'Not implemented' });
-  }
+  confirmVisitorByToken
 );
 
 /**
@@ -105,17 +104,14 @@ router.get(
 
 /**
  * @route GET /api/public/invites/:inviteCode
- * @desc Look up invite details by invite code (bulk or single)
+ * @desc Look up invite details by invite code (E2 Enhancement - supports visitor tokens & event QR codes)
  * @access Public (no auth)
  * @rateLimit 10 req/min
  */
 router.get(
   '/invites/:inviteCode',
   visitorTokenLimiter,
-  async (req, res) => {
-    // TODO: Implement getInviteByCode
-    res.status(501).json({ success: false, message: 'Not implemented' });
-  }
+  getInviteByCode
 );
 
 export default router;
