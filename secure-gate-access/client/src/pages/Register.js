@@ -241,8 +241,11 @@ export default function RegistrationPage() {
 
     if (!bulkFormData.visitorPhone.trim()) {
       newErrors.visitorPhone = 'Phone number is required';
-    } else if (!/^0\d{9}$/.test(bulkFormData.visitorPhone.trim())) {
-      newErrors.visitorPhone = 'Phone must be in format 0xxxxxxxxx (10 digits starting with 0)';
+    } else {
+      const phoneError = phoneValidator.getErrorMessage(bulkFormData.visitorPhone.trim(), 'KE');
+      if (phoneError) {
+        newErrors.visitorPhone = phoneError;
+      }
     }
 
     if (!bulkFormData.visitorEmail.trim()) {
