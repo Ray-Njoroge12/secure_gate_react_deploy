@@ -62,6 +62,7 @@ import dataPrivacyRoutes from './routes/dataPrivacyRoutes.js';
 import kenyaDPARoutes from './routes/kenyaDPARoutes.js'; // Phase 2.3: Kenya DPA compliance (DPO & ODPC)
 import breachNotificationRoutes from './routes/breachNotificationRoutes.js'; // Phase 2.4: 72-hour breach notification
 import guardManagementRoutes from './routes/guardManagementRoutes.js'; // Phase 2.5: Guard management features
+import eventManagementRoutes from './routes/eventManagementRoutes.js'; // Phase 4.1: Event management and bulk invitations
 import approvalRoutes from './routes/approvalRoutes.js'; // Phase 3: Visitor approval
 import guardIncidentRoutes from './routes/guardIncidentRoutes.js'; // Phase G4: Guard incident reporting
 import guardAnalyticsRoutes from './routes/guardAnalyticsRoutes.js'; // Phase G5: Guard analytics
@@ -366,6 +367,9 @@ app.use('/api/admin/breach', breachNotificationRoutes);
 
 // Phase 2.5: Guard management features (shift scheduling, performance, equipment)
 app.use('/api/guards', guardManagementRoutes);
+
+// Phase 4.1: Event management and bulk invitations (requires auth)
+app.use('/api/events', eventManagementRoutes);
 
 // Phase 3: Visitor Approval routes (walk-in approval flow)
 app.use('/api/approvals', approvalRoutes);
