@@ -83,6 +83,7 @@ const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
 const SelfCheckInKiosk = lazy(() => import("./pages/public/SelfCheckInKiosk.jsx"));
+const VisitorConfirmation = lazy(() => import("./pages/VisitorConfirmation.jsx"));
 
 // Resident additional pages
 const QuickInvite = lazy(() => import("./pages/resident/QuickInvite.jsx"));
@@ -196,6 +197,8 @@ function App() {
             {/* Public visitor pages - Token-based access */}
             <Route path="/v/:token" element={<VisitorInvitePage />} />
             <Route path="/kiosk" element={<SelfCheckInKiosk />} />
+            <Route path="/visitor/confirm/:token" element={<VisitorConfirmation />} />
+            <Route path="/visitor/confirm" element={<VisitorConfirmation />} />
 
             {/* Resident routes */}
             <Route
