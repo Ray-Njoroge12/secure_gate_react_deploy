@@ -5,6 +5,7 @@ import { useError } from "../contexts/ErrorContext.jsx";
 import { handleApiError } from "../utils/errorMapper.js";
 import { FloatingLabelInput, GradientButton, GradientCard, Checkbox } from "../components/ui";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle, KeyRound } from "lucide-react";
+import passwordValidator from "../utils/passwordValidator";
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -46,31 +47,16 @@ export default function LoginPage() {
       setPasswordError("Password is required");
       return false;
     }
-    if (value.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
+
+    const result = passwordValidator.validate(value);
+    if (!result.isValid) {
+      setPasswordError(result.errors[0]);
       return false;
     }
+
     setPasswordError("");
     return true;
   };
-
-  // E2E Test support: Auto-fill from URL params in development mode
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' || process.env.REACT_APP_E2E_TEST === 'true') {
-      const params = new URLSearchParams(window.location.search);
-      const testEmail = params.get('test_email');
-      const testPassword = params.get('test_password');
-      if (testEmail && testPassword) {
-        setEmail(testEmail);
-        setPassword(testPassword);
-        // Auto-submit after a short delay
-        setTimeout(() => {
-          const form = document.querySelector('form');
-          if (form) form.requestSubmit();
-        }, 500);
-      }
-    }
-  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {

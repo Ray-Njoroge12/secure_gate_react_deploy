@@ -7,6 +7,7 @@ import AuthLayout from "../layouts/AuthLayout.jsx";
 import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator.jsx';
 import phoneValidator from '../utils/phoneValidator.js';
+import passwordValidator from '../utils/passwordValidator.js';
 import logger from 'utils/logger';
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
@@ -137,10 +138,11 @@ export default function RegistrationPage() {
 
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(formData.password)) {
-      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)';
+    } else {
+      const result = passwordValidator.validate(formData.password);
+      if (!result.isValid) {
+        newErrors.password = result.errors.join('. ');
+      }
     }
 
     if (formData.confirmPassword !== formData.password) {
@@ -281,11 +283,6 @@ export default function RegistrationPage() {
       // Expecting { visitor, otp_issued, otp_ttl_minutes, debug_otp? }
       const v = (response && response.visitor) ? response.visitor : response;
       setConfirmedVisitor(v || null);
-      // If backend echoed debug OTP (dev only), surface it for ease of local testing
-      if (process.env.NODE_ENV === 'development' && response && response.debug_otp) {
-        setOtp(response.debug_otp);
-        setOtpSuccess('⚠️ Debug OTP (dev only): ' + response.debug_otp);
-      }
       // Show OTP step; QR will be shown after verification
       setShowOtpSection(true);
       setSuccess("Registration submitted. Please check your email/SMS for the OTP and verify to view your QR code.");
