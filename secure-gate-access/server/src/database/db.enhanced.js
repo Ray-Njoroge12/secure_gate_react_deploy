@@ -193,6 +193,9 @@ class DatabaseManager extends EventEmitter {
   }
 
   async ensureIndexes() {
+    // First ensure essential tables exist (for fresh databases)
+    await this.ensureEssentialTables();
+    
     try {
       const indexes = [
         'CREATE INDEX IF NOT EXISTS idx_visitors_invite_code ON visitors(invite_code)',
@@ -216,6 +219,129 @@ class DatabaseManager extends EventEmitter {
     } catch (error) {
       console.warn('Index creation failed:', error.message);
     }
+  }
+
+  /**
+   * Ensure essential tables exist for a fresh database
+   */
+  async ensureEssentialTables() {
+    console.log('🔄 Ensuring essential database tables...');
+    
+    const tables = [
+      {
+        name: 'users',
+        sql: `CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(100) UNIQUE NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255),
+          password_hash VARCHAR(255) NOT NULL,
+          role VARCHAR(50) NOT NULL,
+          phone VARCHAR(20),
+          area VARCHAR(100),
+          house VARCHAR(100),
+          notify_email BOOLEAN DEFAULT true,
+          notify_sms BOOLEAN DEFAULT false,
+          verified BOOLEAN DEFAULT false,
+          verification_token TEXT,
+          verification_expires TIMESTAMP,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'visitors',
+        sql: `CREATE TABLE IF NOT EXISTS visitors (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(100) NOT NULL,
+          phone VARCHAR(20),
+          email VARCHAR(100),
+          id_number VARCHAR(50),
+          vehicle_plate VARCHAR(20),
+          purpose TEXT,
+          date_of_visit DATE,
+          time_of_visit TIME,
+          invite_code VARCHAR(100) UNIQUE,
+          status VARCHAR(20) DEFAULT 'PENDING',
+          otp_hash TEXT,
+          otp_expires_at TIMESTAMP,
+          otp_attempts INT DEFAULT 0,
+          qr_code TEXT,
+          check_in_time TIMESTAMP,
+          check_out_time TIMESTAMP,
+          created_by VARCHAR(255),
+          host_id INT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'passes',
+        sql: `CREATE TABLE IF NOT EXISTS passes (
+          id SERIAL PRIMARY KEY,
+          pass_id VARCHAR(100) UNIQUE NOT NULL,
+          visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
+          expires_at TIMESTAMP NOT NULL,
+          status VARCHAR(20) DEFAULT 'active',
+          qr_code TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'bulk_invites',
+        sql: `CREATE TABLE IF NOT EXISTS bulk_invites (
+          id SERIAL PRIMARY KEY,
+          event_name VARCHAR(255) NOT NULL,
+          date DATE NOT NULL,
+          time TIME NOT NULL,
+          num_guests INT NOT NULL,
+          invite_code VARCHAR(100) UNIQUE NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          created_by VARCHAR(100),
+          remaining_slots INT NOT NULL DEFAULT 0,
+          created_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'access_logs',
+        sql: `CREATE TABLE IF NOT EXISTS access_logs (
+          id SERIAL PRIMARY KEY,
+          user_id INT,
+          action VARCHAR(100),
+          log_time TIMESTAMP DEFAULT NOW(),
+          request_id VARCHAR(100),
+          entity_type VARCHAR(50),
+          entity_id VARCHAR(100),
+          outcome VARCHAR(20),
+          message TEXT,
+          metadata JSONB
+        )`
+      },
+      {
+        name: 'audit_logs',
+        sql: `CREATE TABLE IF NOT EXISTS audit_logs (
+          id SERIAL PRIMARY KEY,
+          user_id INT,
+          action VARCHAR(100) NOT NULL,
+          resource VARCHAR(100) NOT NULL DEFAULT 'system',
+          entity_type VARCHAR(50),
+          entity_id VARCHAR(100),
+          details TEXT,
+          ip_address INET,
+          created_at TIMESTAMP DEFAULT NOW()
+        )`
+      }
+    ];
+
+    for (const table of tables) {
+      try {
+        await this.query(table.sql);
+        console.log(`  ✓ Table ${table.name} ready`);
+      } catch (error) {
+        console.warn(`  ⚠ Table ${table.name}: ${error.message}`);
+      }
+    }
+    
+    console.log('✅ Essential tables check complete');
   }
 
   async connect() {
