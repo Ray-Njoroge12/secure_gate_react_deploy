@@ -57,6 +57,18 @@ CREATE INDEX IF NOT EXISTS idx_users_verified ON users(verified);
 CREATE INDEX IF NOT EXISTS idx_visitors_phone ON visitors(phone);
 CREATE INDEX IF NOT EXISTS idx_visitors_email ON visitors(email);
 CREATE INDEX IF NOT EXISTS idx_visitors_created_at ON visitors(created_at);
+
+-- Add check_in and check_out columns if they don't exist (for older database schemas)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'visitors' AND column_name = 'check_in') THEN
+        ALTER TABLE visitors ADD COLUMN check_in TIMESTAMP;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'visitors' AND column_name = 'check_out') THEN
+        ALTER TABLE visitors ADD COLUMN check_out TIMESTAMP;
+    END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_visitors_check_in ON visitors(check_in);
 CREATE INDEX IF NOT EXISTS idx_visitors_check_out ON visitors(check_out);
 
