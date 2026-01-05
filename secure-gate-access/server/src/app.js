@@ -165,7 +165,14 @@ const additionalOrigins = additionalOriginsStr
   : [];
 
 // Build allowed origins list
-const allowedOrigins = [clientOrigin, ...additionalOrigins];
+const allowedOrigins = [
+  clientOrigin,
+  ...additionalOrigins,
+  'https://securegate-access.netlify.app',  // Production Netlify frontend
+  'http://localhost:3000',                   // Development
+  'http://localhost:3001',                   // Alternative dev port
+  'http://127.0.0.1:3000',                   // Alternative localhost
+].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
 
 // Production safety check - warn if only localhost is configured
 if (process.env.NODE_ENV === 'production' && clientOrigin.includes('localhost')) {
