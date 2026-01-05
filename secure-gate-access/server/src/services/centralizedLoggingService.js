@@ -36,7 +36,9 @@ class CentralizedLoggingService {
         enabled: true
       },
       centralization: {
-        enabled: true,
+        // Check if centralization is explicitly enabled or disabled
+        enabled: process.env.LOGGING_CENTRALIZATION_ENABLED !== 'false' && 
+                 (process.env.LOGGING_ENDPOINT ? true : false),
         endpoint: process.env.LOGGING_ENDPOINT || 'http://loki:3100',
         type: process.env.LOGGING_TYPE || 'loki', // loki, elk, fluentd
         batchSize: parseInt(process.env.LOGGING_BATCH_SIZE) || 100,
@@ -116,6 +118,19 @@ class CentralizedLoggingService {
    */
   async initializeService() {
     try {
+      // Log initialization status
+      if (!this.config.centralization.enabled) {
+        loggingService.logInfo('Centralized logging service initialized (centralization disabled)', {
+          format: this.config.logging.format,
+          centralizationEnabled: false,
+          reason: !process.env.LOGGING_ENDPOINT ? 'LOGGING_ENDPOINT not configured' : 'Disabled via LOGGING_CENTRALIZATION_ENABLED',
+          traceabilityEnabled: this.config.traceability.enabled
+        });
+        console.log('⚠️  Centralized logging disabled (no LOGGING_ENDPOINT configured)');
+        console.log('   Logs will only be written locally. Set LOGGING_ENDPOINT to enable.');
+        return;
+      }
+
       loggingService.logInfo('Centralized logging service initialized', {
         format: this.config.logging.format,
         centralizationEnabled: this.config.centralization.enabled,
@@ -123,7 +138,7 @@ class CentralizedLoggingService {
         traceabilityEnabled: this.config.traceability.enabled
       });
       
-      // Start log processing
+      // Start log processing only if centralization is enabled
       this.startLogProcessing();
       
     } catch (error) {
@@ -317,6 +332,13 @@ class CentralizedLoggingService {
    */
   async flushLogs() {
     try {
+      // Skip if centralization is disabled
+      if (!this.config.centralization.enabled) {
+        // Clear buffer to prevent memory buildup
+        this.logBuffer = [];
+        return;
+      }
+
       if (this.logBuffer.length === 0) {
         return;
       }
