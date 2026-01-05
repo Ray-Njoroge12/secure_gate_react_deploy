@@ -1,0 +1,528 @@
+/**
+ * Unit Tests: UserService
+ * Tests core user management functionality in isolation
+ */
+
+import { describe, test, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import crypto from 'crypto';
+
+// Mock dependencies before importing userService
+const mockDb = {
+  query: jest.fn(),
+};
+
+const mockPasswordService = {
+  hashPassword: jest.fn(),
+  verifyPassword: jest.fn(),
+  checkPasswordStrength: jest.fn(),
+};
+
+const mockAccountSecurity = {
+  recordFailedLogin: jest.fn(),
+  recordSuccessfulLogin: jest.fn(),
+  checkAccountLockout: jest.fn(),
+};
+
+// Mock modules
+jest.unstable_mockModule('../../../src/database/db.enhanced.js', () => ({
+  db: mockDb,
+}));
+
+jest.unstable_mockModule('../../../src/services/tokenService.js', () => ({
+  passwordService: mockPasswordService,
+  accountSecurity: mockAccountSecurity,
+}));
+
+jest.unstable_mockModule('../../../src/middleware/standardizedErrorHandler.js', () => ({
+  AppError: class AppError extends Error {
+    constructor(message, statusCode, code) {
+      super(message);
+      this.statusCode = statusCode;
+      this.code = code;
+    }
+  },
+}));
+
+// Import after mocking
+const { userService } = await import('../../../src/services/userService.js');
+
+describe('UserService Unit Tests', () => {
+  beforeEach(() => {
+    // Clear all mocks before each test
+    jest.clearAllMocks();
+    // Reset the db mock to use our mockDb
+    userService.db = mockDb;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('createUser', () => {
+    const validUserData = {
+      username: 'testuser',
+      email: 'test@example.com',
+      password: 'SecurePass123!',
+      role: 'resident',
+    };
+
+    test('should create a new user with valid data', async () => {
+      // Arrange
+      mockPasswordService.checkPasswordStrength.mockReturnValue({
+        strength: 'strong',
+        message: 'Password is strong',
+      });
+      mockPasswordService.hashPassword.mockResolvedValue('$2b$10$hashedpassword');
+      mockDb.query
+        .mockResolvedValueOnce({ rows: [] }) // Check existing user
+        .mockResolvedValueOnce({
+          // Create user
+          rows: [{
+            id: 1,
+            username: 'testuser',
+            email: 'test@example.com',
+            role: 'resident',
+            verification_token: 'token123',
+            created_at: new Date(),
+          }],
+        });
+
+      // Act
+      const result = await userService.createUser(validUserData);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.id).toBe(1);
+      expect(result.username).toBe('testuser');
+      expect(result.email).toBe('test@example.com');
+      expect(result.role).toBe('resident');
+      expect(result.password_hash).toBeUndefined(); // Should be removed from response
+      expect(mockPasswordService.hashPassword).toHaveBeenCalledWith('SecurePass123!');
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+
+    test('should reject user with missing required fields', async () => {
+      // Arrange
+      const invalidData = { username: 'test', email: 'test@example.com' }; // Missing password and role
+
+      // Act & Assert
+      await expect(userService.createUser(invalidData)).rejects.toThrow('Missing required fields');
+    });
+
+    test('should reject user with invalid email format', async () => {
+      // Arrange
+      const invalidData = { ...validUserData, email: 'invalid-email' };
+
+      // Act & Assert
+      await expect(userService.createUser(invalidData)).rejects.toThrow('Invalid email format');
+    });
+
+    test('should reject user with invalid role', async () => {
+      // Arrange
+      const invalidData = { ...validUserData, role: 'superadmin' };
+
+      // Act & Assert
+      await expect(userService.createUser(invalidData)).rejects.toThrow('Invalid role');
+    });
+
+    test('should reject user with invalid username format', async () => {
+      // Arrange
+      const invalidData = { ...validUserData, username: 'test user!' }; // Contains space and special char
+
+      // Act & Assert
+      await expect(userService.createUser(invalidData)).rejects.toThrow(
+        'Username must contain only letters, numbers, and underscores'
+      );
+    });
+
+    test('should reject user with weak password', async () => {
+      // Arrange
+      mockPasswordService.checkPasswordStrength.mockReturnValue({
+        strength: 'weak',
+        message: 'Password must be at least 8 characters',
+      });
+
+      // Act & Assert
+      await expect(userService.createUser(validUserData)).rejects.toThrow('Password is too weak');
+    });
+
+    test('should reject duplicate username or email', async () => {
+      // Arrange
+      mockPasswordService.checkPasswordStrength.mockReturnValue({
+        strength: 'strong',
+        message: 'Password is strong',
+      });
+      mockDb.query.mockResolvedValueOnce({
+        rows: [{ id: 999 }], // Existing user found
+      });
+
+      // Act & Assert
+      await expect(userService.createUser(validUserData)).rejects.toThrow(
+        'Username or email already exists'
+      );
+    });
+
+    test('should handle database errors gracefully', async () => {
+      // Arrange
+      mockPasswordService.checkPasswordStrength.mockReturnValue({
+        strength: 'strong',
+        message: 'Password is strong',
+      });
+      mockPasswordService.hashPassword.mockResolvedValue('$2b$10$hashedpassword');
+      mockDb.query
+        .mockResolvedValueOnce({ rows: [] }) // Check existing user
+        .mockRejectedValueOnce(new Error('Database connection failed'));
+
+      // Act & Assert
+      await expect(userService.createUser(validUserData)).rejects.toThrow('User creation failed');
+    });
+  });
+
+  describe('authenticateUser', () => {
+    test('should authenticate user with valid credentials', async () => {
+      // Arrange
+      const username = 'testuser';
+      const password = 'SecurePass123!';
+      const mockUser = {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        password_hash: '$2b$10$hashedpassword',
+        role: 'resident',
+        email_verified: true,
+      };
+
+      mockAccountSecurity.checkAccountLockout.mockResolvedValue(false);
+      mockDb.query.mockResolvedValueOnce({ rows: [mockUser] });
+      mockPasswordService.verifyPassword.mockResolvedValue(true);
+      mockAccountSecurity.recordSuccessfulLogin.mockResolvedValue();
+
+      // Act
+      const result = await userService.authenticateUser(username, password);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.id).toBe(1);
+      expect(result.username).toBe('testuser');
+      expect(result.password_hash).toBeUndefined(); // Should be removed
+      expect(mockPasswordService.verifyPassword).toHaveBeenCalledWith(password, mockUser.password_hash);
+      expect(mockAccountSecurity.recordSuccessfulLogin).toHaveBeenCalledWith(1);
+    });
+
+    test('should reject authentication with invalid credentials', async () => {
+      // Arrange
+      const username = 'testuser';
+      const password = 'WrongPassword';
+
+      mockAccountSecurity.checkAccountLockout.mockResolvedValue(false);
+      mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1, password_hash: '$2b$10$hash' }] });
+      mockPasswordService.verifyPassword.mockResolvedValue(false);
+      mockAccountSecurity.recordFailedLogin.mockResolvedValue();
+
+      // Act & Assert
+      await expect(userService.authenticateUser(username, password)).rejects.toThrow(
+        'Invalid username or password'
+      );
+      expect(mockAccountSecurity.recordFailedLogin).toHaveBeenCalledWith(1);
+    });
+
+    test('should reject authentication for non-existent user', async () => {
+      // Arrange
+      mockAccountSecurity.checkAccountLockout.mockResolvedValue(false);
+      mockDb.query.mockResolvedValueOnce({ rows: [] }); // No user found
+
+      // Act & Assert
+      await expect(userService.authenticateUser('nonexistent', 'password')).rejects.toThrow(
+        'Invalid username or password'
+      );
+    });
+
+    test('should reject authentication for locked account', async () => {
+      // Arrange
+      mockAccountSecurity.checkAccountLockout.mockResolvedValue(true); // Account is locked
+
+      // Act & Assert
+      await expect(userService.authenticateUser('testuser', 'password')).rejects.toThrow(
+        'Account is locked'
+      );
+    });
+  });
+
+  describe('getUserById', () => {
+    test('should retrieve user by ID', async () => {
+      // Arrange
+      const mockUser = {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        role: 'resident',
+        password_hash: '$2b$10$hash',
+      };
+
+      mockDb.query.mockResolvedValue({ rows: [mockUser] });
+
+      // Act
+      const result = await userService.getUserById(1);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.id).toBe(1);
+      expect(result.username).toBe('testuser');
+      expect(result.password_hash).toBeUndefined(); // Should be removed
+      expect(mockDb.query).toHaveBeenCalledWith(
+        'SELECT * FROM users WHERE id = $1',
+        [1]
+      );
+    });
+
+    test('should return null for non-existent user ID', async () => {
+      // Arrange
+      mockDb.query.mockResolvedValue({ rows: [] });
+
+      // Act
+      const result = await userService.getUserById(999);
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    test('should handle database errors', async () => {
+      // Arrange
+      mockDb.query.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(userService.getUserById(1)).rejects.toThrow('Failed to fetch user');
+    });
+  });
+
+  describe('updateUser', () => {
+    test('should update user email', async () => {
+      // Arrange
+      const userId = 1;
+      const updateData = { email: 'newemail@example.com' };
+      const updatedUser = {
+        id: 1,
+        username: 'testuser',
+        email: 'newemail@example.com',
+        role: 'resident',
+      };
+
+      mockDb.query.mockResolvedValue({ rows: [updatedUser] });
+
+      // Act
+      const result = await userService.updateUser(userId, updateData);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.email).toBe('newemail@example.com');
+      expect(mockDb.query).toHaveBeenCalled();
+    });
+
+    test('should reject update with invalid email format', async () => {
+      // Arrange
+      const updateData = { email: 'invalid-email' };
+
+      // Act & Assert
+      await expect(userService.updateUser(1, updateData)).rejects.toThrow('Invalid email format');
+    });
+
+    test('should reject update with invalid role', async () => {
+      // Arrange
+      const updateData = { role: 'superadmin' };
+
+      // Act & Assert
+      await expect(userService.updateUser(1, updateData)).rejects.toThrow('Invalid role');
+    });
+
+    test('should reject password update through updateUser', async () => {
+      // Arrange
+      const updateData = { password: 'NewPassword123!' };
+
+      // Act & Assert
+      await expect(userService.updateUser(1, updateData)).rejects.toThrow(
+        'Use changePassword method to update password'
+      );
+    });
+  });
+
+  describe('deleteUser', () => {
+    test('should delete user by ID', async () => {
+      // Arrange
+      mockDb.query.mockResolvedValue({ rowCount: 1 });
+
+      // Act
+      const result = await userService.deleteUser(1);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockDb.query).toHaveBeenCalledWith(
+        'DELETE FROM users WHERE id = $1',
+        [1]
+      );
+    });
+
+    test('should return false if user not found', async () => {
+      // Arrange
+      mockDb.query.mockResolvedValue({ rowCount: 0 });
+
+      // Act
+      const result = await userService.deleteUser(999);
+
+      // Assert
+      expect(result).toBe(false);
+    });
+
+    test('should handle database errors', async () => {
+      // Arrange
+      mockDb.query.mockRejectedValue(new Error('Database error'));
+
+      // Act & Assert
+      await expect(userService.deleteUser(1)).rejects.toThrow('Failed to delete user');
+    });
+  });
+
+  describe('generateEmailVerificationToken', () => {
+    test('should generate a valid hex token', () => {
+      // Act
+      const token = userService.generateEmailVerificationToken();
+
+      // Assert
+      expect(token).toBeDefined();
+      expect(typeof token).toBe('string');
+      expect(token.length).toBe(64); // 32 bytes = 64 hex characters
+      expect(/^[a-f0-9]+$/.test(token)).toBe(true); // Only hex characters
+    });
+
+    test('should generate unique tokens', () => {
+      // Act
+      const token1 = userService.generateEmailVerificationToken();
+      const token2 = userService.generateEmailVerificationToken();
+
+      // Assert
+      expect(token1).not.toBe(token2);
+    });
+  });
+
+  describe('changePassword', () => {
+    test('should change password with valid current password', async () => {
+      // Arrange
+      const userId = 1;
+      const currentPassword = 'OldPass123!';
+      const newPassword = 'NewPass456!';
+      const mockUser = {
+        id: 1,
+        password_hash: '$2b$10$oldhash',
+      };
+
+      mockDb.query.mockResolvedValueOnce({ rows: [mockUser] }); // Get user
+      mockPasswordService.verifyPassword.mockResolvedValue(true);
+      mockPasswordService.checkPasswordStrength.mockReturnValue({
+        strength: 'strong',
+        message: 'Password is strong',
+      });
+      mockPasswordService.hashPassword.mockResolvedValue('$2b$10$newhash');
+      mockDb.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // Update password
+
+      // Act
+      const result = await userService.changePassword(userId, currentPassword, newPassword);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockPasswordService.verifyPassword).toHaveBeenCalledWith(currentPassword, mockUser.password_hash);
+      expect(mockPasswordService.hashPassword).toHaveBeenCalledWith(newPassword);
+    });
+
+    test('should reject password change with incorrect current password', async () => {
+      // Arrange
+      const mockUser = { id: 1, password_hash: '$2b$10$oldhash' };
+      mockDb.query.mockResolvedValueOnce({ rows: [mockUser] });
+      mockPasswordService.verifyPassword.mockResolvedValue(false);
+
+      // Act & Assert
+      await expect(
+        userService.changePassword(1, 'WrongPassword', 'NewPass456!')
+      ).rejects.toThrow('Current password is incorrect');
+    });
+
+    test('should reject weak new password', async () => {
+      // Arrange
+      const mockUser = { id: 1, password_hash: '$2b$10$oldhash' };
+      mockDb.query.mockResolvedValueOnce({ rows: [mockUser] });
+      mockPasswordService.verifyPassword.mockResolvedValue(true);
+      mockPasswordService.checkPasswordStrength.mockReturnValue({
+        strength: 'weak',
+        message: 'Too short',
+      });
+
+      // Act & Assert
+      await expect(
+        userService.changePassword(1, 'OldPass123!', 'weak')
+      ).rejects.toThrow('Password is too weak');
+    });
+  });
+
+  describe('listUsers', () => {
+    test('should list all users with pagination', async () => {
+      // Arrange
+      const mockUsers = [
+        { id: 1, username: 'user1', email: 'user1@example.com', role: 'resident', password_hash: '$2b$10$hash1' },
+        { id: 2, username: 'user2', email: 'user2@example.com', role: 'guard', password_hash: '$2b$10$hash2' },
+      ];
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockUsers }) // Get users
+        .mockResolvedValueOnce({ rows: [{ count: '10' }] }); // Get total count
+
+      // Act
+      const result = await userService.listUsers(1, 10);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.users).toHaveLength(2);
+      expect(result.users[0].password_hash).toBeUndefined(); // Passwords should be removed
+      expect(result.total).toBe(10);
+      expect(result.page).toBe(1);
+      expect(result.totalPages).toBe(1);
+    });
+
+    test('should filter users by role', async () => {
+      // Arrange
+      const mockGuards = [
+        { id: 2, username: 'guard1', email: 'guard1@example.com', role: 'guard' },
+      ];
+      mockDb.query
+        .mockResolvedValueOnce({ rows: mockGuards })
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] });
+
+      // Act
+      const result = await userService.listUsers(1, 10, 'guard');
+
+      // Assert
+      expect(result.users).toHaveLength(1);
+      expect(result.users[0].role).toBe('guard');
+    });
+  });
+
+  describe('getUserStats', () => {
+    test('should return user statistics', async () => {
+      // Arrange
+      const mockStats = {
+        total_users: 100,
+        residents: 80,
+        guards: 15,
+        admins: 5,
+        new_users_30d: 10,
+      };
+      mockDb.query.mockResolvedValue({ rows: [mockStats] });
+
+      // Act
+      const result = await userService.getUserStats();
+
+      // Assert
+      expect(result).toEqual(mockStats);
+      expect(result.total_users).toBe(100);
+      expect(result.residents).toBe(80);
+      expect(result.guards).toBe(15);
+      expect(result.admins).toBe(5);
+    });
+  });
+});

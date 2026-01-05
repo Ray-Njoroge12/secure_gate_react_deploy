@@ -101,9 +101,22 @@ async function benchmarkRegister() {
 async function getAuthToken(user = TEST_USERS.admin) {
   try {
     const response = await axios.post(`${API_URL}/auth/login`, user);
-    return response.data.token || response.data.accessToken;
+    // Handle both legacy and standardized response formats
+    // Standardized format: { success: true, data: { accessToken: ... } }
+    // Legacy format: { token: ... } or { accessToken: ... }
+    const token = response.data?.data?.accessToken || 
+                  response.data?.accessToken || 
+                  response.data?.token;
+    if (!token) {
+      console.error('❌ No token found in response:', JSON.stringify(response.data, null, 2));
+    }
+    return token;
   } catch (error) {
     console.error('❌ Failed to get auth token:', error.message);
+    if (error.response) {
+      console.error('   Response status:', error.response.status);
+      console.error('   Response data:', JSON.stringify(error.response.data, null, 2));
+    }
     throw error;
   }
 }

@@ -146,6 +146,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create triggers for updated_at timestamps
+DROP TRIGGER IF EXISTS update_rate_limit_tracking_updated_at ON rate_limit_tracking;
 CREATE TRIGGER update_rate_limit_tracking_updated_at BEFORE UPDATE ON rate_limit_tracking
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

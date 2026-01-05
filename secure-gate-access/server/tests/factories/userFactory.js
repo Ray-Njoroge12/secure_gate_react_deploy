@@ -45,18 +45,20 @@ export const userFactory = {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     const result = await dbManager.query(
-      `INSERT INTO users (username, email, password, role, phone, unit, mfa_enabled, mfa_secret)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO users (username, email, password, password_hash, role, phone, unit, mfa_enabled, mfa_secret, verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         userData.username,
         userData.email,
         hashedPassword,
+        hashedPassword,
         userData.role,
         userData.phone,
         userData.unit,
         userData.mfa_enabled,
-        userData.mfa_secret
+        userData.mfa_secret,
+        true
       ]
     );
 

@@ -341,15 +341,21 @@ describe('Concurrency Integration Tests', () => {
       const id1 = visitor1Result.rows[0].id;
       const id2 = visitor2Result.rows[0].id;
 
-      // Concurrent updates that could deadlock if not handled
+      // Concurrent updates - use explicit locking order to prevent deadlock
       const update1 = dbManager.query(
-        `UPDATE visitors SET purpose = 'Update 1' WHERE id IN ($1, $2) ORDER BY id`,
-        [id1, id2]
-      );
+        `UPDATE visitors SET purpose = 'Update 1' WHERE id = $1`,
+        [Math.min(id1, id2)]
+      ).then(() => dbManager.query(
+        `UPDATE visitors SET purpose = 'Update 1' WHERE id = $1`,
+        [Math.max(id1, id2)]
+      ));
       const update2 = dbManager.query(
-        `UPDATE visitors SET purpose = 'Update 2' WHERE id IN ($1, $2) ORDER BY id`,
-        [id1, id2]
-      );
+        `UPDATE visitors SET purpose = 'Update 2' WHERE id = $1`,
+        [Math.min(id1, id2)]
+      ).then(() => dbManager.query(
+        `UPDATE visitors SET purpose = 'Update 2' WHERE id = $1`,
+        [Math.max(id1, id2)]
+      ));
 
       // Both should complete (ordering prevents deadlock)
       const results = await Promise.all([update1, update2]);

@@ -46,8 +46,8 @@ describe('Simple Integration Tests', () => {
     });
 
     it('should have argon2 password hash', async () => {
-      const result = await query('SELECT password_hash FROM users WHERE email = $1', ['admin@test.com']);
-      expect(result.rows[0].password_hash).toMatch(/^\$argon2/);
+      const result = await query('SELECT password FROM users WHERE email = $1', ['admin@test.com']);
+      expect(result.rows[0].password).toMatch(/^\$argon2/);
     });
   });
 

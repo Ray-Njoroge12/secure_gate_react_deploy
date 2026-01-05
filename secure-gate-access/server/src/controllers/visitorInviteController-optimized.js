@@ -19,6 +19,7 @@ import QRCodeService from '../services/qrCodeService.js';
 import { sendVisitorInviteSms, sendVisitorInviteEmail, sendOtpVerificationSms, sendOtpVerificationEmail } from '../services/notificationService.js';
 import encryptionService from '../services/encryptionService.js';
 import { generateOTP, generateSecureToken } from '../utils/tokenHelper.js';
+import { sanitizeString } from '../utils/sanitizeInput.js';
 
 function getOtpExpiryMinutes() {
   return parseInt(process.env.OTP_EXPIRY_MINUTES, 10) || 15;
@@ -67,19 +68,22 @@ export const createVisitor = async (req, res) => {
       return respondError(res, 401, 'Unauthorized');
     }
 
-    if (req.user.role && req.user.role !== 'resident') {
-      return respondError(res, 403, 'Forbidden');
+    // Allow residents, admins, and guards to create visitors
+    const allowedRoles = ['resident', 'admin', 'guard'];
+    if (req.user.role && !allowedRoles.includes(req.user.role)) {
+      return respondError(res, 403, 'Forbidden - Only residents, admins, and guards can create visitors');
     }
 
     const CLIENT_ORIGIN = getClientOrigin();
 
-    const { 
-      name, 
-      phone, 
-      email, 
-      purpose, 
-      dateOfVisit, 
-      time, 
+    const {
+      name,
+      phone,
+      email,
+      purpose,
+      dateOfVisit,
+      date_of_visit, // Accept both camelCase and snake_case
+      time,
       vehiclePlate,
       allowResidenceLocation,
       allow_residence_location,
@@ -92,15 +96,22 @@ export const createVisitor = async (req, res) => {
       status: requestedStatus
     } = req.body;
 
-    // Validation - name and phone required, dateOfVisit required
+    // Support both camelCase and snake_case for date field
+    // Default to today's date if not provided
+    const finalDateOfVisit = dateOfVisit || date_of_visit || new Date().toISOString().split('T')[0];
+
+    // Validation - name and phone required
     if (typeof name !== 'string' || !name.trim()) {
       return respondError(res, 400, 'Visitor name is required');
     }
     if (typeof phone !== 'string' || !phone.trim()) {
       return respondError(res, 400, 'Phone number is required');
     }
-    if (typeof dateOfVisit !== 'string' || !dateOfVisit) {
-      return respondError(res, 400, 'Date of visit is required');
+
+    // Validate phone number format (must start with + and contain only digits)
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    if (!phoneRegex.test(phone.trim().replace(/[\s-]/g, ''))) {
+      return respondError(res, 400, 'Invalid phone number format. Please use international format (e.g., +254700123456)');
     }
 
     // Get resident info
@@ -121,9 +132,10 @@ export const createVisitor = async (req, res) => {
       ? PASS_STATUS.PENDING_CONFIRMATION
       : PASS_STATUS.PENDING_CONFIRMATION;
 
-    // Option A: Create invite_code only; do NOT issue visitor_token/OTP/QR here.
+    // Generate both invite_code and visitor_token for E2 workflow
     const inviteCode = generateInviteCode();
-    const expiresAt = calculateTokenExpiry(dateOfVisit);
+    const visitorToken = generateVisitorToken();
+    const expiresAt = calculateTokenExpiry(finalDateOfVisit);
 
     const allowResidence =
       allowResidenceLocation === true ||
@@ -140,24 +152,27 @@ export const createVisitor = async (req, res) => {
     const result = await dbManager.query(
       `INSERT INTO visitors (
         name, phone, email, purpose, date_of_visit, time_of_visit,
-        vehicle_plate, resident_id,
-        invite_code,
+        vehicle_plate, resident_id, host_id,
+        invite_code, visitor_token, token_expires_at,
         allow_residence_location, unit_pin_encrypted, unit_pin_encrypted_at,
         consent_given, consent_timestamp, consent_type, consent_version,
         status, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
        RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit,
-                 invite_code, status, created_at`,
+                 invite_code, visitor_token, token_expires_at, status, created_at`,
       [
-        name.trim(),
-        phone.trim(),
-        email?.trim() || null,
-        purpose || 'Visit',
-        dateOfVisit,
+        sanitizeString(name.trim()),
+        sanitizeString(phone.trim()),
+        email ? sanitizeString(email.trim()) : null,
+        sanitizeString(purpose || 'Visit'),
+        finalDateOfVisit,
         time || null,
-        vehiclePlate || null,
+        vehiclePlate ? sanitizeString(vehiclePlate) : null,
         residentId,
+        residentId, // Set host_id to same value as resident_id
         inviteCode,
+        visitorToken,
+        expiresAt,
         allowResidence,
         unitPinEncrypted,
         unitPinEncryptedAt,
@@ -224,7 +239,9 @@ export const createVisitor = async (req, res) => {
       status: visitor.status,
       inviteCode,
       inviteLink,
-      expiresAt,
+      visitorToken: visitor.visitor_token,  // E2: Include visitor_token in response
+      visitor_token: visitor.visitor_token,  // Also include snake_case for backward compatibility
+      expiresAt: visitor.token_expires_at,
       dateOfVisit: visitor.date_of_visit,
       time: visitor.time_of_visit
     };
@@ -258,7 +275,7 @@ export const getMyVisitors = async (req, res) => {
     const offset = (page - 1) * limit;
     const status = req.query.status;
 
-    let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, vehicle_plate, status, check_in, check_out, visitor_token, token_expires_at, invite_code, created_at
+    let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, vehicle_plate, status, check_in, check_out, visitor_token, token_expires_at, invite_code, created_at, host_id, resident_id
                  FROM visitors`;
     const params = [];
 
@@ -273,7 +290,7 @@ export const getMyVisitors = async (req, res) => {
       }
 
       const residentId = residentResult.rows[0].id;
-      query += ` WHERE resident_id = $1`;
+      query += ` WHERE (host_id = $1 OR resident_id = $1)`;
       params.push(residentId);
     } else if (role === 'guard' || role === 'admin') {
       query += ` WHERE 1=1`;
@@ -295,7 +312,7 @@ export const getMyVisitors = async (req, res) => {
     let countQuery = 'SELECT COUNT(*) FROM visitors';
     const countParams = [];
     if (role === 'resident') {
-      countQuery += ' WHERE resident_id = $1';
+      countQuery += ' WHERE (host_id = $1 OR resident_id = $1)';
       countParams.push(params[0]);
       if (status) {
         countQuery += ' AND status = $2';
@@ -466,8 +483,10 @@ export const bulkInvite = async (req, res) => {
       return respondError(res, 401, 'Unauthorized');
     }
 
-    if (req.user.role && req.user.role !== 'resident') {
-      return respondError(res, 403, 'Forbidden');
+    // Allow residents, admins, and guards to create bulk invites
+    const allowedRoles = ['resident', 'admin', 'guard'];
+    if (req.user.role && !allowedRoles.includes(req.user.role)) {
+      return respondError(res, 403, 'Forbidden - Only residents, admins, and guards can create bulk invites');
     }
 
     const OTP_EXPIRY_MINUTES = getOtpExpiryMinutes();
@@ -1004,11 +1023,80 @@ export const completeInvite = async (req, res) => {
   }
 };
 
+/**
+ * Cancel/delete a visitor invitation
+ * - Residents can cancel their own visitors
+ * - Admins can cancel any visitor
+ */
+export const cancelVisitor = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) {
+      return respondError(res, 401, 'Unauthorized');
+    }
+
+    const { id } = req.params;
+    const role = req.user.role;
+
+    // Get the visitor
+    const vRes = await dbManager.query(
+      'SELECT id, resident_id, host_id, name, status FROM visitors WHERE id = $1',
+      [id]
+    );
+    const visitor = vRes.rows[0];
+    
+    if (!visitor) {
+      return respondError(res, 404, 'Visitor not found');
+    }
+
+    // Check permissions
+    if (role === 'resident') {
+      // Residents can only cancel their own visitors
+      const residentResult = await dbManager.query(
+        'SELECT id FROM users WHERE email = $1',
+        [req.user.email]
+      );
+      
+      if (residentResult.rows.length === 0) {
+        return respondError(res, 404, 'Resident not found');
+      }
+
+      const residentId = residentResult.rows[0].id;
+      // Check both host_id and resident_id for backward compatibility
+      if (visitor.host_id !== residentId && visitor.resident_id !== residentId) {
+        return respondError(res, 403, 'You can only cancel your own visitors');
+      }
+    } else if (role !== 'admin') {
+      return respondError(res, 403, 'Forbidden');
+    }
+
+    // Delete the visitor
+    await dbManager.query('DELETE FROM visitors WHERE id = $1', [id]);
+
+    await req.audit?.('visitor.cancel', 'visitor', String(id), { 
+      outcome: 'success', 
+      message: 'Visitor invitation cancelled',
+      visitorName: visitor.name
+    });
+
+    respond(res, { message: 'Visitor cancelled successfully' });
+  } catch
+ (error) {
+    console.error('Cancel visitor error:', error);
+    await req.audit?.('visitor.cancel', 'visitor', null, { 
+      outcome: 'fail', 
+      message: 'Failed to cancel visitor', 
+      error: String(error?.message) 
+    });
+    respondError(res, 500, 'Failed to cancel visitor');
+  }
+};
+
 export default {
   createVisitor,
   getMyVisitors,
   createPass,
   bulkInvite,
   getBulkInvite,
-  completeInvite
+  completeInvite,
+  cancelVisitor
 };

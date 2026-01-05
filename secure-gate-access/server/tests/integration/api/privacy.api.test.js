@@ -3,6 +3,13 @@
  * Tests all DPA compliance API endpoints
  * 
  * Priority: CRITICAL (Regulatory Compliance - Kenya DPA 2019)
+ * 
+ * NOTE: This test uses the ACTUAL production database schema.
+ * Column names must match the production schema:
+ * - consent_log: action ('granted'/'withdrawn'), consent_type, created_at
+ * - data_export_log: export_type, format, record_count, exported_at
+ * - data_deletion_requests: deletion_type, user_email, status, reason
+ * - user_privacy_settings: show_visitor_frequency, share_location_on_panic, etc.
  */
 
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
@@ -26,9 +33,10 @@ describe('Data Privacy API Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    await dbManager.query('DELETE FROM consent_log').catch(() => {});
-    await dbManager.query('DELETE FROM data_export_log').catch(() => {});
-    await dbManager.query('DELETE FROM data_deletion_requests').catch(() => {});
+    // Clean up test data between tests
+    await dbManager.query('DELETE FROM consent_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')').catch(() => {});
+    await dbManager.query('DELETE FROM data_export_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')').catch(() => {});
+    await dbManager.query('DELETE FROM data_deletion_requests WHERE user_email LIKE \'%@test.com\'').catch(() => {});
   });
 
   // =========================================
@@ -80,11 +88,11 @@ describe('Data Privacy API Integration Tests', () => {
     it('should log export request in audit trail', async () => {
       const userId = testUsers.resident.id;
 
-      // Log export
+      // Log export using actual schema columns
       await dbManager.query(
-        `INSERT INTO data_export_log (user_id, export_type, status)
+        `INSERT INTO data_export_log (user_id, export_type, format)
          VALUES ($1, $2, $3)`,
-        [userId, 'full_export', 'completed']
+        [userId, 'full_export', 'JSON']
       );
 
       await dbManager.query(
@@ -99,6 +107,7 @@ describe('Data Privacy API Integration Tests', () => {
         [userId]
       );
       expect(exportLog.rows).toHaveLength(1);
+      expect(exportLog.rows[0].export_type).toBe('full_export');
 
       const auditLog = await dbManager.query(
         "SELECT * FROM audit_logs WHERE action = 'dpa.data_export' AND user_id = $1",
@@ -163,22 +172,23 @@ describe('Data Privacy API Integration Tests', () => {
   describe('POST /api/privacy/delete-account', () => {
     it('should process account deletion request', async () => {
       // Create test user for deletion
-      const bcrypt = await import('bcryptjs');
-      const hashedPassword = await bcrypt.default.hash('deletetest', 10);
+      const argon2 = await import('argon2');
+      const hashedPassword = await argon2.default.hash('deletetest');
 
       const userResult = await dbManager.query(
-        `INSERT INTO users (username, email, password, role, phone, unit)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        ['delete_api_user', 'deleteapi@test.com', hashedPassword, 'resident', '+254700333333', 'D101']
+        ['delete_api_user', 'deleteapi@test.com', hashedPassword, hashedPassword, 'resident', '+254700333333', 'D101', true]
       );
       const deleteUserId = userResult.rows[0].id;
+      const deleteUserEmail = userResult.rows[0].email;
 
-      // Create deletion request
+      // Create deletion request using actual schema columns
       await dbManager.query(
-        `INSERT INTO data_deletion_requests (user_id, request_type, status)
-         VALUES ($1, $2, $3)`,
-        [deleteUserId, 'account_deletion', 'pending']
+        `INSERT INTO data_deletion_requests (user_id, user_email, deletion_type, status, reason)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [deleteUserId, deleteUserEmail, 'full_account', 'pending', 'User requested deletion via API']
       );
 
       // Process deletion
@@ -236,11 +246,13 @@ describe('Data Privacy API Integration Tests', () => {
 
     it('should log deletion request for compliance', async () => {
       const userId = testUsers.resident.id;
+      const userEmail = testUsers.resident.email;
 
+      // Using actual schema columns: deletion_type instead of request_type
       await dbManager.query(
-        `INSERT INTO data_deletion_requests (user_id, request_type, status, notes)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, 'account_deletion', 'pending', 'User requested deletion via API']
+        `INSERT INTO data_deletion_requests (user_id, user_email, deletion_type, status, notes)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, userEmail, 'full_account', 'pending', 'User requested deletion via API']
       );
 
       await dbManager.query(
@@ -255,7 +267,7 @@ describe('Data Privacy API Integration Tests', () => {
       );
 
       expect(request.rows).toHaveLength(1);
-      expect(request.rows[0].request_type).toBe('account_deletion');
+      expect(request.rows[0].deletion_type).toBe('full_account');
     });
   });
 
@@ -266,10 +278,11 @@ describe('Data Privacy API Integration Tests', () => {
     it('should record consent with timestamp', async () => {
       const userId = testUsers.resident.id;
 
+      // Using actual schema: action column with 'granted' or 'withdrawn'
       await dbManager.query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given, ip_address)
+        `INSERT INTO consent_log (user_id, consent_type, action, ip_address)
          VALUES ($1, $2, $3, $4)`,
-        [userId, 'marketing', true, '127.0.0.1']
+        [userId, 'marketing', 'granted', '127.0.0.1']
       );
 
       const consent = await dbManager.query(
@@ -278,8 +291,8 @@ describe('Data Privacy API Integration Tests', () => {
       );
 
       expect(consent.rows).toHaveLength(1);
-      expect(consent.rows[0].consent_given).toBe(true);
-      expect(consent.rows[0].recorded_at).toBeDefined();
+      expect(consent.rows[0].action).toBe('granted');
+      expect(consent.rows[0].created_at).toBeDefined();
     });
 
     it('should handle consent withdrawal', async () => {
@@ -287,26 +300,26 @@ describe('Data Privacy API Integration Tests', () => {
 
       // Give consent first
       await dbManager.query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given)
+        `INSERT INTO consent_log (user_id, consent_type, action)
          VALUES ($1, $2, $3)`,
-        [userId, 'analytics', true]
+        [userId, 'analytics', 'granted']
       );
 
-      // Withdraw consent
+      // Withdraw consent by inserting new record with 'withdrawn' action
       await dbManager.query(
-        `UPDATE consent_log 
-         SET consent_withdrawn = true, withdrawn_at = NOW()
-         WHERE user_id = $1 AND consent_type = $2`,
-        [userId, 'analytics']
+        `INSERT INTO consent_log (user_id, consent_type, action)
+         VALUES ($1, $2, $3)`,
+        [userId, 'analytics', 'withdrawn']
       );
 
       const consent = await dbManager.query(
-        'SELECT * FROM consent_log WHERE user_id = $1 AND consent_type = $2',
+        `SELECT * FROM consent_log 
+         WHERE user_id = $1 AND consent_type = $2 
+         ORDER BY created_at DESC LIMIT 1`,
         [userId, 'analytics']
       );
 
-      expect(consent.rows[0].consent_withdrawn).toBe(true);
-      expect(consent.rows[0].withdrawn_at).toBeDefined();
+      expect(consent.rows[0].action).toBe('withdrawn');
     });
 
     it('should track multiple consent types', async () => {
@@ -315,9 +328,9 @@ describe('Data Privacy API Integration Tests', () => {
 
       for (const type of types) {
         await dbManager.query(
-          `INSERT INTO consent_log (user_id, consent_type, consent_given)
+          `INSERT INTO consent_log (user_id, consent_type, action)
            VALUES ($1, $2, $3)`,
-          [userId, type, true]
+          [userId, type, 'granted']
         );
       }
 
@@ -333,9 +346,9 @@ describe('Data Privacy API Integration Tests', () => {
       const userId = testUsers.resident.id;
 
       await dbManager.query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given)
+        `INSERT INTO consent_log (user_id, consent_type, action)
          VALUES ($1, $2, $3)`,
-        [userId, 'marketing', true]
+        [userId, 'marketing', 'granted']
       );
 
       await dbManager.query(
@@ -361,22 +374,22 @@ describe('Data Privacy API Integration Tests', () => {
       const userId = testUsers.resident.id;
 
       await dbManager.query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given)
+        `INSERT INTO consent_log (user_id, consent_type, action)
          VALUES ($1, $2, $3)`,
-        [userId, 'marketing', true]
+        [userId, 'marketing', 'granted']
       );
 
+      // Get the latest consent status
       const status = await dbManager.query(
-        `SELECT consent_given, consent_withdrawn, recorded_at 
+        `SELECT action, created_at 
          FROM consent_log 
          WHERE user_id = $1 AND consent_type = $2
-         ORDER BY recorded_at DESC LIMIT 1`,
+         ORDER BY created_at DESC LIMIT 1`,
         [userId, 'marketing']
       );
 
       expect(status.rows).toHaveLength(1);
-      expect(status.rows[0].consent_given).toBe(true);
-      expect(status.rows[0].consent_withdrawn).toBe(false);
+      expect(status.rows[0].action).toBe('granted');
     });
 
     it('should return null for non-existent consent', async () => {
@@ -396,20 +409,26 @@ describe('Data Privacy API Integration Tests', () => {
 
       // Give then withdraw consent
       await dbManager.query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given, consent_withdrawn, withdrawn_at)
-         VALUES ($1, $2, $3, $4, NOW())`,
-        [userId, 'withdrawn_type', true, true]
+        `INSERT INTO consent_log (user_id, consent_type, action)
+         VALUES ($1, $2, $3)`,
+        [userId, 'withdrawn_type', 'granted']
+      );
+
+      await dbManager.query(
+        `INSERT INTO consent_log (user_id, consent_type, action)
+         VALUES ($1, $2, $3)`,
+        [userId, 'withdrawn_type', 'withdrawn']
       );
 
       const status = await dbManager.query(
-        `SELECT consent_given, consent_withdrawn 
+        `SELECT action 
          FROM consent_log 
-         WHERE user_id = $1 AND consent_type = $2`,
+         WHERE user_id = $1 AND consent_type = $2
+         ORDER BY created_at DESC LIMIT 1`,
         [userId, 'withdrawn_type']
       );
 
-      expect(status.rows[0].consent_given).toBe(true);
-      expect(status.rows[0].consent_withdrawn).toBe(true);
+      expect(status.rows[0].action).toBe('withdrawn');
     });
   });
 
@@ -433,18 +452,19 @@ describe('Data Privacy API Integration Tests', () => {
       );
 
       expect(settings.rows).toHaveLength(1);
-      expect(settings.rows[0].marketing_consent).toBe(false);
-      expect(settings.rows[0].third_party_sharing).toBe(false);
+      // Using actual schema column names
+      expect(settings.rows[0].show_visitor_frequency).toBeDefined();
     });
 
     it('should update privacy settings', async () => {
       const userId = testUsers.resident.id;
 
+      // Using actual schema column names
       await dbManager.query(
-        `INSERT INTO user_privacy_settings (user_id, marketing_consent, analytics_consent)
+        `INSERT INTO user_privacy_settings (user_id, show_visitor_frequency, share_location_on_panic)
          VALUES ($1, $2, $3)
-         ON CONFLICT (user_id) DO UPDATE SET marketing_consent = $2, analytics_consent = $3`,
-        [userId, true, true]
+         ON CONFLICT (user_id) DO UPDATE SET show_visitor_frequency = $2, share_location_on_panic = $3`,
+        [userId, false, false]
       );
 
       const settings = await dbManager.query(
@@ -452,8 +472,8 @@ describe('Data Privacy API Integration Tests', () => {
         [userId]
       );
 
-      expect(settings.rows[0].marketing_consent).toBe(true);
-      expect(settings.rows[0].analytics_consent).toBe(true);
+      expect(settings.rows[0].show_visitor_frequency).toBe(false);
+      expect(settings.rows[0].share_location_on_panic).toBe(false);
     });
   });
 

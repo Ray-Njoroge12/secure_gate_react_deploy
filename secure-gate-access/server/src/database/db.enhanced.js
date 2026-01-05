@@ -57,9 +57,10 @@ class DatabaseManager extends EventEmitter {
 
       // Pool configuration optimized for cloud environments (especially Render)
       // Phase 3.2: Increased pool size for better performance
-      max: Number(process.env.PGPOOL_MAX) || 20, // Increased from 5 to 20 for production load
-      min: Number(process.env.PGPOOL_MIN) || 5,  // Maintain 5 connections minimum
-      idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || 10000, // 10s idle timeout
+      // Phase 2 Integration Testing: Higher pool size for test environment (40) vs production (20)
+      max: Number(process.env.PGPOOL_MAX) || (process.env.NODE_ENV === 'test' ? 40 : 20),
+      min: Number(process.env.PGPOOL_MIN) || (process.env.NODE_ENV === 'test' ? 10 : 5),
+      idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || (process.env.NODE_ENV === 'test' ? 30000 : 10000),
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 60000, // 60s for cloud cold starts
       
       // Statement timeout to prevent hanging queries
@@ -195,11 +196,11 @@ class DatabaseManager extends EventEmitter {
     try {
       const indexes = [
         'CREATE INDEX IF NOT EXISTS idx_visitors_invite_code ON visitors(invite_code)',
-        'CREATE INDEX IF NOT EXISTS idx_visitors_status_date ON visitors(status, date_of_visit)',
+        'CREATE INDEX IF NOT EXISTS idx_visitors_status ON visitors(status)',
         'CREATE INDEX IF NOT EXISTS idx_passes_pass_id ON passes(pass_id)',
         'CREATE INDEX IF NOT EXISTS idx_passes_visitor_id ON passes(visitor_id)',
         'CREATE INDEX IF NOT EXISTS idx_access_logs_user_created ON access_logs(user_id, log_time)',
-        'CREATE INDEX IF NOT EXISTS idx_visitors_created_by ON visitors(created_by)',
+        'CREATE INDEX IF NOT EXISTS idx_visitors_host_id ON visitors(host_id)',
         'CREATE INDEX IF NOT EXISTS idx_visitors_qr_code ON visitors(qr_code)'
       ];
 

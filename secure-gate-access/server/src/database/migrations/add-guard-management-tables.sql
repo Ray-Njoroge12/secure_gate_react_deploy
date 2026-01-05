@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS guard_shifts (
   status VARCHAR(50) DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in_progress', 'completed', 'cancelled')),
   notes TEXT,
   handover_notes TEXT,
-  estate_id INTEGER REFERENCES estates(id) ON DELETE CASCADE,
+  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS guard_shifts (
 CREATE INDEX IF NOT EXISTS idx_guard_shifts_guard_id ON guard_shifts(guard_id);
 CREATE INDEX IF NOT EXISTS idx_guard_shifts_status ON guard_shifts(status);
 CREATE INDEX IF NOT EXISTS idx_guard_shifts_start_time ON guard_shifts(start_time);
-CREATE INDEX IF NOT EXISTS idx_guard_shifts_estate_id ON guard_shifts(estate_id);
+CREATE INDEX IF NOT EXISTS idx_guard_shifts_estate_location_id ON guard_shifts(estate_location_id);
 
 COMMENT ON TABLE guard_shifts IS 'Guard shift schedules and tracking';
 COMMENT ON COLUMN guard_shifts.shift_type IS 'Type of shift: morning, afternoon, night, weekend';
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS guard_handover_notes (
   notes TEXT NOT NULL,
   incidents_summary TEXT,
   equipment_status TEXT,
-  estate_id INTEGER REFERENCES estates(id) ON DELETE CASCADE,
+  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS guard_performance_metrics (
   notes TEXT,
   recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   recorded_at TIMESTAMP DEFAULT NOW(),
-  estate_id INTEGER REFERENCES estates(id) ON DELETE CASCADE
+  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL
 );
 
 -- Indexes for performance metrics
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS guard_equipment_checkout (
   return_condition VARCHAR(50),
   notes TEXT,
   return_notes TEXT,
-  estate_id INTEGER REFERENCES estates(id) ON DELETE CASCADE,
+  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS guard_training (
   certificate_number VARCHAR(255),
   status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'expired', 'renewed')),
   notes TEXT,
-  estate_id INTEGER REFERENCES estates(id) ON DELETE CASCADE,
+  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -141,11 +141,12 @@ COMMENT ON COLUMN guard_training.status IS 'active, expired, or renewed';
 
 -- ============================================================================
 -- GUARD INCIDENTS JUNCTION TABLE (Many-to-Many)
+-- NOTE: incidents table doesn't exist yet, so we store incident_id as INTEGER without FK
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS guard_incidents (
   id SERIAL PRIMARY KEY,
   guard_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  incident_id INTEGER NOT NULL REFERENCES incidents(id) ON DELETE CASCADE,
+  incident_id INTEGER NOT NULL,
   assigned_at TIMESTAMP DEFAULT NOW(),
   resolved_at TIMESTAMP,
   resolution_notes TEXT,
@@ -179,6 +180,9 @@ BEGIN
     );
 
     RAISE NOTICE 'Guard management tables created: %', table_count;
+    RAISE NOTICE '✅ Guard management tables migration complete!';
+    RAISE NOTICE '📊 Tables: guard_shifts, guard_handover_notes, guard_performance_metrics, guard_equipment_checkout, guard_training, guard_incidents';
+    RAISE NOTICE '📈 Features: Shift scheduling, handover notes, performance tracking, equipment management, training records';
 END $$;
 
 -- Show table sizes
@@ -190,7 +194,3 @@ FROM pg_tables
 WHERE schemaname = 'public'
 AND tablename LIKE 'guard_%'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
-
-RAISE NOTICE '✅ Guard management tables migration complete!';
-RAISE NOTICE '📊 Tables: guard_shifts, guard_handover_notes, guard_performance_metrics, guard_equipment_checkout, guard_training, guard_incidents';
-RAISE NOTICE '📈 Features: Shift scheduling, handover notes, performance tracking, equipment management, training records';

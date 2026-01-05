@@ -28,7 +28,7 @@ class GuardManagementService {
       const query = `
         SELECT
           u.id,
-          u.name,
+          u.username,
           u.email,
           u.phone_number,
           u.role,
@@ -47,7 +47,7 @@ class GuardManagementService {
         WHERE u.role = 'guard'
         ${estateId ? 'AND u.estate_id = $1' : ''}
         GROUP BY u.id
-        ORDER BY u.name
+        ORDER BY u.username
       `;
 
       const result = estateId
@@ -117,7 +117,7 @@ class GuardManagementService {
       const query = `
         SELECT
           s.*,
-          u.name as guard_name,
+          u.username as guard_name,
           u.email as guard_email,
           u.phone_number as guard_phone
         FROM guard_shifts s
@@ -301,7 +301,7 @@ class GuardManagementService {
           pm.*,
           s.shift_type,
           s.start_time,
-          u.name as recorded_by_name
+          u.username as recorded_by_name
         FROM guard_performance_metrics pm
         LEFT JOIN guard_shifts s ON pm.shift_id = s.id
         LEFT JOIN users u ON pm.recorded_by = u.id
@@ -426,7 +426,7 @@ class GuardManagementService {
       let query = `
         SELECT
           ec.*,
-          u.name as guard_name,
+          u.username as guard_name,
           s.shift_type,
           s.start_time
         FROM guard_equipment_checkout ec

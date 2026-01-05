@@ -10,5 +10,6 @@ export {
   createPass,
   bulkInvite,
   getBulkInvite,
-  completeInvite
+  completeInvite,
+  cancelVisitor
 } from './visitorInviteController-optimized.js';

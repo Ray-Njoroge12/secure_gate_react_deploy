@@ -15,7 +15,7 @@
 import db from '../database/db.enhanced.js';
 import crypto from 'crypto';
 import loggingService from './loggingService.js';
-import { notificationQueueService } from './notificationQueueService.js';
+import notificationQueueService from './notificationQueueService.js';
 import calendarService from './calendarService.js';
 
 class EventManagementService {
@@ -32,7 +32,7 @@ class EventManagementService {
           name, description, event_type, location, location_details,
           start_date, end_date, check_in_window_start, check_in_window_end,
           max_capacity, dress_code, parking_instructions, special_instructions,
-          host_id, estate_id, registration_deadline,
+          host_id, estate_location_id, registration_deadline,
           requires_approval, allow_plus_one, send_reminders, reminder_hours_before,
           qr_code_prefix, custom_fields, status
         ) VALUES (
@@ -106,8 +106,14 @@ class EventManagementService {
   async getEventsByEstate(estateId, filters = {}) {
     try {
       let query = `
-        SELECT * FROM event_analytics
-        WHERE estate_id = $1
+        SELECT e.*, 
+               COUNT(ev.id) as total_invited,
+               COUNT(CASE WHEN ev.invitation_status = 'confirmed' THEN 1 END) as confirmed_count,
+               COUNT(CASE WHEN ev.rsvp_status = 'attending' THEN 1 END) as rsvp_attending,
+               COUNT(CASE WHEN ev.checked_in = true THEN 1 END) as checked_in_count
+        FROM events e
+        LEFT JOIN event_visitors ev ON e.id = ev.event_id
+        WHERE e.estate_location_id = $1
       `;
       const params = [estateId];
       let paramCount = 1;
@@ -115,25 +121,25 @@ class EventManagementService {
       // Apply filters
       if (filters.status) {
         paramCount++;
-        query += ` AND status = $${paramCount}`;
+        query += ` AND e.status = $${paramCount}`;
         params.push(filters.status);
       }
 
       if (filters.event_type) {
         paramCount++;
-        query += ` AND event_type = $${paramCount}`;
+        query += ` AND e.event_type = $${paramCount}`;
         params.push(filters.event_type);
       }
 
       if (filters.upcoming) {
-        query += ` AND start_date >= NOW()`;
+        query += ` AND e.start_date >= NOW()`;
       }
 
       if (filters.past) {
-        query += ` AND end_date < NOW()`;
+        query += ` AND e.end_date < NOW()`;
       }
 
-      query += ` ORDER BY start_date DESC`;
+      query += ` GROUP BY e.id ORDER BY e.start_date DESC`;
 
       if (filters.limit) {
         paramCount++;
@@ -558,6 +564,22 @@ class EventManagementService {
 </body>
 </html>
     `;
+  }
+
+  /**
+   * Validate RSVP token
+   */
+  async validateRSVPToken(eventVisitorId, rsvpToken) {
+    try {
+      const result = await db.query(
+        'SELECT id FROM event_visitors WHERE id = $1 AND rsvp_token = $2',
+        [eventVisitorId, rsvpToken]
+      );
+      return result.rows.length > 0;
+    } catch (error) {
+      loggingService.logError('Failed to validate RSVP token', error);
+      return false;
+    }
   }
 
   /**

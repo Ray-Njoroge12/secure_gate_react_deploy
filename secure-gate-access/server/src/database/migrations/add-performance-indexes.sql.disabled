@@ -14,12 +14,12 @@ WHERE email IS NOT NULL;
 
 -- Phone number index (used for SMS notifications, visitor lookup)
 CREATE INDEX IF NOT EXISTS idx_visitors_phone
-ON visitors(phone_number)
-WHERE phone_number IS NOT NULL;
+ON visitors(phone)
+WHERE phone IS NOT NULL;
 
 -- Visitor name index (used for search, autocomplete)
 CREATE INDEX IF NOT EXISTS idx_visitors_name
-ON visitors(visitor_name);
+ON visitors(name);
 
 -- Status index (used for filtering active/checked-in/checked-out visitors)
 CREATE INDEX IF NOT EXISTS idx_visitors_status
@@ -34,15 +34,15 @@ CREATE INDEX IF NOT EXISTS idx_visitors_resident_id
 ON visitors(resident_id)
 WHERE resident_id IS NOT NULL;
 
--- Estate ID index (multi-tenant filtering)
-CREATE INDEX IF NOT EXISTS idx_visitors_estate_id
-ON visitors(estate_id)
-WHERE estate_id IS NOT NULL;
+-- Estate ID index (multi-tenant filtering) - SKIPPED, column doesn't exist
+-- CREATE INDEX IF NOT EXISTS idx_visitors_estate_id
+-- ON visitors(estate_id)
+-- WHERE estate_id IS NOT NULL;
 
--- Composite index for common query pattern (estate + status + date)
-CREATE INDEX IF NOT EXISTS idx_visitors_estate_status_created
-ON visitors(estate_id, status, created_at DESC)
-WHERE estate_id IS NOT NULL;
+-- Composite index for common query pattern (estate + status + date) - SKIPPED, column doesn't exist
+-- CREATE INDEX IF NOT EXISTS idx_visitors_estate_status_created
+-- ON visitors(estate_id, status, created_at DESC)
+-- WHERE estate_id IS NOT NULL;
 
 -- ============================================================================
 -- USERS TABLE INDEXES
@@ -61,41 +61,41 @@ WHERE username IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_users_role
 ON users(role);
 
--- Active status index (filter inactive users)
-CREATE INDEX IF NOT EXISTS idx_users_active
-ON users(is_active)
-WHERE is_active = true;
+-- Active status index (filter inactive users) - SKIPPED, column doesn't exist
+-- CREATE INDEX IF NOT EXISTS idx_users_active
+-- ON users(is_active)
+-- WHERE is_active = true;
 
--- Estate ID index (multi-tenant queries)
-CREATE INDEX IF NOT EXISTS idx_users_estate_id
-ON users(estate_id)
-WHERE estate_id IS NOT NULL;
+-- Estate ID index (multi-tenant queries) - SKIPPED, column doesn't exist
+-- CREATE INDEX IF NOT EXISTS idx_users_estate_id
+-- ON users(estate_id)
+-- WHERE estate_id IS NOT NULL;
 
 -- ============================================================================
--- NOTIFICATIONS TABLE INDEXES
+-- NOTIFICATIONS TABLE INDEXES (SKIPPED - TABLE DOESN'T EXIST)
 -- ============================================================================
 
 -- Recipient email index (delivery tracking)
-CREATE INDEX IF NOT EXISTS idx_notifications_recipient
-ON notifications(recipient_email)
-WHERE recipient_email IS NOT NULL;
+-- CREATE INDEX IF NOT EXISTS idx_notifications_recipient
+-- ON notifications(recipient_email)
+-- WHERE recipient_email IS NOT NULL;
 
 -- Status index (querying pending/sent/failed notifications)
-CREATE INDEX IF NOT EXISTS idx_notifications_status
-ON notifications(status);
+-- CREATE INDEX IF NOT EXISTS idx_notifications_status
+-- ON notifications(status);
 
 -- Created date index (cleanup, reports)
-CREATE INDEX IF NOT EXISTS idx_notifications_created
-ON notifications(created_at DESC);
+-- CREATE INDEX IF NOT EXISTS idx_notifications_created
+-- ON notifications(created_at DESC);
 
 -- Notification type index (filtering by email/sms)
-CREATE INDEX IF NOT EXISTS idx_notifications_type
-ON notifications(type)
-WHERE type IS NOT NULL;
+-- CREATE INDEX IF NOT EXISTS idx_notifications_type
+-- ON notifications(type)
+-- WHERE type IS NOT NULL;
 
 -- Composite index for delivery monitoring (status + created)
-CREATE INDEX IF NOT EXISTS idx_notifications_status_created
-ON notifications(status, created_at DESC);
+-- CREATE INDEX IF NOT EXISTS idx_notifications_status_created
+-- ON notifications(status, created_at DESC);
 
 -- ============================================================================
 -- AUDIT_LOGS TABLE INDEXES
@@ -129,8 +129,8 @@ WHERE user_id IS NOT NULL;
 -- ============================================================================
 
 -- Session ID index (session lookup)
-CREATE INDEX IF NOT EXISTS idx_sessions_sid
-ON sessions(sid);
+CREATE INDEX IF NOT EXISTS idx_sessions_session_id
+ON sessions(session_id);
 
 -- User ID index (user session tracking)
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id
@@ -138,8 +138,8 @@ ON sessions(user_id)
 WHERE user_id IS NOT NULL;
 
 -- Expiry index (cleanup expired sessions)
-CREATE INDEX IF NOT EXISTS idx_sessions_expire
-ON sessions(expire);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at
+ON sessions(expires_at);
 
 -- ============================================================================
 -- RECURRING_PASSES TABLE INDEXES (if exists)
@@ -179,12 +179,15 @@ BEGIN
     AND indexname LIKE 'idx_%';
 
     RAISE NOTICE 'Total performance indexes created: %', index_count;
+    RAISE NOTICE '✅ Performance indexes migration complete!';
+    RAISE NOTICE '📊 Run EXPLAIN ANALYZE on slow queries to verify index usage';
+    RAISE NOTICE '🔍 Monitor pg_stat_user_indexes to track index effectiveness';
 END $$;
 
 -- Analyze tables to update statistics for query planner
 ANALYZE visitors;
 ANALYZE users;
-ANALYZE notifications;
+-- ANALYZE notifications; -- Skipped - table doesn't exist
 ANALYZE audit_logs;
 ANALYZE sessions;
 ANALYZE recurring_passes;
@@ -213,8 +216,8 @@ ORDER BY tablename, indexname;
 
 -- Performance tips
 COMMENT ON INDEX idx_visitors_email IS 'Phase 3.2: Improves email lookup and duplicate checking';
-COMMENT ON INDEX idx_visitors_estate_status_created IS 'Phase 3.2: Composite index for common dashboard queries';
-COMMENT ON INDEX idx_notifications_status_created IS 'Phase 3.2: Optimizes notification queue monitoring';
+-- COMMENT ON INDEX idx_visitors_estate_status_created IS 'Phase 3.2: Composite index for common dashboard queries'; -- Skipped
+-- COMMENT ON INDEX idx_notifications_status_created IS 'Phase 3.2: Optimizes notification queue monitoring'; -- Skipped
 COMMENT ON INDEX idx_audit_logs_user_timestamp IS 'Phase 3.2: Speeds up user activity history queries';
 
 -- ============================================================================
@@ -232,7 +235,3 @@ COMMENT ON INDEX idx_audit_logs_user_timestamp IS 'Phase 3.2: Speeds up user act
 -- BEFORE: N+1 query problem
 -- SELECT * FROM visitors; -- Then SELECT * FROM users FOR EACH visitor
 -- AFTER: Use JOIN with indexed foreign keys (90% reduction in queries)
-
-RAISE NOTICE '✅ Performance indexes migration complete!';
-RAISE NOTICE '📊 Run EXPLAIN ANALYZE on slow queries to verify index usage';
-RAISE NOTICE '🔍 Monitor pg_stat_user_indexes to track index effectiveness';

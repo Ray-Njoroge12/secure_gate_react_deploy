@@ -10,6 +10,7 @@ import { setupTestDatabase, cleanupTestDatabase, createTestUsers, getAuthToken }
 import { dbManager } from '../../../src/database/db.enhanced.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
 
@@ -43,10 +44,10 @@ describe('Authentication API Integration Tests', () => {
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
       const result = await dbManager.query(
-        `INSERT INTO users (username, email, password, role, phone, unit)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id, username, email, role, phone, unit, created_at`,
-        [userData.username, userData.email, hashedPassword, userData.role, userData.phone, userData.unit]
+        [userData.username, userData.email, hashedPassword, hashedPassword, userData.role, userData.phone, userData.unit, true]
       );
 
       expect(result.rows).toHaveLength(1);
@@ -61,10 +62,11 @@ describe('Authentication API Integration Tests', () => {
 
       // Attempt to insert duplicate
       try {
+        const hashedPassword = await bcrypt.hash('hashedpass', 10);
         await dbManager.query(
-          `INSERT INTO users (username, email, password, role)
-           VALUES ($1, $2, $3, $4)`,
-          ['duplicate_user', existingEmail, 'hashedpass', 'resident']
+          `INSERT INTO users (username, email, password, password_hash, role, verified)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          ['duplicate_user', existingEmail, hashedPassword, hashedPassword, 'resident', true]
         );
         fail('Should have thrown duplicate error');
       } catch (error) {
@@ -77,10 +79,10 @@ describe('Authentication API Integration Tests', () => {
       const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
       const result = await dbManager.query(
-        `INSERT INTO users (username, email, password, role)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO users (username, email, password, password_hash, role, verified)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [`hashtest_${Date.now()}`, `hashtest_${Date.now()}@test.com`, hashedPassword, 'resident']
+        [`hashtest_${Date.now()}`, `hashtest_${Date.now()}@test.com`, hashedPassword, hashedPassword, 'resident', true]
       );
 
       // Stored password should not match plain text
@@ -126,7 +128,9 @@ describe('Authentication API Integration Tests', () => {
       expect(userResult.rows).toHaveLength(1);
       const user = userResult.rows[0];
 
-      const isValid = await bcrypt.compare(password, user.password);
+      // Use argon2 since createTestUsers hashes with argon2
+      const argon2 = await import('argon2');
+      const isValid = await argon2.default.verify(user.password, password);
       expect(isValid).toBe(true);
 
       // Generate token
@@ -212,9 +216,10 @@ describe('Authentication API Integration Tests', () => {
     it('should refresh valid token', async () => {
       const user = testUsers.resident;
 
-      // Create initial token
+      // Create initial token with explicit jti
+      const jti1 = crypto.randomBytes(8).toString('hex');
       const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
+        { id: user.id, email: user.email, role: user.role, jti: jti1 },
         JWT_SECRET,
         { expiresIn: '1h' }
       );
@@ -222,15 +227,16 @@ describe('Authentication API Integration Tests', () => {
       // Verify and decode
       const decoded = jwt.verify(token, JWT_SECRET);
 
-      // Generate new token
+      // Generate new token with different jti
+      const jti2 = crypto.randomBytes(8).toString('hex');
       const newToken = jwt.sign(
-        { id: decoded.id, email: decoded.email, role: decoded.role },
+        { id: decoded.id, email: decoded.email, role: decoded.role, jti: jti2 },
         JWT_SECRET,
         { expiresIn: '1h' }
       );
 
       expect(newToken).toBeDefined();
-      expect(newToken).not.toBe(token); // Should be different
+      expect(newToken).not.toBe(token); // Should be different due to different jti
     });
 
     it('should reject expired token refresh', async () => {

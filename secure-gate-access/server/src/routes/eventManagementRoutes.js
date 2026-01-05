@@ -276,7 +276,7 @@ router.post('/:id/invitations', authenticateToken, async (req, res) => {
 
 /**
  * @route POST /api/events/:id/bulk-invitations
- * @desc Upload CSV file with bulk invitations
+ * @desc Upload CSV file with bulk invitations OR send JSON array
  * @access Admin, Event Host
  */
 router.post('/:id/bulk-invitations', authenticateToken, upload.single('csv'), async (req, res) => {
@@ -284,10 +284,42 @@ router.post('/:id/bulk-invitations', authenticateToken, upload.single('csv'), as
     const { id } = req.params;
     const { user } = req;
 
+    // Handle JSON input (for programmatic/test access)
+    if (req.body && req.body.invitations && Array.isArray(req.body.invitations)) {
+      try {
+        if (req.body.invitations.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invitations array is empty'
+          });
+        }
+
+        // Process bulk invitations from JSON
+        const result = await eventManagementService.processBulkInvitations(
+          id,
+          req.body.invitations,
+          user.id
+        );
+
+        return res.json({
+          success: true,
+          data: result,
+          message: `Processed ${result.successful + result.failed} invitations (${result.successful} successful, ${result.failed} failed)`
+        });
+      } catch (error) {
+        loggingService.logError('Failed to process bulk invitations from JSON', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to process bulk invitations'
+        });
+      }
+    }
+
+    // Handle CSV file upload
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        error: 'No CSV file uploaded'
+        error: 'No CSV file uploaded or invitations array provided'
       });
     }
 
@@ -447,7 +479,15 @@ router.get('/:id/statistics', authenticateToken, async (req, res) => {
  */
 router.post('/rsvp', async (req, res) => {
   try {
-    const { event_visitor_id, rsvp_status, plus_one_count, plus_one_names } = req.body;
+    const { event_visitor_id, rsvp_status, plus_one_count, plus_one_names, rsvp_token } = req.body;
+
+    // Require RSVP token for security
+    if (!rsvp_token) {
+      return res.status(400).json({
+        success: false,
+        error: 'RSVP token required'
+      });
+    }
 
     if (!event_visitor_id || !rsvp_status) {
       return res.status(400).json({
@@ -460,6 +500,19 @@ router.post('/rsvp', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Invalid RSVP status'
+      });
+    }
+
+    // Validate RSVP token matches event_visitor_id
+    const isValid = await eventManagementService.validateRSVPToken(
+      event_visitor_id,
+      rsvp_token
+    );
+
+    if (!isValid) {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid RSVP token'
       });
     }
 
@@ -573,6 +626,14 @@ router.get('/:id/calendar', async (req, res) => {
     const { id } = req.params;
     const { code } = req.query;
 
+    // Require invitation code for security
+    if (!code) {
+      return res.status(401).json({
+        success: false,
+        error: 'Invitation code required to download calendar'
+      });
+    }
+
     // Get event
     const eventResult = await eventManagementService.getEventById(id);
     if (!eventResult) {
@@ -582,11 +643,15 @@ router.get('/:id/calendar', async (req, res) => {
       });
     }
 
-    // Get invitation if code provided
-    let invitation = null;
-    if (code) {
-      const invitationResult = await eventManagementService.getEventAttendees(id, {});
-      invitation = invitationResult.find(inv => inv.event_qr_code === code);
+    // Validate invitation code for this event
+    const invitationResult = await eventManagementService.getEventAttendees(id, {});
+    const invitation = invitationResult.find(inv => inv.event_qr_code === code);
+
+    if (!invitation) {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid invitation code for this event'
+      });
     }
 
     // Generate calendar file

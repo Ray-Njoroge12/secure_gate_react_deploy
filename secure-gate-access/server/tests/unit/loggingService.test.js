@@ -15,54 +15,48 @@
 import { jest } from '@jest/globals';
 
 // Mock winston - create fresh logger for each call
-const createMockLogger = () => ({
-  log: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  info: jest.fn(),
-  debug: jest.fn(),
-  child: jest.fn(function() { return this; })
+const createMockLogger = () => {
+  // Create a simple extensible object
+  const logger = {
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+    silly: jest.fn(),
+    child: jest.fn(function() { return logger; })
+  };
+  return logger;
+};
+
+const mockCreateLogger = jest.fn((config) => {
+  // Always return a valid logger object
+  return createMockLogger();
 });
 
-const mockLoggerInstance = createMockLogger();
-
-const mockCreateLogger = jest.fn(() => {
-  const newLogger = createMockLogger();
-  // Ensure new instances can have properties set
-  return newLogger;
-});
-
-jest.unstable_mockModule('winston', () => ({
-  default: {
-    createLogger: mockCreateLogger,
-    format: {
-      combine: jest.fn((...args) => args),
-      timestamp: jest.fn(() => 'timestamp'),
-      colorize: jest.fn(() => 'colorize'),
-      errors: jest.fn(() => 'errors'),
-      json: jest.fn(() => 'json'),
-      printf: jest.fn((fn) => fn),
-      metadata: jest.fn(() => 'metadata')
-    },
-    transports: {
-      Console: jest.fn(),
-      File: jest.fn()
-    }
-  },
+const winstonMock = {
   createLogger: mockCreateLogger,
   format: {
     combine: jest.fn((...args) => args),
-    timestamp: jest.fn(() => 'timestamp'),
-    colorize: jest.fn(() => 'colorize'),
-    errors: jest.fn(() => 'errors'),
-    json: jest.fn(() => 'json'),
-    printf: jest.fn((fn) => fn),
-    metadata: jest.fn(() => 'metadata')
+    timestamp: jest.fn(() => ({ timestamp: true })),
+    colorize: jest.fn(() => ({ colorize: true })),
+    errors: jest.fn(() => ({ errors: true })),
+    json: jest.fn(() => ({ json: true })),
+    printf: jest.fn((fn) => ({ printf: fn })),
+    metadata: jest.fn(() => ({ metadata: true }))
   },
   transports: {
     Console: jest.fn(),
     File: jest.fn()
   }
+};
+
+jest.unstable_mockModule('winston', () => ({
+  default: winstonMock,
+  createLogger: mockCreateLogger,
+  format: winstonMock.format,
+  transports: winstonMock.transports
 }));
 
 // Mock winston-daily-rotate-file
@@ -108,10 +102,10 @@ describe('LoggingService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    jest.resetModules();
+    // DO NOT call jest.resetModules() - it clears our Winston/fs mocks!
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     // Reset log stats
     loggingService.resetStats();
   });

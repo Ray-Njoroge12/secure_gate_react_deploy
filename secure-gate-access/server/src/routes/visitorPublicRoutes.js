@@ -61,7 +61,7 @@ const estateInfoLimiter = rateLimit({
  * @rateLimit 10 req/min
  */
 router.get(
-  '/visitors/by-token/:token',
+  '/by-token/:token',
   visitorTokenLimiter,
   getVisitorByToken
 );
@@ -73,7 +73,7 @@ router.get(
  * @rateLimit 30 req/min
  */
 router.get(
-  '/visitors/:token/status',
+  '/:token/status',
   statusPollLimiter,
   getVisitorStatus
 );
@@ -85,7 +85,7 @@ router.get(
  * @rateLimit 10 req/min
  */
 router.post(
-  '/visitors/:token/confirm',
+  '/:token/confirm',
   visitorTokenLimiter,
   confirmVisitorByToken
 );

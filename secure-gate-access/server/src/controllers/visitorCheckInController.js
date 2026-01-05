@@ -9,7 +9,9 @@ import WebSocketService from '../services/websocketService.js';
 const checkInVisitor = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role && req.user.role !== 'guard') return respondError(res, 403, 'Forbidden');
+    // Allow guards and admins to check in visitors
+    const allowedRoles = ['guard', 'admin'];
+    if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     
     const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);
@@ -49,7 +51,9 @@ const checkInVisitor = async (req, res) => {
 const checkOutVisitor = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role && req.user.role !== 'guard') return respondError(res, 403, 'Forbidden');
+    // Allow guards and admins to check out visitors
+    const allowedRoles = ['guard', 'admin'];
+    if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     
     const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);

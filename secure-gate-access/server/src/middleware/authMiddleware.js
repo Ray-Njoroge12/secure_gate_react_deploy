@@ -14,10 +14,11 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     // Try to get token from Authorization header first (for API clients)
     const authHeader = req.headers['authorization'];
     const headerToken = authHeader && authHeader.split(' ')[1];
-    
+
     // Then try to get token from httpOnly cookie (for browser clients)
-    const cookieToken = req.cookies?.accessToken;
-    
+    // Check both 'accessToken' and 'token' for backward compatibility
+    const cookieToken = req.cookies?.accessToken || req.cookies?.token;
+
     // Use whichever token is available (header takes precedence for backward compatibility)
     const token = headerToken || cookieToken;
 
@@ -60,7 +61,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
 
     // Look up user in database to get full user info
     const userQuery = await dbManager.query(
-      'SELECT id, email, username, role, verified FROM users WHERE LOWER(email) = LOWER($1)',
+      'SELECT id, email, username, role FROM users WHERE LOWER(email) = LOWER($1)',
       [payload.email]
     );
 
@@ -77,8 +78,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       id: dbUser.id,
       email: dbUser.email,
       username: dbUser.username,
-      role: dbUser.role,
-      verified: dbUser.verified
+      role: dbUser.role
     };
 
     return next();
@@ -93,6 +93,14 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       // Security: JWT expired - no details logged
       throw new AppError('Token expired', 401, 'AUTH_TOKEN_EXPIRED');
     } else {
+      // Log the actual error for debugging in test/development
+      if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
+        console.error('Auth middleware unexpected error:', {
+          message: err.message,
+          stack: err.stack,
+          name: err.name
+        });
+      }
       // Security: Unexpected auth error - logged to secure error handler
       throw new AppError('Authentication error', 500, 'AUTH_INTERNAL_ERROR');
     }
@@ -105,7 +113,8 @@ export async function attachUserFromToken(req, res, next) {
     // Try both header and cookie
     const authHeader = req.headers['authorization'];
     const headerToken = authHeader && authHeader.split(' ')[1];
-    const cookieToken = req.cookies?.accessToken;
+    // Check both 'accessToken' and 'token' for backward compatibility
+    const cookieToken = req.cookies?.accessToken || req.cookies?.token;
     const token = headerToken || cookieToken;
     
     if (!token) return next();
@@ -122,13 +131,13 @@ export async function attachUserFromToken(req, res, next) {
     if (userIdentifier.includes('@')) {
       // Email lookup for legacy tokens
       userQuery = await dbManager.query(
-        'SELECT id, email, username, role, verified FROM users WHERE LOWER(email) = LOWER($1)',
+        'SELECT id, email, username, role FROM users WHERE LOWER(email) = LOWER($1)',
         [userIdentifier]
       );
     } else {
       // ID lookup for standardized tokens (sub claim)
       userQuery = await dbManager.query(
-        'SELECT id, email, username, role, verified FROM users WHERE id = $1',
+        'SELECT id, email, username, role FROM users WHERE id = $1',
         [parseInt(userIdentifier)]
       );
     }
@@ -139,8 +148,7 @@ export async function attachUserFromToken(req, res, next) {
         id: dbUser.id,
         email: dbUser.email,
         username: dbUser.username,
-        role: dbUser.role,
-        verified: dbUser.verified
+        role: dbUser.role
       };
     }
   } catch (err) {
@@ -169,11 +177,14 @@ export const authorize = (roles) => {
 
 // Role-based access control middleware
 export const requireRole = (...allowedRoles) => {
+  // Handle both array and spread arguments: requireRole(['admin']) or requireRole('admin')
+  const roles = Array.isArray(allowedRoles[0]) ? allowedRoles[0] : allowedRoles;
+  
   return (req, res, next) => {
     if (!req.user) {
       throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');
     }
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role)) {
       throw new AppError('Insufficient permissions', 403, 'AUTH_FORBIDDEN');
     }
     next();

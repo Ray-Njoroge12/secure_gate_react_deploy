@@ -1,0 +1,44 @@
+/**
+ * Smoke Test: Server Health Check
+ * Verifies that the server is running and responding
+ */
+
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import request from 'supertest';
+
+// Use environment variable or default port
+const BASE_URL = process.env.API_URL || 'http://localhost:3001';
+
+describe('Smoke Test: Server Health', () => {
+  test('should respond to health check endpoint', async () => {
+    const response = await request(BASE_URL)
+      .get('/api/health')
+      .expect(200);
+
+    expect(response.body).toBeDefined();
+    expect(response.body.status).toBe('healthy');
+  }, 10000);
+
+  test('should return server information', async () => {
+    const response = await request(BASE_URL)
+      .get('/api/health')
+      .expect(200);
+
+    expect(response.body.timestamp).toBeDefined();
+    expect(response.body.uptime).toBeDefined();
+    expect(response.body.version).toBeDefined();
+  }, 10000);
+
+  test('server should respond within acceptable time', async () => {
+    const startTime = Date.now();
+
+    await request(BASE_URL)
+      .get('/api/health')
+      .expect(200);
+
+    const responseTime = Date.now() - startTime;
+
+    // Health check should respond within 1 second
+    expect(responseTime).toBeLessThan(1000);
+  }, 10000);
+});

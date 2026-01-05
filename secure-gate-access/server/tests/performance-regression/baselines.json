@@ -1,0 +1,167 @@
+{
+  "encryption_baseline": {
+    "mean": 10.967,
+    "median": 11.079,
+    "min": 10.056,
+    "max": 11.213,
+    "stdDev": 0.289,
+    "p95": 11.128,
+    "p99": 11.213,
+    "timestamp": "2026-01-01T19:35:45.208Z",
+    "version": "1.0.0"
+  },
+  "Encryption": {
+    "mean": 11.004,
+    "median": 11.059,
+    "min": 10.15,
+    "max": 11.418,
+    "stdDev": 0.223,
+    "p95": 11.146,
+    "p99": 11.418,
+    "timestamp": "2026-01-01T19:36:00.413Z",
+    "version": "1.0.0"
+  },
+  "Token Generation": {
+    "mean": 5.616,
+    "median": 5.676,
+    "min": 5.071,
+    "max": 5.71,
+    "stdDev": 0.164,
+    "p95": 5.703,
+    "p99": 5.71,
+    "timestamp": "2026-01-01T19:36:00.639Z",
+    "version": "1.0.0"
+  },
+  "Token Verification": {
+    "mean": 3.37,
+    "median": 3.423,
+    "min": 2.29,
+    "max": 3.654,
+    "stdDev": 0.277,
+    "p95": 3.52,
+    "p99": 3.654,
+    "timestamp": "2026-01-01T19:36:00.777Z",
+    "version": "1.0.0"
+  },
+  "Cache Get": {
+    "mean": 1.162,
+    "median": 1.158,
+    "min": 1.148,
+    "max": 1.191,
+    "stdDev": 0.011,
+    "p95": 1.178,
+    "p99": 1.191,
+    "timestamp": "2026-01-01T19:36:00.848Z",
+    "version": "1.0.0"
+  },
+  "GDPR Compliance": {
+    "mean": 51.067,
+    "median": 51.114,
+    "min": 50.255,
+    "max": 51.508,
+    "stdDev": 0.339,
+    "p95": 51.508,
+    "p99": 51.508,
+    "timestamp": "2026-01-01T19:36:01.871Z",
+    "version": "1.0.0"
+  },
+  "auth_login_baseline": {
+    "mean": 51.208,
+    "median": 51.342,
+    "min": 49.666,
+    "max": 51.816,
+    "stdDev": 0.519,
+    "p95": 51.591,
+    "p99": 51.816,
+    "timestamp": "2026-01-01T19:36:06.233Z",
+    "version": "1.0.0"
+  },
+  "Health Check": {
+    "mean": 5.72,
+    "median": 5.778,
+    "min": 4.283,
+    "max": 5.965,
+    "stdDev": 0.281,
+    "p95": 5.905,
+    "p99": 5.965,
+    "timestamp": "2026-01-01T19:36:57.359Z",
+    "version": "1.0.0"
+  },
+  "Authentication": {
+    "mean": 51.189,
+    "median": 51.352,
+    "min": 50.11,
+    "max": 51.497,
+    "stdDev": 0.363,
+    "p95": 51.474,
+    "p99": 51.497,
+    "timestamp": "2026-01-01T19:36:58.899Z",
+    "version": "1.0.0"
+  },
+  "List Visitors": {
+    "mean": 51.147,
+    "median": 51.367,
+    "min": 50.031,
+    "max": 51.487,
+    "stdDev": 0.406,
+    "p95": 51.478,
+    "p99": 51.487,
+    "timestamp": "2026-01-01T19:37:00.438Z",
+    "version": "1.0.0"
+  },
+  "Create Visitor": {
+    "mean": 31.27,
+    "median": 31.299,
+    "min": 30.271,
+    "max": 32.075,
+    "stdDev": 0.309,
+    "p95": 31.441,
+    "p99": 32.075,
+    "timestamp": "2026-01-01T19:37:01.380Z",
+    "version": "1.0.0"
+  },
+  "simple_select_baseline": {
+    "mean": 5.0,
+    "median": 5.0,
+    "min": 2.0,
+    "max": 10.0,
+    "stdDev": 1.0,
+    "p95": 8.0,
+    "p99": 10.0,
+    "timestamp": "2026-01-02T08:00:00.000Z",
+    "version": "1.0.0"
+  },
+  "Simple SELECT": {
+    "mean": 0.002,
+    "median": 0.001,
+    "min": 0.001,
+    "max": 0.004,
+    "stdDev": 0.001,
+    "p95": 0.004,
+    "p99": 0.004,
+    "timestamp": "2026-01-01T19:37:04.062Z",
+    "version": "1.0.0"
+  },
+  "Complex JOIN": {
+    "mean": 0.001,
+    "median": 0.001,
+    "min": 0.001,
+    "max": 0.003,
+    "stdDev": 0,
+    "p95": 0.003,
+    "p99": 0.003,
+    "timestamp": "2026-01-01T19:37:04.062Z",
+    "version": "1.0.0"
+  },
+  "Transaction": {
+    "mean": 0,
+    "median": 0,
+    "min": 0,
+    "max": 0,
+    "stdDev": 0,
+    "p95": 0,
+    "p99": 0,
+    "timestamp": "2026-01-01T19:37:04.063Z",
+    "version": "1.0.0"
+  }
+}

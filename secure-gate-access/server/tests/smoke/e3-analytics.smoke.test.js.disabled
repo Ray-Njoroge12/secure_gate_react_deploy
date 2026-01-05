@@ -1,0 +1,122 @@
+/**
+ * Smoke Test: E3 Analytics Export
+ * Verifies that event management and analytics endpoints are accessible
+ */
+
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import request from 'supertest';
+import dbManager from '../../src/database/db.enhanced.js';
+
+const BASE_URL = process.env.API_URL || 'http://localhost:3001';
+
+describe('Smoke Test: E3 Analytics Export', () => {
+  // Database manager auto-initializes, no setup needed
+
+  test('should verify events table exists', async () => {
+    const result = await dbManager.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'events'
+      )`
+    );
+
+    expect(result.rows[0].exists).toBe(true);
+  }, 10000);
+
+  test('should verify event_visitors table exists', async () => {
+    const result = await dbManager.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'event_visitors'
+      )`
+    );
+
+    expect(result.rows[0].exists).toBe(true);
+  }, 10000);
+
+  test('should verify event_analytics view exists', async () => {
+    const result = await dbManager.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.views
+        WHERE table_schema = 'public'
+        AND table_name = 'event_analytics'
+      )`
+    );
+
+    expect(result.rows[0].exists).toBe(true);
+  }, 10000);
+
+  test('should verify upcoming_events view exists', async () => {
+    const result = await dbManager.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.views
+        WHERE table_schema = 'public'
+        AND table_name = 'upcoming_events'
+      )`
+    );
+
+    expect(result.rows[0].exists).toBe(true);
+  }, 10000);
+
+  test('should verify event_checkin_queue view exists', async () => {
+    const result = await dbManager.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.views
+        WHERE table_schema = 'public'
+        AND table_name = 'event_checkin_queue'
+      )`
+    );
+
+    expect(result.rows[0].exists).toBe(true);
+  }, 10000);
+
+  test('should access events endpoint (protected)', async () => {
+    // Without auth, should get 401
+    const response = await request(BASE_URL)
+      .get('/api/events');
+
+    expect(response.status).toBe(401);
+  }, 10000);
+
+  test('should access analytics endpoint (protected)', async () => {
+    // Without auth, should get 401
+    const response = await request(BASE_URL)
+      .get('/api/analytics/events/1');
+
+    expect(response.status).toBe(401);
+  }, 10000);
+
+  test('should access analytics export endpoint (protected)', async () => {
+    // Without auth, should get 401
+    const response = await request(BASE_URL)
+      .get('/api/analytics/export?format=csv');
+
+    expect(response.status).toBe(401);
+  }, 10000);
+
+  test('should verify bulk_invitation_batches table exists', async () => {
+    const result = await dbManager.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'bulk_invitation_batches'
+      )`
+    );
+
+    expect(result.rows[0].exists).toBe(true);
+  }, 10000);
+
+  test('should verify event_reminders table exists', async () => {
+    const result = await dbManager.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_name = 'event_reminders'
+      )`
+    );
+
+    expect(result.rows[0].exists).toBe(true);
+  }, 10000);
+});

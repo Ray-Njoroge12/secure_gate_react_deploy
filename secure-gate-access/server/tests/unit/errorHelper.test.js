@@ -6,16 +6,7 @@
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
-// Mock respond module
-const mockRespondError = jest.fn((res, code, message) => {
-  res.status(code).json({ success: false, error: { code, message } });
-  return res;
-});
-
-jest.unstable_mockModule('../../src/utils/respond.js', () => ({
-  respondError: mockRespondError
-}));
-
+// Import the actual implementation (no mocking needed - we test behavior)
 const {
   handleTransactionError,
   handleValidationError,
@@ -29,7 +20,7 @@ describe('errorHelper', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    jest.resetModules();
+    // DO NOT call jest.resetModules() here - it clears our mocks!
     mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis()

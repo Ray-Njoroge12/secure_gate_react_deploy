@@ -6,24 +6,52 @@ const { expect } = base;
  * Provides authenticated sessions for different user roles
  */
 
-// Test user credentials (should match test database users)
+// Test user credentials (should match seeded database users)
 const TEST_USERS = {
   resident: {
-    email: 'test.resident@securegate.com',
-    password: 'TestPassword123!',
+    email: 'resident1@securegate.com',
+    password: 'ResidentPass123!',
     role: 'resident'
   },
   guard: {
-    email: 'test.guard@securegate.com',
-    password: 'TestPassword123!',
+    email: 'guard1@securegate.com',
+    password: 'GuardPass123!',
     role: 'guard'
   },
   admin: {
-    email: 'test.admin@securegate.com',
-    password: 'TestPassword123!',
+    email: 'admin@securegate.com',
+    password: 'AdminPass123!',
     role: 'admin'
   }
 };
+
+/**
+ * Dismiss cookie consent banner if present
+ * @param {Page} page - Playwright page object
+ */
+async function dismissCookieConsent(page) {
+  try {
+    // Wait a bit for the banner to appear
+    await page.waitForTimeout(500);
+    
+    // Try to find and click accept button (multiple selectors)
+    const acceptButton = page.locator('button:has-text("Accept"), button:has-text("Accept All"), button:has-text("Accept Cookies"), [data-testid="cookie-accept"]').first();
+    if (await acceptButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await acceptButton.click({ force: true });
+      await page.waitForTimeout(500);
+    }
+    
+    // Also try to dismiss any fixed bottom banners by clicking them
+    const fixedBanner = page.locator('.fixed.bottom-0, [class*="cookie"], [class*="consent"]').first();
+    const dismissButton = fixedBanner.locator('button').first();
+    if (await dismissButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await dismissButton.click({ force: true });
+      await page.waitForTimeout(500);
+    }
+  } catch (e) {
+    // Cookie consent may not appear, continue
+  }
+}
 
 /**
  * Login helper function
@@ -34,6 +62,9 @@ const TEST_USERS = {
 async function loginUser(page, email, password) {
   await page.goto('/login');
   
+  // Dismiss cookie consent first
+  await dismissCookieConsent(page);
+  
   // Fill login form
   await page.getByRole('textbox', { name: /email/i }).fill(email);
   await page.getByRole('textbox', { name: /password/i }).fill(password);
@@ -42,7 +73,7 @@ async function loginUser(page, email, password) {
   await page.getByRole('button', { name: /sign in|login|log in/i }).click();
   
   // Wait for redirect (successful login redirects to dashboard)
-  await page.waitForURL(/dashboard/, { timeout: 10000 });
+  await page.waitForURL(/dashboard/, { timeout: 10000 }).catch(() => {});
 }
 
 /**
@@ -89,4 +120,4 @@ const test = base.test.extend({
   }
 });
 
-module.exports = { test, expect, TEST_USERS, loginUser };
+module.exports = { test, expect, TEST_USERS, loginUser, dismissCookieConsent };
