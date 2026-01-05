@@ -160,14 +160,22 @@ class KenyaDPAAuditService {
    */
   async createAuditDirectory() {
     try {
-      await fs.mkdir(this.config.kenya_dpa.reporting.outputDirectory, { recursive: true });
-      loggingService.logInfo(`Created Kenya DPA audit directory: ${this.config.kenya_dpa.reporting.outputDirectory}`);
-    } catch (error) {
-      loggingService.logError('Failed to create Kenya DPA audit directory', error);
-      // In test mode, don't throw - just log the error
-      if (process.env.NODE_ENV !== 'test') {
-        throw error;
+      // Use relative path based on current working directory in production
+      let outputDir = this.config.kenya_dpa.reporting.outputDirectory;
+      
+      // If the path starts with /app (Docker/Render absolute path), use relative path instead
+      if (outputDir.startsWith('/app/')) {
+        outputDir = outputDir.replace('/app/', './');
+        this.config.kenya_dpa.reporting.outputDirectory = outputDir;
       }
+      
+      await fs.mkdir(outputDir, { recursive: true });
+      loggingService.logInfo(`Created Kenya DPA audit directory: ${outputDir}`);
+    } catch (error) {
+      // Log the error but don't throw - this is non-critical
+      loggingService.logError('Failed to create Kenya DPA audit directory', error);
+      // Don't throw the error - let the service continue without the directory
+      // Audit reports can be stored in memory or logged instead
     }
   }
 
