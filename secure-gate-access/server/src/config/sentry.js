@@ -14,7 +14,18 @@
  */
 
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
+
+// Attempt to load profiling integration, but don't fail if native module unavailable
+// The @sentry/profiling-node package requires platform-specific native binaries
+let ProfilingIntegration = null;
+try {
+  const profilingModule = await import('@sentry/profiling-node');
+  ProfilingIntegration = profilingModule.ProfilingIntegration;
+  console.log('✅ Sentry profiling module loaded successfully');
+} catch (err) {
+  console.warn('⚠️  Sentry profiling module not available (native bindings not found)');
+  console.warn('   Profiling will be disabled. This is normal on some platforms.');
+}
 
 /**
  * Initialize Sentry for error tracking and performance monitoring
@@ -36,30 +47,38 @@ export function initializeSentry() {
   const tracesSampleRate = parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1');
   const profilesSampleRate = parseFloat(process.env.SENTRY_PROFILES_SAMPLE_RATE || '0.1');
 
+  // Build integrations array dynamically
+  const integrations = [
+    // Enable HTTP request tracking
+    new Sentry.Integrations.Http({ tracing: true }),
+
+    // Enable Express.js integration (will be added via setupExpressErrorHandling)
+    new Sentry.Integrations.Express({
+      app: undefined // Will be set when Express app is passed
+    }),
+
+    // Enable automatic database query tracking
+    new Sentry.Integrations.Postgres(),
+
+    // Enable console breadcrumbs
+    new Sentry.Integrations.Console(),
+  ];
+
+  // Enable profiling only if the native module is available
+  if (ProfilingIntegration) {
+    integrations.push(new ProfilingIntegration());
+    console.log('   Profiling: Enabled');
+  } else {
+    console.log('   Profiling: Disabled (native module not available)');
+  }
+
   Sentry.init({
     dsn,
     environment,
     release,
 
     // Integrations
-    integrations: [
-      // Enable HTTP request tracking
-      new Sentry.Integrations.Http({ tracing: true }),
-
-      // Enable Express.js integration (will be added via setupExpressErrorHandling)
-      new Sentry.Integrations.Express({
-        app: undefined // Will be set when Express app is passed
-      }),
-
-      // Enable profiling for performance insights
-      new ProfilingIntegration(),
-
-      // Enable automatic database query tracking
-      new Sentry.Integrations.Postgres(),
-
-      // Enable console breadcrumbs
-      new Sentry.Integrations.Console(),
-    ],
+    integrations,
 
     // Performance Monitoring
     tracesSampleRate, // 10% of transactions in production (adjustable)
