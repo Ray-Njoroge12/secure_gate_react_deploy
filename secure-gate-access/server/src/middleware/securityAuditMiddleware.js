@@ -145,7 +145,7 @@ export const securityAuditMiddleware = (req, res, next) => {
       // Store in database for analysis
       try {
         await dbManager.query(`
-          INSERT INTO security_events (event_type, event_data, ip_address, user_agent, created_at)
+          INSERT INTO security_events (event_type, details, ip_address, user_agent, created_at)
           VALUES ($1, $2, $3, $4, NOW())
         `, [
           'suspicious_activity',
@@ -196,7 +196,7 @@ export const handleRateLimitViolation = (req, res, next) => {
 
   // Store rate limit violation
   dbManager.query(`
-    INSERT INTO security_events (event_type, event_data, ip_address, user_agent, created_at)
+    INSERT INTO security_events (event_type, details, ip_address, user_agent, created_at)
     VALUES ($1, $2, $3, $4, NOW())
   `, [
     'rate_limit_exceeded',
@@ -232,7 +232,7 @@ export const handleAuthFailure = (req, res, next) => {
 
   // Store authentication failure
   dbManager.query(`
-    INSERT INTO security_events (event_type, event_data, ip_address, user_agent, created_at)
+    INSERT INTO security_events (event_type, details, ip_address, user_agent, created_at)
     VALUES ($1, $2, $3, $4, NOW())
   `, [
     'authentication_failure',
