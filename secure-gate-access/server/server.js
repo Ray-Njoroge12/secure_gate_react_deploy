@@ -47,6 +47,9 @@ import monitoringDashboard from './src/services/monitoringDashboardService.js';
 // Import WebSocket service for Phase 2.3 real-time features
 import webSocketService from './src/services/websocketService.js';
 
+// Import migration service for auto-migration on startup
+import { runMigrations } from './src/services/migrationService.js';
+
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
 // Enhanced error handling for unhandled promise rejections
@@ -282,6 +285,19 @@ async function startServer() {
     try {
       await dbManager.initializeAsync();
       console.log('✅ Database connection established');
+      
+      // Run migrations automatically after database connection
+      console.log('🔄 Running database migrations...');
+      const migrationResult = await runMigrations();
+      if (!migrationResult.success) {
+        console.error('❌ Database migration failed:', migrationResult.error);
+        if (process.env.NODE_ENV === 'production') {
+          console.error('🚨 Server startup blocked - migrations required in production');
+          process.exit(1);
+        }
+      } else {
+        console.log(`✅ Database migrations complete (${migrationResult.applied} applied)`);
+      }
     } catch (dbError) {
       console.error('❌ Database initialization failed:', dbError.message);
       
