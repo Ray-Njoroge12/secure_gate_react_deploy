@@ -1,0 +1,139 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║           🚀 RENDER DEPLOYMENT - COMPLETE ENVIRONMENT VARIABLES              ║
+║                     Generated: 5 January 2026                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+INSTRUCTIONS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Go to Render Dashboard: https://dashboard.render.com
+2. Select your "securegate-api" service
+3. Click "Environment" tab
+4. Add each variable below (copy-paste name and value)
+5. Click "Save Changes"
+6. The service will automatically redeploy
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+================================================================================
+SECTION 1: GENERATED SECRETS (Use these exact values)
+================================================================================
+
+JWT_SECRET=65fa4f63725d298b5735500dde6c7375dc53760be1fe7bb980f9ca5cd627a029
+JWT_REFRESH_SECRET=36c0be719e0152341a0c676399530a84a47cb5b538ee4dcab64879548964ec34
+SESSION_SECRET=039c2c569dd570553c141f307034ae07d671ccb28376dd9735570417841c41ac
+
+================================================================================
+SECTION 2: SERVER CONFIGURATION
+================================================================================
+
+NODE_ENV=production
+PORT=3001
+TRUST_PROXY=true
+ENFORCE_HTTPS=true
+SECURE_COOKIES=true
+
+================================================================================
+SECTION 3: CORS CONFIGURATION (CRITICAL!)
+================================================================================
+
+CORS_ORIGIN=https://securegate-access.netlify.app
+
+================================================================================
+SECTION 4: DATABASE (Get these from Render PostgreSQL dashboard)
+================================================================================
+
+# After creating PostgreSQL database in Render, copy connection details:
+# Go to Render Dashboard → Your PostgreSQL service → Connection tab
+
+PGHOST=<your-database-host-from-render>
+PGPORT=5432
+PGDATABASE=secure_gate
+PGUSER=securegate_user
+PGPASSWORD=<your-database-password-from-render>
+
+# OR use DATABASE_URL (single connection string):
+DATABASE_URL=<postgresql://user:password@host:5432/database>
+
+================================================================================
+SECTION 5: SITE CONFIGURATION
+================================================================================
+
+SITE_NAME=Secure Gate Access
+ENABLE_EXTERNAL_NOTIFICATIONS=true
+EMAIL_VERIFICATION_REQUIRED=false
+
+================================================================================
+SECTION 6: SMS PROVIDER - AFRICA'S TALKING
+================================================================================
+
+SMS_PROVIDER=africastalking
+ENABLE_SMS_NOTIFICATIONS=true
+AT_USERNAME=securelabstest
+AT_API_KEY=<your-africastalking-api-key>
+
+================================================================================
+SECTION 7: EMAIL PROVIDER - MAILGUN
+================================================================================
+
+EMAIL_PROVIDER=mailgun
+ENABLE_EMAIL_NOTIFICATIONS=true
+MAILGUN_DOMAIN=sandboxcd6106b9f4d54da78846462008c1678b.mailgun.org
+MAILGUN_BASE_URL=https://api.mailgun.net
+MAILGUN_API_KEY=<your-mailgun-api-key>
+MAILGUN_FROM_EMAIL=noreply@securegate.com
+MAILGUN_FROM_NAME=Secure Gate
+
+================================================================================
+QUICK COPY-PASTE FORMAT (for Render Dashboard)
+================================================================================
+
+Copy each line below directly into Render Environment Variables:
+
+NODE_ENV=production
+PORT=3001
+TRUST_PROXY=true
+ENFORCE_HTTPS=true
+SECURE_COOKIES=true
+CORS_ORIGIN=https://securegate-access.netlify.app
+SITE_NAME=Secure Gate Access
+ENABLE_EXTERNAL_NOTIFICATIONS=true
+EMAIL_VERIFICATION_REQUIRED=false
+SMS_PROVIDER=africastalking
+ENABLE_SMS_NOTIFICATIONS=true
+AT_USERNAME=securelabstest
+EMAIL_PROVIDER=mailgun
+ENABLE_EMAIL_NOTIFICATIONS=true
+MAILGUN_DOMAIN=sandboxcd6106b9f4d54da78846462008c1678b.mailgun.org
+MAILGUN_BASE_URL=https://api.mailgun.net
+MAILGUN_FROM_NAME=Secure Gate
+JWT_SECRET=65fa4f63725d298b5735500dde6c7375dc53760be1fe7bb980f9ca5cd627a029
+JWT_REFRESH_SECRET=36c0be719e0152341a0c676399530a84a47cb5b538ee4dcab64879548964ec34
+SESSION_SECRET=039c2c569dd570553c141f307034ae07d671ccb28376dd9735570417841c41ac
+
+================================================================================
+SECRETS TO ADD MANUALLY (Replace with your actual values)
+================================================================================
+
+PGHOST=<from-render-postgresql>
+PGPORT=5432
+PGDATABASE=<from-render-postgresql>
+PGUSER=<from-render-postgresql>
+PGPASSWORD=<from-render-postgresql>
+AT_API_KEY=<your-africastalking-api-key>
+MAILGUN_API_KEY=<your-mailgun-api-key>
+
+================================================================================
+VERIFICATION AFTER DEPLOYMENT
+================================================================================
+
+After saving environment variables and service redeploys:
+
+1. Test health endpoint:
+   curl https://securegate-api.onrender.com/api/health
+
+2. Test login page:
+   Visit https://securegate-access.netlify.app
+
+3. Run verification script:
+   ./verify-deployment.sh
+
+================================================================================
