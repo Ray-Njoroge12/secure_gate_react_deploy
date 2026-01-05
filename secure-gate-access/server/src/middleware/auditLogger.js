@@ -163,20 +163,60 @@ const auditLogger = (...args) => {
     // Override response methods to capture response data
     res.send = function(data) {
       responseBody = data;
-      responseSize = Buffer.byteLength(data, 'utf8');
+      try {
+        // Handle all data types safely
+        let stringData;
+        if (data === undefined || data === null) {
+          stringData = '';
+        } else if (typeof data === 'string') {
+          stringData = data;
+        } else if (Buffer.isBuffer(data)) {
+          stringData = data.toString('utf8');
+        } else {
+          stringData = JSON.stringify(data) || '';
+        }
+        responseSize = stringData ? Buffer.byteLength(stringData, 'utf8') : 0;
+      } catch (e) {
+        responseSize = 0;
+      }
       return originalSend.call(this, data);
     };
 
     res.json = function(data) {
-      responseBody = JSON.stringify(data);
-      responseSize = Buffer.byteLength(responseBody, 'utf8');
+      try {
+        // Handle all data types safely
+        if (data === undefined || data === null) {
+          responseBody = '';
+        } else {
+          responseBody = JSON.stringify(data) || '';
+        }
+        responseSize = responseBody ? Buffer.byteLength(responseBody, 'utf8') : 0;
+      } catch (e) {
+        responseBody = '';
+        responseSize = 0;
+      }
       return originalJson.call(this, data);
     };
 
     res.end = function(data) {
       if (data) {
         responseBody = data;
-        responseSize = Buffer.byteLength(data, 'utf8');
+        try {
+          // Handle all data types safely
+          let stringData;
+          if (data === undefined || data === null) {
+            stringData = '';
+          } else if (typeof data === 'string') {
+            stringData = data;
+          } else if (Buffer.isBuffer(data)) {
+            stringData = data.toString('utf8');
+          } else {
+            stringData = JSON.stringify(data) || '';
+          }
+          responseSize = stringData ? Buffer.byteLength(stringData, 'utf8') : 0;
+        } catch (e) {
+          responseSize = 0;
+        }
       }
       return originalEnd.call(this, data);
     };

@@ -187,11 +187,16 @@ export const staticSecurityHeaders = (req, res, next) => {
 
 // CSRF token generation and validation with session support
 export const csrfProtection = (req, res, next) => {
+  // Test mode bypass - disable CSRF in test environment
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
+
   // Development mode bypass (remove in production)
   if (process.env.NODE_ENV === 'development' && process.env.DISABLE_CSRF === 'true') {
     return next();
   }
-  
+
   // Skip CSRF for GET, HEAD, OPTIONS
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();

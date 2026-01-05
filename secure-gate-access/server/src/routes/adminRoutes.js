@@ -418,6 +418,14 @@ router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachReq
   try {
     const { id } = req.params;
     
+    // Prevent deleting own account
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete your own account'
+      });
+    }
+    
     // Soft delete - set status to 'deleted'
     const result = await dbManager.query(
       `UPDATE users SET status = 'deleted', updated_at = NOW() WHERE id = $1 AND status != 'deleted' RETURNING id`,

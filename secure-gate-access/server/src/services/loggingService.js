@@ -590,7 +590,13 @@ class LoggingService {
    * Health check for logging service
    */
   healthCheck() {
-    const logFiles = fs.readdirSync(this.logDir);
+    let logFiles = [];
+    try {
+      logFiles = fs.readdirSync(this.logDir) || [];
+    } catch (error) {
+      // Directory may not exist in test environment
+      logFiles = [];
+    }
     const loggerNames = Array.from(this.loggers.keys());
 
     return {

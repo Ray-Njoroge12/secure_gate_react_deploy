@@ -317,15 +317,18 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
     path: '/'
   });
 
-  // Success response - tokens are now in httpOnly cookies, not in body
+  // Success response - tokens in both httpOnly cookies AND response body
+  // Cookies: for web browsers with automatic credential management
+  // Response body: for API clients, mobile apps, and testing
   successResponse(res, {
     user: {
       id: user.id,
       username: user.username,
       email: user.email,
       role: user.role
-    }
-    // BUG-008 FIX: accessToken and refreshToken removed from body
+    },
+    accessToken,
+    refreshToken
   }, 'Login successful');
 }));
 

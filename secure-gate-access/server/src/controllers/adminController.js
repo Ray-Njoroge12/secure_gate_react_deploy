@@ -1,5 +1,5 @@
 import { dbManager } from '../database/db.enhanced.js';
-import { respond, respondError } from '../utils/respond.js';
+import { respond, respondError, camelize } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 
 /**
@@ -60,7 +60,8 @@ const getAuditLogs = async (req, res) => {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
 
-    const { page = 1, limit = 25, action, user_id, date } = req.query;
+    const { page = 1, limit = 25, action, user_id, userId, date } = req.query;
+    const filterUserId = user_id || userId; // Support both snake_case and camelCase
     const offset = (page - 1) * limit;
 
     let query = 'SELECT * FROM audit_logs WHERE 1=1';
@@ -71,9 +72,9 @@ const getAuditLogs = async (req, res) => {
       query += ` AND action ILIKE $${paramIndex++}`;
       params.push(`%${action}%`);
     }
-    if (user_id) {
+    if (filterUserId) {
       query += ` AND user_id = $${paramIndex++}`;
-      params.push(user_id);
+      params.push(filterUserId);
     }
     if (date) {
       query += ` AND DATE(created_at) = $${paramIndex++}`;
@@ -87,8 +88,10 @@ const getAuditLogs = async (req, res) => {
     const totalRes = await dbManager.query('SELECT COUNT(*) FROM audit_logs');
     const total = parseInt(totalRes.rows[0].count, 10);
 
-    respond(res, {
-      data: result.rows,
+    // Return with success flag and data directly at top level (camelized)
+    res.status(200).json({
+      success: true,
+      data: camelize(result.rows),
       pagination: {
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),

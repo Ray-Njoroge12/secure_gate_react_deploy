@@ -9,7 +9,7 @@
 import dbManager from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
 import qrCodeService from '../services/qrCodeService.js';
-import { notificationQueueService } from '../services/notificationQueueService.js';
+import notificationQueueService from '../services/notificationQueueService.js';
 
 /**
  * Get visitor details by secure token (public endpoint)
@@ -27,8 +27,8 @@ export const getVisitorByToken = async (req, res) => {
   try {
     const { token } = req.params;
     
-    // Validate token format
-    if (!token || !token.startsWith('vst_') || token.length !== 68) {
+    // Validate token format - expects vst_ prefix + 24 alphanumeric chars = 28 total
+    if (!token || !token.startsWith('vst_') || token.length !== 28) {
       logger.warn('Invalid visitor token format', { 
         token: token?.substring(0, 10) + '...',
         ip: req.ip 
@@ -52,12 +52,10 @@ export const getVisitorByToken = async (req, res) => {
         v.time_of_visit,
         v.status,
         v.vehicle_plate,
-        v.company,
-        v.photo_url,
         v.visitor_token,
         v.token_expires_at,
         v.created_at,
-        u.name as resident_name,
+        u.username as resident_name,
         u.email as resident_email,
         u.phone as resident_phone
       FROM visitors v
@@ -125,8 +123,6 @@ export const getVisitorByToken = async (req, res) => {
       timeOfVisit: visitor.time_of_visit,
       status: visitor.status,
       vehiclePlate: visitor.vehicle_plate,
-      company: visitor.company || null,
-      photoUrl: visitor.photo_url || null,
       tokenExpiresAt: visitor.token_expires_at,
       createdAt: visitor.created_at,
       qrCode: qrCodeData,
@@ -288,8 +284,8 @@ export const confirmVisitorByToken = async (req, res) => {
     const { token } = req.params;
     const { consent, additionalInfo } = req.body;
 
-    // Validate token format
-    if (!token || !token.startsWith('vst_') || token.length !== 68) {
+    // Validate token format - expects vst_ prefix + 24 alphanumeric chars = 28 total
+    if (!token || !token.startsWith('vst_') || token.length !== 28) {
       return res.status(400).json({
         success: false,
         error: 'Invalid token format'

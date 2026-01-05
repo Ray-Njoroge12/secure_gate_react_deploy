@@ -75,11 +75,12 @@ class UserService {
 
       // Create user with email verification fields
       // Uses column names matching render_init.sql schema: verification_token, verification_expires
+      // Insert into both password and password_hash for backward compatibility
       const result = await this.db.query(
-        `INSERT INTO users (username, email, password_hash, role, verification_token, verification_expires, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) 
+        `INSERT INTO users (username, email, password, password_hash, role, verification_token, verification_expires, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) 
          RETURNING id, username, email, role, verification_token, created_at`,
-        [username, email, hashedPassword, role, verificationToken, verificationExpires]
+        [username, email, hashedPassword, hashedPassword, role, verificationToken, verificationExpires]
       );
 
       const user = result.rows[0];

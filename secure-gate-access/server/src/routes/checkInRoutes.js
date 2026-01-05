@@ -190,7 +190,7 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  */
 router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
   const result = await dbManager.query(
-    `SELECT v.*, u.name as resident_name
+    `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
      WHERE DATE(v.check_in_time) = CURRENT_DATE
@@ -208,7 +208,7 @@ router.get('/history', authenticateToken, authorize(['guard', 'admin']), asyncHa
   const { limit = 50, offset = 0, date } = req.query;
   
   let query = `
-    SELECT v.*, u.name as resident_name
+    SELECT v.*, u.username as resident_name
     FROM visitors v
     LEFT JOIN users u ON v.created_by = u.email
     WHERE v.check_in_time IS NOT NULL

@@ -171,7 +171,7 @@ export const getVisitorMetrics = async (req, res) => {
     // Top residents by visitor count
     const topResidentsQuery = `
       SELECT 
-        u.name as resident_name,
+        u.username as resident_name,
         u.email as resident_email,
         COUNT(v.id) as visitor_count,
         COUNT(CASE WHEN v.status = 'approved' THEN 1 END) as approved_count
@@ -179,7 +179,7 @@ export const getVisitorMetrics = async (req, res) => {
       JOIN users u ON v.resident_id = u.id
       WHERE v.date_of_visit BETWEEN $1 AND $2
         ${siteFilter.replace('site_id', 'v.site_id')}
-      GROUP BY u.id, u.name, u.email
+      GROUP BY u.id, u.username, u.email
       ORDER BY visitor_count DESC
       LIMIT 10
     `;
@@ -295,14 +295,14 @@ export const getIncidentMetrics = async (req, res) => {
     // Guard incident reporting
     const guardStatsQuery = `
       SELECT 
-        u.name as guard_name,
+        u.username as guard_name,
         COUNT(i.id) as incidents_reported,
         COUNT(CASE WHEN i.severity IN ('critical', 'high') THEN 1 END) as high_severity_count
       FROM incidents i
       JOIN users u ON i.reported_by = u.id
       WHERE i.created_at BETWEEN $1 AND $2
         ${siteFilter.replace('site_id', 'i.site_id')}
-      GROUP BY u.id, u.name
+      GROUP BY u.id, u.username
       ORDER BY incidents_reported DESC
       LIMIT 10
     `;
@@ -353,7 +353,7 @@ export const getGuardMetrics = async (req, res) => {
     // Check-in/check-out performance
     const performanceQuery = `
       SELECT 
-        u.name as guard_name,
+        u.username as guard_name,
         COUNT(DISTINCT v.id) as visitors_processed,
         COUNT(CASE WHEN v.checked_in_at IS NOT NULL THEN 1 END) as check_ins,
         COUNT(CASE WHEN v.checked_out_at IS NOT NULL THEN 1 END) as check_outs,
@@ -363,14 +363,14 @@ export const getGuardMetrics = async (req, res) => {
       WHERE v.date_of_visit BETWEEN $1 AND $2
         ${siteFilter}
         AND v.checked_in_at IS NOT NULL
-      GROUP BY u.id, u.name
+      GROUP BY u.id, u.username
       ORDER BY visitors_processed DESC
     `;
     
     // Incident reporting by guard
     const incidentReportingQuery = `
       SELECT 
-        u.name as guard_name,
+        u.username as guard_name,
         COUNT(i.id) as incidents_reported,
         COUNT(CASE WHEN i.severity IN ('critical', 'high') THEN 1 END) as critical_high_count,
         COUNT(CASE WHEN i.status = 'closed' THEN 1 END) as resolved_count
@@ -378,7 +378,7 @@ export const getGuardMetrics = async (req, res) => {
       JOIN users u ON i.reported_by = u.id
       WHERE i.created_at BETWEEN $1 AND $2
         ${siteFilter.replace('v.site_id', 'i.site_id')}
-      GROUP BY u.id, u.name
+      GROUP BY u.id, u.username
       ORDER BY incidents_reported DESC
     `;
     
@@ -424,7 +424,7 @@ export const getResidentMetrics = async (req, res) => {
     // Most active residents
     const activityQuery = `
       SELECT 
-        u.name as resident_name,
+        u.username as resident_name,
         u.email as resident_email,
         COUNT(v.id) as total_visitors,
         COUNT(CASE WHEN v.status = 'approved' THEN 1 END) as approved,
@@ -434,7 +434,7 @@ export const getResidentMetrics = async (req, res) => {
       JOIN users u ON v.resident_id = u.id
       WHERE v.date_of_visit BETWEEN $1 AND $2
         ${siteFilter}
-      GROUP BY u.id, u.name, u.email
+      GROUP BY u.id, u.username, u.email
       ORDER BY total_visitors DESC
       LIMIT 20
     `;

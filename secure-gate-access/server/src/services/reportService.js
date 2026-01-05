@@ -124,7 +124,7 @@ async function fetchIncidentSummaryData(dateFrom, dateTo, siteId) {
 async function fetchGuardPerformanceData(dateFrom, dateTo, siteId) {
   const query = `
     SELECT 
-      u.name as guard_name,
+      u.username as guard_name,
       COUNT(DISTINCT v.id) as visitors_processed,
       COUNT(DISTINCT v.id) FILTER (WHERE v.checked_in_at IS NOT NULL) as check_ins,
       COUNT(DISTINCT v.id) FILTER (WHERE v.checked_out_at IS NOT NULL) as check_outs,
@@ -134,7 +134,7 @@ async function fetchGuardPerformanceData(dateFrom, dateTo, siteId) {
     WHERE u.role = 'guard'
       AND v.created_at BETWEEN $1 AND $2
       AND ($3::INTEGER IS NULL OR u.site_id = $3)
-    GROUP BY u.id, u.name
+    GROUP BY u.id, u.username
     ORDER BY visitors_processed DESC
   `;
 
@@ -152,7 +152,7 @@ async function fetchGuardPerformanceData(dateFrom, dateTo, siteId) {
 async function fetchResidentActivityData(dateFrom, dateTo, siteId) {
   const query = `
     SELECT 
-      u.name as resident_name,
+      u.username as resident_name,
       u.email as resident_email,
       COUNT(v.id) as total_visitors,
       COUNT(v.id) FILTER (WHERE v.status = 'approved') as approved_visitors,
@@ -162,7 +162,7 @@ async function fetchResidentActivityData(dateFrom, dateTo, siteId) {
     WHERE u.role = 'resident'
       AND v.created_at BETWEEN $1 AND $2
       AND ($3::INTEGER IS NULL OR u.site_id = $3)
-    GROUP BY u.id, u.name, u.email
+    GROUP BY u.id, u.username, u.email
     HAVING COUNT(v.id) > 0
     ORDER BY total_visitors DESC
     LIMIT 50

@@ -328,7 +328,7 @@ try {
 
 // V1: Public visitor routes (NO authentication required - must come before auth middleware)
 // Phase V1: Visitor Invite Landing & Digital Pass
-app.use('/api/public', visitorPublicRoutes);
+app.use('/api/public/visitors', visitorPublicRoutes);
 
 // Phase 3.3: Notification delivery webhooks (NO authentication - verified by signature)
 app.use('/api/webhooks', notificationWebhooks);
@@ -343,7 +343,7 @@ app.use('/api/security', securityRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/dashboard', dashboardRoutes); // Dashboard routes
-app.use('/api', systemRoutes); // System info, status, database health routes
+app.use('/api/system', systemRoutes); // System info, status, database health routes
 // app.use('/api/residents', residentRoutes); // Removed - placeholder implementation
 // app.use('/api/guards', guardRoutes); // Removed - placeholder implementation
 
@@ -447,6 +447,25 @@ app.use('/api/resident', residentRoutes);
 app.use('/api/check-in', checkInRoutes);
 app.use('/api/check-out', checkOutRoutes);
 
+// Simple health endpoints (always return healthy - used for basic availability checks)
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
 // Health routes (explicit mounting for clarity)
 app.use('/api', healthRoutes);
 
@@ -489,25 +508,6 @@ app.get('/api/cache/health', async (req, res) => {
   res.json({
     ...health,
     timestamp: new Date().toISOString()
-  });
-});
-
-// Health check endpoints
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0'
-  });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0'
   });
 });
 

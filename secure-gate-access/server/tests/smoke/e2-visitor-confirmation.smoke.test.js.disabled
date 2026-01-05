@@ -1,0 +1,69 @@
+/**
+ * Smoke Test: E2 Visitor Confirmation
+ * Verifies that visitor self-service confirmation endpoints are accessible
+ */
+
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import request from 'supertest';
+import dbManager from '../../src/database/db.enhanced.js';
+import { v4 as uuidv4 } from 'uuid';
+
+const BASE_URL = process.env.API_URL || 'http://localhost:3001';
+
+describe('Smoke Test: E2 Visitor Confirmation', () => {
+  // Database manager auto-initializes, no setup needed
+
+  test('should access public visitor lookup endpoint', async () => {
+    // Test with a random token (will return 404, but endpoint should be accessible)
+    const randomToken = uuidv4();
+
+    const response = await request(BASE_URL)
+      .get(`/api/public/visitors/by-token/${randomToken}`);
+
+    // Should get 404 (not found) or 200, but not 500
+    expect([200, 404]).toContain(response.status);
+  }, 10000);
+
+  test('should access public visitor confirmation endpoint', async () => {
+    // Test with random ID (will fail, but endpoint should be accessible)
+    const response = await request(BASE_URL)
+      .post('/api/public/visitors/99999/confirm')
+      .send({
+        consent_data: {
+          dataProcessing: true,
+          privacyPolicy: true
+        }
+      });
+
+    // Should get 404 (not found) or 400, but not 500
+    expect([400, 404, 422]).toContain(response.status);
+  }, 10000);
+
+  test('should verify visitors table has E2 columns', async () => {
+    const result = await dbManager.query(
+      `SELECT column_name, data_type
+       FROM information_schema.columns
+       WHERE table_name = 'visitors'
+       AND column_name IN ('consent_data', 'additional_info', 'consent_given_at', 'visitor_token')`
+    );
+
+    expect(result.rows.length).toBeGreaterThanOrEqual(3);
+
+    const columnNames = result.rows.map(r => r.column_name);
+    expect(columnNames).toContain('consent_data');
+    expect(columnNames).toContain('additional_info');
+    expect(columnNames).toContain('consent_given_at');
+  }, 10000);
+
+  test('should verify GIN indexes exist for E2 JSONB columns', async () => {
+    const result = await dbManager.query(
+      `SELECT indexname
+       FROM pg_indexes
+       WHERE tablename = 'visitors'
+       AND indexname LIKE '%consent%'`
+    );
+
+    // Should have at least consent_data index
+    expect(result.rows.length).toBeGreaterThan(0);
+  }, 10000);
+});

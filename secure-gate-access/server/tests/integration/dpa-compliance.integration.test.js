@@ -92,11 +92,11 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
     it('should log data export requests in audit trail', async () => {
       const userId = testUsers.resident.id;
 
-      // Log export request
+      // Log export request - using actual schema: no status column, exported_at is auto-set
       await query(
-        `INSERT INTO data_export_log (user_id, export_type, status)
-         VALUES ($1, $2, $3)`,
-        [userId, 'full_export', 'completed']
+        `INSERT INTO data_export_log (user_id, export_type, format, record_count)
+         VALUES ($1, $2, $3, $4)`,
+        [userId, 'full_export', 'JSON', 100]
       );
 
       await query(
@@ -188,13 +188,13 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
   describe('Article 33 - Right to Erasure (Deletion)', () => {
     it('should delete user account and cascade to related records', async () => {
       // Create a test user specifically for deletion
-      const bcrypt = await import('bcryptjs');
-      const hashedPassword = await bcrypt.default.hash('deletetest123', 10);
+      const argon2 = await import('argon2');
+      const hashedPassword = await argon2.default.hash('deletetest123');
 
       const userResult = await query(
-        `INSERT INTO users (username, email, password, role, phone, unit)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        ['delete_test_user', 'delete@test.com', hashedPassword, 'resident', '+254700333333', 'D101']
+        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        ['delete_test_user', 'delete@test.com', hashedPassword, hashedPassword, 'resident', '+254700333333', 'D101', true]
       );
       const deleteUserId = userResult.rows[0].id;
 
@@ -279,12 +279,13 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
     it('should log deletion requests for audit trail', async () => {
       const userId = testUsers.resident.id;
+      const userEmail = testUsers.resident.email;
 
-      // Create deletion request
+      // Create deletion request - using actual schema: deletion_type not request_type, user_email required
       await query(
-        `INSERT INTO data_deletion_requests (user_id, request_type, status)
-         VALUES ($1, $2, $3)`,
-        [userId, 'full_deletion', 'pending']
+        `INSERT INTO data_deletion_requests (user_id, user_email, deletion_type, status, reason)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, userEmail, 'full_account', 'pending', 'User requested full account deletion']
       );
 
       // Verify request logged
@@ -294,23 +295,25 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
       );
 
       expect(request.rows).toHaveLength(1);
-      expect(request.rows[0].request_type).toBe('full_deletion');
+      expect(request.rows[0].deletion_type).toBe('full_account');
       expect(request.rows[0].status).toBe('pending');
     });
 
     it('should handle deletion with legal hold', async () => {
       const userId = testUsers.resident.id;
+      const userEmail = testUsers.resident.email;
 
       // Simulate legal hold by creating a deletion request with notes
+      // Note: actual schema uses 'rejected' status for holds since 'on_hold' is not in the CHECK constraint
       await query(
-        `INSERT INTO data_deletion_requests (user_id, request_type, status, notes)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, 'full_deletion', 'on_hold', 'Legal hold - pending investigation']
+        `INSERT INTO data_deletion_requests (user_id, user_email, deletion_type, status, notes)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, userEmail, 'full_account', 'rejected', 'Legal hold - pending investigation']
       );
 
-      // Verify request is on hold
+      // Verify request is held/rejected with notes
       const request = await query(
-        "SELECT * FROM data_deletion_requests WHERE user_id = $1 AND status = 'on_hold'",
+        "SELECT * FROM data_deletion_requests WHERE user_id = $1 AND status = 'rejected'",
         [userId]
       );
 
@@ -327,9 +330,9 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
       const userId = testUsers.resident.id;
 
       await query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given, ip_address)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, 'marketing', true, '127.0.0.1']
+        `INSERT INTO consent_log (user_id, consent_type, action, consent_given, ip_address)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, 'marketing', 'granted', true, '127.0.0.1']
       );
 
       const consent = await query(
@@ -345,28 +348,29 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
     it('should record consent withdrawal with timestamp', async () => {
       const userId = testUsers.resident.id;
 
-      // First give consent
+      // First give consent - using actual schema: action='granted'
       await query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given)
+        `INSERT INTO consent_log (user_id, consent_type, action)
          VALUES ($1, $2, $3)`,
-        [userId, 'analytics', true]
+        [userId, 'analytics', 'granted']
       );
 
-      // Then withdraw consent
+      // Then withdraw consent - insert a new record with action='withdrawn'
       await query(
-        `UPDATE consent_log 
-         SET consent_withdrawn = true, withdrawn_at = NOW()
-         WHERE user_id = $1 AND consent_type = $2`,
-        [userId, 'analytics']
+        `INSERT INTO consent_log (user_id, consent_type, action)
+         VALUES ($1, $2, $3)`,
+        [userId, 'analytics', 'withdrawn']
       );
 
+      // Get the latest consent state
       const consent = await query(
-        "SELECT * FROM consent_log WHERE user_id = $1 AND consent_type = 'analytics'",
+        `SELECT * FROM consent_log WHERE user_id = $1 AND consent_type = 'analytics' 
+         ORDER BY created_at DESC LIMIT 1`,
         [userId]
       );
 
-      expect(consent.rows[0].consent_withdrawn).toBe(true);
-      expect(consent.rows[0].withdrawn_at).toBeDefined();
+      expect(consent.rows[0].action).toBe('withdrawn');
+      expect(consent.rows[0].created_at).toBeDefined();
     });
 
     it('should track multiple consent types independently', async () => {
@@ -375,9 +379,9 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       for (const type of consentTypes) {
         await query(
-          `INSERT INTO consent_log (user_id, consent_type, consent_given)
+          `INSERT INTO consent_log (user_id, consent_type, action)
            VALUES ($1, $2, $3)`,
-          [userId, type, true]
+          [userId, type, 'granted']
         );
       }
 
@@ -399,20 +403,20 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       // Give consent
       await query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given, recorded_at)
-         VALUES ($1, $2, $3, NOW() - INTERVAL '30 days')`,
-        [userId, 'marketing', true]
+        `INSERT INTO consent_log (user_id, consent_type, action)
+         VALUES ($1, $2, $3)`,
+        [userId, 'marketing', 'granted']
       );
 
       // Withdraw consent (new record for history)
       await query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given, consent_withdrawn)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, 'marketing', false, true]
+        `INSERT INTO consent_log (user_id, consent_type, action)
+         VALUES ($1, $2, $3)`,
+        [userId, 'marketing', 'withdrawn']
       );
 
       const history = await query(
-        "SELECT * FROM consent_log WHERE user_id = $1 AND consent_type = 'marketing' ORDER BY recorded_at",
+        "SELECT * FROM consent_log WHERE user_id = $1 AND consent_type = 'marketing' ORDER BY created_at",
         [userId]
       );
 
@@ -422,18 +426,18 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
     it('should validate consent before data processing', async () => {
       const userId = testUsers.resident.id;
 
-      // Check consent status (function that would be called before processing)
+      // Check consent status - get latest action for the consent type
       const checkConsent = async (userId, consentType) => {
         const result = await query(
-          `SELECT consent_given, consent_withdrawn 
+          `SELECT action 
            FROM consent_log 
            WHERE user_id = $1 AND consent_type = $2 
-           ORDER BY recorded_at DESC LIMIT 1`,
+           ORDER BY created_at DESC LIMIT 1`,
           [userId, consentType]
         );
 
         if (result.rows.length === 0) return false;
-        return result.rows[0].consent_given && !result.rows[0].consent_withdrawn;
+        return result.rows[0].action === 'granted';
       };
 
       // No consent given yet
@@ -442,9 +446,9 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       // Give consent
       await query(
-        `INSERT INTO consent_log (user_id, consent_type, consent_given)
+        `INSERT INTO consent_log (user_id, consent_type, action)
          VALUES ($1, $2, $3)`,
-        [userId, 'new_feature', true]
+        [userId, 'new_feature', 'granted']
       );
 
       const hasConsent = await checkConsent(userId, 'new_feature');
@@ -452,10 +456,9 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       // Withdraw consent
       await query(
-        `UPDATE consent_log 
-         SET consent_withdrawn = true 
-         WHERE user_id = $1 AND consent_type = $2`,
-        [userId, 'new_feature']
+        `INSERT INTO consent_log (user_id, consent_type, action)
+         VALUES ($1, $2, $3)`,
+        [userId, 'new_feature', 'withdrawn']
       );
 
       const withdrawnConsent = await checkConsent(userId, 'new_feature');
@@ -495,12 +498,13 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
     it('should include IP address and user agent in DPA audit logs', async () => {
       const userId = testUsers.resident.id;
+      const uniqueAction = 'dpa.data_export_with_ip_test';
 
       await query(
         `INSERT INTO audit_logs (action, resource, user_id, ip_address, user_agent, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
         [
-          'dpa.data_export',
+          uniqueAction,
           'dpa_compliance',
           userId,
           '192.168.1.100',
@@ -510,10 +514,11 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
       );
 
       const log = await query(
-        "SELECT * FROM audit_logs WHERE action = 'dpa.data_export' AND user_id = $1",
-        [userId]
+        "SELECT * FROM audit_logs WHERE action = $1 AND user_id = $2",
+        [uniqueAction, userId]
       );
 
+      expect(log.rows.length).toBeGreaterThan(0);
       expect(log.rows[0].ip_address).toBe('192.168.1.100');
       expect(log.rows[0].user_agent).toBe('Mozilla/5.0 (Test)');
     });

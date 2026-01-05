@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS events (
   parking_instructions TEXT,
   special_instructions TEXT,
   host_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  estate_id INTEGER REFERENCES estates(id) ON DELETE CASCADE,
+  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
   status VARCHAR(50) DEFAULT 'draft' CHECK (status IN (
     'draft', 'published', 'ongoing', 'completed', 'cancelled'
   )),
@@ -42,12 +42,12 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- Indexes for events
-CREATE INDEX IF NOT EXISTS idx_events_estate_id ON events(estate_id);
+CREATE INDEX IF NOT EXISTS idx_events_estate_location_id ON events(estate_location_id);
 CREATE INDEX IF NOT EXISTS idx_events_host_id ON events(host_id);
 CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
 CREATE INDEX IF NOT EXISTS idx_events_start_date ON events(start_date DESC);
 CREATE INDEX IF NOT EXISTS idx_events_event_type ON events(event_type);
-CREATE INDEX IF NOT EXISTS idx_events_estate_status ON events(estate_id, status);
+CREATE INDEX IF NOT EXISTS idx_events_estate_location_status ON events(estate_location_id, status);
 
 COMMENT ON TABLE events IS 'Events with bulk invitation capabilities';
 COMMENT ON COLUMN events.event_type IS 'Type: party, corporate, wedding, conference, community, sports, other';
@@ -166,7 +166,6 @@ CREATE TABLE IF NOT EXISTS event_reminders (
   status VARCHAR(50) DEFAULT 'pending' CHECK (status IN (
     'pending', 'sent', 'failed', 'cancelled'
   )),
-  notification_id INTEGER REFERENCES notifications(id) ON DELETE SET NULL,
   error_message TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -199,6 +198,7 @@ SELECT
   COUNT(ev.id) as total_invited,
   COUNT(CASE WHEN ev.invitation_status = 'confirmed' THEN 1 END) as confirmed_count,
   COUNT(CASE WHEN ev.invitation_status = 'declined' THEN 1 END) as declined_count,
+  COUNT(CASE WHEN ev.invitation_status = 'pending' THEN 1 END) as pending_count,
 
   -- RSVP statistics
   COUNT(CASE WHEN ev.rsvp_status = 'attending' THEN 1 END) as rsvp_attending,
@@ -239,7 +239,7 @@ COMMENT ON VIEW event_analytics IS 'Event analytics and statistics';
 CREATE OR REPLACE VIEW upcoming_events AS
 SELECT
   e.*,
-  u.name as host_name,
+  u.username as host_name,
   u.email as host_email,
   COUNT(ev.id) as total_invitations,
   COUNT(CASE WHEN ev.rsvp_status = 'attending' THEN 1 END) as expected_attendees,
@@ -249,7 +249,7 @@ LEFT JOIN users u ON e.host_id = u.id
 LEFT JOIN event_visitors ev ON e.id = ev.event_id
 WHERE e.start_date >= NOW()
 AND e.status IN ('published', 'ongoing')
-GROUP BY e.id, u.name, u.email
+GROUP BY e.id, u.username, u.email
 ORDER BY e.start_date ASC;
 
 COMMENT ON VIEW upcoming_events IS 'Upcoming events with attendee counts';
@@ -325,8 +325,3 @@ FROM pg_tables
 WHERE schemaname = 'public'
 AND (tablename LIKE 'event%' OR tablename LIKE 'bulk_%')
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
-
-RAISE NOTICE '✅ Event management tables migration complete!';
-RAISE NOTICE '📊 Tables: events, event_visitors, bulk_invitation_batches, event_reminders';
-RAISE NOTICE '📈 Views: event_analytics, upcoming_events, event_checkin_queue';
-RAISE NOTICE '🎫 Features: Event management, bulk invitations, RSVP tracking, event check-ins';

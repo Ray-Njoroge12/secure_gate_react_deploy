@@ -97,8 +97,12 @@ export const errorHandler = (err, req, res, next) => {
   }
   
   // Log error (but not operational errors in production)
-  // In development, only log noisy stack traces for non-operational errors or 5xx errors.
-  if (!err.isOperational || (process.env.NODE_ENV === 'development' && statusCode >= 500)) {
+  // In development and test, log detailed error information
+  const shouldLogError = !err.isOperational ||
+                        (process.env.NODE_ENV === 'development' && statusCode >= 500) ||
+                        (process.env.NODE_ENV === 'test' && statusCode >= 500);
+
+  if (shouldLogError) {
     console.error('❌ Error:', {
       message: err.message,
       code: err.code,

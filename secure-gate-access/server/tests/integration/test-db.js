@@ -75,22 +75,23 @@ export async function createTestUsers() {
   // Clean existing test users
   await p.query('DELETE FROM users WHERE email LIKE $1', ['%@test.com']);
 
+  // Insert into both 'password' (legacy) and 'password_hash' columns for compatibility
   const adminResult = await p.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit)
-     VALUES ($1, $2, $3, $3, $4, $5, $6) RETURNING *`,
-    ['admin_test', 'admin@test.com', hashedPassword, 'admin', '+254700000001', 'Admin']
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    ['admin_test', 'admin@test.com', hashedPassword, hashedPassword, 'admin', '+254700000001', 'Admin', true]
   );
 
   const guardResult = await p.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit)
-     VALUES ($1, $2, $3, $3, $4, $5, $6) RETURNING *`,
-    ['guard_test', 'guard@test.com', hashedPassword, 'guard', '+254700000002', 'Gate 1']
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    ['guard_test', 'guard@test.com', hashedPassword, hashedPassword, 'guard', '+254700000002', 'Gate 1', true]
   );
 
   const residentResult = await p.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit)
-     VALUES ($1, $2, $3, $3, $4, $5, $6) RETURNING *`,
-    ['resident_test', 'resident@test.com', hashedPassword, 'resident', '+254700000003', 'A101']
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    ['resident_test', 'resident@test.com', hashedPassword, hashedPassword, 'resident', '+254700000003', 'A101', true]
   );
 
   return {

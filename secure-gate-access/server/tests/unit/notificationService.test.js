@@ -12,8 +12,27 @@
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
-// Mock environment variables before imports
+// Set environment variables FIRST - BEFORE any service imports
 const originalEnv = process.env;
+process.env = {
+  ...process.env,
+  NODE_ENV: 'test',
+  ENABLE_EXTERNAL_NOTIFICATIONS: 'true',
+  ENABLE_EMAIL_NOTIFICATIONS: 'true',
+  ENABLE_SMS_NOTIFICATIONS: 'true',
+  SMTP_HOST: 'smtp.test.com',
+  SMTP_PORT: '587',
+  SMTP_USER: 'test@test.com',
+  SMTP_PASS: 'password',
+  FROM_EMAIL: 'noreply@test.com',
+  EMAIL_PROVIDER: 'smtp',
+  SITE_NAME: 'Test Site',
+  SITE_URL: 'http://localhost:3000',
+  SMS_PROVIDER: 'twilio',
+  TWILIO_ACCOUNT_SID: 'test_sid',
+  TWILIO_AUTH_TOKEN: 'test_token',
+  TWILIO_FROM: '+1234567890'
+};
 
 // Mock nodemailer
 const mockSendMail = jest.fn();
@@ -91,33 +110,18 @@ jest.unstable_mockModule('../../src/templates/sms-templates.js', () => ({
   checkinReminderSmsTemplate: jest.fn(() => 'Check-in reminder SMS')
 }));
 
+// Import notificationService AFTER mocks and environment are set
+const notificationServiceModule = await import('../../src/services/notificationService.js');
+
 describe('NotificationService', () => {
   let notificationService;
   
   beforeEach(async () => {
     jest.clearAllMocks();
-    jest.resetModules();
-    
-    // Reset environment for tests
-    process.env = {
-      ...originalEnv,
-      ENABLE_EXTERNAL_NOTIFICATIONS: 'true',
-      ENABLE_EMAIL_NOTIFICATIONS: 'true',
-      ENABLE_SMS_NOTIFICATIONS: 'true',
-      SMTP_HOST: 'smtp.test.com',
-      SMTP_PORT: '587',
-      SMTP_USER: 'test@test.com',
-      SMTP_PASS: 'password',
-      FROM_EMAIL: 'noreply@test.com',
-      EMAIL_PROVIDER: 'smtp',
-      SITE_NAME: 'Test Site',
-      SITE_URL: 'http://localhost:3000',
-      SMS_PROVIDER: 'twilio',
-      TWILIO_ACCOUNT_SID: 'test_sid',
-      TWILIO_AUTH_TOKEN: 'test_token',
-      TWILIO_FROM: '+1234567890'
-    };
-    
+
+    // DO NOT reset environment variables or call jest.resetModules()
+    // They are already set at the top of the file before imports!
+
     // Default mock implementations
     mockSendMail.mockResolvedValue({ messageId: 'test-123' });
     mockTwilioCreate.mockResolvedValue({ sid: 'SM123' });
@@ -130,10 +134,9 @@ describe('NotificationService', () => {
       }
     });
     mockMailgunCreate.mockResolvedValue({ id: 'mailgun-123' });
-    
-    // Re-import the module to get fresh instance with mocks
-    jest.resetModules();
-    notificationService = await import('../../src/services/notificationService.js');
+
+    // Use the default export from the already-imported module
+    notificationService = notificationServiceModule.default;
   });
   
   afterEach(() => {
@@ -618,15 +621,15 @@ describe('NotificationService', () => {
   
   describe('Default Export', () => {
     it('should export all notification functions', async () => {
-      expect(notificationService.default).toBeDefined();
-      expect(notificationService.default.sendInviteEmail).toBeDefined();
-      expect(notificationService.default.sendSms).toBeDefined();
-      expect(notificationService.default.sendVisitorInviteEmail).toBeDefined();
-      expect(notificationService.default.sendOtpVerificationEmail).toBeDefined();
-      expect(notificationService.default.sendVisitorInviteSms).toBeDefined();
-      expect(notificationService.default.sendOtpVerificationSms).toBeDefined();
-      expect(notificationService.default.sendDeliveryNotification).toBeDefined();
-      expect(notificationService.default.sendHandoffDecisionNotification).toBeDefined();
+      expect(notificationService).toBeDefined();
+      expect(notificationService.sendInviteEmail).toBeDefined();
+      expect(notificationService.sendSms).toBeDefined();
+      expect(notificationService.sendVisitorInviteEmail).toBeDefined();
+      expect(notificationService.sendOtpVerificationEmail).toBeDefined();
+      expect(notificationService.sendVisitorInviteSms).toBeDefined();
+      expect(notificationService.sendOtpVerificationSms).toBeDefined();
+      expect(notificationService.sendDeliveryNotification).toBeDefined();
+      expect(notificationService.sendHandoffDecisionNotification).toBeDefined();
     });
   });
 });

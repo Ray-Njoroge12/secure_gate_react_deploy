@@ -180,7 +180,6 @@ describe('Auth Middleware', () => {
           email: testUser.email,
           username: testUser.username,
           role: testUser.role,
-          verified: testUser.verified
         });
       });
 

@@ -21,8 +21,8 @@ export const getIncidentQueue = async (req, res) => {
 
     let query = `
       SELECT i.*, 
-        u.name as assigned_name,
-        reporter.name as reported_by_name,
+        u.username as assigned_name,
+        reporter.username as reported_by_name,
         sla.response_sla_met,
         sla.resolution_sla_met,
         CASE 
@@ -246,7 +246,7 @@ export const getIncidentComments = async (req, res) => {
     const { id } = req.params;
 
     const result = await pool.query(
-      `SELECT c.*, u.name as user_name
+      `SELECT c.*, u.username as user_name
        FROM incident_comments c
        LEFT JOIN users u ON c.user_id = u.id
        WHERE c.incident_id = $1

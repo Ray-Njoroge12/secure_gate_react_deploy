@@ -1,0 +1,64 @@
+/**
+ * Smoke Test: Authentication
+ * Verifies that authentication endpoints are accessible
+ */
+
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import request from 'supertest';
+import dbManager from '../../src/database/db.enhanced.js';
+
+const BASE_URL = process.env.API_URL || 'http://localhost:3001';
+
+describe('Smoke Test: Authentication', () => {
+  // Database manager auto-initializes, no setup needed
+
+  test('should access login endpoint', async () => {
+    // Just verify endpoint is accessible (even with invalid credentials)
+    const response = await request(BASE_URL)
+      .post('/api/auth/login')
+      .send({
+        email: 'nonexistent@example.com',
+        password: 'invalidpassword'
+      });
+
+    // Should get 401 or 400, but not 404 or 500
+    expect([400, 401, 422]).toContain(response.status);
+  }, 10000);
+
+  test('should reject login without credentials', async () => {
+    const response = await request(BASE_URL)
+      .post('/api/auth/login')
+      .send({});
+
+    expect([400, 422]).toContain(response.status);
+  }, 10000);
+
+  test('should access register endpoint', async () => {
+    const response = await request(BASE_URL)
+      .post('/api/auth/register')
+      .send({
+        // Intentionally incomplete to just check endpoint accessibility
+        email: 'test@example.com'
+      });
+
+    // Should get validation error, not 404 or 500
+    expect([400, 422]).toContain(response.status);
+  }, 10000);
+
+  test('should protect authenticated endpoints', async () => {
+    // Try to access protected endpoint without token
+    const response = await request(BASE_URL)
+      .get('/api/visitors');
+
+    // Should get 401 Unauthorized
+    expect(response.status).toBe(401);
+  }, 10000);
+
+  test('should reject invalid JWT tokens', async () => {
+    const response = await request(BASE_URL)
+      .get('/api/visitors')
+      .set('Authorization', 'Bearer invalid-token-12345');
+
+    expect(response.status).toBe(401);
+  }, 10000);
+});

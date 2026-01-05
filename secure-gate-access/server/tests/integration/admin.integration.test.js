@@ -33,10 +33,11 @@ describe('Admin Operations Integration Tests', () => {
   beforeEach(async () => {
     await cleanupTestDatabase();
     testUsers = await createTestUsers();
-    
-    adminToken = await getAuthToken('admin@test.com');
-    guardToken = await getAuthToken('guard@test.com');
-    residentToken = await getAuthToken('resident@test.com');
+
+    // Use actual emails from created users (they have unique timestamps)
+    adminToken = await getAuthToken(testUsers.admin.email);
+    guardToken = await getAuthToken(testUsers.guard.email);
+    residentToken = await getAuthToken(testUsers.resident.email);
   });
 
   describe('GET /api/admin/metrics - Dashboard Metrics', () => {
@@ -54,9 +55,12 @@ describe('Admin Operations Integration Tests', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('totalUsers');
-      expect(response.body).toHaveProperty('totalVisitors');
-      expect(response.body).toHaveProperty('activeVisitors');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('data');
+      expect(response.body.data.data).toHaveProperty('users');
+      expect(response.body.data.data.users).toHaveProperty('totalUsers');
+      expect(response.body.data.data).toHaveProperty('visitors');
+      expect(response.body.data.data.visitors).toHaveProperty('totalVisitors');
     });
 
     it('should deny access to non-admin users', async () => {
@@ -79,8 +83,9 @@ describe('Admin Operations Integration Tests', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      if (response.body.visitorsByStatus) {
-        expect(typeof response.body.visitorsByStatus).toBe('object');
+      expect(response.body.success).toBe(true);
+      if (response.body.data.visitorsByStatus) {
+        expect(typeof response.body.data.visitorsByStatus).toBe('object');
       }
     });
 
@@ -122,8 +127,9 @@ describe('Admin Operations Integration Tests', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThan(0);
     });
 
     it('should support pagination', async () => {
@@ -132,8 +138,9 @@ describe('Admin Operations Integration Tests', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeLessThanOrEqual(3);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeLessThanOrEqual(3);
     });
 
     it('should support filtering by user', async () => {
@@ -142,9 +149,10 @@ describe('Admin Operations Integration Tests', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      if (response.body.length > 0) {
-        response.body.forEach(log => {
-          expect(log.user_id).toBe(testUsers.admin.id);
+      expect(response.body.success).toBe(true);
+      if (response.body.data.length > 0) {
+        response.body.data.forEach(log => {
+          expect(log.userId).toBe(testUsers.admin.id);
         });
       }
     });
@@ -155,8 +163,9 @@ describe('Admin Operations Integration Tests', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      if (response.body.length > 0) {
-        response.body.forEach(log => {
+      expect(response.body.success).toBe(true);
+      if (response.body.data.length > 0) {
+        response.body.data.forEach(log => {
           expect(log.action).toBe('test.action.0');
         });
       }
@@ -176,8 +185,9 @@ describe('Admin Operations Integration Tests', () => {
         .set('Cookie', `token=${adminToken}`);
 
       expect(response.status).toBe(200);
-      if (response.body.length > 0) {
-        const log = response.body[0];
+      expect(response.body.success).toBe(true);
+      if (response.body.data.length > 0) {
+        const log = response.body.data[0];
         expect(log).toHaveProperty('action');
         expect(log).toHaveProperty('resource');
         expect(log).toHaveProperty('timestamp');
@@ -194,8 +204,9 @@ describe('Admin Operations Integration Tests', () => {
           .set('Cookie', `token=${adminToken}`);
 
         expect(response.status).toBe(200);
-        expect(Array.isArray(response.body)).toBe(true);
-        expect(response.body.length).toBeGreaterThanOrEqual(3);
+        expect(response.body.success).toBe(true);
+        expect(Array.isArray(response.body.data)).toBe(true);
+        expect(response.body.data.length).toBeGreaterThanOrEqual(3);
       });
 
       it('should not expose sensitive data', async () => {
@@ -204,10 +215,11 @@ describe('Admin Operations Integration Tests', () => {
           .set('Cookie', `token=${adminToken}`);
 
         expect(response.status).toBe(200);
-        if (response.body.length > 0) {
-          const user = response.body[0];
+        expect(response.body.success).toBe(true);
+        if (response.body.data.length > 0) {
+          const user = response.body.data[0];
           expect(user).not.toHaveProperty('password');
-          expect(user).not.toHaveProperty('password_hash');
+          expect(user).not.toHaveProperty('passwordHash');
         }
       });
 
@@ -217,8 +229,9 @@ describe('Admin Operations Integration Tests', () => {
           .set('Cookie', `token=${adminToken}`);
 
         expect(response.status).toBe(200);
-        if (response.body.length > 0) {
-          response.body.forEach(user => {
+        expect(response.body.success).toBe(true);
+        if (response.body.data.length > 0) {
+          response.body.data.forEach(user => {
             expect(user.role).toBe('guard');
           });
         }
@@ -236,19 +249,20 @@ describe('Admin Operations Integration Tests', () => {
 
         if (response.status !== 404) {
           expect(response.status).toBe(200);
-          
+          expect(response.body.success).toBe(true);
+
           const { dbManager } = await import('../../src/database/db.enhanced.js');
           const updated = await dbManager.query(
             'SELECT role FROM users WHERE id = $1',
             [testUsers.resident.id]
           );
-          
+
           expect(updated.rows[0].role).toBe('guard');
         }
       });
 
       it('should create audit log for user updates', async () => {
-        await request(app)
+        const response = await request(app)
           .patch(`/api/admin/users/${testUsers.resident.id}`)
           .set('Cookie', `token=${adminToken}`)
           .send({ role: 'guard' });
@@ -267,10 +281,12 @@ describe('Admin Operations Integration Tests', () => {
     describe('DELETE /api/admin/users/:id - Delete User', () => {
       it('should allow admin to delete users', async () => {
         const { dbManager } = await import('../../src/database/db.enhanced.js');
+        const argon2 = await import('argon2');
+        const hashedPassword = await argon2.default.hash('testpass123');
         const tempUser = await dbManager.query(
-          `INSERT INTO users (username, email, password, role)
-           VALUES ($1, $2, $3, $4) RETURNING *`,
-          ['temp_user', 'temp@test.com', 'hash', 'resident']
+          `INSERT INTO users (username, email, password, password_hash, role, verified, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          ['temp_user', 'temp@test.com', hashedPassword, hashedPassword, 'resident', true, 'active']
         );
 
         const response = await request(app)
@@ -280,12 +296,14 @@ describe('Admin Operations Integration Tests', () => {
         if (response.status !== 404) {
           expect(response.status).toBe(200);
           
+          // Check soft delete - status should be 'deleted'
           const deleted = await dbManager.query(
-            'SELECT * FROM users WHERE id = $1',
+            'SELECT status FROM users WHERE id = $1',
             [tempUser.rows[0].id]
           );
           
-          expect(deleted.rows.length).toBe(0);
+          expect(deleted.rows.length).toBe(1);
+          expect(deleted.rows[0].status).toBe('deleted');
         }
       });
 
@@ -314,7 +332,8 @@ describe('Admin Operations Integration Tests', () => {
 
       if (response.status !== 404) {
         expect(response.status).toBe(200);
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body.success).toBe(true);
+        expect(Array.isArray(response.body.data)).toBe(true);
       }
     });
 

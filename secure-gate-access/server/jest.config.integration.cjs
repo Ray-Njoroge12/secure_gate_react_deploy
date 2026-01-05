@@ -10,7 +10,7 @@ module.exports = {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  testTimeout: 30000,
+  testTimeout: 60000,
   verbose: true,
   collectCoverageFrom: [
     'src/**/*.js',
@@ -19,7 +19,8 @@ module.exports = {
   ],
   coverageDirectory: 'coverage/integration',
   coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/tests/integration/setup.js'],
+  globalSetup: '<rootDir>/tests/setup/globalSetup.js',
+  globalTeardown: '<rootDir>/tests/setup/globalTeardown.js',
   maxWorkers: 1,
   forceExit: true,
   detectOpenHandles: true

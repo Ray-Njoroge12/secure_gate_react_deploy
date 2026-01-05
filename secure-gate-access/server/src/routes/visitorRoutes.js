@@ -5,7 +5,8 @@ import {
   createPass,
   bulkInvite,
   getBulkInvite,
-  completeInvite
+  completeInvite,
+  cancelVisitor
 } from '../controllers/visitorInviteController.js';
 import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
@@ -193,11 +194,9 @@ const visitorCreationLimit = rateLimit({
  */
 
 // Protected routes (resident-auth required)
-// TEMPORARY FIX: Audit middleware disabled for debugging
-router.post('/', 
+router.post('/',
   visitorCreationLimit,
-  attachUserFromToken, 
-  // attachRequestAudit, 
+  authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
   attachRequestAudit,
   createVisitor
 );
@@ -208,16 +207,16 @@ router.get('/',
   getMyVisitors
 );
 router.post('/:visitorId/pass', attachUserFromToken, attachRequestAudit, createPass);
-router.post('/bulk-invite', 
+router.post('/bulk-invite',
   visitorCreationLimit,
-  attachUserFromToken, 
-  attachRequestAudit, 
+  authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
+  attachRequestAudit,
   bulkInvite
 );
 
-// Guard Operations (guard/admin roles required)
-router.post('/:id/check-in', attachUserFromToken, attachRequestAudit, checkInVisitor);
-router.post('/:id/check-out', attachUserFromToken, attachRequestAudit, checkOutVisitor);
+// Guard Operations (guard/admin roles required) - require authentication
+router.post('/:id/check-in', authenticateToken, attachRequestAudit, checkInVisitor);
+router.post('/:id/check-out', authenticateToken, attachRequestAudit, checkOutVisitor);
 
 // Walk-in registration (guard only) - Phase G2
 router.post('/walk-in', authenticateToken, attachRequestAudit, registerWalkIn);
@@ -359,6 +358,9 @@ router.get('/bulk-invite/:inviteCode',
 );
 router.post('/complete/:inviteCode', completeInvite);
 router.post('/self-checkin/:inviteCode', selfCheckIn);
+
+// Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
+router.delete('/:id', attachUserFromToken, attachRequestAudit, cancelVisitor);
 
 // Admin Operations (admin role required)
 router.get('/active', attachUserFromToken, attachRequestAudit, getActiveVisitors);
