@@ -172,6 +172,33 @@ router.post('/register', authLimiter, attachRequestAudit(), asyncHandler(async (
     requestId: req.requestId
   });
 
+  // Send email verification
+  try {
+    loggingService.info('Sending verification email', { 
+      email: user.email, 
+      hasToken: !!user.verification_token,
+      requestId: req.requestId
+    });
+    
+    const emailResult = await emailService.sendRegistrationConfirmation(
+      user.email, 
+      user.username,
+      user.verification_token
+    );
+    
+    loggingService.info('Verification email sent successfully', { 
+      messageId: emailResult?.id || 'unknown',
+      requestId: req.requestId
+    });
+  } catch (emailError) {
+    loggingService.error('Failed to send verification email', {
+      error: emailError.message,
+      email: user.email,
+      requestId: req.requestId
+    });
+    // Don't fail registration if email fails - user can request resend
+  }
+
   // Success response using standardized format
   createdResponse(res, {
     user: {
