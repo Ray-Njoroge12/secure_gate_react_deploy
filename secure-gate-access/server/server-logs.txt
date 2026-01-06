@@ -1,0 +1,513 @@
+
+> secure-gate-server@1.0.0 dev
+> node --import ./load-env.js --inspect server.js
+
+Debugger listening on ws://127.0.0.1:9229/3a17adfe-9d58-41a4-abb9-1d7a84b96eed
+For help, see: https://nodejs.org/en/docs/inspector
+📝 Loading environment from .env...
+✅ Environment variables loaded
+✅ Enhanced logging service initialized
+📊 Database: Using individual PG* variables (host: localhost)
+⚠️ DATABASE_URL not set - this may cause issues on Render
+🚀 Enhanced database connection manager loaded
+[REDIS] Initializing Redis service...
+[REDIS] No REDIS_URL configured in development, using memory cache
+⚠️  Using in-memory cache (not recommended for production)
+✅ Memory cache fallback initialized
+undefined
+⚠️  Using in-memory session store (development only)
+⚠️ Using memory store for rate limiting (not suitable for production clusters)
+⚠️ Using memory store for rate limiting (not suitable for production clusters)
+⚠️ Using memory store for rate limiting (not suitable for production clusters)
+⚠️ Using memory store for rate limiting (not suitable for production clusters)
+⚠️ Using memory store for rate limiting (not suitable for production clusters)
+⚠️ Using memory store for rate limiting (not suitable for production clusters)
+✅ Encryption configured: local
+⚠️  ENCRYPTION_KEY not set; using development fallback key
+13:57:49.955 [32minfo[39m : Email service initialized successfully with Mailgun
+2026-01-06T10:57:49.957Z [[32MINFO[39M]: [32mMFA service initialized[39m | metadata={"service":"app","issuer":"Secure Gate Access Control","algorithm":"sha1","digits":6,"period":30,"correlationId":"no-correlation-id"}
+2026-01-06T10:57:49.958Z [[32MINFO[39M]: [32mCentralized logging service initialized (centralization disabled)[39m | metadata={"service":"app","format":"json","centralizationEnabled":false,"reason":"LOGGING_ENDPOINT not configured","traceabilityEnabled":true,"correlationId":"no-correlation-id"}
+⚠️  Centralized logging disabled (no LOGGING_ENDPOINT configured)
+   Logs will only be written locally. Set LOGGING_ENDPOINT to enable.
+2026-01-06T10:57:49.958Z [[32MINFO[39M]: [32mAudit traceability service initialized[39m | metadata={"service":"app","traceabilityEnabled":true,"complianceFrameworks":["kenya_dpa","gdpr","iso27001"],"auditRetention":220752000000,"correlationId":"no-correlation-id"}
+2026-01-06T10:57:49.959Z [[32MINFO[39M]: [32mAudit trail maintenance started[39m | metadata={"service":"app","correlationId":"no-correlation-id"}
+2026-01-06T10:57:49.959Z [[32MINFO[39M]: [32mKenya DPA audit service initialized[39m | metadata={"service":"app","enabled":true,"audit_frequency":"monthly","data_subject_rights":true,"breach_notification":true,"data_processing_agreements":true,"odpc_registration":true,"correlationId":"no-correlation-id"}
+2026-01-06T10:57:50.004Z [[32MINFO[39M]: [32mNotification queue service initialized successfully[39m | metadata={"service":"app","correlationId":"no-correlation-id"}
+2026-01-06T10:57:50.021Z [[32MINFO[39M]: [32mCreated Kenya DPA audit directory: ./compliance_audits/kenya_dpa[39m | metadata={"service":"app","correlationId":"no-correlation-id"}
+2026-01-06T10:57:50.022Z [[32MINFO[39M]: [32mKenya DPA audit monitoring started[39m | metadata={"service":"app","correlationId":"no-correlation-id"}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+✅ Sentry profiling module loaded successfully
+⚠️  Sentry DSN not configured - error tracking disabled
+   Set SENTRY_DSN environment variable to enable Sentry
+🔒 Transport security initialized
+   HTTPS Enforcement: ❌
+   Secure Cookies: ❌
+   HSTS Enabled: ⚠️ (dev mode)
+🌐 CORS Origins: [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:3002',
+  'https://securegate-access.netlify.app',
+  'http://localhost:3001'
+]
+⚠️  CSRF protection disabled (development mode)
+⚠️  Rate limiting disabled (development mode)
+✅ Redis caching middleware enabled for 6 routes
+🔧 Environment: development
+✅ Environment configuration validated successfully
+
+🔧 Environment: development
+✅ Environment configuration validated successfully
+
+🔐 Environment validation passed - starting secure server...
+✅ Port 3001 is available
+🔄 Initializing database connection...
+🔄 Database connection attempt 1/5...
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+✅ Database connection test passed
+🔄 Ensuring essential database tables...
+  ✓ Table users ready
+  ✓ Table visitors ready
+  ✓ Table passes ready
+  ✓ Table bulk_invites ready
+  ✓ Table access_logs ready
+  ✓ Table audit_logs ready
+✅ Essential tables check complete
+✓ Database indexes ensured
+🏥 Starting database health monitoring (interval: 30000ms)
+✅ Database manager initialized successfully
+✅ Database connection established
+🔄 Running database migrations...
+🔄 Running database migrations...
+✅ [migration] Database schema is up to date.
+✅ Database migrations complete (0 applied)
+📊 Starting monitoring dashboard service...
+2026-01-06T10:57:50.163Z [[32MINFO[39M]: [32mMonitoring dashboard service started[39m | metadata={"service":"app","checkInterval":30000,"monitoringWindow":300000,"thresholds":{"errorRate":0.05,"responseTime":2000,"memoryUsage":524288000,"diskUsage":0.9,"logErrors":10,"securityEvents":5},"correlationId":"no-correlation-id"}
+🔌 Initializing WebSocket service for real-time features...
+13:57:50.165 [32minfo[39m : WebSocket service initialized
+🔌 WebSocket service initialized with real-time capabilities
+✅ WebSocket service initialized successfully
+🚀 Secure Gate server running on http://localhost:3001
+🌐 Server accessible on all network interfaces
+🔒 Environment: development
+✅ All security validations passed
+📊 Enhanced logging and monitoring active
+2026-01-06T10:57:50.166Z [[32MINFO[39M]: [32mServer started successfully[39m | metadata={"service":"app","port":3001,"environment":"development","correlationId":"no-correlation-id"}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Redis connection failed after 10 retries
+Redis Client Error: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+Failed to initialize Redis client: AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1134:18)
+    at afterConnectMultiple (node:net:1715:7) {
+  code: 'ECONNREFUSED',
+  [errors]: [
+    Error: connect ECONNREFUSED ::1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '::1',
+      port: 6379
+    },
+    Error: connect ECONNREFUSED 127.0.0.1:6379
+        at createConnectionError (node:net:1678:14)
+        at afterConnectMultiple (node:net:1708:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 6379
+    }
+  ]
+}
+✅ Database connection test passed
+✅ Database connection test passed
+✅ Database connection test passed
+13:59:22.824 [32minfo[39m : Sensitive endpoint access
+13:59:22.824 [32minfo[39m [api][unknown]: Request started
+13:59:22.825 [32minfo[39m [audit]: Audit event
+2026-01-06T10:59:22.841Z [[32MINFO[39M]: [32mRegistration request received[39m | metadata={"service":"app","email":"testuser_1767697162@example.com","role":"resident","requestId":"1c285b2e-8957-4715-85ec-5c7725cec414","correlationId":"no-correlation-id"}
+2026-01-06T10:59:22.842Z [[33MWARN[39M]: [33mRegistration validation failed - missing fields[39m | metadata={"service":"app","hasUsername":false,"hasEmail":true,"hasPassword":true,"hasRole":true,"requestId":"1c285b2e-8957-4715-85ec-5c7725cec414","correlationId":"no-correlation-id"}
+13:59:22.843 [32minfo[39m [audit]: Audit event
+13:59:22.843 [32minfo[39m [audit]: Audit event
+13:59:22.845 [32minfo[39m [audit]: Audit event
+13:59:22.845 [32minfo[39m [performance]: Performance metric
+13:59:22.845 [32minfo[39m [performance]: Performance metric
+13:59:22.845 [32minfo[39m [api][unknown]: Request completed
+✅ Database connection test passed
+14:00:04.247 [32minfo[39m : Sensitive endpoint access
+14:00:04.248 [32minfo[39m [api][unknown]: Request started
+14:00:04.248 [32minfo[39m [audit]: Audit event
+2026-01-06T11:00:04.250Z [[32MINFO[39M]: [32mRegistration request received[39m | metadata={"service":"app","email":"localtest1767697204@example.com","role":"resident","requestId":"a5d00295-9963-43c1-be10-4fd034e02baa","correlationId":"no-correlation-id"}
+2026-01-06T11:00:04.250Z [[33MWARN[39M]: [33mRegistration validation failed - missing fields[39m | metadata={"service":"app","hasUsername":false,"hasEmail":true,"hasPassword":true,"hasRole":true,"requestId":"a5d00295-9963-43c1-be10-4fd034e02baa","correlationId":"no-correlation-id"}
+14:00:04.251 [32minfo[39m [audit]: Audit event
+14:00:04.251 [32minfo[39m [audit]: Audit event
+14:00:04.252 [32minfo[39m [audit]: Audit event
+14:00:04.252 [32minfo[39m [performance]: Performance metric
+14:00:04.252 [32minfo[39m [performance]: Performance metric
+14:00:04.253 [32minfo[39m [api][unknown]: Request completed
+✅ Database connection test passed
+14:00:25.874 [32minfo[39m : Sensitive endpoint access
+14:00:25.874 [32minfo[39m [api][unknown]: Request started
+14:00:25.874 [32minfo[39m [audit]: Audit event
+2026-01-06T11:00:25.876Z [[32MINFO[39M]: [32mRegistration request received[39m | metadata={"service":"app","username":"testuser_1767697225","email":"testuser_1767697225@example.com","role":"resident","requestId":"3de2b3bd-fa67-47bb-8a8d-9432e946aa49","correlationId":"no-correlation-id"}
+2026-01-06T11:00:25.876Z [[32MINFO[39M]: [32mAttempting to create user[39m | metadata={"service":"app","username":"testuser_1767697225","email":"testuser_1767697225@example.com","role":"resident","requestId":"3de2b3bd-fa67-47bb-8a8d-9432e946aa49","correlationId":"no-correlation-id"}
+2026-01-06T11:00:25.903Z [[32MINFO[39M]: [32mUser created successfully[39m | metadata={"service":"app","userId":18,"username":"testuser_1767697225","role":"resident","requestId":"3de2b3bd-fa67-47bb-8a8d-9432e946aa49","correlationId":"no-correlation-id"}
+14:00:25.903 [32minfo[39m [audit]: Audit event
+14:00:25.903 [32minfo[39m [audit]: Audit event
+14:00:25.904 [32minfo[39m [audit]: Audit event
+14:00:25.904 [32minfo[39m [performance]: Performance metric
+14:00:25.904 [32minfo[39m [performance]: Performance metric
+14:00:25.904 [32minfo[39m [api][unknown]: Request completed
+✅ Database connection test passed
+✅ Database connection test passed
+✅ Database connection test passed
+14:02:04.147 [32minfo[39m [api][unknown]: Request started
+14:02:04.151 [32minfo[39m [performance]: Performance metric
+14:02:04.151 [32minfo[39m [performance]: Performance metric
+14:02:04.151 [32minfo[39m [api][unknown]: Request completed
+14:02:16.143 [32minfo[39m [api][unknown]: Request started
+14:02:16.144 [32minfo[39m [audit]: Audit event
+14:02:16.148 [32minfo[39m [audit]: Audit event
+14:02:16.149 [32minfo[39m [performance]: Performance metric
+14:02:16.149 [32minfo[39m [performance]: Performance metric
+14:02:16.149 [32minfo[39m [api][unknown]: Request completed
+✅ Database connection test passed
+14:02:25.446 [32minfo[39m : Sensitive endpoint access
+14:02:25.446 [32minfo[39m [api][unknown]: Request started
+14:02:25.446 [32minfo[39m [audit]: Audit event
+2026-01-06T11:02:25.448Z [[32MINFO[39M]: [32mRegistration request received[39m | metadata={"service":"app","username":"emailtest01","email":"emailtest01@example.com","role":"resident","requestId":"d6aa105c-a7e3-4c35-9375-913d54eb5d40","correlationId":"no-correlation-id"}
+2026-01-06T11:02:25.449Z [[32MINFO[39M]: [32mAttempting to create user[39m | metadata={"service":"app","username":"emailtest01","email":"emailtest01@example.com","role":"resident","requestId":"d6aa105c-a7e3-4c35-9375-913d54eb5d40","correlationId":"no-correlation-id"}
+2026-01-06T11:02:25.492Z [[32MINFO[39M]: [32mUser created successfully[39m | metadata={"service":"app","userId":19,"username":"emailtest01","role":"resident","requestId":"d6aa105c-a7e3-4c35-9375-913d54eb5d40","correlationId":"no-correlation-id"}
+14:02:25.493 [32minfo[39m [audit]: Audit event
+14:02:25.493 [32minfo[39m [audit]: Audit event
+14:02:25.493 [32minfo[39m [audit]: Audit event
+14:02:25.493 [32minfo[39m [performance]: Performance metric
+14:02:25.493 [32minfo[39m [performance]: Performance metric
+14:02:25.493 [32minfo[39m [api][unknown]: Request completed
+2026-01-06T11:02:50.019Z [[32MINFO[39M]: [32mPerformance metrics report[39m | metadata={"service":"app","overall":{"requests":0,"averageResponseTime":"0.00ms","slowRequests":0,"errors":0,"errorRate":"NaN%"},"topEndpoints":[],"correlationId":"no-correlation-id"}
+✅ Database connection test passed
+✅ Database connection test passed
+14:03:28.358 [32minfo[39m : Sensitive endpoint access
+14:03:28.359 [32minfo[39m [api][unknown]: Request started
+14:03:28.359 [32minfo[39m [audit]: Audit event
+2026-01-06T11:03:28.360Z [[32MINFO[39M]: [32mRegistration request received[39m | metadata={"service":"app","username":"realtimetest","email":"realtimetest@mailinator.com","role":"resident","requestId":"ebba5ce5-fb0d-4c35-adce-58d270e5f791","correlationId":"no-correlation-id"}
+2026-01-06T11:03:28.361Z [[32MINFO[39M]: [32mAttempting to create user[39m | metadata={"service":"app","username":"realtimetest","email":"realtimetest@mailinator.com","role":"resident","requestId":"ebba5ce5-fb0d-4c35-adce-58d270e5f791","correlationId":"no-correlation-id"}
+2026-01-06T11:03:28.381Z [[32MINFO[39M]: [32mUser created successfully[39m | metadata={"service":"app","userId":20,"username":"realtimetest","role":"resident","requestId":"ebba5ce5-fb0d-4c35-adce-58d270e5f791","correlationId":"no-correlation-id"}
+14:03:28.381 [32minfo[39m [audit]: Audit event
+14:03:28.381 [32minfo[39m [audit]: Audit event
+14:03:28.382 [32minfo[39m [audit]: Audit event
+14:03:28.382 [32minfo[39m [performance]: Performance metric
+14:03:28.382 [32minfo[39m [performance]: Performance metric
+14:03:28.382 [32minfo[39m [api][unknown]: Request completed
+✅ Database connection test passed
+✅ Database connection test passed
+✅ Database connection test passed
+🔄 Received SIGTERM, closing database connections...
+🔄 Closing database connections...
+2026-01-06T11:05:13.294Z [[32MINFO[39M]: [32mService marked as shutting down[39m | metadata={"service":"app","uptime":444098,"totalRequests":0,"correlationId":"no-correlation-id"}
+🔄 SIGTERM received - shutting down gracefully
+2026-01-06T11:05:13.295Z [[32MINFO[39M]: [32mServer shutdown initiated[39m | metadata={"service":"app","signal":"SIGTERM","correlationId":"no-correlation-id"}
+🔄 Stopping server from accepting new connections...
+📊 Stopping monitoring dashboard...
+2026-01-06T11:05:13.297Z [[32MINFO[39M]: [32mMonitoring dashboard service stopped[39m | metadata={"service":"app","correlationId":"no-correlation-id"}
+✅ Server closed gracefully
+🔄 Closing database connections...
+🔄 Closing database connections...
