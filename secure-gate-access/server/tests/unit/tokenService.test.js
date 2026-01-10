@@ -86,7 +86,8 @@ describe('TokenService', () => {
         email: 'test@example.com',
         role: 'resident',
         username: 'testuser',
-        verified: true
+        verified: true,
+        estate_id: 42
       };
       const tokens = tokenService.generateTokens(payload);
       const decoded = jwt.decode(tokens.accessToken);
@@ -96,6 +97,20 @@ describe('TokenService', () => {
       expect(decoded.role).toBe('resident');
       expect(decoded.username).toBe('testuser');
       expect(decoded.verified).toBe(true);
+      expect(decoded.estate_id).toBe(42);
+    });
+
+    test('should include estate_id in refresh token payload', () => {
+      const payload = {
+        id: 1,
+        email: 'test@example.com',
+        role: 'resident',
+        estate_id: 7
+      };
+      const tokens = tokenService.generateTokens(payload);
+      const refreshDecoded = jwt.decode(tokens.refreshToken);
+
+      expect(refreshDecoded.estate_id).toBe(7);
     });
 
     test('should set default verified to false', () => {
@@ -148,7 +163,7 @@ describe('TokenService', () => {
     });
 
     test('should include all required claims', () => {
-      const payload = { id: 1, email: 'test@example.com', role: 'resident' };
+      const payload = { id: 1, email: 'test@example.com', role: 'resident', estate_id: 99 };
       const token = tokenService.generateAccessToken(payload);
       const decoded = jwt.decode(token);
 
@@ -156,6 +171,7 @@ describe('TokenService', () => {
       expect(decoded).toHaveProperty('jti');
       expect(decoded).toHaveProperty('iat');
       expect(decoded).toHaveProperty('type', 'access');
+      expect(decoded.estate_id).toBe(99);
     });
   });
 
@@ -179,7 +195,7 @@ describe('TokenService', () => {
     });
 
     test('should include required claims', () => {
-      const payload = { id: 1, email: 'test@example.com' };
+      const payload = { id: 1, email: 'test@example.com', estate_id: 5 };
       const token = tokenService.generateRefreshToken(payload);
       const decoded = jwt.decode(token);
 
@@ -187,6 +203,7 @@ describe('TokenService', () => {
       expect(decoded).toHaveProperty('jti');
       expect(decoded).toHaveProperty('iat');
       expect(decoded).toHaveProperty('email');
+      expect(decoded.estate_id).toBe(5);
     });
   });
 
