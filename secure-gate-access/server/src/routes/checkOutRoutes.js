@@ -120,12 +120,16 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  * GET /api/check-out/today
  */
 router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+  const estateId = req.user.estate_id ?? 1;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
      WHERE DATE(v.check_out_time) = CURRENT_DATE
+       AND v.estate_id = $1
      ORDER BY v.check_out_time DESC`
+    ,
+    [estateId]
   );
   
   return successResponse(res, result.rows, 'Today\'s check-outs retrieved');
@@ -136,13 +140,15 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHand
  * GET /api/check-out/active
  */
 router.get('/active', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+  const estateId = req.user.estate_id ?? 1;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
      WHERE v.status = $1
+       AND v.estate_id = $2
      ORDER BY v.check_in_time DESC`,
-    [PASS_STATUS.CHECKED_IN]
+    [PASS_STATUS.CHECKED_IN, estateId]
   );
   
   return successResponse(res, result.rows, 'Active visitors retrieved');

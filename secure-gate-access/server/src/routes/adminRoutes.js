@@ -684,13 +684,14 @@ router.get('/visitors', authenticateToken, requireRole(['admin']), attachRequest
   try {
     const { status, search, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
+    const estateId = req.user.estate_id ?? 1;
     
     let query = `SELECT v.*, u.username as host_name 
                  FROM visitors v 
                  LEFT JOIN users u ON v.created_by = u.email 
-                 WHERE 1=1`;
-    const params = [];
-    let paramIndex = 1;
+                 WHERE v.estate_id = $1`;
+    const params = [estateId];
+    let paramIndex = 2;
     
     if (status) {
       query += ` AND v.status = $${paramIndex++}`;

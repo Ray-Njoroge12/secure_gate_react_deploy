@@ -6,14 +6,16 @@ const getActiveVisitors = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'guard' && req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
-    
+    const estateId = req.user.estate_id ?? 1;
+
     const vRes = await dbManager.query(`
       SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
              invite_code, status, check_in, check_out, created_at
       FROM visitors 
       WHERE status IN ('PENDING', 'VERIFIED', $1)
+        AND estate_id = $2
       ORDER BY created_at DESC
-    `, [PASS_STATUS.ON_PREMISE]);
+    `, [PASS_STATUS.ON_PREMISE, estateId]);
     
     await req.audit?.('visitor.list.active', 'visitor', null, { outcome: 'success', message: 'Retrieved active visitors', count: vRes.rows.length });
     respond(res, { data: vRes.rows });
@@ -27,7 +29,8 @@ const getVisitorReport = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
-    
+    const estateId = req.user.estate_id ?? 1;
+
     const statsRes = await dbManager.query(`
       SELECT 
         COUNT(*) as total_visitors,
@@ -36,14 +39,16 @@ const getVisitorReport = async (req, res) => {
         COUNT(CASE WHEN status = 'CHECKED_IN' THEN 1 END) as checked_in_visitors,
         COUNT(CASE WHEN status = 'CHECKED_OUT' THEN 1 END) as checked_out_visitors
       FROM visitors
-    `);
+      WHERE estate_id = $1
+    `, [estateId]);
     
     const recentRes = await dbManager.query(`
       SELECT id, name, phone, email, purpose, status, check_in, check_out, created_at
       FROM visitors 
+      WHERE estate_id = $1
       ORDER BY created_at DESC 
       LIMIT 50
-    `);
+    `, [estateId]);
     
     const report = {
       statistics: statsRes.rows[0],
