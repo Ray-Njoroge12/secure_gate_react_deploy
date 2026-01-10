@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
+import { getIntegrationHealth } from '../services/integrationHealthService.js';
 
 const router = express.Router();
 
@@ -108,6 +109,22 @@ router.get('/database/tables', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to retrieve tables',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Provider integration health endpoint
+router.get('/integrations/health', async (req, res) => {
+  try {
+    const health = await getIntegrationHealth();
+    const statusCode = health.status === 'healthy' ? 200 : 207;
+    res.status(statusCode).json(health);
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Integration health check failed',
       error: error.message,
       timestamp: new Date().toISOString()
     });

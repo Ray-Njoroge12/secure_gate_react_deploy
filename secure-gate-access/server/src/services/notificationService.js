@@ -4,6 +4,7 @@ import AfricasTalking from 'africastalking';
 import Mailgun from 'mailgun.js';
 import FormData from 'form-data';
 import whatsappService from './whatsappService.js';
+import notificationMetricsService from './notificationMetricsService.js';
 import { 
     visitorInviteTemplate, 
     bulkInviteTemplate, 
@@ -36,6 +37,10 @@ try {
   transporter = nodemailer.createTransport(smtpConfig); 
 } catch (error) {
   console.error('Failed to create email transporter:', error.message);
+  notificationMetricsService.recordProviderInitFailure('smtp', error.message, {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT
+  });
 }
 
 // Twilio Configuration
@@ -45,6 +50,7 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
     twilioClient = Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
   } catch (error) {
     console.error('Failed to initialize Twilio client:', error.message);
+    notificationMetricsService.recordProviderInitFailure('twilio', error.message);
   }
 }
 
@@ -59,6 +65,7 @@ if (process.env.AT_USERNAME && process.env.AT_API_KEY) {
     atClient = africasTalking.SMS;
   } catch (error) {
     console.error('Failed to initialize Africa\'s Talking client:', error.message);
+    notificationMetricsService.recordProviderInitFailure('africas_talking', error.message);
   }
 }
 
@@ -74,6 +81,7 @@ if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
     });
   } catch (error) {
     console.error('Failed to initialize Mailgun client:', error.message);
+    notificationMetricsService.recordProviderInitFailure('mailgun', error.message);
   }
 }
 
@@ -91,11 +99,23 @@ async function sendEmail(to, subject, html, text = null) {
   // Feature flag checks
   if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
     console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: EMAIL_PROVIDER,
+      success: false,
+      error: 'external_notifications_disabled'
+    });
     return false;
   }
   
   if (process.env.ENABLE_EMAIL_NOTIFICATIONS !== 'true') {
     console.log('Email notifications are disabled via ENABLE_EMAIL_NOTIFICATIONS flag');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: EMAIL_PROVIDER,
+      success: false,
+      error: 'email_notifications_disabled'
+    });
     return false;
   }
 
@@ -105,6 +125,12 @@ async function sendEmail(to, subject, html, text = null) {
     return await sendEmailViaSMTP(to, subject, html);
   } else {
     console.warn('No email service configured');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: EMAIL_PROVIDER,
+      success: false,
+      error: 'email_provider_not_configured'
+    });
     return false;
   }
 }
@@ -123,9 +149,21 @@ async function sendEmailViaMailgun(to, subject, html, text = null) {
     });
     
     console.log(`Email sent via Mailgun: ${data.id}`);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: 'mailgun',
+      success: true,
+      metadata: { messageId: data.id }
+    });
     return true;
   } catch (error) {
     console.error('Mailgun email sending failed:', error.message);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: 'mailgun',
+      success: false,
+      error: error.message
+    });
     return false;
   }
 }
@@ -143,9 +181,21 @@ async function sendEmailViaSMTP(to, subject, html) {
     });
     
     console.log(`Email sent via SMTP to ${to}`);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: 'smtp',
+      success: true,
+      metadata: { to }
+    });
     return true;
   } catch (error) {
     console.error('SMTP email sending failed:', error.message);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: 'smtp',
+      success: false,
+      error: error.message
+    });
     return false;
   }
 }
@@ -231,6 +281,12 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
     console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: false,
+      error: 'sms_notifications_disabled'
+    });
     return false;
   }
   
@@ -238,6 +294,12 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
   if (smsProvider === 'whatsapp') {
     if (!whatsappService.isConfigured()) {
       console.warn('WhatsApp service not configured');
+      notificationMetricsService.recordNotificationResult({
+        channel: 'whatsapp',
+        provider: 'whatsapp',
+        success: false,
+        error: 'whatsapp_not_configured'
+      });
       return false;
     }
     
@@ -246,6 +308,12 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
       if (result.success) {
         metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
         console.log(`Visitor invitation sent via WhatsApp to ${visitorData.phone}`);
+        notificationMetricsService.recordNotificationResult({
+          channel: 'whatsapp',
+          provider: 'whatsapp',
+          success: true,
+          metadata: { messageId: result.messageId }
+        });
         return true;
       } else {
         throw new Error(result.error);
@@ -253,6 +321,12 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
     } catch (err) {
       metrics.notifications_whatsapp_failed = (metrics.notifications_whatsapp_failed || 0) + 1;
       console.error('WhatsApp send failed:', err?.message || err);
+      notificationMetricsService.recordNotificationResult({
+        channel: 'whatsapp',
+        provider: 'whatsapp',
+        success: false,
+        error: err?.message || String(err)
+      });
       return false;
     }
   }
@@ -261,6 +335,12 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
   if (smsProvider === 'africastalking') {
     if (!atClient) {
       console.warn('Africa\'s Talking SMS not configured');
+      notificationMetricsService.recordNotificationResult({
+        channel: 'sms',
+        provider: 'africas_talking',
+        success: false,
+        error: 'africas_talking_not_configured'
+      });
       return false;
     }
   }
@@ -268,6 +348,12 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
   // Twilio provider
   if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
     console.warn('Twilio SMS not configured');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: 'twilio',
+      success: false,
+      error: 'twilio_not_configured'
+    });
     return false;
   }
 
@@ -314,10 +400,22 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
     console.log(`Visitor invitation SMS sent via ${smsProvider} to ${visitorData.phone}`);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: true,
+      metadata: { to: visitorData.phone }
+    });
     return true;
   } catch (err) {
     metrics.notifications_sms_failed = (metrics.notifications_sms_failed || 0) + 1;
     console.error('sendVisitorInviteSms failed:', err?.message || err);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: false,
+      error: err?.message || String(err)
+    });
     return false;
   }
 }
@@ -332,6 +430,12 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
     console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: false,
+      error: 'sms_notifications_disabled'
+    });
     return false;
   }
   
@@ -339,6 +443,12 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
   if (smsProvider === 'whatsapp') {
     if (!whatsappService.isConfigured()) {
       console.warn('WhatsApp service not configured');
+      notificationMetricsService.recordNotificationResult({
+        channel: 'whatsapp',
+        provider: 'whatsapp',
+        success: false,
+        error: 'whatsapp_not_configured'
+      });
       return false;
     }
     
@@ -347,6 +457,12 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
       if (result.success) {
         metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
         console.log(`OTP verification sent via WhatsApp to ${visitorData.phone}`);
+        notificationMetricsService.recordNotificationResult({
+          channel: 'whatsapp',
+          provider: 'whatsapp',
+          success: true,
+          metadata: { messageId: result.messageId }
+        });
         return true;
       } else {
         throw new Error(result.error);
@@ -354,6 +470,12 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
     } catch (err) {
       metrics.notifications_whatsapp_failed = (metrics.notifications_whatsapp_failed || 0) + 1;
       console.error('WhatsApp OTP send failed:', err?.message || err);
+      notificationMetricsService.recordNotificationResult({
+        channel: 'whatsapp',
+        provider: 'whatsapp',
+        success: false,
+        error: err?.message || String(err)
+      });
       return false;
     }
   }
@@ -361,12 +483,24 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
   // Africa's Talking provider
   if (smsProvider === 'africastalking' && !atClient) {
     console.warn('Africa\'s Talking SMS not configured');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: 'africas_talking',
+      success: false,
+      error: 'africas_talking_not_configured'
+    });
     return false;
   }
   
   // Twilio provider
   if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
     console.warn('Twilio SMS not configured');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: 'twilio',
+      success: false,
+      error: 'twilio_not_configured'
+    });
     return false;
   }
 
@@ -408,10 +542,22 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
     console.log(`OTP verification SMS sent via ${smsProvider} to ${visitorData.phone}`);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: true,
+      metadata: { to: visitorData.phone }
+    });
     return true;
   } catch (err) {
     metrics.notifications_sms_failed = (metrics.notifications_sms_failed || 0) + 1;
     console.error('sendOtpVerificationSms failed:', err?.message || err);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: false,
+      error: err?.message || String(err)
+    });
     return false;
   }
 }
@@ -451,11 +597,24 @@ export async function sendDeliveryNotification(residentData, deliveryData) {
       metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
       console.log(`Delivery notification email sent to ${residentData.email}`);
     }
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: EMAIL_PROVIDER,
+      success: Boolean(result),
+      error: result ? null : 'delivery_notification_failed',
+      metadata: { to: residentData.email }
+    });
     
     return result;
   } catch (err) {
     metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
     console.error('sendDeliveryNotification failed:', err?.message || err);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'email',
+      provider: EMAIL_PROVIDER,
+      success: false,
+      error: err?.message || String(err)
+    });
     return false;
   }
 }
@@ -500,11 +659,23 @@ export async function sendSms(to, text) {
   // Feature flag checks
   if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
     console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: false,
+      error: 'external_notifications_disabled'
+    });
     return false;
   }
   
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
     console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: false,
+      error: 'sms_notifications_disabled'
+    });
     return false;
   }
 
@@ -512,11 +683,23 @@ export async function sendSms(to, text) {
   
   if (smsProvider === 'africastalking' && !atClient) {
     console.warn('Africa\'s Talking SMS not configured');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: 'africas_talking',
+      success: false,
+      error: 'africas_talking_not_configured'
+    });
     return false;
   }
   
   if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
     console.warn('Twilio SMS not configured');
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: 'twilio',
+      success: false,
+      error: 'twilio_not_configured'
+    });
     return false;
   }
 
@@ -549,10 +732,22 @@ export async function sendSms(to, text) {
     
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
     console.log(`SMS sent via ${smsProvider} to ${to}`);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: true,
+      metadata: { to }
+    });
     return true;
   } catch (err) {
     metrics.notifications_sms_failed = (metrics.notifications_sms_failed || 0) + 1;
     console.error('sendSms failed', err?.message || err);
+    notificationMetricsService.recordNotificationResult({
+      channel: 'sms',
+      provider: smsProvider,
+      success: false,
+      error: err?.message || String(err)
+    });
     return false;
   }
 }
