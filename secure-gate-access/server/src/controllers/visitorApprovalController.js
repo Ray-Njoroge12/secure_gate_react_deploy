@@ -33,8 +33,8 @@ export const requestApproval = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, email, status, resident_id, vehicle_plate FROM visitors WHERE id = $1',
-      [id]
+      'SELECT id, name, phone, email, status, resident_id, vehicle_plate FROM visitors WHERE id = $1 AND estate_id = $2',
+      [id, req.user.estate_id]
     );
     
     if (!vRes.rows[0]) {
@@ -67,9 +67,9 @@ export const requestApproval = async (req, res) => {
        SET status = $1, 
            approval_requested_by = $2, 
            approval_requested_at = NOW()
-       WHERE id = $3
+       WHERE id = $3 AND estate_id = $4
        RETURNING id, name, phone, status, resident_id, approval_requested_at`,
-      [PASS_STATUS.PENDING_APPROVAL, guardId, id]
+      [PASS_STATUS.PENDING_APPROVAL, guardId, id, req.user.estate_id]
     );
 
     const updatedVisitor = updateRes.rows[0];
@@ -125,8 +125,8 @@ export const approveVisitor = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, status, resident_id FROM visitors WHERE id = $1',
-      [id]
+      'SELECT id, name, phone, status, resident_id FROM visitors WHERE id = $1 AND estate_id = $2',
+      [id, req.user.estate_id]
     );
     
     if (!vRes.rows[0]) {
@@ -151,9 +151,9 @@ export const approveVisitor = async (req, res) => {
        SET status = $1, 
            approved_by = $2, 
            approved_at = NOW()
-       WHERE id = $3
+       WHERE id = $3 AND estate_id = $4
        RETURNING id, name, phone, status, approved_by, approved_at`,
-      [PASS_STATUS.APPROVED, residentId, id]
+      [PASS_STATUS.APPROVED, residentId, id, req.user.estate_id]
     );
 
     const approvedVisitor = updateRes.rows[0];
@@ -173,8 +173,8 @@ export const approveVisitor = async (req, res) => {
 
     // Emit real-time WebSocket event to guard
     const guardQuery = await dbManager.query(
-      'SELECT approval_requested_by FROM visitors WHERE id = $1',
-      [id]
+      'SELECT approval_requested_by FROM visitors WHERE id = $1 AND estate_id = $2',
+      [id, req.user.estate_id]
     );
     const guardId = guardQuery.rows[0]?.approval_requested_by;
     
@@ -214,8 +214,8 @@ export const rejectVisitor = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, status, resident_id, approval_requested_by FROM visitors WHERE id = $1',
-      [id]
+      'SELECT id, name, phone, status, resident_id, approval_requested_by FROM visitors WHERE id = $1 AND estate_id = $2',
+      [id, req.user.estate_id]
     );
     
     if (!vRes.rows[0]) {
@@ -241,9 +241,9 @@ export const rejectVisitor = async (req, res) => {
            rejected_by = $2, 
            rejected_at = NOW(),
            rejection_reason = $3
-       WHERE id = $4
+       WHERE id = $4 AND estate_id = $5
        RETURNING id, name, phone, status, rejected_by, rejected_at, rejection_reason`,
-      [PASS_STATUS.REJECTED, residentId, reason || null, id]
+      [PASS_STATUS.REJECTED, residentId, reason || null, id, req.user.estate_id]
     );
 
     const rejectedVisitor = updateRes.rows[0];
@@ -312,8 +312,9 @@ export const getPendingApprovals = async (req, res) => {
        LEFT JOIN users u ON v.approval_requested_by = u.id
        WHERE v.resident_id = $1 
          AND v.status = $2
+         AND v.estate_id = $3
        ORDER BY v.approval_requested_at DESC`,
-      [residentId, PASS_STATUS.PENDING_APPROVAL]
+      [residentId, PASS_STATUS.PENDING_APPROVAL, req.user.estate_id]
     );
 
     respond(res, result.rows);
@@ -359,13 +360,14 @@ export const getApprovalHistory = async (req, res) => {
        FROM visitors v
        WHERE v.resident_id = $1 
          AND v.status IN ($2, $3)
+         AND v.estate_id = $4
        ORDER BY 
          CASE 
            WHEN v.status = 'approved' THEN v.approved_at
            WHEN v.status = 'rejected' THEN v.rejected_at
          END DESC
-       LIMIT $4 OFFSET $5`,
-      [residentId, PASS_STATUS.APPROVED, PASS_STATUS.REJECTED, limit, offset]
+       LIMIT $5 OFFSET $6`,
+      [residentId, PASS_STATUS.APPROVED, PASS_STATUS.REJECTED, req.user.estate_id, limit, offset]
     );
 
     respond(res, result.rows);

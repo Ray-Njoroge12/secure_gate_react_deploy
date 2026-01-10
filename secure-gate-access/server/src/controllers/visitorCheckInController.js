@@ -14,13 +14,19 @@ const checkInVisitor = async (req, res) => {
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     
-    const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);
+    const vRes = await dbManager.query(
+      'SELECT id, status, name, phone, email FROM visitors WHERE id = $1 AND estate_id = $2',
+      [id, req.user.estate_id]
+    );
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
     if (!canCheckInStatus(visitor.status)) return respondError(res, 422, 'Visitor cannot be checked in');
 
     const now = new Date();
-    await dbManager.query('UPDATE visitors SET status = $1, check_in = $2 WHERE id = $3', [PASS_STATUS.ON_PREMISE, now, id]);
+    await dbManager.query(
+      'UPDATE visitors SET status = $1, check_in = $2 WHERE id = $3 AND estate_id = $4',
+      [PASS_STATUS.ON_PREMISE, now, id, req.user.estate_id]
+    );
 
     // Broadcast SSE update
     broadcastVisitorCheckIn(id, 'checkin');
@@ -56,13 +62,19 @@ const checkOutVisitor = async (req, res) => {
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     
-    const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);
+    const vRes = await dbManager.query(
+      'SELECT id, status, name, phone, email FROM visitors WHERE id = $1 AND estate_id = $2',
+      [id, req.user.estate_id]
+    );
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
     if (!statusEquals(visitor.status, PASS_STATUS.ON_PREMISE)) return respondError(res, 422, 'Visitor not checked in');
 
     const now = new Date();
-    await dbManager.query('UPDATE visitors SET status = $1, check_out = $2 WHERE id = $3', [PASS_STATUS.CHECKED_OUT, now, id]);
+    await dbManager.query(
+      'UPDATE visitors SET status = $1, check_out = $2 WHERE id = $3 AND estate_id = $4',
+      [PASS_STATUS.CHECKED_OUT, now, id, req.user.estate_id]
+    );
 
     // Broadcast SSE update
     broadcastVisitorCheckIn(id, 'checkout');
@@ -71,7 +83,10 @@ const checkOutVisitor = async (req, res) => {
     // Emit real-time WebSocket event for dashboard updates (Phase 2.3)
     try {
       // Calculate visit duration
-      const checkInRes = await dbManager.query('SELECT check_in FROM visitors WHERE id = $1', [id]);
+      const checkInRes = await dbManager.query(
+        'SELECT check_in FROM visitors WHERE id = $1 AND estate_id = $2',
+        [id, req.user.estate_id]
+      );
       const checkInTime = checkInRes.rows[0]?.check_in;
       let duration = 'Unknown';
       if (checkInTime) {

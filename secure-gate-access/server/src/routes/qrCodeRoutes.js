@@ -6,6 +6,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import QRCodeService from '../services/qrCodeService.js';
 import WebSocketService from '../services/websocketService.js';
 import { dbManager } from '../database/db.enhanced.js';
@@ -17,16 +18,25 @@ const router = express.Router();
 /**
  * Generate QR code for visitor
  */
-router.post('/generate/:visitorId', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.post('/generate/:visitorId', authenticateToken, requireEstateContext, attachRequestAudit(), async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     
     const { visitorId } = req.params;
+
+    const estateCheck = await dbManager.query(
+      'SELECT id FROM visitors WHERE id = $1 AND estate_id = $2',
+      [visitorId, req.user.estate_id]
+    );
+
+    if (estateCheck.rows.length === 0) {
+      return respondError(res, 404, 'Visitor not found');
+    }
     
     // Get visitor information
     const visitorResult = await dbManager.query(
-      'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',
-      [visitorId]
+      'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1 AND estate_id = $2',
+      [visitorId, req.user.estate_id]
     );
     
     if (visitorResult.rows.length === 0) {
@@ -39,8 +49,8 @@ router.post('/generate/:visitorId', authenticateToken, attachRequestAudit(), asy
     if (req.user.role === 'resident') {
       // Residents can only generate QR codes for their own invites
       const createdByResult = await dbManager.query(
-        'SELECT created_by FROM visitors WHERE id = $1',
-        [visitorId]
+        'SELECT created_by FROM visitors WHERE id = $1 AND estate_id = $2',
+        [visitorId, req.user.estate_id]
       );
       
       if (createdByResult.rows[0]?.created_by !== req.user.email) {
@@ -53,8 +63,8 @@ router.post('/generate/:visitorId', authenticateToken, attachRequestAudit(), asy
     
     // Update visitor record with QR code reference
     await dbManager.query(
-      'UPDATE visitors SET qr_code = $1 WHERE id = $2',
-      [qrResult.qrId, visitorId]
+      'UPDATE visitors SET qr_code = $1 WHERE id = $2 AND estate_id = $3',
+      [qrResult.qrId, visitorId, req.user.estate_id]
     );
     
     // Log activity
@@ -100,7 +110,7 @@ router.post('/generate/:visitorId', authenticateToken, attachRequestAudit(), asy
 /**
  * Validate QR code token
  */
-router.post('/validate', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.post('/validate', authenticateToken, requireEstateContext, attachRequestAudit(), async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     
@@ -125,6 +135,15 @@ router.post('/validate', authenticateToken, attachRequestAudit(), async (req, re
         error: validation.error
       });
       return respondError(res, 400, validation.error);
+    }
+
+    if (validation.visitor?.estate_id !== req.user.estate_id) {
+      await req.audit?.('qr.validate', 'qr_code', validation.qrCode?.id, {
+        outcome: 'fail',
+        message: 'QR code estate mismatch',
+        visitorId: validation.visitor?.id
+      });
+      return respondError(res, 403, 'Visitor does not belong to your estate');
     }
     
     await req.audit?.('qr.validate', 'qr_code', validation.qrCode.id, {
@@ -156,7 +175,7 @@ router.post('/validate', authenticateToken, attachRequestAudit(), async (req, re
 /**
  * Check-in visitor using QR code
  */
-router.post('/checkin', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAudit(), async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     
@@ -179,6 +198,10 @@ router.post('/checkin', authenticateToken, attachRequestAudit(), async (req, res
     }
     
     const visitor = validation.visitor;
+
+    if (visitor?.estate_id !== req.user.estate_id) {
+      return respondError(res, 403, 'Visitor does not belong to your estate');
+    }
     
     // Check if visitor can be checked in
     if (visitor.status !== 'PENDING' && visitor.status !== 'VERIFIED') {
@@ -188,8 +211,8 @@ router.post('/checkin', authenticateToken, attachRequestAudit(), async (req, res
     // Check-in visitor
     const now = new Date();
     await dbManager.query(
-      'UPDATE visitors SET status = $1, check_in = $2, real_time_status = $3 WHERE id = $4',
-      [PASS_STATUS.ON_PREMISE, now, 'CHECKED_IN', visitor.id]
+      'UPDATE visitors SET status = $1, check_in = $2, real_time_status = $3 WHERE id = $4 AND estate_id = $5',
+      [PASS_STATUS.ON_PREMISE, now, 'CHECKED_IN', visitor.id, req.user.estate_id]
     );
     
     // Mark QR code as used
@@ -243,7 +266,7 @@ router.post('/checkin', authenticateToken, attachRequestAudit(), async (req, res
 /**
  * Get QR code by visitor ID
  */
-router.get('/visitor/:visitorId', authenticateToken, attachRequestAudit(), async (req, res) => {
+router.get('/visitor/:visitorId', authenticateToken, requireEstateContext, attachRequestAudit(), async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     
@@ -252,8 +275,8 @@ router.get('/visitor/:visitorId', authenticateToken, attachRequestAudit(), async
     // Check permissions
     if (req.user.role === 'resident') {
       const createdByResult = await dbManager.query(
-        'SELECT created_by FROM visitors WHERE id = $1',
-        [visitorId]
+        'SELECT created_by FROM visitors WHERE id = $1 AND estate_id = $2',
+        [visitorId, req.user.estate_id]
       );
       
       if (createdByResult.rows[0]?.created_by !== req.user.email) {
