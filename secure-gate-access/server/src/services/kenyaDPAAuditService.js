@@ -53,7 +53,9 @@ class KenyaDPAAuditService {
       policy_metadata: {
         last_updated_at: process.env.KENYA_DPA_LAST_UPDATED_AT || null,
         last_reviewed_at: process.env.KENYA_DPA_LAST_REVIEWED_AT || null,
-        review_frequency_days: Number(process.env.KENYA_DPA_REVIEW_FREQUENCY_DAYS || 90)
+        review_frequency_days: Number(process.env.KENYA_DPA_REVIEW_FREQUENCY_DAYS || 90),
+        last_review_status: 'pending',
+        last_review_notes: []
       },
       kenya_dpa: {
         enabled: true,
@@ -239,19 +241,46 @@ class KenyaDPAAuditService {
    */
   async runComplianceReview(trigger = 'manual') {
     const now = new Date().toISOString();
+    const verification = this.verifyComplianceData();
 
     this.config.policy_metadata = {
       ...this.config.policy_metadata,
       last_reviewed_at: now,
-      last_updated_at: now
+      last_updated_at: now,
+      last_review_status: verification.status,
+      last_review_notes: verification.issues
     };
 
     await this.saveComplianceStore();
 
     loggingService.logInfo('Kenya DPA compliance review completed', {
       trigger,
-      last_reviewed_at: now
+      last_reviewed_at: now,
+      review_status: verification.status,
+      review_issues: verification.issues
     });
+  }
+
+  /**
+   * Verify compliance metadata accuracy for DPO and ODPC records
+   */
+  verifyComplianceData() {
+    const issues = [];
+    const dpo = this.getDPOInformation();
+    const odpc = this.getODPCRegistration();
+
+    if (!dpo.is_configured) {
+      issues.push('DPO record is not configured with name, email, and appointment date.');
+    }
+
+    if (!odpc.is_configured) {
+      issues.push('ODPC registration record is not configured with status and registration details.');
+    }
+
+    return {
+      status: issues.length === 0 ? 'verified' : 'needs_attention',
+      issues
+    };
   }
 
   /**

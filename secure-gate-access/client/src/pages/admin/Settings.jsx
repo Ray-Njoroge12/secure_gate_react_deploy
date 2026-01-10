@@ -58,8 +58,11 @@ export default function Settings() {
   });
   const [policyMetadata, setPolicyMetadata] = useState({
     last_updated_at: null,
-    last_reviewed_at: null
+    last_reviewed_at: null,
+    last_review_status: "pending",
+    last_review_notes: []
   });
+  const [reviewRunning, setReviewRunning] = useState(false);
 
   const handleSave = (section, e) => {
     e.preventDefault();
@@ -153,7 +156,9 @@ export default function Settings() {
 
       setPolicyMetadata({
         last_updated_at: metadataData.data.last_updated_at,
-        last_reviewed_at: metadataData.data.last_reviewed_at
+        last_reviewed_at: metadataData.data.last_reviewed_at,
+        last_review_status: metadataData.data.last_review_status || "pending",
+        last_review_notes: metadataData.data.last_review_notes || []
       });
 
       setComplianceLoaded(true);
@@ -187,6 +192,26 @@ export default function Settings() {
       alert("Compliance settings updated successfully!");
     } catch (error) {
       alert(error.message || "Failed to update compliance settings");
+    }
+  };
+
+  const handleComplianceReview = async () => {
+    setReviewRunning(true);
+    try {
+      const response = await fetch("/api/admin/compliance/kenya-dpa/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to run compliance review");
+      }
+      await loadComplianceData();
+      alert("Compliance review completed.");
+    } catch (error) {
+      alert(error.message || "Failed to run compliance review");
+    } finally {
+      setReviewRunning(false);
     }
   };
 
@@ -630,6 +655,29 @@ export default function Settings() {
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       <strong>Last Reviewed:</strong> {formatDateValue(policyMetadata.last_reviewed_at)}
                     </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <strong>Review Status:</strong>{" "}
+                      {policyMetadata.last_review_status === "verified"
+                        ? "Verified"
+                        : policyMetadata.last_review_status === "pending"
+                          ? "Pending"
+                          : "Needs Attention"}
+                    </p>
+                    {policyMetadata.last_review_notes?.length > 0 && (
+                      <ul className="mt-2 list-disc list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                        {policyMetadata.last_review_notes.map((note, index) => (
+                          <li key={`${note}-${index}`}>{note}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleComplianceReview}
+                      className="btn secondary mt-4"
+                      disabled={reviewRunning}
+                    >
+                      {reviewRunning ? "Running Review..." : "Run Compliance Review"}
+                    </button>
                   </div>
                 </div>
               )}
