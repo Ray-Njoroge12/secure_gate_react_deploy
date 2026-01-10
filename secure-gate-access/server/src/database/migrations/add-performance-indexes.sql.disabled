@@ -34,15 +34,15 @@ CREATE INDEX IF NOT EXISTS idx_visitors_resident_id
 ON visitors(resident_id)
 WHERE resident_id IS NOT NULL;
 
--- Estate ID index (multi-tenant filtering) - SKIPPED, column doesn't exist
--- CREATE INDEX IF NOT EXISTS idx_visitors_estate_id
--- ON visitors(estate_id)
--- WHERE estate_id IS NOT NULL;
+-- Estate ID index (multi-tenant filtering)
+CREATE INDEX IF NOT EXISTS idx_visitors_estate_id
+ON visitors(estate_id)
+WHERE estate_id IS NOT NULL;
 
--- Composite index for common query pattern (estate + status + date) - SKIPPED, column doesn't exist
--- CREATE INDEX IF NOT EXISTS idx_visitors_estate_status_created
--- ON visitors(estate_id, status, created_at DESC)
--- WHERE estate_id IS NOT NULL;
+-- Composite index for common query pattern (estate + status + date)
+CREATE INDEX IF NOT EXISTS idx_visitors_estate_status_created
+ON visitors(estate_id, status, created_at DESC)
+WHERE estate_id IS NOT NULL;
 
 -- ============================================================================
 -- USERS TABLE INDEXES
@@ -66,10 +66,10 @@ ON users(role);
 -- ON users(is_active)
 -- WHERE is_active = true;
 
--- Estate ID index (multi-tenant queries) - SKIPPED, column doesn't exist
--- CREATE INDEX IF NOT EXISTS idx_users_estate_id
--- ON users(estate_id)
--- WHERE estate_id IS NOT NULL;
+-- Estate ID index (multi-tenant queries)
+CREATE INDEX IF NOT EXISTS idx_users_estate_id
+ON users(estate_id)
+WHERE estate_id IS NOT NULL;
 
 -- ============================================================================
 -- NOTIFICATIONS TABLE INDEXES (SKIPPED - TABLE DOESN'T EXIST)
@@ -216,7 +216,7 @@ ORDER BY tablename, indexname;
 
 -- Performance tips
 COMMENT ON INDEX idx_visitors_email IS 'Phase 3.2: Improves email lookup and duplicate checking';
--- COMMENT ON INDEX idx_visitors_estate_status_created IS 'Phase 3.2: Composite index for common dashboard queries'; -- Skipped
+COMMENT ON INDEX idx_visitors_estate_status_created IS 'Phase 3.2: Composite index for common dashboard queries';
 -- COMMENT ON INDEX idx_notifications_status_created IS 'Phase 3.2: Optimizes notification queue monitoring'; -- Skipped
 COMMENT ON INDEX idx_audit_logs_user_timestamp IS 'Phase 3.2: Speeds up user activity history queries';
 
