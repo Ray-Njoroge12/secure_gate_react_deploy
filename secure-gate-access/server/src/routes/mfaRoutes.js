@@ -129,7 +129,8 @@ router.post('/verify', asyncHandler(async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        estate_id: user.estate_id
       }
       // Tokens are in httpOnly cookies
     }

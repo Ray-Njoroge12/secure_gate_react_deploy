@@ -24,7 +24,7 @@ class UserService {
    * Create a new user with email verification
    */
   async createUser(userData) {
-    const { username, email, password, role } = userData;
+    const { username, email, password, role, estate_id: estateId } = userData;
 
     // Input validation
     if (!username || !email || !password || !role) {
@@ -58,8 +58,8 @@ class UserService {
     try {
       // Check if user already exists using parameterized queries
       const existingUser = await this.db.query(
-        'SELECT id FROM users WHERE username = $1 OR email = $2',
-        [username, email]
+        'SELECT id FROM users WHERE estate_id = COALESCE($3, estate_id) AND (username = $1 OR email = $2)',
+        [username, email, estateId]
       );
 
       if (existingUser.rows.length > 0) {
@@ -77,10 +77,10 @@ class UserService {
       // Uses column names matching render_init.sql schema: verification_token, verification_expires
       // Insert into both password and password_hash for backward compatibility
       const result = await this.db.query(
-        `INSERT INTO users (username, email, password, password_hash, role, verification_token, verification_expires, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) 
-         RETURNING id, username, email, role, verification_token, created_at`,
-        [username, email, hashedPassword, hashedPassword, role, verificationToken, verificationExpires]
+        `INSERT INTO users (username, email, password, password_hash, role, estate_id, verification_token, verification_expires, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6, 1), $7, $8, NOW(), NOW()) 
+         RETURNING id, username, email, role, estate_id, verification_token, created_at`,
+        [username, email, hashedPassword, hashedPassword, role, estateId, verificationToken, verificationExpires]
       );
 
       const user = result.rows[0];
@@ -209,7 +209,7 @@ class UserService {
       // Get user by username OR email using parameterized query, including email verification status
       // Uses column names matching render_init.sql schema: verified instead of email_verified_at
       const result = await this.db.query(
-        'SELECT id, username, email, password_hash, role, created_at, verified FROM users WHERE username = $1 OR email = $1',
+        'SELECT id, username, email, password_hash, role, estate_id, created_at, verified FROM users WHERE username = $1 OR email = $1',
         [username]
       );
 
@@ -268,7 +268,7 @@ class UserService {
 
     try {
       const result = await this.db.query(
-        'SELECT id, username, email, role, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, username, email, role, estate_id, created_at, updated_at FROM users WHERE id = $1',
         [userId]
       );
 
@@ -292,7 +292,7 @@ class UserService {
 
     try {
       const result = await this.db.query(
-        'SELECT id, username, email, role, created_at, updated_at FROM users WHERE username = $1',
+        'SELECT id, username, email, role, estate_id, created_at, updated_at FROM users WHERE username = $1',
         [username]
       );
 
@@ -388,7 +388,7 @@ class UserService {
    */
   async listUsers(page = 1, limit = 10, role = null) {
     const offset = (page - 1) * limit;
-    let query = 'SELECT id, username, email, role, created_at, updated_at FROM users';
+    let query = 'SELECT id, username, email, role, estate_id, created_at, updated_at FROM users';
     const values = [];
     let paramCount = 1;
 
@@ -571,7 +571,7 @@ class UserService {
     try {
       // Check if user exists
       const userCheck = await this.db.query(
-        'SELECT id, username, email, verified FROM users WHERE email = $1',
+        'SELECT id, username, email, estate_id, verified FROM users WHERE email = $1',
         [email]
       );
 

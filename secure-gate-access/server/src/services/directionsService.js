@@ -96,7 +96,8 @@ export async function getVisitorDirections(visitorId, inviteToken) {
   const visitorCheck = await pool.query(
     `SELECT v.id, v.invite_code, v.visitor_token, v.status,
             v.allow_residence_location, v.unit_pin_encrypted,
-            u.username as host_name, u.house
+            v.estate_id,
+            u.username as host_name, u.house, u.estate_id as host_estate_id
      FROM visitors v
      JOIN users u ON v.created_by = u.email OR v.created_by::text = u.id::text
      WHERE v.id = $1
@@ -111,7 +112,8 @@ export async function getVisitorDirections(visitorId, inviteToken) {
   const visitor = visitorCheck.rows[0];
   
   // Get estate location
-  const estate = await getEstateLocation(1);
+  const estateId = visitor.estate_id || visitor.host_estate_id || 1;
+  const estate = await getEstateLocation(estateId);
   
   // Get custom directions if any
   const customResult = await pool.query(
@@ -164,7 +166,12 @@ export async function getVisitorDirections(visitorId, inviteToken) {
  * Generate shareable directions link (for visitor to share with driver)
  */
 export async function generateShareableLink(visitorId) {
-  const estate = await getEstateLocation(1);
+  const visitorResult = await pool.query(
+    'SELECT estate_id FROM visitors WHERE id = $1',
+    [visitorId]
+  );
+  const estateId = visitorResult.rows[0]?.estate_id || 1;
+  const estate = await getEstateLocation(estateId);
   
   if (!estate?.gate_latitude || !estate?.gate_longitude) {
     return { success: false, error: 'Estate location not configured' };

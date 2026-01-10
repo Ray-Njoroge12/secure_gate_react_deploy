@@ -177,18 +177,52 @@ export const getVisitorByToken = async (req, res) => {
  */
 export const getEstateInfo = async (req, res) => {
   try {
-    // This would typically come from a settings/config table
-    // For now, return default info
+    const estateSlug = req.query.estate;
+    const estateId = req.query.estate_id ? parseInt(req.query.estate_id, 10) : null;
+    const estateParams = [];
+    let estateFilter = 'e.id = $1';
+
+    if (estateSlug) {
+      estateFilter = 'e.slug = $1';
+      estateParams.push(estateSlug);
+    } else if (Number.isInteger(estateId)) {
+      estateParams.push(estateId);
+    } else {
+      estateParams.push(1);
+    }
+
+    const estateResult = await dbManager.query(
+      `SELECT e.id, e.name, e.slug, e.address, e.timezone,
+              e.contact_phone, e.emergency_contact,
+              el.gate_name, el.gate_latitude, el.gate_longitude,
+              el.directions_from_highway, el.directions_from_city
+       FROM estates e
+       LEFT JOIN estate_locations el ON el.estate_id = e.id
+       WHERE ${estateFilter}
+       LIMIT 1`,
+      estateParams
+    );
+
+    if (estateResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Estate not found'
+      });
+    }
+
+    const estate = estateResult.rows[0];
     const estateInfo = {
-      name: 'Secure Gate Estate',
-      address: 'Nairobi, Kenya',
-      timezone: 'Africa/Nairobi',
+      id: estate.id,
+      name: estate.name,
+      slug: estate.slug,
+      address: estate.address,
+      timezone: estate.timezone,
       gates: [
         {
-          name: 'Main Gate',
-          location: 'North Entrance',
+          name: estate.gate_name || 'Main Gate',
+          location: estate.address || 'Estate main entrance',
           hours: '24/7',
-          contact: '+254 700 000 000'
+          contact: estate.contact_phone || estate.emergency_contact
         }
       ],
       parkingInstructions: 'Visitor parking available at designated areas near the main gate.',
@@ -197,7 +231,13 @@ export const getEstateInfo = async (req, res) => {
         'Valid ID required for entry',
         'Wait for resident approval if status is pending'
       ],
-      emergencyContact: '+254 700 000 000',
+      emergencyContact: estate.emergency_contact || estate.contact_phone,
+      directions: {
+        fromHighway: estate.directions_from_highway,
+        fromCity: estate.directions_from_city,
+        gateLatitude: estate.gate_latitude,
+        gateLongitude: estate.gate_longitude
+      },
       languages: ['en', 'sw']
     };
     
