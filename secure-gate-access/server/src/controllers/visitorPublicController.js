@@ -57,7 +57,8 @@ export const getVisitorByToken = async (req, res) => {
         v.created_at,
         u.username as resident_name,
         u.email as resident_email,
-        u.phone as resident_phone
+        u.phone as resident_phone,
+        u.estate_id as estate_id
       FROM visitors v
       LEFT JOIN users u ON v.resident_id = u.id
       WHERE v.visitor_token = $1
@@ -126,6 +127,7 @@ export const getVisitorByToken = async (req, res) => {
       tokenExpiresAt: visitor.token_expires_at,
       createdAt: visitor.created_at,
       qrCode: qrCodeData,
+      estateId: visitor.estate_id,
       resident: {
         name: visitor.resident_name,
         // Only show first part of email for privacy
@@ -177,38 +179,87 @@ export const getVisitorByToken = async (req, res) => {
  */
 export const getEstateInfo = async (req, res) => {
   try {
-    // This would typically come from a settings/config table
-    // For now, return default info
-    const estateInfo = {
-      name: 'Secure Gate Estate',
-      address: 'Nairobi, Kenya',
-      timezone: 'Africa/Nairobi',
-      gates: [
-        {
-          name: 'Main Gate',
-          location: 'North Entrance',
-          hours: '24/7',
-          contact: '+254 700 000 000'
-        }
-      ],
-      parkingInstructions: 'Visitor parking available at designated areas near the main gate.',
-      checkInInstructions: [
-        'Present your QR code or visit code to the guard',
-        'Valid ID required for entry',
-        'Wait for resident approval if status is pending'
-      ],
-      emergencyContact: '+254 700 000 000',
-      languages: ['en', 'sw']
-    };
-    
+    const estateId = Number(req.query.estateId);
+
+    if (!estateId || Number.isNaN(estateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Estate ID is required'
+      });
+    }
+
+    const estateInfoResult = await dbManager.query(
+      `SELECT
+        estate_id,
+        name,
+        address,
+        timezone,
+        contact,
+        parking_instructions,
+        check_in_instructions,
+        emergency_contact,
+        languages,
+        gate_location,
+        gate_hours,
+        gate_contact
+       FROM estate_public_info
+       WHERE estate_id = $1
+       LIMIT 1`,
+      [estateId]
+    );
+
+    if (estateInfoResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Estate information not found'
+      });
+    }
+
+    const locationResult = await dbManager.query(
+      `SELECT gate_name, gate_latitude, gate_longitude
+       FROM estate_locations
+       WHERE estate_id = $1
+       LIMIT 1`,
+      [estateId]
+    );
+
+    const estateInfo = estateInfoResult.rows[0];
+    const estateLocation = locationResult.rows[0];
+    const gateLocation = estateInfo.gate_location
+      || (estateLocation?.gate_latitude && estateLocation?.gate_longitude
+        ? `${estateLocation.gate_latitude}, ${estateLocation.gate_longitude}`
+        : null);
+
     return res.status(200).json({
       success: true,
-      data: estateInfo
+      data: {
+        name: estateInfo.name,
+        address: estateInfo.address,
+        timezone: estateInfo.timezone,
+        contact: estateInfo.contact,
+        gates: estateLocation || estateInfo.gate_location || estateInfo.gate_hours || estateInfo.gate_contact
+          ? [
+              {
+                name: estateLocation?.gate_name,
+                location: gateLocation,
+                hours: estateInfo.gate_hours,
+                contact: estateInfo.gate_contact
+              }
+            ]
+          : [],
+        parkingInstructions: estateInfo.parking_instructions,
+        checkInInstructions: Array.isArray(estateInfo.check_in_instructions)
+          ? estateInfo.check_in_instructions
+          : [],
+        emergencyContact: estateInfo.emergency_contact,
+        languages: Array.isArray(estateInfo.languages)
+          ? estateInfo.languages
+          : []
+      }
     });
-    
   } catch (error) {
     logger.error('Error fetching estate info', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch estate information'

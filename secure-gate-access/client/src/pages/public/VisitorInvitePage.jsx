@@ -75,6 +75,7 @@ const VisitorInvitePage = () => {
       
       if (data.success) {
         setVisitor(data.data);
+        await fetchEstateInfo(data.data.estateId);
       } else {
         throw new Error(data.error || 'Failed to load invite');
       }
@@ -86,9 +87,13 @@ const VisitorInvitePage = () => {
   };
 
   // Fetch estate information
-  const fetchEstateInfo = async () => {
+  const fetchEstateInfo = async (estateId) => {
     try {
-      const response = await fetch('/api/public/estate-info');
+      if (!estateId) {
+        return;
+      }
+
+      const response = await fetch(`/api/public/estate-info?estateId=${estateId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -126,7 +131,6 @@ const VisitorInvitePage = () => {
     }
 
     fetchVisitorDetails();
-    fetchEstateInfo();
   }, [token]);
 
   // Start status polling when visitor is pending_approval

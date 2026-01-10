@@ -9,6 +9,12 @@ import directionsService from '../services/directionsService.js';
 
 const router = express.Router();
 
+const getEstateIdFromRequest = (req) => {
+  const estateId = Number(req.query.estateId || req.body.estateId || req.params.estateId);
+
+  return Number.isNaN(estateId) ? null : estateId;
+};
+
 /**
  * @swagger
  * /api/directions/estate:
@@ -18,7 +24,16 @@ const router = express.Router();
  */
 router.get('/estate', async (req, res) => {
   try {
-    const location = await directionsService.getEstateLocation();
+    const estateId = getEstateIdFromRequest(req);
+
+    if (!estateId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Estate ID is required'
+      });
+    }
+
+    const location = await directionsService.getEstateLocation(estateId);
     
     if (!location) {
       return res.status(404).json({
@@ -48,6 +63,7 @@ router.get('/estate', async (req, res) => {
 router.put('/estate', authenticateToken, async (req, res) => {
   try {
     const { role } = req.user;
+    const estateId = req.user?.estate_id || getEstateIdFromRequest(req);
     
     if (role !== 'admin') {
       return res.status(403).json({
@@ -55,10 +71,17 @@ router.put('/estate', authenticateToken, async (req, res) => {
         error: 'Only admins can update estate location'
       });
     }
+
+    if (!estateId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Estate ID is required'
+      });
+    }
     
     const { gateName, gateLatitude, gateLongitude, directionsFromHighway, directionsFromCity } = req.body;
     
-    const result = await directionsService.updateEstateLocation(1, {
+    const result = await directionsService.updateEstateLocation(estateId, {
       gateName,
       gateLatitude,
       gateLongitude,

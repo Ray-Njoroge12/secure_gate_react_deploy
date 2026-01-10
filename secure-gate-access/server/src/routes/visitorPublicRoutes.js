@@ -54,6 +54,19 @@ const estateInfoLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const requireEstateId = (req, res, next) => {
+  const estateId = Number(req.query.estateId);
+
+  if (!estateId || Number.isNaN(estateId)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Estate ID is required'
+    });
+  }
+
+  return next();
+};
+
 /**
  * @route GET /api/public/visitors/by-token/:token
  * @desc Get visitor details by secure token
@@ -99,6 +112,7 @@ router.post(
 router.get(
   '/estate-info',
   estateInfoLimiter,
+  requireEstateId,
   getEstateInfo
 );
 

@@ -15,7 +15,11 @@ import encryptionService from './encryptionService.js';
 /**
  * Get estate gate location (public info)
  */
-export async function getEstateLocation(estateId = 1) {
+export async function getEstateLocation(estateId) {
+  if (!estateId) {
+    return null;
+  }
+
   const result = await pool.query(
     `SELECT 
       gate_latitude, 
@@ -96,7 +100,7 @@ export async function getVisitorDirections(visitorId, inviteToken) {
   const visitorCheck = await pool.query(
     `SELECT v.id, v.invite_code, v.visitor_token, v.status,
             v.allow_residence_location, v.unit_pin_encrypted,
-            u.username as host_name, u.house
+            u.username as host_name, u.house, u.estate_id as estate_id
      FROM visitors v
      JOIN users u ON v.created_by = u.email OR v.created_by::text = u.id::text
      WHERE v.id = $1
@@ -111,7 +115,11 @@ export async function getVisitorDirections(visitorId, inviteToken) {
   const visitor = visitorCheck.rows[0];
   
   // Get estate location
-  const estate = await getEstateLocation(1);
+  const estate = await getEstateLocation(visitor.estate_id);
+
+  if (!estate) {
+    return { success: false, error: 'Estate location not configured' };
+  }
   
   // Get custom directions if any
   const customResult = await pool.query(
@@ -128,13 +136,13 @@ export async function getVisitorDirections(visitorId, inviteToken) {
     directions: {
       // General gate info (publicly available)
       gate: {
-        name: estate?.gate_name || 'Main Gate',
+        name: estate.gate_name || 'Main Gate',
         latitude: estate?.gate_latitude,
         longitude: estate?.gate_longitude
       },
       // Standard directions
-      fromHighway: estate?.directions_from_highway,
-      fromCity: estate?.directions_from_city,
+      fromHighway: estate.directions_from_highway,
+      fromCity: estate.directions_from_city,
       // Custom instructions from host (visible only to this visitor)
       customInstructions: customResult.rows[0]?.custom_instructions,
       // Optional unit PIN (only when explicitly allowed on invite)
@@ -146,13 +154,13 @@ export async function getVisitorDirections(visitorId, inviteToken) {
     },
     // Deep links for map apps
     mapLinks: {
-      google: estate?.gate_latitude && estate?.gate_longitude
+      google: estate.gate_latitude && estate.gate_longitude
         ? `https://www.google.com/maps/search/?api=1&query=${estate.gate_latitude},${estate.gate_longitude}`
         : null,
-      apple: estate?.gate_latitude && estate?.gate_longitude
+      apple: estate.gate_latitude && estate.gate_longitude
         ? `https://maps.apple.com/?q=${estate.gate_latitude},${estate.gate_longitude}`
         : null,
-      waze: estate?.gate_latitude && estate?.gate_longitude
+      waze: estate.gate_latitude && estate.gate_longitude
         ? `https://waze.com/ul?ll=${estate.gate_latitude},${estate.gate_longitude}&navigate=yes`
         : null
     },
@@ -164,7 +172,19 @@ export async function getVisitorDirections(visitorId, inviteToken) {
  * Generate shareable directions link (for visitor to share with driver)
  */
 export async function generateShareableLink(visitorId) {
-  const estate = await getEstateLocation(1);
+  const estateResult = await pool.query(
+    `SELECT u.estate_id as estate_id
+     FROM visitors v
+     JOIN users u ON v.created_by = u.email OR v.created_by::text = u.id::text
+     WHERE v.id = $1`,
+    [visitorId]
+  );
+
+  if (estateResult.rows.length === 0 || !estateResult.rows[0].estate_id) {
+    return { success: false, error: 'Estate location not configured' };
+  }
+
+  const estate = await getEstateLocation(estateResult.rows[0].estate_id);
   
   if (!estate?.gate_latitude || !estate?.gate_longitude) {
     return { success: false, error: 'Estate location not configured' };
