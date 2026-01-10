@@ -1,5 +1,5 @@
 // Enhanced registration page supporting normal user registration and event (bulk invite) visitor self-registration
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } from "../services/passService.js";
 import { useError } from "../contexts/ErrorContext.jsx";
@@ -80,6 +80,16 @@ export default function RegistrationPage() {
   const [otpError, setOtpError] = useState("");
   const [otpSuccess, setOtpSuccess] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const otpInputRefs = useRef([]);
+  const OTP_LENGTH = 6;
+
+  const otpDigits = Array.from({ length: OTP_LENGTH }, (_, index) => otp[index] || "");
+
+  useEffect(() => {
+    if (showOtpSection) {
+      otpInputRefs.current[0]?.focus();
+    }
+  }, [showOtpSection]);
 
   useEffect(() => {
     if (isBulkRegistration && inviteCode) {
@@ -139,9 +149,9 @@ export default function RegistrationPage() {
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required';
     } else {
-      const result = passwordValidator.validate(formData.password);
-      if (!result.isValid) {
-        newErrors.password = result.errors.join('. ');
+      const errorMessage = passwordValidator.getErrorMessage(formData.password);
+      if (errorMessage) {
+        newErrors.password = errorMessage;
       }
     }
 
@@ -359,21 +369,84 @@ export default function RegistrationPage() {
           {/* OTP verification section */}
           {showOtpSection && (
             <div className="mb-4 p-4 border border-gray-200 rounded-md bg-white">
-              <div className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Verify your OTP</div>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter 6-digit OTP"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                />
+              <fieldset className="mb-2" aria-describedby="otp-instructions otp-error otp-success">
+                <legend className="font-semibold text-gray-700 dark:text-gray-300">Verify your OTP</legend>
+                <p id="otp-instructions" className="text-sm text-gray-500 mb-2">
+                  Enter the 6-digit code sent to you.
+                </p>
+                <div className="flex gap-2 mb-2" role="group" aria-label="One-time password digits">
+                  {otpDigits.map((digit, index) => (
+                    <input
+                      key={`otp-digit-${index}`}
+                      ref={(el) => {
+                        otpInputRefs.current[index] = el;
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete={index === 0 ? "one-time-code" : "off"}
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/\D/g, "");
+                        const nextDigits = [...otpDigits];
+
+                        if (cleaned.length === 0) {
+                          nextDigits[index] = "";
+                          setOtp(nextDigits.join(""));
+                          return;
+                        }
+
+                        const chars = cleaned.split("");
+                        chars.forEach((char, offset) => {
+                          if (index + offset < OTP_LENGTH) {
+                            nextDigits[index + offset] = char;
+                          }
+                        });
+
+                        setOtp(nextDigits.join(""));
+                        const nextIndex = Math.min(index + chars.length, OTP_LENGTH - 1);
+                        otpInputRefs.current[nextIndex]?.focus();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+                          otpInputRefs.current[index - 1]?.focus();
+                        }
+                        if (e.key === "ArrowLeft" && index > 0) {
+                          otpInputRefs.current[index - 1]?.focus();
+                        }
+                        if (e.key === "ArrowRight" && index < OTP_LENGTH - 1) {
+                          otpInputRefs.current[index + 1]?.focus();
+                        }
+                      }}
+                      onPaste={(e) => {
+                        const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
+                        if (!pasted) return;
+                        e.preventDefault();
+                        const nextDigits = [...otpDigits];
+                        pasted.split("").forEach((char, offset) => {
+                          if (index + offset < OTP_LENGTH) {
+                            nextDigits[index + offset] = char;
+                          }
+                        });
+                        setOtp(nextDigits.join(""));
+                        const nextIndex = Math.min(index + pasted.length, OTP_LENGTH - 1);
+                        otpInputRefs.current[nextIndex]?.focus();
+                      }}
+                      aria-label={`OTP digit ${index + 1}`}
+                      aria-invalid={Boolean(otpError)}
+                      className="w-12 h-12 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    />
+                  ))}
+                </div>
+              </fieldset>
+              <div className="flex flex-wrap gap-2 mb-2">
                 <button
                   onClick={async () => {
                     setOtpError("");
                     setOtpSuccess("");
-                    if (!confirmedVisitor?.id || !otp.trim()) {
-                      setOtpError('OTP and visitor are required');
+                    if (!confirmedVisitor?.id || otp.trim().length !== OTP_LENGTH) {
+                      setOtpError('Enter the 6-digit OTP to continue.');
                       return;
                     }
                     try {
@@ -418,8 +491,16 @@ export default function RegistrationPage() {
                   }`}
                 >{resendCooldown>0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</button>
               </div>
-              {otpError && <div className="text-red-600 text-sm mt-2">{otpError}</div>}
-              {otpSuccess && <div className="text-green-600 text-sm mt-2">{otpSuccess}</div>}
+              {otpError && (
+                <div id="otp-error" className="text-red-600 text-sm mt-2" aria-live="polite">
+                  {otpError}
+                </div>
+              )}
+              {otpSuccess && (
+                <div id="otp-success" className="text-green-600 text-sm mt-2" aria-live="polite">
+                  {otpSuccess}
+                </div>
+              )}
             </div>
           )}
 
