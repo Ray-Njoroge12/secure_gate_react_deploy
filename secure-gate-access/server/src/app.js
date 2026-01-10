@@ -129,6 +129,10 @@ app.use(requestIdMiddleware); // Enhanced request ID for tracing and error corre
 app.use(...transportSecurityStack); // Transport security (HTTPS, HSTS, secure cookies)
 // SECURITY FIX: Generate nonce before CSP headers (removes unsafe-inline)
 app.use(generateNonce); // Generate unique nonce for each request
+app.use((req, res, next) => {
+  res.locals.cspNonce = res.locals.nonce;
+  next();
+});
 // Configure comprehensive security headers
 configureSecurityHeaders(app);
 app.use(customSecurityHeaders); // Custom security headers and cache control
