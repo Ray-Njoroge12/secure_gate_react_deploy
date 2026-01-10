@@ -189,12 +189,16 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  * GET /api/check-in/today
  */
 router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+  const estateId = req.user.estate_id ?? 1;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
      WHERE DATE(v.check_in_time) = CURRENT_DATE
+       AND v.estate_id = $1
      ORDER BY v.check_in_time DESC`
+    ,
+    [estateId]
   );
   
   return successResponse(res, result.rows, 'Today\'s check-ins retrieved');
@@ -206,15 +210,17 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHand
  */
 router.get('/history', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
   const { limit = 50, offset = 0, date } = req.query;
+  const estateId = req.user.estate_id ?? 1;
   
   let query = `
     SELECT v.*, u.username as resident_name
     FROM visitors v
     LEFT JOIN users u ON v.created_by = u.email
     WHERE v.check_in_time IS NOT NULL
+      AND v.estate_id = $1
   `;
   
-  const params = [];
+  const params = [estateId];
   
   if (date) {
     params.push(date);
