@@ -9,6 +9,7 @@ import auditLoggerFactory from '../middleware/auditLogger.js';
 import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
 import { dbManager } from '../database/db.enhanced.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -17,7 +18,7 @@ const attachRequestAudit = auditLoggerFactory();
  * Get resident profile
  * GET /api/resident/profile
  */
-router.get('/profile', authenticateToken, authorize(['resident', 'admin']), asyncHandler(async (req, res) => {
+router.get('/profile', authenticateToken, requireEstateContext, authorize(['resident', 'admin']), asyncHandler(async (req, res) => {
   const userId = req.user.id;
   
   const result = await dbManager.query(
@@ -37,7 +38,7 @@ router.get('/profile', authenticateToken, authorize(['resident', 'admin']), asyn
  * Update resident profile
  * PUT /api/resident/profile
  */
-router.put('/profile', authenticateToken, authorize(['resident', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.put('/profile', authenticateToken, requireEstateContext, authorize(['resident', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { name, phone, unit_number } = req.body;
   
@@ -59,7 +60,7 @@ router.put('/profile', authenticateToken, authorize(['resident', 'admin']), atta
  * Get favorite visitors
  * GET /api/resident/favorites
  */
-router.get('/favorites', authenticateToken, authorize(['resident', 'admin']), asyncHandler(async (req, res) => {
+router.get('/favorites', authenticateToken, requireEstateContext, authorize(['resident', 'admin']), asyncHandler(async (req, res) => {
   const userId = req.user.id;
   
   const result = await dbManager.query(
@@ -78,7 +79,7 @@ router.get('/favorites', authenticateToken, authorize(['resident', 'admin']), as
  * Add visitor to favorites
  * POST /api/resident/favorites
  */
-router.post('/favorites', authenticateToken, authorize(['resident', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/favorites', authenticateToken, requireEstateContext, authorize(['resident', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { visitor_id, nickname } = req.body;
   
@@ -101,7 +102,7 @@ router.post('/favorites', authenticateToken, authorize(['resident', 'admin']), a
  * Remove visitor from favorites
  * DELETE /api/resident/favorites/:visitorId
  */
-router.delete('/favorites/:visitorId', authenticateToken, authorize(['resident', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.delete('/favorites/:visitorId', authenticateToken, requireEstateContext, authorize(['resident', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { visitorId } = req.params;
   
@@ -117,7 +118,7 @@ router.delete('/favorites/:visitorId', authenticateToken, authorize(['resident',
  * Get resident statistics
  * GET /api/resident/stats
  */
-router.get('/stats', authenticateToken, authorize(['resident', 'admin']), asyncHandler(async (req, res) => {
+router.get('/stats', authenticateToken, requireEstateContext, authorize(['resident', 'admin']), asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const userEmail = req.user.email;
   
