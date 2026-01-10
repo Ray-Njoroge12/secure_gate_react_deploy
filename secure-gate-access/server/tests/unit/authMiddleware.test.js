@@ -82,7 +82,7 @@ describe('Auth Middleware', () => {
 
     mockNext = jest.fn();
 
-    mockVerifyAccessToken.mockResolvedValue({ email: testUser.email });
+    mockVerifyAccessToken.mockResolvedValue({ email: testUser.email, estate_id: testUser.estate_id });
     mockQuery.mockResolvedValue({ rows: [testUser], rowCount: 1 });
   });
 
@@ -240,7 +240,7 @@ describe('Auth Middleware', () => {
 
         expect(mockQuery).toHaveBeenCalledWith(
           expect.stringContaining('SELECT'),
-          [testUser.email]
+          [testUser.email, testUser.estate_id]
         );
       });
 
@@ -320,14 +320,14 @@ describe('Auth Middleware', () => {
 
     it('should support user ID lookup from sub claim', async () => {
       mockReq.headers['authorization'] = `Bearer ${validToken}`;
-      mockVerifyAccessToken.mockResolvedValue({ sub: '123' });
+      mockVerifyAccessToken.mockResolvedValue({ sub: '123', estate_id: testUser.estate_id });
       mockQuery.mockResolvedValue({ rows: [testUser], rowCount: 1 });
 
       await attachUserFromToken(mockReq, mockRes, mockNext);
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.stringContaining('id ='),
-        [123]
+        [123, testUser.estate_id]
       );
       expect(mockReq.user).toBeDefined();
     });
