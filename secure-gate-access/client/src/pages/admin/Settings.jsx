@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PageHeader, ThemeRadioGroup } from "../../components/ui";
 import { useTheme } from "../../contexts/ThemeContext";
 import NotificationSettings from "../../components/settings/NotificationSettings";
@@ -11,7 +11,8 @@ import {
   Users,
   Key,
   Database,
-  Mail
+  Mail,
+  FileCheck
 } from 'lucide-react';
 import "../../styles.css";
 
@@ -38,6 +39,26 @@ export default function Settings() {
     smtpPort: 587,
     smtpUser: "",
     enableSSL: true
+  });
+  const [complianceLoaded, setComplianceLoaded] = useState(false);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [complianceError, setComplianceError] = useState(null);
+  const [dpoSettings, setDpoSettings] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    office: "",
+    qualifications: "",
+    appointed_date: ""
+  });
+  const [odpcSettings, setOdpcSettings] = useState({
+    registration_number: "",
+    registration_date: "",
+    status: "pending"
+  });
+  const [policyMetadata, setPolicyMetadata] = useState({
+    last_updated_at: null,
+    last_reviewed_at: null
   });
 
   const handleSave = (section, e) => {
@@ -69,10 +90,105 @@ export default function Settings() {
     { key: "notifications", label: "Notifications", icon: <Bell size={16} /> },
     { key: "email", label: "Email", icon: <Mail size={16} /> },
     { key: "appearance", label: "Appearance", icon: <Eye size={16} /> },
+    { key: "compliance", label: "Compliance", icon: <FileCheck size={16} /> },
   ];
 
   const inputClass = "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+
+  const formatDateValue = (dateValue) => {
+    if (!dateValue) {
+      return "Not configured";
+    }
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return "Not configured";
+    }
+    return parsed.toLocaleDateString();
+  };
+
+  const toDateInputValue = (dateValue) => {
+    if (!dateValue) {
+      return "";
+    }
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return "";
+    }
+    return parsed.toISOString().split("T")[0];
+  };
+
+  const loadComplianceData = async () => {
+    setComplianceLoading(true);
+    setComplianceError(null);
+    try {
+      const [dpoResponse, odpcResponse, metadataResponse] = await Promise.all([
+        fetch("/api/privacy/dpo"),
+        fetch("/api/privacy/odpc-registration"),
+        fetch("/api/privacy/policy-metadata")
+      ]);
+
+      const dpoData = await dpoResponse.json();
+      const odpcData = await odpcResponse.json();
+      const metadataData = await metadataResponse.json();
+
+      if (!dpoData.success || !odpcData.success || !metadataData.success) {
+        throw new Error("Failed to load compliance settings");
+      }
+
+      setDpoSettings({
+        name: dpoData.data.name || "",
+        email: dpoData.data.email || "",
+        phone: dpoData.data.phone || "",
+        office: dpoData.data.office || "",
+        qualifications: dpoData.data.qualifications || "",
+        appointed_date: toDateInputValue(dpoData.data.appointed_date)
+      });
+
+      setOdpcSettings({
+        registration_number: odpcData.data.registration_number || "",
+        registration_date: toDateInputValue(odpcData.data.registration_date),
+        status: odpcData.data.status || "pending"
+      });
+
+      setPolicyMetadata({
+        last_updated_at: metadataData.data.last_updated_at,
+        last_reviewed_at: metadataData.data.last_reviewed_at
+      });
+
+      setComplianceLoaded(true);
+    } catch (error) {
+      setComplianceError(error.message || "Unable to load compliance settings");
+    } finally {
+      setComplianceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "compliance" && !complianceLoaded && !complianceLoading) {
+      loadComplianceData();
+    }
+  }, [activeTab, complianceLoaded, complianceLoading]);
+
+  const handleComplianceUpdate = async (section, payload) => {
+    try {
+      const response = await fetch(`/api/admin/compliance/${section}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to update compliance settings");
+      }
+
+      await loadComplianceData();
+      alert("Compliance settings updated successfully!");
+    } catch (error) {
+      alert(error.message || "Failed to update compliance settings");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -353,6 +469,170 @@ export default function Settings() {
                   {theme === 'system' && <span className="ml-1 text-gray-500">(following system preference)</span>}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Compliance Settings */}
+          {activeTab === "compliance" && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Compliance Administration</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Manage Data Protection Officer and ODPC registration details.
+                </p>
+              </div>
+
+              {complianceLoading && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
+                  Loading compliance settings...
+                </div>
+              )}
+
+              {complianceError && (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-sm text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+                  {complianceError}
+                </div>
+              )}
+
+              {!complianceLoading && !complianceError && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleComplianceUpdate("dpo", dpoSettings);
+                      }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">DPO Details</h3>
+                        <div className="space-y-3">
+                          <div>
+                            <label className={labelClass}>Name</label>
+                            <input
+                              type="text"
+                              value={dpoSettings.name}
+                              onChange={(e) => setDpoSettings({ ...dpoSettings, name: e.target.value })}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Email</label>
+                            <input
+                              type="email"
+                              value={dpoSettings.email}
+                              onChange={(e) => setDpoSettings({ ...dpoSettings, email: e.target.value })}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Phone</label>
+                            <input
+                              type="tel"
+                              value={dpoSettings.phone}
+                              onChange={(e) => setDpoSettings({ ...dpoSettings, phone: e.target.value })}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Office</label>
+                            <input
+                              type="text"
+                              value={dpoSettings.office}
+                              onChange={(e) => setDpoSettings({ ...dpoSettings, office: e.target.value })}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Qualifications</label>
+                            <input
+                              type="text"
+                              value={dpoSettings.qualifications}
+                              onChange={(e) => setDpoSettings({ ...dpoSettings, qualifications: e.target.value })}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Appointed Date</label>
+                            <input
+                              type="date"
+                              value={dpoSettings.appointed_date}
+                              onChange={(e) => setDpoSettings({ ...dpoSettings, appointed_date: e.target.value })}
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <button type="submit" className="btn primary">Save DPO Details</button>
+                    </form>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleComplianceUpdate("odpc-registration", odpcSettings);
+                      }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">ODPC Registration</h3>
+                        <div className="space-y-3">
+                          <div>
+                            <label className={labelClass}>Status</label>
+                            <select
+                              value={odpcSettings.status}
+                              onChange={(e) => {
+                                const nextStatus = e.target.value;
+                                setOdpcSettings({
+                                  ...odpcSettings,
+                                  status: nextStatus,
+                                  registration_number: nextStatus === "active" ? odpcSettings.registration_number : "",
+                                  registration_date: nextStatus === "active" ? odpcSettings.registration_date : ""
+                                });
+                              }}
+                              className={inputClass}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="active">Active</option>
+                              <option value="expired">Expired</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className={labelClass}>Registration Number</label>
+                            <input
+                              type="text"
+                              value={odpcSettings.registration_number}
+                              onChange={(e) => setOdpcSettings({ ...odpcSettings, registration_number: e.target.value })}
+                              className={inputClass}
+                              disabled={odpcSettings.status !== "active"}
+                            />
+                          </div>
+                          <div>
+                            <label className={labelClass}>Registration Date</label>
+                            <input
+                              type="date"
+                              value={odpcSettings.registration_date}
+                              onChange={(e) => setOdpcSettings({ ...odpcSettings, registration_date: e.target.value })}
+                              className={inputClass}
+                              disabled={odpcSettings.status !== "active"}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <button type="submit" className="btn primary">Save ODPC Status</button>
+                    </form>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Policy Metadata</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <strong>Last Updated:</strong> {formatDateValue(policyMetadata.last_updated_at)}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      <strong>Last Reviewed:</strong> {formatDateValue(policyMetadata.last_reviewed_at)}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
