@@ -8,6 +8,7 @@ import EventEmitter from 'events';
 import loggingService from './loggingService.js';
 import { performanceMonitor } from '../middleware/performanceMiddleware.js';
 import optimizedDb from './optimizedDatabaseService.js';
+import notificationMetricsService from './notificationMetricsService.js';
 
 /**
  * Real-time Monitoring Dashboard Service
@@ -23,7 +24,11 @@ class MonitoringDashboardService extends EventEmitter {
       memoryUsage: 500 * 1024 * 1024, // 500MB
       diskUsage: 0.9, // 90%
       logErrors: 10, // 10 errors in monitoring window
-      securityEvents: 5 // 5 security events in monitoring window
+      securityEvents: 5, // 5 security events in monitoring window
+      notificationFailureRate: 0.1, // 10% notification failures
+      deliveryFailureRate: 0.1, // 10% delivery failures
+      providerInitFailures: 1,
+      webhookSignatureFailures: 1
     };
 
     this.monitoringWindow = 5 * 60 * 1000; // 5 minutes
@@ -50,6 +55,31 @@ class MonitoringDashboardService extends EventEmitter {
         slowQueries: 0,
         queryErrors: 0,
         avgQueryTime: 0
+      },
+      notifications: {
+        windowMs: 0,
+        notifications: {
+          total: 0,
+          failed: 0,
+          success: 0,
+          failureRate: 0,
+          byChannel: {},
+          byProvider: {}
+        },
+        providerInitFailures: {
+          total: 0,
+          byProvider: {}
+        },
+        webhookSignatureFailures: {
+          total: 0,
+          byProvider: {}
+        },
+        deliveries: {
+          total: 0,
+          failed: 0,
+          failureRate: 0,
+          byProvider: {}
+        }
       },
       alerts: [],
       lastUpdate: null
@@ -144,6 +174,13 @@ class MonitoringDashboardService extends EventEmitter {
       await this.collectLoggingMetrics();
     } catch (error) {
       loggingService.logError('Error collecting logging metrics (non-fatal)', error);
+    }
+
+    try {
+      // Notification metrics
+      await this.collectNotificationMetrics();
+    } catch (error) {
+      loggingService.logError('Error collecting notification metrics (non-fatal)', error);
     }
 
     try {
@@ -255,6 +292,10 @@ class MonitoringDashboardService extends EventEmitter {
     };
   }
 
+  async collectNotificationMetrics() {
+    this.metrics.notifications = notificationMetricsService.getWindowMetrics(this.monitoringWindow);
+  }
+
   /**
    * Check for alert conditions
    */
@@ -334,6 +375,58 @@ class MonitoringDashboardService extends EventEmitter {
       });
     }
 
+    if (this.metrics.notifications.providerInitFailures.total >= this.alertThresholds.providerInitFailures) {
+      alerts.push({
+        id: `provider-init-${timestamp.getTime()}`,
+        type: 'provider_init_failure',
+        severity: 'high',
+        message: `Notification provider initialization failures detected (${this.metrics.notifications.providerInitFailures.total})`,
+        current: this.metrics.notifications.providerInitFailures.total,
+        threshold: this.alertThresholds.providerInitFailures,
+        timestamp: timestamp.toISOString(),
+        category: 'notifications'
+      });
+    }
+
+    if (this.metrics.notifications.webhookSignatureFailures.total >= this.alertThresholds.webhookSignatureFailures) {
+      alerts.push({
+        id: `webhook-signature-${timestamp.getTime()}`,
+        type: 'webhook_signature_failure',
+        severity: 'high',
+        message: `Webhook signature verification failures detected (${this.metrics.notifications.webhookSignatureFailures.total})`,
+        current: this.metrics.notifications.webhookSignatureFailures.total,
+        threshold: this.alertThresholds.webhookSignatureFailures,
+        timestamp: timestamp.toISOString(),
+        category: 'notifications'
+      });
+    }
+
+    if (this.metrics.notifications.notifications.failureRate > this.alertThresholds.notificationFailureRate) {
+      alerts.push({
+        id: `notification-failure-rate-${timestamp.getTime()}`,
+        type: 'notification_failure_rate',
+        severity: 'medium',
+        message: `High notification failure rate detected: ${(this.metrics.notifications.notifications.failureRate * 100).toFixed(2)}%`,
+        current: this.metrics.notifications.notifications.failureRate * 100,
+        threshold: this.alertThresholds.notificationFailureRate * 100,
+        timestamp: timestamp.toISOString(),
+        category: 'notifications'
+      });
+    }
+
+    if (this.metrics.notifications.deliveries.failureRate > this.alertThresholds.deliveryFailureRate) {
+      alerts.push({
+        id: `delivery-failure-rate-${timestamp.getTime()}`,
+        type: 'delivery_failure_rate',
+        severity: 'medium',
+        message: `High delivery failure rate detected: ${(this.metrics.notifications.deliveries.failureRate * 100).toFixed(2)}%`,
+        current: this.metrics.notifications.deliveries.failureRate * 100,
+        threshold: this.alertThresholds.deliveryFailureRate * 100,
+        timestamp: timestamp.toISOString(),
+        category: 'notifications'
+      });
+    }
+
     // Update alerts and log new ones
     const newAlerts = alerts.filter(alert =>
       !this.metrics.alerts.some(existing => existing.type === alert.type)
@@ -378,6 +471,7 @@ class MonitoringDashboardService extends EventEmitter {
       application: { ...this.metrics.application },
       database: { ...this.metrics.database },
       logging: { ...this.metrics.logging },
+      notifications: { ...this.metrics.notifications },
       alertCount: this.metrics.alerts.length
     };
 

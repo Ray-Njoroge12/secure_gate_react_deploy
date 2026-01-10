@@ -33,6 +33,8 @@
 - [ ] PostgreSQL database ready (Render provides free tier)
 - [ ] Africa's Talking API credentials (SMS provider)
 - [ ] Mailgun API credentials (Email provider)
+- [ ] Twilio API credentials (optional SMS provider)
+- [ ] WhatsApp Business API credentials (optional WhatsApp provider)
 - [ ] Generated JWT secrets (see below)
 
 ### 🔐 Generate Secrets
@@ -130,6 +132,17 @@ AT_USERNAME=YOUR_AT_USERNAME
 AT_API_KEY=YOUR_AT_API_KEY
 SMS_PROVIDER=africastalking
 ENABLE_SMS_NOTIFICATIONS=true
+
+# SMS Provider - Twilio (optional)
+TWILIO_ACCOUNT_SID=YOUR_TWILIO_ACCOUNT_SID
+TWILIO_AUTH_TOKEN=YOUR_TWILIO_AUTH_TOKEN
+TWILIO_FROM=YOUR_TWILIO_FROM_NUMBER
+
+# WhatsApp Provider (optional)
+WHATSAPP_PHONE_NUMBER_ID=YOUR_WHATSAPP_PHONE_NUMBER_ID
+WHATSAPP_ACCESS_TOKEN=YOUR_WHATSAPP_ACCESS_TOKEN
+WHATSAPP_BUSINESS_ACCOUNT_ID=YOUR_WHATSAPP_BUSINESS_ACCOUNT_ID
+WHATSAPP_VERIFY_TOKEN=YOUR_WHATSAPP_VERIFY_TOKEN
 
 # Email Provider - Mailgun
 MAILGUN_API_KEY=YOUR_MAILGUN_API_KEY
@@ -290,7 +303,17 @@ curl https://securegate-api.onrender.com/api/health
 }
 ```
 
-### 2. Client Accessibility
+### 2. Provider Integration Health Check
+
+```bash
+# Requires an admin JWT token
+curl -H "Authorization: Bearer <ADMIN_JWT>" \
+  https://securegate-api.onrender.com/api/system/integrations/health
+```
+
+Expected response includes health results for Mailgun, Africa's Talking, Twilio, and WhatsApp.
+
+### 3. Client Accessibility
 
 1. **Visit your Netlify URL**: `https://your-site.netlify.app`
 2. **Verify all pages load**:
@@ -299,7 +322,7 @@ curl https://securegate-api.onrender.com/api/health
    - Registration page
    - Dashboard (after login)
 
-### 3. End-to-End Tests
+### 4. End-to-End Tests
 
 ```bash
 # Run E2E tests against production
@@ -309,7 +332,7 @@ cd /Users/raynj/Desktop/secure-gate-react-express/secure-gate-access/client
 REACT_APP_API_URL=https://securegate-api.onrender.com npm run test:e2e
 ```
 
-### 4. Functional Verification
+### 5. Functional Verification
 
 Test these critical flows:
 
@@ -322,7 +345,7 @@ Test these critical flows:
 - [ ] SMS notifications (if credentials configured)
 - [ ] Email notifications
 
-### 5. Security Verification
+### 6. Security Verification
 
 - [ ] HTTPS enabled on both client and server
 - [ ] Security headers present (check browser dev tools)
@@ -330,7 +353,7 @@ Test these critical flows:
 - [ ] Rate limiting working
 - [ ] XSS/CSRF protections active
 
-### 6. Performance Check
+### 7. Performance Check
 
 ```bash
 # Run Lighthouse audit on deployed site
@@ -359,6 +382,18 @@ Target scores:
 | `AT_USERNAME` | Config | Yes* | Africa's Talking username | `securelabstest` |
 | `MAILGUN_API_KEY` | Secret | Yes* | Mailgun API key | `key-xxx` |
 | `MAILGUN_DOMAIN` | Config | Yes* | Mailgun domain | `mg.yourdomain.com` |
+| `TWILIO_ACCOUNT_SID` | Secret | No | Twilio account SID | `ACxxxxxxxx` |
+| `TWILIO_AUTH_TOKEN` | Secret | No | Twilio auth token | `xxxxxxxx` |
+| `TWILIO_FROM` | Config | No | Twilio sender number | `+15551234567` |
+| `WHATSAPP_PHONE_NUMBER_ID` | Secret | No | WhatsApp phone number ID | `123456789` |
+| `WHATSAPP_ACCESS_TOKEN` | Secret | No | WhatsApp access token | `EAAG...` |
+| `WHATSAPP_BUSINESS_ACCOUNT_ID` | Secret | No | WhatsApp business account ID | `123456789` |
+| `WHATSAPP_VERIFY_TOKEN` | Config | No | WhatsApp webhook verify token | `secure_gate_whatsapp_token` |
+| `ENABLE_EXTERNAL_NOTIFICATIONS` | Config | Yes* | Enable outbound notifications | `true` |
+| `ENABLE_EMAIL_NOTIFICATIONS` | Config | Yes* | Enable email notifications | `true` |
+| `ENABLE_SMS_NOTIFICATIONS` | Config | Yes* | Enable SMS/WhatsApp notifications | `true` |
+| `EMAIL_PROVIDER` | Config | Yes* | Email provider (`smtp` or `mailgun`) | `mailgun` |
+| `SMS_PROVIDER` | Config | Yes* | SMS provider (`twilio`, `africastalking`, `whatsapp`) | `africastalking` |
 | `NODE_ENV` | Config | Yes | Environment mode | `production` |
 | `PORT` | Config | Yes | Server port | `3001` |
 | `CORS_ORIGIN` | Config | Yes | Allowed origin | `https://yoursite.netlify.app` |

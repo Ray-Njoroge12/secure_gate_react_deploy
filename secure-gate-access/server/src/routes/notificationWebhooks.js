@@ -12,6 +12,7 @@ import express from 'express';
 import crypto from 'crypto';
 import loggingService from '../services/loggingService.js';
 import db from '../database/db.enhanced.js';
+import notificationMetricsService from '../services/notificationMetricsService.js';
 
 const router = express.Router();
 
@@ -128,6 +129,9 @@ router.post('/mailgun/delivered', async (req, res) => {
 
     // Verify signature
     if (!verifyMailgunSignature(timestamp, token, signature)) {
+      notificationMetricsService.recordWebhookSignatureFailure('mailgun', 'invalid_signature', {
+        timestamp
+      });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
@@ -144,6 +148,12 @@ router.post('/mailgun/delivered', async (req, res) => {
       event_type: 'delivered',
       provider: 'mailgun',
       data: eventData
+    });
+    notificationMetricsService.recordDeliveryEvent({
+      provider: 'mailgun',
+      status: 'delivered',
+      messageId,
+      metadata: { recipient: eventData.recipient }
     });
 
     res.status(200).json({ received: true });
@@ -165,6 +175,9 @@ router.post('/mailgun/failed', async (req, res) => {
 
     // Verify signature
     if (!verifyMailgunSignature(timestamp, token, signature)) {
+      notificationMetricsService.recordWebhookSignatureFailure('mailgun', 'invalid_signature', {
+        timestamp
+      });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
@@ -184,6 +197,12 @@ router.post('/mailgun/failed', async (req, res) => {
       event_type: 'failed',
       provider: 'mailgun',
       data: eventData
+    });
+    notificationMetricsService.recordDeliveryEvent({
+      provider: 'mailgun',
+      status: 'failed',
+      messageId,
+      metadata: { recipient: eventData.recipient, reason }
     });
 
     res.status(200).json({ received: true });
@@ -205,6 +224,9 @@ router.post('/mailgun/bounced', async (req, res) => {
 
     // Verify signature
     if (!verifyMailgunSignature(timestamp, token, signature)) {
+      notificationMetricsService.recordWebhookSignatureFailure('mailgun', 'invalid_signature', {
+        timestamp
+      });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
@@ -223,6 +245,12 @@ router.post('/mailgun/bounced', async (req, res) => {
       event_type: 'bounced',
       provider: 'mailgun',
       data: eventData
+    });
+    notificationMetricsService.recordDeliveryEvent({
+      provider: 'mailgun',
+      status: 'bounced',
+      messageId,
+      metadata: { recipient: eventData.recipient, reason }
     });
 
     res.status(200).json({ received: true });
@@ -248,6 +276,9 @@ router.post('/twilio/status', async (req, res) => {
 
     // Verify signature
     if (!verifyTwilioSignature(signature, url, req.body)) {
+      notificationMetricsService.recordWebhookSignatureFailure('twilio', 'invalid_signature', {
+        messageSid: req.body?.MessageSid
+      });
       return res.status(401).send('Invalid signature');
     }
 
@@ -289,6 +320,12 @@ router.post('/twilio/status', async (req, res) => {
       event_type: status,
       provider: 'twilio',
       data: req.body
+    });
+    notificationMetricsService.recordDeliveryEvent({
+      provider: 'twilio',
+      status,
+      messageId: MessageSid,
+      metadata: { to: To, status: MessageStatus }
     });
 
     res.status(200).send('OK');
@@ -347,6 +384,12 @@ router.post('/africas-talking/delivery', async (req, res) => {
       provider: 'africas_talking',
       data: req.body
     });
+    notificationMetricsService.recordDeliveryEvent({
+      provider: 'africas_talking',
+      status: deliveryStatus,
+      messageId: id,
+      metadata: { phoneNumber, status }
+    });
 
     res.status(200).send('Received');
   } catch (error) {
@@ -388,6 +431,12 @@ router.post('/notification/status', async (req, res) => {
       event_type: status,
       provider,
       data: details || {}
+    });
+    notificationMetricsService.recordDeliveryEvent({
+      provider,
+      status,
+      messageId: message_id,
+      metadata: details || {}
     });
 
     res.status(200).json({ received: true });
