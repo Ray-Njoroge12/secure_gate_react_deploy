@@ -16,8 +16,8 @@ const router = express.Router();
  */
 router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    const { estate_id } = req.query;
-    const guards = await guardManagementService.getGuards(estate_id || null);
+    const estateId = req.user.estate_id ?? 1;
+    const guards = await guardManagementService.getGuards(estateId);
 
     res.json({
       success: true,
@@ -104,7 +104,7 @@ router.post('/shifts', authenticateToken, requireRole(['admin']), async (req, re
  */
 router.get('/shifts', authenticateToken, requireRole(['admin', 'guard']), async (req, res) => {
   try {
-    const { start_date, end_date, estate_id } = req.query;
+    const { start_date, end_date } = req.query;
 
     if (!start_date || !end_date) {
       return res.status(400).json({
@@ -116,7 +116,7 @@ router.get('/shifts', authenticateToken, requireRole(['admin', 'guard']), async 
     const shifts = await guardManagementService.getShifts(
       start_date,
       end_date,
-      estate_id || req.user.estate_id
+      req.user.estate_id ?? 1
     );
 
     res.json({
@@ -308,6 +308,7 @@ router.get('/:guardId/performance', authenticateToken, requireRole(['admin', 'gu
 
     const metrics = await guardManagementService.getPerformanceMetrics(
       guardId,
+      req.user.estate_id ?? 1,
       start_date || null,
       end_date || null
     );
@@ -405,7 +406,8 @@ router.get('/equipment', authenticateToken, requireRole(['guard', 'admin']), asy
     const { guard_id, status } = req.query;
     const guardId = req.user.role === 'guard' ? req.user.id : (guard_id || null);
 
-    const checkouts = await guardManagementService.getEquipmentCheckouts(guardId, status || null);
+    const estateId = req.user.estate_id ?? 1;
+    const checkouts = await guardManagementService.getEquipmentCheckouts(guardId, status || null, estateId);
 
     res.json({
       success: true,
@@ -486,7 +488,7 @@ router.get('/:guardId/training', authenticateToken, requireRole(['guard', 'admin
       });
     }
 
-    const training = await guardManagementService.getTrainingRecords(guardId);
+    const training = await guardManagementService.getTrainingRecords(guardId, req.user.estate_id ?? 1);
 
     res.json({
       success: true,

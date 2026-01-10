@@ -116,7 +116,7 @@ export const createVisitor = async (req, res) => {
 
     // Get resident info
     const residentResult = await dbManager.query(
-      'SELECT id, username, email as resident_email FROM users WHERE email = $1',
+      'SELECT id, username, email as resident_email, estate_id FROM users WHERE email = $1',
       [req.user.email]
     );
 
@@ -126,6 +126,7 @@ export const createVisitor = async (req, res) => {
 
     const resident = residentResult.rows[0];
     const residentId = resident.id;
+    const estateId = resident.estate_id ?? req.user.estate_id ?? 1;
 
     // Determine initial status
     const initialStatus = requestedStatus === 'pending_confirmation'
@@ -156,8 +157,8 @@ export const createVisitor = async (req, res) => {
         invite_code, visitor_token, token_expires_at,
         allow_residence_location, unit_pin_encrypted, unit_pin_encrypted_at,
         consent_given, consent_timestamp, consent_type, consent_version,
-        status, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
+        status, created_by, estate_id, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
        RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit,
                  invite_code, visitor_token, token_expires_at, status, created_at`,
       [
@@ -181,7 +182,8 @@ export const createVisitor = async (req, res) => {
         consent_type || 'data_processing',
         consent_version || '1.0',
         initialStatus,
-        req.user.email
+        req.user.email,
+        estateId
       ]
     );
 
@@ -268,6 +270,7 @@ export const getMyVisitors = async (req, res) => {
     }
 
     const role = req.user.role;
+    const estateId = req.user.estate_id ?? 1;
 
     // Get pagination params
     const page = parseInt(req.query.page) || 1;
@@ -290,10 +293,11 @@ export const getMyVisitors = async (req, res) => {
       }
 
       const residentId = residentResult.rows[0].id;
-      query += ` WHERE (host_id = $1 OR resident_id = $1)`;
-      params.push(residentId);
+      query += ` WHERE (host_id = $1 OR resident_id = $1) AND estate_id = $2`;
+      params.push(residentId, estateId);
     } else if (role === 'guard' || role === 'admin') {
-      query += ` WHERE 1=1`;
+      query += ` WHERE estate_id = $1`;
+      params.push(estateId);
     } else {
       return respondError(res, 403, 'Forbidden');
     }
@@ -312,16 +316,17 @@ export const getMyVisitors = async (req, res) => {
     let countQuery = 'SELECT COUNT(*) FROM visitors';
     const countParams = [];
     if (role === 'resident') {
-      countQuery += ' WHERE (host_id = $1 OR resident_id = $1)';
-      countParams.push(params[0]);
+      countQuery += ' WHERE (host_id = $1 OR resident_id = $1) AND estate_id = $2';
+      countParams.push(params[0], estateId);
       if (status) {
-        countQuery += ' AND status = $2';
+        countQuery += ' AND status = $3';
         countParams.push(String(status).toLowerCase());
       }
     } else {
-      countQuery += ' WHERE 1=1';
+      countQuery += ' WHERE estate_id = $1';
+      countParams.push(estateId);
       if (status) {
-        countQuery += ` AND status = $1`;
+        countQuery += ` AND status = $2`;
         countParams.push(String(status).toLowerCase());
       }
     }
@@ -512,7 +517,7 @@ export const bulkInvite = async (req, res) => {
 
     // Get resident info
     const residentResult = await dbManager.query(
-      'SELECT id, email FROM users WHERE email = $1',
+      'SELECT id, email, estate_id FROM users WHERE email = $1',
       [req.user.email]
     );
 
@@ -521,6 +526,7 @@ export const bulkInvite = async (req, res) => {
     }
 
     const resident = residentResult.rows[0];
+    const estateId = resident.estate_id ?? req.user.estate_id ?? 1;
 
     // Generate unique invite code
     const inviteCode = generateSecureToken(16);
@@ -578,8 +584,8 @@ export const bulkInvite = async (req, res) => {
               resident_id, bulk_invite_id,
               visitor_token, token_expires_at,
               otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
-              status, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, $13, NOW())
+              status, estate_id, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, $13, $14, NOW())
              RETURNING id, name, phone, email, purpose, status, visitor_token`,
             [
               name.trim(),
@@ -594,7 +600,8 @@ export const bulkInvite = async (req, res) => {
               tokenExpiresAt,
               otpHash,
               otpExpiresAt,
-              PASS_STATUS.PENDING
+              PASS_STATUS.PENDING,
+              estateId
             ]
           );
 
@@ -785,9 +792,11 @@ export const completeInvite = async (req, res) => {
 
         // Resolve resident id from bulk_invites.created_by (email)
         let residentId = null;
+        let estateId = 1;
         if (bulkInvite.created_by) {
-          const residentRes = await client.query('SELECT id FROM users WHERE email = $1', [bulkInvite.created_by]);
+          const residentRes = await client.query('SELECT id, estate_id FROM users WHERE email = $1', [bulkInvite.created_by]);
           residentId = residentRes.rows[0]?.id || null;
+          estateId = residentRes.rows[0]?.estate_id ?? estateId;
         }
 
         const visitorToken = generateVisitorToken();
@@ -803,8 +812,8 @@ export const completeInvite = async (req, res) => {
             visitor_token, token_expires_at,
             otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
             consent_given, consent_timestamp, consent_type, consent_version,
-            status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, true, $13, $14, $15, $16, NOW())
+            status, estate_id, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, true, $13, $14, $15, $16, $17, NOW())
            RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
           [
             name.trim(),
@@ -822,7 +831,8 @@ export const completeInvite = async (req, res) => {
             consent_timestamp ? new Date(consent_timestamp) : new Date(),
             consent_type || 'data_processing',
             consent_version || '1.0',
-            PASS_STATUS.OTP_SENT
+            PASS_STATUS.OTP_SENT,
+            estateId
           ]
         );
 

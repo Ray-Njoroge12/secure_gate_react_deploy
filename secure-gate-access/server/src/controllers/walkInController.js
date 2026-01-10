@@ -73,6 +73,7 @@ export const registerWalkIn = async (req, res) => {
     const visitDate = dateOfVisit || now.split('T')[0];
     const visitTime = timeOfVisit || now.split('T')[1].slice(0, 5);
 
+    const estateId = req.user.estate_id ?? 1;
     const insertQuery = `
       INSERT INTO visitors (
         name, 
@@ -85,8 +86,9 @@ export const registerWalkIn = async (req, res) => {
         resident_id,
         created_by,
         vehicle_plate,
+        estate_id,
         created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, status, vehicle_plate, created_at
     `;
 
@@ -101,6 +103,7 @@ export const registerWalkIn = async (req, res) => {
       residentId,
       req.user.email, // Guard who created it
       sanitizedVehiclePlate,
+      estateId,
       now
     ]);
 
@@ -150,6 +153,7 @@ export const getTodayWalkIns = async (req, res) => {
 
     const today = new Date().toISOString().split('T')[0];
 
+    const estateId = req.user.estate_id ?? 1;
     const query = `
       SELECT 
         v.id,
@@ -167,10 +171,11 @@ export const getTodayWalkIns = async (req, res) => {
       LEFT JOIN users u ON v.resident_id = u.id
       WHERE v.date_of_visit = $1
       AND v.created_by LIKE '%@%' -- Created by guard (has email format)
+      AND v.estate_id = $2
       ORDER BY v.created_at DESC
     `;
 
-    const result = await dbManager.query(query, [today]);
+    const result = await dbManager.query(query, [today, estateId]);
 
     respond(res, {
       data: result.rows,

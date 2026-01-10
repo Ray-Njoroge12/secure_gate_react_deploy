@@ -294,7 +294,7 @@ class GuardManagementService {
   /**
    * Get performance metrics for a guard
    */
-  async getPerformanceMetrics(guardId, startDate = null, endDate = null) {
+  async getPerformanceMetrics(guardId, estateId, startDate = null, endDate = null) {
     try {
       let query = `
         SELECT
@@ -306,12 +306,13 @@ class GuardManagementService {
         LEFT JOIN guard_shifts s ON pm.shift_id = s.id
         LEFT JOIN users u ON pm.recorded_by = u.id
         WHERE pm.guard_id = $1
+          AND pm.estate_id = $2
       `;
 
-      const params = [guardId];
+      const params = [guardId, estateId];
 
       if (startDate && endDate) {
-        query += ' AND pm.recorded_at BETWEEN $2 AND $3';
+        query += ' AND pm.recorded_at BETWEEN $3 AND $4';
         params.push(startDate, endDate);
       }
 
@@ -421,7 +422,7 @@ class GuardManagementService {
   /**
    * Get equipment checkout status
    */
-  async getEquipmentCheckouts(guardId = null, status = null) {
+  async getEquipmentCheckouts(guardId = null, status = null, estateId = null) {
     try {
       let query = `
         SELECT
@@ -437,6 +438,12 @@ class GuardManagementService {
 
       const params = [];
       let paramIndex = 1;
+
+      if (estateId) {
+        query += ` AND ec.estate_id = $${paramIndex}`;
+        params.push(estateId);
+        paramIndex++;
+      }
 
       if (guardId) {
         query += ` AND ec.guard_id = $${paramIndex}`;
@@ -501,14 +508,15 @@ class GuardManagementService {
   /**
    * Get training records for a guard
    */
-  async getTrainingRecords(guardId) {
+  async getTrainingRecords(guardId, estateId) {
     try {
       const result = await db.query(`
         SELECT *
         FROM guard_training
         WHERE guard_id = $1
+          AND estate_id = $2
         ORDER BY completion_date DESC
-      `, [guardId]);
+      `, [guardId, estateId]);
 
       // Check for expiring certifications (within 30 days)
       const expiringCerts = result.rows.filter(record => {
@@ -548,13 +556,13 @@ class GuardManagementService {
       `, [guardId, estateId]);
 
       // Get recent performance
-      const recentMetrics = await this.getPerformanceMetrics(guardId);
+      const recentMetrics = await this.getPerformanceMetrics(guardId, estateId);
 
       // Get checked out equipment
-      const checkedOutEquipment = await this.getEquipmentCheckouts(guardId, 'checked_out');
+      const checkedOutEquipment = await this.getEquipmentCheckouts(guardId, 'checked_out', estateId);
 
       // Get training status
-      const training = await this.getTrainingRecords(guardId);
+      const training = await this.getTrainingRecords(guardId, estateId);
 
       return {
         upcoming_shifts: upcomingShifts.rows,
