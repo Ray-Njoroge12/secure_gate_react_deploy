@@ -68,7 +68,7 @@ ENABLE_EMAIL_NOTIFICATIONS=true
 SITE_NAME=Secure Gate Access
 ENABLE_EXTERNAL_NOTIFICATIONS=true
 EMAIL_VERIFICATION_REQUIRED=false
-CORS_ORIGIN=https://your-site.netlify.app  # Update after Netlify deploy
+CLIENT_ORIGIN=https://your-site.netlify.app  # Update after Netlify deploy
 ```
 
 - [ ] Click "Create Web Service"
@@ -106,7 +106,8 @@ GENERATE_SOURCEMAP=false
 ### 3. Update Server CORS (2 min)
 - [ ] Go back to Render dashboard
 - [ ] Select `securegate-api` service
-- [ ] Update `CORS_ORIGIN=https://YOUR_SITE.netlify.app`
+- [ ] Update `CLIENT_ORIGIN=https://YOUR_SITE.netlify.app`
+- [ ] (Optional) Set `ADDITIONAL_ORIGINS` for extra allowed origins
 - [ ] Save (triggers redeploy)
 
 ## Verification (5 minutes)
@@ -220,7 +221,7 @@ Use information from previous conversation summary to:
 |-------|-----------|
 | Build fails | Check `package.json` and Node version (18) |
 | Can't connect to DB | Verify `DATABASE_URL` and `TRUST_PROXY=true` |
-| CORS errors | Update `CORS_ORIGIN` in Render to match Netlify URL |
+| CORS errors | Update `CLIENT_ORIGIN` in Render to match Netlify URL |
 | Client can't reach API | Check `REACT_APP_API_URL` in Netlify env vars |
 | Slow first request | Expected on Render free tier (15min spin-down) |
 | No SMS/emails | Verify API credentials and enable flags |

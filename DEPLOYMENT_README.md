@@ -106,8 +106,9 @@ Follow the prompts to:
 3. Deploy and wait (5 min)
 
 #### Update CORS - 5 min
-1. Update `CORS_ORIGIN` in Render with Netlify URL
-2. Redeploy server
+1. Update `CLIENT_ORIGIN` in Render with Netlify URL
+2. (Optional) Set `ADDITIONAL_ORIGINS` for extra allowed origins
+3. Redeploy server
 
 📖 **Detailed instructions**: See `DEPLOYMENT_CHECKLIST.md`
 
@@ -253,7 +254,7 @@ If something goes wrong, refer to:
 |-------|----------|
 | Build fails | Check Node version = 18 |
 | DB connection fails | Verify `DATABASE_URL` and `TRUST_PROXY=true` |
-| CORS errors | Update `CORS_ORIGIN` in Render |
+| CORS errors | Update `CLIENT_ORIGIN` in Render |
 | Client can't reach API | Check `REACT_APP_API_URL` in Netlify |
 | Slow first request | Normal on Render free tier (spin-down) |
 

@@ -176,8 +176,13 @@ class EnvironmentValidator {
     }
 
     // CORS validation
-    if (!process.env.CLIENT_ORIGIN && this.isProduction) {
-      this.warnings.push('CLIENT_ORIGIN not set - CORS may not work correctly');
+    if (this.isProduction) {
+      const clientOrigin = process.env.CLIENT_ORIGIN;
+      if (!clientOrigin) {
+        this.errors.push('CLIENT_ORIGIN is required in production for CORS');
+      } else if (this.isLocalOrigin(clientOrigin)) {
+        this.errors.push('CLIENT_ORIGIN must not point to localhost in production');
+      }
     }
   }
 
@@ -285,6 +290,19 @@ class EnvironmentValidator {
   }
 
   /**
+   * Check if an origin points to localhost
+   */
+  isLocalOrigin(origin) {
+    if (!origin) return false;
+    try {
+      const { hostname } = new URL(origin);
+      return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    } catch (error) {
+      return origin.includes('localhost') || origin.includes('127.0.0.1');
+    }
+  }
+
+  /**
    * Generate secure secret
    */
   generateSecureSecret(length = 64) {
@@ -384,7 +402,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 export default EnvironmentValidator;
-
 
 
 
