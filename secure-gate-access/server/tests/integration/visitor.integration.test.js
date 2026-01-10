@@ -180,6 +180,31 @@ describe('Visitor Management Integration Tests', () => {
       });
     });
 
+    it('should not expose visitors from other estates to guards', async () => {
+      const { dbManager } = await import('../../src/database/db.enhanced.js');
+      const argon2 = await import('argon2');
+      const hashedPassword = await argon2.default.hash('testpass123');
+
+      const otherResident = await dbManager.query(
+        `INSERT INTO users (username, email, password, password_hash, role, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        ['estate2_resident', 'estate2@test.com', hashedPassword, hashedPassword, 'resident', true, 2]
+      );
+
+      const otherVisitor = await dbManager.query(
+        `INSERT INTO visitors (name, phone, email, purpose, status, host_id, resident_id, invite_code, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+        ['Estate2 Visitor', '+254700999999', 'estate2visitor@test.com', 'Estate 2', 'pending', otherResident.rows[0].id, otherResident.rows[0].id, 'ESTATE2_INVITE', 2]
+      );
+
+      const response = await request(app)
+        .get('/api/visitors')
+        .set('Cookie', `token=${guardToken}`);
+
+      const visitorIds = response.body.data.visitors.map(visitor => visitor.id);
+      expect(visitorIds).not.toContain(otherVisitor.rows[0].id);
+    });
+
     it('should list active visitors for guard', async () => {
       const response = await request(app)
         .get('/api/visitors/active')
@@ -446,9 +471,9 @@ describe('Visitor Management Integration Tests', () => {
       const hashedPassword = await argon2.default.hash('testpass123');
       
       const otherResident = await dbManager.query(
-        `INSERT INTO users (username, email, password, password_hash, role, verified)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        ['other_resident', 'other@test.com', hashedPassword, hashedPassword, 'resident', true]
+        `INSERT INTO users (username, email, password, password_hash, role, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        ['other_resident', 'other@test.com', hashedPassword, hashedPassword, 'resident', true, 1]
       );
       
       const otherResidentToken = await getAuthToken('other@test.com');
