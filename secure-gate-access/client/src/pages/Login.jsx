@@ -48,9 +48,9 @@ export default function LoginPage() {
       return false;
     }
 
-    const result = passwordValidator.validate(value);
-    if (!result.isValid) {
-      setPasswordError(result.errors[0]);
+    const errorMessage = passwordValidator.getErrorMessage(value);
+    if (errorMessage) {
+      setPasswordError(errorMessage);
       return false;
     }
 
