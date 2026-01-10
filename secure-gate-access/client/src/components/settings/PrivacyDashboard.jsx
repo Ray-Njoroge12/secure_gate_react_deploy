@@ -67,14 +67,16 @@ const PrivacyDashboard = ({ className = '' }) => {
   const handleRequestExport = async (format = 'json') => {
     try {
       const result = await privacyService.requestDataExport(format);
+      const statusMessage = getExportStatusMessage(result.status);
       setExportStatus({
-        requestId: result.requestId,
-        status: 'processing',
-        message: 'Your data export is being prepared...'
+        ...result,
+        message: statusMessage
       });
       
       // Poll for completion
-      pollExportStatus(result.requestId);
+      if (['queued', 'processing'].includes(result.status)) {
+        pollExportStatus(result.requestId);
+      }
     } catch (err) {
       console.error('Error requesting export:', err);
       setError('Failed to request data export');
@@ -85,23 +87,33 @@ const PrivacyDashboard = ({ className = '' }) => {
   const pollExportStatus = async (requestId) => {
     try {
       const status = await privacyService.getExportStatus(requestId);
-      
-      if (status.status === 'completed') {
-        setExportStatus({
-          ...status,
-          message: 'Your data export is ready for download!'
-        });
-      } else if (status.status === 'failed') {
-        setExportStatus({
-          ...status,
-          message: 'Export failed. Please try again.'
-        });
-      } else {
+
+      setExportStatus({
+        ...status,
+        message: getExportStatusMessage(status.status)
+      });
+
+      if (['queued', 'processing'].includes(status.status)) {
         // Still processing, poll again in 5 seconds
         setTimeout(() => pollExportStatus(requestId), 5000);
       }
     } catch (err) {
       console.error('Error polling export status:', err);
+    }
+  };
+
+  const getExportStatusMessage = (status) => {
+    switch (status) {
+      case 'queued':
+        return 'Your export request is queued and will start shortly.';
+      case 'processing':
+        return 'Your data export is being prepared...';
+      case 'completed':
+        return 'Your data export is ready for download!';
+      case 'failed':
+        return 'Export failed. Please try again.';
+      default:
+        return 'Export status unavailable.';
     }
   };
 
@@ -386,13 +398,23 @@ const PrivacyDashboard = ({ className = '' }) => {
             }`}>
               {exportStatus.message}
             </p>
-            {exportStatus.status === 'completed' && (
+            {exportStatus.status === 'completed' && exportStatus.expiresAt && (
+              <p className="mt-2 text-xs text-gray-600">
+                Download available until {new Date(exportStatus.expiresAt).toLocaleString()}.
+              </p>
+            )}
+            {exportStatus.status === 'completed' && exportStatus.downloadAvailable !== false && (
               <button
                 onClick={handleDownloadExport}
                 className="mt-3 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
               >
                 Download Export
               </button>
+            )}
+            {exportStatus.status === 'completed' && exportStatus.downloadAvailable === false && (
+              <p className="mt-3 text-xs text-gray-600">
+                The download window has expired. Please request a new export.
+              </p>
             )}
           </div>
         ) : (
