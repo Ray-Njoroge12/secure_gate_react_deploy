@@ -52,9 +52,10 @@ export const registerWalkIn = async (req, res) => {
       `SELECT id, email, username 
        FROM users 
        WHERE role = 'resident' 
+       AND estate_id = $2
        AND (username ILIKE $1 OR email ILIKE $1)
        LIMIT 1`,
-      [`%${sanitizedResidentName}%`]
+      [`%${sanitizedResidentName}%`, req.user.estate_id]
     );
 
     let residentId = null;
@@ -83,10 +84,11 @@ export const registerWalkIn = async (req, res) => {
         time_of_visit, 
         status,
         resident_id,
+        estate_id,
         created_by,
         vehicle_plate,
         created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, status, vehicle_plate, created_at
     `;
 
@@ -99,6 +101,7 @@ export const registerWalkIn = async (req, res) => {
       visitTime,
       'pending', // Initial status (will change to pending_approval when guard requests)
       residentId,
+      req.user.estate_id,
       req.user.email, // Guard who created it
       sanitizedVehiclePlate,
       now
@@ -167,10 +170,11 @@ export const getTodayWalkIns = async (req, res) => {
       LEFT JOIN users u ON v.resident_id = u.id
       WHERE v.date_of_visit = $1
       AND v.created_by LIKE '%@%' -- Created by guard (has email format)
+      AND v.estate_id = $2
       ORDER BY v.created_at DESC
     `;
 
-    const result = await dbManager.query(query, [today]);
+    const result = await dbManager.query(query, [today, req.user.estate_id]);
 
     respond(res, {
       data: result.rows,

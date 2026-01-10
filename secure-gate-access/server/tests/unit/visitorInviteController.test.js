@@ -103,7 +103,8 @@ describe('visitorInviteController', () => {
       query: {},
       user: {
         email: 'resident@test.com',
-        role: 'resident'
+        role: 'resident',
+        estate_id: 1
       },
       audit: jest.fn()
     };
@@ -189,7 +190,7 @@ describe('visitorInviteController', () => {
     });
 
     it('should return 401 if user email is missing', async () => {
-      mockReq.user = { role: 'resident' };
+      mockReq.user = { role: 'resident', estate_id: 1 };
       mockReq.body = validVisitorData;
 
       await createVisitor(mockReq, mockRes);
@@ -198,12 +199,21 @@ describe('visitorInviteController', () => {
     });
 
     it('should return 403 if user is not a resident', async () => {
-      mockReq.user = { email: 'guard@test.com', role: 'guard' };
+      mockReq.user = { email: 'guard@test.com', role: 'guard', estate_id: 1 };
       mockReq.body = validVisitorData;
 
       await createVisitor(mockReq, mockRes);
 
       expect(mockRespondError).toHaveBeenCalledWith(mockRes, 403, 'Forbidden');
+    });
+
+    it('should return 400 if estate context is missing', async () => {
+      mockReq.user = { email: 'resident@test.com', role: 'resident' };
+      mockReq.body = validVisitorData;
+
+      await createVisitor(mockReq, mockRes);
+
+      expect(mockRespondError).toHaveBeenCalledWith(mockRes, 400, 'Estate context is required to create visitors');
     });
 
     it('should return 400 if visitor name is missing', async () => {
@@ -370,15 +380,31 @@ describe('visitorInviteController', () => {
     });
 
     it('should allow guards to view all visitors', async () => {
-      mockReq.user = { email: 'guard@test.com', role: 'guard' };
+      mockReq.user = { email: 'guard@test.com', role: 'guard', estate_id: 1 };
 
       await getMyVisitors(mockReq, mockRes);
 
       expect(mockRespond).toHaveBeenCalled();
     });
 
+    it('should scope guard results to the current estate', async () => {
+      mockReq.user = { email: 'guard@test.com', role: 'guard', estate_id: 42 };
+      mockDbManager.query.mockReset();
+      mockDbManager.query
+        .mockResolvedValueOnce({ rows: [{ id: 100 }] })
+        .mockResolvedValueOnce({ rows: [{ count: '1' }] });
+
+      await getMyVisitors(mockReq, mockRes);
+
+      const firstQueryParams = mockDbManager.query.mock.calls[0][1];
+      const countQueryParams = mockDbManager.query.mock.calls[1][1];
+
+      expect(firstQueryParams).toContain(42);
+      expect(countQueryParams).toContain(42);
+    });
+
     it('should allow admins to view all visitors', async () => {
-      mockReq.user = { email: 'admin@test.com', role: 'admin' };
+      mockReq.user = { email: 'admin@test.com', role: 'admin', estate_id: 1 };
       mockDbManager.query.mockReset();
       mockDbManager.query
         .mockResolvedValueOnce({ rows: [{ id: 100 }] })
@@ -560,7 +586,7 @@ describe('visitorInviteController', () => {
     });
 
     it('should return 403 if user is not a resident', async () => {
-      mockReq.user = { email: 'guard@test.com', role: 'guard' };
+      mockReq.user = { email: 'guard@test.com', role: 'guard', estate_id: 1 };
       mockReq.body = validBulkData;
 
       await bulkInvite(mockReq, mockRes);

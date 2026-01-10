@@ -64,6 +64,7 @@ class TokenService {
     const jti = randomUUID(); // Standard JWT ID claim
     const refreshJti = randomUUID();
     const now = Math.floor(Date.now() / 1000);
+    const estateId = payload.estate_id ?? payload.estateId ?? null;
 
     // Standardized access token claims
     const accessToken = jwt.sign(
@@ -78,6 +79,7 @@ class TokenService {
         email: payload.email,                     // User email
         role: payload.role,                       // User role for authorization
         username: payload.username,               // User display name
+        estate_id: estateId,                      // Tenant context for estate-scoped access
         verified: payload.verified || false,      // Account verification status
         type: 'access'
       },
@@ -123,6 +125,7 @@ class TokenService {
   generateAccessToken(payload, expiresIn = '15m') {
     const jti = randomUUID();
     const now = Math.floor(Date.now() / 1000);
+    const estateId = payload.estate_id ?? payload.estateId ?? null;
 
     return jwt.sign(
       {
@@ -136,6 +139,7 @@ class TokenService {
         email: payload.email,
         role: payload.role,
         username: payload.username,
+        estate_id: estateId,
         verified: payload.verified || false,
         type: 'access'
       },

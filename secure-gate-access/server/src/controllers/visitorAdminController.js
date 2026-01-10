@@ -12,8 +12,9 @@ const getActiveVisitors = async (req, res) => {
              invite_code, status, check_in, check_out, created_at
       FROM visitors 
       WHERE status IN ('PENDING', 'VERIFIED', $1)
+        AND estate_id = $2
       ORDER BY created_at DESC
-    `, [PASS_STATUS.ON_PREMISE]);
+    `, [PASS_STATUS.ON_PREMISE, req.user.estate_id]);
     
     await req.audit?.('visitor.list.active', 'visitor', null, { outcome: 'success', message: 'Retrieved active visitors', count: vRes.rows.length });
     respond(res, { data: vRes.rows });
@@ -36,14 +37,16 @@ const getVisitorReport = async (req, res) => {
         COUNT(CASE WHEN status = 'CHECKED_IN' THEN 1 END) as checked_in_visitors,
         COUNT(CASE WHEN status = 'CHECKED_OUT' THEN 1 END) as checked_out_visitors
       FROM visitors
-    `);
+      WHERE estate_id = $1
+    `, [req.user.estate_id]);
     
     const recentRes = await dbManager.query(`
       SELECT id, name, phone, email, purpose, status, check_in, check_out, created_at
       FROM visitors 
+      WHERE estate_id = $1
       ORDER BY created_at DESC 
       LIMIT 50
-    `);
+    `, [req.user.estate_id]);
     
     const report = {
       statistics: statsRes.rows[0],
@@ -65,11 +68,17 @@ const revokeVisitor = async (req, res) => {
     
     const { visitorId } = req.params;
     
-    const vRes = await dbManager.query('SELECT id, status, name FROM visitors WHERE id = $1', [visitorId]);
+    const vRes = await dbManager.query(
+      'SELECT id, status, name FROM visitors WHERE id = $1 AND estate_id = $2',
+      [visitorId, req.user.estate_id]
+    );
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
     
-    await dbManager.query('UPDATE visitors SET status = $1 WHERE id = $2', [PASS_STATUS.REVOKED, visitorId]);
+    await dbManager.query(
+      'UPDATE visitors SET status = $1 WHERE id = $2 AND estate_id = $3',
+      [PASS_STATUS.REVOKED, visitorId, req.user.estate_id]
+    );
     
     await req.audit?.('visitor.revoke', 'visitor', String(visitorId), { outcome: 'success', message: 'Visitor access revoked', visitorName: visitor.name });
     respond(res, { message: 'Visitor access revoked successfully' });

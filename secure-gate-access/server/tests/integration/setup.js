@@ -126,6 +126,7 @@ export async function cleanupTestDatabase() {
 export async function createTestUsers() {
   const argon2 = await import('argon2');
   const hashedPassword = await argon2.default.hash('testpass123');
+  const estateId = 1;
 
   // Generate unique identifiers for parallel test execution
   const timestamp = Date.now();
@@ -136,8 +137,8 @@ export async function createTestUsers() {
   // Insert into both 'password' and 'password_hash' columns for compatibility
 
   const adminResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `admin_${uniqueSuffix}`,
       `admin_${uniqueSuffix}@test.com`,
@@ -146,13 +147,14 @@ export async function createTestUsers() {
       'admin',
       `+2547${timestamp.toString().slice(-8)}`,
       'Admin',
-      true  // Mark as verified for testing
+      true,  // Mark as verified for testing
+      estateId
     ]
   );
 
   const guardResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `guard_${uniqueSuffix}`,
       `guard_${uniqueSuffix}@test.com`,
@@ -161,13 +163,14 @@ export async function createTestUsers() {
       'guard',
       `+2547${(timestamp + 1).toString().slice(-8)}`,
       'Gate 1',
-      true
+      true,
+      estateId
     ]
   );
 
   const residentResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `resident_${uniqueSuffix}`,
       `resident_${uniqueSuffix}@test.com`,
@@ -176,7 +179,8 @@ export async function createTestUsers() {
       'resident',
       `+2547${(timestamp + 2).toString().slice(-8)}`,
       'A101',
-      true
+      true,
+      estateId
     ]
   );
 
@@ -196,8 +200,8 @@ export async function createTestVisitor(hostId, overrides = {}) {
   const random = Math.random().toString(36).substring(2, 11);
 
   const result = await dbManager.query(
-    `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
     [
       overrides.name || 'Test Visitor',
       overrides.phone || '+254700123456',
@@ -205,7 +209,8 @@ export async function createTestVisitor(hostId, overrides = {}) {
       overrides.purpose || 'Testing',
       overrides.status || 'pending',
       hostId,
-      overrides.invite_code || `TEST${timestamp}_${random}`
+      overrides.invite_code || `TEST${timestamp}_${random}`,
+      overrides.estate_id ?? 1
     ]
   );
 
@@ -319,8 +324,8 @@ export async function createTestUserInTransaction(client, overrides = {}) {
   );
 
   const result = await client.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       overrides.username || `user_${timestamp}_${random}`,
       overrides.email || `test${timestamp}_${random}@test.com`,
@@ -329,7 +334,8 @@ export async function createTestUserInTransaction(client, overrides = {}) {
       overrides.role || 'resident',
       overrides.phone || `+2547${timestamp.toString().substr(-8)}`,
       overrides.unit || 'Test Unit',
-      true
+      true,
+      overrides.estate_id ?? 1
     ]
   );
 
@@ -347,9 +353,9 @@ export async function createTestVisitorInTransaction(client, hostId, overrides =
   const result = await client.query(
     `INSERT INTO visitors (
       name, phone, email, purpose, status, resident_id,
-      invite_code, visitor_token, date_of_visit, created_by
+      invite_code, visitor_token, date_of_visit, created_by, estate_id
     )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
     [
       overrides.name || 'Test Visitor',
       overrides.phone || `+2547${timestamp.toString().substr(-8)}`,
@@ -360,7 +366,8 @@ export async function createTestVisitorInTransaction(client, hostId, overrides =
       overrides.invite_code || `TEST${timestamp}${random}`,
       overrides.visitor_token || `TOKEN${timestamp}${random}`,
       overrides.date_of_visit || new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      overrides.created_by || hostId.toString()
+      overrides.created_by || hostId.toString(),
+      overrides.estate_id ?? 1
     ]
   );
 

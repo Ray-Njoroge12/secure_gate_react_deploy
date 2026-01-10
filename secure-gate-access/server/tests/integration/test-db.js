@@ -77,21 +77,21 @@ export async function createTestUsers() {
 
   // Insert into both 'password' (legacy) and 'password_hash' columns for compatibility
   const adminResult = await p.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-    ['admin_test', 'admin@test.com', hashedPassword, hashedPassword, 'admin', '+254700000001', 'Admin', true]
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    ['admin_test', 'admin@test.com', hashedPassword, hashedPassword, 'admin', '+254700000001', 'Admin', true, 1]
   );
 
   const guardResult = await p.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-    ['guard_test', 'guard@test.com', hashedPassword, hashedPassword, 'guard', '+254700000002', 'Gate 1', true]
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    ['guard_test', 'guard@test.com', hashedPassword, hashedPassword, 'guard', '+254700000002', 'Gate 1', true, 1]
   );
 
   const residentResult = await p.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-    ['resident_test', 'resident@test.com', hashedPassword, hashedPassword, 'resident', '+254700000003', 'A101', true]
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    ['resident_test', 'resident@test.com', hashedPassword, hashedPassword, 'resident', '+254700000003', 'A101', true, 1]
   );
 
   return {
