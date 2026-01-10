@@ -194,7 +194,7 @@ class UserService {
   /**
    * Authenticate user with proper SQL injection protection
    */
-  async authenticateUser(username, password) {
+  async authenticateUser(username, password, estateId = null) {
     if (!username || !password) {
       throw new Error('Username and password required');
     }
@@ -209,8 +209,11 @@ class UserService {
       // Get user by username OR email using parameterized query, including email verification status
       // Uses column names matching render_init.sql schema: verified instead of email_verified_at
       const result = await this.db.query(
-        'SELECT id, username, email, password_hash, role, estate_id, created_at, verified FROM users WHERE username = $1 OR email = $1',
-        [username]
+        `SELECT id, username, email, password_hash, role, estate_id, created_at, verified
+         FROM users
+         WHERE (username = $1 OR email = $1)
+           AND estate_id = COALESCE($2, estate_id)`,
+        [username, estateId]
       );
 
       if (result.rows.length === 0) {
