@@ -128,6 +128,10 @@ export const createVisitor = async (req, res) => {
     const residentId = resident.id;
     const estateId = resident.estate_id ?? req.user.estate_id ?? 1;
 
+    if (!estateId) {
+      return respondError(res, 400, 'Estate context is required to create visitors');
+    }
+
     // Determine initial status
     const initialStatus = requestedStatus === 'pending_confirmation'
       ? PASS_STATUS.PENDING_CONFIRMATION
