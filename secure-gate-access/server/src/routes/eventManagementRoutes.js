@@ -24,7 +24,7 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import eventManagementService from '../services/eventManagementService.js';
 import loggingService from '../services/loggingService.js';
-import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireEstateId, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -52,7 +52,7 @@ const upload = multer({
  * @desc Create a new event
  * @access Admin, Resident (host)
  */
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireEstateId, async (req, res) => {
   try {
     const { body, user } = req;
 
@@ -94,7 +94,7 @@ router.post('/', authenticateToken, async (req, res) => {
  * @desc Get all events for user's estate
  * @access Authenticated
  */
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireEstateId, async (req, res) => {
   try {
     const { user, query } = req;
 

@@ -86,7 +86,8 @@ describe('TokenService', () => {
         email: 'test@example.com',
         role: 'resident',
         username: 'testuser',
-        verified: true
+        verified: true,
+        estate_id: 12
       };
       const tokens = tokenService.generateTokens(payload);
       const decoded = jwt.decode(tokens.accessToken);
@@ -96,6 +97,7 @@ describe('TokenService', () => {
       expect(decoded.role).toBe('resident');
       expect(decoded.username).toBe('testuser');
       expect(decoded.verified).toBe(true);
+      expect(decoded.estate_id).toBe(12);
     });
 
     test('should set default verified to false', () => {
@@ -104,6 +106,14 @@ describe('TokenService', () => {
       const decoded = jwt.decode(tokens.accessToken);
 
       expect(decoded.verified).toBe(false);
+    });
+
+    test('should include estate_id when provided', () => {
+      const payload = { id: 1, email: 'test@example.com', role: 'resident', estate_id: 9 };
+      const tokens = tokenService.generateTokens(payload);
+      const decoded = jwt.decode(tokens.accessToken);
+
+      expect(decoded.estate_id).toBe(9);
     });
 
     test('should convert user ID to string in sub claim', () => {
@@ -148,7 +158,7 @@ describe('TokenService', () => {
     });
 
     test('should include all required claims', () => {
-      const payload = { id: 1, email: 'test@example.com', role: 'resident' };
+      const payload = { id: 1, email: 'test@example.com', role: 'resident', estate_id: 33 };
       const token = tokenService.generateAccessToken(payload);
       const decoded = jwt.decode(token);
 
@@ -156,6 +166,7 @@ describe('TokenService', () => {
       expect(decoded).toHaveProperty('jti');
       expect(decoded).toHaveProperty('iat');
       expect(decoded).toHaveProperty('type', 'access');
+      expect(decoded.estate_id).toBe(33);
     });
   });
 

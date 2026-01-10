@@ -5,7 +5,7 @@
 
 import express from 'express';
 import guardManagementService from '../services/guardManagementService.js';
-import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireEstateId, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -37,7 +37,7 @@ router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
  * @desc Get guard dashboard data
  * @access Guard role
  */
-router.get('/dashboard', authenticateToken, requireRole(['guard']), async (req, res) => {
+router.get('/dashboard', authenticateToken, requireEstateId, requireRole(['guard']), async (req, res) => {
   try {
     const guardId = req.user.id;
     const estateId = req.user.estate_id;
@@ -62,7 +62,7 @@ router.get('/dashboard', authenticateToken, requireRole(['guard']), async (req, 
  * @desc Create a new shift
  * @access Admin only
  */
-router.post('/shifts', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/shifts', authenticateToken, requireEstateId, requireRole(['admin']), async (req, res) => {
   try {
     const { guard_id, shift_type, start_time, end_time, post_location, notes } = req.body;
 
@@ -102,7 +102,7 @@ router.post('/shifts', authenticateToken, requireRole(['admin']), async (req, re
  * @desc Get shifts for a date range
  * @access Admin, Guard
  */
-router.get('/shifts', authenticateToken, requireRole(['admin', 'guard']), async (req, res) => {
+router.get('/shifts', authenticateToken, requireEstateId, requireRole(['admin', 'guard']), async (req, res) => {
   try {
     const { start_date, end_date, estate_id } = req.query;
 
@@ -190,7 +190,7 @@ router.post('/shifts/:shiftId/end', authenticateToken, requireRole(['guard']), a
  * @desc Create handover note
  * @access Guard only
  */
-router.post('/handover', authenticateToken, requireRole(['guard']), async (req, res) => {
+router.post('/handover', authenticateToken, requireEstateId, requireRole(['guard']), async (req, res) => {
   try {
     const { shift_id, to_guard_id, notes, incidents_summary, equipment_status } = req.body;
 
@@ -253,7 +253,7 @@ router.get('/handover/:shiftId', authenticateToken, requireRole(['guard', 'admin
  * @desc Record performance metric
  * @access Admin only
  */
-router.post('/performance', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/performance', authenticateToken, requireEstateId, requireRole(['admin']), async (req, res) => {
   try {
     const { guard_id, shift_id, metric_type, rating, notes } = req.body;
 
@@ -330,7 +330,7 @@ router.get('/:guardId/performance', authenticateToken, requireRole(['admin', 'gu
  * @desc Checkout equipment
  * @access Guard only
  */
-router.post('/equipment/checkout', authenticateToken, requireRole(['guard']), async (req, res) => {
+router.post('/equipment/checkout', authenticateToken, requireEstateId, requireRole(['guard']), async (req, res) => {
   try {
     const { shift_id, equipment_type, equipment_id, notes } = req.body;
 
@@ -425,7 +425,7 @@ router.get('/equipment', authenticateToken, requireRole(['guard', 'admin']), asy
  * @desc Add training record
  * @access Admin only
  */
-router.post('/:guardId/training', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:guardId/training', authenticateToken, requireEstateId, requireRole(['admin']), async (req, res) => {
   try {
     const { guardId } = req.params;
     const {

@@ -439,6 +439,7 @@ describe('userController', () => {
           email: 'user@example.com',
           username: 'testuser',
           role: 'resident',
+          estate_id: 7,
           password_hash: '$argon2id$v=19$m=65536,t=3,p=4$hashed',
           phone: '+1234567890',
           area: 'Building A',
@@ -478,7 +479,8 @@ describe('userController', () => {
           expect.objectContaining({
             id: 1,
             email: 'user@example.com',
-            role: 'resident'
+            role: 'resident',
+            estate_id: 7
           })
         );
 
@@ -487,7 +489,8 @@ describe('userController', () => {
           expect.objectContaining({
             id: 1,
             email: 'user@example.com',
-            role: 'resident'
+            role: 'resident',
+            estate_id: 7
           })
         );
 
@@ -897,7 +900,8 @@ describe('userController', () => {
             email: 'user@example.com',
             username: 'testuser',
             role: 'resident',
-            verified: true
+            verified: true,
+            estate_id: 11
           }],
           rowCount: 1
         });
@@ -920,7 +924,8 @@ describe('userController', () => {
           expect.objectContaining({
             id: 1,
             email: 'user@example.com',
-            role: 'resident'
+            role: 'resident',
+            estate_id: 11
           })
         );
 

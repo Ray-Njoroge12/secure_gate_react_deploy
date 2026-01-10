@@ -89,6 +89,7 @@ class SessionSecurityService {
         userId: user.id,
         userEmail: user.email,
         userRole: user.role,
+        estateId: user.estate_id ?? null,
         fingerprint: fingerprint,
         createdAt: now,
         lastActivity: now,

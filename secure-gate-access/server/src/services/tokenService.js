@@ -79,6 +79,7 @@ class TokenService {
         role: payload.role,                       // User role for authorization
         username: payload.username,               // User display name
         verified: payload.verified || false,      // Account verification status
+        estate_id: payload.estate_id,             // Tenant/estate context
         type: 'access'
       },
       this.accessTokenSecret,
@@ -137,6 +138,7 @@ class TokenService {
         role: payload.role,
         username: payload.username,
         verified: payload.verified || false,
+        estate_id: payload.estate_id,
         type: 'access'
       },
       this.accessTokenSecret,

@@ -34,6 +34,7 @@ const {
   authenticateToken, 
   attachUserFromToken, 
   authorize, 
+  requireEstateId,
   requireRole 
 } = authMiddlewareModule;
 
@@ -58,7 +59,8 @@ describe('Auth Middleware', () => {
     email: 'test@example.com',
     username: 'testuser',
     role: 'resident',
-    verified: true
+    verified: true,
+    estate_id: 5
   };
 
   const validToken = 'valid-jwt-token';
@@ -180,6 +182,7 @@ describe('Auth Middleware', () => {
           email: testUser.email,
           username: testUser.username,
           role: testUser.role,
+          estate_id: testUser.estate_id
         });
       });
 
@@ -411,6 +414,28 @@ describe('Auth Middleware', () => {
       const middleware = requireRole('Resident');
 
       expect(() => middleware(mockReq, mockRes, mockNext)).toThrow(AppError);
+    });
+  });
+
+  describe('requireEstateId', () => {
+    it('should allow access when estate_id is present', () => {
+      mockReq.user = { ...testUser, estate_id: 10 };
+
+      requireEstateId(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should throw error when estate_id is missing', () => {
+      mockReq.user = { ...testUser, estate_id: null };
+
+      expect(() => requireEstateId(mockReq, mockRes, mockNext)).toThrow(AppError);
+    });
+
+    it('should throw error when user not authenticated', () => {
+      mockReq.user = undefined;
+
+      expect(() => requireEstateId(mockReq, mockRes, mockNext)).toThrow(AppError);
     });
   });
 
