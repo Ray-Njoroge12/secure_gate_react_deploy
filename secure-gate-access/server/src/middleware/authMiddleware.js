@@ -61,11 +61,8 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
 
     // Look up user in database to get full user info
     const userQuery = await dbManager.query(
-      `SELECT id, email, username, role, estate_id
-       FROM users
-       WHERE LOWER(email) = LOWER($1)
-         AND estate_id = COALESCE($2, estate_id)`,
-      [payload.email, payload.estate_id ?? null]
+      'SELECT id, email, username, role, estate_id FROM users WHERE LOWER(email) = LOWER($1)',
+      [payload.email]
     );
 
     if (userQuery.rowCount === 0) {
@@ -135,20 +132,14 @@ export async function attachUserFromToken(req, res, next) {
     if (userIdentifier.includes('@')) {
       // Email lookup for legacy tokens
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id
-         FROM users
-         WHERE LOWER(email) = LOWER($1)
-           AND estate_id = COALESCE($2, estate_id)`,
-        [userIdentifier, payload.estate_id ?? null]
+        'SELECT id, email, username, role, estate_id FROM users WHERE LOWER(email) = LOWER($1)',
+        [userIdentifier]
       );
     } else {
       // ID lookup for standardized tokens (sub claim)
       userQuery = await dbManager.query(
-        `SELECT id, email, username, role, estate_id
-         FROM users
-         WHERE id = $1
-           AND estate_id = COALESCE($2, estate_id)`,
-        [parseInt(userIdentifier), payload.estate_id ?? null]
+        'SELECT id, email, username, role, estate_id FROM users WHERE id = $1',
+        [parseInt(userIdentifier)]
       );
     }
 
@@ -201,5 +192,28 @@ export const requireRole = (...allowedRoles) => {
     next();
   };
 };
+
+export const requireEstate = asyncHandler(async (req, res, next) => {
+  if (!req.user || req.user.estate_id === undefined || req.user.estate_id === null) {
+    throw new AppError('Estate access required', 403, 'ESTATE_REQUIRED');
+  }
+
+  const estateId = Number(req.user.estate_id);
+  if (!Number.isInteger(estateId) || estateId <= 0) {
+    throw new AppError('Invalid estate', 400, 'ESTATE_INVALID');
+  }
+
+  const estateCheck = await dbManager.query(
+    'SELECT estate_id FROM estate_locations WHERE estate_id = $1',
+    [estateId]
+  );
+
+  if (estateCheck.rowCount === 0) {
+    throw new AppError('Invalid estate', 403, 'ESTATE_INVALID');
+  }
+
+  req.user.estate_id = estateId;
+  next();
+});
 
 export default authenticateToken;

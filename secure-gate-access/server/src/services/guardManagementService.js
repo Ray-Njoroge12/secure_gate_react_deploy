@@ -20,6 +20,28 @@ class GuardManagementService {
     this.equipmentTypes = ['radio', 'flashlight', 'baton', 'first_aid', 'keys', 'tablet'];
   }
 
+  async assertGuardEstate(guardId, estateId) {
+    const guardResult = await db.query(
+      'SELECT id FROM users WHERE id = $1 AND estate_id = $2',
+      [guardId, estateId]
+    );
+
+    if (guardResult.rows.length === 0) {
+      throw new Error('Guard not found for estate');
+    }
+  }
+
+  async assertShiftEstate(shiftId, estateId) {
+    const shiftResult = await db.query(
+      'SELECT id FROM guard_shifts WHERE id = $1 AND estate_id = $2',
+      [shiftId, estateId]
+    );
+
+    if (shiftResult.rows.length === 0) {
+      throw new Error('Shift not found for estate');
+    }
+  }
+
   /**
    * Get all guards with shift and performance data
    */
@@ -75,6 +97,8 @@ class GuardManagementService {
         notes,
         estate_id
       } = shiftData;
+
+      await this.assertGuardEstate(guard_id, estate_id);
 
       // Validate shift doesn't overlap
       const overlapCheck = await db.query(`
@@ -141,7 +165,7 @@ class GuardManagementService {
   /**
    * Start shift (check-in)
    */
-  async startShift(shiftId, guardId) {
+  async startShift(shiftId, guardId, estateId) {
     try {
       const result = await db.query(`
         UPDATE guard_shifts
@@ -151,9 +175,10 @@ class GuardManagementService {
           updated_at = NOW()
         WHERE id = $1
         AND guard_id = $2
+        AND estate_id = $3
         AND status = 'scheduled'
         RETURNING *
-      `, [shiftId, guardId]);
+      `, [shiftId, guardId, estateId]);
 
       if (result.rows.length === 0) {
         throw new Error('Shift not found or already started');
@@ -170,7 +195,7 @@ class GuardManagementService {
   /**
    * End shift (check-out)
    */
-  async endShift(shiftId, guardId, handoverNotes = null) {
+  async endShift(shiftId, guardId, handoverNotes = null, estateId) {
     try {
       const result = await db.query(`
         UPDATE guard_shifts
@@ -181,9 +206,10 @@ class GuardManagementService {
           updated_at = NOW()
         WHERE id = $1
         AND guard_id = $2
+        AND estate_id = $4
         AND status = 'in_progress'
         RETURNING *
-      `, [shiftId, guardId, handoverNotes]);
+      `, [shiftId, guardId, handoverNotes, estateId]);
 
       if (result.rows.length === 0) {
         throw new Error('Shift not found or not in progress');
