@@ -18,13 +18,17 @@ import encryptionService from './encryptionService.js';
 export async function getEstateLocation(estateId = 1) {
   const result = await pool.query(
     `SELECT 
+      e.name AS estate_name,
+      e.slug AS estate_slug,
+      e.timezone AS estate_timezone,
       gate_latitude, 
       gate_longitude, 
       gate_name,
       directions_from_highway,
       directions_from_city
-     FROM estate_locations
-     WHERE estate_id = $1`,
+     FROM estate_locations el
+     JOIN estates e ON e.id = el.estate_id
+     WHERE el.estate_id = $1`,
     [estateId]
   );
   
