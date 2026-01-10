@@ -251,11 +251,25 @@ export const getEstateInfo = async (req, res) => {
     const publicInfo = publicInfoResult.rows[0];
     const locationInfo = locationResult.rows[0];
     
-    // Build response with data from estate_public_info if available, otherwise use defaults
-    const gateLocation = publicInfo?.gate_location
-      || (locationInfo?.gate_latitude && locationInfo?.gate_longitude
-        ? `${locationInfo.gate_latitude}, ${locationInfo.gate_longitude}`
-        : null);
+    // Helper function to build gate information
+    const buildGateInfo = () => {
+      // Only include gates array if we have location or public info data
+      if (!locationInfo && !publicInfo?.gate_location && !publicInfo?.gate_hours && !publicInfo?.gate_contact) {
+        return [];
+      }
+
+      const gateLocation = publicInfo?.gate_location
+        || (locationInfo?.gate_latitude && locationInfo?.gate_longitude
+          ? `${locationInfo.gate_latitude}, ${locationInfo.gate_longitude}`
+          : estate.address || 'Estate main entrance');
+
+      return [{
+        name: locationInfo?.gate_name || 'Main Gate',
+        location: gateLocation,
+        hours: publicInfo?.gate_hours || '24/7',
+        contact: publicInfo?.gate_contact || publicInfo?.contact || estate.contact_phone || estate.emergency_contact
+      }];
+    };
 
     const estateInfo = {
       id: estate.id,
@@ -264,16 +278,7 @@ export const getEstateInfo = async (req, res) => {
       address: publicInfo?.address || estate.address,
       timezone: publicInfo?.timezone || estate.timezone,
       contact: publicInfo?.contact || estate.contact_phone,
-      gates: locationInfo || publicInfo?.gate_location || publicInfo?.gate_hours || publicInfo?.gate_contact
-        ? [
-            {
-              name: locationInfo?.gate_name || 'Main Gate',
-              location: gateLocation || estate.address || 'Estate main entrance',
-              hours: publicInfo?.gate_hours || '24/7',
-              contact: publicInfo?.gate_contact || publicInfo?.contact || estate.contact_phone || estate.emergency_contact
-            }
-          ]
-        : [],
+      gates: buildGateInfo(),
       parkingInstructions: publicInfo?.parking_instructions || 'Visitor parking available at designated areas near the main gate.',
       checkInInstructions: Array.isArray(publicInfo?.check_in_instructions)
         ? publicInfo.check_in_instructions

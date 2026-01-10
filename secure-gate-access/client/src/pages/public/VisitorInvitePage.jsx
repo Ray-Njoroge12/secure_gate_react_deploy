@@ -91,7 +91,7 @@ const VisitorInvitePage = () => {
   const fetchEstateInfo = async (estateId) => {
     try {
       if (!estateId) {
-        // Fallback to fetching without estate ID
+        console.warn('Estate ID not available, skipping estate info fetch');
         return;
       }
 
@@ -100,6 +100,8 @@ const VisitorInvitePage = () => {
       
       if (data.success) {
         setEstateInfo(data.data);
+      } else {
+        console.warn('Failed to load estate info:', data.error);
       }
     } catch (err) {
       console.error('Failed to load estate info:', err);
