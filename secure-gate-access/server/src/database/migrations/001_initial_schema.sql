@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     entity_id VARCHAR(100),
     details TEXT,
     ip_address INET,
+    estate_id INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

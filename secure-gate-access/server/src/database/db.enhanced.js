@@ -237,6 +237,7 @@ class DatabaseManager extends EventEmitter {
           password VARCHAR(255),
           password_hash VARCHAR(255) NOT NULL,
           role VARCHAR(50) NOT NULL,
+          estate_id INT,
           phone VARCHAR(20),
           area VARCHAR(100),
           house VARCHAR(100),
@@ -271,6 +272,7 @@ class DatabaseManager extends EventEmitter {
           check_out_time TIMESTAMP,
           created_by VARCHAR(255),
           host_id INT,
+          estate_id INT,
           created_at TIMESTAMP DEFAULT NOW()
         )`
       },
@@ -327,6 +329,7 @@ class DatabaseManager extends EventEmitter {
           entity_id VARCHAR(100),
           details TEXT,
           ip_address INET,
+          estate_id INT,
           created_at TIMESTAMP DEFAULT NOW()
         )`
       }

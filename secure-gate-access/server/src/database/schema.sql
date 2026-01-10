@@ -5,6 +5,7 @@ CREATE TABLE users (
     password VARCHAR(255), -- legacy column, nullable
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL, -- admin, guard, visitor
+    estate_id INTEGER,
     phone VARCHAR(20),
     area VARCHAR(100),
     house VARCHAR(100),
@@ -40,6 +41,7 @@ CREATE TABLE visitors (
     check_in_time TIMESTAMP,
     check_out_time TIMESTAMP,
     created_by VARCHAR(255),
+    estate_id INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -96,6 +98,7 @@ CREATE TABLE audit_logs (
     entity_id VARCHAR(100),
     details TEXT,
     ip_address INET,
+    estate_id INTEGER,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
