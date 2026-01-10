@@ -17,6 +17,8 @@ export const configureSecurityHeaders = (app) => {
   // Content Security Policy - Prevent XSS attacks
   // SECURITY FIX: Using nonce-based CSP instead of unsafe-inline
   app.use((req, res, next) => {
+    const apiBaseUrl = process.env.API_BASE_URL || 'https://secure-gate-api.onrender.com';
+    const websocketUrl = process.env.WEBSOCKET_URL || 'wss://secure-gate-api.onrender.com';
     const cspMiddleware = helmet.contentSecurityPolicy({
       directives: {
         defaultSrc: ["'self'"],
@@ -40,8 +42,8 @@ export const configureSecurityHeaders = (app) => {
         ],
         connectSrc: [
           "'self'",
-          "https://api.securegate.com",
-          "wss://api.securegate.com",
+          apiBaseUrl,
+          websocketUrl,
           "https://www.google-analytics.com"
         ],
         fontSrc: [
