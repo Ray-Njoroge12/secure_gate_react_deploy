@@ -150,7 +150,7 @@ if [ ! -z "$cors_header" ]; then
     ((PASSED++))
 else
     echo -e "${YELLOW}⚠ WARNING (No CORS headers found)${NC}"
-    echo "  Make sure CORS_ORIGIN is set to: $CLIENT_URL"
+    echo "  Make sure CLIENT_ORIGIN is set to: $CLIENT_URL"
     ((FAILED++))
 fi
 echo ""
@@ -247,7 +247,7 @@ elif [ $PERCENTAGE -ge 80 ]; then
     echo ""
     echo "Please review the failed checks above and:"
     echo "1. Check environment variables in Render/Netlify"
-    echo "2. Verify CORS_ORIGIN is set correctly"
+    echo "2. Verify CLIENT_ORIGIN is set correctly"
     echo "3. Check server logs for errors"
     echo "4. Ensure database is connected"
     exit 1

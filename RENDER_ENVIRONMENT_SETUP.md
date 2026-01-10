@@ -13,7 +13,8 @@ DATABASE_URL=<automatically set by Render PostgreSQL>
 ```
 NODE_ENV=production
 PORT=3001
-CORS_ORIGIN=https://your-frontend-url.netlify.app
+CLIENT_ORIGIN=https://your-frontend-url.netlify.app
+ADDITIONAL_ORIGINS=https://another-allowed-origin.example.com
 TRUST_PROXY=true
 ```
 
@@ -191,7 +192,8 @@ HSTS_MAX_AGE=31536000
 - [ ] `JWT_SECRET` - 64+ character secret
 - [ ] `JWT_REFRESH_SECRET` - 64+ character secret  
 - [ ] `SESSION_SECRET` - 64+ character secret
-- [ ] `CORS_ORIGIN` - Frontend URL
+- [ ] `CLIENT_ORIGIN` - Frontend URL (must be non-localhost in production)
+- [ ] `ADDITIONAL_ORIGINS` - Optional comma-separated additional allowed origins
 
 ### Recommended
 - [ ] `REDIS_URL` - Redis connection string
