@@ -294,7 +294,8 @@ router.get('/users', authenticateToken, requireRole(['admin']), attachRequestAud
     const { role, status, search, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     
-    let query = 'SELECT id, username, email, role, status, created_at, updated_at FROM users WHERE 1=1';
+    const baseSelect = 'SELECT id, username, email, role, status, estate_id, created_at, updated_at FROM users WHERE 1=1';
+    let query = baseSelect;
     const params = [];
     let paramIndex = 1;
     
@@ -313,7 +314,7 @@ router.get('/users', authenticateToken, requireRole(['admin']), attachRequestAud
     }
     
     // Get total count
-    const countQuery = query.replace('SELECT id, username, email, role, status, created_at, updated_at', 'SELECT COUNT(*)');
+    const countQuery = query.replace(baseSelect, 'SELECT COUNT(*) FROM users WHERE 1=1');
     const countResult = await dbManager.query(countQuery, params);
     const total = parseInt(countResult.rows[0].count);
     
@@ -384,7 +385,7 @@ router.put('/users/:id', authenticateToken, requireRole(['admin']), attachReques
     updates.push(`updated_at = NOW()`);
     params.push(id);
     
-    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, email, role, status, updated_at`;
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, email, role, status, estate_id, updated_at`;
     const result = await dbManager.query(query, params);
     
     if (result.rows.length === 0) {

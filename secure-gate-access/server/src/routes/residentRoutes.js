@@ -21,7 +21,7 @@ router.get('/profile', authenticateToken, authorize(['resident', 'admin']), asyn
   const userId = req.user.id;
   
   const result = await dbManager.query(
-    `SELECT id, name, email, phone, unit_number, role, created_at, updated_at 
+    `SELECT id, name, email, phone, unit_number, role, estate_id, created_at, updated_at 
      FROM users WHERE id = $1`,
     [userId]
   );
@@ -48,7 +48,7 @@ router.put('/profile', authenticateToken, authorize(['resident', 'admin']), atta
          unit_number = COALESCE($3, unit_number),
          updated_at = NOW()
      WHERE id = $4
-     RETURNING id, name, email, phone, unit_number, role`,
+     RETURNING id, name, email, phone, unit_number, role, estate_id`,
     [name, phone, unit_number, userId]
   );
   

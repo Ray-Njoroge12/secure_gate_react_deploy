@@ -6,7 +6,7 @@
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import { setupTestDatabase, cleanupTestDatabase, createTestUsers, getAuthToken } from './setup.js';
+import { setupTestDatabase, cleanupTestDatabase, createTestUsers, getAuthToken, dbManager } from './setup.js';
 
 // Mock modules before importing app
 jest.unstable_mockModule('../../src/services/emailService.js', () => ({
@@ -197,6 +197,69 @@ describe('Authentication Integration Tests', () => {
       expect(residentResponse.status).toBe(200);
       const residentUser = residentResponse.body.user || residentResponse.body.data?.user;
       expect(residentUser.role).toBe('resident');
+    });
+
+    it('should authenticate users across estates with tenant-scoped queries', async () => {
+      const estateSlug = `test-estate-${Date.now()}`;
+      const estateResult = await dbManager.query(
+        `INSERT INTO estates (name, slug, address, timezone, contact_phone, emergency_contact)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id`,
+        [
+          `Test Estate ${estateSlug}`,
+          estateSlug,
+          'Test Address',
+          'Africa/Nairobi',
+          '+254700000001',
+          '+254700000001'
+        ]
+      );
+
+      const estateId = estateResult.rows[0].id;
+
+      try {
+        const argon2 = await import('argon2');
+        const hashedPassword = await argon2.default.hash('testpass123');
+        await dbManager.query(
+          `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            testUsers.admin.username,
+            testUsers.admin.email,
+            hashedPassword,
+            hashedPassword,
+            'admin',
+            `+2547${Date.now().toString().slice(-8)}`,
+            'Admin',
+            true,
+            estateId
+          ]
+        );
+
+        const response = await request(app)
+          .post('/api/auth/login')
+          .send({
+            email: testUsers.admin.email,
+            password: 'testpass123',
+            estate_id: estateId
+          });
+
+        expect(response.status).toBe(200);
+        const user = response.body.user || response.body.data?.user;
+        expect(user.estate_id).toBe(estateId);
+
+        const accessToken = response.body.data?.accessToken || response.body.accessToken;
+        const meResponse = await request(app)
+          .get('/api/auth/me')
+          .set('Authorization', `Bearer ${accessToken}`);
+
+        expect(meResponse.status).toBe(200);
+        const meUser = meResponse.body.user || meResponse.body.data?.user;
+        expect(meUser.estate_id).toBe(estateId);
+      } finally {
+        await dbManager.query('DELETE FROM users WHERE email = $1 AND estate_id = $2', [testUsers.admin.email, estateId]);
+        await dbManager.query('DELETE FROM estates WHERE id = $1', [estateId]);
+      }
     });
   });
 

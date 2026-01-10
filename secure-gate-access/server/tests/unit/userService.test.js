@@ -222,6 +222,40 @@ describe('UserService', () => {
         await expect(userService.createUser(validUserData)).rejects.toThrow('Username or email already exists');
       });
 
+      it('should allow same username/email in different estates', async () => {
+        const estateUserData = { ...validUserData, estate_id: 2 };
+        mockQuery.mockResolvedValueOnce({ rows: [] });
+        mockQuery.mockResolvedValueOnce({
+          rows: [{
+            id: 2,
+            username: estateUserData.username,
+            email: estateUserData.email,
+            role: estateUserData.role,
+            estate_id: estateUserData.estate_id,
+            verification_token: 'token123',
+            created_at: new Date()
+          }]
+        });
+
+        const result = await userService.createUser(estateUserData);
+        expect(result.estate_id).toBe(2);
+        expect(mockQuery).toHaveBeenCalledWith(
+          expect.stringContaining('estate_id = COALESCE($3, estate_id)'),
+          [estateUserData.username, estateUserData.email, estateUserData.estate_id]
+        );
+      });
+
+      it('should reject duplicate username/email within the same estate', async () => {
+        const estateUserData = { ...validUserData, estate_id: 1 };
+        mockQuery.mockResolvedValueOnce({ rows: [{ id: 3 }] });
+
+        await expect(userService.createUser(estateUserData)).rejects.toThrow('Username or email already exists');
+        expect(mockQuery).toHaveBeenCalledWith(
+          expect.stringContaining('estate_id = COALESCE($3, estate_id)'),
+          [estateUserData.username, estateUserData.email, estateUserData.estate_id]
+        );
+      });
+
       it('should handle PostgreSQL unique constraint violation', async () => {
         mockQuery.mockResolvedValueOnce({ rows: [] });
         const pgError = new Error('duplicate key value');
