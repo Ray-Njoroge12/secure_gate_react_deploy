@@ -4,24 +4,31 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Shield, Eye, Lock, Database, UserCheck, FileText, Clock, Mail } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
 const PrivacyPolicy = () => {
   const [dpoInfo, setDpoInfo] = useState(null);
   const [odpcInfo, setOdpcInfo] = useState(null);
+  const [policyMetadata, setPolicyMetadata] = useState(null);
+  const { isAuthenticated, hasAnyRole } = useAuth();
+  const canAccessAdminSettings = hasAnyRole(['admin']);
 
   useEffect(() => {
     const fetchComplianceInfo = async () => {
       try {
-        const [dpoResponse, odpcResponse] = await Promise.all([
+        const [dpoResponse, odpcResponse, metadataResponse] = await Promise.all([
           api.get('/privacy/dpo'),
-          api.get('/privacy/odpc-registration')
+          api.get('/privacy/odpc-registration'),
+          api.get('/privacy/policy-metadata')
         ]);
         setDpoInfo(dpoResponse.data.data);
         setOdpcInfo(odpcResponse.data.data);
+        setPolicyMetadata(metadataResponse.data.data);
       } catch (error) {
         console.error('Failed to fetch compliance information:', error);
         // Fallback to default values
@@ -29,16 +36,34 @@ const PrivacyPolicy = () => {
           name: 'To Be Appointed',
           email: 'dpo@securegate.com',
           phone: '+254 700 000 000',
-          office: 'Nairobi, Kenya'
+          office: 'Nairobi, Kenya',
+          is_configured: false
         });
         setOdpcInfo({
           registration_number: 'PENDING',
-          status: 'pending'
+          status: 'pending',
+          is_configured: false
+        });
+        setPolicyMetadata({
+          last_updated_at: null,
+          last_reviewed_at: null
         });
       }
     };
     fetchComplianceInfo();
   }, []);
+
+  const dpoMissing = dpoInfo && !dpoInfo.is_configured;
+  const odpcMissing = odpcInfo && !odpcInfo.is_configured;
+  const policyMissing = policyMetadata && !policyMetadata.last_updated_at;
+
+  const formatDate = (dateString) => {
+    if (!dateString) {
+      return 'Not configured';
+    }
+    const date = new Date(dateString);
+    return Number.isNaN(date.getTime()) ? 'Not configured' : date.toLocaleDateString();
+  };
   const sections = [
     {
       id: 'introduction',
@@ -54,10 +79,46 @@ const PrivacyPolicy = () => {
             This Privacy Policy explains how we collect, use, disclose, and protect your personal information 
             when you use our visitor management system.
           </p>
+          {(dpoMissing || odpcMissing || policyMissing) && (
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <p className="text-sm text-yellow-800 font-semibold mb-2">
+                Compliance data is not fully configured.
+              </p>
+              <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+                {dpoMissing && <li>Data Protection Officer details are missing.</li>}
+                {odpcMissing && <li>ODPC registration details are missing.</li>}
+                {policyMissing && <li>Policy metadata (Last Updated) is missing.</li>}
+              </ul>
+              <div className="mt-3 text-sm text-yellow-900">
+                {canAccessAdminSettings ? (
+                  <Link
+                    to="/dashboard/admin/settings"
+                    className="font-semibold underline"
+                  >
+                    Update compliance settings
+                  </Link>
+                ) : isAuthenticated ? (
+                  <Link
+                    to="/privacy"
+                    className="font-semibold underline"
+                  >
+                    Visit the privacy dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="font-semibold underline"
+                  >
+                    Sign in to manage privacy settings
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Last Updated:</strong> October 11, 2025<br/>
-              <strong>Effective Date:</strong> October 11, 2025<br/>
+              <strong>Last Updated:</strong> {formatDate(policyMetadata?.last_updated_at)}<br/>
+              <strong>Effective Date:</strong> {formatDate(policyMetadata?.last_updated_at)}<br/>
               <strong>Version:</strong> 1.0
             </p>
           </div>
@@ -475,5 +536,4 @@ const PrivacyPolicy = () => {
 };
 
 export default PrivacyPolicy;
-
 
