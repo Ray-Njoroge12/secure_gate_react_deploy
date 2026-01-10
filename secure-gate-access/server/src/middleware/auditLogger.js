@@ -112,11 +112,11 @@ const auditLogger = (...args) => {
         try {
           const query = `
             INSERT INTO audit_logs (
-              action, resource, user_id, user_role, request_id,
+              action, resource, user_id, user_role, estate_id, request_id,
               ip_address, user_agent, details, timestamp, created_at
             ) VALUES (
               $1, $2, $3, $4, $5,
-              $6, $7, $8, NOW(), NOW()
+              $6, $7, $8, $9, NOW(), NOW()
             )
           `;
 
@@ -128,6 +128,7 @@ const auditLogger = (...args) => {
             resource,
             req.user?.id || null,
             req.user?.role || null,
+            req.user?.estate_id ?? null,
             requestId,
             req.ip || '127.0.0.1',
             userAgent,
@@ -232,6 +233,7 @@ const auditLogger = (...args) => {
         id: req.user?.id || null,
         email: req.user?.email || null,
         role: req.user?.role || null,
+        estate_id: req.user?.estate_id ?? null,
         ip: req.ip || req.connection.remoteAddress,
         userAgent: req.get('User-Agent') || null
       },
@@ -480,11 +482,11 @@ async function logAuditEvent(auditData) {
   try {
     const query = `
       INSERT INTO audit_logs (
-        action, resource, user_id, user_role, request_id, 
+        action, resource, user_id, user_role, estate_id, request_id,
         ip_address, user_agent, details, timestamp, created_at
       ) VALUES (
-        $1, $2, $3, $4, $5, 
-        $6, $7, $8, NOW(), NOW()
+        $1, $2, $3, $4, $5,
+        $6, $7, $8, $9, NOW(), NOW()
       )
     `;
     
@@ -496,6 +498,7 @@ async function logAuditEvent(auditData) {
       resource.substring(0, 100),                      // resource (NOT NULL, VARCHAR(100))
       auditData.user?.id || null,                      // user_id
       auditData.user?.role || null,                    // user_role
+      auditData.user?.estate_id ?? null,               // estate_id
       auditData.requestId || null,                     // request_id
       auditData.user?.ip || '127.0.0.1',               // ip_address
       auditData.user?.userAgent || null,               // user_agent
