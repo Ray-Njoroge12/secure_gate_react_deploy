@@ -124,6 +124,16 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_user_timestamp
 ON audit_logs(user_id, timestamp DESC)
 WHERE user_id IS NOT NULL;
 
+-- Estate ID index (multi-tenant filtering)
+CREATE INDEX IF NOT EXISTS idx_audit_logs_estate_id
+ON audit_logs(estate_id)
+WHERE estate_id IS NOT NULL;
+
+-- Composite index for estate-scoped audit queries (estate + timestamp)
+CREATE INDEX IF NOT EXISTS idx_audit_logs_estate_timestamp
+ON audit_logs(estate_id, timestamp DESC)
+WHERE estate_id IS NOT NULL;
+
 -- ============================================================================
 -- SESSIONS TABLE INDEXES
 -- ============================================================================
@@ -219,6 +229,23 @@ COMMENT ON INDEX idx_visitors_email IS 'Phase 3.2: Improves email lookup and dup
 COMMENT ON INDEX idx_visitors_estate_status_created IS 'Phase 3.2: Composite index for common dashboard queries';
 -- COMMENT ON INDEX idx_notifications_status_created IS 'Phase 3.2: Optimizes notification queue monitoring'; -- Skipped
 COMMENT ON INDEX idx_audit_logs_user_timestamp IS 'Phase 3.2: Speeds up user activity history queries';
+COMMENT ON INDEX idx_audit_logs_estate_timestamp IS 'Phase 3.2: Optimizes estate-scoped audit log filtering';
+
+-- Validate query plans for estate-scoped listings
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM visitors
+WHERE estate_id = 1
+  AND status = 'checked_in'
+ORDER BY created_at DESC
+LIMIT 50;
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT *
+FROM audit_logs
+WHERE estate_id = 1
+ORDER BY timestamp DESC
+LIMIT 100;
 
 -- ============================================================================
 -- EXPECTED PERFORMANCE IMPROVEMENTS
