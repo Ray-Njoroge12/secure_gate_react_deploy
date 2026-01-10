@@ -54,6 +54,23 @@ const estateInfoLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Optional middleware to validate estate ID if provided
+const validateEstateId = (req, res, next) => {
+  const estateId = Number(req.query.estateId || req.query.estate_id);
+  
+  // If estate ID is provided, validate it
+  if (req.query.estateId || req.query.estate_id) {
+    if (!estateId || Number.isNaN(estateId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid Estate ID format'
+      });
+    }
+  }
+
+  return next();
+};
+
 /**
  * @route GET /api/public/visitors/by-token/:token
  * @desc Get visitor details by secure token
@@ -99,6 +116,7 @@ router.post(
 router.get(
   '/estate-info',
   estateInfoLimiter,
+  validateEstateId,
   getEstateInfo
 );
 

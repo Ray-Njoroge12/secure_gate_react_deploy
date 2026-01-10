@@ -75,6 +75,8 @@ const VisitorInvitePage = () => {
       
       if (data.success) {
         setVisitor(data.data);
+        // Fetch estate info after getting visitor details with estate ID
+        await fetchEstateInfo(data.data.estateId);
       } else {
         throw new Error(data.error || 'Failed to load invite');
       }
@@ -86,9 +88,14 @@ const VisitorInvitePage = () => {
   };
 
   // Fetch estate information
-  const fetchEstateInfo = async () => {
+  const fetchEstateInfo = async (estateId) => {
     try {
-      const response = await fetch('/api/public/estate-info');
+      if (!estateId) {
+        // Fallback to fetching without estate ID
+        return;
+      }
+
+      const response = await fetch(`/api/public/estate-info?estateId=${estateId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -126,7 +133,7 @@ const VisitorInvitePage = () => {
     }
 
     fetchVisitorDetails();
-    fetchEstateInfo();
+    // Estate info is now fetched inside fetchVisitorDetails after getting estateId
   }, [token]);
 
   // Start status polling when visitor is pending_approval
