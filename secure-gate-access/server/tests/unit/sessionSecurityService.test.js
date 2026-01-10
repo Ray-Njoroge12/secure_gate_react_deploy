@@ -77,7 +77,8 @@ describe('SessionSecurityService', () => {
     mockUser = {
       id: 'user-123',
       email: 'test@example.com',
-      role: 'resident'
+      role: 'resident',
+      estate_id: 42
     };
 
     consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -203,6 +204,7 @@ describe('SessionSecurityService', () => {
         userId: mockUser.id,
         userEmail: mockUser.email,
         userRole: mockUser.role,
+        estateId: mockUser.estate_id,
         fingerprint: expect.any(String),
         ipAddress: mockReq.ip,
         userAgent: expect.any(String),
