@@ -222,6 +222,111 @@ describe('Visitor Management Integration Tests', () => {
         });
       }
     });
+
+    it('should not return visitors from other estates for resident', async () => {
+      const { dbManager } = await import('../../src/database/db.enhanced.js');
+      const argon2 = await import('argon2');
+      const hashedPassword = await argon2.default.hash('testpass123');
+      const timestamp = Date.now();
+      const uniqueSuffix = `${timestamp}_${Math.random().toString(36).substring(2, 11)}`;
+
+      const residentAResult = await dbManager.query(
+        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [
+          `residentA_${uniqueSuffix}`,
+          `residentA_${uniqueSuffix}@test.com`,
+          hashedPassword,
+          hashedPassword,
+          'resident',
+          `+2547${timestamp.toString().slice(-8)}`,
+          'A101',
+          true,
+          1
+        ]
+      );
+
+      const residentBResult = await dbManager.query(
+        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [
+          `residentB_${uniqueSuffix}`,
+          `residentB_${uniqueSuffix}@test.com`,
+          hashedPassword,
+          hashedPassword,
+          'resident',
+          `+2547${(timestamp + 1).toString().slice(-8)}`,
+          'B201',
+          true,
+          2
+        ]
+      );
+
+      const residentA = residentAResult.rows[0];
+      const residentB = residentBResult.rows[0];
+      const residentAToken = await getAuthToken(residentA.email);
+
+      await dbManager.query(
+        `INSERT INTO visitors (name, phone, email, purpose, status, resident_id, host_id, invite_code, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          'Estate A Visitor',
+          '+254700000001',
+          'estateA@test.com',
+          'Test visit',
+          'pending',
+          residentA.id,
+          residentA.id,
+          `ESTATE_A_${uniqueSuffix}`,
+          1
+        ]
+      );
+
+      await dbManager.query(
+        `INSERT INTO visitors (name, phone, email, purpose, status, resident_id, host_id, invite_code, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          'Estate B Visitor',
+          '+254700000002',
+          'estateB@test.com',
+          'Test visit',
+          'pending',
+          residentB.id,
+          residentB.id,
+          `ESTATE_B_${uniqueSuffix}`,
+          2
+        ]
+      );
+
+      await dbManager.query(
+        `INSERT INTO visitors (name, phone, email, purpose, status, resident_id, host_id, invite_code, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          'Mismatched Estate Visitor',
+          '+254700000003',
+          'mismatch@test.com',
+          'Test visit',
+          'pending',
+          residentA.id,
+          residentA.id,
+          `ESTATE_MISMATCH_${uniqueSuffix}`,
+          2
+        ]
+      );
+
+      const response = await request(app)
+        .get('/api/visitors')
+        .set('Cookie', `token=${residentAToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      const visitors = response.body.data.visitors || [];
+      const visitorNames = visitors.map(visitor => visitor.name);
+
+      expect(visitorNames).toContain('Estate A Visitor');
+      expect(visitorNames).not.toContain('Estate B Visitor');
+      expect(visitorNames).not.toContain('Mismatched Estate Visitor');
+    });
   });
 
   describe('POST /api/visitors/:id/check-in - Check-In Flow', () => {
