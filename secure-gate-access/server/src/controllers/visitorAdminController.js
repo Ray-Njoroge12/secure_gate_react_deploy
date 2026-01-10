@@ -6,7 +6,7 @@ const getActiveVisitors = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'guard' && req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
-    
+
     const vRes = await dbManager.query(`
       SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
              invite_code, status, check_in, check_out, created_at
@@ -28,7 +28,7 @@ const getVisitorReport = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
-    
+
     const statsRes = await dbManager.query(`
       SELECT 
         COUNT(*) as total_visitors,
