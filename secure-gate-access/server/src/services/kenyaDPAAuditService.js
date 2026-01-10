@@ -34,13 +34,26 @@ class KenyaDPAAuditService {
         qualifications: process.env.DPO_QUALIFICATIONS || 'Certified Data Protection Professional (CDPP)'
       },
       odpc_registration: {
-        registration_number: process.env.ODPC_REGISTRATION_NUMBER || 'PENDING',
+        registration_number: process.env.ODPC_REGISTRATION_NUMBER || null,
         registration_date: process.env.ODPC_REGISTRATION_DATE || null,
         renewal_date: process.env.ODPC_RENEWAL_DATE || null,
         status: process.env.ODPC_REGISTRATION_STATUS || 'pending',
         controller_category: 'private_sector',
         data_controller_name: 'SecureGate Access Control System',
-        registration_url: 'https://www.odpc.go.ke/data-controller-registration/'
+        registration_url: 'https://www.odpc.go.ke/data-controller-registration/',
+        enabled: true,
+        registration_required: true,
+        validation: {
+          controller_registered: true,
+          processor_registered: true,
+          registration_current: true,
+          annual_renewal: true
+        }
+      },
+      policy_metadata: {
+        last_updated_at: process.env.KENYA_DPA_LAST_UPDATED_AT || null,
+        last_reviewed_at: process.env.KENYA_DPA_LAST_REVIEWED_AT || null,
+        review_frequency_days: Number(process.env.KENYA_DPA_REVIEW_FREQUENCY_DAYS || 90)
       },
       kenya_dpa: {
         enabled: true,
@@ -98,16 +111,6 @@ class KenyaDPAAuditService {
           update_required: true
         }
       },
-      odpc_registration: {
-        enabled: true,
-        registration_required: true,
-        validation: {
-          controller_registered: true,
-          processor_registered: true,
-          registration_current: true,
-          annual_renewal: true
-        }
-      },
       monitoring: {
         enabled: true,
         interval: 30000, // 30 seconds
@@ -125,6 +128,9 @@ class KenyaDPAAuditService {
     this.violations = [];
     this.remediations = [];
     this.isRunning = false;
+    this.storePath = process.env.KENYA_DPA_STORE_PATH
+      ? path.resolve(process.env.KENYA_DPA_STORE_PATH)
+      : path.join(process.cwd(), 'data', 'kenya-dpa-store.json');
     
     this.initializeService();
   }
@@ -134,6 +140,7 @@ class KenyaDPAAuditService {
    */
   async initializeService() {
     try {
+      await this.loadComplianceStore();
       loggingService.logInfo('Kenya DPA audit service initialized', {
         enabled: this.config.kenya_dpa.enabled,
         audit_frequency: this.config.kenya_dpa.audit_frequency,
@@ -148,11 +155,103 @@ class KenyaDPAAuditService {
       
       // Start monitoring
       this.startAuditMonitoring();
+
+      // Start compliance review scheduler
+      this.startComplianceReviewScheduler();
       
     } catch (error) {
       loggingService.logError('Failed to initialize Kenya DPA audit service', error);
       throw error;
     }
+  }
+
+  /**
+   * Load compliance data from persistent store
+   */
+  async loadComplianceStore() {
+    try {
+      await fs.mkdir(path.dirname(this.storePath), { recursive: true });
+      const raw = await fs.readFile(this.storePath, 'utf-8');
+      const stored = JSON.parse(raw);
+
+      if (stored?.dpo) {
+        this.config.dpo = {
+          ...this.config.dpo,
+          ...stored.dpo
+        };
+      }
+
+      if (stored?.odpc_registration) {
+        this.config.odpc_registration = {
+          ...this.config.odpc_registration,
+          ...stored.odpc_registration
+        };
+      }
+
+      if (stored?.policy_metadata) {
+        this.config.policy_metadata = {
+          ...this.config.policy_metadata,
+          ...stored.policy_metadata
+        };
+      }
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        loggingService.logError('Failed to load Kenya DPA compliance store', error);
+      }
+    }
+  }
+
+  /**
+   * Save compliance data to persistent store
+   */
+  async saveComplianceStore() {
+    try {
+      await fs.mkdir(path.dirname(this.storePath), { recursive: true });
+      const payload = {
+        dpo: this.config.dpo,
+        odpc_registration: this.config.odpc_registration,
+        policy_metadata: this.config.policy_metadata
+      };
+      await fs.writeFile(this.storePath, JSON.stringify(payload, null, 2));
+    } catch (error) {
+      loggingService.logError('Failed to persist Kenya DPA compliance store', error);
+    }
+  }
+
+  /**
+   * Start compliance review scheduler
+   */
+  startComplianceReviewScheduler() {
+    const intervalDays = this.config.policy_metadata.review_frequency_days || 90;
+    const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
+
+    setInterval(async () => {
+      try {
+        await this.runComplianceReview('scheduled');
+      } catch (error) {
+        loggingService.logError('Scheduled Kenya DPA compliance review failed', error);
+      }
+    }, intervalMs);
+  }
+
+  /**
+   * Run compliance review and refresh policy metadata
+   */
+  async runComplianceReview(trigger = 'manual') {
+    const now = new Date().toISOString();
+
+    this.config.policy_metadata = {
+      ...this.config.policy_metadata,
+      last_reviewed_at: now,
+      last_updated_at: now
+    };
+
+    await this.saveComplianceStore();
+
+    loggingService.logInfo('Kenya DPA compliance review completed', {
+      trigger,
+      last_reviewed_at: now
+    });
   }
 
   /**
@@ -970,9 +1069,16 @@ class KenyaDPAAuditService {
    * Get Data Protection Officer (DPO) information
    */
   getDPOInformation() {
+    const isConfigured = Boolean(
+      this.config.dpo.name &&
+      this.config.dpo.email &&
+      this.config.dpo.appointed_date
+    );
+
     return {
       ...this.config.dpo,
       is_appointed: this.config.dpo.appointed_date !== null,
+      is_configured: isConfigured,
       compliance_status: this.config.dpo.appointed_date ? 'compliant' : 'non_compliant',
       contact_methods: {
         email: this.config.dpo.email,
@@ -986,12 +1092,24 @@ class KenyaDPAAuditService {
    * Get ODPC registration status
    */
   getODPCRegistration() {
+    const isActive = this.config.odpc_registration.status === 'active';
+    const hasRegistrationNumber = Boolean(this.config.odpc_registration.registration_number);
+    const hasRegistrationData = Boolean(
+      this.config.odpc_registration.registration_number ||
+      this.config.odpc_registration.registration_date
+    );
+    const isConfigured = Boolean(
+      this.config.odpc_registration.status &&
+      (isActive ? hasRegistrationNumber : hasRegistrationData)
+    );
+
     return {
       ...this.config.odpc_registration,
-      is_registered: this.config.odpc_registration.status === 'active',
+      is_registered: isActive,
       is_pending: this.config.odpc_registration.status === 'pending',
       is_expired: this.config.odpc_registration.status === 'expired',
-      compliance_status: this.config.odpc_registration.status === 'active' ? 'compliant' : 'non_compliant',
+      is_configured: isConfigured,
+      compliance_status: isActive ? 'compliant' : 'non_compliant',
       days_until_renewal: this.calculateDaysUntilRenewal()
     };
   }
@@ -1030,6 +1148,13 @@ class KenyaDPAAuditService {
         appointed_date: dpoData.appointed_date || new Date().toISOString()
       };
 
+      this.config.policy_metadata = {
+        ...this.config.policy_metadata,
+        last_updated_at: new Date().toISOString()
+      };
+
+      await this.saveComplianceStore();
+
       // Log update
       loggingService.logInfo('DPO information updated', this.config.dpo);
 
@@ -1049,26 +1174,38 @@ class KenyaDPAAuditService {
    */
   async updateODPCRegistration(registrationData) {
     try {
-      // Validate required fields
-      if (!registrationData.registration_number) {
-        throw new Error('ODPC registration number is required');
+      const status = registrationData.status || 'active';
+
+      if (status === 'active' && !registrationData.registration_number) {
+        throw new Error('ODPC registration number is required for active status');
       }
 
-      // Calculate renewal date (annual renewal)
-      const registrationDate = registrationData.registration_date
-        ? new Date(registrationData.registration_date)
-        : new Date();
-      const renewalDate = new Date(registrationDate);
-      renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+      let registrationDate = null;
+      let renewalDate = null;
+
+      if (status === 'active') {
+        registrationDate = registrationData.registration_date
+          ? new Date(registrationData.registration_date)
+          : new Date();
+        renewalDate = new Date(registrationDate);
+        renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+      }
 
       // Update ODPC registration
       this.config.odpc_registration = {
         ...this.config.odpc_registration,
         ...registrationData,
-        registration_date: registrationDate.toISOString(),
-        renewal_date: renewalDate.toISOString(),
-        status: 'active'
+        registration_date: registrationDate ? registrationDate.toISOString() : null,
+        renewal_date: renewalDate ? renewalDate.toISOString() : null,
+        status
       };
+
+      this.config.policy_metadata = {
+        ...this.config.policy_metadata,
+        last_updated_at: new Date().toISOString()
+      };
+
+      await this.saveComplianceStore();
 
       // Log update
       loggingService.logInfo('ODPC registration updated', this.config.odpc_registration);
@@ -1092,6 +1229,7 @@ class KenyaDPAAuditService {
 
     return {
       overall_status: dpo.is_appointed && odpc.is_registered ? 'compliant' : 'non_compliant',
+      policy_metadata: this.getPolicyMetadata(),
       dpo_compliance: {
         status: dpo.compliance_status,
         appointed: dpo.is_appointed,
@@ -1144,6 +1282,15 @@ class KenyaDPAAuditService {
     }
 
     return recommendations;
+  }
+
+  /**
+   * Get policy metadata
+   */
+  getPolicyMetadata() {
+    return {
+      ...this.config.policy_metadata
+    };
   }
 }
 
