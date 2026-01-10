@@ -378,6 +378,53 @@ describe('Visitor Public Controller', () => {
 
   describe('getEstateInfo', () => {
     it('should return estate information', async () => {
+      mockReq.query = { estateId: '1' };
+      
+      // Mock estate_public_info query
+      mockQuery
+        .mockResolvedValueOnce({
+          rows: [{
+            estate_id: 1,
+            name: 'Secure Gate Estate',
+            address: 'Nairobi, Kenya',
+            timezone: 'Africa/Nairobi',
+            contact: '+254 700 000 000',
+            parking_instructions: 'Visitor parking available at designated areas near the main gate.',
+            check_in_instructions: [
+              'Present your QR code or visit code to the guard',
+              'Valid ID required for entry',
+              'Wait for resident approval if status is pending'
+            ],
+            emergency_contact: '+254 700 000 000',
+            languages: ['en', 'sw'],
+            gate_location: 'North Entrance',
+            gate_hours: '24/7',
+            gate_contact: '+254 700 000 000'
+          }]
+        })
+        // Mock estate_locations query
+        .mockResolvedValueOnce({
+          rows: [{
+            gate_name: 'Main Gate',
+            gate_latitude: -1.123456,
+            gate_longitude: 36.123456,
+            directions_from_highway: 'Take exit 5',
+            directions_from_city: 'Head north on Main Road'
+          }]
+        })
+        // Mock estates query
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 1,
+            name: 'Secure Gate Estate',
+            slug: 'secure-gate-estate',
+            address: 'Nairobi, Kenya',
+            timezone: 'Africa/Nairobi',
+            contact_phone: '+254 700 000 000',
+            emergency_contact: '+254 700 000 000'
+          }]
+        });
+
       await getEstateInfo(mockReq, mockRes);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
@@ -387,10 +434,10 @@ describe('Visitor Public Controller', () => {
           name: 'Secure Gate Estate',
           address: 'Nairobi, Kenya',
           timezone: 'Africa/Nairobi',
+          contact: '+254 700 000 000',
           gates: expect.arrayContaining([
             expect.objectContaining({
-              name: 'Main Gate',
-              location: 'North Entrance'
+              name: 'Main Gate'
             })
           ]),
           parkingInstructions: expect.any(String),
@@ -402,11 +449,16 @@ describe('Visitor Public Controller', () => {
     });
 
     it('should return 500 on unexpected error', async () => {
-      // This endpoint doesn't have external dependencies,
-      // so testing error handling would require internal mocking
-      // The estate info endpoint returns static data, so errors are unlikely
-      // We verify the happy path above, which is sufficient
-      expect(true).toBe(true);
+      mockReq.query = { estateId: '1' };
+      mockQuery.mockRejectedValueOnce(new Error('DB error'));
+
+      await getEstateInfo(mockReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(500);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'Failed to fetch estate information'
+      });
     });
   });
 

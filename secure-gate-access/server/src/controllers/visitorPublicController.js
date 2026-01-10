@@ -57,9 +57,12 @@ export const getVisitorByToken = async (req, res) => {
         v.created_at,
         u.username as resident_name,
         u.email as resident_email,
-        u.phone as resident_phone
+        u.phone as resident_phone,
+        u.estate_id as estate_id
       FROM visitors v
       LEFT JOIN users u ON v.resident_id = u.id
+        OR v.created_by::text = u.id::text
+        OR v.created_by = u.email
       WHERE v.visitor_token = $1
         AND v.token_expires_at > NOW()
       LIMIT 1
@@ -126,6 +129,7 @@ export const getVisitorByToken = async (req, res) => {
       tokenExpiresAt: visitor.token_expires_at,
       createdAt: visitor.created_at,
       qrCode: qrCodeData,
+      estateId: visitor.estate_id,
       resident: {
         name: visitor.resident_name,
         // Only show first part of email for privacy
@@ -179,25 +183,58 @@ export const getEstateInfo = async (req, res) => {
   try {
     const estateSlug = req.query.estate;
     const estateId = req.query.estate_id ? parseInt(req.query.estate_id, 10) : null;
+    const estateIdFromQuery = req.query.estateId ? parseInt(req.query.estateId, 10) : null;
+    
+    // Support both estate_id and estateId query params
+    const finalEstateId = estateId || estateIdFromQuery;
+    
     const estateParams = [];
     let estateFilter = 'e.id = $1';
 
     if (estateSlug) {
       estateFilter = 'e.slug = $1';
       estateParams.push(estateSlug);
-    } else if (Number.isInteger(estateId)) {
-      estateParams.push(estateId);
+    } else if (Number.isInteger(finalEstateId)) {
+      estateParams.push(finalEstateId);
     } else {
       estateParams.push(1);
     }
 
+    // Try to get data from estate_public_info first
+    const publicInfoResult = await dbManager.query(
+      `SELECT
+        estate_id,
+        name,
+        address,
+        timezone,
+        contact,
+        parking_instructions,
+        check_in_instructions,
+        emergency_contact,
+        languages,
+        gate_location,
+        gate_hours,
+        gate_contact
+       FROM estate_public_info
+       WHERE estate_id = $1
+       LIMIT 1`,
+      estateParams
+    );
+
+    // Get estate location info
+    const locationResult = await dbManager.query(
+      `SELECT gate_name, gate_latitude, gate_longitude, directions_from_highway, directions_from_city
+       FROM estate_locations
+       WHERE estate_id = $1
+       LIMIT 1`,
+      estateParams
+    );
+
+    // Get basic estate info as fallback
     const estateResult = await dbManager.query(
       `SELECT e.id, e.name, e.slug, e.address, e.timezone,
-              e.contact_phone, e.emergency_contact,
-              el.gate_name, el.gate_latitude, el.gate_longitude,
-              el.directions_from_highway, el.directions_from_city
+              e.contact_phone, e.emergency_contact
        FROM estates e
-       LEFT JOIN estate_locations el ON el.estate_id = e.id
        WHERE ${estateFilter}
        LIMIT 1`,
       estateParams
@@ -211,34 +248,55 @@ export const getEstateInfo = async (req, res) => {
     }
 
     const estate = estateResult.rows[0];
+    const publicInfo = publicInfoResult.rows[0];
+    const locationInfo = locationResult.rows[0];
+    
+    // Helper function to build gate information
+    const buildGateInfo = () => {
+      // Only include gates array if we have location or public info data
+      if (!locationInfo && !publicInfo?.gate_location && !publicInfo?.gate_hours && !publicInfo?.gate_contact) {
+        return [];
+      }
+
+      const gateLocation = publicInfo?.gate_location
+        || (locationInfo?.gate_latitude && locationInfo?.gate_longitude
+          ? `${locationInfo.gate_latitude}, ${locationInfo.gate_longitude}`
+          : estate.address || 'Estate main entrance');
+
+      return [{
+        name: locationInfo?.gate_name || 'Main Gate',
+        location: gateLocation,
+        hours: publicInfo?.gate_hours || '24/7',
+        contact: publicInfo?.gate_contact || publicInfo?.contact || estate.contact_phone || estate.emergency_contact
+      }];
+    };
+
     const estateInfo = {
       id: estate.id,
-      name: estate.name,
+      name: publicInfo?.name || estate.name,
       slug: estate.slug,
-      address: estate.address,
-      timezone: estate.timezone,
-      gates: [
-        {
-          name: estate.gate_name || 'Main Gate',
-          location: estate.address || 'Estate main entrance',
-          hours: '24/7',
-          contact: estate.contact_phone || estate.emergency_contact
-        }
-      ],
-      parkingInstructions: 'Visitor parking available at designated areas near the main gate.',
-      checkInInstructions: [
-        'Present your QR code or visit code to the guard',
-        'Valid ID required for entry',
-        'Wait for resident approval if status is pending'
-      ],
-      emergencyContact: estate.emergency_contact || estate.contact_phone,
+      address: publicInfo?.address || estate.address,
+      timezone: publicInfo?.timezone || estate.timezone,
+      contact: publicInfo?.contact || estate.contact_phone,
+      gates: buildGateInfo(),
+      parkingInstructions: publicInfo?.parking_instructions || 'Visitor parking available at designated areas near the main gate.',
+      checkInInstructions: Array.isArray(publicInfo?.check_in_instructions)
+        ? publicInfo.check_in_instructions
+        : [
+            'Present your QR code or visit code to the guard',
+            'Valid ID required for entry',
+            'Wait for resident approval if status is pending'
+          ],
+      emergencyContact: publicInfo?.emergency_contact || estate.emergency_contact || estate.contact_phone,
       directions: {
-        fromHighway: estate.directions_from_highway,
-        fromCity: estate.directions_from_city,
-        gateLatitude: estate.gate_latitude,
-        gateLongitude: estate.gate_longitude
+        fromHighway: locationInfo?.directions_from_highway,
+        fromCity: locationInfo?.directions_from_city,
+        gateLatitude: locationInfo?.gate_latitude,
+        gateLongitude: locationInfo?.gate_longitude
       },
-      languages: ['en', 'sw']
+      languages: Array.isArray(publicInfo?.languages)
+        ? publicInfo.languages
+        : ['en', 'sw']
     };
     
     return res.status(200).json({
