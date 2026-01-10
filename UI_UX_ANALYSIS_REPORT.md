@@ -16,6 +16,33 @@ This comprehensive analysis evaluates the UI/UX design of the Secure Gate Access
 
 ---
 
+## Follow-up Update (Accessibility + UX)
+
+**Follow-up Date:** March 2026  
+**Focus:** Authentication and bulk registration UX/accessibility improvements and a11y regression checks.
+
+### ✅ Updates Implemented
+
+1. **Password Rule Alignment**
+   - Login and registration now use the same centralized password validator and error messaging.
+   - Removes inconsistent password guidance between flows.
+
+2. **Phone Validation Consistency**
+   - Bulk invite CSV parsing now uses the shared `phoneValidator` helper instead of a hardcoded regex.
+
+3. **Segmented OTP Entry**
+   - OTP verification uses a 6-digit segmented input with auto-advance, paste handling, and accessible labeling.
+
+4. **Form Labels & ARIA Enhancements**
+   - OTP inputs now have explicit labels, `aria-describedby` guidance, and live-region error feedback.
+
+### ⚠️ A11y Test Re-run Status
+
+- **Command:** `npm run test:a11y` (client)
+- **Result:** Failed — Playwright web server exited early in the current environment. Re-run locally after confirming the dev server configuration.
+
+---
+
 ## 1. Authentication Pages Analysis
 
 ### 1.1 Login Page (`/pages/Login.jsx`)
