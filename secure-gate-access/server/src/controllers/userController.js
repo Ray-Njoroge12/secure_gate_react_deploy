@@ -141,7 +141,8 @@ export async function loginUser(req, res) {
       await sessionSecurityService.initializeSession(req, {
         id: user.id,
         email: user.email,
-        role: user.role
+        role: user.role,
+        estate_id: user.estate_id
       });
     } catch (err) {
       loggingService.logSecurity('warn', 'Session initialization failed during login', {
@@ -150,7 +151,12 @@ export async function loginUser(req, res) {
       });
     }
 
-    const tokens = tokenService.generateTokens({ id: user.id, email: user.email, role: user.role });
+    const tokens = tokenService.generateTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      estate_id: user.estate_id
+    });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
@@ -197,7 +203,12 @@ export async function refreshToken(req, res) {
       return res.status(401).json({ status: 'error', message: 'User not found' });
     }
 
-    const tokens = tokenService.generateTokens({ id: user.id, email: user.email, role: user.role });
+    const tokens = tokenService.generateTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      estate_id: user.estate_id
+    });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,

@@ -352,7 +352,8 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
       id: user.id,
       username: user.username,
       email: user.email,
-      role: user.role
+      role: user.role,
+      estate_id: user.estate_id
     },
     accessToken,
     refreshToken
