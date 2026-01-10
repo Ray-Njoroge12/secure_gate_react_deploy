@@ -238,6 +238,9 @@ class GuardManagementService {
         estate_id
       } = noteData;
 
+      await this.assertGuardEstate(from_guard_id, estate_id);
+      await this.assertShiftEstate(shift_id, estate_id);
+
       const result = await db.query(`
         INSERT INTO guard_handover_notes (
           shift_id, from_guard_id, to_guard_id,
@@ -259,7 +262,7 @@ class GuardManagementService {
   /**
    * Get handover notes for a shift
    */
-  async getHandoverNotes(shiftId) {
+  async getHandoverNotes(shiftId, estateId) {
     try {
       const result = await db.query(`
         SELECT
@@ -270,8 +273,9 @@ class GuardManagementService {
         JOIN users uf ON h.from_guard_id = uf.id
         LEFT JOIN users ut ON h.to_guard_id = ut.id
         WHERE h.shift_id = $1
+        AND h.estate_id = $2
         ORDER BY h.created_at DESC
-      `, [shiftId]);
+      `, [shiftId, estateId]);
 
       return result.rows;
     } catch (error) {
@@ -294,6 +298,11 @@ class GuardManagementService {
         recorded_by,
         estate_id
       } = metricData;
+
+      await this.assertGuardEstate(guard_id, estate_id);
+      if (shift_id) {
+        await this.assertShiftEstate(shift_id, estate_id);
+      }
 
       const result = await db.query(`
         INSERT INTO guard_performance_metrics (
@@ -320,7 +329,7 @@ class GuardManagementService {
   /**
    * Get performance metrics for a guard
    */
-  async getPerformanceMetrics(guardId, estateId, startDate = null, endDate = null) {
+  async getPerformanceMetrics(guardId, startDate = null, endDate = null, estateId) {
     try {
       let query = `
         SELECT
@@ -381,6 +390,11 @@ class GuardManagementService {
         estate_id
       } = equipmentData;
 
+      await this.assertGuardEstate(guard_id, estate_id);
+      if (shift_id) {
+        await this.assertShiftEstate(shift_id, estate_id);
+      }
+
       // Check if equipment is already checked out
       const existingCheckout = await db.query(`
         SELECT id FROM guard_equipment_checkout
@@ -417,7 +431,7 @@ class GuardManagementService {
   /**
    * Return equipment from guard
    */
-  async returnEquipment(checkoutId, guardId, condition = 'good', notes = null) {
+  async returnEquipment(checkoutId, guardId, condition = 'good', notes = null, estateId) {
     try {
       const result = await db.query(`
         UPDATE guard_equipment_checkout
@@ -429,9 +443,10 @@ class GuardManagementService {
           updated_at = NOW()
         WHERE id = $1
         AND guard_id = $2
+        AND estate_id = $5
         AND status = 'checked_out'
         RETURNING *
-      `, [checkoutId, guardId, condition, notes]);
+      `, [checkoutId, guardId, condition, notes, estateId]);
 
       if (result.rows.length === 0) {
         throw new Error('Equipment checkout not found or already returned');
@@ -448,7 +463,7 @@ class GuardManagementService {
   /**
    * Get equipment checkout status
    */
-  async getEquipmentCheckouts(guardId = null, status = null, estateId = null) {
+  async getEquipmentCheckouts(guardId = null, status = null, estateId) {
     try {
       let query = `
         SELECT
@@ -459,17 +474,11 @@ class GuardManagementService {
         FROM guard_equipment_checkout ec
         JOIN users u ON ec.guard_id = u.id
         LEFT JOIN guard_shifts s ON ec.shift_id = s.id
-        WHERE 1=1
+        WHERE ec.estate_id = $1
       `;
 
-      const params = [];
-      let paramIndex = 1;
-
-      if (estateId) {
-        query += ` AND ec.estate_id = $${paramIndex}`;
-        params.push(estateId);
-        paramIndex++;
-      }
+      const params = [estateId];
+      let paramIndex = 2;
 
       if (guardId) {
         query += ` AND ec.guard_id = $${paramIndex}`;
@@ -508,6 +517,8 @@ class GuardManagementService {
         notes,
         estate_id
       } = trainingData;
+
+      await this.assertGuardEstate(guard_id, estate_id);
 
       const result = await db.query(`
         INSERT INTO guard_training (
@@ -582,7 +593,7 @@ class GuardManagementService {
       `, [guardId, estateId]);
 
       // Get recent performance
-      const recentMetrics = await this.getPerformanceMetrics(guardId, estateId);
+      const recentMetrics = await this.getPerformanceMetrics(guardId, null, null, estateId);
 
       // Get checked out equipment
       const checkedOutEquipment = await this.getEquipmentCheckouts(guardId, 'checked_out', estateId);
