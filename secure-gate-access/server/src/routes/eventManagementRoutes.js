@@ -24,7 +24,7 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import eventManagementService from '../services/eventManagementService.js';
 import loggingService from '../services/loggingService.js';
-import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -52,7 +52,7 @@ const upload = multer({
  * @desc Create a new event
  * @access Admin, Resident (host)
  */
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { body, user } = req;
 
@@ -94,7 +94,7 @@ router.post('/', authenticateToken, async (req, res) => {
  * @desc Get all events for user's estate
  * @access Authenticated
  */
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { user, query } = req;
 
@@ -130,9 +130,9 @@ router.get('/', authenticateToken, async (req, res) => {
  * @desc Get event by ID with analytics
  * @access Authenticated
  */
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireEstate, async (req, res) => {
   try {
-    const event = await eventManagementService.getEventById(req.params.id);
+    const event = await eventManagementService.getEventById(req.params.id, req.user.estate_id);
 
     if (!event) {
       return res.status(404).json({
@@ -159,13 +159,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
  * @desc Update event
  * @access Admin, Event Host
  */
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { id } = req.params;
     const { body, user } = req;
 
     // Check if user is host or admin
-    const event = await eventManagementService.getEventById(id);
+    const event = await eventManagementService.getEventById(id, user.estate_id);
     if (!event) {
       return res.status(404).json({
         success: false,
@@ -180,7 +180,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    const updated = await eventManagementService.updateEvent(id, body);
+    const updated = await eventManagementService.updateEvent(id, body, user.estate_id);
 
     res.json({
       success: true,
@@ -201,13 +201,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
  * @desc Delete event
  * @access Admin, Event Host
  */
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { id } = req.params;
     const { user } = req;
 
     // Check permissions
-    const event = await eventManagementService.getEventById(id);
+    const event = await eventManagementService.getEventById(id, user.estate_id);
     if (!event) {
       return res.status(404).json({
         success: false,
@@ -222,7 +222,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    await eventManagementService.deleteEvent(id);
+    await eventManagementService.deleteEvent(id, user.estate_id);
 
     res.json({
       success: true,
@@ -246,7 +246,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
  * @desc Add single visitor to event
  * @access Admin, Event Host
  */
-router.post('/:id/invitations', authenticateToken, async (req, res) => {
+router.post('/:id/invitations', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { id } = req.params;
     const { body } = req;
@@ -258,7 +258,7 @@ router.post('/:id/invitations', authenticateToken, async (req, res) => {
       });
     }
 
-    const invitation = await eventManagementService.addVisitorToEvent(id, body);
+    const invitation = await eventManagementService.addVisitorToEvent(id, body, req.user.estate_id);
 
     res.status(201).json({
       success: true,
@@ -279,7 +279,7 @@ router.post('/:id/invitations', authenticateToken, async (req, res) => {
  * @desc Upload CSV file with bulk invitations OR send JSON array
  * @access Admin, Event Host
  */
-router.post('/:id/bulk-invitations', authenticateToken, upload.single('csv'), async (req, res) => {
+router.post('/:id/bulk-invitations', authenticateToken, requireEstate, upload.single('csv'), async (req, res) => {
   try {
     const { id } = req.params;
     const { user } = req;
@@ -298,7 +298,8 @@ router.post('/:id/bulk-invitations', authenticateToken, upload.single('csv'), as
         const result = await eventManagementService.processBulkInvitations(
           id,
           req.body.invitations,
-          user.id
+          user.id,
+          user.estate_id
         );
 
         return res.json({
@@ -345,7 +346,8 @@ router.post('/:id/bulk-invitations', authenticateToken, upload.single('csv'), as
           const result = await eventManagementService.processBulkInvitations(
             id,
             csvData,
-            user.id
+            user.id,
+            user.estate_id
           );
 
           res.json({
@@ -382,11 +384,11 @@ router.post('/:id/bulk-invitations', authenticateToken, upload.single('csv'), as
  * @desc Send invitations to all pending visitors
  * @access Admin, Event Host
  */
-router.post('/:id/send-invitations', authenticateToken, async (req, res) => {
+router.post('/:id/send-invitations', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await eventManagementService.sendEventInvitations(id);
+    const result = await eventManagementService.sendEventInvitations(id, req.user.estate_id);
 
     res.json({
       success: true,
@@ -411,7 +413,7 @@ router.post('/:id/send-invitations', authenticateToken, async (req, res) => {
  * @desc Get event attendees with filters
  * @access Admin, Event Host
  */
-router.get('/:id/attendees', authenticateToken, async (req, res) => {
+router.get('/:id/attendees', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { id } = req.params;
     const { query } = req;
@@ -421,7 +423,7 @@ router.get('/:id/attendees', authenticateToken, async (req, res) => {
       checked_in: query.checked_in ? query.checked_in === 'true' : undefined
     };
 
-    const attendees = await eventManagementService.getEventAttendees(id, filters);
+    const attendees = await eventManagementService.getEventAttendees(id, filters, req.user.estate_id);
 
     res.json({
       success: true,
@@ -442,11 +444,11 @@ router.get('/:id/attendees', authenticateToken, async (req, res) => {
  * @desc Get event statistics
  * @access Admin, Event Host
  */
-router.get('/:id/statistics', authenticateToken, async (req, res) => {
+router.get('/:id/statistics', authenticateToken, requireEstate, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const stats = await eventManagementService.getEventStatistics(id);
+    const stats = await eventManagementService.getEventStatistics(id, req.user.estate_id);
 
     if (!stats) {
       return res.status(404).json({
@@ -539,7 +541,7 @@ router.post('/rsvp', async (req, res) => {
  * @desc Check in to event with QR code
  * @access Guard
  */
-router.post('/check-in', authenticateToken, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/check-in', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
   try {
     const { event_qr_code } = req.body;
 
@@ -550,7 +552,7 @@ router.post('/check-in', authenticateToken, requireRole(['guard', 'admin']), asy
       });
     }
 
-    const result = await eventManagementService.checkInToEvent(event_qr_code);
+    const result = await eventManagementService.checkInToEvent(event_qr_code, req.user.estate_id);
 
     if (!result.success) {
       return res.status(400).json({
@@ -578,7 +580,7 @@ router.post('/check-in', authenticateToken, requireRole(['guard', 'admin']), asy
  * @desc Check out from event with QR code
  * @access Guard
  */
-router.post('/check-out', authenticateToken, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/check-out', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
   try {
     const { event_qr_code } = req.body;
 
@@ -589,7 +591,7 @@ router.post('/check-out', authenticateToken, requireRole(['guard', 'admin']), as
       });
     }
 
-    const result = await eventManagementService.checkOutFromEvent(event_qr_code);
+    const result = await eventManagementService.checkOutFromEvent(event_qr_code, req.user.estate_id);
 
     if (!result.success) {
       return res.status(400).json({
