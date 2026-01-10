@@ -61,6 +61,8 @@ export const getVisitorByToken = async (req, res) => {
         u.estate_id as estate_id
       FROM visitors v
       LEFT JOIN users u ON v.resident_id = u.id
+        OR v.created_by::text = u.id::text
+        OR v.created_by = u.email
       WHERE v.visitor_token = $1
         AND v.token_expires_at > NOW()
       LIMIT 1
@@ -240,7 +242,7 @@ export const getEstateInfo = async (req, res) => {
         gates: estateLocation || estateInfo.gate_location || estateInfo.gate_hours || estateInfo.gate_contact
           ? [
               {
-                name: estateLocation?.gate_name,
+                name: estateLocation?.gate_name || 'Main Gate',
                 location: gateLocation,
                 hours: estateInfo.gate_hours,
                 contact: estateInfo.gate_contact
