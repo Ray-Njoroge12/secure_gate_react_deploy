@@ -79,7 +79,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
       email: dbUser.email,
       username: dbUser.username,
       role: dbUser.role,
-      estate_id: dbUser.estate_id
+      estate_id: dbUser.estate_id ?? payload.estate_id ?? null
     };
 
     return next();
@@ -150,7 +150,7 @@ export async function attachUserFromToken(req, res, next) {
         email: dbUser.email,
         username: dbUser.username,
         role: dbUser.role,
-        estate_id: dbUser.estate_id
+        estate_id: dbUser.estate_id ?? payload.estate_id ?? null
       };
     }
   } catch (err) {

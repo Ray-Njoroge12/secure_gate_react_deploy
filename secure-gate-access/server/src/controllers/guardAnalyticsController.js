@@ -26,6 +26,10 @@ export const getGuardAnalytics = async (req, res) => {
     const from = fromDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const to = toDate || new Date().toISOString().split('T')[0];
 
+    const estateId = req.user.estate_id ?? null;
+    const estateFilter = estateId !== null ? ' AND estate_id = $3' : '';
+    const estateParams = estateId !== null ? [from, to, estateId] : [from, to];
+
     // 1. Approval time statistics
     const approvalStats = await dbManager.query(`
       SELECT 
@@ -35,7 +39,8 @@ export const getGuardAnalytics = async (req, res) => {
         COUNT(*) FILTER (WHERE approval_requested_at IS NOT NULL) as total_approval_requests
       FROM visitors
       WHERE approval_requested_at BETWEEN $1 AND $2
-    `, [from, to]);
+      ${estateFilter}
+    `, estateParams);
 
     // 2. Visits by hour of day
     const visitsByHour = await dbManager.query(`
@@ -44,9 +49,10 @@ export const getGuardAnalytics = async (req, res) => {
         COUNT(*) as count
       FROM visitors
       WHERE created_at BETWEEN $1 AND $2
+      ${estateFilter}
       GROUP BY hour
       ORDER BY hour
-    `, [from, to]);
+    `, estateParams);
 
     // 3. Incidents by category
     const incidentsByCategory = await dbManager.query(`
@@ -70,10 +76,11 @@ export const getGuardAnalytics = async (req, res) => {
       FROM visitors v
       JOIN users u ON v.resident_id = u.id
       WHERE v.approval_requested_at BETWEEN $1 AND $2
+        ${estateId !== null ? 'AND v.estate_id = $3' : ''}
       GROUP BY u.id, u.full_name, u.email
       ORDER BY approval_count DESC
       LIMIT 10
-    `, [from, to]);
+    `, estateParams);
 
     // 5. Daily visitor trends
     const dailyTrends = await dbManager.query(`
@@ -85,9 +92,10 @@ export const getGuardAnalytics = async (req, res) => {
         COUNT(*) FILTER (WHERE status = 'pending_approval') as pending
       FROM visitors
       WHERE created_at BETWEEN $1 AND $2
+      ${estateFilter}
       GROUP BY DATE(created_at)
       ORDER BY date
-    `, [from, to]);
+    `, estateParams);
 
     // 6. Walk-in vs pre-registered ratio
     const visitorTypes = await dbManager.query(`
@@ -96,7 +104,8 @@ export const getGuardAnalytics = async (req, res) => {
         COUNT(*) FILTER (WHERE created_by NOT LIKE '%@%' OR created_by IS NULL) as pre_registered
       FROM visitors
       WHERE created_at BETWEEN $1 AND $2
-    `, [from, to]);
+      ${estateFilter}
+    `, estateParams);
 
     respond(res, {
       data: {
