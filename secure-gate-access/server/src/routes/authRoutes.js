@@ -289,7 +289,7 @@ router.post('/register', authLimiter, attachRequestAudit(), asyncHandler(async (
 // BUG-001 FIX: Rate limiter re-enabled for production security
 router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req, res) => {
   // Accept either username or email field for login
-  const { username, email, password } = req.body;
+  const { username, email, password, estate_id: estateId } = req.body;
   const userIdentifier = username || email;
   
   if (!userIdentifier || !password) {
@@ -301,7 +301,7 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
   // Authenticate user
   let user;
   try {
-    user = await userService.authenticateUser(userIdentifier, password);
+    user = await userService.authenticateUser(userIdentifier, password, estateId);
   } catch (authError) {
     // Handle authentication errors (invalid credentials, account locked, etc.)
     if (authError.message.includes('Invalid credentials') || 
@@ -535,7 +535,8 @@ router.get('/profile', authenticateToken, attachRequestAudit(), asyncHandler(asy
       id: user.id,
       username: user.username,
       email: user.email,
-      role: user.role
+      role: user.role,
+      estate_id: user.estate_id
     }
   }, 'Profile retrieved successfully');
 }));
@@ -566,7 +567,8 @@ router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
       id: user.id,
       username: user.username,
       email: user.email,
-      role: user.role
+      role: user.role,
+      estate_id: user.estate_id
     }
   }, 'User retrieved successfully');
 }));

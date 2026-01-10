@@ -61,8 +61,11 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
 
     // Look up user in database to get full user info
     const userQuery = await dbManager.query(
-      'SELECT id, email, username, role, estate_id FROM users WHERE LOWER(email) = LOWER($1)',
-      [payload.email]
+      `SELECT id, email, username, role, estate_id
+       FROM users
+       WHERE LOWER(email) = LOWER($1)
+         AND estate_id = COALESCE($2, estate_id)`,
+      [payload.email, payload.estate_id ?? null]
     );
 
     if (userQuery.rowCount === 0) {
@@ -132,14 +135,20 @@ export async function attachUserFromToken(req, res, next) {
     if (userIdentifier.includes('@')) {
       // Email lookup for legacy tokens
       userQuery = await dbManager.query(
-        'SELECT id, email, username, role, estate_id FROM users WHERE LOWER(email) = LOWER($1)',
-        [userIdentifier]
+        `SELECT id, email, username, role, estate_id
+         FROM users
+         WHERE LOWER(email) = LOWER($1)
+           AND estate_id = COALESCE($2, estate_id)`,
+        [userIdentifier, payload.estate_id ?? null]
       );
     } else {
       // ID lookup for standardized tokens (sub claim)
       userQuery = await dbManager.query(
-        'SELECT id, email, username, role, estate_id FROM users WHERE id = $1',
-        [parseInt(userIdentifier)]
+        `SELECT id, email, username, role, estate_id
+         FROM users
+         WHERE id = $1
+           AND estate_id = COALESCE($2, estate_id)`,
+        [parseInt(userIdentifier), payload.estate_id ?? null]
       );
     }
 
