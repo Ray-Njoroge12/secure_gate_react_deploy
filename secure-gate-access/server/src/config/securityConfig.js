@@ -11,26 +11,34 @@ const isTesting = process.env.NODE_ENV === 'test';
 /**
  * Content Security Policy Directives
  */
+const nonceDirective = (_req, res) => (res?.locals?.nonce ? `'nonce-${res.locals.nonce}'` : '\'self\'');
+
+const productionConnectSrc = [
+  '\'self\'',
+  process.env.API_BASE_URL || 'https://secure-gate-api.onrender.com',
+  process.env.WEBSOCKET_URL || 'wss://secure-gate-api.onrender.com',
+  'https://www.google-analytics.com'
+].filter(Boolean);
+
 export const cspDirectives = {
   // Default fallback for any resource type not covered by other directives
   defaultSrc: ['\'self\''],
 
-  // JavaScript sources - stricter in production
-  scriptSrc: isDevelopment
-    ? ['\'self\'', '\'unsafe-inline\'', '\'unsafe-eval\'']
-    : [
-      '\'self\'',
-      // Add specific script hashes for inline scripts in production
-      '\'sha256-xyz123...\'', // Replace with actual script hashes
-      'https://apis.google.com', // If using Google APIs
-    ],
+  // JavaScript sources - use nonce-based scripts in production
+  scriptSrc: [
+    '\'self\'',
+    nonceDirective,
+    ...(isDevelopment ? ['\'unsafe-eval\''] : []),
+    'https://cdn.jsdelivr.net',
+    'https://www.google-analytics.com'
+  ],
 
   // CSS sources - allow inline styles for UI frameworks
   styleSrc: [
     '\'self\'',
-    '\'unsafe-inline\'', // Required for most CSS frameworks
+    nonceDirective,
     'https://fonts.googleapis.com',
-    'https://cdnjs.cloudflare.com' // If using CDN stylesheets
+    'https://cdn.jsdelivr.net'
   ],
 
   // Image sources - comprehensive image loading policy
@@ -60,12 +68,7 @@ export const cspDirectives = {
       'http://localhost:*',
       'https://localhost:*'
     ]
-    : [
-      '\'self\'',
-      process.env.API_BASE_URL || '\'self\'',
-      process.env.WEBSOCKET_URL || '\'self\'',
-      'wss://*.yourdomain.com' // Replace with actual domain
-    ],
+    : productionConnectSrc,
 
   // Media sources
   mediaSrc: ['\'self\'', 'blob:', 'data:'],
