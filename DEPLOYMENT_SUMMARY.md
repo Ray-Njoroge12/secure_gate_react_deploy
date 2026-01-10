@@ -137,7 +137,7 @@ Since frontend is already deployed:
 # - Add environment variables from render-env-vars.txt
 
 # 3. Update Netlify CORS
-# - Update CORS_ORIGIN in Render to match Netlify URL
+# - Update CLIENT_ORIGIN in Render to match Netlify URL
 
 # 4. Verify
 ./verify-deployment.sh
@@ -417,7 +417,7 @@ Use this after deployment:
 |-------|----------|---------|
 | **Build fails** | Check Node version (must be 18) | See DEPLOYMENT_GUIDE.md |
 | **DB connection fails** | Verify DATABASE_URL and TRUST_PROXY=true | Check Render logs |
-| **CORS errors** | Update CORS_ORIGIN to match Netlify URL | Redeploy after change |
+| **CORS errors** | Update CLIENT_ORIGIN to match Netlify URL | Redeploy after change |
 | **Client can't reach API** | Check REACT_APP_API_URL in Netlify | Must be HTTPS |
 | **Slow first request** | Normal on Render free tier (spin-down) | Upgrade to $7/month |
 | **No SMS** | Verify AT_API_KEY and AT_USERNAME | Check server logs |

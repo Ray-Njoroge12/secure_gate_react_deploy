@@ -146,7 +146,7 @@ ENABLE_EXTERNAL_NOTIFICATIONS=true
 EMAIL_VERIFICATION_REQUIRED=false
 
 # CORS (will update after Netlify deployment)
-CORS_ORIGIN=https://your-netlify-site.netlify.app
+CLIENT_ORIGIN=https://your-netlify-site.netlify.app
 ```
 
 3. **Deploy**
@@ -264,11 +264,12 @@ After client deployment, update server CORS:
 
 1. **Go to Render Dashboard**
 2. **Select your `securegate-api` service**
-3. **Update `CORS_ORIGIN` environment variable**:
+3. **Update `CLIENT_ORIGIN` environment variable**:
    ```
-   CORS_ORIGIN=https://your-netlify-site.netlify.app
+   CLIENT_ORIGIN=https://your-netlify-site.netlify.app
    ```
    (or your custom domain)
+   - Optional: `ADDITIONAL_ORIGINS` for extra allowed origins (comma-separated)
 4. **Save and redeploy**
 
 ---
@@ -361,7 +362,8 @@ Target scores:
 | `MAILGUN_DOMAIN` | Config | Yes* | Mailgun domain | `mg.yourdomain.com` |
 | `NODE_ENV` | Config | Yes | Environment mode | `production` |
 | `PORT` | Config | Yes | Server port | `3001` |
-| `CORS_ORIGIN` | Config | Yes | Allowed origin | `https://yoursite.netlify.app` |
+| `CLIENT_ORIGIN` | Config | Yes | Allowed origin | `https://yoursite.netlify.app` |
+| `ADDITIONAL_ORIGINS` | Config | No | Extra allowed origins (comma-separated) | `https://admin.yoursite.app,https://partners.yoursite.app` |
 | `TRUST_PROXY` | Config | Yes | Trust proxy headers | `true` |
 | `ENFORCE_HTTPS` | Config | Yes | Enforce HTTPS | `true` |
 | `SECURE_COOKIES` | Config | Yes | Secure cookie flag | `true` |
@@ -411,7 +413,7 @@ Target scores:
 **Symptom**: Browser console shows CORS errors
 
 **Solution**:
-- Update `CORS_ORIGIN` in Render to match Netlify URL
+- Update `CLIENT_ORIGIN` in Render to match Netlify URL
 - Ensure no trailing slash in URLs
 - Check client is using HTTPS (not HTTP)
 - Redeploy server after CORS change

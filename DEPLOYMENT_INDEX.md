@@ -209,7 +209,7 @@ Since frontend is already deployed:
    • Copy from render-env-vars.txt
    ↓
 4. Update CORS (2 min)
-   • Set CORS_ORIGIN to Netlify URL
+   • Set CLIENT_ORIGIN to Netlify URL
    ↓
 5. Run ./verify-deployment.sh (5 min)
    ↓

@@ -158,30 +158,45 @@ app.use(dataAccessAuditLogging); // Data access audit logging
 // CORS configuration with secure whitelist
 // Uses CLIENT_ORIGIN (primary) + ADDITIONAL_ORIGINS (comma-separated list)
 // Production: Set CLIENT_ORIGIN to your production domain
-const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+const isProduction = process.env.NODE_ENV === 'production';
+const clientOrigin = process.env.CLIENT_ORIGIN || (isProduction ? null : 'http://localhost:3000');
 const additionalOriginsStr = process.env.ADDITIONAL_ORIGINS || '';
 const additionalOrigins = additionalOriginsStr 
   ? additionalOriginsStr.split(',').map(o => o.trim()).filter(Boolean)
   : [];
 
+const isLocalOrigin = (origin) => {
+  if (!origin) return false;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  } catch (error) {
+    return origin.includes('localhost') || origin.includes('127.0.0.1');
+  }
+};
+
+if (isProduction) {
+  if (!clientOrigin) {
+    throw new Error('CLIENT_ORIGIN must be set in production to a non-localhost URL.');
+  }
+  if (isLocalOrigin(clientOrigin)) {
+    throw new Error('CLIENT_ORIGIN must not point to localhost in production.');
+  }
+}
+
 // Build allowed origins list
 const allowedOrigins = [
   clientOrigin,
   ...additionalOrigins,
-  'https://securegate-access.netlify.app',  // Production Netlify frontend
-  'http://localhost:3000',                   // Development
-  'http://localhost:3001',                   // Alternative dev port
-  'http://127.0.0.1:3000',                   // Alternative localhost
-].filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
-
-// Production safety check - warn if only localhost is configured
-if (process.env.NODE_ENV === 'production' && clientOrigin.includes('localhost')) {
-  console.warn('⚠️  WARNING: CORS is configured with localhost in production!');
-  console.warn('⚠️  Set CLIENT_ORIGIN environment variable to your production domain.');
-}
+  ...(!isProduction ? [
+    'http://localhost:3000',                   // Development
+    'http://localhost:3001',                   // Alternative dev port
+    'http://127.0.0.1:3000'                    // Alternative localhost
+  ] : [])
+].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
 
 // Log CORS configuration (hide in production for security)
-if (process.env.NODE_ENV !== 'production') {
+if (!isProduction) {
   console.log('🌐 CORS Origins:', allowedOrigins);
 } else {
   console.log('🌐 CORS configured with', allowedOrigins.length, 'allowed origins');
