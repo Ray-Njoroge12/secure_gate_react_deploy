@@ -83,11 +83,18 @@ class EventManagementService {
   /**
    * Get event by ID with analytics
    */
-  async getEventById(eventId) {
+  async getEventById(eventId, estateId = null) {
     try {
-      const result = await db.query(`
-        SELECT * FROM event_analytics WHERE id = $1
-      `, [eventId]);
+      const result = estateId
+        ? await db.query(`
+          SELECT * FROM event_analytics
+          WHERE id = $1
+          AND estate_location_id = $2
+        `, [eventId, estateId])
+        : await db.query(`
+          SELECT * FROM event_analytics
+          WHERE id = $1
+        `, [eventId]);
 
       if (result.rows.length === 0) {
         return null;
@@ -158,7 +165,7 @@ class EventManagementService {
   /**
    * Update event
    */
-  async updateEvent(eventId, updates) {
+  async updateEvent(eventId, updates, estateId) {
     try {
       const fields = [];
       const values = [];
@@ -190,11 +197,14 @@ class EventManagementService {
 
       paramCount++;
       values.push(eventId);
+      paramCount++;
+      values.push(estateId);
 
       const query = `
         UPDATE events
         SET ${fields.join(', ')}
-        WHERE id = $${paramCount}
+        WHERE id = $${paramCount - 1}
+        AND estate_location_id = $${paramCount}
         RETURNING *
       `;
 
@@ -215,9 +225,9 @@ class EventManagementService {
   /**
    * Delete event
    */
-  async deleteEvent(eventId) {
+  async deleteEvent(eventId, estateId) {
     try {
-      await db.query('DELETE FROM events WHERE id = $1', [eventId]);
+      await db.query('DELETE FROM events WHERE id = $1 AND estate_location_id = $2', [eventId, estateId]);
       loggingService.logInfo('Event deleted', { eventId });
       return true;
     } catch (error) {
@@ -229,8 +239,16 @@ class EventManagementService {
   /**
    * Add single visitor to event
    */
-  async addVisitorToEvent(eventId, visitorData) {
+  async addVisitorToEvent(eventId, visitorData, estateId) {
     try {
+      const eventCheck = await db.query(
+        'SELECT id FROM events WHERE id = $1 AND estate_location_id = $2',
+        [eventId, estateId]
+      );
+      if (eventCheck.rows.length === 0) {
+        throw new Error('Event not found');
+      }
+
       // Generate event-specific QR code
       const eventQRCode = await this.generateEventQRCode(eventId);
 
@@ -269,8 +287,16 @@ class EventManagementService {
   /**
    * Process bulk invitations from CSV data
    */
-  async processBulkInvitations(eventId, csvData, processedBy) {
+  async processBulkInvitations(eventId, csvData, processedBy, estateId) {
     try {
+      const eventCheck = await db.query(
+        'SELECT id FROM events WHERE id = $1 AND estate_location_id = $2',
+        [eventId, estateId]
+      );
+      if (eventCheck.rows.length === 0) {
+        throw new Error('Event not found');
+      }
+
       // Create batch record
       const batch = await db.query(`
         INSERT INTO bulk_invitation_batches (
@@ -299,7 +325,7 @@ class EventManagementService {
             plus_one_count: parseInt(row.plus_one_count || 0),
             plus_one_names: row.plus_one_names || null,
             custom_message: row.custom_message || null
-          });
+          }, estateId);
           successful++;
         } catch (error) {
           failed++;
@@ -345,10 +371,10 @@ class EventManagementService {
   /**
    * Send invitations to all pending event visitors
    */
-  async sendEventInvitations(eventId) {
+  async sendEventInvitations(eventId, estateId) {
     try {
       // Get event details
-      const event = await this.getEventById(eventId);
+      const event = await this.getEventById(eventId, estateId);
       if (!event) {
         throw new Error('Event not found');
       }
@@ -614,18 +640,21 @@ class EventManagementService {
   /**
    * Check in visitor to event
    */
-  async checkInToEvent(eventQRCode) {
+  async checkInToEvent(eventQRCode, estateId) {
     try {
       const result = await db.query(`
-        UPDATE event_visitors
+        UPDATE event_visitors ev
         SET
           checked_in = true,
           check_in_time = NOW(),
           updated_at = NOW()
-        WHERE event_qr_code = $1
-        AND checked_in = false
-        RETURNING *
-      `, [eventQRCode]);
+        FROM events e
+        WHERE ev.event_id = e.id
+        AND ev.event_qr_code = $1
+        AND e.estate_location_id = $2
+        AND ev.checked_in = false
+        RETURNING ev.*
+      `, [eventQRCode, estateId]);
 
       if (result.rows.length === 0) {
         return { success: false, message: 'Invalid QR code or already checked in' };
@@ -655,19 +684,22 @@ class EventManagementService {
   /**
    * Check out visitor from event
    */
-  async checkOutFromEvent(eventQRCode) {
+  async checkOutFromEvent(eventQRCode, estateId) {
     try {
       const result = await db.query(`
-        UPDATE event_visitors
+        UPDATE event_visitors ev
         SET
           checked_out = true,
           check_out_time = NOW(),
           updated_at = NOW()
-        WHERE event_qr_code = $1
-        AND checked_in = true
-        AND checked_out = false
-        RETURNING *
-      `, [eventQRCode]);
+        FROM events e
+        WHERE ev.event_id = e.id
+        AND ev.event_qr_code = $1
+        AND e.estate_location_id = $2
+        AND ev.checked_in = true
+        AND ev.checked_out = false
+        RETURNING ev.*
+      `, [eventQRCode, estateId]);
 
       if (result.rows.length === 0) {
         return { success: false, message: 'Invalid QR code or not checked in' };
@@ -688,7 +720,7 @@ class EventManagementService {
   /**
    * Get event attendees
    */
-  async getEventAttendees(eventId, filters = {}) {
+  async getEventAttendees(eventId, filters = {}, estateId = null) {
     try {
       let query = `
         SELECT
@@ -697,11 +729,13 @@ class EventManagementService {
           v.id_type,
           v.id_number
         FROM event_visitors ev
+        ${estateId ? 'JOIN events e ON ev.event_id = e.id' : ''}
         LEFT JOIN visitors v ON ev.visitor_id = v.id
         WHERE ev.event_id = $1
+        ${estateId ? 'AND e.estate_location_id = $2' : ''}
       `;
-      const params = [eventId];
-      let paramCount = 1;
+      const params = estateId ? [eventId, estateId] : [eventId];
+      let paramCount = estateId ? 2 : 1;
 
       if (filters.rsvp_status) {
         paramCount++;
@@ -764,11 +798,13 @@ class EventManagementService {
   /**
    * Get event statistics
    */
-  async getEventStatistics(eventId) {
+  async getEventStatistics(eventId, estateId) {
     try {
       const result = await db.query(`
-        SELECT * FROM event_analytics WHERE id = $1
-      `, [eventId]);
+        SELECT * FROM event_analytics
+        WHERE id = $1
+        AND estate_location_id = $2
+      `, [eventId, estateId]);
 
       if (result.rows.length === 0) {
         return null;
