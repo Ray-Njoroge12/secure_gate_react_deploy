@@ -10,6 +10,7 @@ import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.j
 import { successResponse } from '../utils/responseFormatter.js';
 import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
 import * as whatsappService from '../services/whatsappService.js';
+import notificationMetricsService from '../services/notificationMetricsService.js';
 
 const router = express.Router();
 
@@ -57,6 +58,9 @@ router.post('/webhook', asyncHandler(async (req, res) => {
       
       if (signature !== expectedSignature) {
         console.warn('[WhatsApp] Invalid signature');
+        notificationMetricsService.recordWebhookSignatureFailure('whatsapp', 'invalid_signature', {
+          headerSignature: signature
+        });
         return res.sendStatus(403);
       }
     }
@@ -232,6 +236,12 @@ async function handleMessageStatus(status) {
     const statusType = status.status; // sent, delivered, read, failed
     
     console.log(`[WhatsApp] Message ${messageId} status: ${statusType}`);
+    notificationMetricsService.recordDeliveryEvent({
+      provider: 'whatsapp',
+      status: statusType,
+      messageId,
+      metadata: { recipientId, errors: status.errors }
+    });
     
     // TODO: Update message status in database
     
