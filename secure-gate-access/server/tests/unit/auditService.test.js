@@ -47,8 +47,8 @@ describe('AuditService', () => {
 
       expect(mockQuery).toHaveBeenCalledTimes(1);
       expect(mockQuery).toHaveBeenCalledWith(
-        'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address) VALUES ($1,$2,$3,$4,$5,$6)',
-        [userId, action, entityType, entityId, JSON.stringify(details), ip]
+        'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address, estate_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [userId, action, entityType, entityId, JSON.stringify(details), ip, null]
       );
     });
 
@@ -82,7 +82,7 @@ describe('AuditService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
-        [userId, action, null, null, null, null]
+        [userId, action, null, null, null, null, null]
       );
     });
 
@@ -95,7 +95,7 @@ describe('AuditService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
-        [userId, action, entityType, null, null, null]
+        [userId, action, entityType, null, null, null, null]
       );
     });
 
@@ -124,7 +124,7 @@ describe('AuditService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
-        [userId, action, null, null, null, null]
+        [userId, action, null, null, null, null, null]
       );
     });
 
@@ -136,7 +136,7 @@ describe('AuditService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
-        [userId, action, null, null, null, null]
+        [userId, action, null, null, null, null, null]
       );
     });
 
@@ -444,7 +444,7 @@ describe('AuditService', () => {
     it('should use correct SQL query format', async () => {
       await auditLog('user-123', 'ACTION', 'type', 'id', { key: 'value' }, '127.0.0.1');
 
-      const expectedQuery = 'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address) VALUES ($1,$2,$3,$4,$5,$6)';
+      const expectedQuery = 'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address, estate_id) VALUES ($1,$2,$3,$4,$5,$6,$7)';
       expect(mockQuery).toHaveBeenCalledWith(expectedQuery, expect.any(Array));
     });
 

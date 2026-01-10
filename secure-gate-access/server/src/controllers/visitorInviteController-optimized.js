@@ -128,6 +128,10 @@ export const createVisitor = async (req, res) => {
     const residentId = resident.id;
     const estateId = resident.estate_id ?? req.user.estate_id ?? 1;
 
+    if (!estateId) {
+      return respondError(res, 400, 'Estate context is required to create visitors');
+    }
+
     // Determine initial status
     const initialStatus = requestedStatus === 'pending_confirmation'
       ? PASS_STATUS.PENDING_CONFIRMATION
@@ -1049,7 +1053,7 @@ export const cancelVisitor = async (req, res) => {
 
     // Get the visitor
     const vRes = await dbManager.query(
-      'SELECT id, resident_id, host_id, name, status FROM visitors WHERE id = $1',
+      'SELECT id, resident_id, host_id, name, status, estate_id FROM visitors WHERE id = $1',
       [id]
     );
     const visitor = vRes.rows[0];
@@ -1075,12 +1079,17 @@ export const cancelVisitor = async (req, res) => {
       if (visitor.host_id !== residentId && visitor.resident_id !== residentId) {
         return respondError(res, 403, 'You can only cancel your own visitors');
       }
+      if (visitor.estate_id !== req.user.estate_id) {
+        return respondError(res, 403, 'Visitor does not belong to your estate');
+      }
     } else if (role !== 'admin') {
       return respondError(res, 403, 'Forbidden');
+    } else if (visitor.estate_id !== req.user.estate_id) {
+      return respondError(res, 403, 'Visitor does not belong to your estate');
     }
 
     // Delete the visitor
-    await dbManager.query('DELETE FROM visitors WHERE id = $1', [id]);
+    await dbManager.query('DELETE FROM visitors WHERE id = $1 AND estate_id = $2', [id, req.user.estate_id]);
 
     await req.audit?.('visitor.cancel', 'visitor', String(id), { 
       outcome: 'success', 
