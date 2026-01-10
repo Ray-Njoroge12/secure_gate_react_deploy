@@ -117,6 +117,30 @@ router.get('/compliance/kenya-dpa', authenticateToken, requireRole(['admin']), a
 });
 
 /**
+ * @route POST /api/admin/compliance/kenya-dpa/review
+ * @desc Trigger Kenya DPA compliance review
+ * @access Admin only
+ */
+router.post('/compliance/kenya-dpa/review', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    await kenyaDPAAuditService.runComplianceReview('manual');
+    const metadata = kenyaDPAAuditService.getPolicyMetadata();
+
+    res.json({
+      success: true,
+      message: 'Compliance review completed',
+      data: metadata
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to run compliance review',
+      error: error.message
+    });
+  }
+});
+
+/**
  * @route PUT /api/admin/compliance/dpo
  * @desc Update Data Protection Officer information
  * @access Admin only
