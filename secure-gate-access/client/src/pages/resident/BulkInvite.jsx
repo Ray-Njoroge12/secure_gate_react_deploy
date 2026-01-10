@@ -4,6 +4,7 @@ import { bulkInvite } from "../../services/visitorService";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
 import { Button, Input, Card, PageHeader } from "../../components/ui";
+import phoneValidator from "../../utils/phoneValidator";
 import { 
   Users, 
   Calendar, 
@@ -43,7 +44,7 @@ const BulkInvite = () => {
   const [csvInfo, setCsvInfo] = useState("");
 
   const emailOk = (v) => /\S+@\S+\.\S+/.test((v || "").trim());
-  const phoneOk = (v) => !v || /^0\d{9}$/.test((v || "").trim());
+  const phoneOk = (v) => !v || !phoneValidator.getErrorMessage((v || "").trim(), "KE");
 
   const parseCsv = useCallback((text) => {
     const MAX = 50;
@@ -97,7 +98,8 @@ const BulkInvite = () => {
       }
       
       if (!phoneOk(phone)) {
-        errors.push({ index: i - startIndex + 1, message: `Invalid phone (expected 0xxxxxxxxx): ${phone}` });
+        const phoneError = phoneValidator.getErrorMessage(phone, "KE") || "Invalid phone number";
+        errors.push({ index: i - startIndex + 1, message: `${phoneError}: ${phone}` });
         continue;
       }
       
