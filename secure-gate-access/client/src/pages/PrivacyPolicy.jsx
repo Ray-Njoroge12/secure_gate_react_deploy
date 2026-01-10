@@ -85,9 +85,9 @@ const PrivacyPolicy = () => {
                 Compliance data is not fully configured.
               </p>
               <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
-                {dpoMissing && <li>Data Protection Officer details are missing.</li>}
-                {odpcMissing && <li>ODPC registration details are missing.</li>}
-                {policyMissing && <li>Policy metadata (Last Updated) is missing.</li>}
+                {dpoMissing && <li>Data Protection Officer status: Not configured.</li>}
+                {odpcMissing && <li>ODPC registration status: Not configured.</li>}
+                {policyMissing && <li>Policy metadata (Last Updated): Not configured.</li>}
               </ul>
               <div className="mt-3 text-sm text-yellow-900">
                 {canAccessAdminSettings ? (
@@ -422,9 +422,11 @@ const PrivacyPolicy = () => {
                     <strong>Phone:</strong> {dpoInfo.phone}<br/>
                     <strong>Office:</strong> {dpoInfo.office}
                   </p>
-                  {!dpoInfo.is_appointed && (
+                  {dpoMissing ? (
+                    <Badge variant="danger" className="text-xs">Not Configured</Badge>
+                  ) : !dpoInfo.is_appointed ? (
                     <Badge variant="warning" className="text-xs">DPO Appointment Pending</Badge>
-                  )}
+                  ) : null}
                 </>
               ) : (
                 <p className="text-sm text-gray-500">Loading...</p>
@@ -435,13 +437,15 @@ const PrivacyPolicy = () => {
               {odpcInfo ? (
                 <>
                   <p className="text-sm text-gray-600">
-                    <strong>Status:</strong> {odpcInfo.status === 'active' ? 'Registered' : 'Pending Registration'}<br/>
-                    <strong>Registration Number:</strong> {odpcInfo.registration_number}<br/>
+                    <strong>Status:</strong> {odpcMissing ? 'Not configured' : odpcInfo.status === 'active' ? 'Registered' : 'Pending Registration'}<br/>
+                    <strong>Registration Number:</strong> {odpcInfo.registration_number || 'Not configured'}<br/>
                     <strong>Data Controller:</strong> {odpcInfo.data_controller_name}
                   </p>
-                  {odpcInfo.status === 'pending' && (
+                  {odpcMissing ? (
+                    <Badge variant="danger" className="text-xs">Not Configured</Badge>
+                  ) : odpcInfo.status === 'pending' ? (
                     <Badge variant="warning" className="text-xs">ODPC Registration Pending</Badge>
-                  )}
+                  ) : null}
                 </>
               ) : (
                 <p className="text-sm text-gray-500">Loading...</p>
@@ -536,4 +540,3 @@ const PrivacyPolicy = () => {
 };
 
 export default PrivacyPolicy;
-
