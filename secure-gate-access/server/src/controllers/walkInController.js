@@ -52,9 +52,10 @@ export const registerWalkIn = async (req, res) => {
       `SELECT id, email, username 
        FROM users 
        WHERE role = 'resident' 
+       AND estate_id = $2
        AND (username ILIKE $1 OR email ILIKE $1)
        LIMIT 1`,
-      [`%${sanitizedResidentName}%`]
+      [`%${sanitizedResidentName}%`, req.user.estate_id]
     );
 
     let residentId = null;
