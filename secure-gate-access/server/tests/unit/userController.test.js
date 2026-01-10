@@ -443,7 +443,8 @@ describe('userController', () => {
           phone: '+1234567890',
           area: 'Building A',
           house: '101',
-          verified: true
+          verified: true,
+          estate_id: 12
         };
 
         mockDbManager.query.mockResolvedValueOnce({ rows: [mockUser], rowCount: 1 });
@@ -478,7 +479,8 @@ describe('userController', () => {
           expect.objectContaining({
             id: 1,
             email: 'user@example.com',
-            role: 'resident'
+            role: 'resident',
+            estate_id: 12
           })
         );
 
@@ -487,7 +489,8 @@ describe('userController', () => {
           expect.objectContaining({
             id: 1,
             email: 'user@example.com',
-            role: 'resident'
+            role: 'resident',
+            estate_id: 12
           })
         );
 
@@ -897,7 +900,8 @@ describe('userController', () => {
             email: 'user@example.com',
             username: 'testuser',
             role: 'resident',
-            verified: true
+            verified: true,
+            estate_id: 55
           }],
           rowCount: 1
         });
@@ -920,7 +924,8 @@ describe('userController', () => {
           expect.objectContaining({
             id: 1,
             email: 'user@example.com',
-            role: 'resident'
+            role: 'resident',
+            estate_id: 55
           })
         );
 
