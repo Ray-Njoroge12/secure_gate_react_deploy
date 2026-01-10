@@ -37,7 +37,7 @@ After setting environment variables:
 Make sure your Render backend has the CORS origin set to your Netlify URL:
 
 ```
-CORS_ORIGIN=https://your-site-name.netlify.app
+CLIENT_ORIGIN=https://your-site-name.netlify.app
 ```
 
 After your Netlify site is deployed, update this to match the actual URL.
@@ -72,7 +72,7 @@ Both Render and Netlify will auto-deploy when you push to the `main` branch.
 
 ### CORS Errors
 If you see CORS errors:
-1. Check `CORS_ORIGIN` on Render matches your Netlify URL exactly
+1. Check `CLIENT_ORIGIN` on Render matches your Netlify URL exactly
 2. Make sure there's no trailing slash
 3. Redeploy the backend after changing CORS settings
 

@@ -35,7 +35,8 @@ SECURE_COOKIES=true
 SECTION 3: CORS CONFIGURATION (CRITICAL!)
 ================================================================================
 
-CORS_ORIGIN=https://securegate-access.netlify.app
+CLIENT_ORIGIN=https://securegate-access.netlify.app
+ADDITIONAL_ORIGINS=https://admin.securegate-access.netlify.app
 
 ================================================================================
 SECTION 4: DATABASE (Get these from Render PostgreSQL dashboard)
@@ -93,7 +94,8 @@ PORT=3001
 TRUST_PROXY=true
 ENFORCE_HTTPS=true
 SECURE_COOKIES=true
-CORS_ORIGIN=https://securegate-access.netlify.app
+CLIENT_ORIGIN=https://securegate-access.netlify.app
+ADDITIONAL_ORIGINS=https://admin.securegate-access.netlify.app
 SITE_NAME=Secure Gate Access
 ENABLE_EXTERNAL_NOTIFICATIONS=true
 EMAIL_VERIFICATION_REQUIRED=false

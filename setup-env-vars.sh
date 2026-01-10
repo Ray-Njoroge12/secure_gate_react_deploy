@@ -170,7 +170,7 @@ ENABLE_EMAIL_NOTIFICATIONS=true
 SITE_NAME=Secure Gate Access
 ENABLE_EXTERNAL_NOTIFICATIONS=true
 EMAIL_VERIFICATION_REQUIRED=false
-CORS_ORIGIN=$NETLIFY_URL
+CLIENT_ORIGIN=$NETLIFY_URL
 
 # ================================================================
 # HOW TO USE:

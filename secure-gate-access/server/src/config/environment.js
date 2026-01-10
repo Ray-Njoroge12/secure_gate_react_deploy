@@ -291,6 +291,24 @@ class EnvironmentConfig {
     if (process.env.OTP_DEBUG_ECHO === 'true') {
       this.validationErrors.push('OTP_DEBUG_ECHO must be disabled in production');
     }
+
+    const clientOrigin = process.env.CLIENT_ORIGIN;
+    if (!clientOrigin) {
+      this.validationErrors.push('CLIENT_ORIGIN is required in production for CORS');
+    } else if (this.isLocalOrigin(clientOrigin)) {
+      this.validationErrors.push('CLIENT_ORIGIN must not point to localhost in production');
+    }
+
+    const additionalOrigins = process.env.ADDITIONAL_ORIGINS;
+    if (additionalOrigins) {
+      const localOrigins = additionalOrigins
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(origin => this.isLocalOrigin(origin));
+      if (localOrigins.length > 0) {
+        this.warnings.push(`ADDITIONAL_ORIGINS includes localhost entries: ${localOrigins.join(', ')}`);
+      }
+    }
   }
 
   /**
@@ -320,6 +338,19 @@ class EnvironmentConfig {
     if (uniqueChars < 16) return true;  // Should have decent character variety
 
     return false;
+  }
+
+  /**
+   * Check if an origin points to localhost
+   */
+  isLocalOrigin(origin) {
+    if (!origin) return false;
+    try {
+      const { hostname } = new URL(origin);
+      return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    } catch (error) {
+      return origin.includes('localhost') || origin.includes('127.0.0.1');
+    }
   }
 
   /**
@@ -393,7 +424,7 @@ class EnvironmentConfig {
     const clientOrigin = process.env.CLIENT_ORIGIN;
     const additionalOrigins = process.env.ADDITIONAL_ORIGINS;
 
-    const origins = ['http://localhost:3000']; // Default for development
+    const origins = this.isProduction ? [] : ['http://localhost:3000']; // Default for development
 
     if (clientOrigin) {
       origins.push(clientOrigin);
