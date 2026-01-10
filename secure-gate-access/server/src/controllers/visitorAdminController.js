@@ -7,13 +7,21 @@ const getActiveVisitors = async (req, res) => {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'guard' && req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
     
+    const estateId = req.user.estate_id ?? null;
+    const params = [PASS_STATUS.ON_PREMISE];
+    let estateClause = '';
+    if (estateId !== null) {
+      estateClause = ' AND estate_id = $2';
+      params.push(estateId);
+    }
+
     const vRes = await dbManager.query(`
       SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
              invite_code, status, check_in, check_out, created_at
       FROM visitors 
-      WHERE status IN ('PENDING', 'VERIFIED', $1)
+      WHERE status IN ('PENDING', 'VERIFIED', $1)${estateClause}
       ORDER BY created_at DESC
-    `, [PASS_STATUS.ON_PREMISE]);
+    `, params);
     
     await req.audit?.('visitor.list.active', 'visitor', null, { outcome: 'success', message: 'Retrieved active visitors', count: vRes.rows.length });
     respond(res, { data: vRes.rows });
@@ -28,6 +36,13 @@ const getVisitorReport = async (req, res) => {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
     
+    const estateId = req.user.estate_id ?? null;
+    const statsParams = [];
+    const statsEstateClause = estateId !== null ? ' WHERE estate_id = $1' : '';
+    if (estateId !== null) {
+      statsParams.push(estateId);
+    }
+
     const statsRes = await dbManager.query(`
       SELECT 
         COUNT(*) as total_visitors,
@@ -35,15 +50,21 @@ const getVisitorReport = async (req, res) => {
         COUNT(CASE WHEN status = 'VERIFIED' THEN 1 END) as verified_visitors,
         COUNT(CASE WHEN status = 'CHECKED_IN' THEN 1 END) as checked_in_visitors,
         COUNT(CASE WHEN status = 'CHECKED_OUT' THEN 1 END) as checked_out_visitors
-      FROM visitors
-    `);
+      FROM visitors${statsEstateClause}
+    `, statsParams);
     
+    const recentParams = [];
+    const recentEstateClause = estateId !== null ? ' WHERE estate_id = $1' : '';
+    if (estateId !== null) {
+      recentParams.push(estateId);
+    }
+
     const recentRes = await dbManager.query(`
       SELECT id, name, phone, email, purpose, status, check_in, check_out, created_at
-      FROM visitors 
+      FROM visitors${recentEstateClause}
       ORDER BY created_at DESC 
       LIMIT 50
-    `);
+    `, recentParams);
     
     const report = {
       statistics: statsRes.rows[0],
@@ -65,9 +86,13 @@ const revokeVisitor = async (req, res) => {
     
     const { visitorId } = req.params;
     
-    const vRes = await dbManager.query('SELECT id, status, name FROM visitors WHERE id = $1', [visitorId]);
+    const vRes = await dbManager.query('SELECT id, status, name, estate_id FROM visitors WHERE id = $1', [visitorId]);
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
     
     await dbManager.query('UPDATE visitors SET status = $1 WHERE id = $2', [PASS_STATUS.REVOKED, visitorId]);
     

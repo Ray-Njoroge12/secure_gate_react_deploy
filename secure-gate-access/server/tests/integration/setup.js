@@ -43,6 +43,10 @@ export async function setupTestDatabase() {
       throw new Error('Database pool not initialized after initializeAsync');
     }
 
+    // Ensure estate_id columns exist for tenant-scoped tests
+    await dbManager.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS estate_id INTEGER');
+    await dbManager.query('ALTER TABLE visitors ADD COLUMN IF NOT EXISTS estate_id INTEGER');
+
     // Clean up test data from tables (in correct order due to foreign keys)
     // Order matters: delete child records before parent records
     // Use DELETE instead of TRUNCATE to avoid locking issues
@@ -136,8 +140,8 @@ export async function createTestUsers() {
   // Insert into both 'password' and 'password_hash' columns for compatibility
 
   const adminResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `admin_${uniqueSuffix}`,
       `admin_${uniqueSuffix}@test.com`,
@@ -146,13 +150,14 @@ export async function createTestUsers() {
       'admin',
       `+2547${timestamp.toString().slice(-8)}`,
       'Admin',
-      true  // Mark as verified for testing
+      true,  // Mark as verified for testing
+      1
     ]
   );
 
   const guardResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `guard_${uniqueSuffix}`,
       `guard_${uniqueSuffix}@test.com`,
@@ -161,13 +166,14 @@ export async function createTestUsers() {
       'guard',
       `+2547${(timestamp + 1).toString().slice(-8)}`,
       'Gate 1',
-      true
+      true,
+      1
     ]
   );
 
   const residentResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `resident_${uniqueSuffix}`,
       `resident_${uniqueSuffix}@test.com`,
@@ -176,7 +182,8 @@ export async function createTestUsers() {
       'resident',
       `+2547${(timestamp + 2).toString().slice(-8)}`,
       'A101',
-      true
+      true,
+      1
     ]
   );
 
@@ -194,10 +201,12 @@ export async function createTestVisitor(hostId, overrides = {}) {
   // Generate unique invite code for parallel test execution
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 11);
+  const hostResult = await dbManager.query('SELECT estate_id FROM users WHERE id = $1', [hostId]);
+  const estateId = overrides.estate_id ?? hostResult.rows[0]?.estate_id ?? null;
 
   const result = await dbManager.query(
-    `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
     [
       overrides.name || 'Test Visitor',
       overrides.phone || '+254700123456',
@@ -205,7 +214,8 @@ export async function createTestVisitor(hostId, overrides = {}) {
       overrides.purpose || 'Testing',
       overrides.status || 'pending',
       hostId,
-      overrides.invite_code || `TEST${timestamp}_${random}`
+      overrides.invite_code || `TEST${timestamp}_${random}`,
+      estateId
     ]
   );
 
@@ -319,8 +329,8 @@ export async function createTestUserInTransaction(client, overrides = {}) {
   );
 
   const result = await client.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       overrides.username || `user_${timestamp}_${random}`,
       overrides.email || `test${timestamp}_${random}@test.com`,
@@ -329,7 +339,8 @@ export async function createTestUserInTransaction(client, overrides = {}) {
       overrides.role || 'resident',
       overrides.phone || `+2547${timestamp.toString().substr(-8)}`,
       overrides.unit || 'Test Unit',
-      true
+      true,
+      overrides.estate_id ?? 1
     ]
   );
 
@@ -343,13 +354,15 @@ export async function createTestUserInTransaction(client, overrides = {}) {
 export async function createTestVisitorInTransaction(client, hostId, overrides = {}) {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substr(2, 9);
+  const hostResult = await client.query('SELECT estate_id FROM users WHERE id = $1', [hostId]);
+  const estateId = overrides.estate_id ?? hostResult.rows[0]?.estate_id ?? null;
 
   const result = await client.query(
     `INSERT INTO visitors (
       name, phone, email, purpose, status, resident_id,
-      invite_code, visitor_token, date_of_visit, created_by
+      invite_code, visitor_token, date_of_visit, created_by, estate_id
     )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
     [
       overrides.name || 'Test Visitor',
       overrides.phone || `+2547${timestamp.toString().substr(-8)}`,
@@ -360,7 +373,8 @@ export async function createTestVisitorInTransaction(client, hostId, overrides =
       overrides.invite_code || `TEST${timestamp}${random}`,
       overrides.visitor_token || `TOKEN${timestamp}${random}`,
       overrides.date_of_visit || new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      overrides.created_by || hostId.toString()
+      overrides.created_by || hostId.toString(),
+      estateId
     ]
   );
 

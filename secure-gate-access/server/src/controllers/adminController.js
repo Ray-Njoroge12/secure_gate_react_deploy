@@ -18,16 +18,38 @@ const getMetrics = async (req, res) => {
     const guardsRes = await dbManager.query('SELECT COUNT(*) FROM users WHERE role = $1', ['guard']);
     const adminsRes = await dbManager.query('SELECT COUNT(*) FROM users WHERE role = $1', ['admin']);
 
+    const estateId = req.user.estate_id ?? null;
+    const estateClause = estateId !== null ? ' WHERE estate_id = $1' : '';
+    const statusClause = estateId !== null ? ' AND estate_id = $2' : '';
+
     // Get visitor metrics
-    const totalVisitorsRes = await dbManager.query('SELECT COUNT(*) FROM visitors');
-    const pendingVisitorsRes = await dbManager.query('SELECT COUNT(*) FROM visitors WHERE status = $1', ['PENDING']);
-    const verifiedVisitorsRes = await dbManager.query('SELECT COUNT(*) FROM visitors WHERE status = $1', ['VERIFIED']);
-    const checkedInVisitorsRes = await dbManager.query('SELECT COUNT(*) FROM visitors WHERE status = $1', [PASS_STATUS.ON_PREMISE]);
-    const checkedOutVisitorsRes = await dbManager.query('SELECT COUNT(*) FROM visitors WHERE status = $1', [PASS_STATUS.CHECKED_OUT]);
+    const totalVisitorsRes = await dbManager.query(
+      `SELECT COUNT(*) FROM visitors${estateClause}`,
+      estateId !== null ? [estateId] : []
+    );
+    const pendingVisitorsRes = await dbManager.query(
+      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
+      estateId !== null ? ['PENDING', estateId] : ['PENDING']
+    );
+    const verifiedVisitorsRes = await dbManager.query(
+      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
+      estateId !== null ? ['VERIFIED', estateId] : ['VERIFIED']
+    );
+    const checkedInVisitorsRes = await dbManager.query(
+      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
+      estateId !== null ? [PASS_STATUS.ON_PREMISE, estateId] : [PASS_STATUS.ON_PREMISE]
+    );
+    const checkedOutVisitorsRes = await dbManager.query(
+      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
+      estateId !== null ? [PASS_STATUS.CHECKED_OUT, estateId] : [PASS_STATUS.CHECKED_OUT]
+    );
 
     // Get recent visitors
     const recentVisitorsRes = await dbManager.query(
-      'SELECT id, name, phone, email, status, created_at FROM visitors ORDER BY created_at DESC LIMIT 10'
+      `SELECT id, name, phone, email, status, created_at
+       FROM visitors${estateClause}
+       ORDER BY created_at DESC LIMIT 10`,
+      estateId !== null ? [estateId] : []
     );
 
     const metrics = {

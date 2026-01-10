@@ -25,7 +25,7 @@ router.post('/generate/:visitorId', authenticateToken, attachRequestAudit(), asy
     
     // Get visitor information
     const visitorResult = await dbManager.query(
-      'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',
+      'SELECT id, name, phone, email, purpose, date_of_visit, status, estate_id FROM visitors WHERE id = $1',
       [visitorId]
     );
     
@@ -34,6 +34,10 @@ router.post('/generate/:visitorId', authenticateToken, attachRequestAudit(), asy
     }
     
     const visitor = visitorResult.rows[0];
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
     
     // Check if user has permission to generate QR code for this visitor
     if (req.user.role === 'resident') {
@@ -127,6 +131,11 @@ router.post('/validate', authenticateToken, attachRequestAudit(), async (req, re
       return respondError(res, 400, validation.error);
     }
     
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && validation.visitor?.estate_id !== null && validation.visitor?.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
+
     await req.audit?.('qr.validate', 'qr_code', validation.qrCode.id, {
       outcome: 'success',
       message: 'QR code validated successfully',

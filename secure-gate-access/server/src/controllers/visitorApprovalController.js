@@ -33,7 +33,7 @@ export const requestApproval = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, email, status, resident_id, vehicle_plate FROM visitors WHERE id = $1',
+      'SELECT id, name, phone, email, status, resident_id, vehicle_plate, estate_id FROM visitors WHERE id = $1',
       [id]
     );
     
@@ -42,6 +42,10 @@ export const requestApproval = async (req, res) => {
     }
 
     const visitor = vRes.rows[0];
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
 
     // Validation: Must have resident assigned
     if (!visitor.resident_id) {
@@ -125,7 +129,7 @@ export const approveVisitor = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, status, resident_id FROM visitors WHERE id = $1',
+      'SELECT id, name, phone, status, resident_id, estate_id FROM visitors WHERE id = $1',
       [id]
     );
     
@@ -134,6 +138,10 @@ export const approveVisitor = async (req, res) => {
     }
 
     const visitor = vRes.rows[0];
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
 
     // Authorization: Only the assigned resident can approve
     if (visitor.resident_id !== residentId) {
@@ -214,7 +222,7 @@ export const rejectVisitor = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, status, resident_id, approval_requested_by FROM visitors WHERE id = $1',
+      'SELECT id, name, phone, status, resident_id, approval_requested_by, estate_id FROM visitors WHERE id = $1',
       [id]
     );
     
@@ -223,6 +231,10 @@ export const rejectVisitor = async (req, res) => {
     }
 
     const visitor = vRes.rows[0];
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
 
     // Authorization: Only the assigned resident can reject
     if (visitor.resident_id !== residentId) {
@@ -294,6 +306,7 @@ export const getPendingApprovals = async (req, res) => {
     }
 
     const residentId = req.user.id;
+    const estateId = req.user.estate_id ?? null;
 
     // Fetch pending approvals for this resident
     const result = await dbManager.query(
@@ -312,8 +325,11 @@ export const getPendingApprovals = async (req, res) => {
        LEFT JOIN users u ON v.approval_requested_by = u.id
        WHERE v.resident_id = $1 
          AND v.status = $2
+         ${estateId !== null ? 'AND v.estate_id = $3' : ''}
        ORDER BY v.approval_requested_at DESC`,
-      [residentId, PASS_STATUS.PENDING_APPROVAL]
+      estateId !== null
+        ? [residentId, PASS_STATUS.PENDING_APPROVAL, estateId]
+        : [residentId, PASS_STATUS.PENDING_APPROVAL]
     );
 
     respond(res, result.rows);
@@ -337,6 +353,7 @@ export const getApprovalHistory = async (req, res) => {
     }
 
     const residentId = req.user.id;
+    const estateId = req.user.estate_id ?? null;
     const { limit = 50, offset = 0 } = req.query;
 
     // Fetch approval history (both approved and rejected)
@@ -359,13 +376,16 @@ export const getApprovalHistory = async (req, res) => {
        FROM visitors v
        WHERE v.resident_id = $1 
          AND v.status IN ($2, $3)
+         ${estateId !== null ? 'AND v.estate_id = $4' : ''}
        ORDER BY 
          CASE 
            WHEN v.status = 'approved' THEN v.approved_at
            WHEN v.status = 'rejected' THEN v.rejected_at
          END DESC
-       LIMIT $4 OFFSET $5`,
-      [residentId, PASS_STATUS.APPROVED, PASS_STATUS.REJECTED, limit, offset]
+       LIMIT $${estateId !== null ? 5 : 4} OFFSET $${estateId !== null ? 6 : 5}`,
+      estateId !== null
+        ? [residentId, PASS_STATUS.APPROVED, PASS_STATUS.REJECTED, estateId, limit, offset]
+        : [residentId, PASS_STATUS.APPROVED, PASS_STATUS.REJECTED, limit, offset]
     );
 
     respond(res, result.rows);

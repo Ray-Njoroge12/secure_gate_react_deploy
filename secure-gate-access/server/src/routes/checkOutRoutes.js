@@ -34,6 +34,10 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
   }
   
   const visitorData = visitor.rows[0];
+  const estateId = req.user.estate_id ?? null;
+  if (estateId !== null && visitorData.estate_id !== null && visitorData.estate_id !== estateId) {
+    throw new AppError('Forbidden', 403);
+  }
   
   // Check if visitor is checked in
   if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
@@ -86,6 +90,10 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
   }
   
   const visitorData = visitor.rows[0];
+  const estateId = req.user.estate_id ?? null;
+  if (estateId !== null && visitorData.estate_id !== null && visitorData.estate_id !== estateId) {
+    throw new AppError('Forbidden', 403);
+  }
   
   // Validate visitor status
   if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
@@ -120,12 +128,21 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  * GET /api/check-out/today
  */
 router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+  const estateId = req.user.estate_id ?? null;
+  const params = [];
+  let whereClause = 'WHERE DATE(v.check_out_time) = CURRENT_DATE';
+  if (estateId !== null) {
+    params.push(estateId);
+    whereClause += ` AND v.estate_id = $${params.length}`;
+  }
+
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
-     WHERE DATE(v.check_out_time) = CURRENT_DATE
-     ORDER BY v.check_out_time DESC`
+     ${whereClause}
+     ORDER BY v.check_out_time DESC`,
+    params
   );
   
   return successResponse(res, result.rows, 'Today\'s check-outs retrieved');
@@ -136,13 +153,21 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHand
  * GET /api/check-out/active
  */
 router.get('/active', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+  const estateId = req.user.estate_id ?? null;
+  const params = [PASS_STATUS.CHECKED_IN];
+  let whereClause = 'WHERE v.status = $1';
+  if (estateId !== null) {
+    params.push(estateId);
+    whereClause += ` AND v.estate_id = $2`;
+  }
+
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
-     WHERE v.status = $1
+     ${whereClause}
      ORDER BY v.check_in_time DESC`,
-    [PASS_STATUS.CHECKED_IN]
+    params
   );
   
   return successResponse(res, result.rows, 'Active visitors retrieved');

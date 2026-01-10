@@ -14,9 +14,13 @@ const checkInVisitor = async (req, res) => {
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     
-    const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);
+    const vRes = await dbManager.query('SELECT id, status, name, phone, email, estate_id FROM visitors WHERE id = $1', [id]);
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
     if (!canCheckInStatus(visitor.status)) return respondError(res, 422, 'Visitor cannot be checked in');
 
     const now = new Date();
@@ -56,9 +60,13 @@ const checkOutVisitor = async (req, res) => {
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     
-    const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE id = $1', [id]);
+    const vRes = await dbManager.query('SELECT id, status, name, phone, email, estate_id FROM visitors WHERE id = $1', [id]);
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
+    const estateId = req.user.estate_id ?? null;
+    if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+      return respondError(res, 403, 'Forbidden');
+    }
     if (!statusEquals(visitor.status, PASS_STATUS.ON_PREMISE)) return respondError(res, 422, 'Visitor not checked in');
 
     const now = new Date();

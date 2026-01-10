@@ -116,7 +116,7 @@ export const createVisitor = async (req, res) => {
 
     // Get resident info
     const residentResult = await dbManager.query(
-      'SELECT id, username, email as resident_email FROM users WHERE email = $1',
+      'SELECT id, username, email as resident_email, estate_id FROM users WHERE email = $1',
       [req.user.email]
     );
 
@@ -126,6 +126,7 @@ export const createVisitor = async (req, res) => {
 
     const resident = residentResult.rows[0];
     const residentId = resident.id;
+    const estateId = resident.estate_id ?? req.user.estate_id ?? null;
 
     // Determine initial status
     const initialStatus = requestedStatus === 'pending_confirmation'
@@ -152,12 +153,12 @@ export const createVisitor = async (req, res) => {
     const result = await dbManager.query(
       `INSERT INTO visitors (
         name, phone, email, purpose, date_of_visit, time_of_visit,
-        vehicle_plate, resident_id, host_id,
+        vehicle_plate, resident_id, host_id, estate_id,
         invite_code, visitor_token, token_expires_at,
         allow_residence_location, unit_pin_encrypted, unit_pin_encrypted_at,
         consent_given, consent_timestamp, consent_type, consent_version,
         status, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
        RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit,
                  invite_code, visitor_token, token_expires_at, status, created_at`,
       [
@@ -170,6 +171,7 @@ export const createVisitor = async (req, res) => {
         vehiclePlate ? sanitizeString(vehiclePlate) : null,
         residentId,
         residentId, // Set host_id to same value as resident_id
+        estateId,
         inviteCode,
         visitorToken,
         expiresAt,
@@ -275,9 +277,11 @@ export const getMyVisitors = async (req, res) => {
     const offset = (page - 1) * limit;
     const status = req.query.status;
 
-    let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, vehicle_plate, status, check_in, check_out, visitor_token, token_expires_at, invite_code, created_at, host_id, resident_id
+    let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, vehicle_plate, status, check_in, check_out, visitor_token, token_expires_at, invite_code, created_at, host_id, resident_id, estate_id
                  FROM visitors`;
     const params = [];
+    const estateId = req.user.estate_id ?? null;
+    let residentId = null;
 
     if (role === 'resident') {
       const residentResult = await dbManager.query(
@@ -289,11 +293,19 @@ export const getMyVisitors = async (req, res) => {
         return respondError(res, 404, 'Resident not found');
       }
 
-      const residentId = residentResult.rows[0].id;
+      residentId = residentResult.rows[0].id;
       query += ` WHERE (host_id = $1 OR resident_id = $1)`;
       params.push(residentId);
+      if (estateId !== null) {
+        query += ` AND estate_id = $2`;
+        params.push(estateId);
+      }
     } else if (role === 'guard' || role === 'admin') {
       query += ` WHERE 1=1`;
+      if (estateId !== null) {
+        query += ` AND estate_id = $1`;
+        params.push(estateId);
+      }
     } else {
       return respondError(res, 403, 'Forbidden');
     }
@@ -313,15 +325,23 @@ export const getMyVisitors = async (req, res) => {
     const countParams = [];
     if (role === 'resident') {
       countQuery += ' WHERE (host_id = $1 OR resident_id = $1)';
-      countParams.push(params[0]);
+      countParams.push(residentId);
+      if (estateId !== null) {
+        countQuery += ` AND estate_id = $${countParams.length + 1}`;
+        countParams.push(estateId);
+      }
       if (status) {
-        countQuery += ' AND status = $2';
+        countQuery += ` AND status = $${countParams.length + 1}`;
         countParams.push(String(status).toLowerCase());
       }
     } else {
       countQuery += ' WHERE 1=1';
+      if (estateId !== null) {
+        countQuery += ` AND estate_id = $${countParams.length + 1}`;
+        countParams.push(estateId);
+      }
       if (status) {
-        countQuery += ` AND status = $1`;
+        countQuery += ` AND status = $${countParams.length + 1}`;
         countParams.push(String(status).toLowerCase());
       }
     }
@@ -364,7 +384,7 @@ export const createPass = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, resident_id, visitor_token
+      `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, resident_id, visitor_token, estate_id
        FROM visitors
        WHERE id = $1
        LIMIT 1`,
@@ -377,6 +397,8 @@ export const createPass = async (req, res) => {
 
     const visitor = vRes.rows[0];
 
+    const estateId = req.user.estate_id ?? null;
+
     // Permission: resident can only generate pass for their own visitors
     if (req.user.role === 'resident') {
       const residentRes = await dbManager.query('SELECT id FROM users WHERE email = $1', [req.user.email]);
@@ -384,7 +406,12 @@ export const createPass = async (req, res) => {
       if (!residentId || visitor.resident_id !== residentId) {
         return respondError(res, 403, 'Forbidden');
       }
+      if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+        return respondError(res, 403, 'Forbidden');
+      }
     } else if (req.user.role !== 'admin' && req.user.role !== 'guard') {
+      return respondError(res, 403, 'Forbidden');
+    } else if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
       return respondError(res, 403, 'Forbidden');
     }
 
@@ -512,7 +539,7 @@ export const bulkInvite = async (req, res) => {
 
     // Get resident info
     const residentResult = await dbManager.query(
-      'SELECT id, email FROM users WHERE email = $1',
+      'SELECT id, email, estate_id FROM users WHERE email = $1',
       [req.user.email]
     );
 
@@ -521,6 +548,7 @@ export const bulkInvite = async (req, res) => {
     }
 
     const resident = residentResult.rows[0];
+    const residentEstateId = resident.estate_id ?? req.user.estate_id ?? null;
 
     // Generate unique invite code
     const inviteCode = generateSecureToken(16);
@@ -575,11 +603,11 @@ export const bulkInvite = async (req, res) => {
           const result = await dbManager.query(
             `INSERT INTO visitors (
               name, phone, email, purpose, date_of_visit, time_of_visit,
-              resident_id, bulk_invite_id,
+              resident_id, bulk_invite_id, estate_id,
               visitor_token, token_expires_at,
               otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
               status, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, $13, NOW())
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, 0, $14, NOW())
              RETURNING id, name, phone, email, purpose, status, visitor_token`,
             [
               name.trim(),
@@ -590,6 +618,7 @@ export const bulkInvite = async (req, res) => {
               time,
               resident.id,
               bulkInvite.id,
+              residentEstateId,
               visitorToken,
               tokenExpiresAt,
               otpHash,
@@ -785,9 +814,11 @@ export const completeInvite = async (req, res) => {
 
         // Resolve resident id from bulk_invites.created_by (email)
         let residentId = null;
+        let residentEstateId = null;
         if (bulkInvite.created_by) {
-          const residentRes = await client.query('SELECT id FROM users WHERE email = $1', [bulkInvite.created_by]);
+          const residentRes = await client.query('SELECT id, estate_id FROM users WHERE email = $1', [bulkInvite.created_by]);
           residentId = residentRes.rows[0]?.id || null;
+          residentEstateId = residentRes.rows[0]?.estate_id ?? null;
         }
 
         const visitorToken = generateVisitorToken();
@@ -799,12 +830,12 @@ export const completeInvite = async (req, res) => {
         const visitorInsert = await client.query(
           `INSERT INTO visitors (
             name, phone, email, purpose, date_of_visit, time_of_visit,
-            resident_id, bulk_invite_id,
+            resident_id, bulk_invite_id, estate_id,
             visitor_token, token_expires_at,
             otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
             consent_given, consent_timestamp, consent_type, consent_version,
             status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, true, $13, $14, $15, $16, NOW())
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, 0, true, $14, $15, $16, $17, NOW())
            RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
           [
             name.trim(),
@@ -815,6 +846,7 @@ export const completeInvite = async (req, res) => {
             bulkInvite.time,
             residentId,
             bulkInvite.id,
+            residentEstateId,
             visitorToken,
             tokenExpiresAt,
             otpHash,
@@ -1039,7 +1071,7 @@ export const cancelVisitor = async (req, res) => {
 
     // Get the visitor
     const vRes = await dbManager.query(
-      'SELECT id, resident_id, host_id, name, status FROM visitors WHERE id = $1',
+      'SELECT id, resident_id, host_id, name, status, estate_id FROM visitors WHERE id = $1',
       [id]
     );
     const visitor = vRes.rows[0];
@@ -1049,6 +1081,8 @@ export const cancelVisitor = async (req, res) => {
     }
 
     // Check permissions
+    const estateId = req.user.estate_id ?? null;
+
     if (role === 'resident') {
       // Residents can only cancel their own visitors
       const residentResult = await dbManager.query(
@@ -1065,7 +1099,12 @@ export const cancelVisitor = async (req, res) => {
       if (visitor.host_id !== residentId && visitor.resident_id !== residentId) {
         return respondError(res, 403, 'You can only cancel your own visitors');
       }
+      if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
+        return respondError(res, 403, 'Forbidden');
+      }
     } else if (role !== 'admin') {
+      return respondError(res, 403, 'Forbidden');
+    } else if (estateId !== null && visitor.estate_id !== null && visitor.estate_id !== estateId) {
       return respondError(res, 403, 'Forbidden');
     }
 

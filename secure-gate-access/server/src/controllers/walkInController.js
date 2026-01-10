@@ -49,7 +49,7 @@ export const registerWalkIn = async (req, res) => {
 
     // Look up resident by name (fuzzy match)
     const residentQuery = await dbManager.query(
-      `SELECT id, email, username 
+      `SELECT id, email, username, estate_id 
        FROM users 
        WHERE role = 'resident' 
        AND (username ILIKE $1 OR email ILIKE $1)
@@ -59,10 +59,12 @@ export const registerWalkIn = async (req, res) => {
 
     let residentId = null;
     let residentEmail = null;
+    let residentEstateId = null;
 
     if (residentQuery.rows.length > 0) {
       residentId = residentQuery.rows[0].id;
       residentEmail = residentQuery.rows[0].email;
+      residentEstateId = residentQuery.rows[0].estate_id ?? null;
     } else {
       // Resident not found - still create visitor but note in audit
       logger.warn(`Walk-in: Resident '${sanitizedResidentName}' not found in system`);
@@ -85,8 +87,9 @@ export const registerWalkIn = async (req, res) => {
         resident_id,
         created_by,
         vehicle_plate,
-        created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        created_at,
+        estate_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, status, vehicle_plate, created_at
     `;
 
@@ -101,7 +104,8 @@ export const registerWalkIn = async (req, res) => {
       residentId,
       req.user.email, // Guard who created it
       sanitizedVehiclePlate,
-      now
+      now,
+      residentEstateId ?? req.user.estate_id ?? null
     ]);
 
     const visitor = result.rows[0];
@@ -150,6 +154,7 @@ export const getTodayWalkIns = async (req, res) => {
 
     const today = new Date().toISOString().split('T')[0];
 
+    const estateId = req.user.estate_id ?? null;
     const query = `
       SELECT 
         v.id,
@@ -166,11 +171,12 @@ export const getTodayWalkIns = async (req, res) => {
       FROM visitors v
       LEFT JOIN users u ON v.resident_id = u.id
       WHERE v.date_of_visit = $1
+      ${estateId !== null ? 'AND v.estate_id = $2' : ''}
       AND v.created_by LIKE '%@%' -- Created by guard (has email format)
       ORDER BY v.created_at DESC
     `;
 
-    const result = await dbManager.query(query, [today]);
+    const result = await dbManager.query(query, estateId !== null ? [today, estateId] : [today]);
 
     respond(res, {
       data: result.rows,

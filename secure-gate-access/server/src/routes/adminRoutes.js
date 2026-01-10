@@ -691,6 +691,12 @@ router.get('/visitors', authenticateToken, requireRole(['admin']), attachRequest
                  WHERE 1=1`;
     const params = [];
     let paramIndex = 1;
+    const estateId = req.user.estate_id ?? null;
+
+    if (estateId !== null) {
+      query += ` AND v.estate_id = $${paramIndex++}`;
+      params.push(estateId);
+    }
     
     if (status) {
       query += ` AND v.status = $${paramIndex++}`;

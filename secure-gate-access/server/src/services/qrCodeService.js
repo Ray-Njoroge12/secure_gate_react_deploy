@@ -208,7 +208,7 @@ class OptimizedQRCodeService {
       // Get visitor data with timeout
       const visitorResult = await withTimeout(
         dbManager.query(
-          'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',
+          'SELECT id, name, phone, email, purpose, date_of_visit, status, estate_id FROM visitors WHERE id = $1',
           [qrRecord.visitor_id]
         ),
         2000
