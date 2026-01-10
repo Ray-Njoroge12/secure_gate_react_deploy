@@ -78,6 +78,7 @@ class TokenService {
         email: payload.email,                     // User email
         role: payload.role,                       // User role for authorization
         username: payload.username,               // User display name
+        estate_id: payload.estate_id,             // Tenant scope
         verified: payload.verified || false,      // Account verification status
         type: 'access'
       },
@@ -96,6 +97,7 @@ class TokenService {
         iat: now,
         jti: refreshJti,                          // JWT ID for refresh token
         email: payload.email,
+        estate_id: payload.estate_id,
         accessJti: jti,                          // Link to access token
         type: 'refresh'
       },
@@ -136,6 +138,7 @@ class TokenService {
         email: payload.email,
         role: payload.role,
         username: payload.username,
+        estate_id: payload.estate_id,
         verified: payload.verified || false,
         type: 'access'
       },
@@ -161,6 +164,7 @@ class TokenService {
         iat: now,
         jti: refreshJti,
         email: payload.email,
+        estate_id: payload.estate_id,
         type: 'refresh'
       },
       this.refreshTokenSecret,
