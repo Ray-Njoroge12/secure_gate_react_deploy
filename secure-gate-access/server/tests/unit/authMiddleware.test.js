@@ -58,7 +58,8 @@ describe('Auth Middleware', () => {
     email: 'test@example.com',
     username: 'testuser',
     role: 'resident',
-    verified: true
+    verified: true,
+    estate_id: 22
   };
 
   const validToken = 'valid-jwt-token';
@@ -180,6 +181,7 @@ describe('Auth Middleware', () => {
           email: testUser.email,
           username: testUser.username,
           role: testUser.role,
+          estate_id: testUser.estate_id
         });
       });
 
@@ -239,6 +241,7 @@ describe('Auth Middleware', () => {
           expect.stringContaining('SELECT'),
           [testUser.email]
         );
+        expect(mockReq.user.estate_id).toBe(testUser.estate_id);
       });
 
       it('should pass error to next when user not found', async () => {
@@ -276,6 +279,7 @@ describe('Auth Middleware', () => {
 
       expect(mockReq.user).toBeDefined();
       expect(mockReq.user.id).toBe(testUser.id);
+      expect(mockReq.user.estate_id).toBe(testUser.estate_id);
       expect(mockNext).toHaveBeenCalled();
     });
 
