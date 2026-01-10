@@ -10,12 +10,7 @@ import { successResponse, createdResponse } from '../utils/responseFormatter.js'
 import { rateLimiters } from '../config/rateLimits.js';
 import db from '../database/db.enhanced.js';
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import dataExportService from '../services/dataExportService.js';
 
 const router = express.Router();
 
@@ -57,58 +52,59 @@ router.get('/data-export',
   rateLimiters.sensitive,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    
-    try {
-      // Gather all user data from various tables
-      const userData = await db.query(
-        'SELECT * FROM users WHERE id = $1',
-        [userId]
-      );
-      
-      const visitorData = await db.query(
-        'SELECT * FROM visitors WHERE created_by = (SELECT email FROM users WHERE id = $1)',
-        [userId]
-      );
-      
-      const accessLogs = await db.query(
-        'SELECT * FROM access_logs WHERE user_id = $1 ORDER BY log_time DESC LIMIT 100',
-        [userId]
-      );
-      
-      const consentRecords = await db.query(
-        'SELECT * FROM consent_records WHERE user_id = $1 ORDER BY timestamp DESC',
-        [userId]
-      );
-      
-      const dsarRequests = await db.query(
-        'SELECT * FROM dsar_requests WHERE user_id = $1 ORDER BY requested_at DESC',
-        [userId]
-      );
-      
-      // Compile into exportable format
-      const exportData = {
-        personal_info: userData.rows[0] || null,
-        visitors_registered: visitorData.rows,
-        access_logs: accessLogs.rows,
-        consent_records: consentRecords.rows,
-        dsar_requests: dsarRequests.rows,
-        exported_at: new Date().toISOString(),
-        export_id: uuidv4(),
-        format_version: '1.0',
-        data_controller: 'Secure Gate Access Control System',
-        legal_basis: 'Data Subject Access Request under Kenya DPA 2019'
-      };
-      
-      // Log the export request
-      await db.query(
-        'INSERT INTO dsar_requests (user_id, request_type, status, request_id, requested_at, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [userId, 'data_export', 'completed', exportData.export_id, new Date(), req.ip, req.get('User-Agent')]
-      );
-      
-      successResponse(res, exportData, 'User data exported successfully');
-    } catch (error) {
-      throw new AppError('Failed to export user data', 500, 'EXPORT_ERROR');
+
+    const format = req.query.format || 'json';
+    const exportRequest = await dataExportService.createExportRequest({
+      userId,
+      format,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    createdResponse(res, exportRequest, 'Data export request queued');
+  })
+);
+
+router.get('/data-export/:requestId/status',
+  authenticateToken,
+  rateLimiters.sensitive,
+  asyncHandler(async (req, res) => {
+    const { requestId } = req.params;
+    const userId = req.user.id;
+
+    const status = await dataExportService.getExportStatus(requestId, userId);
+    if (!status) {
+      throw new AppError('Export request not found', 404, 'EXPORT_NOT_FOUND');
     }
+
+    successResponse(res, status, 'Export status retrieved');
+  })
+);
+
+router.get('/data-export/:requestId/download',
+  authenticateToken,
+  rateLimiters.sensitive,
+  asyncHandler(async (req, res) => {
+    const { requestId } = req.params;
+    const userId = req.user.id;
+
+    const exportFile = await dataExportService.getExportFile(requestId, userId);
+    if (!exportFile) {
+      throw new AppError('Export request not found', 404, 'EXPORT_NOT_FOUND');
+    }
+
+    if (exportFile.status === 'expired') {
+      throw new AppError('Export download link has expired', 410, 'EXPORT_EXPIRED');
+    }
+
+    if (exportFile.status !== 'completed') {
+      throw new AppError('Export not ready for download', 409, 'EXPORT_NOT_READY');
+    }
+
+    await dataExportService.logExportDownload(userId, requestId, exportFile.format);
+
+    const filename = `secure-gate-export-${requestId}.${exportFile.format === 'csv' ? 'csv' : 'json'}`;
+    return res.download(exportFile.filePath, filename);
   })
 );
 
@@ -718,7 +714,6 @@ function convertToXML(data) {
 }
 
 export default router;
-
 
 
 

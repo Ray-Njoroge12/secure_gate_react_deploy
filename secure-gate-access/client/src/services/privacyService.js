@@ -70,7 +70,7 @@ class PrivacyService {
   async requestDataExport(format = 'json') {
     try {
       const response = await http.post('/api/privacy/export', { format });
-      return response.data;
+      return response.data?.data || response.data;
     } catch (error) {
       console.error('Error requesting data export:', error);
       throw error;
@@ -83,7 +83,7 @@ class PrivacyService {
   async getExportStatus(requestId) {
     try {
       const response = await http.get(`/api/privacy/export/${requestId}/status`);
-      return response.data;
+      return response.data?.data || response.data;
     } catch (error) {
       console.error('Error fetching export status:', error);
       throw error;

@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/authMiddleware.js';
 import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.js';
 import { userService } from '../services/userService.js';
 import databaseService from '../services/optimizedDatabaseService.js';
+import dataExportService from '../services/dataExportService.js';
 
 const router = express.Router();
 
@@ -69,19 +70,93 @@ router.get('/my-data', authenticateToken, asyncHandler(async (req, res) => {
  */
 router.get('/export', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const format = req.query.format || 'json';
 
-  // Use comprehensive export from userService
-  const exportData = await userService.exportUserData(userId);
+  const exportRequest = await dataExportService.createExportRequest({
+    userId,
+    format,
+    ipAddress: req.ip,
+    userAgent: req.get('User-Agent')
+  });
 
-  // Set headers for file download
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Content-Disposition', `attachment; filename="personal-data-export-${userId}-${Date.now()}.json"`);
-  
+  res.status(202).json({
+    success: true,
+    message: 'Export request queued',
+    legalBasis: 'Kenya Data Protection Act 2019 - Article 39 (Right to Data Portability)',
+    data: exportRequest
+  });
+}));
+
+/**
+ * @route   POST /api/privacy/export
+ * @desc    Queue a data export request (Data Portability - Kenya DPA Article 39)
+ * @access  Private
+ */
+router.post('/export', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { format = 'json' } = req.body || {};
+
+  const exportRequest = await dataExportService.createExportRequest({
+    userId,
+    format,
+    ipAddress: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+
+  res.status(202).json({
+    success: true,
+    message: 'Export request queued',
+    legalBasis: 'Kenya Data Protection Act 2019 - Article 39 (Right to Data Portability)',
+    data: exportRequest
+  });
+}));
+
+/**
+ * @route   GET /api/privacy/export/:requestId/status
+ * @desc    Get status of a queued export request
+ * @access  Private
+ */
+router.get('/export/:requestId/status', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { requestId } = req.params;
+
+  const status = await dataExportService.getExportStatus(requestId, userId);
+  if (!status) {
+    throw new AppError('Export request not found', 404, 'EXPORT_NOT_FOUND');
+  }
+
   res.json({
     success: true,
-    legalBasis: 'Kenya Data Protection Act 2019 - Article 39 (Right to Data Portability)',
-    ...exportData
+    data: status
   });
+}));
+
+/**
+ * @route   GET /api/privacy/export/:requestId/download
+ * @desc    Download completed export file
+ * @access  Private
+ */
+router.get('/export/:requestId/download', authenticateToken, asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { requestId } = req.params;
+
+  const exportFile = await dataExportService.getExportFile(requestId, userId);
+  if (!exportFile) {
+    throw new AppError('Export request not found', 404, 'EXPORT_NOT_FOUND');
+  }
+
+  if (exportFile.status === 'expired') {
+    throw new AppError('Export download link has expired', 410, 'EXPORT_EXPIRED');
+  }
+
+  if (exportFile.status !== 'completed') {
+    throw new AppError('Export not ready for download', 409, 'EXPORT_NOT_READY');
+  }
+
+  await dataExportService.logExportDownload(userId, requestId, exportFile.format);
+
+  const filename = `secure-gate-export-${requestId}.${exportFile.format === 'csv' ? 'csv' : 'json'}`;
+  return res.download(exportFile.filePath, filename);
 }));
 
 /**
