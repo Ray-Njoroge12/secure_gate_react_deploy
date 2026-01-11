@@ -90,7 +90,7 @@
 - [ ] `REDIS_URL` - Production Redis (if used)
 
 ### 4.2 Third-Party Services
-- [ ] SMS Provider configured (Africa's Talking/Twilio)
+- [ ] SMS Provider configured (Africa's Talking)
 - [ ] Email Provider configured (Mailgun/SMTP)
 - [ ] WhatsApp Business API configured
 - [ ] API keys secured (not in code)

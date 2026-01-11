@@ -1,4 +1,3 @@
-import Twilio from 'twilio';
 import AfricasTalking from 'africastalking';
 import Mailgun from 'mailgun.js';
 import FormData from 'form-data';
@@ -68,34 +67,6 @@ async function checkAfricasTalkingHealth() {
   }
 }
 
-async function checkTwilioHealth() {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  if (!accountSid || !authToken) {
-    return {
-      provider: 'twilio',
-      healthy: false,
-      reason: 'missing_credentials'
-    };
-  }
-
-  try {
-    const client = Twilio(accountSid, authToken);
-    await client.api.accounts(accountSid).fetch();
-    return {
-      provider: 'twilio',
-      healthy: true,
-      accountSid: `***${accountSid.slice(-4)}`
-    };
-  } catch (error) {
-    return {
-      provider: 'twilio',
-      healthy: false,
-      reason: 'api_error',
-      error: error.message
-    };
-  }
-}
 
 async function checkWhatsAppHealth() {
   if (!whatsappService.isConfigured()) {
@@ -133,7 +104,6 @@ async function checkWhatsAppHealth() {
 
 export async function getIntegrationHealth() {
   const checks = await Promise.all([
-    checkTwilioHealth(),
     checkAfricasTalkingHealth(),
     checkMailgunHealth(),
     checkWhatsAppHealth()
