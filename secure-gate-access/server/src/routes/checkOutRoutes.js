@@ -144,7 +144,7 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
  * GET /api/check-out/today
  */
 router.get('/today', authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
-  const estateId = req.user.estate_id ?? 1;
+  const estateId = req.user.estate_id;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
@@ -164,7 +164,7 @@ router.get('/today', authorize(['guard', 'admin']), asyncHandler(async (req, res
  * GET /api/check-out/active
  */
 router.get('/active', authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
-  const estateId = req.user.estate_id ?? 1;
+  const estateId = req.user.estate_id;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
