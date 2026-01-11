@@ -36,15 +36,7 @@ router.post('/qr', authorize(['guard', 'admin']), attachRequestAudit, asyncHandl
   );
   
   if (visitor.rows.length === 0) {
-    const visitorExists = await dbManager.query(
-      'SELECT id FROM visitors WHERE qr_code = $1 OR token = $1',
-      [qrCode]
-    );
-
-    if (visitorExists.rowCount > 0) {
-      throw new AppError('Visitor not found in your estate', 403);
-    }
-
+    // Return generic error to avoid information disclosure about visitors in other estates
     throw new AppError('Invalid QR code', 404);
   }
   
@@ -96,15 +88,7 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
   );
   
   if (visitor.rows.length === 0) {
-    const visitorExists = await dbManager.query(
-      'SELECT id FROM visitors WHERE id = $1',
-      [visitorId]
-    );
-
-    if (visitorExists.rowCount > 0) {
-      throw new AppError('Visitor not found in your estate', 403);
-    }
-
+    // Return generic error to avoid information disclosure about visitors in other estates
     throw new AppError('Visitor not found', 404);
   }
   
