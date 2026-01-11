@@ -19,7 +19,7 @@ import {
 } from './config/sentry.js';
 
 // Import middleware
-import { attachUserFromToken } from './middleware/authMiddleware.js';
+import { attachUserFromToken, authenticateToken, requireEstate, requireRole } from './middleware/authMiddleware.js';
 import auditLogger from './middleware/auditLogger.js';
 import {
   customSecurityHeaders,
@@ -496,7 +496,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api', healthRoutes);
 
 // Guard SSE endpoint (stub for real-time updates)
-app.get('/api/ws/guards', (req, res) => {
+app.get('/api/ws/guards', authenticateToken, requireRole(['guard', 'admin', 'super_admin']), requireEstate, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
