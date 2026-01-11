@@ -15,55 +15,6 @@ const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
 
 /**
- * Check out a visitor by ID
- * POST /api/check-out/:visitorId
- */
-router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
-  const { visitorId } = req.params;
-  const guardId = req.user.id;
-  const { notes } = req.body;
-  
-  // Verify visitor exists
-  const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE id = $1',
-    [visitorId]
-  );
-  
-  if (visitor.rows.length === 0) {
-    throw new AppError('Visitor not found', 404);
-  }
-  
-  const visitorData = visitor.rows[0];
-  
-  // Check if visitor is checked in
-  if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
-    throw new AppError('Visitor is not currently checked in', 400);
-  }
-  
-  // Perform check-out
-  const result = await dbManager.query(
-    `UPDATE visitors 
-     SET status = $1, 
-         check_out_time = NOW(), 
-         check_out_guard_id = $2,
-         check_out_notes = $3,
-         updated_at = NOW()
-     WHERE id = $4
-     RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId]
-  );
-  
-  // Log access
-  await dbManager.query(
-    `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
-     VALUES ($1, 'check_out', $2, $3, NOW())`,
-    [visitorId, guardId, notes]
-  );
-  
-  return successResponse(res, result.rows[0], 'Visitor checked out successfully');
-}));
-
-/**
  * Check out visitor by QR code
  * POST /api/check-out/qr
  */
@@ -113,6 +64,55 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
   );
   
   return successResponse(res, result.rows[0], 'Visitor checked out via QR code');
+}));
+
+/**
+ * Check out a visitor by ID
+ * POST /api/check-out/:visitorId
+ */
+router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+  const { visitorId } = req.params;
+  const guardId = req.user.id;
+  const { notes } = req.body;
+  
+  // Verify visitor exists
+  const visitor = await dbManager.query(
+    'SELECT * FROM visitors WHERE id = $1',
+    [visitorId]
+  );
+  
+  if (visitor.rows.length === 0) {
+    throw new AppError('Visitor not found', 404);
+  }
+  
+  const visitorData = visitor.rows[0];
+  
+  // Check if visitor is checked in
+  if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
+    throw new AppError('Visitor is not currently checked in', 400);
+  }
+  
+  // Perform check-out
+  const result = await dbManager.query(
+    `UPDATE visitors 
+     SET status = $1, 
+         check_out_time = NOW(), 
+         check_out_guard_id = $2,
+         check_out_notes = $3,
+         updated_at = NOW()
+     WHERE id = $4
+     RETURNING *`,
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId]
+  );
+  
+  // Log access
+  await dbManager.query(
+    `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
+     VALUES ($1, 'check_out', $2, $3, NOW())`,
+    [visitorId, guardId, notes]
+  );
+  
+  return successResponse(res, result.rows[0], 'Visitor checked out successfully');
 }));
 
 /**
