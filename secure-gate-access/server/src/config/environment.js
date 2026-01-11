@@ -241,13 +241,6 @@ class EnvironmentConfig {
       }
     }
 
-    // Twilio Configuration
-    const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-    const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-    if (twilioSid && !twilioToken) {
-      this.warnings.push('TWILIO_ACCOUNT_SID set but TWILIO_AUTH_TOKEN missing');
-    }
-
     // Africa's Talking Configuration
     const atUsername = process.env.AT_USERNAME;
     const atApiKey = process.env.AT_API_KEY;
@@ -257,8 +250,8 @@ class EnvironmentConfig {
 
     // SMS Provider validation
     const smsProvider = process.env.SMS_PROVIDER;
-    if (smsProvider && !['twilio', 'africastalking'].includes(smsProvider)) {
-      this.warnings.push(`Invalid SMS_PROVIDER: ${smsProvider}. Must be 'twilio' or 'africastalking'`);
+    if (smsProvider && !['africastalking', 'whatsapp'].includes(smsProvider)) {
+      this.warnings.push(`Invalid SMS_PROVIDER: ${smsProvider}. Must be 'africastalking' or 'whatsapp'`);
     }
 
     // Redis Configuration (for rate limiting)

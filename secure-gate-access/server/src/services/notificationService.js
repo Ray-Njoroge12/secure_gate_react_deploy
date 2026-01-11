@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import Twilio from 'twilio';
 import AfricasTalking from 'africastalking';
 import Mailgun from 'mailgun.js';
 import FormData from 'form-data';
@@ -41,17 +40,6 @@ try {
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT
   });
-}
-
-// Twilio Configuration
-let twilioClient = null;
-if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  try {
-    twilioClient = Twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-  } catch (error) {
-    console.error('Failed to initialize Twilio client:', error.message);
-    notificationMetricsService.recordProviderInitFailure('twilio', error.message);
-  }
 }
 
 // Africa's Talking Configuration
@@ -273,10 +261,10 @@ export async function sendOtpVerificationEmail(visitorData, otpCode, expiryMinut
 
 /**
  * Send visitor invitation SMS/WhatsApp
- * Supports: twilio, africastalking, whatsapp
+ * Supports: africastalking, whatsapp
  */
 export async function sendVisitorInviteSms(visitorData, residentData, inviteLink) {
-  const smsProvider = process.env.SMS_PROVIDER || 'twilio';
+  const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
   
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
@@ -332,27 +320,13 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
   }
   
   // Africa's Talking provider
-  if (smsProvider === 'africastalking') {
-    if (!atClient) {
-      console.warn('Africa\'s Talking SMS not configured');
-      notificationMetricsService.recordNotificationResult({
-        channel: 'sms',
-        provider: 'africas_talking',
-        success: false,
-        error: 'africas_talking_not_configured'
-      });
-      return false;
-    }
-  }
-  
-  // Twilio provider
-  if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
-    console.warn('Twilio SMS not configured');
+  if (smsProvider === 'africastalking' && !atClient) {
+    console.warn('Africa\'s Talking SMS not configured');
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
-      provider: 'twilio',
+      provider: 'africas_talking',
       success: false,
-      error: 'twilio_not_configured'
+      error: 'africas_talking_not_configured'
     });
     return false;
   }
@@ -372,30 +346,21 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
 
     const message = visitorInviteSmsTemplate(smsData);
 
-    if (smsProvider === 'africastalking') {
-      // Africa's Talking implementation
-      const smsOptions = {
-        to: [visitorData.phone],
-        message: message
-      };
-      
-      // Only add 'from' if sender ID is configured
-      if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-        smsOptions.from = process.env.AT_SENDER_ID;
-      }
-      
-      const result = await atClient.send(smsOptions);
-      
-      if (result.SMSMessageData.Recipients[0].status !== 'Success') {
-        throw new Error(result.SMSMessageData.Recipients[0].statusCode);
-      }
-    } else {
-      // Twilio implementation (existing)
-      await twilioClient.messages.create({
-        body: message,
-        from: process.env.TWILIO_FROM,
-        to: visitorData.phone
-      });
+    // Africa's Talking implementation
+    const smsOptions = {
+      to: [visitorData.phone],
+      message: message
+    };
+    
+    // Only add 'from' if sender ID is configured
+    if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
+      smsOptions.from = process.env.AT_SENDER_ID;
+    }
+    
+    const result = await atClient.send(smsOptions);
+    
+    if (result.SMSMessageData.Recipients[0].status !== 'Success') {
+      throw new Error(result.SMSMessageData.Recipients[0].statusCode);
     }
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
@@ -422,10 +387,10 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
 
 /**
  * Send OTP verification SMS/WhatsApp
- * Supports: twilio, africastalking, whatsapp
+ * Supports: africastalking, whatsapp
  */
 export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes = 15) {
-  const smsProvider = process.env.SMS_PROVIDER || 'twilio';
+  const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
   
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
@@ -492,18 +457,6 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
     return false;
   }
   
-  // Twilio provider
-  if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
-    console.warn('Twilio SMS not configured');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: 'twilio',
-      success: false,
-      error: 'twilio_not_configured'
-    });
-    return false;
-  }
-
   try {
     const smsData = {
       siteName: SITE_NAME,
@@ -514,30 +467,21 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
 
     const message = otpVerificationSmsTemplate(smsData);
 
-    if (smsProvider === 'africastalking') {
-      // Africa's Talking implementation
-      const smsOptions = {
-        to: [visitorData.phone],
-        message: message
-      };
-      
-      // Only add 'from' if sender ID is configured
-      if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-        smsOptions.from = process.env.AT_SENDER_ID;
-      }
-      
-      const result = await atClient.send(smsOptions);
-      
-      if (result.SMSMessageData.Recipients[0].status !== 'Success') {
-        throw new Error(result.SMSMessageData.Recipients[0].statusCode);
-      }
-    } else {
-      // Twilio implementation (existing)
-      await twilioClient.messages.create({
-        body: message,
-        from: process.env.TWILIO_FROM,
-        to: visitorData.phone
-      });
+    // Africa's Talking implementation
+    const smsOptions = {
+      to: [visitorData.phone],
+      message: message
+    };
+    
+    // Only add 'from' if sender ID is configured
+    if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
+      smsOptions.from = process.env.AT_SENDER_ID;
+    }
+    
+    const result = await atClient.send(smsOptions);
+    
+    if (result.SMSMessageData.Recipients[0].status !== 'Success') {
+      throw new Error(result.SMSMessageData.Recipients[0].statusCode);
     }
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
@@ -656,6 +600,8 @@ export async function sendInviteEmail(to, subject, html) {
 }
 
 export async function sendSms(to, text) {
+  const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
+
   // Feature flag checks
   if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
     console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
@@ -678,8 +624,6 @@ export async function sendSms(to, text) {
     });
     return false;
   }
-
-  const smsProvider = process.env.SMS_PROVIDER || 'twilio'; // default to twilio for backward compatibility
   
   if (smsProvider === 'africastalking' && !atClient) {
     console.warn('Africa\'s Talking SMS not configured');
@@ -691,43 +635,23 @@ export async function sendSms(to, text) {
     });
     return false;
   }
-  
-  if (smsProvider === 'twilio' && (!twilioClient || !process.env.TWILIO_FROM)) {
-    console.warn('Twilio SMS not configured');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: 'twilio',
-      success: false,
-      error: 'twilio_not_configured'
-    });
-    return false;
-  }
 
   try {
-    if (smsProvider === 'africastalking') {
-      // Africa's Talking implementation
-      const smsOptions = {
-        to: [to],
-        message: text
-      };
-      
-      // Only add 'from' if sender ID is configured
-      if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-        smsOptions.from = process.env.AT_SENDER_ID;
-      }
-      
-      const result = await atClient.send(smsOptions);
-      
-      if (result.SMSMessageData.Recipients[0].status !== 'Success') {
-        throw new Error(result.SMSMessageData.Recipients[0].statusCode);
-      }
-    } else {
-      // Twilio implementation (existing)
-      await twilioClient.messages.create({ 
-        body: text, 
-        from: process.env.TWILIO_FROM, 
-        to 
-      });
+    // Africa's Talking implementation
+    const smsOptions = {
+      to: [to],
+      message: text
+    };
+    
+    // Only add 'from' if sender ID is configured
+    if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
+      smsOptions.from = process.env.AT_SENDER_ID;
+    }
+    
+    const result = await atClient.send(smsOptions);
+    
+    if (result.SMSMessageData.Recipients[0].status !== 'Success') {
+      throw new Error(result.SMSMessageData.Recipients[0].statusCode);
     }
     
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;

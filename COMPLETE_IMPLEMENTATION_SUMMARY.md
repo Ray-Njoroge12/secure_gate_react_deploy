@@ -16,7 +16,7 @@
 - Bull queue with Redis backend
 - Exponential backoff retry (3 attempts: 2s, 4s, 8s)
 - Dead letter queue for permanent failures
-- Multiple provider support (SMTP, Mailgun, Twilio, Africa's Talking)
+- Multiple provider support (SMTP, Mailgun, Africa's Talking)
 
 **API Endpoints:**
 - `GET /api/admin/notification-queue/stats`
@@ -210,7 +210,7 @@
 **Status:** Complete | **Commit:** `e676149`
 
 **Implementation:**
-- Webhook handlers for Mailgun, Twilio, Africa's Talking
+- Webhook handlers for Mailgun, Africa's Talking
 - Delivery status tracking in database
 - Delivery events table for audit trail
 - Statistics views for monitoring
@@ -219,14 +219,12 @@
 - `POST /api/webhooks/mailgun/delivered`
 - `POST /api/webhooks/mailgun/failed`
 - `POST /api/webhooks/mailgun/bounced`
-- `POST /api/webhooks/twilio/status`
 - `POST /api/webhooks/africas-talking/delivery`
 - `POST /api/webhooks/notification/status` (generic with API key)
 - `GET /api/webhooks/delivery/stats` (admin only)
 
 **Security Features:**
 - Mailgun signature verification (HMAC SHA256)
-- Twilio signature verification (HMAC SHA1)
 - API key authentication for generic webhook
 
 **Database Enhancements:**
@@ -533,7 +531,6 @@ PGPOOL_MIN=5
 
 # Webhook Keys (Phase 3.3)
 MAILGUN_WEBHOOK_SIGNING_KEY=your_mailgun_signing_key
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
 NOTIFICATION_WEBHOOK_API_KEY=generate_random_key
 ```
 
@@ -545,10 +542,6 @@ NOTIFICATION_WEBHOOK_API_KEY=generate_random_key
    - Delivered: `https://yourdomain.com/api/webhooks/mailgun/delivered`
    - Failed: `https://yourdomain.com/api/webhooks/mailgun/failed`
    - Bounced: `https://yourdomain.com/api/webhooks/mailgun/bounced`
-
-**Twilio:**
-1. Console → Messaging → Settings
-2. Status callback: `https://yourdomain.com/api/webhooks/twilio/status`
 
 **Africa's Talking:**
 1. Dashboard → SMS

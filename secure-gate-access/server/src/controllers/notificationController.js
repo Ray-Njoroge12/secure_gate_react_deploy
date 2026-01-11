@@ -137,7 +137,7 @@ export async function sendTemplatedNotification(options) {
           recipient.phone,
           rendered.body
         );
-        providerInfo.provider = process.env.SMS_PROVIDER || 'twilio';
+        providerInfo.provider = process.env.SMS_PROVIDER || 'africastalking';
       }
 
       // 7. Update notification log with result
