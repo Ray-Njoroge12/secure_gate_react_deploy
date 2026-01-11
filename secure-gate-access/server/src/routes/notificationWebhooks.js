@@ -12,24 +12,117 @@ import crypto from 'crypto';
 import loggingService from '../services/loggingService.js';
 import db from '../database/db.enhanced.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 /**
  * Verify Mailgun webhook signature
  */
+function safeCompareSignature(expected, provided) {
+  if (!expected || !provided) {
+    return false;
+  }
+  const expectedBuffer = Buffer.from(expected);
+  const providedBuffer = Buffer.from(provided);
+  if (expectedBuffer.length !== providedBuffer.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(expectedBuffer, providedBuffer);
+}
+
+function logWebhookAuthFailure(provider, reason, req, details = {}) {
+  const ip = req?.ip || req?.headers['x-forwarded-for'] || req?.connection?.remoteAddress;
+  loggingService.logSecurity('warn', 'Webhook authentication failed', {
+    provider,
+    reason,
+    ip,
+    ...details
+  });
+  loggingService.logAudit('Webhook authentication failed', 'webhook_auth_failed', null, {
+    provider,
+    reason,
+    ip,
+    ...details
+  });
+  notificationMetricsService.recordWebhookSignatureFailure(provider, reason, {
+    ip,
+    ...details
+  });
+}
+
 function verifyMailgunSignature(timestamp, token, signature) {
   const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
   if (!signingKey) {
     loggingService.logWarn('MAILGUN_WEBHOOK_SIGNING_KEY not configured');
-    return true; // Skip verification if not configured
+    return { valid: false, reason: 'missing_signing_key' };
   }
 
   const hmac = crypto.createHmac('sha256', signingKey);
   hmac.update(timestamp + token);
   const computedSignature = hmac.digest('hex');
 
-  return computedSignature === signature;
+  if (!safeCompareSignature(computedSignature, signature)) {
+    return { valid: false, reason: 'invalid_signature' };
+  }
+
+  return { valid: true };
+}
+
+function normalizeIp(ip) {
+  if (!ip) {
+    return null;
+  }
+  const normalized = ip.split(',')[0].trim();
+  return normalized.startsWith('::ffff:') ? normalized.replace('::ffff:', '') : normalized;
+}
+
+function isIpAllowed(req, allowlist) {
+  if (!allowlist || allowlist.length === 0) {
+    return true;
+  }
+  const requestIp = normalizeIp(req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress);
+  return allowlist.includes(requestIp);
+}
+
+function verifyAfricasTalkingAuth(req) {
+  const allowlist = process.env.AFRICAS_TALKING_WEBHOOK_ALLOWED_IPS
+    ? process.env.AFRICAS_TALKING_WEBHOOK_ALLOWED_IPS.split(',').map(ip => ip.trim()).filter(Boolean)
+    : [];
+
+  if (!isIpAllowed(req, allowlist)) {
+    return { valid: false, reason: 'ip_not_allowed', details: { allowlist } };
+  }
+
+  const signatureHeader = req.headers['x-at-signature']
+    || req.headers['x-africastalking-signature']
+    || req.headers['x-africas-talking-signature'];
+  const signingSecret = process.env.AFRICAS_TALKING_WEBHOOK_SIGNING_SECRET;
+  const apiKeyHeader = req.headers['x-africas-talking-api-key']
+    || req.headers['x-africastalking-api-key']
+    || req.headers['x-at-api-key']
+    || req.headers['x-api-key'];
+  const apiKeys = [
+    process.env.AFRICAS_TALKING_WEBHOOK_API_KEY,
+    process.env.AT_WEBHOOK_API_KEY,
+    process.env.AT_API_KEY,
+    process.env.AFRICASTALKING_API_KEY
+  ].filter(Boolean);
+
+  const payloadString = JSON.stringify(req.body || {});
+  if (signingSecret && signatureHeader) {
+    const computedHex = crypto.createHmac('sha256', signingSecret).update(payloadString).digest('hex');
+    const computedBase64 = crypto.createHmac('sha256', signingSecret).update(payloadString).digest('base64');
+    if (safeCompareSignature(computedHex, signatureHeader) || safeCompareSignature(computedBase64, signatureHeader)) {
+      return { valid: true };
+    }
+  }
+
+  if (apiKeyHeader && apiKeys.some(key => safeCompareSignature(key, apiKeyHeader))) {
+    return { valid: true };
+  }
+
+  return { valid: false, reason: 'missing_or_invalid_auth' };
 }
 
 
@@ -105,10 +198,9 @@ router.post('/mailgun/delivered', async (req, res) => {
     const eventData = req.body['event-data'] || {};
 
     // Verify signature
-    if (!verifyMailgunSignature(timestamp, token, signature)) {
-      notificationMetricsService.recordWebhookSignatureFailure('mailgun', 'invalid_signature', {
-        timestamp
-      });
+    const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
+    if (!mailgunVerification.valid) {
+      logWebhookAuthFailure('mailgun', mailgunVerification.reason, req, { timestamp });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
@@ -151,10 +243,9 @@ router.post('/mailgun/failed', async (req, res) => {
     const eventData = req.body['event-data'] || {};
 
     // Verify signature
-    if (!verifyMailgunSignature(timestamp, token, signature)) {
-      notificationMetricsService.recordWebhookSignatureFailure('mailgun', 'invalid_signature', {
-        timestamp
-      });
+    const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
+    if (!mailgunVerification.valid) {
+      logWebhookAuthFailure('mailgun', mailgunVerification.reason, req, { timestamp });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
@@ -200,10 +291,9 @@ router.post('/mailgun/bounced', async (req, res) => {
     const eventData = req.body['event-data'] || {};
 
     // Verify signature
-    if (!verifyMailgunSignature(timestamp, token, signature)) {
-      notificationMetricsService.recordWebhookSignatureFailure('mailgun', 'invalid_signature', {
-        timestamp
-      });
+    const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
+    if (!mailgunVerification.valid) {
+      logWebhookAuthFailure('mailgun', mailgunVerification.reason, req, { timestamp });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
@@ -248,6 +338,12 @@ router.post('/mailgun/bounced', async (req, res) => {
  */
 router.post('/africas-talking/delivery', async (req, res) => {
   try {
+    const africaVerification = verifyAfricasTalkingAuth(req);
+    if (!africaVerification.valid) {
+      logWebhookAuthFailure('africas_talking', africaVerification.reason, req, africaVerification.details || {});
+      return res.status(401).send('Unauthorized');
+    }
+
     const {
       id,
       status,
@@ -357,7 +453,7 @@ router.post('/notification/status', async (req, res) => {
  * @desc Get delivery statistics
  * @access Admin only (requires authentication)
  */
-router.get('/delivery/stats', async (req, res) => {
+router.get('/delivery/stats', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
   try {
     const { start_date, end_date, provider } = req.query;
 
