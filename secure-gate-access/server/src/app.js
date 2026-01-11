@@ -363,7 +363,7 @@ app.use('/api/webhooks', notificationWebhooks);
 app.use('/api/setup', setupRoutes);
 
 // Legacy routes (for backward compatibility)
-app.use('/api/cache', createCacheRoutes());
+app.use('/api/cache', createCacheRoutes(cacheMiddleware));
 app.use('/api/rate-limits', rateLimitRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/admin', adminRoutes);
@@ -519,23 +519,6 @@ app.get('/api/ws/guards', (req, res) => {
 
 // API Documentation (Swagger)
 app.use('/api-docs', swaggerMiddleware.serve, swaggerMiddleware.setup);
-
-// Cache statistics endpoint
-app.get('/api/cache/stats', (req, res) => {
-  res.json({
-    cache: cacheMiddleware.getStats(),
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Cache health check endpoint
-app.get('/api/cache/health', async (req, res) => {
-  const health = await cacheMiddleware.healthCheck();
-  res.json({
-    ...health,
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Phase 4.3: Sentry error handler (must be after routes, before other error handlers)
 setupExpressErrorHandler(app);
