@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
+import { authenticateToken, authorize, requireEstate } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
@@ -14,22 +14,34 @@ import { PASS_STATUS } from '../constants/statuses.js';
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
 
+router.use(authenticateToken, requireEstate);
+
 /**
  * Check out a visitor by ID
  * POST /api/check-out/:visitorId
  */
-router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { visitorId } = req.params;
   const guardId = req.user.id;
+  const estateId = req.user.estate_id;
   const { notes } = req.body;
   
   // Verify visitor exists
   const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE id = $1',
-    [visitorId]
+    'SELECT * FROM visitors WHERE id = $1 AND estate_id = $2',
+    [visitorId, estateId]
   );
   
   if (visitor.rows.length === 0) {
+    const visitorExists = await dbManager.query(
+      'SELECT id FROM visitors WHERE id = $1',
+      [visitorId]
+    );
+
+    if (visitorExists.rowCount > 0) {
+      throw new AppError('Visitor not found in your estate', 403);
+    }
+
     throw new AppError('Visitor not found', 404);
   }
   
@@ -49,8 +61,9 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
          check_out_notes = $3,
          updated_at = NOW()
      WHERE id = $4
+       AND estate_id = $5
      RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId]
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId, estateId]
   );
   
   // Log access
@@ -67,9 +80,10 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
  * Check out visitor by QR code
  * POST /api/check-out/qr
  */
-router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/qr', authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
+  const estateId = req.user.estate_id;
   
   if (!qrCode) {
     throw new AppError('QR code is required', 400);
@@ -77,11 +91,20 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
   
   // Find visitor by QR code
   const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE qr_code = $1 OR token = $1',
-    [qrCode]
+    'SELECT * FROM visitors WHERE (qr_code = $1 OR token = $1) AND estate_id = $2',
+    [qrCode, estateId]
   );
   
   if (visitor.rows.length === 0) {
+    const visitorExists = await dbManager.query(
+      'SELECT id FROM visitors WHERE qr_code = $1 OR token = $1',
+      [qrCode]
+    );
+
+    if (visitorExists.rowCount > 0) {
+      throw new AppError('Visitor not found in your estate', 403);
+    }
+
     throw new AppError('Invalid QR code', 404);
   }
   
@@ -101,8 +124,9 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
          check_out_notes = $3,
          updated_at = NOW()
      WHERE id = $4
+       AND estate_id = $5
      RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id]
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id, estateId]
   );
   
   // Log access
@@ -119,7 +143,7 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  * Get today's check-outs
  * GET /api/check-out/today
  */
-router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+router.get('/today', authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
   const estateId = req.user.estate_id ?? 1;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
@@ -139,7 +163,7 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHand
  * Get currently checked-in visitors (for check-out)
  * GET /api/check-out/active
  */
-router.get('/active', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+router.get('/active', authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
   const estateId = req.user.estate_id ?? 1;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
