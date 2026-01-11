@@ -1017,7 +1017,7 @@ NOTIFICATION_WEBHOOK_API_KEY=$(openssl rand -hex 32)
 ```
 
 ### **Step 3: Provider Webhooks** (30 minutes)
-Configure delivery webhooks in provider dashboards (Mailgun, Twilio, Africa's Talking)
+Configure delivery webhooks in provider dashboards (Mailgun, Africa's Talking)
 
 ### **Step 4: Start Phase 4.3** (Today!)
 Begin Sentry integration for production monitoring

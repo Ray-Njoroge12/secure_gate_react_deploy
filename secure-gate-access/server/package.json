@@ -107,7 +107,6 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "tough-cookie": "^5.1.2",
-    "twilio": "^5.10.2",
     "uuid": "^13.0.0",
     "web-push": "^3.6.7",
     "winston": "^3.18.3",

@@ -33,7 +33,6 @@
 - [ ] PostgreSQL database ready (Render provides free tier)
 - [ ] Africa's Talking API credentials (SMS provider)
 - [ ] Mailgun API credentials (Email provider)
-- [ ] Twilio API credentials (optional SMS provider)
 - [ ] WhatsApp Business API credentials (optional WhatsApp provider)
 - [ ] Generated JWT secrets (see below)
 
@@ -132,11 +131,6 @@ AT_USERNAME=YOUR_AT_USERNAME
 AT_API_KEY=YOUR_AT_API_KEY
 SMS_PROVIDER=africastalking
 ENABLE_SMS_NOTIFICATIONS=true
-
-# SMS Provider - Twilio (optional)
-TWILIO_ACCOUNT_SID=YOUR_TWILIO_ACCOUNT_SID
-TWILIO_AUTH_TOKEN=YOUR_TWILIO_AUTH_TOKEN
-TWILIO_FROM=YOUR_TWILIO_FROM_NUMBER
 
 # WhatsApp Provider (optional)
 WHATSAPP_PHONE_NUMBER_ID=YOUR_WHATSAPP_PHONE_NUMBER_ID
@@ -312,7 +306,7 @@ curl -H "Authorization: Bearer <ADMIN_JWT>" \
   https://securegate-api.onrender.com/api/system/integrations/health
 ```
 
-Expected response includes health results for Mailgun, Africa's Talking, Twilio, and WhatsApp.
+Expected response includes health results for Mailgun, Africa's Talking, and WhatsApp.
 
 ### 3. Client Accessibility
 
@@ -383,9 +377,6 @@ Target scores:
 | `AT_USERNAME` | Config | Yes* | Africa's Talking username | `securelabstest` |
 | `MAILGUN_API_KEY` | Secret | Yes* | Mailgun API key | `key-xxx` |
 | `MAILGUN_DOMAIN` | Config | Yes* | Mailgun domain | `mg.yourdomain.com` |
-| `TWILIO_ACCOUNT_SID` | Secret | No | Twilio account SID | `ACxxxxxxxx` |
-| `TWILIO_AUTH_TOKEN` | Secret | No | Twilio auth token | `xxxxxxxx` |
-| `TWILIO_FROM` | Config | No | Twilio sender number | `+15551234567` |
 | `WHATSAPP_PHONE_NUMBER_ID` | Secret | No | WhatsApp phone number ID | `123456789` |
 | `WHATSAPP_ACCESS_TOKEN` | Secret | No | WhatsApp access token | `EAAG...` |
 | `WHATSAPP_BUSINESS_ACCOUNT_ID` | Secret | No | WhatsApp business account ID | `123456789` |
@@ -394,7 +385,7 @@ Target scores:
 | `ENABLE_EMAIL_NOTIFICATIONS` | Config | Yes* | Enable email notifications | `true` |
 | `ENABLE_SMS_NOTIFICATIONS` | Config | Yes* | Enable SMS/WhatsApp notifications | `true` |
 | `EMAIL_PROVIDER` | Config | Yes* | Email provider (`smtp` or `mailgun`) | `mailgun` |
-| `SMS_PROVIDER` | Config | Yes* | SMS provider (`twilio`, `africastalking`, `whatsapp`) | `africastalking` |
+| `SMS_PROVIDER` | Config | Yes* | SMS provider (`africastalking`, `whatsapp`) | `africastalking` |
 | `NODE_ENV` | Config | Yes | Environment mode | `production` |
 | `PORT` | Config | Yes | Server port | `3001` |
 | `CLIENT_ORIGIN` | Config | Yes | Allowed origin | `https://yoursite.netlify.app` |

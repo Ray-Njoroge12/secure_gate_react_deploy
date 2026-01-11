@@ -215,8 +215,6 @@ class VaultService {
       
       return {
         sendgridKey: secret.sendgrid_key,
-        twilioSid: secret.twilio_sid,
-        twilioToken: secret.twilio_token,
         redisUrl: secret.redis_url
       };
       

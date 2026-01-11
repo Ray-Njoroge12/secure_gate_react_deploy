@@ -82,7 +82,7 @@ BEGIN
 
   IF notifications_exists THEN
     COMMENT ON COLUMN notifications.delivery_status IS 'Delivery status: sent, delivered, failed, bounced, undelivered';
-    COMMENT ON COLUMN notifications.delivery_provider IS 'Provider: mailgun, twilio, africas_talking, smtp';
+    COMMENT ON COLUMN notifications.delivery_provider IS 'Provider: mailgun, africas_talking, smtp';
     COMMENT ON COLUMN notifications.message_id IS 'Provider message ID for webhook matching';
     COMMENT ON COLUMN notifications.delivery_metadata IS 'Additional delivery data from provider webhooks';
   END IF;
@@ -227,7 +227,7 @@ BEGIN
     END IF;
     RAISE NOTICE '✅ Notification delivery tracking migration complete!';
     RAISE NOTICE '📊 Views created: notification_delivery_stats, provider_performance, failed_delivery_notifications';
-    RAISE NOTICE '🔔 Webhook endpoints ready for: Mailgun, Twilio, Africa''s Talking';
+    RAISE NOTICE '🔔 Webhook endpoints ready for: Mailgun, Africa''s Talking';
 END $$;
 
 -- Show delivery statistics

@@ -1515,7 +1515,7 @@ git revert <commit-hash>
 git push origin main
 
 # Or rollback deployment
-# (depends on hosting platform - Netlify, Vercel, etc.)
+# (depends on hosting platform - Netlify, etc.)
 ```
 
 ### Partial Rollback
