@@ -28,10 +28,9 @@ process.env = {
   EMAIL_PROVIDER: 'smtp',
   SITE_NAME: 'Test Site',
   SITE_URL: 'http://localhost:3000',
-  SMS_PROVIDER: 'twilio',
-  TWILIO_ACCOUNT_SID: 'test_sid',
-  TWILIO_AUTH_TOKEN: 'test_token',
-  TWILIO_FROM: '+1234567890'
+  SMS_PROVIDER: 'africastalking',
+  AT_USERNAME: 'test_at',
+  AT_API_KEY: 'test_key'
 };
 
 // Mock nodemailer
@@ -43,16 +42,6 @@ jest.unstable_mockModule('nodemailer', () => ({
   default: {
     createTransport: mockCreateTransport
   }
-}));
-
-// Mock Twilio
-const mockTwilioCreate = jest.fn();
-jest.unstable_mockModule('twilio', () => ({
-  default: jest.fn(() => ({
-    messages: {
-      create: mockTwilioCreate
-    }
-  }))
 }));
 
 // Mock Africa's Talking
@@ -124,7 +113,6 @@ describe('NotificationService', () => {
 
     // Default mock implementations
     mockSendMail.mockResolvedValue({ messageId: 'test-123' });
-    mockTwilioCreate.mockResolvedValue({ sid: 'SM123' });
     mockWhatsappIsConfigured.mockReturnValue(true);
     mockWhatsappSendVisitorInvitation.mockResolvedValue({ success: true });
     mockWhatsappSendOtp.mockResolvedValue({ success: true });
@@ -299,7 +287,7 @@ describe('NotificationService', () => {
   });
   
   describe('sendVisitorInviteSms', () => {
-    it('should send SMS via Twilio successfully', async () => {
+    it('should send SMS via Africa\'s Talking successfully', async () => {
       const visitorData = createVisitorData();
       const residentData = createResidentData();
       const inviteLink = 'http://test.com/invite';
@@ -371,8 +359,12 @@ describe('NotificationService', () => {
       expect(result).toBe(false);
     });
     
-    it('should handle Twilio failure gracefully', async () => {
-      mockTwilioCreate.mockRejectedValueOnce(new Error('Twilio error'));
+    it('should handle Africa\'s Talking failure gracefully', async () => {
+      mockAtSend.mockResolvedValueOnce({
+        SMSMessageData: {
+          Recipients: [{ status: 'Failed', statusCode: '404' }]
+        }
+      });
       jest.resetModules();
       notificationService = await import('../../src/services/notificationService.js');
       
@@ -385,8 +377,8 @@ describe('NotificationService', () => {
       expect(result).toBe(false);
     });
     
-    it('should return false when Twilio is not configured', async () => {
-      delete process.env.TWILIO_FROM;
+    it('should return false when Africa\'s Talking is not configured', async () => {
+      delete process.env.AT_API_KEY;
       jest.resetModules();
       notificationService = await import('../../src/services/notificationService.js');
       
@@ -401,7 +393,7 @@ describe('NotificationService', () => {
   });
   
   describe('sendOtpVerificationSms', () => {
-    it('should send OTP SMS via Twilio successfully', async () => {
+    it('should send OTP SMS via Africa\'s Talking successfully', async () => {
       const visitorData = createVisitorData();
       const otpCode = '123456';
       
@@ -569,7 +561,7 @@ describe('NotificationService', () => {
     });
     
     describe('sendSms', () => {
-      it('should send SMS via Twilio successfully', async () => {
+      it('should send SMS via Africa\'s Talking successfully', async () => {
         const result = await notificationService.sendSms(
           '+254712345678',
           'Test message'
@@ -604,8 +596,8 @@ describe('NotificationService', () => {
         expect(result).toBe(false);
       });
       
-      it('should handle Twilio failure', async () => {
-        mockTwilioCreate.mockRejectedValueOnce(new Error('Twilio error'));
+      it('should handle Africa\'s Talking failure', async () => {
+        mockAtSend.mockRejectedValueOnce(new Error('Africa\'s Talking error'));
         jest.resetModules();
         notificationService = await import('../../src/services/notificationService.js');
         

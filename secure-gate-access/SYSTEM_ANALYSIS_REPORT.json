@@ -1201,10 +1201,6 @@
           },
           {
             "method": "POST",
-            "path": "/twilio/status"
-          },
-          {
-            "method": "POST",
             "path": "/africas-talking/delivery"
           },
           {
@@ -1216,7 +1212,7 @@
             "path": "/delivery/stats"
           }
         ],
-        "count": 7
+        "count": 6
       },
       {
         "file": "qrCodeRoutes.js",

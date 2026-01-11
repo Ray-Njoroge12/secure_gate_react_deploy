@@ -4,7 +4,6 @@
  *
  * Providers:
  * - Mailgun: Email delivery webhooks
- * - Twilio: SMS status callbacks
  * - Africa's Talking: Delivery reports
  */
 
@@ -33,28 +32,6 @@ function verifyMailgunSignature(timestamp, token, signature) {
   return computedSignature === signature;
 }
 
-/**
- * Verify Twilio webhook signature
- */
-function verifyTwilioSignature(signature, url, params) {
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  if (!authToken) {
-    loggingService.logWarn('TWILIO_AUTH_TOKEN not configured');
-    return true; // Skip verification if not configured
-  }
-
-  // Create data string
-  const data = Object.keys(params)
-    .sort()
-    .map(key => `${key}${params[key]}`)
-    .join('');
-
-  const hmac = crypto.createHmac('sha1', authToken);
-  hmac.update(url + data);
-  const computedSignature = hmac.digest('base64');
-
-  return computedSignature === signature;
-}
 
 /**
  * Update notification status in database
@@ -257,81 +234,6 @@ router.post('/mailgun/bounced', async (req, res) => {
   } catch (error) {
     loggingService.logError('Mailgun bounced webhook error', error);
     res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ============================================================================
-// TWILIO WEBHOOKS
-// ============================================================================
-
-/**
- * @route POST /api/webhooks/twilio/status
- * @desc Twilio SMS status callback
- * @access Public (webhook)
- */
-router.post('/twilio/status', async (req, res) => {
-  try {
-    const signature = req.headers['x-twilio-signature'];
-    const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-
-    // Verify signature
-    if (!verifyTwilioSignature(signature, url, req.body)) {
-      notificationMetricsService.recordWebhookSignatureFailure('twilio', 'invalid_signature', {
-        messageSid: req.body?.MessageSid
-      });
-      return res.status(401).send('Invalid signature');
-    }
-
-    const {
-      MessageSid,
-      MessageStatus,
-      To,
-      From,
-      ErrorCode,
-      ErrorMessage
-    } = req.body;
-
-    let status;
-    switch (MessageStatus) {
-      case 'delivered':
-        status = 'delivered';
-        break;
-      case 'failed':
-      case 'undelivered':
-        status = 'failed';
-        break;
-      case 'sent':
-        status = 'sent';
-        break;
-      default:
-        status = MessageStatus;
-    }
-
-    await updateNotificationStatus(MessageSid, status, 'twilio', {
-      to: To,
-      from: From,
-      error_code: ErrorCode,
-      error_message: ErrorMessage,
-      status: MessageStatus
-    });
-
-    await logDeliveryEvent({
-      message_id: MessageSid,
-      event_type: status,
-      provider: 'twilio',
-      data: req.body
-    });
-    notificationMetricsService.recordDeliveryEvent({
-      provider: 'twilio',
-      status,
-      messageId: MessageSid,
-      metadata: { to: To, status: MessageStatus }
-    });
-
-    res.status(200).send('OK');
-  } catch (error) {
-    loggingService.logError('Twilio status webhook error', error);
-    res.status(500).send('Internal server error');
   }
 });
 

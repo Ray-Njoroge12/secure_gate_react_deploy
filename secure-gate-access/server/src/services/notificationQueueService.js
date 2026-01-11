@@ -13,7 +13,6 @@
 
 import Queue from 'bull';
 import nodemailer from 'nodemailer';
-import Twilio from 'twilio';
 import AfricasTalking from 'africastalking';
 import Mailgun from 'mailgun.js';
 import FormData from 'form-data';
@@ -277,7 +276,7 @@ class NotificationQueueService {
       const job = await this.smsQueue.add({
         to,
         message,
-        provider: options.provider || process.env.SMS_PROVIDER || 'twilio',
+        provider: options.provider || process.env.SMS_PROVIDER || 'africastalking',
         metadata: options.metadata || {}
       }, {
         priority: options.priority || 5,
@@ -360,32 +359,11 @@ class NotificationQueueService {
   /**
    * Send SMS directly (used by queue processor and fallback)
    */
-  async sendSMSDirect(to, message, provider = 'twilio') {
+  async sendSMSDirect(to, message, provider = 'africastalking') {
     if (provider === 'africastalking' && process.env.AT_API_KEY) {
       return await this.sendSMSViaAfricasTalking(to, message);
-    } else if (provider === 'twilio' && process.env.TWILIO_ACCOUNT_SID) {
-      return await this.sendSMSViaTwilio(to, message);
-    } else {
-      throw new Error('No SMS provider configured');
     }
-  }
-
-  /**
-   * Send SMS via Twilio
-   */
-  async sendSMSViaTwilio(to, message) {
-    const client = Twilio(
-      process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_AUTH_TOKEN
-    );
-
-    const result = await client.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to
-    });
-
-    return result;
+    throw new Error('No SMS provider configured');
   }
 
   /**

@@ -207,14 +207,6 @@ class EnvironmentValidator {
       }
     }
 
-    // Twilio Configuration
-    const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-    const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-    
-    if (twilioSid && !twilioToken) {
-      this.warnings.push('TWILIO_ACCOUNT_SID set but TWILIO_AUTH_TOKEN missing');
-    }
-
     // Redis Configuration
     const redisUrl = process.env.REDIS_URL;
     if (!redisUrl && this.isProduction) {
@@ -352,7 +344,7 @@ class EnvironmentValidator {
     console.log(`   JWT Refresh Secret: ${process.env.JWT_REFRESH_SECRET ? '✅ Set' : '⚠️  Using fallback'}`);
     console.log(`   Session Secret: ${process.env.SESSION_SECRET ? '✅ Set' : '⚠️  Using fallback'}`);
     console.log(`   SMTP: ${process.env.SMTP_HOST ? '✅ Configured' : '❌ Not configured'}`);
-    console.log(`   Twilio: ${process.env.TWILIO_ACCOUNT_SID ? '✅ Configured' : '❌ Not configured'}`);
+    console.log(`   Africa's Talking: ${process.env.AT_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
     console.log(`   Redis: ${process.env.REDIS_URL ? '✅ Configured' : '⚠️  Using memory store'}`);
   }
 
@@ -402,6 +394,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 export default EnvironmentValidator;
-
-
 

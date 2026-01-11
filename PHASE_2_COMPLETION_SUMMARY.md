@@ -28,7 +28,7 @@ Phase 2 focused on critical high-priority issues including notification reliabil
 
 **Features:**
 - ✅ Automatic retry for failed notifications (max 3 attempts)
-- ✅ Multiple provider support (SMTP, Mailgun, Twilio, Africa's Talking)
+- ✅ Multiple provider support (SMTP, Mailgun, Africa's Talking)
 - ✅ Email and SMS queue separation
 - ✅ Delivery metrics and statistics
 - ✅ Failed notification management

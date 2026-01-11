@@ -525,7 +525,7 @@ Implement webhook handlers for delivery status:
 **Providers:**
 - Mailgun: Delivery webhooks
 - Africa's Talking: Delivery reports
-- Twilio: Status callbacks
+- SMS: Status callbacks
 
 **Implementation:**
 ```javascript
