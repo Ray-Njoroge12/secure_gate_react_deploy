@@ -14,19 +14,23 @@ export default function createCacheRoutes(redisService) {
   const router = express.Router();
 
   /**
- * Cache health check endpoint (public)
+ * Cache health check endpoint (admin only)
  * GET /api/cache/health
  */
-  router.get('/health', asyncHandler(async (req, res) => {
-    const health = await redisService.healthCheck();
+  router.get('/health',
+    authenticateToken,
+    requireRole(['admin', 'super_admin']),
+    asyncHandler(async (req, res) => {
+      const health = await redisService.healthCheck();
 
-    const response = ResponseUtil.success({
-      cache: health,
-      timestamp: new Date().toISOString()
-    }, 'Cache health check completed');
+      const response = ResponseUtil.success({
+        cache: health,
+        timestamp: new Date().toISOString()
+      }, 'Cache health check completed');
 
-    res.status(health.status === 'healthy' ? 200 : 503).json(response);
-  }));
+      res.status(health.status === 'healthy' ? 200 : 503).json(response);
+    })
+  );
 
   /**
  * Cache statistics endpoint (admin only)
@@ -34,7 +38,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.get('/stats',
     authenticateToken,
-    requireRole(['admin']),
+    requireRole(['admin', 'super_admin']),
     asyncHandler(async (req, res) => {
       const cacheStats = redisService.getStats();
       const sessionStats = await sessionManager.getSessionStats();
