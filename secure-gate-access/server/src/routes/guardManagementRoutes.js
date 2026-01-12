@@ -97,6 +97,55 @@ router.post('/shifts', authenticateToken, requireEstate, requireRole(['admin']),
 });
 
 /**
+ * @route PUT /api/guards/shifts/:shiftId
+ * @desc Update a scheduled shift
+ * @access Admin only
+ */
+router.put('/shifts/:shiftId', authenticateToken, requireEstate, requireRole(['admin']), async (req, res) => {
+  try {
+    const { shiftId } = req.params;
+    const {
+      guard_id,
+      shift_type,
+      start_time,
+      end_time,
+      post_location,
+      notes,
+      status
+    } = req.body;
+
+    if ((start_time && !end_time) || (!start_time && end_time)) {
+      return res.status(400).json({
+        success: false,
+        message: 'start_time and end_time must be provided together'
+      });
+    }
+
+    const shift = await guardManagementService.updateShift(shiftId, {
+      guard_id,
+      shift_type,
+      start_time,
+      end_time,
+      post_location,
+      notes,
+      status
+    }, req.user.estate_id);
+
+    res.json({
+      success: true,
+      message: 'Shift updated successfully',
+      data: shift
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update shift',
+      error: error.message
+    });
+  }
+});
+
+/**
  * @route GET /api/guards/shifts
  * @desc Get shifts for a date range
  * @access Admin, Guard
@@ -328,11 +377,13 @@ router.get('/:guardId/performance', authenticateToken, requireEstate, requireRol
 /**
  * @route POST /api/guards/equipment/checkout
  * @desc Checkout equipment
- * @access Guard only
+ * @access Guard, Admin
  */
-router.post('/equipment/checkout', authenticateToken, requireEstate, requireRole(['guard']), async (req, res) => {
+router.post('/equipment/checkout', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
   try {
-    const { shift_id, equipment_type, equipment_id, notes } = req.body;
+    const { guard_id, shift_id, equipment_type, equipment_id, notes } = req.body;
+    const isAdmin = req.user.role === 'admin';
+    const guardId = isAdmin ? guard_id : req.user.id;
 
     if (!equipment_type || !equipment_id) {
       return res.status(400).json({
@@ -341,8 +392,15 @@ router.post('/equipment/checkout', authenticateToken, requireEstate, requireRole
       });
     }
 
+    if (isAdmin && !guardId) {
+      return res.status(400).json({
+        success: false,
+        message: 'guard_id is required when admin checks out equipment'
+      });
+    }
+
     const checkout = await guardManagementService.checkoutEquipment({
-      guard_id: req.user.id,
+      guard_id: guardId,
       shift_id,
       equipment_type,
       equipment_id,
@@ -367,16 +425,25 @@ router.post('/equipment/checkout', authenticateToken, requireEstate, requireRole
 /**
  * @route POST /api/guards/equipment/:checkoutId/return
  * @desc Return equipment
- * @access Guard only
+ * @access Guard, Admin
  */
-router.post('/equipment/:checkoutId/return', authenticateToken, requireEstate, requireRole(['guard']), async (req, res) => {
+router.post('/equipment/:checkoutId/return', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
   try {
     const { checkoutId } = req.params;
-    const { condition, notes } = req.body;
+    const { guard_id, condition, notes } = req.body;
+    const isAdmin = req.user.role === 'admin';
+    const guardId = isAdmin ? guard_id : req.user.id;
+
+    if (isAdmin && !guardId) {
+      return res.status(400).json({
+        success: false,
+        message: 'guard_id is required when admin returns equipment'
+      });
+    }
 
     const returned = await guardManagementService.returnEquipment(
       checkoutId,
-      req.user.id,
+      guardId,
       condition || 'good',
       notes,
       req.user.estate_id
