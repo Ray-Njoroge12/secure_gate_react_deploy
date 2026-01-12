@@ -112,10 +112,21 @@ variable "db_multi_az" {
   default     = true
 }
 
+variable "app_config_json" {
+  type        = string
+  description = "JSON blob stored in SSM Parameter Store for app configuration."
+  default     = "{}"
+}
+
 variable "redis_node_type" {
   type        = string
   description = "ElastiCache Redis node type."
   default     = "cache.t4g.small"
+}
+
+variable "alb_certificate_arn" {
+  type        = string
+  description = "ACM certificate ARN in the regional account for the ALB HTTPS listener."
 }
 
 variable "acm_certificate_arn" {
@@ -127,4 +138,34 @@ variable "cloudfront_aliases" {
   type        = list(string)
   description = "Custom domain names for CloudFront distribution."
   default     = []
+}
+
+variable "waf_rate_limit" {
+  type        = number
+  description = "Rate limit for WAF rules (requests per 5 minutes per IP)."
+  default     = 2000
+}
+
+variable "waf_alb_web_acl_name" {
+  type        = string
+  description = "Name for the ALB WAF WebACL."
+  default     = "secure-gate-alb-web-acl"
+}
+
+variable "waf_cloudfront_web_acl_name" {
+  type        = string
+  description = "Name for the CloudFront WAF WebACL."
+  default     = "secure-gate-cloudfront-web-acl"
+}
+
+variable "cloudfront_response_headers_policy_name" {
+  type        = string
+  description = "Name for the CloudFront response headers policy."
+  default     = "secure-gate-response-headers"
+}
+
+variable "hsts_max_age_seconds" {
+  type        = number
+  description = "HSTS max-age seconds for the CloudFront response headers policy."
+  default     = 31536000
 }

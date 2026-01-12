@@ -68,6 +68,15 @@ The repository uses GitHub Actions to build, test, and deploy to staging and pro
 - **Push to `main`** → build/test → deploy staging → smoke tests → production deploy (manual approval required).
 - **Manual (workflow_dispatch)** → select `staging` or `production`.
 
+### One-Click Deploy (GitHub Actions)
+Use the workflow dispatch button for a one-click deploy that promotes through staging to production:
+
+1. Open **Actions → Deploy → Run workflow**.
+2. Select `staging` to deploy only to staging, or select `production` to deploy staging first and then production.
+3. Confirm the run; the pipeline executes build/test, deploys, and runs smoke tests automatically.
+
+The build/test logic runs through `secure-gate-access/scripts/ci/build.sh`, and the environment deploy + smoke tests run through `secure-gate-access/scripts/ci/deploy.sh`.
+
 ### Deployment Script
 The pipeline calls `secure-gate-access/scripts/deploy-aws.sh` which supports:
 
@@ -108,6 +117,16 @@ The smoke tests run `secure-gate-access/server/scripts/smoke-test.js` and verify
 - Minimal auth flow via `POST /api/auth/login`
 - Optional database connectivity check via `GET /api/system/database/health` when admin credentials/token are provided
 - Core API endpoint availability (visitors, deliveries, recurring passes, rideshare, ANPR contract)
+
+### Staging Smoke Test Command
+To manually validate staging outside of the pipeline:
+
+```bash
+SMOKE_BASE_URL=https://staging.example.com \
+SMOKE_LOGIN_EMAIL=staging-user@example.com \
+SMOKE_LOGIN_PASSWORD=your-password \
+node secure-gate-access/server/scripts/smoke-test.js
+```
 
 ### Rollback Guidance
 - **ECS**: Re-deploy the previous task definition revision (set `ECS_TASK_DEFINITION` to the known good revision and re-run the workflow).
