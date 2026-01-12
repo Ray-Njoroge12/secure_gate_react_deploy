@@ -171,7 +171,44 @@ export const ValidationSchemas = {
       'string.pattern.base': 'OTP must be a 6-digit number',
       'any.required': 'OTP code is required'
     })
+  }),
+
+  inviteCodeParam: Joi.object({
+    inviteCode: Joi.string().pattern(/^inv_[a-z0-9]{24}$/i).required().messages({
+      'string.pattern.base': 'Invalid invite code format',
+      'any.required': 'Invite code is required'
+    })
+  }),
+
+  visitorOtp: Joi.object({
+    otp: Joi.string().pattern(/^\d{6}$/).required().messages({
+      'string.pattern.base': 'OTP must be a 6-digit number',
+      'any.required': 'OTP is required'
+    })
+  }),
+
+  inviteCompletion: Joi.object({
+    name: Joi.string().min(1).max(100).required().trim().messages({
+      'string.min': 'Name is required',
+      'string.max': 'Name must not exceed 100 characters',
+      'any.required': 'Name is required'
+    }),
+    phone: Joi.string().pattern(/^(\+?[1-9]\d{1,14}|0[0-9]{9,10})$/).optional().allow('').messages({
+      'string.pattern.base': 'Phone number must be in valid format (e.g., +1234567890 or 0712345678)'
+    }),
+    email: Joi.string().email().optional().allow('').trim().lowercase().messages({
+      'string.email': 'Please provide a valid email address'
+    }),
+    idNumber: Joi.string().max(50).optional().allow('').trim(),
+    vehiclePlate: Joi.string().max(20).optional().allow('').trim(),
+    purpose: Joi.string().max(500).optional().allow('').trim(),
+    consent_given: Joi.boolean().optional(),
+    consentGiven: Joi.boolean().optional(),
+    consent_timestamp: Joi.date().optional(),
+    consent_type: Joi.string().max(50).optional().allow('').trim(),
+    consent_version: Joi.string().max(20).optional().allow('').trim()
   })
+    .or('phone', 'email')
 };
 
 /**
@@ -220,6 +257,39 @@ export const validateRequest = (schema, options = {}) => {
       req.body = value;
     }
 
+    next();
+  };
+};
+
+/**
+ * Validation middleware for route params
+ */
+export const validateParams = (schema, options = {}) => {
+  const defaultOptions = {
+    abortEarly: false,
+    allowUnknown: false,
+    stripUnknown: true,
+    ...options
+  };
+
+  return (req, res, next) => {
+    const { error, value } = schema.validate(req.params, defaultOptions);
+
+    if (error) {
+      const validationErrors = error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message,
+        value: detail.context?.value
+      }));
+
+      throw ErrorHelper.badRequest(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Input validation failed',
+        { validationErrors }
+      );
+    }
+
+    req.params = value;
     next();
   };
 };

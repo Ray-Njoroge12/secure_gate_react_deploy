@@ -238,6 +238,7 @@ describe('Authentication Integration Tests', () => {
 
         const response = await request(app)
           .post('/api/auth/login')
+          .set('x-client-platform', 'mobile')
           .send({
             email: testUsers.admin.email,
             password: 'testpass123',
@@ -325,16 +326,25 @@ describe('Authentication Integration Tests', () => {
 
   describe('Token Refresh Flow', () => {
     it('should refresh token successfully', async () => {
-      // Use getAuthToken helper to generate a valid token
-      const token = await getAuthToken(testUsers.admin.email);
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .set('x-client-platform', 'web')
+        .send({
+          email: testUsers.admin.email,
+          password: 'testpass123'
+        });
+
+      const refreshCookie = loginResponse.headers['set-cookie']
+        ?.find(c => c.startsWith('refreshToken='))
+        ?.split(';')[0];
 
       const refreshResponse = await request(app)
         .post('/api/auth/refresh')
-        .set('Cookie', `token=${token}`);
+        .set('Cookie', refreshCookie || '');
 
       // If endpoint exists, check proper refresh behavior
       // Note: refresh endpoint may have different behavior with JWT tokens
-      expect([200, 400, 404]).toContain(refreshResponse.status);
+      expect([200, 400]).toContain(refreshResponse.status);
     });
   });
 
@@ -345,12 +355,12 @@ describe('Authentication Integration Tests', () => {
 
       const logoutResponse = await request(app)
         .post('/api/auth/logout')
-        .set('Cookie', `token=${token}`);
+        .set('Cookie', `accessToken=${token}`);
 
       expect([200, 204]).toContain(logoutResponse.status);
 
       // Token should be cleared
-      const cookieHeader = logoutResponse.headers['set-cookie']?.find(c => c.startsWith('token='));
+      const cookieHeader = logoutResponse.headers['set-cookie']?.find(c => c.startsWith('accessToken='));
       if (cookieHeader) {
         expect(cookieHeader).toContain('Max-Age=0');
       }
@@ -362,11 +372,11 @@ describe('Authentication Integration Tests', () => {
 
       await request(app)
         .post('/api/auth/logout')
-        .set('Cookie', `token=${token}`);
+        .set('Cookie', `accessToken=${token}`);
 
       const protectedResponse = await request(app)
         .get('/api/admin/metrics')
-        .set('Cookie', `token=${token}`);
+        .set('Cookie', `accessToken=${token}`);
 
       // After logout, token should be invalid (if logout blacklists tokens)
       // or still valid if stateless JWT without blacklist
