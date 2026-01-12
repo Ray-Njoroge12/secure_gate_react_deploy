@@ -3,6 +3,7 @@ import argon2 from 'argon2';
 import crypto from 'crypto';
 import { randomUUID } from 'crypto';
 import RedisService from './redisService.js';
+import { dbManager } from '../database/db.enhanced.js';
 
 /**
  * Enhanced Token Service with Refresh Token Support
@@ -34,6 +35,9 @@ class TokenService {
     this.redisService = new RedisService();
     this.redisInitialized = false;
     this.initializeRedis();
+
+    // Database-backed refresh token store
+    this.db = dbManager;
     
     // Fallback in-memory storage if Redis unavailable (not recommended for production)
     this.revokedTokens = new Set(); // Fallback only
@@ -326,16 +330,18 @@ class TokenService {
   /**
    * Store refresh token in database (for production persistence)
    */
-  async storeRefreshToken(jti, userId, token, expiresAt) {
-    if (this.db) {
-      try {
-        await this.db.query(
-          'INSERT INTO refresh_tokens (jti, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)',
-          [jti, userId, this.hashToken(token), expiresAt]
-        );
-      } catch (error) {
-        // Security: Error storing refresh token - logged to secure error handler
-      }
+  async storeRefreshToken(jti, userId, token, expiresAt, metadata = {}) {
+    if (!this.db) return;
+
+    try {
+      const tokenHash = this.hashToken(token);
+      await this.db.query(
+        `INSERT INTO refresh_tokens (user_id, token, expires_at, user_agent, ip_address)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, tokenHash, expiresAt, metadata.userAgent || null, metadata.ipAddress || null]
+      );
+    } catch (error) {
+      // Security: Error storing refresh token - logged to secure error handler
     }
   }
 
@@ -372,6 +378,62 @@ class TokenService {
       }
     }
     return false;
+  }
+
+  /**
+   * Retrieve refresh token record from database
+   */
+  async getRefreshTokenRecord(token) {
+    if (!this.db) return null;
+
+    try {
+      const tokenHash = this.hashToken(token);
+      const result = await this.db.query(
+        `SELECT id, user_id, token, expires_at, is_revoked, last_used_at
+         FROM refresh_tokens
+         WHERE token = $1`,
+        [tokenHash]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Mark refresh token as used
+   */
+  async markRefreshTokenUsed(token) {
+    if (!this.db) return;
+
+    try {
+      const tokenHash = this.hashToken(token);
+      await this.db.query(
+        'UPDATE refresh_tokens SET last_used_at = NOW() WHERE token = $1',
+        [tokenHash]
+      );
+    } catch (error) {
+      // Security: ignore
+    }
+  }
+
+  /**
+   * Revoke refresh token (database-backed)
+   */
+  async revokeRefreshToken(token) {
+    if (!this.db) return;
+
+    try {
+      const tokenHash = this.hashToken(token);
+      await this.db.query(
+        `UPDATE refresh_tokens
+         SET is_revoked = TRUE, revoked_at = NOW()
+         WHERE token = $1`,
+        [tokenHash]
+      );
+    } catch (error) {
+      // Security: ignore
+    }
   }
 
   /**

@@ -19,6 +19,7 @@ import {
   confirmVisitorByToken,
   getInviteByCode
 } from '../controllers/visitorPublicController.js';
+import { validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
@@ -50,6 +51,14 @@ const statusPollLimiter = rateLimit({
 const estateInfoLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // 20 requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const inviteLookupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  message: 'Too many invite lookups, please try again later',
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -122,13 +131,13 @@ router.get(
 
 /**
  * @route GET /api/public/invites/:inviteCode
- * @desc Look up invite details by invite code (E2 Enhancement - supports visitor tokens & event QR codes)
+ * @desc Look up invite details by invite code
  * @access Public (no auth)
- * @rateLimit 10 req/min
  */
 router.get(
   '/invites/:inviteCode',
-  visitorTokenLimiter,
+  inviteLookupLimiter,
+  validateParams(ValidationSchemas.inviteCodeParam),
   getInviteByCode
 );
 
