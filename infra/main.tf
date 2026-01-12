@@ -17,6 +17,11 @@ provider "aws" {
   region = var.aws_region
 }
 
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -235,14 +240,60 @@ resource "aws_lb_target_group" "app" {
   }
 }
 
-resource "aws_lb_listener" "http" {
+resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.app.arn
-  port              = 80
-  protocol          = "HTTP"
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = var.alb_certificate_arn
 
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.app.arn
+  }
+}
+
+resource "aws_cloudformation_stack" "alb_https_redirect" {
+  name          = "secure-gate-alb-https-redirect-${var.environment}"
+  template_body = file("${path.module}/../secure-gate-access/infrastructure/aws/cloudformation/alb-https-redirect.yml")
+
+  parameters = {
+    LoadBalancerArn  = aws_lb.app.arn
+    HttpListenerPort = 80
+    HttpsListenerPort = 443
+  }
+}
+
+resource "aws_cloudformation_stack" "alb_waf" {
+  name          = "secure-gate-alb-waf-${var.environment}"
+  template_body = file("${path.module}/../secure-gate-access/infrastructure/aws/cloudformation/waf-alb.yml")
+
+  parameters = {
+    WebAclName = var.waf_alb_web_acl_name
+    AlbArn     = aws_lb.app.arn
+    RateLimit  = var.waf_rate_limit
+  }
+}
+
+resource "aws_cloudformation_stack" "cloudfront_waf" {
+  provider      = aws.us_east_1
+  name          = "secure-gate-cloudfront-waf-${var.environment}"
+  template_body = file("${path.module}/../secure-gate-access/infrastructure/aws/cloudformation/waf-cloudfront.yml")
+
+  parameters = {
+    WebAclName = var.waf_cloudfront_web_acl_name
+    RateLimit  = var.waf_rate_limit
+  }
+}
+
+resource "aws_cloudformation_stack" "cloudfront_headers" {
+  provider      = aws.us_east_1
+  name          = "secure-gate-cloudfront-headers-${var.environment}"
+  template_body = file("${path.module}/../secure-gate-access/infrastructure/aws/cloudformation/cloudfront-security-headers.yml")
+
+  parameters = {
+    PolicyName         = var.cloudfront_response_headers_policy_name
+    HstsMaxAgeSeconds  = var.hsts_max_age_seconds
   }
 }
 
@@ -306,7 +357,8 @@ resource "aws_iam_role_policy" "task" {
         ],
         Resource = [
           aws_secretsmanager_secret.db_credentials.arn,
-          aws_secretsmanager_secret.api_keys.arn
+          aws_secretsmanager_secret.api_keys.arn,
+          aws_ssm_parameter.app_config.arn
         ]
       },
       {
@@ -351,6 +403,13 @@ resource "aws_secretsmanager_secret_version" "api_keys" {
   })
 }
 
+resource "aws_ssm_parameter" "app_config" {
+  name        = "/secure-gate/${var.environment}/app-config"
+  description = "Secure Gate application configuration payload."
+  type        = "String"
+  value       = var.app_config_json
+}
+
 resource "aws_ecs_task_definition" "app" {
   family                   = "secure-gate-task"
   network_mode             = "awsvpc"
@@ -375,6 +434,10 @@ resource "aws_ecs_task_definition" "app" {
         {
           name  = "NODE_ENV",
           value = var.environment
+        },
+        {
+          name  = "APP_CONFIG_PARAMETER",
+          value = aws_ssm_parameter.app_config.name
         },
         {
           name  = "REDIS_ENDPOINT",
@@ -422,7 +485,7 @@ resource "aws_ecs_service" "app" {
     ignore_changes = [desired_count]
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = [aws_lb_listener.https, aws_cloudformation_stack.alb_https_redirect]
 }
 
 resource "aws_appautoscaling_target" "ecs" {
@@ -514,7 +577,7 @@ resource "aws_cloudfront_distribution" "app" {
     custom_origin_config {
       http_port              = 80
       https_port             = 443
-      origin_protocol_policy = "http-only"
+      origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
@@ -533,6 +596,7 @@ resource "aws_cloudfront_distribution" "app" {
     }
 
     viewer_protocol_policy = "redirect-to-https"
+    response_headers_policy_id = aws_cloudformation_stack.cloudfront_headers.outputs["ResponseHeadersPolicyId"]
   }
 
   restrictions {
@@ -548,6 +612,7 @@ resource "aws_cloudfront_distribution" "app" {
   }
 
   aliases = var.cloudfront_aliases
+  web_acl_id = aws_cloudformation_stack.cloudfront_waf.outputs["CloudFrontWebAclArn"]
 
   tags = {
     Name = "secure-gate-cdn"
