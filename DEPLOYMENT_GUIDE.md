@@ -618,6 +618,58 @@ npm run migrate:prod
 
 ---
 
+## 🚦 Phased Rollout Plan
+
+### Phase Definitions
+1. **Internal** → Core team only (feature flags on)
+2. **Pilot Tenants** → 3–5 trusted tenants
+3. **25% Tenants** → Expanded cohort via feature flags
+4. **50% Tenants** → Broader release + scaling validation
+5. **100% Tenants** → Full production rollout
+
+### Success Criteria per Phase
+| Metric | Internal | Pilot Tenants | 25% Tenants | 50% Tenants | 100% Tenants |
+| --- | --- | --- | --- | --- | --- |
+| **Latency P95** | ≤ 400ms | ≤ 450ms | ≤ 500ms | ≤ 550ms | ≤ 600ms |
+| **Latency P99** | ≤ 800ms | ≤ 900ms | ≤ 1000ms | ≤ 1100ms | ≤ 1200ms |
+| **Uptime (SLO/SLA)** | ≥ 99.5% | ≥ 99.5% | ≥ 99.7% | ≥ 99.9% | ≥ 99.9% |
+| **Error Rate (4xx/5xx)** | ≤ 1% / ≤ 0.3% | ≤ 1% / ≤ 0.5% | ≤ 1.5% / ≤ 0.7% | ≤ 2% / ≤ 1% | ≤ 2% / ≤ 1% |
+| **Cost per Tenant** | Baseline | ≤ +10% | ≤ +15% | ≤ +20% | ≤ +25% |
+| **Cost per Request** | Baseline | ≤ +10% | ≤ +15% | ≤ +20% | ≤ +25% |
+
+### Monitoring Dashboards & Alerts
+- **Latency Dashboard**: P50/P95/P99 over 5m/1h windows
+- **Uptime Dashboard**: Uptime % by service + SLA burn rate
+- **Error Dashboard**: 4xx/5xx split, top endpoints
+- **Cost Dashboard**: Cost per tenant, cost per request
+- **Alerting**:
+  - P95/P99 latency breaches (2 consecutive 5m windows)
+  - Uptime burn rate > 2x SLO
+  - 5xx error rate > threshold for 10 minutes
+  - Cost per tenant/request exceeds phase limits
+
+### Rollback Triggers
+- **Immediate rollback** if:
+  - P99 latency exceeds phase threshold for > 15 minutes
+  - 5xx error rate exceeds phase threshold for > 10 minutes
+  - Uptime drops below SLO for > 30 minutes
+- **Manual rollback review** if:
+  - Cost per tenant/request exceeds phase limit for 24 hours
+  - Significant tenant-facing regression is reported
+
+### Phase Gates & Sign-off
+- **Gate cadence**: Weekly (Internal → Pilot), Bi-weekly (Pilot → 25% → 50%), Monthly (50% → 100%)
+- **Sign-off checklist**:
+  - Success criteria met for 7 consecutive days
+  - Open incident count ≤ 2 (no P0/P1)
+  - Stakeholder approval (Product + Engineering + Ops)
+  - Rollback plan validated in staging
+- **Reporting cadence**:
+  - Daily rollout dashboard summary during phase
+  - Weekly stakeholder report with KPI trends
+
+---
+
 ## 🚀 Continuous Deployment
 
 ### GitHub Actions (Optional)
