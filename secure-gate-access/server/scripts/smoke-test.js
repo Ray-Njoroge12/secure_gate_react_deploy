@@ -8,15 +8,22 @@
 
 const BASE_URL = process.argv.includes('--base-url') 
   ? process.argv[process.argv.indexOf('--base-url') + 1]
-  : 'http://localhost:3001';
+  : process.env.SMOKE_BASE_URL || 'http://localhost:3001';
+const LOGIN_EMAIL = process.env.SMOKE_LOGIN_EMAIL || 'resident1@securegate.com';
+const LOGIN_PASSWORD = process.env.SMOKE_LOGIN_PASSWORD || 'ResidentPass123!';
+const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL || null;
+const ADMIN_PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || null;
+const ADMIN_TOKEN = process.env.SMOKE_ADMIN_TOKEN || null;
 
 let authToken = null;
+let adminToken = ADMIN_TOKEN;
 let testResults = { passed: 0, failed: 0, tests: [] };
 
-async function request(method, path, body = null, useAuth = true) {
+async function request(method, path, body = null, useAuth = true, token = null) {
   const headers = { 'Content-Type': 'application/json' };
-  if (useAuth && authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
+  const bearerToken = token || authToken;
+  if (useAuth && bearerToken) {
+    headers['Authorization'] = `Bearer ${bearerToken}`;
   }
 
   const options = { method, headers };
@@ -57,11 +64,21 @@ const tests = [
     assert(data.status === 'healthy' || data.success, 'Server not healthy');
   }),
 
+  test('Server readiness check', async () => {
+    const { status } = await request('GET', '/health/ready', null, false);
+    assert([200, 503].includes(status), `Unexpected status: ${status}`);
+  }),
+
+  test('Server liveness check', async () => {
+    const { status } = await request('GET', '/health/live', null, false);
+    assert(status === 200, `Expected 200, got ${status}`);
+  }),
+
   // Auth flow
   test('Login with valid credentials', async () => {
     const { status, data } = await request('POST', '/api/auth/login', {
-      email: 'resident1@securegate.com',
-      password: 'ResidentPass123!'
+      email: LOGIN_EMAIL,
+      password: LOGIN_PASSWORD
     }, false);
     
     if (status === 200 && data.token) {
@@ -73,6 +90,39 @@ const tests = [
     } else {
       assert(false, `Login failed: ${data.error || 'Unknown error'}`);
     }
+  }),
+
+  test('Admin login for DB health checks (optional)', async () => {
+    if (adminToken) {
+      console.log('    (Using provided admin token)');
+      return;
+    }
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+      console.log('    (Skipped - no admin credentials provided)');
+      return;
+    }
+    const { status, data } = await request('POST', '/api/auth/login', {
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD
+    }, false);
+
+    if (status === 200 && data.token) {
+      adminToken = data.token;
+      assert(true, 'Admin login successful');
+      return;
+    }
+
+    assert(false, `Admin login failed: ${data.error || 'Unknown error'}`);
+  }),
+
+  test('Database connectivity check (optional)', async () => {
+    if (!adminToken) {
+      console.log('    (Skipped - no admin token)');
+      return;
+    }
+    const { status, data } = await request('GET', '/api/system/database/health', null, true, adminToken);
+    assert(status === 200, `Expected 200, got ${status}`);
+    assert(data.connection_status === 'healthy' || data.status === 'connected', 'Database not healthy');
   }),
 
   test('Login with invalid credentials returns error', async () => {
