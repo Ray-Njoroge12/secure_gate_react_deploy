@@ -50,6 +50,28 @@ These procedures cover PostgreSQL backups/restores for Secure Gate, along with a
      ```
    - Validate critical workflows (login, visitor check-in, notifications).
 
+## Restore Procedure (TAR Backups)
+### When to use
+- **Custom format TAR** (`pg_dump --format=tar`) requires `pg_restore`.
+- **Basebackup TAR** (`pg_basebackup --format=tar`) requires extracting into `PGDATA` and restarting Postgres.
+
+### Steps
+1. **Identify TAR backup type**
+   - If the TAR contains `toc.dat`, it is a custom-format dump.
+   - If the TAR contains `PG_VERSION`/`base/`, it is a basebackup.
+2. **Custom format TAR restore**
+   ```bash
+   tar -xf secure_gate_custom.tar -C /tmp/secure-gate-restore
+   pg_restore --clean --if-exists --no-owner --dbname "$DATABASE_URL" /tmp/secure-gate-restore
+   ```
+3. **Basebackup TAR restore**
+   ```bash
+   tar -xf secure_gate_basebackup.tar -C "$PGDATA"
+   pg_ctl -D "$PGDATA" restart
+   ```
+4. **Verify restore integrity**
+   - Run the same sanity checks as the standard restore procedure.
+
 ## Staging Restore Drill
 ### Objective
 Validate that backups can be restored end-to-end, confirm runbooks, and capture RTO/RPO metrics.
@@ -59,13 +81,15 @@ Validate that backups can be restored end-to-end, confirm runbooks, and capture 
    - Provision a fresh staging database.
    - Pause staging writes or redirect traffic to avoid drift.
 2. **Restore latest backup**
-   - Use the restore steps above against the staging DB.
-3. **Post-restore verification**
+   - Use the standard restore steps above against the staging DB.
+3. **Restore TAR backup (drill)**
+   - Execute the TAR restore steps above against staging using a TAR artifact.
+4. **Post-restore verification**
    - Confirm application boot.
    - Run staging smoke tests (login, visitor creation, guard dashboard).
-4. **Capture metrics**
+5. **Capture metrics**
    - Record start/end timestamps, total restore time, and any errors.
-5. **Clean up**
+6. **Clean up**
    - Resume staging traffic.
    - Archive logs and artifacts from the drill.
 
