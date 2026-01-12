@@ -33,6 +33,11 @@ Use this runbook when SMS delivery is failing or the provider is unavailable, im
 - Use Admin → Notification Queue Failures to retry DLQ jobs.
 - Confirm new OTP deliveries succeed for at least three test numbers.
 
+## Escalation & Communications
+- Notify customer success with expected impact and ETA.
+- Post status update in incident channel and set next update time.
+- Escalate to vendor support if outage exceeds SLA threshold.
+
 ## Post-Incident Follow‑ups
 - Export DLQ jobs that were not retried automatically.
 - Add incident notes to audit logs and notify customer success.
