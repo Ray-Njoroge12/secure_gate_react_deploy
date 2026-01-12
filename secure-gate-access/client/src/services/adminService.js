@@ -4,6 +4,7 @@
 import { http } from './_http.js';
 
 const API_BASE = '/api/admin';
+const GUARDS_BASE = '/api/guards';
 
 // === Dashboard Metrics ===
 export const getMetrics = () => http.get(`${API_BASE}/metrics`);
@@ -35,6 +36,28 @@ export const getAllGuards = () => http.get(`${API_BASE}/guards`);
 export const addGuard = (data) => http.post(`${API_BASE}/guards`, data);
 export const updateGuard = (id, data) => http.put(`${API_BASE}/guards/${id}`, data);
 export const deleteGuard = (id) => http.delete(`${API_BASE}/guards/${id}`);
+
+// === Guard Operations (Scheduling, Performance, Equipment, Training) ===
+export const getGuardShifts = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${GUARDS_BASE}/shifts${queryString ? `?${queryString}` : ''}`);
+};
+export const createGuardShift = (data) => http.post(`${GUARDS_BASE}/shifts`, data);
+export const updateGuardShift = (shiftId, data) => http.put(`${GUARDS_BASE}/shifts/${shiftId}`, data);
+export const getHandoverNotes = (shiftId) => http.get(`${GUARDS_BASE}/handover/${shiftId}`);
+export const recordGuardPerformance = (data) => http.post(`${GUARDS_BASE}/performance`, data);
+export const getGuardPerformance = (guardId, params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${GUARDS_BASE}/${guardId}/performance${queryString ? `?${queryString}` : ''}`);
+};
+export const checkoutEquipment = (data) => http.post(`${GUARDS_BASE}/equipment/checkout`, data);
+export const returnEquipment = (checkoutId, data) => http.post(`${GUARDS_BASE}/equipment/${checkoutId}/return`, data);
+export const getEquipmentCheckouts = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${GUARDS_BASE}/equipment${queryString ? `?${queryString}` : ''}`);
+};
+export const addTrainingRecord = (guardId, data) => http.post(`${GUARDS_BASE}/${guardId}/training`, data);
+export const getTrainingRecords = (guardId) => http.get(`${GUARDS_BASE}/${guardId}/training`);
 
 // === Visitor Logs ===
 export const getVisitorLogs = (params = {}) => {
