@@ -134,6 +134,87 @@ class GuardManagementService {
   }
 
   /**
+   * Update scheduled shift
+   */
+  async updateShift(shiftId, updates, estateId) {
+    try {
+      const shiftResult = await db.query(
+        'SELECT * FROM guard_shifts WHERE id = $1 AND estate_id = $2',
+        [shiftId, estateId]
+      );
+
+      if (shiftResult.rows.length === 0) {
+        throw new Error('Shift not found for estate');
+      }
+
+      const existingShift = shiftResult.rows[0];
+
+      if (existingShift.status !== 'scheduled') {
+        throw new Error('Only scheduled shifts can be updated');
+      }
+
+      if (updates.status && !['scheduled', 'cancelled'].includes(updates.status)) {
+        throw new Error('Shift status can only be set to scheduled or cancelled');
+      }
+
+      const nextGuardId = updates.guard_id ?? existingShift.guard_id;
+      const nextStartTime = updates.start_time ?? existingShift.start_time;
+      const nextEndTime = updates.end_time ?? existingShift.end_time;
+
+      await this.assertGuardEstate(nextGuardId, estateId);
+
+      const overlapCheck = await db.query(`
+        SELECT id FROM guard_shifts
+        WHERE guard_id = $1
+        AND id != $2
+        AND status IN ('scheduled', 'in_progress')
+        AND estate_id = $5
+        AND (
+          (start_time <= $3 AND end_time >= $3)
+          OR (start_time <= $4 AND end_time >= $4)
+          OR (start_time >= $3 AND end_time <= $4)
+        )
+      `, [nextGuardId, shiftId, nextStartTime, nextEndTime, estateId]);
+
+      if (overlapCheck.rows.length > 0) {
+        throw new Error('Guard already has a shift scheduled during this time');
+      }
+
+      const result = await db.query(`
+        UPDATE guard_shifts
+        SET
+          guard_id = $1,
+          shift_type = $2,
+          start_time = $3,
+          end_time = $4,
+          post_location = $5,
+          notes = $6,
+          status = $7,
+          updated_at = NOW()
+        WHERE id = $8
+        AND estate_id = $9
+        RETURNING *
+      `, [
+        nextGuardId,
+        updates.shift_type ?? existingShift.shift_type,
+        nextStartTime,
+        nextEndTime,
+        updates.post_location ?? existingShift.post_location,
+        updates.notes ?? existingShift.notes,
+        updates.status ?? existingShift.status,
+        shiftId,
+        estateId
+      ]);
+
+      loggingService.logInfo('Shift updated', { shiftId, guardId: nextGuardId });
+      return result.rows[0];
+    } catch (error) {
+      loggingService.logError('Failed to update shift', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get shifts for a date range
    */
   async getShifts(startDate, endDate, estateId = null) {

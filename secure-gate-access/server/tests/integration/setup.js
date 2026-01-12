@@ -53,6 +53,12 @@ export async function setupTestDatabase() {
       'DELETE FROM data_deletion_requests WHERE user_email LIKE \'%@test.com\'',
       'DELETE FROM data_export_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM user_privacy_settings WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_handover_notes WHERE from_guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR to_guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_performance_metrics WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR recorded_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_equipment_checkout WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_training WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_shifts WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete delivery logs for test users
       'DELETE FROM delivery_logs WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete rideshare entries for test users
@@ -97,6 +103,12 @@ export async function cleanupTestDatabase() {
       'DELETE FROM data_deletion_requests WHERE user_email LIKE \'%@test.com\'',
       'DELETE FROM data_export_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM user_privacy_settings WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_handover_notes WHERE from_guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR to_guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_performance_metrics WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR recorded_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_equipment_checkout WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_training WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM guard_shifts WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete delivery logs for test users
       'DELETE FROM delivery_logs WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete rideshare entries for test users
