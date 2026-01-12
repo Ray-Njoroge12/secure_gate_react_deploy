@@ -100,7 +100,7 @@ export const unsubscribeFromPush = async () => {
 // Send subscription to server
 export const sendSubscriptionToServer = async (subscription) => {
   try {
-    const response = await fetch('/api/notifications/subscribe', {
+    const response = await fetch('/api/notifications/push/subscribe', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -116,6 +116,63 @@ export const sendSubscriptionToServer = async (subscription) => {
     return await response.json();
   } catch (error) {
     console.error('Error sending subscription to server:', error);
+    return null;
+  }
+};
+
+// Register device token metadata for topic-based notifications
+export const registerDeviceToken = async ({ token, platform, deviceInfo }) => {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const response = await fetch('/api/notifications/devices/register', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        token,
+        platform,
+        deviceInfo
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to register device token');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error registering device token:', error);
+    return null;
+  }
+};
+
+export const unregisterDeviceToken = async (token) => {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const response = await fetch('/api/notifications/devices/unregister', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ token })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to unregister device token');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error unregistering device token:', error);
     return null;
   }
 };
@@ -243,13 +300,32 @@ export class PushNotificationManager {
     
     if (this.subscription) {
       await sendSubscriptionToServer(this.subscription);
+      await registerDeviceToken({
+        token: this.subscription.endpoint,
+        platform: 'webpush',
+        deviceInfo: {
+          userAgent: navigator.userAgent
+        }
+      });
     }
 
     return this.subscription;
   }
 
   async unsubscribe() {
+    const currentSubscription = await getPushSubscription();
     const result = await unsubscribeFromPush();
+    if (currentSubscription?.endpoint) {
+      await unregisterDeviceToken(currentSubscription.endpoint);
+      await fetch('/api/notifications/push/unsubscribe', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ endpoint: currentSubscription.endpoint })
+      });
+    }
     if (result) {
       this.subscription = null;
     }

@@ -259,11 +259,13 @@ class SyncService {
         return;
       }
       
+      const idempotencyKey = change.idempotencyKey || (window.crypto?.randomUUID?.() ?? null);
       const transaction = this.db.transaction(['pendingChanges'], 'readwrite');
       const store = transaction.objectStore('pendingChanges');
       
       const changeWithMeta = {
         ...change,
+        idempotencyKey,
         timestamp: new Date().toISOString(),
         synced: false
       };
