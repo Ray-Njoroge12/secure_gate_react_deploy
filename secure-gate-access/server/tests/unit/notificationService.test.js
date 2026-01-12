@@ -26,6 +26,12 @@ process.env = {
   SMTP_PASS: 'password',
   FROM_EMAIL: 'noreply@test.com',
   EMAIL_PROVIDER: 'smtp',
+  MAILGUN_API_KEY: 'mailgun-test-key',
+  MAILGUN_DOMAIN: 'mg.test.com',
+  SES_SMTP_HOST: 'email-smtp.us-east-1.amazonaws.com',
+  SES_SMTP_PORT: '587',
+  SES_SMTP_USER: 'ses-user',
+  SES_SMTP_PASS: 'ses-pass',
   SITE_NAME: 'Test Site',
   SITE_URL: 'http://localhost:3000',
   SMS_PROVIDER: 'africastalking',
@@ -242,6 +248,44 @@ describe('NotificationService', () => {
       );
       
       expect(result).toBe(true);
+    });
+
+    it('should preserve business logic across email providers', async () => {
+      const visitorData = createVisitorData();
+      const residentData = createResidentData();
+      const inviteLink = 'http://test.com/invite/ABC123';
+      const expectedSubject = `🏠 Visitor Invitation - ${process.env.SITE_NAME}`;
+
+      process.env.EMAIL_PROVIDER = 'mailgun';
+      jest.resetModules();
+      notificationService = await import('../../src/services/notificationService.js');
+
+      const mailgunResult = await notificationService.sendVisitorInviteEmail(
+        visitorData,
+        residentData,
+        inviteLink
+      );
+
+      expect(mailgunResult).toBe(true);
+      expect(mockMailgunCreate).toHaveBeenCalledWith(
+        process.env.MAILGUN_DOMAIN,
+        expect.objectContaining({ subject: expectedSubject })
+      );
+
+      process.env.EMAIL_PROVIDER = 'ses';
+      jest.resetModules();
+      notificationService = await import('../../src/services/notificationService.js');
+
+      const sesResult = await notificationService.sendVisitorInviteEmail(
+        visitorData,
+        residentData,
+        inviteLink
+      );
+
+      expect(sesResult).toBe(true);
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ subject: expectedSubject })
+      );
     });
   });
   
