@@ -20,6 +20,17 @@ The following IAM policies are scoped to explicit AWS actions and resources. Rep
 
 Both templates include AWS managed rule groups plus a baseline rate-limit rule.
 
+### WAF tuning workflow
+
+Use the following operational checklist to move the WAF from baseline protection to tuned enforcement:
+
+1. Enable WAF logging to a centralized sink (CloudWatch Logs, S3, or Kinesis Data Firehose).
+2. Collect baseline traffic for 2–4 weeks; tag or query by endpoint, tenant, and status code.
+3. Analyze false positives to identify legitimate requests that were blocked; map them back to the rule IDs.
+4. Tune managed rule overrides in count mode and define custom allowlists or rule exceptions where needed.
+5. Add custom rules for abuse patterns (rate-based rules, geo matches, bot/UA filters).
+6. Roll out changes from count mode → block mode; monitor false positives and request error rates.
+
 ## HTTPS enforcement + HSTS
 
 - `cloudformation/alb-https-redirect.yml` enforces HTTP → HTTPS redirects at the ALB listener level.
