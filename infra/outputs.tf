@@ -23,6 +23,21 @@ output "cloudfront_domain" {
   description = "CloudFront distribution domain."
 }
 
+output "alb_waf_arn" {
+  value       = aws_cloudformation_stack.alb_waf.outputs["AlbWebAclArn"]
+  description = "ALB WAF WebACL ARN."
+}
+
+output "cloudfront_waf_arn" {
+  value       = aws_cloudformation_stack.cloudfront_waf.outputs["CloudFrontWebAclArn"]
+  description = "CloudFront WAF WebACL ARN."
+}
+
+output "cloudfront_response_headers_policy_id" {
+  value       = aws_cloudformation_stack.cloudfront_headers.outputs["ResponseHeadersPolicyId"]
+  description = "CloudFront response headers policy ID."
+}
+
 output "rds_endpoint" {
   value       = aws_db_instance.postgres.address
   description = "RDS Postgres endpoint."

@@ -6,10 +6,10 @@ This folder captures the production-ready AWS baseline for Secure Gate using Ter
 
 - **Network:** VPC with two public and two private subnets across two AZs, IGW, NAT, and separate route tables.
 - **Compute:** ECS Fargate cluster and service fronted by an ALB.
-- **Database:** Multi-AZ RDS Postgres in private subnets with app-only security group access for high availability.
+- **Database:** RDS Postgres in private subnets with app-only security group access; staging is configured for a single-AZ pilot via `db_multi_az = false`.
 - **Async/Cache:** SQS queue and ElastiCache Redis in private subnets with least-privilege access.
-- **Edge:** CloudFront distribution in front of the ALB with ACM TLS certificate.
-- **Secrets:** Secrets Manager for DB credentials and API keys accessed by the ECS task role.
+- **Edge:** CloudFront distribution in front of the ALB with ACM TLS certificate, WAF, and security headers.
+- **Secrets/Config:** Secrets Manager for DB credentials and API keys plus SSM Parameter Store for app config.
 
 ## CIDR Ranges
 
@@ -24,6 +24,7 @@ This folder captures the production-ready AWS baseline for Secure Gate using Ter
 ## Key Inputs
 
 - `acm_certificate_arn`: ACM certificate ARN in **us-east-1** for CloudFront.
+- `alb_certificate_arn`: ACM certificate ARN in the regional account for the ALB HTTPS listener.
 - `container_image`: Secure Gate container image.
 - `cloudfront_aliases`: Optional custom domains for CloudFront.
 
@@ -35,7 +36,8 @@ This folder captures the production-ready AWS baseline for Secure Gate using Ter
 cd infra
 terraform init
 terraform apply -var-file="staging.tfvars" \
-  -var='acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/abc'
+  -var='acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/abc' \
+  -var='alb_certificate_arn=arn:aws:acm:us-west-2:123456789012:certificate/def'
 ```
 
 ### Production Environment
@@ -44,19 +46,21 @@ terraform apply -var-file="staging.tfvars" \
 cd infra
 terraform init
 terraform apply -var-file="production.tfvars" \
-  -var='acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/abc'
+  -var='acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/abc' \
+  -var='alb_certificate_arn=arn:aws:acm:us-west-2:123456789012:certificate/def'
 ```
 
 ### Environment Configuration
 
-- **staging.tfvars**: Configures staging environment with Multi-AZ enabled and smaller instance sizes
+- **staging.tfvars**: Configures staging environment as a single-AZ pilot with smaller instance sizes
 - **production.tfvars**: Configures production environment with Multi-AZ enabled and production-grade instance sizes
-- Both environments enable Multi-AZ for RDS (controlled by `db_multi_az` variable)
+- Multi-AZ for RDS is controlled by the `db_multi_az` variable
 
 ## Notes
 
 - Update the `container_image`, secrets payloads, and health check path as needed.
-- CloudFront uses the provided ACM certificate to terminate TLS and forwards traffic to the ALB over HTTP.
+- CloudFront uses the provided ACM certificate to terminate TLS and forwards traffic to the ALB over HTTPS.
+- WAF and HTTPS enforcement are provisioned via CloudFormation templates in `secure-gate-access/infrastructure/aws`.
 
 ## Scaling Targets & Policies
 

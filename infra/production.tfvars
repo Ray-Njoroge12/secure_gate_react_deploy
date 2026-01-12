@@ -15,3 +15,4 @@ max_capacity      = 6
 
 # Note: Set acm_certificate_arn via command line or environment variable
 # Example: terraform apply -var-file="production.tfvars" -var="acm_certificate_arn=arn:aws:acm:..."
+# Also set alb_certificate_arn for the regional ALB certificate.
