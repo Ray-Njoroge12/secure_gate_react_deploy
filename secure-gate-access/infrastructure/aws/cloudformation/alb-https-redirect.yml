@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ALB HTTP to HTTPS redirect listener.
+
+Parameters:
+  LoadBalancerArn:
+    Type: String
+  HttpListenerPort:
+    Type: Number
+    Default: 80
+  HttpsListenerPort:
+    Type: Number
+    Default: 443
+
+Resources:
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancerArn
+      Port: !Ref HttpListenerPort
+      Protocol: HTTP
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: !Ref HttpsListenerPort
+            StatusCode: HTTP_301
+
+Outputs:
+  HttpListenerArn:
+    Value: !Ref HttpListener
