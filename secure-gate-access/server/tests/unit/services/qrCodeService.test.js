@@ -100,6 +100,22 @@ describe('QRCodeService', () => {
         expect(insertCall[0]).toContain('INSERT INTO qr_codes');
         expect(insertCall[1]).toContain('active');
       });
+
+      it('should throw when JWT_SECRET is missing outside test mode', async () => {
+        const originalNodeEnv = process.env.NODE_ENV;
+
+        delete process.env.JWT_SECRET;
+        process.env.NODE_ENV = 'development';
+
+        try {
+          await expect(qrCodeService.generateVisitorQR({ id: 1, name: 'Test' }))
+            .rejects
+            .toThrow('JWT_SECRET is required');
+        } finally {
+          process.env.NODE_ENV = originalNodeEnv;
+          process.env.JWT_SECRET = 'test-secret-key-for-testing';
+        }
+      });
     });
 
     describe('validateQR', () => {

@@ -7,6 +7,32 @@ import QRCode from 'qrcode';
 import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { dbManager } from '../database/db.enhanced.js';
+import EnvironmentConfig from '../config/environment.js';
+
+let environmentValidationPromise = null;
+
+const ensureEnvironmentValidated = async () => {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  if (!environmentValidationPromise) {
+    environmentValidationPromise = EnvironmentConfig.validateAndReport(false);
+  }
+
+  await environmentValidationPromise;
+};
+
+const requireJwtSecret = async () => {
+  await ensureEnvironmentValidated();
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is required to generate and validate QR codes.');
+  }
+
+  return jwtSecret;
+};
 
 // Query timeout wrapper
 const withTimeout = async (queryPromise, timeoutMs = 5000) => {
@@ -37,6 +63,8 @@ class OptimizedQRCodeService {
    * Generate QR code for visitor invitation with timeout protection
    */
   async generateVisitorQR(visitorData, options = {}) {
+    const jwtSecret = await requireJwtSecret();
+
     try {
       const qrId = randomUUID();
 
@@ -64,7 +92,6 @@ class OptimizedQRCodeService {
       };
 
       // Generate JWT token with timeout
-      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
       const expiresInSeconds = Math.max(1, Math.floor((expirationTime.getTime() - Date.now()) / 1000));
       const token = jwt.sign(payload, jwtSecret, { expiresIn: expiresInSeconds });
 
@@ -158,6 +185,8 @@ class OptimizedQRCodeService {
    * Validate QR code with timeout protection
    */
   async validateQR(qrData, options = {}) {
+    const jwtSecret = await requireJwtSecret();
+
     try {
       const parsed = this.parseQrToken(qrData);
       if (!parsed.success) {
@@ -167,7 +196,6 @@ class OptimizedQRCodeService {
       const { token, qrId } = parsed.data;
 
       // Verify JWT token
-      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
       let payload;
       try {
         payload = jwt.verify(token, jwtSecret);
@@ -277,6 +305,8 @@ class OptimizedQRCodeService {
    * Validate and consume QR code (single-use enforcement)
    */
   async consumeQRCode(qrData, options = {}) {
+    const jwtSecret = await requireJwtSecret();
+
     try {
       const parsed = this.parseQrToken(qrData);
       if (!parsed.success) {
@@ -284,7 +314,6 @@ class OptimizedQRCodeService {
       }
 
       const { token, qrId } = parsed.data;
-      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
 
       let payload;
       try {
