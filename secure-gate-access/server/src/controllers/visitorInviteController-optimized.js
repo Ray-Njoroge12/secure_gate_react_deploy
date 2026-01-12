@@ -13,13 +13,14 @@
 
 import argon2 from 'argon2';
 import { dbManager } from '../database/db.enhanced.js';
-import { respond, respondError } from '../utils/respond.js';
+import { camelize, respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 import QRCodeService from '../services/qrCodeService.js';
 import { sendVisitorInviteSms, sendVisitorInviteEmail, sendOtpVerificationSms, sendOtpVerificationEmail } from '../services/notificationService.js';
 import encryptionService from '../services/encryptionService.js';
 import { generateOTP, generateSecureToken } from '../utils/tokenHelper.js';
 import { sanitizeString } from '../utils/sanitizeInput.js';
+import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempotencyResponse } from '../services/idempotencyService.js';
 
 function getOtpExpiryMinutes() {
   return parseInt(process.env.OTP_EXPIRY_MINUTES, 10) || 15;
@@ -500,6 +501,29 @@ export const bulkInvite = async (req, res) => {
 
     const OTP_EXPIRY_MINUTES = getOtpExpiryMinutes();
     const CLIENT_ORIGIN = getClientOrigin();
+    const idempotencyKey = getIdempotencyKey(req);
+    const requestHash = idempotencyKey
+      ? buildRequestHash({
+        method: req.method,
+        path: req.originalUrl,
+        body: req.body,
+        userId: req.user.id
+      })
+      : null;
+
+    if (idempotencyKey) {
+      const idempotencyResult = await resolveIdempotency({
+        key: idempotencyKey,
+        scope: 'bulk-invite',
+        requestHash
+      });
+      if (idempotencyResult.conflict) {
+        return respondError(res, 409, 'Idempotency key reuse with different request payload');
+      }
+      if (idempotencyResult.hit) {
+        return res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
+      }
+    }
 
     const { eventName, date, time, numGuests, guests } = req.body;
 
@@ -632,7 +656,7 @@ export const bulkInvite = async (req, res) => {
       preRegistered: createdVisitors.length
     });
 
-    respond(res, {
+    const responseData = {
       message: 'Event invite created successfully',
       bulkInviteId: bulkInvite.id,
       inviteCode,
@@ -645,7 +669,20 @@ export const bulkInvite = async (req, res) => {
       expiresAt: bulkInvite.expires_at,
       guests: createdVisitors.length > 0 ? createdVisitors : undefined,
       errors: errors.length > 0 ? errors : undefined
-    }, 201);
+    };
+
+    const responseBody = { success: true, data: camelize(responseData) };
+    if (idempotencyKey) {
+      await storeIdempotencyResponse({
+        key: idempotencyKey,
+        scope: 'bulk-invite',
+        requestHash,
+        responseCode: 201,
+        responseBody
+      });
+    }
+
+    res.status(201).json(responseBody);
 
   } catch (error) {
     console.error('[bulkInvite] Error:', error);

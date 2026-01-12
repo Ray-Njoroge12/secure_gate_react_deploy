@@ -10,6 +10,7 @@
  */
 
 import logger from '../config/logger.js';
+import { PASS_STATUS } from '../constants/statuses.js';
 
 class DashboardEvents {
   constructor(webSocketService) {
@@ -32,7 +33,7 @@ class DashboardEvents {
         purpose: visitorData.purpose,
         checkInTime: visitorData.checkInTime,
         location: visitorData.location || 'Main Gate',
-        status: 'CHECKED_IN'
+        status: PASS_STATUS.ON_PREMISE
       }
     };
 
@@ -52,7 +53,7 @@ class DashboardEvents {
         name: visitorData.name,
         checkOutTime: visitorData.checkOutTime,
         duration: visitorData.duration,
-        status: 'CHECKED_OUT'
+        status: PASS_STATUS.CHECKED_OUT
       }
     };
 
@@ -75,7 +76,7 @@ class DashboardEvents {
         validFrom: inviteData.validFrom,
         validUntil: inviteData.validUntil,
         invitedBy: inviteData.invitedBy,
-        status: 'PENDING'
+        status: PASS_STATUS.PENDING
       }
     };
 
