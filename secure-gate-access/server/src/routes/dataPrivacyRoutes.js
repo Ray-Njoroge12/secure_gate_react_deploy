@@ -391,6 +391,44 @@ router.get('/data-inventory', authenticateToken, asyncHandler(async (req, res) =
   const userId = req.user.id;
 
   const user = await userService.getUserById(userId);
+  const [
+    visitorCountResult,
+    accessLogCountResult,
+    auditLogCountResult,
+    deliveryPhotoCountResult,
+    retentionPoliciesResult
+  ] = await Promise.all([
+    databaseService.query(
+      'SELECT COUNT(*)::int AS count FROM visitors WHERE host_id = $1',
+      [userId]
+    ),
+    databaseService.query(
+      'SELECT COUNT(*)::int AS count FROM access_logs WHERE user_id = $1',
+      [userId]
+    ),
+    databaseService.query(
+      'SELECT COUNT(*)::int AS count FROM audit_logs WHERE user_id = $1',
+      [userId]
+    ),
+    databaseService.query(
+      `SELECT COUNT(*)::int AS count
+       FROM delivery_photos dp
+       JOIN deliveries d ON d.id = dp.delivery_id
+       WHERE d.recipient_id = $1`,
+      [userId]
+    ),
+    databaseService.query(
+      `SELECT table_name, retention_days, auto_delete, category
+       FROM data_retention_policies
+       WHERE table_name IN ('access_logs', 'audit_logs', 'delivery_photos')
+       ORDER BY table_name`
+    )
+  ]);
+
+  const retentionPolicies = retentionPoliciesResult.rows.reduce((acc, policy) => {
+    acc[policy.table_name] = policy;
+    return acc;
+  }, {});
   
   res.json({
     success: true,
@@ -401,10 +439,34 @@ router.get('/data-inventory', authenticateToken, asyncHandler(async (req, res) =
         createdAt: user?.created_at
       },
       dataCategories: [
-        { category: 'visitors', description: 'Visitor records you created', count: 0 },
+        {
+          category: 'visitors',
+          description: 'Visitor records you created',
+          count: visitorCountResult.rows[0]?.count || 0
+        },
+        {
+          category: 'visitorLogs',
+          description: 'Access log activity tied to your account',
+          count: accessLogCountResult.rows[0]?.count || 0,
+          retentionDays: retentionPolicies.access_logs?.retention_days,
+          autoDelete: retentionPolicies.access_logs?.auto_delete
+        },
+        {
+          category: 'auditLogs',
+          description: 'Audit trail entries referencing your account',
+          count: auditLogCountResult.rows[0]?.count || 0,
+          retentionDays: retentionPolicies.audit_logs?.retention_days,
+          autoDelete: retentionPolicies.audit_logs?.auto_delete
+        },
+        {
+          category: 'deliveryPhotos',
+          description: 'Delivery photo records for your deliveries',
+          count: deliveryPhotoCountResult.rows[0]?.count || 0,
+          retentionDays: retentionPolicies.delivery_photos?.retention_days,
+          autoDelete: retentionPolicies.delivery_photos?.auto_delete
+        },
         { category: 'deliveries', description: 'Delivery notifications', count: 0 },
-        { category: 'emergencies', description: 'Emergency incidents', count: 0 },
-        { category: 'activityLogs', description: 'System activity logs', count: 0 }
+        { category: 'emergencies', description: 'Emergency incidents', count: 0 }
       ],
       lastAccessed: new Date().toISOString()
     }
@@ -455,6 +517,18 @@ router.post('/delete-account', authenticateToken, asyncHandler(async (req, res) 
   if (!confirmDeletion) {
     throw new AppError('Please confirm account deletion', 400, 'CONFIRMATION_REQUIRED');
   }
+
+  await databaseService.query(
+    `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, created_at)
+     VALUES ($1, $2, $3, $4, $5, NOW())`,
+    [
+      null,
+      'data_deletion_initiated',
+      'user_account',
+      String(userId),
+      JSON.stringify({ reason: reason || 'User requested immediate deletion' })
+    ]
+  );
 
   // Execute immediate deletion using userService
   await userService.deleteUserData(userId);
@@ -595,16 +669,27 @@ router.get('/processing-activities', authenticateToken, asyncHandler(async (req,
  * @access  Private
  */
 router.get('/retention-policies', authenticateToken, asyncHandler(async (req, res) => {
-  res.json({
-    success: true,
-    data: [
-      { category: 'Visitor Records', retention: '365 days', autoDelete: true },
-      { category: 'Access Logs', retention: '730 days', autoDelete: true },
-      { category: 'Emergency Incidents', retention: '90 days', autoDelete: true },
-      { category: 'Delivery Photos', retention: '30 days', autoDelete: true },
-      { category: 'Audit Logs', retention: '7 years', autoDelete: false }
-    ]
-  });
+  try {
+    const policies = await databaseService.query(
+      'SELECT * FROM data_retention_policies ORDER BY table_name'
+    );
+
+    res.json({
+      success: true,
+      data: policies.rows
+    });
+  } catch (error) {
+    res.json({
+      success: true,
+      data: [
+        { category: 'Visitor Records', retention: '365 days', autoDelete: true },
+        { category: 'Access Logs', retention: '730 days', autoDelete: true },
+        { category: 'Emergency Incidents', retention: '90 days', autoDelete: true },
+        { category: 'Delivery Photos', retention: '30 days', autoDelete: true },
+        { category: 'Audit Logs', retention: '7 years', autoDelete: false }
+      ]
+    });
+  }
 }));
 
 /**

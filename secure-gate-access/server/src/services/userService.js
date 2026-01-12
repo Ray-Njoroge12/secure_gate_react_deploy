@@ -805,6 +805,15 @@ class UserService {
         [userId]
       );
 
+      // Get access logs related to user
+      const accessLogsResult = await this.db.query(
+        `SELECT action, log_time, request_id, entity_type, entity_id, outcome, message, metadata
+         FROM access_logs WHERE user_id = $1
+         ORDER BY log_time DESC
+         LIMIT 1000`,
+        [userId]
+      );
+
       return {
         profile: {
           id: user.id,
@@ -821,6 +830,7 @@ class UserService {
         visitors: visitorsResult.rows,
         recurringPasses: passesResult.rows,
         deliveries: deliveriesResult.rows,
+        accessLogs: accessLogsResult.rows,
         auditLogs: auditLogsResult.rows,
         exportMetadata: {
           exportedAt: new Date().toISOString(),
@@ -829,6 +839,7 @@ class UserService {
             visitors: visitorsResult.rows.length,
             passes: passesResult.rows.length,
             deliveries: deliveriesResult.rows.length,
+            accessLogs: accessLogsResult.rows.length,
             auditLogs: auditLogsResult.rows.length
           }
         }
@@ -896,6 +907,18 @@ class UserService {
 
       await this.db.query('COMMIT');
 
+      await this.db.query(
+        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [
+          null,
+          'data_deletion_completed',
+          'user_account',
+          String(userId),
+          JSON.stringify({ email: deleteResult.rows[0].email })
+        ]
+      );
+
       console.log(`User data deleted for user ID: ${userId}`);
 
       return {
@@ -924,6 +947,18 @@ class UserService {
              purpose = 'Historical Record - User Deleted'
          WHERE host_id = $1 AND status = 'checked_out'`,
         [userId]
+      );
+
+      await this.db.query(
+        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [
+          null,
+          'data_anonymization_completed',
+          'visitor_records',
+          String(userId),
+          JSON.stringify({ source: 'user_deletion' })
+        ]
       );
 
       console.log(`Historical records anonymized for user ID: ${userId}`);

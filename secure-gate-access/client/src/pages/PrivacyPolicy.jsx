@@ -252,8 +252,9 @@ const PrivacyPolicy = () => {
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
             <p className="text-sm text-green-800">
-              <strong>Data Retention:</strong> Personal data is retained for 7 years (users) and 5 years (visitors) 
-              as required by law and business needs.
+              <strong>Data Retention:</strong> We retain visitor access logs for 2 years, delivery photos for 30 days, 
+              and audit logs for 7 years to meet security and legal obligations. Other visitor records are retained 
+              in line with operational needs and applicable law.
             </p>
           </div>
         </div>
