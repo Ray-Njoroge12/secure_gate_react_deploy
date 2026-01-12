@@ -29,6 +29,23 @@ Use this runbook when API latency spikes, queries time out, or the database is u
    - Reduce max pool size to avoid exhaustion.
    - Increase timeouts for long-running reports.
 
+## Failover Success Criteria
+1. **Recovery Time Objective (RTO)**
+   - End-to-end failover completes in **< 5 minutes** from initiation to healthy primary/replica.
+2. **Error rate thresholds**
+   - During failover: HTTP 5xx + DB errors **< 5%**.
+   - After stabilization: HTTP 5xx + DB errors **< 1%** for the stability window.
+3. **Stability window**
+   - Observe a **15–30 minute** period with stable latency, error rates, and replication status.
+4. **Verification (dashboards/log queries)**
+   - **Latency:** APM dashboard for `/api/health/detailed` and critical endpoints (login, invite create, guard check‑in).
+   - **Error rate:** HTTP 5xx dashboard + DB error logs filtered by `Database health check failed` or `connection error`.
+   - **Replication:** DB dashboard for replica lag and primary/replica role status.
+   - **Health checks:** `/api/health/detailed` and `/api/system/database/health` show `healthy`.
+5. **Go/No-go (rollback criteria)**
+   - **Rollback if** RTO exceeds 5 minutes, error rate exceeds thresholds after stabilization, or replication lag remains elevated.
+   - **Rollback steps:** revert to previous primary/replica configuration and re-route traffic to last known healthy instance.
+
 ## Recovery & Verification
 - Re-run `/api/health/detailed` until database status returns to `healthy`.
 - Validate critical flows: login, create invite, guard check‑in.
