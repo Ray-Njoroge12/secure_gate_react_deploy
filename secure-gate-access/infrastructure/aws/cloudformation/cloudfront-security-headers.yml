@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFront Response Headers Policy with HSTS and secure headers.
+
+Parameters:
+  PolicyName:
+    Type: String
+    Default: secure-gate-response-headers
+  HstsMaxAgeSeconds:
+    Type: Number
+    Default: 31536000
+
+Resources:
+  ResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Ref PolicyName
+        Comment: Enforce HSTS and baseline security headers
+        SecurityHeadersConfig:
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: !Ref HstsMaxAgeSeconds
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: same-origin
+            Override: true
+          XSSProtection:
+            Protection: true
+            ModeBlock: true
+            Override: true
+
+Outputs:
+  ResponseHeadersPolicyId:
+    Value: !Ref ResponseHeadersPolicy

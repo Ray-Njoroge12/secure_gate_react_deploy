@@ -225,6 +225,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Lint IAM policies
+        run: node scripts/security/iam-policy-lint.js infrastructure/aws/iam
+
       - name: Audit backend dependencies
         working-directory: ./server
         run: npm audit --audit-level=high
@@ -234,6 +237,12 @@ jobs:
         working-directory: ./client
         run: npm audit --audit-level=critical
         continue-on-error: true
+
+      - name: Run tfsec (Terraform security scan)
+        if: ${{ hashFiles('**/*.tf') != '' }}
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          additional_args: --no-color
 
   # Build Check
   build:
