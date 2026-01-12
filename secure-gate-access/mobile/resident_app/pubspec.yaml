@@ -1,0 +1,17 @@
+name: secure_gate_resident
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=2.19.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
