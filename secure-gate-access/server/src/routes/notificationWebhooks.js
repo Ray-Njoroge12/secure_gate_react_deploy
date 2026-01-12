@@ -13,6 +13,7 @@ import loggingService from '../services/loggingService.js';
 import db from '../database/db.enhanced.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
 
 const router = express.Router();
 
@@ -195,7 +196,8 @@ async function logDeliveryEvent(event) {
 router.post('/mailgun/delivered', async (req, res) => {
   try {
     const { signature, token, timestamp } = req.body;
-    const eventData = req.body['event-data'] || {};
+    const mailgunProvider = getEmailProvider('mailgun');
+    const parsedEvent = mailgunProvider?.parseWebhook?.(req.body);
 
     // Verify signature
     const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
@@ -204,23 +206,25 @@ router.post('/mailgun/delivered', async (req, res) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    const messageId = eventData['message-id'] || eventData.id;
+    const messageId = parsedEvent?.messageId;
+    const status = parsedEvent?.status || 'delivered';
+    const eventData = parsedEvent?.metadata || {};
 
-    await updateNotificationStatus(messageId, 'delivered', 'mailgun', {
-      recipient: eventData.recipient,
-      timestamp: eventData.timestamp,
-      event: eventData.event
-    });
+    if (!messageId) {
+      return res.status(400).json({ error: 'Missing message ID' });
+    }
+
+    await updateNotificationStatus(messageId, status, 'mailgun', eventData);
 
     await logDeliveryEvent({
       message_id: messageId,
-      event_type: 'delivered',
+      event_type: status,
       provider: 'mailgun',
       data: eventData
     });
     notificationMetricsService.recordDeliveryEvent({
       provider: 'mailgun',
-      status: 'delivered',
+      status,
       messageId,
       metadata: { recipient: eventData.recipient }
     });
@@ -240,7 +244,8 @@ router.post('/mailgun/delivered', async (req, res) => {
 router.post('/mailgun/failed', async (req, res) => {
   try {
     const { signature, token, timestamp } = req.body;
-    const eventData = req.body['event-data'] || {};
+    const mailgunProvider = getEmailProvider('mailgun');
+    const parsedEvent = mailgunProvider?.parseWebhook?.(req.body);
 
     // Verify signature
     const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
@@ -249,26 +254,29 @@ router.post('/mailgun/failed', async (req, res) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    const messageId = eventData['message-id'] || eventData.id;
-    const severity = eventData.severity;
-    const reason = eventData['delivery-status']?.message || 'Unknown error';
+    const messageId = parsedEvent?.messageId;
+    const status = parsedEvent?.status || 'failed';
+    const eventData = parsedEvent?.metadata || {};
+    const reason = parsedEvent?.reason || eventData['delivery-status']?.message || 'Unknown error';
 
-    await updateNotificationStatus(messageId, 'failed', 'mailgun', {
-      recipient: eventData.recipient,
-      severity,
-      reason,
-      timestamp: eventData.timestamp
+    if (!messageId) {
+      return res.status(400).json({ error: 'Missing message ID' });
+    }
+
+    await updateNotificationStatus(messageId, status, 'mailgun', {
+      ...eventData,
+      reason
     });
 
     await logDeliveryEvent({
       message_id: messageId,
-      event_type: 'failed',
+      event_type: status,
       provider: 'mailgun',
       data: eventData
     });
     notificationMetricsService.recordDeliveryEvent({
       provider: 'mailgun',
-      status: 'failed',
+      status,
       messageId,
       metadata: { recipient: eventData.recipient, reason }
     });
@@ -288,7 +296,8 @@ router.post('/mailgun/failed', async (req, res) => {
 router.post('/mailgun/bounced', async (req, res) => {
   try {
     const { signature, token, timestamp } = req.body;
-    const eventData = req.body['event-data'] || {};
+    const mailgunProvider = getEmailProvider('mailgun');
+    const parsedEvent = mailgunProvider?.parseWebhook?.(req.body);
 
     // Verify signature
     const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
@@ -297,25 +306,29 @@ router.post('/mailgun/bounced', async (req, res) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    const messageId = eventData['message-id'] || eventData.id;
-    const reason = eventData['delivery-status']?.description || 'Bounced';
+    const messageId = parsedEvent?.messageId;
+    const status = parsedEvent?.status || 'bounced';
+    const eventData = parsedEvent?.metadata || {};
+    const reason = parsedEvent?.reason || eventData['delivery-status']?.description || 'Bounced';
 
-    await updateNotificationStatus(messageId, 'bounced', 'mailgun', {
-      recipient: eventData.recipient,
-      reason,
-      timestamp: eventData.timestamp,
-      code: eventData['delivery-status']?.code
+    if (!messageId) {
+      return res.status(400).json({ error: 'Missing message ID' });
+    }
+
+    await updateNotificationStatus(messageId, status, 'mailgun', {
+      ...eventData,
+      reason
     });
 
     await logDeliveryEvent({
       message_id: messageId,
-      event_type: 'bounced',
+      event_type: status,
       provider: 'mailgun',
       data: eventData
     });
     notificationMetricsService.recordDeliveryEvent({
       provider: 'mailgun',
-      status: 'bounced',
+      status,
       messageId,
       metadata: { recipient: eventData.recipient, reason }
     });
@@ -344,40 +357,27 @@ router.post('/africas-talking/delivery', async (req, res) => {
       return res.status(401).send('Unauthorized');
     }
 
-    const {
-      id,
-      status,
-      phoneNumber,
-      failureReason,
-      retryCount,
-      networkCode
-    } = req.body;
+    const smsProvider = getSmsProvider('africastalking');
+    const parsedEvent = smsProvider?.parseDeliveryCallback?.(req.body);
 
-    let deliveryStatus;
-    switch (status) {
-      case 'Success':
-        deliveryStatus = 'delivered';
-        break;
-      case 'Failed':
-        deliveryStatus = 'failed';
-        break;
-      case 'Sent':
-        deliveryStatus = 'sent';
-        break;
-      default:
-        deliveryStatus = status.toLowerCase();
+    const messageId = parsedEvent?.messageId;
+    const deliveryStatus = parsedEvent?.status;
+    const metadata = parsedEvent?.metadata || {};
+
+    if (!messageId || !deliveryStatus) {
+      return res.status(400).send('Invalid delivery payload');
     }
 
-    await updateNotificationStatus(id, deliveryStatus, 'africas_talking', {
-      phone_number: phoneNumber,
-      failure_reason: failureReason,
-      retry_count: retryCount,
-      network_code: networkCode,
-      status: status
+    await updateNotificationStatus(messageId, deliveryStatus, 'africas_talking', {
+      phone_number: metadata.phoneNumber,
+      failure_reason: metadata.failureReason,
+      retry_count: metadata.retryCount,
+      network_code: metadata.networkCode,
+      status: metadata.rawStatus
     });
 
     await logDeliveryEvent({
-      message_id: id,
+      message_id: messageId,
       event_type: deliveryStatus,
       provider: 'africas_talking',
       data: req.body
@@ -385,8 +385,8 @@ router.post('/africas-talking/delivery', async (req, res) => {
     notificationMetricsService.recordDeliveryEvent({
       provider: 'africas_talking',
       status: deliveryStatus,
-      messageId: id,
-      metadata: { phoneNumber, status }
+      messageId,
+      metadata: { phoneNumber: metadata.phoneNumber, status: metadata.rawStatus }
     });
 
     res.status(200).send('Received');
