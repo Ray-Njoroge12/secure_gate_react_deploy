@@ -209,6 +209,48 @@ describe('QRCodeService', () => {
       });
     });
 
+    describe('consumeQRCode', () => {
+      it('should reject expired QR code on consume', async () => {
+        const qrToken = JSON.stringify({ token: 'valid-jwt', qrId: 'expired-qr' });
+
+        jwt.verify.mockReturnValue({ qrId: 'expired-qr', visitorId: 1 });
+        dbManager.query
+          .mockResolvedValueOnce({ rows: [] })
+          .mockResolvedValueOnce({
+            rows: [{
+              qr_id: 'expired-qr',
+              status: 'active',
+              expires_at: new Date(Date.now() - 1000)
+            }]
+          });
+
+        const result = await qrCodeService.consumeQRCode(qrToken, { guardId: 7 });
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('expired');
+      });
+
+      it('should reject reused QR code on consume', async () => {
+        const qrToken = JSON.stringify({ token: 'valid-jwt', qrId: 'used-qr' });
+
+        jwt.verify.mockReturnValue({ qrId: 'used-qr', visitorId: 1 });
+        dbManager.query
+          .mockResolvedValueOnce({ rows: [] })
+          .mockResolvedValueOnce({
+            rows: [{
+              qr_id: 'used-qr',
+              status: 'used',
+              expires_at: new Date(Date.now() + 1000)
+            }]
+          });
+
+        const result = await qrCodeService.consumeQRCode(qrToken, { guardId: 9 });
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('already been used');
+      });
+    });
+
     describe('markQRCodeUsed', () => {
       it('should mark QR code as used with scan count', async () => {
         const qrToken = JSON.stringify({ qrId: 'test-qr-id', token: 'jwt' });
