@@ -43,6 +43,7 @@ import { dbManager } from './src/database/db.enhanced.js';
 // Don't extract pool here - it's null until initializeAsync() is called
 // Access dbManager.pool dynamically when needed
 import monitoringDashboard from './src/services/monitoringDashboardService.js';
+import { startDataRetentionScheduler, stopDataRetentionScheduler } from './src/services/dataRetentionService.js';
 
 // Import WebSocket service for Phase 2.3 real-time features
 import webSocketService from './src/services/websocketService.js';
@@ -321,6 +322,9 @@ async function startServer() {
     console.log('📊 Starting monitoring dashboard service...');
     monitoringDashboard.start();
 
+    // Start data retention cleanup scheduler
+    startDataRetentionScheduler();
+
     // Initialize enhanced health monitoring
     await initializeHealthMonitoring();
 
@@ -368,6 +372,9 @@ async function startServer() {
           console.log('📊 Stopping monitoring dashboard...');
           monitoringDashboard.stop();
         }
+
+        // Step 2b: Stop data retention scheduler
+        stopDataRetentionScheduler();
         
         // Step 3: Wait for existing connections to drain (with timeout)
         await new Promise((resolve) => {

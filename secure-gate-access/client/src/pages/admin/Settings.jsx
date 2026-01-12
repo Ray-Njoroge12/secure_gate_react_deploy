@@ -62,6 +62,12 @@ export default function Settings() {
     last_review_status: "pending",
     last_review_notes: []
   });
+  const [retentionPolicy, setRetentionPolicy] = useState({
+    policies: [],
+    legalBasis: "Kenya Data Protection Act 2019",
+    lastUpdated: null,
+    contactEmail: "privacy@securegate.com"
+  });
   const [reviewRunning, setReviewRunning] = useState(false);
 
   const handleSave = (section, e) => {
@@ -125,17 +131,19 @@ export default function Settings() {
     setComplianceLoading(true);
     setComplianceError(null);
     try {
-      const [dpoResponse, odpcResponse, metadataResponse] = await Promise.all([
+      const [dpoResponse, odpcResponse, metadataResponse, retentionResponse] = await Promise.all([
         fetch("/api/privacy/dpo"),
         fetch("/api/privacy/odpc-registration"),
-        fetch("/api/privacy/policy-metadata")
+        fetch("/api/privacy/policy-metadata"),
+        fetch("/api/privacy/retention-policy")
       ]);
 
       const dpoData = await dpoResponse.json();
       const odpcData = await odpcResponse.json();
       const metadataData = await metadataResponse.json();
+      const retentionData = await retentionResponse.json();
 
-      if (!dpoData.success || !odpcData.success || !metadataData.success) {
+      if (!dpoData.success || !odpcData.success || !metadataData.success || !retentionData.success) {
         throw new Error("Failed to load compliance settings");
       }
 
@@ -159,6 +167,13 @@ export default function Settings() {
         last_reviewed_at: metadataData.data.last_reviewed_at,
         last_review_status: metadataData.data.last_review_status || "pending",
         last_review_notes: metadataData.data.last_review_notes || []
+      });
+
+      setRetentionPolicy({
+        policies: retentionData.data.policies || [],
+        legalBasis: retentionData.data.legalBasis,
+        lastUpdated: retentionData.data.lastUpdated,
+        contactEmail: retentionData.data.contactEmail
       });
 
       setComplianceLoaded(true);
@@ -678,6 +693,48 @@ export default function Settings() {
                     >
                       {reviewRunning ? "Running Review..." : "Run Compliance Review"}
                     </button>
+                  </div>
+
+                  <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Retention Policy Overview</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Legal basis: {retentionPolicy.legalBasis || "Kenya Data Protection Act 2019"}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Last updated: {formatDateValue(retentionPolicy.lastUpdated)}
+                    </p>
+                    <div className="mt-4 space-y-3">
+                      {retentionPolicy.policies.length === 0 ? (
+                        <p className="text-sm text-gray-500">No retention policies configured.</p>
+                      ) : (
+                        retentionPolicy.policies.map((policy) => (
+                          <div
+                            key={policy.table_name}
+                            className="flex items-start justify-between gap-4 border border-gray-100 dark:border-gray-700 rounded-md p-3"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {policy.category || policy.table_name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                Table: {policy.table_name}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-gray-700 dark:text-gray-200">
+                                {policy.retention_days} days
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {policy.auto_delete ? "Auto delete" : "Manual retention"}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                      Contact {retentionPolicy.contactEmail || "privacy@securegate.com"} for retention adjustments.
+                    </p>
                   </div>
                 </div>
               )}
