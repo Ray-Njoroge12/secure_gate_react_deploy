@@ -32,6 +32,11 @@ Use this runbook when a guard device loses connectivity or cannot sync events, i
 - Ensure queued events (check-ins, incident notes) sync successfully.
 - Monitor audit logs for late-arriving events.
 
+## Escalation & Communications
+- Notify site supervisor if offline time exceeds 15 minutes.
+- Share manual check-in guidance with affected estate admins.
+- Log incident in ops channel with device ID and location.
+
 ## Post-Incident Follow‑ups
 - Record outage duration in incident log.
 - Update device inventory and network coverage notes.
