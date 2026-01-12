@@ -110,7 +110,7 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  * Check in a visitor by ID
  * POST /api/check-in/:visitorId
  */
-router.post('/:visitorId', authenticate Token, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { visitorId } = req.params;
   const guardId = req.user.id;
   const { notes, vehicle_plate } = req.body;
