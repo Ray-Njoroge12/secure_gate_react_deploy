@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFront WAFv2 WebACL with managed rules and baseline custom protections.
+
+Parameters:
+  WebAclName:
+    Type: String
+    Default: secure-gate-cloudfront-web-acl
+  RateLimit:
+    Type: Number
+    Default: 2000
+    Description: Requests per 5-minute period per IP
+
+Resources:
+  CloudFrontWebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Ref WebAclName
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        MetricName: secure-gate-cloudfront-web-acl
+        SampledRequestsEnabled: true
+      Rules:
+        - Name: AWSManagedRulesCommonRuleSet
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: managed-common
+            SampledRequestsEnabled: true
+        - Name: AWSManagedRulesKnownBadInputsRuleSet
+          Priority: 1
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: managed-bad-inputs
+            SampledRequestsEnabled: true
+        - Name: AWSManagedRulesSQLiRuleSet
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesSQLiRuleSet
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: managed-sqli
+            SampledRequestsEnabled: true
+        - Name: AWSManagedRulesAmazonIpReputationList
+          Priority: 3
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAmazonIpReputationList
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: managed-ip-reputation
+            SampledRequestsEnabled: true
+        - Name: RateLimitByIp
+          Priority: 10
+          Action:
+            Block: {}
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              Limit: !Ref RateLimit
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: rate-limit
+            SampledRequestsEnabled: true
+
+Outputs:
+  CloudFrontWebAclArn:
+    Value: !GetAtt CloudFrontWebAcl.Arn
