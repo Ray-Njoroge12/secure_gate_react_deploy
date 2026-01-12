@@ -181,7 +181,8 @@ class SyncService {
     const results = {
       processed: 0,
       conflicts: [],
-      errors: []
+      errors: [],
+      duplicates: []
     };
 
     try {
@@ -192,11 +193,25 @@ class SyncService {
 
       for (const change of changes) {
         try {
+          if (change.idempotencyKey) {
+            const isDuplicate = await this.isDuplicateChange(userId, change.idempotencyKey);
+            if (isDuplicate) {
+              results.duplicates.push({
+                change,
+                reason: 'idempotency_key_already_processed'
+              });
+              continue;
+            }
+          }
+
           const result = await this.processSingleChange(userId, userRole, change);
           if (result.conflict) {
             results.conflicts.push(result);
           } else {
             results.processed++;
+            if (change.idempotencyKey) {
+              await this.logProcessedChange(userId, change);
+            }
           }
         } catch (error) {
           results.errors.push({
@@ -210,13 +225,39 @@ class SyncService {
       await this.logSyncEvent(userId, 'upload', packageId, {
         processed: results.processed,
         conflicts: results.conflicts.length,
-        errors: results.errors.length
+        errors: results.errors.length,
+        duplicates: results.duplicates.length
       });
 
       return results;
     } catch (error) {
       console.error('Error processing offline changes:', error);
       throw error;
+    }
+  }
+
+  async isDuplicateChange(userId, idempotencyKey) {
+    try {
+      const result = await pool.query(
+        `SELECT 1 FROM sync_change_log WHERE user_id = $1 AND idempotency_key = $2`,
+        [userId, idempotencyKey]
+      );
+      return result.rows.length > 0;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async logProcessedChange(userId, change) {
+    try {
+      await pool.query(
+        `INSERT INTO sync_change_log (user_id, idempotency_key, entity, action, created_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (user_id, idempotency_key) DO NOTHING`,
+        [userId, change.idempotencyKey, change.entity, change.action]
+      );
+    } catch (error) {
+      console.warn('Failed to log sync change idempotency:', error);
     }
   }
 
