@@ -288,8 +288,30 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Admin Views Quick Links */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Admin Views</h2>
+          <p className="text-sm text-gray-600 mt-1">Jump to operational health, audit, and queue recovery panels</p>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <a href="#health-metrics" className="border border-gray-200 rounded-md p-4 hover:border-blue-500">
+            <h3 className="text-sm font-semibold text-gray-900">Health Metrics</h3>
+            <p className="text-xs text-gray-600 mt-1">Status of database, queues, and integrations</p>
+          </a>
+          <a href="#audit-logs" className="border border-gray-200 rounded-md p-4 hover:border-blue-500">
+            <h3 className="text-sm font-semibold text-gray-900">Audit Logs</h3>
+            <p className="text-xs text-gray-600 mt-1">Track admin actions and sensitive events</p>
+          </a>
+          <a href="#queue-failures" className="border border-gray-200 rounded-md p-4 hover:border-blue-500">
+            <h3 className="text-sm font-semibold text-gray-900">Queue Failures</h3>
+            <p className="text-xs text-gray-600 mt-1">Retry DLQ notifications and review failures</p>
+          </a>
+        </div>
+      </div>
+
       {/* Health Metrics Section */}
-      <div data-tour="health-metrics" className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+      <div id="health-metrics" data-tour="health-metrics" className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Health Metrics</h2>
@@ -334,7 +356,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Audit Logs Section */}
-      <div data-tour="audit-logs" className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div id="audit-logs" data-tour="audit-logs" className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex flex-row items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Audit Logs</h2>
           <div className="flex items-center gap-2">
@@ -433,7 +455,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Notification Queue Failures */}
-      <div data-tour="queue-failures" className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+      <div id="queue-failures" data-tour="queue-failures" className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Notification Queue Failures</h2>

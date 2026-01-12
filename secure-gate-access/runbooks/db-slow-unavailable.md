@@ -51,6 +51,11 @@ Use this runbook when API latency spikes, queries time out, or the database is u
 - Validate critical flows: login, create invite, guard check‑in.
 - Resume paused jobs and clear any backlog.
 
+## Escalation & Communications
+- Notify on-call DB owner and incident lead with impact summary.
+- Communicate expected user impact to customer success.
+- Schedule status updates every 15–30 minutes during degradation.
+
 ## Post-Incident Follow‑ups
 - Capture incident timeline and root cause analysis.
 - Add preventive checks: alert on pool saturation and latency.
