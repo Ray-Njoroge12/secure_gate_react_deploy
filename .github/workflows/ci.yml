@@ -110,6 +110,10 @@ jobs:
             psql -v ON_ERROR_STOP=1 -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f "$f"
           done
 
+      - name: Run critical flow tests
+        working-directory: secure-gate-access/server
+        run: npm run test:critical
+
       - name: Run server tests
         working-directory: secure-gate-access/server
         run: npm test
