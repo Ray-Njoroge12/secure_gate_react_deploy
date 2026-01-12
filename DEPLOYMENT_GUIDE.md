@@ -5,11 +5,12 @@
 
 ## 📋 Table of Contents
 1. [Pre-Deployment Checklist](#pre-deployment-checklist)
-2. [Server Deployment (Render)](#server-deployment-render)
-3. [Client Deployment (Netlify)](#client-deployment-netlify)
-4. [Post-Deployment Verification](#post-deployment-verification)
-5. [Environment Variables Reference](#environment-variables-reference)
-6. [Troubleshooting](#troubleshooting)
+2. [CI/CD Pipeline (GitHub Actions)](#cicd-pipeline-github-actions)
+3. [Server Deployment (Render)](#server-deployment-render)
+4. [Client Deployment (Netlify)](#client-deployment-netlify)
+5. [Post-Deployment Verification](#post-deployment-verification)
+6. [Environment Variables Reference](#environment-variables-reference)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -51,6 +52,66 @@ openssl rand -base64 64
 ```
 
 Save these securely - you'll need them for environment variables.
+
+---
+
+## 🚀 CI/CD Pipeline (GitHub Actions)
+
+The repository uses GitHub Actions to build, test, and deploy to staging and production. The workflow is defined in `.github/workflows/deploy.yml` and includes:
+
+1. **Build/Test**: Runs server dependency installation and `npm test`, then runs the root `npm run build`.
+2. **Deploy to Staging**: Updates ECS or Elastic Beanstalk using the deployment script, then runs smoke tests against the staging URL.
+3. **Deploy to Production**: Requires staging success and manual approval via the `production` environment (or protected branch rules), then runs smoke tests against the production URL.
+
+### Workflow Triggers
+- **Push to `develop`** → build/test → deploy staging → smoke tests.
+- **Push to `main`** → build/test → deploy staging → smoke tests → production deploy (manual approval required).
+- **Manual (workflow_dispatch)** → select `staging` or `production`.
+
+### Deployment Script
+The pipeline calls `secure-gate-access/scripts/deploy-aws.sh` which supports:
+
+- **ECS**: `DEPLOY_TARGET=ecs` with `ECS_CLUSTER`, `ECS_SERVICE`, and optional `ECS_TASK_DEFINITION`.
+- **Elastic Beanstalk**: `DEPLOY_TARGET=eb` with `EB_APP`, `EB_ENV`, and `EB_VERSION_LABEL`.
+
+### Required GitHub Secrets (Environment-Specific)
+Define secrets in **GitHub Environments** (`staging`, `production`) so each environment can use different values:
+
+**Common AWS Secrets**
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `DEPLOY_TARGET` (`ecs` or `eb`)
+
+**ECS Secrets (if using ECS)**
+- `ECS_CLUSTER`
+- `ECS_SERVICE`
+- `ECS_TASK_DEFINITION` (optional; if omitted, deploy forces a new deployment)
+
+**Elastic Beanstalk Secrets (if using EB)**
+- `EB_APP`
+- `EB_ENV`
+- `EB_VERSION_LABEL`
+
+**Smoke Test Secrets**
+- `STAGING_BASE_URL` / `PROD_BASE_URL`
+- `STAGING_SMOKE_LOGIN_EMAIL` / `PROD_SMOKE_LOGIN_EMAIL`
+- `STAGING_SMOKE_LOGIN_PASSWORD` / `PROD_SMOKE_LOGIN_PASSWORD`
+- `STAGING_SMOKE_ADMIN_EMAIL` / `PROD_SMOKE_ADMIN_EMAIL` (optional for DB health checks)
+- `STAGING_SMOKE_ADMIN_PASSWORD` / `PROD_SMOKE_ADMIN_PASSWORD` (optional)
+- `STAGING_SMOKE_ADMIN_TOKEN` / `PROD_SMOKE_ADMIN_TOKEN` (optional; overrides admin login)
+
+### Smoke Test Coverage
+The smoke tests run `secure-gate-access/server/scripts/smoke-test.js` and verify:
+
+- `GET /health`, `/health/ready`, `/health/live`
+- Minimal auth flow via `POST /api/auth/login`
+- Optional database connectivity check via `GET /api/system/database/health` when admin credentials/token are provided
+- Core API endpoint availability (visitors, deliveries, recurring passes, rideshare, ANPR contract)
+
+### Rollback Guidance
+- **ECS**: Re-deploy the previous task definition revision (set `ECS_TASK_DEFINITION` to the known good revision and re-run the workflow).
+- **Elastic Beanstalk**: Update to the previous version label by setting `EB_VERSION_LABEL` to the last known good version.
 
 ---
 
