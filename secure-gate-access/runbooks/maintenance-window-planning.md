@@ -3,6 +3,12 @@
 ## Overview
 Use this runbook to plan a low-impact maintenance window for infrastructure or application changes.
 
+## Scope
+This runbook applies to both staging and production environments:
+- **Staging:** Multi-AZ RDS (`secure-gate-postgres`) for failover testing
+- **Production:** Multi-AZ RDS with high-availability requirements
+- **Infrastructure:** Defined in `/infra/main.tf` with `var.db_multi_az = true`
+
 ## Inputs
 - APM dashboards (Datadog/New Relic) or CloudWatch metrics.
 - Current on-call schedule and business calendar.
