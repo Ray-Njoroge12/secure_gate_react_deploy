@@ -13,13 +13,19 @@ import loggingService from '../services/loggingService.js';
  */
 export const correlationIdMiddleware = (req, res, next) => {
   // Get correlation ID from header or generate new one
-  const correlationId = req.headers['x-correlation-id'] ||
+  const correlationId = req.correlationId ||
+                       req.requestId ||
+                       req.id ||
+                       req.headers['x-correlation-id'] ||
                        req.headers['x-request-id'] ||
                        uuidv4();
 
   // Set correlation ID in request and response
   req.correlationId = correlationId;
+  req.requestId = correlationId;
+  req.id = correlationId;
   res.setHeader('X-Correlation-Id', correlationId);
+  res.setHeader('X-Request-Id', correlationId);
 
   // Set in logging service for this request (with error handling)
   try {
@@ -50,6 +56,11 @@ export const requestLoggingMiddleware = (req, res, next) => {
   // Log request start
   loggingService.logAPI('info', 'Request started', req, {
     correlationId: req.correlationId,
+    request_id: req.requestId || req.correlationId,
+    user_id: req.user?.id ?? null,
+    estate_id: req.user?.estate_id ?? null,
+    role: req.user?.role ?? null,
+    route: req.originalUrl,
     startTime: new Date(startTime).toISOString()
   });
 
@@ -73,6 +84,13 @@ export const requestLoggingMiddleware = (req, res, next) => {
     // Log response
     loggingService.logAPI(logLevel, 'Request completed', req, {
       correlationId: req.correlationId,
+      request_id: req.requestId || req.correlationId,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null,
+      role: req.user?.role ?? null,
+      route: req.originalUrl,
+      status: res.statusCode,
+      latency: duration,
       statusCode: res.statusCode,
       duration,
       memoryUsed,

@@ -8,6 +8,7 @@ import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import metricsService from '../services/metricsService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,14 +20,36 @@ const logFormat = winston.format.combine(
   }),
   winston.format.errors({ stack: true }),
   winston.format.json(),
-  winston.format.printf(({ timestamp, level, message, service, requestId, userId, ...meta }) => {
+  winston.format.printf(({
+    timestamp,
+    level,
+    message,
+    service,
+    requestId,
+    userId,
+    request_id,
+    user_id,
+    estate_id,
+    role,
+    route,
+    status,
+    latency,
+    ...meta
+  }) => {
+    const normalizedRequestId = request_id || requestId;
+    const normalizedUserId = user_id || userId;
     const logEntry = {
       timestamp,
       level,
       message,
       service: service || 'secure-gate',
-      ...(requestId && { requestId }),
-      ...(userId && { userId }),
+      ...(normalizedRequestId && { request_id: normalizedRequestId }),
+      ...(normalizedUserId && { user_id: normalizedUserId }),
+      ...(estate_id !== undefined && { estate_id }),
+      ...(role && { role }),
+      ...(route && { route }),
+      ...(status !== undefined && { status }),
+      ...(latency !== undefined && { latency }),
       ...(Object.keys(meta).length > 0 && { meta })
     };
     return JSON.stringify(logEntry);
@@ -184,16 +207,24 @@ export const auditLogger = createSpecializedLogger('audit');
 // Request logger middleware
 export const requestLogger = (req, res, next) => {
   const startTime = Date.now();
-  const requestId = req.id || 'unknown';
+  const requestId = req.requestId || req.correlationId || req.id || 'unknown';
+  const userId = req.user?.id ?? null;
+  const estateId = req.user?.estate_id ?? req.user?.estateId ?? null;
+  const role = req.user?.role ?? null;
+  const route = req.originalUrl;
   
   // Log request
   apiLogger.info('Request started', {
     requestId,
+    request_id: requestId,
+    user_id: userId,
+    estate_id: estateId,
+    role,
+    route,
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: req.user?.id
+    userAgent: req.get('User-Agent')
   });
 
   // Override res.end to log response
@@ -203,22 +234,45 @@ export const requestLogger = (req, res, next) => {
     
     apiLogger.info('Request completed', {
       requestId,
+      request_id: requestId,
+      user_id: userId,
+      estate_id: estateId,
+      role,
+      route,
+      status: res.statusCode,
+      latency: duration,
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
-      duration,
-      userId: req.user?.id
+      duration
+    });
+
+    metricsService.recordRequest({
+      requestId,
+      userId,
+      estateId,
+      role,
+      route,
+      method: req.method,
+      statusCode: res.statusCode,
+      latencyMs: duration
     });
 
     // Log performance metrics for slow requests
     if (duration > 1000) {
       performanceLogger.warn('Slow request detected', {
         requestId,
+        request_id: requestId,
+        user_id: userId,
+        estate_id: estateId,
+        role,
+        route,
+        status: res.statusCode,
+        latency: duration,
         method: req.method,
         url: req.originalUrl,
         duration,
-        statusCode: res.statusCode,
-        userId: req.user?.id
+        statusCode: res.statusCode
       });
     }
 
@@ -366,7 +420,4 @@ export const setupLogRotation = () => {
 
 // Export main logger
 export default logger;
-
-
-
 
