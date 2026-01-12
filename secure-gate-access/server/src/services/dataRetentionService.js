@@ -23,7 +23,7 @@ const recordRetentionAudit = async ({ tableName, action, affectedRows }) => {
 const cleanupAccessLogs = async (retentionDays) => {
   const result = await dbManager.query(
     `DELETE FROM access_logs
-     WHERE created_at < NOW() - ($1 || ' days')::INTERVAL`,
+     WHERE log_time < NOW() - ($1 || ' days')::INTERVAL`,
     [retentionDays]
   );
 
@@ -111,13 +111,16 @@ export const runDataRetentionCleanup = async () => {
   }
 };
 
-export const startDataRetentionScheduler = ({ intervalMs = DEFAULT_INTERVAL_MS } = {}) => {
+export const startDataRetentionScheduler = ({ intervalMs = DEFAULT_INTERVAL_MS, runImmediately = false } = {}) => {
   if (schedulerStarted) {
     return;
   }
 
   schedulerStarted = true;
-  runDataRetentionCleanup();
+  
+  if (runImmediately) {
+    runDataRetentionCleanup();
+  }
 
   retentionTimer = setInterval(() => {
     runDataRetentionCleanup();
