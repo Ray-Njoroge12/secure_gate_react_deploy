@@ -106,6 +106,12 @@ variable "db_engine_version" {
   default     = "15.4"
 }
 
+variable "db_multi_az" {
+  type        = bool
+  description = "Enable Multi-AZ deployment for the RDS instance."
+  default     = true
+}
+
 variable "redis_node_type" {
   type        = string
   description = "ElastiCache Redis node type."
