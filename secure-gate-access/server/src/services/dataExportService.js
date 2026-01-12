@@ -208,6 +208,11 @@ const startExportWorker = () => {
   }, 30000);
 };
 
+export const getExportQueueDepth = () => ({
+  queued: exportQueue.length,
+  processing: isProcessing ? 1 : 0
+});
+
 export const createExportRequest = async ({
   userId,
   format,

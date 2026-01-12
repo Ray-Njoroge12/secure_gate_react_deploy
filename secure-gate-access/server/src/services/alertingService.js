@@ -11,6 +11,8 @@ class AlertingService {
     this.alerts = [];
     this.thresholds = {
       errorRate: { warning: 0.05, critical: 0.15 },
+      queueDepth: { warning: 50, critical: 200 },
+      dbPoolUtilization: { warning: 0.85, critical: 0.95 },
       responseTime: { warning: 1000, critical: 3000 },
       memoryUsage: { warning: 0.8, critical: 0.95 },
       cpuUsage: { warning: 0.7, critical: 0.9 }
