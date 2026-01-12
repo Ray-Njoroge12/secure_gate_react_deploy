@@ -3,6 +3,13 @@
 ## Purpose
 Define measurable success criteria for failover events so the on-call team can make a clear go/no-go decision.
 
+## Infrastructure Context
+This runbook applies to the Multi-AZ RDS PostgreSQL deployment configured in `/infra/main.tf`:
+- **RDS Instance:** `secure-gate-postgres`
+- **Multi-AZ:** Enabled by default (`var.db_multi_az = true` in `/infra/variables.tf`)
+- **Engine:** PostgreSQL 15.4
+- **Deployment:** Primary + standby across two availability zones
+
 ## 1) Recovery Time Objective (RTO)
 - **Target RTO:** < 5 minutes end-to-end from failover initiation to all critical health checks reporting `healthy`.
 - **Clock starts:** when failover command/runbook step is executed.
