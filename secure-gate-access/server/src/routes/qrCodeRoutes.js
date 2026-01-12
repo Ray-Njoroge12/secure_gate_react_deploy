@@ -12,6 +12,7 @@ import WebSocketService from '../services/websocketService.js';
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
+import { validateVisitorTransition } from '../services/visitorStateService.js';
 
 const router = express.Router();
 
@@ -158,7 +159,7 @@ router.post('/validate', authenticateToken, requireEstateContext, attachRequestA
       data: {
         visitor: validation.visitor,
         qrCode: validation.qrCode,
-        canCheckIn: validation.visitor.status === 'PENDING' || validation.visitor.status === 'VERIFIED'
+        canCheckIn: validateVisitorTransition(validation.visitor.status, PASS_STATUS.ON_PREMISE).valid
       }
     });
     
@@ -204,15 +205,16 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
     }
     
     // Check if visitor can be checked in
-    if (visitor.status !== 'PENDING' && visitor.status !== 'VERIFIED') {
-      return respondError(res, 422, 'Visitor cannot be checked in');
+    const transition = validateVisitorTransition(visitor.status, PASS_STATUS.ON_PREMISE);
+    if (!transition.valid) {
+      return respondError(res, 422, transition.reason);
     }
     
     // Check-in visitor
     const now = new Date();
     await dbManager.query(
       'UPDATE visitors SET status = $1, check_in = $2, real_time_status = $3 WHERE id = $4 AND estate_id = $5',
-      [PASS_STATUS.ON_PREMISE, now, 'CHECKED_IN', visitor.id, req.user.estate_id]
+      [PASS_STATUS.ON_PREMISE, now, PASS_STATUS.ON_PREMISE, visitor.id, req.user.estate_id]
     );
     
     // Mark QR code as used
