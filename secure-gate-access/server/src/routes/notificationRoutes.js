@@ -12,8 +12,42 @@ import {
 } from '../controllers/notificationController.js';
 import { dbManager as db } from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
+import { renderPushTemplate, pushTemplateNames } from '../templates/push-templates.js';
 
 const router = express.Router();
+
+const defaultRoleTopics = (role) => {
+  if (!role) {
+    return [];
+  }
+
+  const normalizedRole = String(role).toLowerCase();
+  return [`role:${normalizedRole}`];
+};
+
+const buildDeviceTopics = ({ estateId, role, topics = [] }) => {
+  const normalizedTopics = new Set(
+    topics
+      .filter(Boolean)
+      .map((topic) => String(topic).trim())
+      .filter((topic) => topic.length > 0)
+  );
+
+  if (estateId) {
+    normalizedTopics.add(`estate:${estateId}`);
+  }
+
+  if (role) {
+    const normalizedRole = String(role).toLowerCase();
+    defaultRoleTopics(normalizedRole).forEach((topic) => normalizedTopics.add(topic));
+    normalizedTopics.add(`role:${normalizedRole}`);
+    if (estateId) {
+      normalizedTopics.add(`estate:${estateId}:role:${normalizedRole}`);
+    }
+  }
+
+  return normalizedTopics;
+};
 
 /**
  * @route GET /api/notifications/preferences
@@ -145,17 +179,7 @@ router.post('/devices/register', authenticateToken, async (req, res) => {
     ]);
 
     const deviceTokenId = insertResult.rows[0]?.id;
-    const normalizedTopics = new Set(topics);
-
-    if (estateId) {
-      normalizedTopics.add(`estate:${estateId}`);
-    }
-    if (role) {
-      normalizedTopics.add(`role:${role}`);
-    }
-    if (estateId && role) {
-      normalizedTopics.add(`estate:${estateId}:role:${role}`);
-    }
+    const normalizedTopics = buildDeviceTopics({ estateId, role, topics });
 
     if (deviceTokenId && normalizedTopics.size > 0) {
       await db.query(
@@ -240,7 +264,7 @@ router.post('/devices/unregister', authenticateToken, async (req, res) => {
  */
 router.post('/devices/topics', authenticateToken, async (req, res) => {
   try {
-    const { token, topics = [] } = req.body;
+    const { token, topics = [], includeDefaults = true } = req.body;
 
     if (!token) {
       return res.status(400).json({
@@ -250,7 +274,7 @@ router.post('/devices/topics', authenticateToken, async (req, res) => {
     }
 
     const lookup = await db.query(
-      `SELECT id FROM device_tokens WHERE token = $1`,
+      `SELECT id, estate_id, role FROM device_tokens WHERE token = $1`,
       [token]
     );
 
@@ -262,12 +286,21 @@ router.post('/devices/topics', authenticateToken, async (req, res) => {
     }
 
     const deviceTokenId = lookup.rows[0].id;
+    const deviceInfo = lookup.rows[0];
     await db.query(
       `DELETE FROM device_topic_subscriptions WHERE device_token_id = $1`,
       [deviceTokenId]
     );
 
-    for (const topic of topics) {
+    const normalizedTopics = includeDefaults
+      ? buildDeviceTopics({
+        estateId: deviceInfo.estate_id,
+        role: deviceInfo.role,
+        topics
+      })
+      : buildDeviceTopics({ topics });
+
+    for (const topic of normalizedTopics) {
       await db.query(
         `INSERT INTO device_topic_subscriptions (device_token_id, topic, created_at)
          VALUES ($1, $2, NOW())
@@ -285,6 +318,116 @@ router.post('/devices/topics', authenticateToken, async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to update device topics'
+    });
+  }
+});
+
+/**
+ * @route POST /api/notifications/push/preview
+ * @desc Render a push notification template preview
+ * @access Private (authenticated)
+ */
+router.post('/push/preview', authenticateToken, async (req, res) => {
+  try {
+    const { templateName, data = {} } = req.body;
+
+    if (!templateName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Template name is required'
+      });
+    }
+
+    const payload = renderPushTemplate(templateName, data);
+    return res.json({
+      success: true,
+      data: {
+        templateName,
+        availableTemplates: pushTemplateNames,
+        payload
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to preview push template:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to preview push template'
+    });
+  }
+});
+
+/**
+ * @route POST /api/notifications/push/test
+ * @desc Store a test push notification log entry
+ * @access Private (authenticated)
+ */
+router.post('/push/test', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { templateName, data = {}, metadata = {} } = req.body;
+
+    if (!templateName) {
+      return res.status(400).json({
+        success: false,
+        error: 'Template name is required'
+      });
+    }
+
+    const payload = renderPushTemplate(templateName, data);
+
+    const insertQuery = `
+      INSERT INTO notification_log (
+        recipient_type,
+        recipient_id,
+        notification_type,
+        channel,
+        subject,
+        body,
+        template_name,
+        template_variables,
+        user_id,
+        status,
+        metadata,
+        sent_at
+      )
+      VALUES (
+        'user',
+        $1,
+        $2,
+        'push',
+        $3,
+        $4,
+        $2,
+        $5,
+        $1,
+        'sent',
+        $6,
+        NOW()
+      )
+      RETURNING id
+    `;
+
+    const result = await db.query(insertQuery, [
+      userId,
+      templateName,
+      payload.title,
+      payload.body,
+      JSON.stringify(data),
+      JSON.stringify(metadata)
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        logId: result.rows[0]?.id,
+        payload
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to log push test notification:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to log push notification'
     });
   }
 });
