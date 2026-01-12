@@ -75,8 +75,9 @@ router.post('/qr', authorize(['guard', 'admin']), attachRequestAudit, asyncHandl
          check_out_notes = $3,
          updated_at = NOW()
      WHERE id = $4
+       AND estate_id = $5
      RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id]
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id, estateId]
   );
   
   // Log access
@@ -180,7 +181,6 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
   );
   
   if (visitor.rows.length === 0) {
-    // Return generic error to avoid information disclosure about visitors in other estates
     throw new AppError('Visitor not found', 404);
   }
   
@@ -200,8 +200,9 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
          check_out_notes = $3,
          updated_at = NOW()
      WHERE id = $4
+       AND estate_id = $5
      RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId]
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId, estateId]
   );
   
   // Log access
