@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
+import { authenticateToken, authorize, requireEstate } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
@@ -14,69 +14,17 @@ import { PASS_STATUS } from '../constants/statuses.js';
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
 
-/**
- * Check in a visitor by ID
- * POST /api/check-in/:visitorId
- */
-router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
-  const { visitorId } = req.params;
-  const guardId = req.user.id;
-  const { notes, vehicle_plate } = req.body;
-  
-  // Verify visitor exists and is in valid state
-  const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE id = $1',
-    [visitorId]
-  );
-  
-  if (visitor.rows.length === 0) {
-    throw new AppError('Visitor not found', 404);
-  }
-  
-  const visitorData = visitor.rows[0];
-  
-  // Check if already checked in
-  if (visitorData.status === PASS_STATUS.CHECKED_IN) {
-    throw new AppError('Visitor is already checked in', 400);
-  }
-  
-  // Check if visitor pass is still valid
-  if (visitorData.status === PASS_STATUS.EXPIRED) {
-    throw new AppError('Visitor pass has expired', 400);
-  }
-  
-  // Perform check-in
-  const result = await dbManager.query(
-    `UPDATE visitors 
-     SET status = $1, 
-         check_in_time = NOW(), 
-         check_in_guard_id = $2,
-         check_in_notes = $3,
-         vehicle_plate = COALESCE($4, vehicle_plate),
-         updated_at = NOW()
-     WHERE id = $5
-     RETURNING *`,
-    [PASS_STATUS.CHECKED_IN, guardId, notes, vehicle_plate, visitorId]
-  );
-  
-  // Log access
-  await dbManager.query(
-    `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
-     VALUES ($1, 'check_in', $2, $3, NOW())`,
-    [visitorId, guardId, notes]
-  );
-  
-  return successResponse(res, result.rows[0], 'Visitor checked in successfully');
-}));
+router.use(authenticateToken, requireEstate);
 
 /**
  * Check in visitor by QR code
  * SEC-004: Enforces one-time QR code use
  * POST /api/check-in/qr
  */
-router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/qr', authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
+  const estateId = req.user.estate_id;
   
   if (!qrCode) {
     throw new AppError('QR code is required', 400);
@@ -136,13 +84,13 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
   let visitorQuery;
   if (qrRecord?.visitor_id) {
     visitorQuery = await dbManager.query(
-      'SELECT * FROM visitors WHERE id = $1',
-      [qrRecord.visitor_id]
+      'SELECT * FROM visitors WHERE id = $1 AND estate_id = $2',
+      [qrRecord.visitor_id, estateId]
     );
   } else {
     visitorQuery = await dbManager.query(
-      'SELECT * FROM visitors WHERE qr_code = $1 OR token = $1',
-      [parsedQrData.token || qrCode]
+      'SELECT * FROM visitors WHERE (qr_code = $1 OR token = $1) AND estate_id = $2',
+      [parsedQrData.token || qrCode, estateId]
     );
   }
   
@@ -170,8 +118,9 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
          check_in_notes = $3,
          updated_at = NOW()
      WHERE id = $4
+       AND estate_id = $5
      RETURNING *`,
-    [PASS_STATUS.CHECKED_IN, guardId, notes, visitorData.id]
+    [PASS_STATUS.CHECKED_IN, guardId, notes, visitorData.id, estateId]
   );
   
   // Log access
@@ -185,11 +134,68 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
 }));
 
 /**
+ * Check in a visitor by ID
+ * POST /api/check-in/:visitorId
+ */
+router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+  const { visitorId } = req.params;
+  const guardId = req.user.id;
+  const estateId = req.user.estate_id;
+  const { notes, vehicle_plate } = req.body;
+  
+  // Verify visitor exists and is in valid state
+  const visitor = await dbManager.query(
+    'SELECT * FROM visitors WHERE id = $1 AND estate_id = $2',
+    [visitorId, estateId]
+  );
+  
+  if (visitor.rows.length === 0) {
+    throw new AppError('Visitor not found', 404);
+  }
+  
+  const visitorData = visitor.rows[0];
+  
+  // Check if already checked in
+  if (visitorData.status === PASS_STATUS.CHECKED_IN) {
+    throw new AppError('Visitor is already checked in', 400);
+  }
+  
+  // Check if visitor pass is still valid
+  if (visitorData.status === PASS_STATUS.EXPIRED) {
+    throw new AppError('Visitor pass has expired', 400);
+  }
+  
+  // Perform check-in
+  const result = await dbManager.query(
+    `UPDATE visitors 
+     SET status = $1, 
+         check_in_time = NOW(), 
+         check_in_guard_id = $2,
+         check_in_notes = $3,
+         vehicle_plate = COALESCE($4, vehicle_plate),
+         updated_at = NOW()
+     WHERE id = $5
+       AND estate_id = $6
+     RETURNING *`,
+    [PASS_STATUS.CHECKED_IN, guardId, notes, vehicle_plate, visitorId, estateId]
+  );
+  
+  // Log access
+  await dbManager.query(
+    `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
+     VALUES ($1, 'check_in', $2, $3, NOW())`,
+    [visitorId, guardId, notes]
+  );
+  
+  return successResponse(res, result.rows[0], 'Visitor checked in successfully');
+}));
+
+/**
  * Get today's check-ins
  * GET /api/check-in/today
  */
-router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
-  const estateId = req.user.estate_id ?? 1;
+router.get('/today', authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+  const estateId = req.user.estate_id;
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
@@ -208,9 +214,9 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), asyncHand
  * Get check-in history
  * GET /api/check-in/history
  */
-router.get('/history', authenticateToken, authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
+router.get('/history', authorize(['guard', 'admin']), asyncHandler(async (req, res) => {
   const { limit = 50, offset = 0, date } = req.query;
-  const estateId = req.user.estate_id ?? 1;
+  const estateId = req.user.estate_id;
   
   let query = `
     SELECT v.*, u.username as resident_name

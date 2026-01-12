@@ -1,5 +1,6 @@
 import express from 'express';
 import { dbManager } from '../database/db.enhanced.js';
+import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.get('/test', (req, res) => {
 });
 
 // SSE endpoint for guards
-router.get('/guards', (req, res) => {
+router.get('/guards', authenticateToken, requireRole(['guard', 'admin', 'super_admin']), requireEstate, (req, res) => {
   // Set SSE headers
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',

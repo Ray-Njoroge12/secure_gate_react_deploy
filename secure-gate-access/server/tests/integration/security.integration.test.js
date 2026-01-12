@@ -196,16 +196,14 @@ describe('Security & Compliance Integration Tests', () => {
     it('should enforce secure session cookies', async () => {
       const response = await request(app)
         .post('/api/auth/login')
+        .set('x-client-platform', 'web')
         .send({
           email: 'resident@test.com',
           password: 'testpass123'
         });
 
-      // The current implementation returns tokens in the response body, not cookies
-      // This is a valid approach for API-first backends
       if (response.status === 200) {
-        // If tokens are in response body, verify they exist
-        expect(response.body.data?.accessToken || response.body.accessToken).toBeDefined();
+        expect(response.body.data?.session?.type || response.body.session?.type).toBe('cookie');
       }
       
       // If cookies are set, verify they have HttpOnly flag
@@ -222,23 +220,24 @@ describe('Security & Compliance Integration Tests', () => {
     it('should invalidate tokens after logout', async () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('x-client-platform', 'web')
         .send({
           email: 'resident@test.com',
           password: 'testpass123'
         });
 
       const token = loginResponse.headers['set-cookie']
-        ?.find(c => c.startsWith('token='))
+        ?.find(c => c.startsWith('accessToken='))
         ?.split(';')[0]
         ?.split('=')[1];
 
       await request(app)
         .post('/api/auth/logout')
-        .set('Cookie', `token=${token}`);
+        .set('Cookie', `accessToken=${token}`);
 
       const protectedResponse = await request(app)
         .get('/api/visitors')
-        .set('Cookie', `token=${token}`);
+        .set('Cookie', `accessToken=${token}`);
 
       expect(protectedResponse.status).toBe(401);
     });

@@ -3,8 +3,7 @@ import express from 'express';
 import { CacheKeys } from '../services/redisService.js';
 import enhancedSessionManager from '../middleware/enhancedSessionMiddleware.js';
 const sessionManager = enhancedSessionManager;
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import { requireRole } from '../middleware/roleMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
@@ -38,7 +37,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.get('/stats',
     authenticateToken,
-    requireRole(['admin', 'super_admin']),
+    requireRole(['super_admin']),
     asyncHandler(async (req, res) => {
       const cacheStats = redisService.getStats();
       const sessionStats = await sessionManager.getSessionStats();

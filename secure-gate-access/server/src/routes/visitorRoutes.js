@@ -14,7 +14,7 @@ import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controlle
 import { attachUserFromToken, authenticateToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
-import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
+import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
 
@@ -28,6 +28,18 @@ import {
 } from '../controllers/visitorApprovalController.js';
 
 const router = express.Router();
+
+const inviteLookupLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  message: 'Too many invite lookups, please try again later.'
+});
+
+const otpLimit = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  message: 'Too many OTP attempts, please try again later.'
+});
 
 /**
  * @swagger
@@ -215,6 +227,7 @@ router.post('/bulk-invite',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
   requireEstateContext,
+  validateRequest(ValidationSchemas.bulkInviteCreation),
   attachRequestAudit,
   bulkInvite
 );
@@ -353,16 +366,27 @@ router.get('/approval-history', authenticateToken, requireEstateContext, attachR
  */
 
 // OTP Operations (public endpoints for visitor verification)
-router.post('/:id/verify-otp', verifyOtp);
-router.post('/:id/resend-otp', resendOtp);
+router.post('/:id/verify-otp', otpLimit, validateRequest(ValidationSchemas.visitorOtp), verifyOtp);
+router.post('/:id/resend-otp', otpLimit, resendOtp);
 
 // Public routes (guests) - cached for performance
 router.get('/bulk-invite/:inviteCode',
+  inviteLookupLimit,
+  validateParams(ValidationSchemas.inviteCodeParam),
   CacheMiddleware.createMiddleware({ ttl: 300 }),
   getBulkInvite
 );
-router.post('/complete/:inviteCode', completeInvite);
-router.post('/self-checkin/:inviteCode', selfCheckIn);
+router.post('/complete/:inviteCode',
+  inviteLookupLimit,
+  validateParams(ValidationSchemas.inviteCodeParam),
+  validateRequest(ValidationSchemas.inviteCompletion),
+  completeInvite
+);
+router.post('/self-checkin/:inviteCode',
+  inviteLookupLimit,
+  validateParams(ValidationSchemas.inviteCodeParam),
+  selfCheckIn
+);
 
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
 router.delete('/:id', authenticateToken, requireEstateContext, attachRequestAudit, cancelVisitor);
@@ -377,6 +401,8 @@ router.get('/reports', authenticateToken, requireEstateContext, attachRequestAud
 
 // Public invite route alias
 router.get('/invite/:inviteCode',
+  inviteLookupLimit,
+  validateParams(ValidationSchemas.inviteCodeParam),
   CacheMiddleware.createMiddleware({ ttl: 300 }),
   getBulkInvite
 );

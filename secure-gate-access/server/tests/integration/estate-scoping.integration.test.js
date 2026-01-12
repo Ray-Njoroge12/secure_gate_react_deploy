@@ -191,4 +191,33 @@ describe('Estate scoping for guard and event APIs', () => {
     expect(blockedResponse.status).toBe(200);
     expect(blockedResponse.body.count).toBe(0);
   });
+
+  test('guard cannot check in visitor from another estate', async () => {
+    const guardToken = await getAuthToken(guardUser.email);
+    const visitorResult = await dbManager.query(
+      `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code, estate_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id`,
+      [
+        'Estate Two Visitor',
+        '+254700000123',
+        'estate-two-visitor@test.com',
+        'Estate visit',
+        'pending',
+        adminUser.id,
+        `EST2-${Date.now()}`,
+        2
+      ]
+    );
+    const visitorId = visitorResult.rows[0].id;
+
+    const response = await request(app)
+      .post(`/api/check-in/${visitorId}`)
+      .set('Authorization', `Bearer ${guardToken}`)
+      .send({ notes: 'Attempted cross-estate check-in' });
+
+    expect(response.status).toBe(404);
+
+    await dbManager.query('DELETE FROM visitors WHERE id = $1', [visitorId]);
+  });
 });

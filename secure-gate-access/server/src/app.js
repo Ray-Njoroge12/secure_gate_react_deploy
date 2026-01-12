@@ -229,7 +229,7 @@ const corsConfig = cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID', 'X-CSRF-Token', 'API-Version'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID', 'X-CSRF-Token', 'API-Version', 'X-Client-Platform', 'X-Client-Type'],
   exposedHeaders: ['X-CSRF-Token', 'X-Request-ID', 'API-Version', 'API-Version-Status'],
   maxAge: 86400 // Cache preflight for 24 hours
 });
