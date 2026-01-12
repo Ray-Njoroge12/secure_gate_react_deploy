@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import { spawn } from 'child_process';
 import dotenv from 'dotenv';
+import os from 'os';
 
 dotenv.config();
 
@@ -579,9 +580,112 @@ class BackupService {
    * Restore from TAR backup
    */
   async restoreFromTar(backupPath, options = {}) {
-    // For TAR backups, we need to extract and then restore
-    // This is a simplified implementation
-    throw new Error('TAR restore not implemented yet');
+    if (!fs.existsSync(backupPath)) {
+      throw new Error(`Backup file not found: ${backupPath}`);
+    }
+
+    const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'secure-gate-tar-'));
+    try {
+      await this.extractTarArchive(backupPath, tempDir);
+
+      const isCustomFormat = fs.existsSync(path.join(tempDir, 'toc.dat'));
+      if (isCustomFormat) {
+        await this.restoreFromCustomTar(tempDir);
+        return { format: 'custom' };
+      }
+
+      const isBasebackup = fs.existsSync(path.join(tempDir, 'PG_VERSION')) || fs.existsSync(path.join(tempDir, 'base'));
+      if (!isBasebackup) {
+        throw new Error('Unrecognized TAR backup contents: missing toc.dat or PG_VERSION');
+      }
+
+      await this.restoreFromBasebackupDirectory(tempDir, options);
+      return { format: 'basebackup', targetDir: options.pgDataDir || process.env.PGDATA };
+    } finally {
+      await fs.promises.rm(tempDir, { recursive: true, force: true });
+    }
+  }
+
+  async extractTarArchive(backupPath, destinationDir) {
+    return new Promise((resolve, reject) => {
+      const tarProcess = spawn('tar', ['-xf', backupPath, '-C', destinationDir]);
+
+      let stderr = '';
+
+      tarProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      tarProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`tar extraction failed with code ${code}: ${stderr}`));
+        }
+      });
+
+      tarProcess.on('error', (error) => {
+        reject(new Error(`tar extraction error: ${error.message}`));
+      });
+    });
+  }
+
+  async restoreFromCustomTar(extractedDir) {
+    return new Promise((resolve, reject) => {
+      const args = [
+        '--host', this.dbConfig.host,
+        '--port', this.dbConfig.port,
+        '--username', this.dbConfig.user,
+        '--dbname', this.dbConfig.database,
+        '--verbose',
+        '--clean',
+        '--if-exists',
+        '--no-owner',
+        '--format', 'directory',
+        '/backup'
+      ];
+
+      const dockerArgs = [
+        'run', '--rm',
+        '--network', 'host',
+        '-e', `PGPASSWORD=${this.dbConfig.password}`,
+        '-v', `${extractedDir}:/backup`,
+        'postgres:13',
+        'pg_restore',
+        ...args
+      ];
+
+      const docker = spawn('docker', dockerArgs);
+
+      let stderr = '';
+
+      docker.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      docker.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`pg_restore failed with code ${code}: ${stderr}`));
+        }
+      });
+
+      docker.on('error', (error) => {
+        reject(new Error(`pg_restore error: ${error.message}`));
+      });
+    });
+  }
+
+  async restoreFromBasebackupDirectory(sourceDir, options = {}) {
+    const targetDir = options.pgDataDir || process.env.PGDATA;
+    if (!targetDir) {
+      throw new Error('PGDATA or options.pgDataDir must be set for basebackup restores');
+    }
+
+    await fs.promises.rm(targetDir, { recursive: true, force: true });
+    await fs.promises.mkdir(targetDir, { recursive: true });
+    await fs.promises.cp(sourceDir, targetDir, { recursive: true });
   }
 
   /**

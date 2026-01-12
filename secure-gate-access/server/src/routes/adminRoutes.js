@@ -282,6 +282,84 @@ router.post('/backup/trigger', authenticateToken, attachRequestAudit, async (req
   }
 });
 
+/**
+ * @swagger
+ * /api/admin/backup/restore/tar:
+ *   post:
+ *     summary: Restore database from TAR backup
+ *     description: Restore a database from a TAR backup file (custom format or basebackup)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - backupPath
+ *             properties:
+ *               backupPath:
+ *                 type: string
+ *                 description: Absolute path to the TAR backup file
+ *               pgDataDir:
+ *                 type: string
+ *                 description: Optional PGDATA directory for basebackup restores
+ *     responses:
+ *       200:
+ *         description: TAR restore triggered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Success'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         format: { type: string }
+ *                         targetDir: { type: string }
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       500:
+ *         description: TAR restore failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/backup/restore/tar', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { backupPath, pgDataDir } = req.body;
+    if (!backupPath || !backupPath.endsWith('.tar')) {
+      return res.status(400).json({
+        success: false,
+        message: 'backupPath must reference a .tar file'
+      });
+    }
+
+    const result = await backupService.restoreFromBackup(backupPath, { pgDataDir });
+    return res.json({
+      success: true,
+      message: 'TAR restore triggered successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error restoring from TAR backup:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to restore TAR backup',
+      error: error.message
+    });
+  }
+});
+
 // ==================== USER MANAGEMENT ENDPOINTS ====================
 
 /**
