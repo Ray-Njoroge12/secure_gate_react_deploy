@@ -3,6 +3,13 @@
 ## Overview
 Use this runbook to execute a planned maintenance window in staging, run a database failover drill, and capture recovery metrics.
 
+## Infrastructure Context
+This runbook applies to the staging environment with Multi-AZ RDS configuration:
+- **RDS Instance:** `secure-gate-postgres` (defined in `/infra/main.tf`)
+- **Multi-AZ:** Enabled by default (`var.db_multi_az = true` in `/infra/variables.tf`)
+- **Failover Type:** Automatic failover between primary and standby instances across AZs
+- **Expected RTO:** < 5 minutes (see [Failover Acceptance Criteria](./failover-acceptance-criteria.md))
+
 ## Preconditions
 - Approved change ticket and maintenance window start/end times.
 - On-call coverage and stakeholder notification complete.
@@ -28,7 +35,23 @@ Use this runbook to execute a planned maintenance window in staging, run a datab
 
 ### 3) Trigger staging DB failover
 1. Announce failover start and capture **failover start timestamp** (UTC).
-2. Trigger the staging DB failover using the provider-approved process.
+2. Trigger the staging DB failover using one of these methods:
+   
+   **AWS Console:**
+   - Navigate to RDS → Databases → `secure-gate-postgres`
+   - Actions → Reboot → Select "Reboot with failover"
+   
+   **AWS CLI:**
+   ```bash
+   aws rds reboot-db-instance \
+     --db-instance-identifier secure-gate-postgres \
+     --force-failover
+   ```
+   
+   **Terraform (if using IaC):**
+   - The failover is typically triggered manually via Console/CLI, not Terraform
+   - Verify Multi-AZ is enabled: `var.db_multi_az = true` in `/infra/variables.tf`
+
 3. Monitor and record:
    - ALB 5xx rate and app log connection errors.
    - Health check failures during the failover window.
