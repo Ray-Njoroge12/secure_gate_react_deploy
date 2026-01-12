@@ -8,10 +8,10 @@ const getActiveVisitors = async (req, res) => {
     if (req.user.role !== 'guard' && req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
     
     const estateId = req.user.estate_id ?? null;
-    const params = [PASS_STATUS.ON_PREMISE];
+    const params = [PASS_STATUS.PENDING, PASS_STATUS.VERIFIED, PASS_STATUS.ON_PREMISE];
     let estateClause = '';
     if (estateId !== null) {
-      estateClause = ' AND estate_id = $2';
+      estateClause = ' AND estate_id = $4';
       params.push(estateId);
     }
 
@@ -19,7 +19,7 @@ const getActiveVisitors = async (req, res) => {
       SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
              invite_code, status, check_in, check_out, created_at
       FROM visitors 
-      WHERE status IN ('PENDING', 'VERIFIED', $1)${estateClause}
+      WHERE status IN ($1, $2, $3)${estateClause}
       ORDER BY created_at DESC
     `, params);
     
@@ -37,19 +37,20 @@ const getVisitorReport = async (req, res) => {
     if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
     
     const estateId = req.user.estate_id ?? null;
-    const statsParams = [];
-    const statsEstateClause = estateId !== null ? ' WHERE estate_id = $1' : '';
+    const statsParams = [PASS_STATUS.PENDING, PASS_STATUS.VERIFIED, PASS_STATUS.ON_PREMISE, PASS_STATUS.CHECKED_OUT];
+    let statsEstateClause = '';
     if (estateId !== null) {
+      statsEstateClause = ' WHERE estate_id = $5';
       statsParams.push(estateId);
     }
 
     const statsRes = await dbManager.query(`
       SELECT 
         COUNT(*) as total_visitors,
-        COUNT(CASE WHEN status = 'PENDING' THEN 1 END) as pending_visitors,
-        COUNT(CASE WHEN status = 'VERIFIED' THEN 1 END) as verified_visitors,
-        COUNT(CASE WHEN status = 'CHECKED_IN' THEN 1 END) as checked_in_visitors,
-        COUNT(CASE WHEN status = 'CHECKED_OUT' THEN 1 END) as checked_out_visitors
+        COUNT(CASE WHEN status = $1 THEN 1 END) as pending_visitors,
+        COUNT(CASE WHEN status = $2 THEN 1 END) as verified_visitors,
+        COUNT(CASE WHEN status = $3 THEN 1 END) as checked_in_visitors,
+        COUNT(CASE WHEN status = $4 THEN 1 END) as checked_out_visitors
       FROM visitors${statsEstateClause}
     `, statsParams);
     
@@ -105,4 +106,3 @@ const revokeVisitor = async (req, res) => {
 };
 
 export { getActiveVisitors, getVisitorReport, revokeVisitor };
-

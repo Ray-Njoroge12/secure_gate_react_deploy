@@ -13,6 +13,7 @@ import loggingService from '../services/loggingService.js';
 import db from '../database/db.enhanced.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempotencyResponse } from '../services/idempotencyService.js';
 
 const router = express.Router();
 
@@ -125,6 +126,31 @@ function verifyAfricasTalkingAuth(req) {
   return { valid: false, reason: 'missing_or_invalid_auth' };
 }
 
+async function resolveWebhookIdempotency(req, res, { key, scope }) {
+  if (!key) {
+    return { hit: false };
+  }
+
+  const requestHash = buildRequestHash({
+    method: req.method,
+    path: req.originalUrl,
+    body: req.body,
+    scopeContext: scope
+  });
+
+  const idempotencyResult = await resolveIdempotency({ key, scope, requestHash });
+  if (idempotencyResult.conflict) {
+    res.status(409).json({ error: 'Idempotency key reuse with different payload' });
+    return { hit: true };
+  }
+  if (idempotencyResult.hit) {
+    res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
+    return { hit: true };
+  }
+
+  return { hit: false, requestHash };
+}
+
 
 /**
  * Update notification status in database
@@ -205,6 +231,14 @@ router.post('/mailgun/delivered', async (req, res) => {
     }
 
     const messageId = eventData['message-id'] || eventData.id;
+    const idempotencyKey = getIdempotencyKey(req) || (messageId ? `mailgun:${messageId}:delivered` : null);
+    const idempotency = await resolveWebhookIdempotency(req, res, {
+      key: idempotencyKey,
+      scope: 'notification-webhook'
+    });
+    if (idempotency.hit) {
+      return;
+    }
 
     await updateNotificationStatus(messageId, 'delivered', 'mailgun', {
       recipient: eventData.recipient,
@@ -225,7 +259,18 @@ router.post('/mailgun/delivered', async (req, res) => {
       metadata: { recipient: eventData.recipient }
     });
 
-    res.status(200).json({ received: true });
+    const responseBody = { received: true };
+    if (idempotencyKey) {
+      await storeIdempotencyResponse({
+        key: idempotencyKey,
+        scope: 'notification-webhook',
+        requestHash: idempotency.requestHash,
+        responseCode: 200,
+        responseBody
+      });
+    }
+
+    res.status(200).json(responseBody);
   } catch (error) {
     loggingService.logError('Mailgun delivered webhook error', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -252,6 +297,14 @@ router.post('/mailgun/failed', async (req, res) => {
     const messageId = eventData['message-id'] || eventData.id;
     const severity = eventData.severity;
     const reason = eventData['delivery-status']?.message || 'Unknown error';
+    const idempotencyKey = getIdempotencyKey(req) || (messageId ? `mailgun:${messageId}:failed` : null);
+    const idempotency = await resolveWebhookIdempotency(req, res, {
+      key: idempotencyKey,
+      scope: 'notification-webhook'
+    });
+    if (idempotency.hit) {
+      return;
+    }
 
     await updateNotificationStatus(messageId, 'failed', 'mailgun', {
       recipient: eventData.recipient,
@@ -273,7 +326,18 @@ router.post('/mailgun/failed', async (req, res) => {
       metadata: { recipient: eventData.recipient, reason }
     });
 
-    res.status(200).json({ received: true });
+    const responseBody = { received: true };
+    if (idempotencyKey) {
+      await storeIdempotencyResponse({
+        key: idempotencyKey,
+        scope: 'notification-webhook',
+        requestHash: idempotency.requestHash,
+        responseCode: 200,
+        responseBody
+      });
+    }
+
+    res.status(200).json(responseBody);
   } catch (error) {
     loggingService.logError('Mailgun failed webhook error', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -299,6 +363,14 @@ router.post('/mailgun/bounced', async (req, res) => {
 
     const messageId = eventData['message-id'] || eventData.id;
     const reason = eventData['delivery-status']?.description || 'Bounced';
+    const idempotencyKey = getIdempotencyKey(req) || (messageId ? `mailgun:${messageId}:bounced` : null);
+    const idempotency = await resolveWebhookIdempotency(req, res, {
+      key: idempotencyKey,
+      scope: 'notification-webhook'
+    });
+    if (idempotency.hit) {
+      return;
+    }
 
     await updateNotificationStatus(messageId, 'bounced', 'mailgun', {
       recipient: eventData.recipient,
@@ -320,7 +392,18 @@ router.post('/mailgun/bounced', async (req, res) => {
       metadata: { recipient: eventData.recipient, reason }
     });
 
-    res.status(200).json({ received: true });
+    const responseBody = { received: true };
+    if (idempotencyKey) {
+      await storeIdempotencyResponse({
+        key: idempotencyKey,
+        scope: 'notification-webhook',
+        requestHash: idempotency.requestHash,
+        responseCode: 200,
+        responseBody
+      });
+    }
+
+    res.status(200).json(responseBody);
   } catch (error) {
     loggingService.logError('Mailgun bounced webhook error', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -352,6 +435,14 @@ router.post('/africas-talking/delivery', async (req, res) => {
       retryCount,
       networkCode
     } = req.body;
+    const idempotencyKey = getIdempotencyKey(req) || (id ? `africas_talking:${id}:${status}` : null);
+    const idempotency = await resolveWebhookIdempotency(req, res, {
+      key: idempotencyKey,
+      scope: 'notification-webhook'
+    });
+    if (idempotency.hit) {
+      return;
+    }
 
     let deliveryStatus;
     switch (status) {
@@ -389,7 +480,18 @@ router.post('/africas-talking/delivery', async (req, res) => {
       metadata: { phoneNumber, status }
     });
 
-    res.status(200).send('Received');
+    const responseBody = { received: true };
+    if (idempotencyKey) {
+      await storeIdempotencyResponse({
+        key: idempotencyKey,
+        scope: 'notification-webhook',
+        requestHash: idempotency.requestHash,
+        responseCode: 200,
+        responseBody
+      });
+    }
+
+    res.status(200).json(responseBody);
   } catch (error) {
     loggingService.logError("Africa's Talking delivery webhook error", error);
     res.status(500).send('Internal server error');
@@ -422,6 +524,15 @@ router.post('/notification/status', async (req, res) => {
       });
     }
 
+    const idempotencyKey = getIdempotencyKey(req) || `notification:${provider}:${message_id}:${status}`;
+    const idempotency = await resolveWebhookIdempotency(req, res, {
+      key: idempotencyKey,
+      scope: 'notification-webhook'
+    });
+    if (idempotency.hit) {
+      return;
+    }
+
     await updateNotificationStatus(message_id, status, provider, details || {});
 
     await logDeliveryEvent({
@@ -437,7 +548,18 @@ router.post('/notification/status', async (req, res) => {
       metadata: details || {}
     });
 
-    res.status(200).json({ received: true });
+    const responseBody = { received: true };
+    if (idempotencyKey) {
+      await storeIdempotencyResponse({
+        key: idempotencyKey,
+        scope: 'notification-webhook',
+        requestHash: idempotency.requestHash,
+        responseCode: 200,
+        responseBody
+      });
+    }
+
+    res.status(200).json(responseBody);
   } catch (error) {
     loggingService.logError('Generic webhook error', error);
     res.status(500).json({ error: 'Internal server error' });

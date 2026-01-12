@@ -88,6 +88,19 @@ const run = async () => {
         metadata JSONB
       );
     `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS idempotency_keys (
+        id SERIAL PRIMARY KEY,
+        key TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        request_hash TEXT,
+        response_code INT,
+        response_body JSONB,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE (key, scope)
+      );
+    `);
     await client.query('COMMIT');
     console.log('DB init complete');
     process.exit(0);

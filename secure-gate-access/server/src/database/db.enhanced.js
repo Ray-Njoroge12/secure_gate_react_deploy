@@ -329,6 +329,20 @@ class DatabaseManager extends EventEmitter {
           ip_address INET,
           created_at TIMESTAMP DEFAULT NOW()
         )`
+      },
+      {
+        name: 'idempotency_keys',
+        sql: `CREATE TABLE IF NOT EXISTS idempotency_keys (
+          id SERIAL PRIMARY KEY,
+          key TEXT NOT NULL,
+          scope TEXT NOT NULL,
+          request_hash TEXT,
+          response_code INT,
+          response_body JSONB,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW(),
+          UNIQUE (key, scope)
+        )`
       }
     ];
 

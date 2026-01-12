@@ -10,6 +10,9 @@ import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.j
 import { successResponse } from '../utils/responseFormatter.js';
 import { dbManager } from '../database/db.enhanced.js';
 import { PASS_STATUS } from '../constants/statuses.js';
+import QRCodeService from '../services/qrCodeService.js';
+import { validateVisitorTransition } from '../services/visitorStateService.js';
+import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempotencyResponse } from '../services/idempotencyService.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -24,27 +27,43 @@ router.post('/qr', authorize(['guard', 'admin']), attachRequestAudit, asyncHandl
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
   const estateId = req.user.estate_id;
+  const idempotencyKey = getIdempotencyKey(req);
+  const requestHash = idempotencyKey
+    ? buildRequestHash({ method: req.method, path: req.originalUrl, body: req.body, userId: guardId })
+    : null;
+
+  if (idempotencyKey) {
+    const idempotencyResult = await resolveIdempotency({
+      key: idempotencyKey,
+      scope: 'check-out-qr',
+      requestHash
+    });
+    if (idempotencyResult.conflict) {
+      throw new AppError('Idempotency key reuse with different request payload', 409);
+    }
+    if (idempotencyResult.hit) {
+      return res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
+    }
+  }
   
   if (!qrCode) {
     throw new AppError('QR code is required', 400);
   }
   
-  // Find visitor by QR code
-  const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE (qr_code = $1 OR token = $1) AND estate_id = $2',
-    [qrCode, estateId]
-  );
-  
-  if (visitor.rows.length === 0) {
-    // Return generic error to avoid information disclosure about visitors in other estates
+  const qrValidation = await QRCodeService.validateQRCode(qrCode, { allowUsed: true });
+  if (!qrValidation.valid) {
+    throw new AppError(qrValidation.error, 400);
+  }
+
+  const visitorData = qrValidation.visitor;
+  if (visitorData.estate_id !== estateId) {
     throw new AppError('Invalid QR code', 404);
   }
   
-  const visitorData = visitor.rows[0];
-  
   // Validate visitor status
-  if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
-    throw new AppError('Visitor is not currently checked in', 400);
+  const transition = validateVisitorTransition(visitorData.status, PASS_STATUS.CHECKED_OUT);
+  if (!transition.valid) {
+    throw new AppError(transition.reason, 422);
   }
   
   // Perform check-out
@@ -68,7 +87,24 @@ router.post('/qr', authorize(['guard', 'admin']), attachRequestAudit, asyncHandl
     [visitorData.id, guardId, notes]
   );
   
-  return successResponse(res, result.rows[0], 'Visitor checked out via QR code');
+  const responseBody = {
+    success: true,
+    message: 'Visitor checked out via QR code',
+    data: result.rows[0],
+    timestamp: new Date().toISOString()
+  };
+
+  if (idempotencyKey) {
+    await storeIdempotencyResponse({
+      key: idempotencyKey,
+      scope: 'check-out-qr',
+      requestHash,
+      responseCode: 200,
+      responseBody
+    });
+  }
+
+  return res.status(200).json(responseBody);
 }));
 
 /**
@@ -80,6 +116,24 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
   const guardId = req.user.id;
   const estateId = req.user.estate_id;
   const { notes } = req.body;
+  const idempotencyKey = getIdempotencyKey(req);
+  const requestHash = idempotencyKey
+    ? buildRequestHash({ method: req.method, path: req.originalUrl, body: req.body, userId: guardId })
+    : null;
+
+  if (idempotencyKey) {
+    const idempotencyResult = await resolveIdempotency({
+      key: idempotencyKey,
+      scope: 'check-out',
+      requestHash
+    });
+    if (idempotencyResult.conflict) {
+      throw new AppError('Idempotency key reuse with different request payload', 409);
+    }
+    if (idempotencyResult.hit) {
+      return res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
+    }
+  }
   
   // Verify visitor exists
   const visitor = await dbManager.query(
@@ -94,9 +148,9 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
   
   const visitorData = visitor.rows[0];
   
-  // Check if visitor is checked in
-  if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
-    throw new AppError('Visitor is not currently checked in', 400);
+  const transition = validateVisitorTransition(visitorData.status, PASS_STATUS.CHECKED_OUT);
+  if (!transition.valid) {
+    throw new AppError(transition.reason, 422);
   }
   
   // Perform check-out
@@ -120,7 +174,24 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
     [visitorId, guardId, notes]
   );
   
-  return successResponse(res, result.rows[0], 'Visitor checked out successfully');
+  const responseBody = {
+    success: true,
+    message: 'Visitor checked out successfully',
+    data: result.rows[0],
+    timestamp: new Date().toISOString()
+  };
+
+  if (idempotencyKey) {
+    await storeIdempotencyResponse({
+      key: idempotencyKey,
+      scope: 'check-out',
+      requestHash,
+      responseCode: 200,
+      responseBody
+    });
+  }
+
+  return res.status(200).json(responseBody);
 }));
 
 /**
@@ -154,9 +225,9 @@ router.get('/active', authorize(['guard', 'admin']), asyncHandler(async (req, re
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
      WHERE v.status = $1
-       AND v.estate_id = $2
+      AND v.estate_id = $2
      ORDER BY v.check_in_time DESC`,
-    [PASS_STATUS.CHECKED_IN, estateId]
+    [PASS_STATUS.ON_PREMISE, estateId]
   );
   
   return successResponse(res, result.rows, 'Active visitors retrieved');
