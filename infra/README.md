@@ -6,7 +6,7 @@ This folder captures the production-ready AWS baseline for Secure Gate using Ter
 
 - **Network:** VPC with two public and two private subnets across two AZs, IGW, NAT, and separate route tables.
 - **Compute:** ECS Fargate cluster and service fronted by an ALB.
-- **Database:** Single-AZ RDS Postgres in private subnets with app-only security group access.
+- **Database:** Multi-AZ RDS Postgres in private subnets with app-only security group access for high availability.
 - **Async/Cache:** SQS queue and ElastiCache Redis in private subnets with least-privilege access.
 - **Edge:** CloudFront distribution in front of the ALB with ACM TLS certificate.
 - **Secrets:** Secrets Manager for DB credentials and API keys accessed by the ECS task role.
@@ -29,11 +29,29 @@ This folder captures the production-ready AWS baseline for Secure Gate using Ter
 
 ## Apply Steps
 
+### Staging Environment
+
 ```bash
 cd infra
 terraform init
-terraform apply -var='acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/abc'
+terraform apply -var-file="staging.tfvars" \
+  -var='acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/abc'
 ```
+
+### Production Environment
+
+```bash
+cd infra
+terraform init
+terraform apply -var-file="production.tfvars" \
+  -var='acm_certificate_arn=arn:aws:acm:us-east-1:123456789012:certificate/abc'
+```
+
+### Environment Configuration
+
+- **staging.tfvars**: Configures staging environment with Multi-AZ enabled and smaller instance sizes
+- **production.tfvars**: Configures production environment with Multi-AZ enabled and production-grade instance sizes
+- Both environments enable Multi-AZ for RDS (controlled by `db_multi_az` variable)
 
 ## Notes
 
