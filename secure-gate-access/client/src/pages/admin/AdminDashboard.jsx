@@ -6,7 +6,14 @@ import AppShell from "../../layouts/AppShell";
 import StatsCard from "../../components/StatsCard";
 import Table from "../../components/Table";
 import { SearchFilter, Pagination } from "../../components/ui";
-import { getMetrics, getAuditLogs } from "../../services/adminService";
+import { 
+  getMetrics, 
+  getAuditLogs, 
+  getNotificationQueueStats, 
+  getNotificationFailures,
+  retryNotificationFailure,
+  getHealthDetails
+} from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
 import { useSearchData } from "../../hooks/useSearch";
 import OfflineIndicator from "../../components/common/OfflineIndicator";
@@ -28,6 +35,18 @@ export default function AdminDashboard() {
   const [metrics, setMetrics] = useState({ invitesActive: 0, invitesExpired: 0, checkinsToday: 0, failedOtps: 0, invitesByStatus: [] });
   const [loadingMetrics, setLoadingMetrics] = useState(true);
   const [metricsError, setMetricsError] = useState(null);
+
+  // Notification queue state
+  const [queueStats, setQueueStats] = useState(null);
+  const [queueFailures, setQueueFailures] = useState([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueError, setQueueError] = useState(null);
+  const [retryingJobId, setRetryingJobId] = useState(null);
+
+  // Health metrics state
+  const [healthDetails, setHealthDetails] = useState(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthError, setHealthError] = useState(null);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -116,6 +135,60 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let cancelled = false;
+
+    async function loadQueueData() {
+      setQueueLoading(true);
+      setQueueError(null);
+      try {
+        const [stats, failures] = await Promise.all([
+          getNotificationQueueStats(),
+          getNotificationFailures({ limit: 25 })
+        ]);
+        if (!cancelled) {
+          setQueueStats(stats?.data || stats);
+          setQueueFailures(failures?.data || failures || []);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setQueueError(handleApiError(e));
+          logger.error('Failed to load queue data:', e);
+        }
+      } finally {
+        if (!cancelled) setQueueLoading(false);
+      }
+    }
+
+    loadQueueData();
+    const id = setInterval(loadQueueData, 60000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHealthDetails() {
+      setHealthLoading(true);
+      setHealthError(null);
+      try {
+        const details = await getHealthDetails();
+        if (!cancelled) setHealthDetails(details);
+      } catch (e) {
+        if (!cancelled) {
+          setHealthError(handleApiError(e));
+          logger.error('Failed to load health details:', e);
+        }
+      } finally {
+        if (!cancelled) setHealthLoading(false);
+      }
+    }
+
+    loadHealthDetails();
+    const id = setInterval(loadHealthDetails, 60000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     async function loadLogs() {
       setLogsLoading(true); setLogsError(null);
       try {
@@ -150,6 +223,43 @@ export default function AdminDashboard() {
     l.ip_address || ""
   ]);
 
+  const queueHeaders = ["Failed At", "Type", "Recipient", "Error", "Actions"];
+  const queueRows = queueFailures.map(item => [
+    item.failedAt ? new Date(item.failedAt).toLocaleString() : "-",
+    item.type || "-",
+    item.recipient || "-",
+    item.error || "-",
+    <button
+      key={`retry-${item.id}`}
+      onClick={async () => {
+        if (!item.id) return;
+        setRetryingJobId(item.id);
+        try {
+          await retryNotificationFailure(item.id);
+          const failures = await getNotificationFailures({ limit: 25 });
+          setQueueFailures(failures?.data || failures || []);
+        } catch (e) {
+          setQueueError(handleApiError(e));
+        } finally {
+          setRetryingJobId(null);
+        }
+      }}
+      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+      disabled={retryingJobId === item.id}
+    >
+      {retryingJobId === item.id ? 'Retrying...' : 'Retry'}
+    </button>
+  ]);
+
+  const healthStatusColor = (status) => {
+    if (status === 'healthy') return 'text-green-600 bg-green-50';
+    if (status === 'degraded' || status === 'warning') return 'text-yellow-700 bg-yellow-50';
+    if (status === 'unhealthy' || status === 'error') return 'text-red-600 bg-red-50';
+    return 'text-gray-600 bg-gray-50';
+  };
+
+  const healthComponents = Object.entries(healthDetails?.components || {});
+
   return (
     <AppShell role={role} title="Admin Dashboard" onLogout={onLogout}>
       {/* Phase 4: Onboarding Tour for Admins */}
@@ -177,6 +287,51 @@ export default function AdminDashboard() {
           {metricsError}
         </div>
       )}
+
+      {/* Health Metrics Section */}
+      <div data-tour="health-metrics" className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Health Metrics</h2>
+            <p className="text-sm text-gray-600 mt-1">Live component status and environment checks</p>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${healthStatusColor(healthDetails?.status)}`}>
+            {healthDetails?.status || (healthLoading ? 'loading' : 'unknown')}
+          </span>
+        </div>
+        <div className="p-6">
+          {healthError && (
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+              {healthError}
+            </div>
+          )}
+          {healthLoading ? (
+            <div className="text-sm text-gray-500">Loading health details...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {healthComponents.length === 0 && (
+                <div className="text-sm text-gray-500">No component health data available.</div>
+              )}
+              {healthComponents.map(([component, detail]) => (
+                <div key={component} className="border border-gray-200 rounded-md p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 capitalize">{component.replace(/_/g, ' ')}</h3>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${healthStatusColor(detail?.status)}`}>
+                      {detail?.status || 'unknown'}
+                    </span>
+                  </div>
+                  {detail?.message && <p className="text-xs text-gray-600">{detail.message}</p>}
+                  {detail?.metrics && (
+                    <pre className="mt-2 text-xs text-gray-500 whitespace-pre-wrap">
+                      {JSON.stringify(detail.metrics, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Audit Logs Section */}
       <div data-tour="audit-logs" className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -273,6 +428,34 @@ export default function AdminDashboard() {
                 </button>
               )}
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Notification Queue Failures */}
+      <div data-tour="queue-failures" className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Notification Queue Failures</h2>
+            <p className="text-sm text-gray-600 mt-1">Retry failed SMS/email deliveries from the dead-letter queue</p>
+          </div>
+          <div className="text-sm text-gray-600">
+            DLQ: {queueStats?.deadLetter?.total ?? 0} total / {queueStats?.deadLetter?.waiting ?? 0} waiting
+          </div>
+        </div>
+        <div className="p-6">
+          {queueError && (
+            <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+              {queueError}
+            </div>
+          )}
+          {queueLoading ? (
+            <div className="text-sm text-gray-500">Loading queue failures...</div>
+          ) : (
+            <Table headers={queueHeaders} rows={queueRows} loading={queueLoading} />
+          )}
+          {!queueLoading && queueFailures.length === 0 && (
+            <div className="text-sm text-gray-500 mt-4">No failed notifications in the dead-letter queue.</div>
           )}
         </div>
       </div>

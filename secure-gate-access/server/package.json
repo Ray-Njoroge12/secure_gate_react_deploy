@@ -22,6 +22,7 @@
     "test:integration": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --detectOpenHandles --testPathPattern=tests/integration --passWithNoTests",
     "test:integration:verbose": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --verbose --detectOpenHandles --testPathPattern=tests/integration --passWithNoTests",
     "test:integration:coverage": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/integration --passWithNoTests --coverage",
+    "test:critical": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/integration/(auth-refresh|invite-lifecycle|estate-scoping|webhook-signature|notification-queue).integration.test.js --passWithNoTests",
     "test:e2e": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/e2e --passWithNoTests",
     "test:e2e:coverage": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/e2e --passWithNoTests --coverage",
     "test:playwright": "npx playwright test",

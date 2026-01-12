@@ -14,6 +14,17 @@ export const getAuditLogs = (params = {}) => {
   return http.get(`${API_BASE}/audit-logs${queryString ? `?${queryString}` : ''}`);
 };
 
+// === Notification Queue Monitoring ===
+export const getNotificationQueueStats = () => http.get(`${API_BASE}/notification-queue/stats`);
+export const getNotificationFailures = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/notification-queue/failed${queryString ? `?${queryString}` : ''}`);
+};
+export const retryNotificationFailure = (jobId) => http.post(`${API_BASE}/notification-queue/retry/${jobId}`);
+
+// === Health Monitoring ===
+export const getHealthDetails = () => http.get('/api/health/detailed');
+
 // === Residents Management ===
 export const getAllResidents = () => http.get(`${API_BASE}/residents`);
 export const updateResident = (id, data) => http.put(`${API_BASE}/residents/${id}`, data);
