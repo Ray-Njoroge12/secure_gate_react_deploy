@@ -43,6 +43,7 @@ import { dbManager } from './src/database/db.enhanced.js';
 // Don't extract pool here - it's null until initializeAsync() is called
 // Access dbManager.pool dynamically when needed
 import monitoringDashboard from './src/services/monitoringDashboardService.js';
+import metricsService from './src/services/metricsService.js';
 
 // Import WebSocket service for Phase 2.3 real-time features
 import webSocketService from './src/services/websocketService.js';
@@ -326,6 +327,9 @@ async function startServer() {
 
     // Initialize enhanced error monitoring
     await initializeErrorMonitoring();
+
+    // Start metrics capture and alerting
+    metricsService.start();
     
     // Start server
     const server = app.listen(PORT, '0.0.0.0', () => {
@@ -368,6 +372,9 @@ async function startServer() {
           console.log('📊 Stopping monitoring dashboard...');
           monitoringDashboard.stop();
         }
+
+        console.log('📈 Stopping metrics service...');
+        metricsService.stop();
         
         // Step 3: Wait for existing connections to drain (with timeout)
         await new Promise((resolve) => {

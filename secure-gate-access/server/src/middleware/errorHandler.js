@@ -117,8 +117,16 @@ export const ErrorHelper = {
  * Request ID generator middleware
  */
 export const requestIdMiddleware = (req, res, next) => {
-  req.requestId = req.headers['x-request-id'] || uuidv4();
-  res.setHeader('X-Request-ID', req.requestId);
+  const existingCorrelationId = req.correlationId || req.requestId || req.id;
+  const headerRequestId = req.headers['x-request-id'];
+  const headerCorrelationId = req.headers['x-correlation-id'];
+  const requestId = existingCorrelationId || headerCorrelationId || headerRequestId || uuidv4();
+
+  req.requestId = requestId;
+  req.correlationId = requestId;
+  req.id = requestId;
+  res.setHeader('X-Request-ID', requestId);
+  res.setHeader('X-Correlation-ID', requestId);
   next();
 };
 

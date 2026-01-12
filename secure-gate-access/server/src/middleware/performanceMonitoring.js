@@ -47,7 +47,7 @@ export const performanceMonitoring = (options = {}) => {
 
       // Prepare metrics data
       const metrics = {
-        requestId: req.id,
+        requestId: req.requestId || req.correlationId || req.id,
         method: req.method,
         url: req.originalUrl,
         statusCode: res.statusCode,
@@ -178,7 +178,6 @@ export default {
   cpuMonitoring,
   systemMetricsMonitoring
 };
-
 
 
 
