@@ -130,30 +130,41 @@ class OptimizedQRCodeService {
     }
   }
 
+  parseQrToken(qrData) {
+    let parsedData;
+    try {
+      parsedData = JSON.parse(qrData);
+    } catch {
+      return {
+        success: false,
+        error: 'Invalid QR code format',
+        code: 400
+      };
+    }
+
+    const { token, qrId } = parsedData;
+    if (!token || !qrId) {
+      return {
+        success: false,
+        error: 'Missing required QR code data',
+        code: 400
+      };
+    }
+
+    return { success: true, data: { token, qrId } };
+  }
+
   /**
    * Validate QR code with timeout protection
    */
   async validateQR(qrData, options = {}) {
     try {
-      let parsedData;
-      try {
-        parsedData = JSON.parse(qrData);
-      } catch {
-        return {
-          success: false,
-          error: 'Invalid QR code format',
-          code: 400
-        };
+      const parsed = this.parseQrToken(qrData);
+      if (!parsed.success) {
+        return parsed;
       }
 
-      const { token, qrId } = parsedData;
-      if (!token || !qrId) {
-        return {
-          success: false,
-          error: 'Missing required QR code data',
-          code: 400
-        };
-      }
+      const { token, qrId } = parsed.data;
 
       // Verify JWT token
       const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
@@ -164,6 +175,14 @@ class OptimizedQRCodeService {
         return {
           success: false,
           error: 'Invalid or expired QR code',
+          code: 401
+        };
+      }
+
+      if (payload?.qrId && payload.qrId !== qrId) {
+        return {
+          success: false,
+          error: 'QR code token mismatch',
           code: 401
         };
       }
@@ -196,8 +215,8 @@ class OptimizedQRCodeService {
         };
       }
 
-      // Check status
-      if (qrRecord.status !== 'active') {
+      // Check status (allow used if explicitly requested)
+      if (qrRecord.status !== 'active' && !(options.allowUsed && qrRecord.status === 'used')) {
         return {
           success: false,
           error: 'QR code is not active',
@@ -246,6 +265,121 @@ class OptimizedQRCodeService {
         };
       }
       
+      return {
+        success: false,
+        error: 'Failed to validate QR code',
+        code: 500
+      };
+    }
+  }
+
+  /**
+   * Validate and consume QR code (single-use enforcement)
+   */
+  async consumeQRCode(qrData, options = {}) {
+    try {
+      const parsed = this.parseQrToken(qrData);
+      if (!parsed.success) {
+        return parsed;
+      }
+
+      const { token, qrId } = parsed.data;
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+
+      let payload;
+      try {
+        payload = jwt.verify(token, jwtSecret);
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Invalid or expired QR code',
+          code: 401
+        };
+      }
+
+      if (payload?.qrId && payload.qrId !== qrId) {
+        return {
+          success: false,
+          error: 'QR code token mismatch',
+          code: 401
+        };
+      }
+
+      const qrUpdate = await withTimeout(
+        dbManager.query(
+          `UPDATE qr_codes
+           SET status = 'used',
+               scan_count = COALESCE(scan_count, 0) + 1,
+               first_used_at = COALESCE(first_used_at, NOW()),
+               used_by_guard_id = $2
+           WHERE qr_id = $1
+             AND status = 'active'
+             AND expires_at > NOW()
+           RETURNING qr_id, visitor_id, status, expires_at, data_url, created_at, scan_count`,
+          [qrId, options.guardId || null]
+        ),
+        2000
+      );
+
+      if (qrUpdate.rows.length === 0) {
+        const qrCheck = await withTimeout(
+          dbManager.query(
+            'SELECT qr_id, status, expires_at FROM qr_codes WHERE qr_id = $1',
+            [qrId]
+          ),
+          2000
+        );
+
+        if (qrCheck.rows.length === 0) {
+          return { success: false, error: 'QR code not found', code: 404 };
+        }
+
+        const qrRecord = qrCheck.rows[0];
+        if (new Date() > new Date(qrRecord.expires_at)) {
+          return { success: false, error: 'QR code has expired', code: 410 };
+        }
+
+        if (qrRecord.status === 'used') {
+          return { success: false, error: 'QR code has already been used', code: 403 };
+        }
+
+        return { success: false, error: 'QR code is not active', code: 403 };
+      }
+
+      const qrRecord = qrUpdate.rows[0];
+      const visitorResult = await withTimeout(
+        dbManager.query(
+          'SELECT id, name, phone, email, purpose, date_of_visit, status, estate_id FROM visitors WHERE id = $1',
+          [qrRecord.visitor_id]
+        ),
+        2000
+      );
+
+      if (visitorResult.rows.length === 0) {
+        return { success: false, error: 'Associated visitor not found', code: 404 };
+      }
+
+      return {
+        success: true,
+        data: {
+          qrId: qrRecord.qr_id,
+          visitor: visitorResult.rows[0],
+          qrCode: qrRecord,
+          payload,
+          validUntil: qrRecord.expires_at
+        }
+      };
+    } catch (error) {
+      console.error('[QRCodeService] consumeQRCode error:', error);
+
+      if (error.message === 'Database query timeout') {
+        return {
+          success: false,
+          error: 'Request timeout - please try again',
+          code: 408
+        };
+      }
+
       return {
         success: false,
         error: 'Failed to validate QR code',
@@ -342,8 +476,8 @@ class OptimizedQRCodeService {
   // Compatibility wrappers for existing routes (qrCodeRoutes.js)
   // ---------------------------------------------------------------------------
 
-  async validateQRCode(qrToken) {
-    const validation = await this.validateQR(qrToken);
+  async validateQRCode(qrToken, options = {}) {
+    const validation = await this.validateQR(qrToken, options);
     if (!validation.success) {
       return {
         valid: false,
