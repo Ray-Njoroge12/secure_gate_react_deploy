@@ -43,10 +43,14 @@ This runbook applies to the staging environment with Multi-AZ RDS configuration:
    
    **AWS CLI:**
    ```bash
+   # Ensure AWS CLI is configured with correct region
    aws rds reboot-db-instance \
      --db-instance-identifier secure-gate-postgres \
-     --force-failover
+     --force-failover \
+     --region us-west-2
    ```
+   
+   **Note:** Verify the region matches your RDS deployment (default: `us-west-2` per `/infra/variables.tf`)
    
    **Terraform (if using IaC):**
    - The failover is typically triggered manually via Console/CLI, not Terraform

@@ -190,7 +190,11 @@ For unplanned incidents:
 - **RPO (Recovery Point Objective):** Maximum acceptable data loss window
 - **Error Rate:** HTTP 5xx rate, database connection errors
 - **Latency:** API response time (p50, p95, p99)
-- **Health Check Status:** `/api/health/detailed` and `/api/system/database/health`
+- **Health Check Status:** 
+  - `/api/health/detailed` (requires authentication - use admin/guard credentials)
+  - `/api/system/database/health` (requires authentication - use admin/guard credentials)
+  - `/api/health/ready` (public - suitable for automated monitoring)
+  - `/api/health` (public - suitable for automated monitoring)
 
 ### Monitoring Dashboards
 
@@ -233,5 +237,5 @@ For issues not covered by these runbooks:
 
 ---
 
-**Last Updated:** January 2026
+**Last Updated:** January 12, 2026
 **Maintained By:** SRE Team / Platform Engineering
