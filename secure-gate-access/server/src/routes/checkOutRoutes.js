@@ -181,17 +181,6 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
   );
   
   if (visitor.rows.length === 0) {
-    // Check if visitor exists in a different estate
-    const visitorExists = await dbManager.query(
-      'SELECT id FROM visitors WHERE id = $1',
-      [visitorId]
-    );
-
-    if (visitorExists.rowCount > 0) {
-      throw new AppError('Visitor not found in your estate', 403);
-    }
-
-    // Return generic error to avoid information disclosure about visitors in other estates
     throw new AppError('Visitor not found', 404);
   }
   
