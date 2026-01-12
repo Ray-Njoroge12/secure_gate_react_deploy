@@ -80,6 +80,20 @@ describe('Estate scoping for guard and event APIs', () => {
       [guardUser.id, 'security_basics', 'Estate Two Training', new Date(), 'active', 2]
     );
 
+    await dbManager.query(
+      `INSERT INTO guard_equipment_checkout (
+        guard_id, equipment_type, equipment_id, status, notes, estate_id
+      ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [guardUser.id, 'radio', `RAD-${Date.now()}`, 'checked_out', 'Estate One Equipment', 1]
+    );
+
+    await dbManager.query(
+      `INSERT INTO guard_equipment_checkout (
+        guard_id, equipment_type, equipment_id, status, notes, estate_id
+      ) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [estateTwoGuard.id, 'radio', `RAD-${Date.now()}-2`, 'checked_out', 'Estate Two Equipment', 2]
+    );
+
     const estateOneEventResult = await dbManager.query(
       `INSERT INTO events (
         name, event_type, start_date, end_date, host_id, status, estate_location_id
@@ -130,6 +144,7 @@ describe('Estate scoping for guard and event APIs', () => {
   afterAll(async () => {
     await dbManager.query('DELETE FROM event_visitors WHERE visitor_email LIKE $1', ['estate%@test.com']).catch(() => {});
     await dbManager.query('DELETE FROM events WHERE name IN ($1, $2)', ['Estate One Event', 'Estate Two Event']).catch(() => {});
+    await dbManager.query('DELETE FROM guard_equipment_checkout WHERE notes LIKE $1', ['Estate % Equipment']).catch(() => {});
     await dbManager.query('DELETE FROM guard_training WHERE training_name LIKE $1', ['Estate % Training']).catch(() => {});
     await dbManager.query('DELETE FROM guard_shifts WHERE guard_id IN ($1, $2)', [guardUser?.id || 0, estateTwoGuard?.id || 0]).catch(() => {});
     await dbManager.query('DELETE FROM users WHERE email LIKE $1', ['guard_estate_two_%@test.com']).catch(() => {});
@@ -156,6 +171,17 @@ describe('Estate scoping for guard and event APIs', () => {
     expect(response.status).toBe(200);
     expect(response.body.data.training_records).toHaveLength(1);
     expect(response.body.data.training_records[0].training_name).toBe('Estate One Training');
+  });
+
+  test('guard equipment list is scoped to estate', async () => {
+    const response = await request(app)
+      .get('/api/guards/equipment')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data[0].notes).toBe('Estate One Equipment');
+    expect(response.body.data[0].estate_id).toBe(1);
   });
 
   test('event list is scoped to estate', async () => {
