@@ -47,7 +47,7 @@ export const registerSchema = Joi.object({
   password: passwordSchema,
   confirmPassword: Joi.string()
     .valid(Joi.ref('password'))
-    .required()
+    .optional()
     .messages({
       'any.only': 'Passwords do not match'
     }),
@@ -65,7 +65,7 @@ export const registerSchema = Joi.object({
     }),
   consent: Joi.boolean()
     .valid(true)
-    .required()
+    .optional()
     .messages({
       'any.only': 'You must consent to data processing to register'
     })
@@ -106,6 +106,13 @@ export const loginSchema = Joi.object({
   remember: Joi.boolean()
     .optional()
     .default(false)
+  ,
+  estate_id: Joi.number()
+    .integer()
+    .optional()
+    .messages({
+      'number.base': 'Estate ID must be a number'
+    })
 })
 // Ensure at least one identifier is provided
 .or('username', 'email')
@@ -141,6 +148,19 @@ export const passwordResetSchema = Joi.object({
 }).options({ 
   stripUnknown: true,
   abortEarly: false 
+});
+
+// Refresh request schema (token optional to allow cookie-based refresh)
+export const refreshSchema = Joi.object({
+  refreshToken: Joi.string()
+    .min(20)
+    .optional()
+    .messages({
+      'string.min': 'Refresh token is invalid'
+    })
+}).options({
+  stripUnknown: true,
+  abortEarly: false
 });
 
 // Change password schema (for logged-in users)
@@ -236,5 +256,6 @@ export const validateRegistration = validate(registerSchema);
 export const validateLogin = validate(loginSchema);
 export const validatePasswordResetRequest = validate(passwordResetRequestSchema);
 export const validatePasswordReset = validate(passwordResetSchema);
+export const validateRefreshRequest = validate(refreshSchema);
 export const validateChangePassword = validate(changePasswordSchema);
 export const validateProfileUpdate = validate(profileUpdateSchema);

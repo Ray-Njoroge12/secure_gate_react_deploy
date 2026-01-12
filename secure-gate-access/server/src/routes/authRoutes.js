@@ -7,7 +7,7 @@ import attachRequestAudit from '../middleware/auditLogger.js';
 import loggingService from '../services/loggingService.js';
 import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.js';
 import { successResponse, createdResponse, validationErrorResponse, unauthorizedResponse, internalErrorResponse } from '../utils/responseFormatter.js';
-import { validatePasswordResetRequest, validatePasswordReset } from '../validation/authValidation.js';
+import { validatePasswordResetRequest, validatePasswordReset, validateRegistration, validateLogin, validateRefreshRequest } from '../validation/authValidation.js';
 import emailService from '../services/emailService.js';
 
 const router = express.Router();
@@ -27,6 +27,24 @@ const authLimiter = rateLimit({
     return req.path === '/health' || req.path === '/api/health';
   }
 });
+
+const getClientPlatform = (req) => {
+  const header = req.headers['x-client-platform'] || req.headers['x-client-type'];
+  if (typeof header === 'string') {
+    const normalized = header.trim().toLowerCase();
+    if (normalized === 'mobile' || normalized === 'api') return 'mobile';
+    if (normalized === 'web') return 'web';
+  }
+  return 'web';
+};
+
+const getBearerToken = (req) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return null;
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer') return null;
+  return token;
+};
 
 /**
  * @swagger
@@ -114,7 +132,7 @@ const authLimiter = rateLimit({
  */
 // User registration
 // BUG-001 FIX: Rate limiter re-enabled for production security
-router.post('/register', authLimiter, attachRequestAudit(), asyncHandler(async (req, res) => {
+router.post('/register', authLimiter, validateRegistration, attachRequestAudit(), asyncHandler(async (req, res) => {
   const { username, email, password, role } = req.body;
   
   // BUG-006 FIX: Using proper logging service instead of console.log
@@ -287,7 +305,7 @@ router.post('/register', authLimiter, attachRequestAudit(), asyncHandler(async (
  */
 // User login
 // BUG-001 FIX: Rate limiter re-enabled for production security
-router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req, res) => {
+router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHandler(async (req, res) => {
   // Accept either username or email field for login
   const { username, email, password, estate_id: estateId } = req.body;
   const userIdentifier = username || email;
@@ -316,9 +334,22 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
-  // Generate tokens
-  const accessToken = tokenService.generateAccessToken(user);
-  const refreshToken = tokenService.generateRefreshToken(user);
+  const platform = getClientPlatform(req);
+  const isWebClient = platform === 'web';
+
+  const { accessToken, refreshToken, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
+  const refreshInfo = tokenService.getTokenInfo(refreshToken);
+  const refreshExpiresAt = refreshInfo?.exp ? new Date(refreshInfo.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await tokenService.storeRefreshToken(
+    refreshJti,
+    user.id,
+    refreshToken,
+    refreshExpiresAt,
+    {
+      userAgent: req.get('User-Agent'),
+      ipAddress: req.ip
+    }
+  );
 
   // BUG-008 FIX: Set tokens as httpOnly cookies instead of returning in body
   const isProduction = process.env.NODE_ENV === 'production';
@@ -327,26 +358,25 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
   
   // Set access token cookie
   // For cross-site (Netlify frontend + Render backend), use sameSite: 'none' + secure: true
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: cookieSecure, // Must be true for sameSite: 'none'
-    sameSite: cookieSameSite, // Required for cross-site cookies
-    maxAge: 15 * 60 * 1000, // 15 minutes
-    path: '/'
-  });
+  if (isWebClient) {
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: cookieSecure, // Must be true for sameSite: 'none'
+      sameSite: cookieSameSite, // Required for cross-site cookies
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      path: '/'
+    });
 
-  // Set refresh token cookie
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: cookieSecure,
-    sameSite: cookieSameSite,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/'
-  });
+    // Set refresh token cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: cookieSecure,
+      sameSite: cookieSameSite,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+  }
 
-  // Success response - tokens in both httpOnly cookies AND response body
-  // Cookies: for web browsers with automatic credential management
-  // Response body: for API clients, mobile apps, and testing
   successResponse(res, {
     user: {
       id: user.id,
@@ -355,8 +385,9 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
       role: user.role,
       estate_id: user.estate_id
     },
-    accessToken,
-    refreshToken
+    ...(isWebClient
+      ? { session: { type: 'cookie' } }
+      : { accessToken, refreshToken, tokenType, expiresIn })
   }, 'Login successful');
 }));
 
@@ -418,29 +449,80 @@ router.post('/login', authLimiter, attachRequestAudit(), asyncHandler(async (req
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Token refresh
-router.post('/refresh', attachRequestAudit(), asyncHandler(async (req, res) => {
-  const { refreshToken } = req.body;
-  
+router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(), asyncHandler(async (req, res) => {
+  const platform = getClientPlatform(req);
+  const isWebClient = platform === 'web';
+  const refreshToken = isWebClient ? req.cookies?.refreshToken : (getBearerToken(req) || req.body?.refreshToken);
+
   if (!refreshToken) {
     throw new AppError('Refresh token required', 400, 'VALIDATION_ERROR', {
       field: 'refreshToken'
     });
   }
 
-  // Verify refresh token
-  const decoded = tokenService.verifyRefreshToken(refreshToken);
-  const user = await userService.getUserById(decoded.userId);
+  const decoded = await tokenService.verifyRefreshToken(refreshToken);
+  const userId = Number(decoded.sub || decoded.userId);
+  const user = await userService.getUserById(userId);
   
   if (!user) {
     throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
   }
 
-  // Generate new access token
-  const newAccessToken = tokenService.generateAccessToken(user);
+  const storedToken = await tokenService.getRefreshTokenRecord(refreshToken);
+  if (!storedToken || storedToken.is_revoked) {
+    throw new AppError('Refresh token has been revoked', 401, 'INVALID_TOKEN');
+  }
 
-  // Success response using standardized format
+  if (storedToken.user_id !== user.id) {
+    throw new AppError('Refresh token mismatch', 401, 'INVALID_TOKEN');
+  }
+
+  if (storedToken.expires_at && new Date(storedToken.expires_at) <= new Date()) {
+    throw new AppError('Refresh token expired', 401, 'INVALID_TOKEN');
+  }
+
+  await tokenService.revokeRefreshToken(refreshToken);
+
+  const { accessToken, refreshToken: nextRefreshToken, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
+  const refreshInfo = tokenService.getTokenInfo(nextRefreshToken);
+  const refreshExpiresAt = refreshInfo?.exp ? new Date(refreshInfo.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await tokenService.storeRefreshToken(
+    refreshJti,
+    user.id,
+    nextRefreshToken,
+    refreshExpiresAt,
+    {
+      userAgent: req.get('User-Agent'),
+      ipAddress: req.ip
+    }
+  );
+
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieSameSite = isProduction ? 'none' : 'lax';
+  const cookieSecure = isProduction;
+
+  if (isWebClient) {
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: cookieSecure,
+      sameSite: cookieSameSite,
+      maxAge: 15 * 60 * 1000,
+      path: '/'
+    });
+
+    res.cookie('refreshToken', nextRefreshToken, {
+      httpOnly: true,
+      secure: cookieSecure,
+      sameSite: cookieSameSite,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+  }
+
   successResponse(res, {
-    accessToken: newAccessToken
+    ...(isWebClient
+      ? { session: { type: 'cookie' } }
+      : { accessToken, refreshToken: nextRefreshToken, tokenType, expiresIn })
   }, 'Token refreshed successfully');
 }));
 
@@ -472,6 +554,15 @@ router.post('/refresh', attachRequestAudit(), asyncHandler(async (req, res) => {
 router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(async (req, res) => {
   // BUG-008 FIX: Clear httpOnly cookies on logout
   const isProduction = process.env.NODE_ENV === 'production';
+  const accessToken = getBearerToken(req) || req.cookies?.accessToken;
+  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+  if (accessToken) {
+    await tokenService.revokeToken(accessToken);
+  }
+  if (refreshToken) {
+    await tokenService.revokeRefreshToken(refreshToken);
+  }
   
   res.clearCookie('accessToken', {
     httpOnly: true,

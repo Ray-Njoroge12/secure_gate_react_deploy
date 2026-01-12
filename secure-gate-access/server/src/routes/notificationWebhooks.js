@@ -9,6 +9,8 @@
 
 import express from 'express';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
+import Joi from 'joi';
 import loggingService from '../services/loggingService.js';
 import db from '../database/db.enhanced.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
@@ -16,6 +18,49 @@ import { authenticateToken, requireRole } from '../middleware/authMiddleware.js'
 import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
 
 const router = express.Router();
+
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: 'Too many webhook requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const validateWebhookPayload = (schema) => (req, res, next) => {
+  const { error, value } = schema.validate(req.body, { abortEarly: false, allowUnknown: true });
+  if (error) {
+    return res.status(400).json({
+      error: 'Invalid webhook payload',
+      details: error.details.map(detail => detail.message)
+    });
+  }
+  req.body = value;
+  return next();
+};
+
+const mailgunWebhookSchema = Joi.object({
+  signature: Joi.string().required(),
+  token: Joi.string().required(),
+  timestamp: Joi.alternatives().try(Joi.string(), Joi.number()).required(),
+  'event-data': Joi.object().optional()
+});
+
+const africasTalkingSchema = Joi.object({
+  id: Joi.string().required(),
+  status: Joi.string().required(),
+  phoneNumber: Joi.string().optional(),
+  failureReason: Joi.string().optional(),
+  retryCount: Joi.alternatives().try(Joi.number(), Joi.string()).optional(),
+  networkCode: Joi.string().optional()
+});
+
+const genericWebhookSchema = Joi.object({
+  message_id: Joi.string().required(),
+  status: Joi.string().required(),
+  provider: Joi.string().required(),
+  details: Joi.object().optional()
+});
 
 /**
  * Verify Mailgun webhook signature
@@ -57,6 +102,11 @@ function verifyMailgunSignature(timestamp, token, signature) {
   if (!signingKey) {
     loggingService.logWarn('MAILGUN_WEBHOOK_SIGNING_KEY not configured');
     return { valid: false, reason: 'missing_signing_key' };
+  }
+
+  const timestampNumber = Number(timestamp);
+  if (!timestampNumber || Math.abs(Date.now() / 1000 - timestampNumber) > 300) {
+    return { valid: false, reason: 'stale_timestamp' };
   }
 
   const hmac = crypto.createHmac('sha256', signingKey);
@@ -193,7 +243,7 @@ async function logDeliveryEvent(event) {
  * @desc Mailgun delivery webhook
  * @access Public (webhook)
  */
-router.post('/mailgun/delivered', async (req, res) => {
+router.post('/mailgun/delivered', webhookLimiter, validateWebhookPayload(mailgunWebhookSchema), async (req, res) => {
   try {
     const { signature, token, timestamp } = req.body;
     const mailgunProvider = getEmailProvider('mailgun');
@@ -241,7 +291,7 @@ router.post('/mailgun/delivered', async (req, res) => {
  * @desc Mailgun failure webhook
  * @access Public (webhook)
  */
-router.post('/mailgun/failed', async (req, res) => {
+router.post('/mailgun/failed', webhookLimiter, validateWebhookPayload(mailgunWebhookSchema), async (req, res) => {
   try {
     const { signature, token, timestamp } = req.body;
     const mailgunProvider = getEmailProvider('mailgun');
@@ -293,7 +343,7 @@ router.post('/mailgun/failed', async (req, res) => {
  * @desc Mailgun bounce webhook
  * @access Public (webhook)
  */
-router.post('/mailgun/bounced', async (req, res) => {
+router.post('/mailgun/bounced', webhookLimiter, validateWebhookPayload(mailgunWebhookSchema), async (req, res) => {
   try {
     const { signature, token, timestamp } = req.body;
     const mailgunProvider = getEmailProvider('mailgun');
@@ -349,7 +399,7 @@ router.post('/mailgun/bounced', async (req, res) => {
  * @desc Africa's Talking delivery report
  * @access Public (webhook)
  */
-router.post('/africas-talking/delivery', async (req, res) => {
+router.post('/africas-talking/delivery', webhookLimiter, validateWebhookPayload(africasTalkingSchema), async (req, res) => {
   try {
     const africaVerification = verifyAfricasTalkingAuth(req);
     if (!africaVerification.valid) {
@@ -405,22 +455,16 @@ router.post('/africas-talking/delivery', async (req, res) => {
  * @desc Generic notification status webhook
  * @access Public (webhook with API key)
  */
-router.post('/notification/status', async (req, res) => {
+router.post('/notification/status', webhookLimiter, validateWebhookPayload(genericWebhookSchema), async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'];
 
     // Verify API key
-    if (apiKey !== process.env.NOTIFICATION_WEBHOOK_API_KEY) {
+    if (!apiKey || !safeCompareSignature(process.env.NOTIFICATION_WEBHOOK_API_KEY, apiKey)) {
+      logWebhookAuthFailure('generic', 'invalid_api_key', req);
       return res.status(401).json({ error: 'Invalid API key' });
     }
-
     const { message_id, status, provider, details } = req.body;
-
-    if (!message_id || !status || !provider) {
-      return res.status(400).json({
-        error: 'Missing required fields: message_id, status, provider'
-      });
-    }
 
     await updateNotificationStatus(message_id, status, provider, details || {});
 

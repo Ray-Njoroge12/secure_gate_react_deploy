@@ -103,7 +103,13 @@ router.post('/verify', asyncHandler(async (req, res) => {
 
   // Generate tokens
   const { tokenService } = await import('../services/tokenService.js');
-  const { accessToken, refreshToken, expiresIn } = tokenService.generateTokens(user);
+  const { accessToken, refreshToken, refreshJti, expiresIn } = tokenService.generateTokens(user);
+  const refreshInfo = tokenService.getTokenInfo(refreshToken);
+  const refreshExpiresAt = refreshInfo?.exp ? new Date(refreshInfo.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await tokenService.storeRefreshToken(refreshJti, user.id, refreshToken, refreshExpiresAt, {
+    userAgent: req.get('User-Agent'),
+    ipAddress: req.ip
+  });
   
   // Set httpOnly cookies for security (cross-site compatible for Netlify + Render)
   res.cookie('accessToken', accessToken, {
