@@ -1,9 +1,6 @@
-import nodemailer from 'nodemailer';
-import AfricasTalking from 'africastalking';
-import Mailgun from 'mailgun.js';
-import FormData from 'form-data';
 import whatsappService from './whatsappService.js';
 import notificationMetricsService from './notificationMetricsService.js';
+import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
 import { 
     visitorInviteTemplate, 
     bulkInviteTemplate, 
@@ -20,76 +17,23 @@ import {
 // Simple in-memory metrics counter (no external dependencies)
 const metrics = {};
 
-// SMTP Configuration
-const smtpConfig = {
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || Number(process.env.SMTP_PORT) === 465,
-  auth: process.env.SMTP_USER && process.env.SMTP_PASS ? { 
-    user: process.env.SMTP_USER, 
-    pass: process.env.SMTP_PASS 
-  } : undefined,
-};
-
-let transporter = null;
-try { 
-  transporter = nodemailer.createTransport(smtpConfig); 
-} catch (error) {
-  console.error('Failed to create email transporter:', error.message);
-  notificationMetricsService.recordProviderInitFailure('smtp', error.message, {
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT
-  });
-}
-
-// Africa's Talking Configuration
-let atClient = null;
-if (process.env.AT_USERNAME && process.env.AT_API_KEY) {
-  try {
-    const africasTalking = AfricasTalking({
-      apiKey: process.env.AT_API_KEY,
-      username: process.env.AT_USERNAME
-    });
-    atClient = africasTalking.SMS;
-  } catch (error) {
-    console.error('Failed to initialize Africa\'s Talking client:', error.message);
-    notificationMetricsService.recordProviderInitFailure('africas_talking', error.message);
-  }
-}
-
-// Mailgun Configuration
-let mailgunClient = null;
-if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) {
-  try {
-    const mailgun = new Mailgun(FormData);
-    mailgunClient = mailgun.client({
-      username: 'api',
-      key: process.env.MAILGUN_API_KEY,
-      url: process.env.MAILGUN_BASE_URL || 'https://api.mailgun.net'
-    });
-  } catch (error) {
-    console.error('Failed to initialize Mailgun client:', error.message);
-    notificationMetricsService.recordProviderInitFailure('mailgun', error.message);
-  }
-}
-
 // Site configuration
 const SITE_NAME = process.env.SITE_NAME || 'Secure Gate Access';
 const SITE_URL = process.env.SITE_URL || 'http://localhost';
 
 // Email provider selection
-const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'smtp'; // 'smtp' or 'mailgun'
-
 /**
  * Send email using configured provider (SMTP or Mailgun API)
  */
 async function sendEmail(to, subject, html, text = null) {
+  const provider = getEmailProvider();
+  const providerName = provider?.getName?.() || process.env.EMAIL_PROVIDER || 'smtp';
   // Feature flag checks
   if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
     console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
-      provider: EMAIL_PROVIDER,
+      provider: providerName,
       success: false,
       error: 'external_notifications_disabled'
     });
@@ -100,92 +44,45 @@ async function sendEmail(to, subject, html, text = null) {
     console.log('Email notifications are disabled via ENABLE_EMAIL_NOTIFICATIONS flag');
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
-      provider: EMAIL_PROVIDER,
+      provider: providerName,
       success: false,
       error: 'email_notifications_disabled'
     });
     return false;
   }
 
-  if (EMAIL_PROVIDER === 'mailgun' && mailgunClient) {
-    return await sendEmailViaMailgun(to, subject, html, text);
-  } else if (transporter && process.env.SMTP_HOST) {
-    return await sendEmailViaSMTP(to, subject, html);
-  } else {
+  if (!provider?.isConfigured?.()) {
     console.warn('No email service configured');
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
-      provider: EMAIL_PROVIDER,
+      provider: providerName,
       success: false,
       error: 'email_provider_not_configured'
     });
     return false;
   }
-}
 
-/**
- * Send email via Mailgun API
- */
-async function sendEmailViaMailgun(to, subject, html, text = null) {
-  try {
-    const data = await mailgunClient.messages.create(process.env.MAILGUN_DOMAIN, {
-      from: process.env.EMAIL_FROM || `noreply@${process.env.MAILGUN_DOMAIN}`,
-      to: [to],
-      subject: subject,
-      html: html,
-      text: text || html.replace(/<[^>]*>/g, '') // Strip HTML tags for text version
-    });
-    
-    console.log(`Email sent via Mailgun: ${data.id}`);
+  const result = await provider.send({ to, subject, html, text });
+
+  if (result.success) {
+    console.log(`Email sent via ${providerName}`);
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
-      provider: 'mailgun',
+      provider: providerName,
       success: true,
-      metadata: { messageId: data.id }
+      metadata: { messageId: result.messageId, to }
     });
     return true;
-  } catch (error) {
-    console.error('Mailgun email sending failed:', error.message);
-    notificationMetricsService.recordNotificationResult({
-      channel: 'email',
-      provider: 'mailgun',
-      success: false,
-      error: error.message
-    });
-    return false;
   }
-}
 
-/**
- * Send email via SMTP (nodemailer)
- */
-async function sendEmailViaSMTP(to, subject, html) {
-  try {
-    await transporter.sendMail({
-      from: process.env.FROM_EMAIL || process.env.EMAIL_FROM,
-      to: to,
-      subject: subject,
-      html: html
-    });
-    
-    console.log(`Email sent via SMTP to ${to}`);
-    notificationMetricsService.recordNotificationResult({
-      channel: 'email',
-      provider: 'smtp',
-      success: true,
-      metadata: { to }
-    });
-    return true;
-  } catch (error) {
-    console.error('SMTP email sending failed:', error.message);
-    notificationMetricsService.recordNotificationResult({
-      channel: 'email',
-      provider: 'smtp',
-      success: false,
-      error: error.message
-    });
-    return false;
-  }
+  console.error(`${providerName} email sending failed:`, result.error);
+  notificationMetricsService.recordNotificationResult({
+    channel: 'email',
+    provider: providerName,
+    success: false,
+    error: result.error
+  });
+  return false;
 }
 
 /**
@@ -265,6 +162,7 @@ export async function sendOtpVerificationEmail(visitorData, otpCode, expiryMinut
  */
 export async function sendVisitorInviteSms(visitorData, residentData, inviteLink) {
   const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
+  const smsProviderClient = getSmsProvider(smsProvider);
   
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
@@ -319,14 +217,13 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
     }
   }
   
-  // Africa's Talking provider
-  if (smsProvider === 'africastalking' && !atClient) {
-    console.warn('Africa\'s Talking SMS not configured');
+  if (!smsProviderClient?.isConfigured?.()) {
+    console.warn('SMS provider not configured');
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
-      provider: 'africas_talking',
+      provider: smsProviderClient?.getName?.() || smsProvider,
       success: false,
-      error: 'africas_talking_not_configured'
+      error: 'sms_provider_not_configured'
     });
     return false;
   }
@@ -346,21 +243,14 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
 
     const message = visitorInviteSmsTemplate(smsData);
 
-    // Africa's Talking implementation
-    const smsOptions = {
-      to: [visitorData.phone],
-      message: message
-    };
-    
-    // Only add 'from' if sender ID is configured
-    if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-      smsOptions.from = process.env.AT_SENDER_ID;
-    }
-    
-    const result = await atClient.send(smsOptions);
-    
-    if (result.SMSMessageData.Recipients[0].status !== 'Success') {
-      throw new Error(result.SMSMessageData.Recipients[0].statusCode);
+    const result = await smsProviderClient.send({
+      to: visitorData.phone,
+      message,
+      from: process.env.AT_SENDER_ID
+    });
+
+    if (!result.success) {
+      throw new Error(result.error);
     }
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
@@ -369,7 +259,7 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
       channel: 'sms',
       provider: smsProvider,
       success: true,
-      metadata: { to: visitorData.phone }
+      metadata: { to: visitorData.phone, messageId: result.messageId }
     });
     return true;
   } catch (err) {
@@ -391,6 +281,7 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
  */
 export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes = 15) {
   const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
+  const smsProviderClient = getSmsProvider(smsProvider);
   
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
@@ -445,14 +336,13 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
     }
   }
   
-  // Africa's Talking provider
-  if (smsProvider === 'africastalking' && !atClient) {
-    console.warn('Africa\'s Talking SMS not configured');
+  if (!smsProviderClient?.isConfigured?.()) {
+    console.warn('SMS provider not configured');
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
-      provider: 'africas_talking',
+      provider: smsProviderClient?.getName?.() || smsProvider,
       success: false,
-      error: 'africas_talking_not_configured'
+      error: 'sms_provider_not_configured'
     });
     return false;
   }
@@ -467,21 +357,14 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
 
     const message = otpVerificationSmsTemplate(smsData);
 
-    // Africa's Talking implementation
-    const smsOptions = {
-      to: [visitorData.phone],
-      message: message
-    };
-    
-    // Only add 'from' if sender ID is configured
-    if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-      smsOptions.from = process.env.AT_SENDER_ID;
-    }
-    
-    const result = await atClient.send(smsOptions);
-    
-    if (result.SMSMessageData.Recipients[0].status !== 'Success') {
-      throw new Error(result.SMSMessageData.Recipients[0].statusCode);
+    const result = await smsProviderClient.send({
+      to: visitorData.phone,
+      message,
+      from: process.env.AT_SENDER_ID
+    });
+
+    if (!result.success) {
+      throw new Error(result.error);
     }
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
@@ -490,7 +373,7 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
       channel: 'sms',
       provider: smsProvider,
       success: true,
-      metadata: { to: visitorData.phone }
+      metadata: { to: visitorData.phone, messageId: result.messageId }
     });
     return true;
   } catch (err) {
@@ -543,7 +426,7 @@ export async function sendDeliveryNotification(residentData, deliveryData) {
     }
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
-      provider: EMAIL_PROVIDER,
+      provider: process.env.EMAIL_PROVIDER || 'smtp',
       success: Boolean(result),
       error: result ? null : 'delivery_notification_failed',
       metadata: { to: residentData.email }
@@ -555,7 +438,7 @@ export async function sendDeliveryNotification(residentData, deliveryData) {
     console.error('sendDeliveryNotification failed:', err?.message || err);
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
-      provider: EMAIL_PROVIDER,
+      provider: process.env.EMAIL_PROVIDER || 'smtp',
       success: false,
       error: err?.message || String(err)
     });
@@ -601,6 +484,7 @@ export async function sendInviteEmail(to, subject, html) {
 
 export async function sendSms(to, text) {
   const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
+  const smsProviderClient = getSmsProvider(smsProvider);
 
   // Feature flag checks
   if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
@@ -625,42 +509,35 @@ export async function sendSms(to, text) {
     return false;
   }
   
-  if (smsProvider === 'africastalking' && !atClient) {
-    console.warn('Africa\'s Talking SMS not configured');
+  if (!smsProviderClient?.isConfigured?.()) {
+    console.warn('SMS provider not configured');
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
-      provider: 'africas_talking',
+      provider: smsProviderClient?.getName?.() || smsProvider,
       success: false,
-      error: 'africas_talking_not_configured'
+      error: 'sms_provider_not_configured'
     });
     return false;
   }
 
   try {
-    // Africa's Talking implementation
-    const smsOptions = {
-      to: [to],
-      message: text
-    };
-    
-    // Only add 'from' if sender ID is configured
-    if (process.env.AT_SENDER_ID && process.env.AT_SENDER_ID.trim() !== '') {
-      smsOptions.from = process.env.AT_SENDER_ID;
+    const result = await smsProviderClient.send({
+      to,
+      message: text,
+      from: process.env.AT_SENDER_ID
+    });
+
+    if (!result.success) {
+      throw new Error(result.error);
     }
-    
-    const result = await atClient.send(smsOptions);
-    
-    if (result.SMSMessageData.Recipients[0].status !== 'Success') {
-      throw new Error(result.SMSMessageData.Recipients[0].statusCode);
-    }
-    
+
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
     console.log(`SMS sent via ${smsProvider} to ${to}`);
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
       provider: smsProvider,
       success: true,
-      metadata: { to }
+      metadata: { to, messageId: result.messageId }
     });
     return true;
   } catch (err) {
