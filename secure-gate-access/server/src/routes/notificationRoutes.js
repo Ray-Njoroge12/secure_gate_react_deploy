@@ -100,6 +100,196 @@ router.get('/preferences', authenticateToken, async (req, res) => {
 router.put('/preferences', authenticateToken, updateNotificationPreferences);
 
 /**
+ * @route POST /api/notifications/devices/register
+ * @desc Register a device token for topic-based notifications
+ * @access Private (authenticated)
+ */
+router.post('/devices/register', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const estateId = req.body.estateId ?? req.user.estate_id ?? null;
+    const role = req.body.role ?? req.user.role ?? null;
+    const { token, platform, deviceInfo, topics = [] } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Device token is required'
+      });
+    }
+
+    const insertQuery = `
+      INSERT INTO device_tokens (
+        user_id, estate_id, role, token, platform, device_info, last_seen_at, created_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), NOW())
+      ON CONFLICT (token)
+      DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        estate_id = EXCLUDED.estate_id,
+        role = EXCLUDED.role,
+        platform = EXCLUDED.platform,
+        device_info = EXCLUDED.device_info,
+        last_seen_at = NOW(),
+        updated_at = NOW()
+      RETURNING id
+    `;
+
+    const insertResult = await db.query(insertQuery, [
+      userId,
+      estateId,
+      role,
+      token,
+      platform || 'unknown',
+      JSON.stringify(deviceInfo || {})
+    ]);
+
+    const deviceTokenId = insertResult.rows[0]?.id;
+    const normalizedTopics = new Set(topics);
+
+    if (estateId) {
+      normalizedTopics.add(`estate:${estateId}`);
+    }
+    if (role) {
+      normalizedTopics.add(`role:${role}`);
+    }
+    if (estateId && role) {
+      normalizedTopics.add(`estate:${estateId}:role:${role}`);
+    }
+
+    if (deviceTokenId && normalizedTopics.size > 0) {
+      await db.query(
+        `DELETE FROM device_topic_subscriptions WHERE device_token_id = $1`,
+        [deviceTokenId]
+      );
+
+      for (const topic of normalizedTopics) {
+        await db.query(
+          `INSERT INTO device_topic_subscriptions (device_token_id, topic, created_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (device_token_id, topic) DO NOTHING`,
+          [deviceTokenId, topic]
+        );
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Device token registered'
+    });
+  } catch (error) {
+    logger.error('Failed to register device token:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to register device token'
+    });
+  }
+});
+
+/**
+ * @route POST /api/notifications/devices/unregister
+ * @desc Unregister a device token
+ * @access Private (authenticated)
+ */
+router.post('/devices/unregister', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Device token is required'
+      });
+    }
+
+    const lookup = await db.query(
+      `SELECT id FROM device_tokens WHERE token = $1 AND user_id = $2`,
+      [token, userId]
+    );
+
+    if (lookup.rows.length > 0) {
+      const deviceTokenId = lookup.rows[0].id;
+      await db.query(
+        `DELETE FROM device_topic_subscriptions WHERE device_token_id = $1`,
+        [deviceTokenId]
+      );
+      await db.query(
+        `DELETE FROM device_tokens WHERE id = $1`,
+        [deviceTokenId]
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: 'Device token removed'
+    });
+  } catch (error) {
+    logger.error('Failed to unregister device token:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to unregister device token'
+    });
+  }
+});
+
+/**
+ * @route POST /api/notifications/devices/topics
+ * @desc Update device topics
+ * @access Private (authenticated)
+ */
+router.post('/devices/topics', authenticateToken, async (req, res) => {
+  try {
+    const { token, topics = [] } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Device token is required'
+      });
+    }
+
+    const lookup = await db.query(
+      `SELECT id FROM device_tokens WHERE token = $1`,
+      [token]
+    );
+
+    if (lookup.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Device token not found'
+      });
+    }
+
+    const deviceTokenId = lookup.rows[0].id;
+    await db.query(
+      `DELETE FROM device_topic_subscriptions WHERE device_token_id = $1`,
+      [deviceTokenId]
+    );
+
+    for (const topic of topics) {
+      await db.query(
+        `INSERT INTO device_topic_subscriptions (device_token_id, topic, created_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (device_token_id, topic) DO NOTHING`,
+        [deviceTokenId, topic]
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: 'Device topics updated'
+    });
+  } catch (error) {
+    logger.error('Failed to update device topics:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update device topics'
+    });
+  }
+});
+
+/**
  * @route POST /api/notifications/push/subscribe
  * @desc Register push notification subscription
  * @access Private (authenticated)
@@ -236,7 +426,7 @@ router.get('/recent', authenticateToken, async (req, res) => {
         sent_at,
         read_at,
         created_at
-      FROM notification_logs
+      FROM notification_log
       WHERE (recipient_type = 'user' AND recipient_id = $1)
          OR user_id = $1
       ORDER BY created_at DESC
@@ -269,7 +459,7 @@ router.post('/:id/read', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     const query = `
-      UPDATE notification_logs
+      UPDATE notification_log
       SET read_at = CURRENT_TIMESTAMP
       WHERE id = $1 AND (user_id = $2 OR recipient_id = $2)
       RETURNING id
@@ -307,7 +497,7 @@ router.post('/read-all', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     
     const query = `
-      UPDATE notification_logs
+      UPDATE notification_log
       SET read_at = CURRENT_TIMESTAMP
       WHERE (user_id = $1 OR recipient_id = $1)
         AND read_at IS NULL
