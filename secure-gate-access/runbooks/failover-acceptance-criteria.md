@@ -7,7 +7,7 @@ Define measurable success criteria for failover events so the on-call team can m
 This runbook applies to the Multi-AZ RDS PostgreSQL deployment configured in `/infra/main.tf`:
 - **RDS Instance:** `secure-gate-postgres`
 - **Multi-AZ:** Enabled by default (`var.db_multi_az = true` in `/infra/variables.tf`)
-- **Engine:** PostgreSQL 15.4
+- **Engine:** PostgreSQL (version controlled by `var.db_engine_version`, default: 15.4)
 - **Deployment:** Primary + standby across two availability zones
 
 ## 1) Recovery Time Objective (RTO)
