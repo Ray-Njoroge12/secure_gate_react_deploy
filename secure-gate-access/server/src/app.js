@@ -52,6 +52,7 @@ import createCacheRoutes from './routes/cacheRoutes.js';
 import rateLimitRoutes from './routes/rateLimitRoutes.js';
 import securityRoutes from './routes/securityRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import tenantProvisioningRoutes from './routes/tenantProvisioningRoutes.js';
 import visitorRoutes from './routes/visitorRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js'; // Dashboard routes
 // import residentRoutes from './routes/residentRoutes.js'; // Removed - placeholder implementation
@@ -367,6 +368,7 @@ app.use('/api/cache', createCacheRoutes(cacheMiddleware));
 app.use('/api/rate-limits', rateLimitRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/tenants', tenantProvisioningRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/dashboard', dashboardRoutes); // Dashboard routes
 app.use('/api/system', systemRoutes); // System info, status, database health routes
