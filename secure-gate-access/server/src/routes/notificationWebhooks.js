@@ -16,6 +16,7 @@ import db from '../database/db.enhanced.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
+import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempotencyResponse } from '../services/idempotencyService.js';
 
 const router = express.Router();
 
@@ -135,6 +136,32 @@ function isIpAllowed(req, allowlist) {
   const requestIp = normalizeIp(req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress);
   return allowlist.includes(requestIp);
 }
+
+async function resolveWebhookIdempotency(req, res, { key, scope }) {
+  if (!key) {
+    return { hit: false };
+  }
+
+  const requestHash = buildRequestHash({
+    method: req.method,
+    path: req.originalUrl,
+    body: req.body,
+    scopeContext: scope
+  });
+
+  const idempotencyResult = await resolveIdempotency({ key, scope, requestHash });
+  if (idempotencyResult.conflict) {
+    res.status(409).json({ error: 'Idempotency key reuse with different payload' });
+    return { hit: true };
+  }
+  if (idempotencyResult.hit) {
+    res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
+    return { hit: true };
+  }
+
+  return { hit: false, requestHash };
+}
+
 
 function verifyAfricasTalkingAuth(req) {
   const allowlist = process.env.AFRICAS_TALKING_WEBHOOK_ALLOWED_IPS
