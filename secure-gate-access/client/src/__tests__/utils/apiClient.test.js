@@ -199,6 +199,25 @@ describe('apiClient', () => {
     expect(result).toEqual({ data: { ok: true } });
   });
 
+  test('response interceptor redirects on estate-required errors', async () => {
+    process.env.NODE_ENV = 'development';
+    window.location.pathname = '/dashboard/resident';
+
+    apiClientModule = require('../../utils/apiClient');
+
+    const error = {
+      response: { status: 403, data: { error: { code: 'ESTATE_REQUIRED' }, message: 'Estate required' } },
+      config: { url: '/api/resident/profile' }
+    };
+
+    await expect(responseRejected(error)).rejects.toEqual({
+      message: 'Estate required',
+      code: 'ESTATE_REQUIRED'
+    });
+
+    expect(window.location.href).toBe('/estate-required');
+  });
+
   test('response interceptor does not retry CSRF refresh twice', async () => {
     process.env.NODE_ENV = 'development';
     axios.get.mockResolvedValue({ data: { csrfToken: 'newcsrf' }, headers: {} });
