@@ -11,7 +11,7 @@ import {
 import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
 import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
-import { attachUserFromToken, authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
@@ -222,7 +222,7 @@ router.get('/',
   // CacheMiddleware.createMiddleware({ ttl: 300 }), // Temporarily disabled for debugging
   getMyVisitors
 );
-router.post('/:visitorId/pass', attachUserFromToken, attachRequestAudit, createPass);
+router.post('/:visitorId/pass', authenticateToken, requireEstateContext, attachRequestAudit, createPass);
 router.post('/bulk-invite',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)

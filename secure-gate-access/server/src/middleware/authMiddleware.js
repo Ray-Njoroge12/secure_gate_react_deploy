@@ -54,19 +54,35 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     // Security: Token validated successfully - no PII logging
 
     // Validate required fields
-    if (!payload.email) {
+    const userIdentifier = payload.email || payload.sub || payload.userId;
+    if (!userIdentifier) {
       // Security: Invalid token format - no details logged
       throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
     }
 
     // Look up user in database to get full user info
-    const userQuery = await dbManager.query(
-      `SELECT id, email, username, role, estate_id
-       FROM users
-       WHERE LOWER(email) = LOWER($1)
-         AND estate_id = COALESCE($2, estate_id)`,
-      [payload.email, payload.estate_id ?? null]
-    );
+    let userQuery;
+    if (typeof userIdentifier === 'string' && userIdentifier.includes('@')) {
+      userQuery = await dbManager.query(
+        `SELECT id, email, username, role, estate_id
+         FROM users
+         WHERE LOWER(email) = LOWER($1)
+           AND estate_id = COALESCE($2, estate_id)`,
+        [userIdentifier, payload.estate_id ?? null]
+      );
+    } else {
+      const userId = Number(userIdentifier);
+      if (!Number.isInteger(userId)) {
+        throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
+      }
+      userQuery = await dbManager.query(
+        `SELECT id, email, username, role, estate_id
+         FROM users
+         WHERE id = $1
+           AND estate_id = COALESCE($2, estate_id)`,
+        [userId, payload.estate_id ?? null]
+      );
+    }
 
     if (userQuery.rowCount === 0) {
       // Security: User lookup failed - no PII logged

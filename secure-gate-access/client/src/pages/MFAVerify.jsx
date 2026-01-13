@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/apiClient';
 
 /**
  * MFA Verification Component
@@ -39,12 +39,10 @@ const MFAVerify = () => {
     }
 
     try {
-      const response = await axios.post('/api/mfa/verify', {
+      const response = await api.post('/api/mfa/verify', {
         userId,
         token,
         useBackupCode
-      }, {
-        withCredentials: true
       });
 
       if (response.data.success) {
