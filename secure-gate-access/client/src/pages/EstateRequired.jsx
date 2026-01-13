@@ -1,0 +1,35 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const EstateRequired = () => {
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center px-4">
+      <div className="max-w-lg w-full bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-8 text-center">
+        <div className="text-5xl mb-4">🏡</div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+          Estate assignment required
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">
+          Your account is authenticated, but it is not linked to an estate yet. Please contact your
+          estate administrator or support to complete your setup.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            to="/login"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
+          >
+            Back to login
+          </Link>
+          <a
+            href="mailto:support@securegate.com"
+            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+          >
+            Contact support
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EstateRequired;

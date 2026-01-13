@@ -41,6 +41,7 @@ const GuestInvite = lazy(() => import("./pages/GuestInvite.jsx"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
 const ProtectedRoute = lazy(() => import("./routes/ProtectedRoute.jsx"));
+const EstateRequired = lazy(() => import("./pages/EstateRequired.jsx"));
 
 // Security and Privacy pages - MFA and Data Privacy
 const MFASetup = lazy(() => import("./pages/MFASetup.jsx"));
@@ -174,6 +175,7 @@ function App() {
             {/* Privacy and Terms routes */}
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/estate-required" element={<EstateRequired />} />
 
             {/* MFA routes - Multi-Factor Authentication */}
             <Route
