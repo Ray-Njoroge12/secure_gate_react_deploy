@@ -26,6 +26,7 @@ import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarnin
 import CookieConsentBanner from "./components/CookieConsentBanner.jsx"; // Privacy: Cookie consent for KDPA compliance
 import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
+import { refreshCSRFToken } from "./utils/apiClient.js";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
 
 /**
@@ -132,6 +133,10 @@ function App() {
     initializeAllKeyboardFeatures();
     // BUG-002 FIX: Removed localStorage-based keyboard shortcuts
     // Now handled by GlobalKeyboardShortcuts component inside RootProvider
+  }, []);
+
+  useEffect(() => {
+    refreshCSRFToken().catch(() => {});
   }, []);
 
   return (
