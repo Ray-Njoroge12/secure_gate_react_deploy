@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { authenticateToken, attachUserFromToken } from '../middleware/authMiddleware.js';
 import { tokenService } from '../services/tokenService.js';
+import { getCookieOptions } from '../utils/cookies.js';
 import { userService } from '../services/userService.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import loggingService from '../services/loggingService.js';
@@ -24,6 +25,18 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting in development mode or for health endpoints
+    if (isDev) return true;
+    return req.path === '/health' || req.path === '/api/health';
+  }
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 300 : 60,
+  message: 'Too many refresh attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
     if (isDev) return true;
     return req.path === '/health' || req.path === '/api/health';
   }
@@ -353,28 +366,20 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
   );
 
   // BUG-008 FIX: Set tokens as httpOnly cookies instead of returning in body
-  const isProduction = process.env.NODE_ENV === 'production';
-  const cookieSameSite = isProduction ? 'none' : 'lax';
-  const cookieSecure = isProduction;
+  const cookieOptions = getCookieOptions();
   
   // Set access token cookie
   // For cross-site (Netlify frontend + Render backend), use sameSite: 'none' + secure: true
   if (isWebClient) {
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: cookieSecure, // Must be true for sameSite: 'none'
-      sameSite: cookieSameSite, // Required for cross-site cookies
+      ...cookieOptions,
       maxAge: 15 * 60 * 1000, // 15 minutes
-      path: '/'
     });
 
     // Set refresh token cookie
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSameSite,
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/'
     });
   }
 
@@ -450,7 +455,7 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Token refresh
-router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(), asyncHandler(async (req, res) => {
+router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAudit(), asyncHandler(async (req, res) => {
   const platform = getClientPlatform(req);
   const isWebClient = platform === 'web';
   const refreshToken = isWebClient ? req.cookies?.refreshToken : (getBearerToken(req) || req.body?.refreshToken);
@@ -498,25 +503,17 @@ router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(
     }
   );
 
-  const isProduction = process.env.NODE_ENV === 'production';
-  const cookieSameSite = isProduction ? 'none' : 'lax';
-  const cookieSecure = isProduction;
+  const cookieOptions = getCookieOptions();
 
   if (isWebClient) {
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSameSite,
+      ...cookieOptions,
       maxAge: 15 * 60 * 1000,
-      path: '/'
     });
 
     res.cookie('refreshToken', nextRefreshToken, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSameSite,
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
     });
   }
 
@@ -579,9 +576,7 @@ router.get('/csrf-token', asyncHandler(async (req, res) => {
 // User logout
 router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(async (req, res) => {
   // BUG-008 FIX: Clear httpOnly cookies on logout
-  const isProduction = process.env.NODE_ENV === 'production';
-  const cookieSameSite = isProduction ? 'none' : 'lax';
-  const cookieSecure = isProduction;
+  const cookieOptions = getCookieOptions();
   const accessToken = getBearerToken(req) || req.cookies?.accessToken;
   const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
@@ -592,19 +587,8 @@ router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(asy
     await tokenService.revokeRefreshToken(refreshToken);
   }
   
-  res.clearCookie('accessToken', {
-    httpOnly: true,
-    secure: cookieSecure,
-    sameSite: cookieSameSite,
-    path: '/'
-  });
-  
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    secure: cookieSecure,
-    sameSite: cookieSameSite,
-    path: '/'
-  });
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
 
   successResponse(res, {}, 'Logout successful');
 }));
