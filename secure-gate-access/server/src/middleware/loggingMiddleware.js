@@ -103,6 +103,20 @@ export const requestLoggingMiddleware = (req, res, next) => {
       }
     });
 
+    if (res.statusCode === 403 || res.statusCode === 429) {
+      loggingService.logSecurity('warn', 'Security response emitted', {
+        correlationId: req.correlationId,
+        request_id: req.requestId || req.correlationId,
+        user_id: req.user?.id ?? null,
+        estate_id: req.user?.estate_id ?? null,
+        role: req.user?.role ?? null,
+        route: req.originalUrl,
+        status: res.statusCode,
+        method: req.method,
+        code: res.statusCode === 429 ? 'RATE_LIMITED' : 'FORBIDDEN'
+      });
+    }
+
     // Log to performance logger if slow
     if (duration > 1000) {
       loggingService.logPerformance('warn', 'Slow request detected', {
