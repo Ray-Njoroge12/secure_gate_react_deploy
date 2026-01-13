@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/apiClient';
 
 /**
  * Privacy Dashboard Component
@@ -25,9 +25,7 @@ const PrivacyDashboard = () => {
   // Fetch user's personal data
   const fetchMyData = async () => {
     try {
-      const response = await axios.get('/api/privacy/my-data', {
-        withCredentials: true
-      });
+      const response = await api.get('/api/privacy/my-data');
       if (response.data.success) {
         setMyData(response.data.data);
       }
@@ -39,9 +37,7 @@ const PrivacyDashboard = () => {
   // Fetch consent status
   const fetchConsentStatus = async () => {
     try {
-      const response = await axios.get('/api/privacy/consent-status', {
-        withCredentials: true
-      });
+      const response = await api.get('/api/privacy/consent-status');
       if (response.data.success) {
         setConsentStatus(response.data.data);
       }
@@ -53,7 +49,7 @@ const PrivacyDashboard = () => {
   // Fetch retention policy
   const fetchRetentionPolicy = async () => {
     try {
-      const response = await axios.get('/api/privacy/retention-policy');
+      const response = await api.get('/api/privacy/retention-policy');
       if (response.data.success) {
         setRetentionPolicy(response.data.data);
       }
@@ -69,8 +65,7 @@ const PrivacyDashboard = () => {
     setSuccess('');
     
     try {
-      const response = await axios.get('/api/privacy/export', {
-        withCredentials: true,
+      const response = await api.get('/api/privacy/export', {
         responseType: 'blob'
       });
       
@@ -99,11 +94,9 @@ const PrivacyDashboard = () => {
     setSuccess('');
     
     try {
-      const response = await axios.post('/api/privacy/request-deletion', {
+      const response = await api.post('/api/privacy/request-deletion', {
         confirmEmail: deleteConfirmEmail,
         reason: deleteReason
-      }, {
-        withCredentials: true
       });
       
       if (response.data.success) {
@@ -126,10 +119,8 @@ const PrivacyDashboard = () => {
     }
     
     try {
-      const response = await axios.post('/api/privacy/withdraw-consent', {
+      const response = await api.post('/api/privacy/withdraw-consent', {
         consentType
-      }, {
-        withCredentials: true
       });
       
       if (response.data.success) {
