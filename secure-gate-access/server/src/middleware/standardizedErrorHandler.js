@@ -24,6 +24,8 @@
  * }
  */
 
+import loggingService from '../services/loggingService.js';
+
 /**
  * Custom error class for operational errors
  */
@@ -115,6 +117,29 @@ export const errorHandler = (err, req, res, next) => {
       requestId: req.requestId
     });
   }
+
+  const securityCodes = new Set([
+    'AUTH_TOKEN_EXPIRED',
+    'AUTH_TOKEN_INVALID',
+    'AUTH_TOKEN_MISSING',
+    'AUTH_USER_NOT_FOUND',
+    'AUTH_REQUIRED',
+    'AUTH_FORBIDDEN',
+    'ESTATE_REQUIRED',
+    'CSRF_TOKEN_MISSING',
+    'CSRF_VALIDATION_FAILED'
+  ]);
+
+  if (securityCodes.has(errorCode)) {
+    loggingService.logSecurity('warn', 'Security error response', {
+      code: errorCode,
+      statusCode,
+      path: req.originalUrl,
+      method: req.method,
+      userId: req.user?.id ?? null,
+      requestId: req.requestId
+    });
+  }
   
   // Build error response
   const errorResponse = {
@@ -175,7 +200,5 @@ export default {
   notFoundHandler,
   asyncHandler
 };
-
-
 
 
