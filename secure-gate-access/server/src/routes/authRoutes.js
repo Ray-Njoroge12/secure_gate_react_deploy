@@ -1,4 +1,5 @@
 import express from 'express';
+import { randomBytes } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { authenticateToken, attachUserFromToken } from '../middleware/authMiddleware.js';
 import { tokenService } from '../services/tokenService.js';
@@ -528,6 +529,31 @@ router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(
 
 /**
  * @swagger
+ * /api/auth/csrf-token:
+ *   get:
+ *     summary: Get CSRF token
+ *     description: Returns the current CSRF token for the session
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: CSRF token retrieved successfully
+ */
+router.get('/csrf-token', asyncHandler(async (req, res) => {
+  if (!req.session) {
+    throw new AppError('Session not initialized', 500, 'NO_SESSION');
+  }
+
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = randomBytes(32).toString('hex');
+  }
+
+  res.setHeader('X-CSRF-Token', req.session.csrfToken);
+
+  successResponse(res, { csrfToken: req.session.csrfToken }, 'CSRF token issued');
+}));
+
+/**
+ * @swagger
  * /api/auth/logout:
  *   post:
  *     summary: Logout user
@@ -554,6 +580,8 @@ router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(
 router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(async (req, res) => {
   // BUG-008 FIX: Clear httpOnly cookies on logout
   const isProduction = process.env.NODE_ENV === 'production';
+  const cookieSameSite = isProduction ? 'none' : 'lax';
+  const cookieSecure = isProduction;
   const accessToken = getBearerToken(req) || req.cookies?.accessToken;
   const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
@@ -566,15 +594,15 @@ router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(asy
   
   res.clearCookie('accessToken', {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
+    secure: cookieSecure,
+    sameSite: cookieSameSite,
     path: '/'
   });
   
   res.clearCookie('refreshToken', {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
+    secure: cookieSecure,
+    sameSite: cookieSameSite,
     path: '/'
   });
 
