@@ -39,6 +39,10 @@ describe('apiClient', () => {
       }
     };
 
+    instance.defaults = {
+      baseURL: 'http://localhost:3001'
+    };
+
     instance.get = jest.fn();
     instance.post = jest.fn();
     instance.put = jest.fn();
