@@ -4,7 +4,6 @@
  */
 
 import axios from 'axios';
-import { getCSRFToken } from './csrf';
 import logger from './logger';
 
 // Create axios instance with default config
@@ -17,6 +16,8 @@ const apiClient = axios.create({
     'X-Requested-With': 'XMLHttpRequest'
   }
 });
+
+let refreshPromise = null;
 
 // Request interceptor for auth and CSRF
 apiClient.interceptors.request.use(
@@ -86,9 +87,24 @@ apiClient.interceptors.response.use(
 
     // Handle 401 - Unauthorized
     if (error.response.status === 401) {
+      const isAuthEndpoint = originalRequest?.url?.includes('/api/auth/');
+      if (!isAuthEndpoint && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          if (!refreshPromise) {
+            refreshPromise = refreshAccessToken();
+          }
+          await refreshPromise;
+          refreshPromise = null;
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          refreshPromise = null;
+          logger.warn('🔒 Token refresh failed', refreshError);
+        }
+      }
+
       // NOTE: httpOnly cookies are cleared by backend on 401
       // No need to clear localStorage tokens
-      
       // Don't redirect if already on login page
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
@@ -185,6 +201,15 @@ async function refreshCSRFToken() {
     logger.error('Failed to refresh CSRF token:', error);
     throw error;
   }
+}
+
+// Helper function to refresh access token
+async function refreshAccessToken() {
+  const baseURL = apiClient.defaults.baseURL;
+  await axios.post('/api/auth/refresh', {}, {
+    baseURL,
+    withCredentials: true
+  });
 }
 
 // API methods with timeout handling

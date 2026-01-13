@@ -1,6 +1,7 @@
 jest.mock('axios', () => ({
   create: jest.fn(),
   get: jest.fn(),
+  post: jest.fn(),
   CancelToken: {
     source: jest.fn(() => ({ token: 'token', cancel: jest.fn() }))
   }
@@ -133,9 +134,33 @@ describe('apiClient', () => {
     });
   });
 
-  test('response interceptor handles 401 by redirecting to /login', async () => {
+  test('response interceptor refreshes access token and retries on 401', async () => {
     process.env.NODE_ENV = 'development';
     window.location.pathname = '/dashboard/resident';
+
+    axios.post.mockResolvedValue({ data: { success: true } });
+
+    apiClientModule = require('../../utils/apiClient');
+
+    instance.mockResolvedValue({ data: { ok: true } });
+
+    const error = {
+      response: { status: 401, data: {} },
+      config: { url: '/api/secure', method: 'get' }
+    };
+
+    const result = await responseRejected(error);
+
+    expect(axios.post).toHaveBeenCalledWith('/api/auth/refresh', {}, expect.objectContaining({ withCredentials: true }));
+    expect(instance).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/secure', _retry: true }));
+    expect(result).toEqual({ data: { ok: true } });
+  });
+
+  test('response interceptor handles 401 by redirecting to /login when refresh fails', async () => {
+    process.env.NODE_ENV = 'development';
+    window.location.pathname = '/dashboard/resident';
+
+    axios.post.mockRejectedValue(new Error('refresh failed'));
 
     apiClientModule = require('../../utils/apiClient');
 
