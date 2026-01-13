@@ -127,8 +127,18 @@ apiClient.interceptors.response.use(
       });
     }
 
-    // Handle 403 - Forbidden (CSRF)
+    // Handle 403 - Forbidden (estate required or CSRF)
     if (error.response.status === 403) {
+      if (error.response.data?.error?.code === 'ESTATE_REQUIRED') {
+        if (!window.location.pathname.includes('/estate-required')) {
+          window.location.href = '/estate-required';
+        }
+        return Promise.reject({
+          message: error.response.data?.message || 'Estate assignment required.',
+          code: 'ESTATE_REQUIRED'
+        });
+      }
+
       if (error.response.data?.error?.code === 'CSRF_TOKEN_MISSING' || 
           error.response.data?.error?.code === 'CSRF_VALIDATION_FAILED') {
         logger.error('🛡️ CSRF token error');
