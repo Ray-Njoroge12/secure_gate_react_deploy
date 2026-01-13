@@ -1,7 +1,7 @@
 import express from 'express';
 import { randomBytes } from 'crypto';
 import rateLimit from 'express-rate-limit';
-import { authenticateToken, attachUserFromToken } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 import { tokenService } from '../services/tokenService.js';
 import { getCookieOptions } from '../utils/cookies.js';
 import { userService } from '../services/userService.js';

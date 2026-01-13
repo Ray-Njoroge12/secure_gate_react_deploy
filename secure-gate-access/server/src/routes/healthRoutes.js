@@ -6,7 +6,7 @@
 
 import express from 'express';
 import { enhancedHealthMonitoring } from '../services/enhancedHealthService.js';
-import { attachUserFromToken } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -83,15 +83,8 @@ router.get('/health/ready', async (req, res) => {
  * @desc Detailed health check - requires authentication
  * @access Admin only
  */
-router.get('/health/detailed', attachUserFromToken, async (req, res) => {
+router.get('/health/detailed', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'Admin access required for detailed health information'
-      });
-    }
-
     const detailedHealth = await enhancedHealthMonitoring.getDetailedHealth();
     
     res.status(200).json({
@@ -120,14 +113,8 @@ router.get('/health/detailed', attachUserFromToken, async (req, res) => {
  * @desc Prometheus-compatible metrics endpoint
  * @access Admin only
  */
-router.get('/health/metrics', attachUserFromToken, async (req, res) => {
+router.get('/health/metrics', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'Admin access required for metrics'
-      });
-    }
-
     const metrics = await enhancedHealthMonitoring.getMetrics();
     
     // Format as Prometheus metrics
