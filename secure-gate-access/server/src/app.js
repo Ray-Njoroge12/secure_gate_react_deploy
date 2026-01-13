@@ -59,6 +59,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js'; // Dashboard routes
 // import guardRoutes from './routes/guardRoutes.js'; // Removed - placeholder implementation
 import authRoutes from './routes/authRoutes.js';
 import mfaRoutes from './routes/mfaRoutes.js';
+import estateRoutes from './routes/estateRoutes.js';
 import dataPrivacyRoutes from './routes/dataPrivacyRoutes.js';
 import kenyaDPARoutes from './routes/kenyaDPARoutes.js'; // Phase 2.3: Kenya DPA compliance (DPO & ODPC)
 import breachNotificationRoutes from './routes/breachNotificationRoutes.js'; // Phase 2.4: 72-hour breach notification
@@ -379,6 +380,9 @@ app.use('/api/system', systemRoutes); // System info, status, database health ro
 // app.use('/api/auth', debugMiddleware('BEFORE_AUTH_ROUTES')); // Disabled for production
 app.use('/api/auth', authRoutes);
 // app.use('/api/auth', debugMiddleware('AFTER_AUTH_ROUTES')); // Disabled for production
+
+// Estate onboarding routes (requires auth, no estate required)
+app.use('/api/estates', estateRoutes);
 
 // MFA routes
 app.use('/api/mfa', mfaRoutes);

@@ -68,6 +68,15 @@ export const registerSchema = Joi.object({
     .optional()
     .messages({
       'any.only': 'You must consent to data processing to register'
+    }),
+  estate_id: Joi.number()
+    .integer()
+    .min(1)
+    .required()
+    .messages({
+      'number.base': 'Estate ID must be a number',
+      'number.min': 'Estate ID must be a positive number',
+      'any.required': 'Estate ID is required'
     })
 }).options({ 
   stripUnknown: true,  // Remove unknown fields for security
