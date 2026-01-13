@@ -126,6 +126,7 @@ export const errorHandler = (err, req, res, next) => {
     'AUTH_REQUIRED',
     'AUTH_FORBIDDEN',
     'ESTATE_REQUIRED',
+    'ESTATE_INVALID',
     'CSRF_TOKEN_MISSING',
     'CSRF_VALIDATION_FAILED'
   ]);
@@ -137,6 +138,7 @@ export const errorHandler = (err, req, res, next) => {
       path: req.originalUrl,
       method: req.method,
       userId: req.user?.id ?? null,
+      estateId: req.user?.estate_id ?? null,
       requestId: req.requestId
     });
   }
@@ -200,5 +202,3 @@ export default {
   notFoundHandler,
   asyncHandler
 };
-
-

@@ -657,11 +657,19 @@ router.get('/guards', authenticateToken, requireRole(['admin']), attachRequestAu
 router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { username, email, phone, password } = req.body;
+    const estateId = req.user?.estate_id;
     
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
         message: 'Username, email, and password are required'
+      });
+    }
+
+    if (!estateId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Estate assignment required to create guard'
       });
     }
     
@@ -671,7 +679,8 @@ router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestA
       email,
       phone,
       password,
-      role: 'guard'
+      role: 'guard',
+      estate_id: estateId
     });
     
     res.status(201).json({

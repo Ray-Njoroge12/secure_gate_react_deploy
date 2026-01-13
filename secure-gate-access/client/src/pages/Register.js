@@ -28,6 +28,7 @@ export default function RegistrationPage() {
     confirmPassword: '',
     role: 'resident',
     residentialArea: '',
+    estateId: '',
     phone: '',
     houseNumber: '',
     consent: false
@@ -36,6 +37,8 @@ export default function RegistrationPage() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [estates, setEstates] = useState([]);
+  const [estatesLoading, setEstatesLoading] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -61,6 +64,27 @@ export default function RegistrationPage() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [loading, errors, isBulkRegistration]);
+
+  useEffect(() => {
+    if (isBulkRegistration) return;
+
+    const fetchEstates = async () => {
+      try {
+        setEstatesLoading(true);
+        const response = await fetch(`${API_BASE_URL}/api/estates/available`);
+        const data = await response.json();
+        if (response.ok) {
+          setEstates(data?.data?.estates || []);
+        }
+      } catch (err) {
+        logger.error('Failed to load estates', err);
+      } finally {
+        setEstatesLoading(false);
+      }
+    };
+
+    fetchEstates();
+  }, [isBulkRegistration]);
 
   // Bulk registration fields
   const [bulkFormData, setBulkFormData] = useState({
@@ -163,6 +187,10 @@ export default function RegistrationPage() {
       newErrors.residentialArea = 'Residential area is required';
     }
 
+    if (!isBulkRegistration && !formData.estateId) {
+      newErrors.estateId = 'Estate selection is required';
+    }
+
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
     } else {
@@ -206,6 +234,7 @@ export default function RegistrationPage() {
           phone: internationalPhone,
           house: formData.role === "resident" ? formData.houseNumber : "", // Backend expects 'house' field
           password: formData.password,
+          estate_id: Number(formData.estateId)
         }),
       });
 
@@ -707,6 +736,28 @@ export default function RegistrationPage() {
             <option value="resident">Resident</option>
             <option value="security">Security Guard</option>
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="estateId" className="block text-sm font-medium text-gray-700 mb-2">
+            Estate
+          </label>
+          <select
+            id="estateId"
+            value={formData.estateId}
+            onChange={(e) => setFormData(prev => ({ ...prev, estateId: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            required
+            disabled={estatesLoading}
+          >
+            <option value="">{estatesLoading ? 'Loading estates...' : 'Select an estate'}</option>
+            {estates.map((estate) => (
+              <option key={estate.id} value={estate.id}>
+                {estate.name}
+              </option>
+            ))}
+          </select>
+          {errors.estateId && <p className="text-red-600 text-sm mt-1">{errors.estateId}</p>}
         </div>
 
         <div>

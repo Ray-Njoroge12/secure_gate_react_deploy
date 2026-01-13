@@ -129,13 +129,16 @@ apiClient.interceptors.response.use(
 
     // Handle 403 - Forbidden (estate required or CSRF)
     if (error.response.status === 403) {
-      if (error.response.data?.error?.code === 'ESTATE_REQUIRED') {
+      const estateCode = error.response.data?.error?.code;
+      if (estateCode === 'ESTATE_REQUIRED' || estateCode === 'ESTATE_INVALID') {
         if (!window.location.pathname.includes('/estate-required')) {
-          window.location.href = '/estate-required';
+          const params = new URLSearchParams();
+          params.set('code', estateCode);
+          window.location.assign(`/estate-required?${params.toString()}`);
         }
         return Promise.reject({
           message: error.response.data?.message || 'Estate assignment required.',
-          code: 'ESTATE_REQUIRED'
+          code: estateCode
         });
       }
 

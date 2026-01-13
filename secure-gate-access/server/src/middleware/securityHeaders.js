@@ -1,5 +1,6 @@
 import helmet from 'helmet';
 import { randomBytes } from 'crypto';
+import loggingService from '../services/loggingService.js';
 
 /**
  * Comprehensive security headers configuration
@@ -232,11 +233,16 @@ export const csrfProtection = (req, res, next) => {
   
   // Ensure session exists
   if (!req.session) {
-    console.warn('⚠️  CSRF validation attempted without session');
+    loggingService.logSecurity('warn', 'CSRF validation attempted without session', {
+      path: req.path,
+      method: req.method,
+      requestId: req.requestId
+    });
     return res.status(500).json({
       success: false,
       message: 'Session not initialized',
-      error: { code: 'NO_SESSION' }
+      error: { code: 'NO_SESSION', requestId: req.requestId },
+      timestamp: new Date().toISOString()
     });
   }
   
@@ -252,21 +258,32 @@ export const csrfProtection = (req, res, next) => {
   
   // Validate token
   if (!token || !sessionToken) {
+    loggingService.logSecurity('warn', 'CSRF token missing', {
+      path: req.path,
+      method: req.method,
+      requestId: req.requestId
+    });
     return res.status(403).json({
       success: false,
       message: 'CSRF token missing',
-      error: { code: 'CSRF_TOKEN_MISSING' }
+      error: { code: 'CSRF_TOKEN_MISSING', requestId: req.requestId },
+      timestamp: new Date().toISOString()
     });
   }
-  
+
   if (token !== sessionToken) {
-    // Log potential CSRF attack
-    console.warn(`⚠️  CSRF token mismatch for ${req.path} from ${req.ip}`);
+    loggingService.logSecurity('warn', 'CSRF token mismatch', {
+      path: req.path,
+      method: req.method,
+      ip: req.ip,
+      requestId: req.requestId
+    });
     return res.status(403).json({
       success: false,
       message: 'Invalid CSRF token',
       error: {
-        code: 'CSRF_VALIDATION_FAILED'
+        code: 'CSRF_VALIDATION_FAILED',
+        requestId: req.requestId
       },
       timestamp: new Date().toISOString()
     });

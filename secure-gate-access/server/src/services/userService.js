@@ -78,7 +78,7 @@ class UserService {
       // Insert into both password and password_hash for backward compatibility
       const result = await this.db.query(
         `INSERT INTO users (username, email, password, password_hash, role, estate_id, verification_token, verification_expires, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, COALESCE($6, 1), $7, $8, NOW(), NOW()) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
          RETURNING id, username, email, role, estate_id, verification_token, created_at`,
         [username, email, hashedPassword, hashedPassword, role, estateId, verificationToken, verificationExpires]
       );
