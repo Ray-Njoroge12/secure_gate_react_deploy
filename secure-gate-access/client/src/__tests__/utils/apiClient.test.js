@@ -199,6 +199,25 @@ describe('apiClient', () => {
     expect(result).toEqual({ data: { ok: true } });
   });
 
+  test('response interceptor does not retry CSRF refresh twice', async () => {
+    process.env.NODE_ENV = 'development';
+    axios.get.mockResolvedValue({ data: { csrfToken: 'newcsrf' }, headers: {} });
+
+    apiClientModule = require('../../utils/apiClient');
+
+    const error = {
+      response: { status: 403, data: { error: { code: 'CSRF_TOKEN_MISSING' } } },
+      config: { method: 'post', url: '/api/secure', data: { a: 1 }, _csrfRetry: true }
+    };
+
+    await expect(responseRejected(error)).rejects.toEqual({
+      message: 'Access forbidden',
+      code: 'FORBIDDEN'
+    });
+
+    expect(axios.get).not.toHaveBeenCalled();
+  });
+
   test('response interceptor maps 429 rate limit error', async () => {
     process.env.NODE_ENV = 'development';
     apiClientModule = require('../../utils/apiClient');
