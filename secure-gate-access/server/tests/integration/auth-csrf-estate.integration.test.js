@@ -55,6 +55,7 @@ describe('Auth, CSRF, and estate integration', () => {
     expect(cookieHeader).toContain('accessToken=');
     expect(cookieHeader).toContain('refreshToken=');
     expect(cookieHeader).toContain('HttpOnly');
+    expect(response.headers['x-csrf-token']).toBeTruthy();
   });
 
   it('refreshes tokens using cookie session', async () => {
@@ -86,6 +87,26 @@ describe('Auth, CSRF, and estate integration', () => {
     expect(response.status).toBe(200);
     expect(response.headers['x-csrf-token']).toBeTruthy();
     expect(response.body.data?.csrfToken).toBeTruthy();
+  });
+
+  it('rejects requests with invalid CSRF tokens', async () => {
+    const agent = request.agent(app);
+    const loginResponse = await agent
+      .post('/api/auth/login')
+      .send({
+        email: testUsers.resident.email,
+        password: 'testpass123'
+      });
+
+    expect(loginResponse.status).toBe(200);
+
+    const response = await agent
+      .post('/api/auth/logout')
+      .set('X-CSRF-Token', 'invalid-token')
+      .send({});
+
+    expect(response.status).toBe(403);
+    expect(response.body.error?.code).toBe('CSRF_VALIDATION_FAILED');
   });
 
   it('returns ESTATE_REQUIRED for estate-less users', async () => {

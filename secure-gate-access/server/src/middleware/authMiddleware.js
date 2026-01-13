@@ -225,7 +225,7 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
 
   const estateId = Number(req.user.estate_id);
   if (!Number.isInteger(estateId) || estateId <= 0) {
-    throw new AppError('Invalid estate', 400, 'ESTATE_INVALID');
+    throw new AppError('Invalid estate', 403, 'ESTATE_INVALID');
   }
 
   const estateCheck = await dbManager.query(

@@ -17,12 +17,27 @@ const router = express.Router();
 // Rate limiting for authentication endpoints (more aggressive)
 // Skip in development/test mode to allow testing
 const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+const authLimiterMax = Number.parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10);
+const refreshLimiterMax = Number.parseInt(process.env.REFRESH_RATE_LIMIT_MAX, 10);
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 100 : 5, // Higher limit in dev, strict in production
+  max: Number.isFinite(authLimiterMax) ? authLimiterMax : (isDev ? 100 : 5), // Higher limit in dev, strict in production
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    loggingService.warn('Login rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId
+    });
+    res.status(options.statusCode).json({
+      success: false,
+      message: options.message,
+      error: { code: 'AUTH_RATE_LIMIT', requestId: req.requestId },
+      timestamp: new Date().toISOString()
+    });
+  },
   skip: (req) => {
     // Skip rate limiting in development mode or for health endpoints
     if (isDev) return true;
@@ -32,10 +47,23 @@ const authLimiter = rateLimit({
 
 const refreshLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isDev ? 300 : 60,
+  max: Number.isFinite(refreshLimiterMax) ? refreshLimiterMax : (isDev ? 300 : 60),
   message: 'Too many refresh attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    loggingService.warn('Refresh rate limit exceeded', {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId
+    });
+    res.status(options.statusCode).json({
+      success: false,
+      message: options.message,
+      error: { code: 'REFRESH_RATE_LIMIT' },
+      timestamp: new Date().toISOString()
+    });
+  },
   skip: (req) => {
     if (isDev) return true;
     return req.path === '/health' || req.path === '/api/health';
@@ -147,27 +175,29 @@ const getBearerToken = (req) => {
 // User registration
 // BUG-001 FIX: Rate limiter re-enabled for production security
 router.post('/register', authLimiter, validateRegistration, attachRequestAudit(), asyncHandler(async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, estate_id: estateId } = req.body;
   
   // BUG-006 FIX: Using proper logging service instead of console.log
   loggingService.info('Registration request received', {
     username,
     email,
     role,
+    estateId,
     requestId: req.requestId
   });
   
   // Validate required fields
-  if (!username || !email || !password || !role) {
+  if (!username || !email || !password || !role || estateId == null) {
     loggingService.warn('Registration validation failed - missing fields', {
       hasUsername: !!username,
       hasEmail: !!email,
       hasPassword: !!password,
       hasRole: !!role,
+      hasEstateId: estateId != null,
       requestId: req.requestId
     });
     throw new AppError('Missing required fields', 400, 'VALIDATION_ERROR', {
-      missing: { username: !username, email: !email, password: !password, role: !role }
+      missing: { username: !username, email: !email, password: !password, role: !role, estate_id: estateId == null }
     });
   }
 
@@ -189,12 +219,13 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
   }
 
   // Create user
-  loggingService.info('Attempting to create user', { username, email, role, requestId: req.requestId });
+  loggingService.info('Attempting to create user', { username, email, role, estateId, requestId: req.requestId });
   const user = await userService.createUser({
     username,
     email,
     password,
-    role
+    role,
+    estate_id: estateId
   });
 
   loggingService.info('User created successfully', {
