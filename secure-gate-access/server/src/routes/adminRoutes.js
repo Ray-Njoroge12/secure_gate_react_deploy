@@ -5,6 +5,7 @@ import attachRequestAudit from '../middleware/auditLogger.js';
 import backupService from '../services/backupService.js';
 import userService from '../services/userService.js';
 import { dbManager } from '../database/db.enhanced.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -667,10 +668,7 @@ router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestA
     }
 
     if (!estateId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Estate assignment required to create guard'
-      });
+      return errorResponse(res, 'Estate assignment required to create guard', 'FORBIDDEN', 403, null, req);
     }
     
     // Use userService to create guard with proper password hashing

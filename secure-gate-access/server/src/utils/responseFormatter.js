@@ -28,7 +28,13 @@ export const noContentResponse = (res, message = 'Operation successful') => {
 /**
  * Standardized error response helpers
  */
-export const errorResponse = (res, message, errorCode, statusCode = 400, details = null) => {
+const getRequestId = (req, res) => {
+  if (req?.requestId) return req.requestId;
+  if (res?.locals?.requestId) return res.locals.requestId;
+  return res?.getHeader?.('X-Request-ID') || res?.getHeader?.('X-Request-Id');
+};
+
+export const buildErrorPayload = (req, res, message, errorCode, details = null) => {
   const response = {
     success: false,
     message,
@@ -38,11 +44,21 @@ export const errorResponse = (res, message, errorCode, statusCode = 400, details
     timestamp: new Date().toISOString()
   };
 
+  const requestId = getRequestId(req, res);
+  if (requestId) {
+    response.error.requestId = requestId;
+  }
+
   // Add details only in development
   if (details && process.env.NODE_ENV === 'development') {
     response.error.details = details;
   }
 
+  return response;
+};
+
+export const errorResponse = (res, message, errorCode, statusCode = 400, details = null, req = null) => {
+  const response = buildErrorPayload(req, res, message, errorCode, details);
   res.status(statusCode).json(response);
 };
 
@@ -75,6 +91,7 @@ export default {
   createdResponse,
   noContentResponse,
   errorResponse,
+  buildErrorPayload,
   validationErrorResponse,
   notFoundResponse,
   unauthorizedResponse,
@@ -82,7 +99,5 @@ export default {
   conflictResponse,
   internalErrorResponse
 };
-
-
 
 

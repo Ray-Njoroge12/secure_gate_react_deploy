@@ -7,6 +7,7 @@
 
 import { dbManager } from '../database/db.enhanced.js';
 import { v4 as uuidv4 } from 'uuid';
+import { buildErrorPayload, errorResponse } from '../utils/responseFormatter.js';
 
 /**
  * Consent types for different data processing activities
@@ -71,19 +72,13 @@ export function createConsentMiddleware(requiredConsents = []) {
         req.consentStatus = consentStatus;
         
         // Return consent required response
-        return res.status(403).json({
-          success: false,
-          message: 'Consent required for data processing',
-          error: {
-            code: 'CONSENT_REQUIRED',
-            details: {
-              requiredConsents: requiredConsents,
-              missingConsents: consentStatus.missingConsents,
-              consentUrl: '/api/consent/required'
-            }
-          },
-          timestamp: new Date().toISOString()
-        });
+        const response = buildErrorPayload(req, res, 'Consent required for data processing', 'CONSENT_REQUIRED');
+        response.error.details = {
+          requiredConsents: requiredConsents,
+          missingConsents: consentStatus.missingConsents,
+          consentUrl: '/api/consent/required'
+        };
+        return res.status(403).json(response);
       }
       
       // Add consent information to request
@@ -402,23 +397,14 @@ export function validateConsent(consentType) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required',
-          error: { code: 'AUTH_REQUIRED' }
-        });
+        return errorResponse(res, 'Authentication required', 'AUTH_REQUIRED', 401, null, req);
       }
       
       const isValid = await isConsentValid(userId, consentType);
       if (!isValid) {
-        return res.status(403).json({
-          success: false,
-          message: 'Valid consent required',
-          error: {
-            code: 'CONSENT_INVALID',
-            details: { requiredConsent: consentType }
-          }
-        });
+        const response = buildErrorPayload(req, res, 'Valid consent required', 'CONSENT_INVALID');
+        response.error.details = { requiredConsent: consentType };
+        return res.status(403).json(response);
       }
       
       next();
@@ -442,11 +428,7 @@ export function requireConsentWithdrawal(consentType) {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required',
-          error: { code: 'AUTH_REQUIRED' }
-        });
+        return errorResponse(res, 'Authentication required', 'AUTH_REQUIRED', 401, null, req);
       }
       
       // Check if user has active consent
@@ -473,7 +455,6 @@ export function requireConsentWithdrawal(consentType) {
 }
 
 export default createConsentMiddleware;
-
 
 
 
