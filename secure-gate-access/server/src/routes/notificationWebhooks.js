@@ -14,7 +14,8 @@ import Joi from 'joi';
 import loggingService from '../services/loggingService.js';
 import db from '../database/db.enhanced.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
-import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
 import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempotencyResponse } from '../services/idempotencyService.js';
 
@@ -524,7 +525,7 @@ router.post('/notification/status', webhookLimiter, validateWebhookPayload(gener
  * @desc Get delivery statistics
  * @access Admin only (requires authentication)
  */
-router.get('/delivery/stats', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/delivery/stats', authenticateToken, requireRolePolicy('adminOrSuperAdmin'), async (req, res) => {
   try {
     const { start_date, end_date, provider } = req.query;
 

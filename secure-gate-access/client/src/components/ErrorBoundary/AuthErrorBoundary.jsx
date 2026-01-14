@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ErrorBoundary from './ErrorBoundary';
+import { navigateToLogin } from '../../utils/authNavigation';
 import './AuthErrorBoundary.css';
 
 const AuthErrorFallback = ({ 
@@ -23,7 +24,7 @@ const AuthErrorFallback = ({
   }
 
   const handleLogin = () => {
-    window.location.href = '/login';
+    navigateToLogin();
   };
 
   return (
@@ -117,7 +118,6 @@ AuthErrorBoundary.propTypes = {
 };
 
 export default AuthErrorBoundary;
-
 
 
 

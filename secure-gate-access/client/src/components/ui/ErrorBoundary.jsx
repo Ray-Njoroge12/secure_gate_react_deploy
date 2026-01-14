@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, Button } from './index';
 import logger from 'utils/logger';
 import { reportError, reportUserAction } from '../../utils/errorReporting';
+import { navigateTo } from '../../utils/appNavigation';
 import { handleError, getRecoveryActions, ERROR_TYPES } from '../../utils/errorHandler';
 
 class ErrorBoundary extends React.Component {
@@ -124,7 +125,7 @@ class ErrorBoundary extends React.Component {
 
   handleGoHome = () => {
     reportUserAction('error_recovery_go_home');
-    window.location.href = '/dashboard';
+    navigateTo('/dashboard');
   };
 
   handleRetry = async () => {

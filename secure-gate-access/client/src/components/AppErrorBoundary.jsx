@@ -6,7 +6,9 @@
  */
 
 import React from 'react';
+
 import logger from 'utils/logger';
+import { navigateToLogin } from '../utils/authNavigation';
 
 /**
  * App-level Error Boundary Component
@@ -27,7 +29,7 @@ class AppErrorBoundary extends React.Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(_error) {
     // Update state to show the fallback UI
     return { hasError: true };
   }
@@ -70,7 +72,7 @@ class AppErrorBoundary extends React.Component {
     // Clear all localStorage and reload
     localStorage.clear();
     sessionStorage.clear();
-    window.location.href = '/login';
+    navigateToLogin();
   };
 
   render() {
@@ -133,12 +135,12 @@ class AppErrorBoundary extends React.Component {
                 Reset Application
               </button>
               
-              <a
-                href="/login"
+              <button
+                onClick={() => navigateToLogin()}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 text-center"
               >
                 Go to Login
-              </a>
+              </button>
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-200">

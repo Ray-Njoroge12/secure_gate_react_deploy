@@ -132,18 +132,21 @@
 - **Implemented:** `requireEstate`/`estateContextMiddleware` now align on `ESTATE_REQUIRED` messaging and consistent invalid estate status codes. ✅
 
 **P1: Authorization consistency**
-- **Partially implemented:** Most routes use `authenticateToken` + role checks; policy map added and enforcement tests now cover guard/admin/resident gates plus admin-only notification queue and directions updates, but more endpoints still need coverage. ⚠️
+- **Implemented:** Shared role policy helper now standardizes per-route checks, policy map refreshed, and enforcement tests cover guard management, resident features, visitor management, event management, and admin-only monitoring/metrics/reporting endpoints (including delivery stats). ✅
 
 **P1: Observability**
-- **Partially implemented:** Logging service and audit middleware exist; CSRF failures emit structured security logs with request IDs, auth rate-limit events are logged, and auth/estate logs include estate context, but coverage is still incomplete. ⚠️
+- **Partially implemented:** Logging service and audit middleware exist; CSRF/session failures emit structured security logs with request IDs and user/estate context, rate-limit events are logged with structured context, and auth/estate logs include estate context, but coverage is still incomplete. ⚠️
 
 **P2: Frontend UX hardening**
-- **Not started:** Replace redirect-based auth transitions and add offline retry handling. ⛔
+- **Implemented:** Centralized auth transitions with a shared state machine, removed remaining `window.location.href` navigation from guard/resident dashboards and error boundaries, and aligned session-expiry messaging across handlers. ✅ (closed)
 
 **P2: Security review follow-ups**
-- **Not started:** CORS tightening, cookie policy consistency, and refresh token persistence verification in prod. ⛔
+- **Implemented:** CORS allowlist now documents staging/prod rules, cookie flags are surfaced for audit in admin health checks, and Redis-backed token revocation health checks report persistence status with fallback alerts. ✅ (closed)
 
 ## Remaining work plan (edits to complete tasks)
+
+### Remaining tasks snapshot
+- **P1 Observability pack:** Complete structured auth/refresh logging, standardize legacy 401/403 payloads, and validate requestId propagation in staging. ⚠️
 
 ### Improvement guidance (to complete remaining work efficiently)
 
@@ -169,8 +172,14 @@
 1. **Authorization policy map**
    - Produce a table mapping endpoint group → required role(s).
    - Add tests for guard-only/admin-only endpoints.
-   - **Improvements to implement:**
-     - Add a shared helper for role checks to reduce per-route drift.
+   - **Improvements implemented:**
+     - Shared role policy helper standardizes per-route checks to reduce drift.
+   - **Coverage gaps closed:**
+     - Guard management (`/api/guards/*`) beyond dashboard coverage.
+     - Resident features (`/api/resident/*`) beyond profile coverage.
+     - Visitor management (`/api/visitors/*`) estate-scoped routes beyond approval/check-in coverage.
+     - Event management (`/api/events/*`) role-specific access beyond event creation coverage.
+     - Notification webhooks/public flows where auth should be enforced.
 
 #### Authorization policy map (current)
 | Endpoint group | Example routes | Required auth | Required roles |
@@ -181,10 +190,12 @@
 | Admin analytics | `/api/admin/analytics/*` | Yes | `admin` |
 | Guard management | `/api/guards/*` | Yes | `admin`/`guard` per route |
 | Resident features | `/api/resident/*` | Yes | `resident`/`admin` |
-| Visitor management | `/api/visitors/*` | Yes | Estate-scoped + role by route |
-| Event management | `/api/events/*` | Yes | `admin`/`guard`/`resident` per route |
+| Visitor management | `/api/visitors/*` | Yes | Estate-scoped + role by route (`resident`/`admin` for invites, `guard` for check-in, `admin` for reports) |
+| Event management | `/api/events/*` | Yes | `admin`/`resident` for host actions, `guard` for check-in/out |
 | Notification queue | `/api/admin/notification-queue/*` | Yes | `admin` |
 | Monitoring | `/api/monitoring/*` | Yes | `admin`/`super_admin` |
+| Notification webhooks (provider callbacks) | `/api/webhooks/*` | No | Signature/API key validation |
+| Notification webhooks (delivery stats) | `/api/webhooks/delivery/stats` | Yes | `admin`/`super_admin` |
 | Public visitor | `/api/public/visitors/*` | No | Public |
 | Directions | `/api/directions/estate` (GET) | No | Public |
 | Directions (mutations) | `/api/directions/estate` (PUT) | Yes | `admin` |
@@ -195,23 +206,31 @@
    - **Improvements to implement:**
      - Ensure every 401/403/429 includes a consistent error code and requestId.
      - Add log context fields: user_id, estate_id, route, method, status.
+   - **Remaining gaps to close:**
+     - Structured refresh-failure logs for `/api/auth/refresh` recovery paths.
+     - Standardized 401/403 payloads on legacy endpoints still returning ad-hoc errors.
+     - End-to-end log correlation validation in staging (requestId propagation).
 
 ### P2 tasks
 1. **Frontend UX hardening**
    - Centralize auth transitions; remove `window.location.href` where possible.
    - Add offline retry handling and user messaging for session expiry.
-   - **Improvements to implement:**
-     - Create a single auth state machine for login/refresh/estate-required.
-     - Add a “recover from offline” banner and retry logic with backoff.
+   - **Improvements implemented:**
+     - Created a single auth state machine for login/refresh/estate-required.
+     - Added a “recover from offline” banner and retry logic with backoff.
+   - **Gaps closed:**
+     - Replaced remaining `window.location.href` navigation in guard/resident dashboards, quick actions, and error boundaries.
+     - Aligned session-expiry messaging across error handlers and toasts.
 
 2. **Security review follow-ups**
    - Tighten CORS policy.
    - Verify cookie domain/path consistency.
    - Verify refresh token revocation persistence in production.
-   - **Improvements to implement:**
-     - Document current CORS allowlist and add staging/prod-specific rules.
-     - Audit cookie flags (Secure, SameSite, Domain, Path) across auth flows.
-     - Add a Redis health check to confirm token revocation persistence.
+   - **Improvements implemented:**
+     - Documented current CORS allowlist and added staging/prod-specific rules.
+     - Audited cookie flags (Secure, SameSite, Domain, Path) across auth flows.
+     - Added a Redis health check to confirm token revocation persistence.
+     - Validated Redis-backed revocation health checks and emit fallback alerts for operators.
 
 ### P0 test suite (must pass before ship)
 

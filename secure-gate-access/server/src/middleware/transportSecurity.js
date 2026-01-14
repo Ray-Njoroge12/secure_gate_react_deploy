@@ -11,6 +11,7 @@
  */
 
 import auditLogger from '../services/auditLogger.js';
+import { getCookieOptions } from '../utils/cookies.js';
 
 /**
  * HTTPS Enforcement Middleware
@@ -97,6 +98,7 @@ export const transportSecurityHeaders = (req, res, next) => {
 export const secureCookieConfig = (req, res, next) => {
   const isProduction = process.env.NODE_ENV === 'production';
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  const baseOptions = getCookieOptions();
 
   // Override res.cookie to add security attributes
   const originalCookie = res.cookie.bind(res);
@@ -104,10 +106,13 @@ export const secureCookieConfig = (req, res, next) => {
   res.cookie = function(name, value, options = {}) {
     // Default secure cookie options
     const secureOptions = {
-      httpOnly: options.httpOnly !== false, // Default to httpOnly
-      secure: (isProduction && process.env.SECURE_COOKIES === 'true') || isHttps,
-      sameSite: options.sameSite || (isProduction ? 'strict' : 'lax'),
-      ...options
+      ...baseOptions,
+      ...options,
+      httpOnly: options.httpOnly !== false,
+      secure: options.secure ?? ((isProduction && process.env.SECURE_COOKIES === 'true') || isHttps),
+      sameSite: options.sameSite ?? baseOptions.sameSite,
+      domain: options.domain ?? baseOptions.domain,
+      path: options.path ?? baseOptions.path
     };
 
     // Add security validations

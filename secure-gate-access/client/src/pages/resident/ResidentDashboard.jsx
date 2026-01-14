@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { navigateTo } from "../../utils/appNavigation";
 import logger from 'utils/logger';
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -65,22 +66,22 @@ const DashboardHome = () => {
       // Ctrl/Cmd + A to add visitor
       if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
         e.preventDefault();
-        window.location.href = '/resident/add-visitor';
+        navigateTo('/resident/add-visitor');
       }
       // Ctrl/Cmd + G to generate pass
       if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
         e.preventDefault();
-        window.location.href = '/resident/generate-pass';
+        navigateTo('/resident/generate-pass');
       }
       // Ctrl/Cmd + B to bulk invite
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
-        window.location.href = '/resident/bulk-invite';
+        navigateTo('/resident/bulk-invite');
       }
       // Ctrl/Cmd + H to visitor history
       if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
         e.preventDefault();
-        window.location.href = '/resident/visitor-history';
+        navigateTo('/resident/visitor-history');
       }
       // Ctrl/Cmd + R to refresh
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
@@ -247,7 +248,7 @@ const DashboardHome = () => {
         data-tour="add-visitor"
         data-test-id="cta-quick-invite"
         className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:shadow-green-500/20 hover:scale-[1.01] transition-all duration-200 shadow-lg"
-        onClick={() => window.location.href = '/resident/quick-invite'}
+        onClick={() => navigateTo('/resident/quick-invite')}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -281,7 +282,7 @@ const DashboardHome = () => {
               <Skeleton.List items={2} showAvatar={false} />
             ) : upcomingInvites.length === 0 ? (
               <UpcomingVisitsEmpty 
-                onCreate={() => window.location.href = '/resident/quick-invite'}
+                onCreate={() => navigateTo('/resident/quick-invite')}
               />
             ) : (
             <div className="space-y-3">
@@ -377,7 +378,7 @@ const DashboardHome = () => {
         {/* Visitor Approvals - Highlighted */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 relative"
-          onClick={() => window.location.href = '/resident/approvals'}
+          onClick={() => navigateTo('/resident/approvals')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-green-500 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -397,7 +398,7 @@ const DashboardHome = () => {
         <Card 
           data-tour="bulk-invite"
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200"
-          onClick={() => window.location.href = '/resident/bulk-invite'}
+          onClick={() => navigateTo('/resident/bulk-invite')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -413,7 +414,7 @@ const DashboardHome = () => {
         {/* Visitor History */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200"
-          onClick={() => window.location.href = '/resident/visitor-history'}
+          onClick={() => navigateTo('/resident/visitor-history')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -429,7 +430,7 @@ const DashboardHome = () => {
         {/* Settings */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200"
-          onClick={() => window.location.href = '/resident/settings'}
+          onClick={() => navigateTo('/resident/settings')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -446,7 +447,7 @@ const DashboardHome = () => {
         {/* Phase 2.1: My Deliveries */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
-          onClick={() => window.location.href = '/resident/deliveries'}
+          onClick={() => navigateTo('/resident/deliveries')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -463,7 +464,7 @@ const DashboardHome = () => {
         {/* Phase 2.2: Auto-Approval Rules */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
-          onClick={() => window.location.href = '/resident/auto-approval'}
+          onClick={() => navigateTo('/resident/auto-approval')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -480,7 +481,7 @@ const DashboardHome = () => {
         {/* Phase 3: Privacy Dashboard */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
-          onClick={() => window.location.href = '/resident/privacy'}
+          onClick={() => navigateTo('/resident/privacy')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -498,7 +499,7 @@ const DashboardHome = () => {
         <Card 
           data-tour="favorites"
           className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
-          onClick={() => window.location.href = '/resident/favorites'}
+          onClick={() => navigateTo('/resident/favorites')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-pink-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
@@ -552,7 +553,7 @@ export default function ResidentDashboard() {
   // Phase 3: Privacy Dashboard
   else if (location.pathname === "/resident/privacy") panel = <PrivacyDashboard />;
   // Phase 4: Favorites System
-  else if (location.pathname === "/resident/favorites") panel = <FavoriteVisitors onInviteClick={(visitor) => window.location.href = `/resident/add-visitor?favorite=${visitor.id}`} />;
+  else if (location.pathname === "/resident/favorites") panel = <FavoriteVisitors onInviteClick={(visitor) => navigateTo(`/resident/add-visitor?favorite=${visitor.id}`)} />;
 
   return (
     <AppShell role={role} title="Resident Dashboard" onLogout={onLogout}>
