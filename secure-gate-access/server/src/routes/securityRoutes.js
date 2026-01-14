@@ -1,7 +1,6 @@
 // server/src/routes/securityRoutes.js
 import express from 'express';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import { requireRole } from '../middleware/roleMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { adminRateLimit } from '../middleware/rateLimitMiddleware.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
 import { asyncHandler } from '../middleware/errorHandler.js';

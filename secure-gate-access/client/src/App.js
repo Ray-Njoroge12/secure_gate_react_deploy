@@ -8,26 +8,27 @@
 
 import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import RootProvider from "./contexts/RootProvider.jsx";
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles.css"; // Additional app styles
 // BUG-003 FIX: httpInterceptor removed - using httpOnly cookies instead
 // import "./utils/httpInterceptor.js"; // HTTP interceptor for automatic auth headers
-import Loading from "./components/ui/Loading.jsx";
-import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
-import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
-import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
 import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
-import ToastContainer from "./components/ToastContainer.jsx";
-import ErrorQueue from "./components/ErrorQueue.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
 import CookieConsentBanner from "./components/CookieConsentBanner.jsx"; // Privacy: Cookie consent for KDPA compliance
-import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
+import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
+import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
+import ErrorQueue from "./components/ErrorQueue.jsx";
+import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
+import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
-import { refreshCSRFToken } from "./utils/apiClient.js";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
+import Loading from "./components/ui/Loading.jsx";
+import ToastContainer from "./components/ToastContainer.jsx";
+import RootProvider from "./contexts/RootProvider.jsx";
+import { refreshCSRFToken } from "./utils/apiClient.js";
+import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
 
 /**
  * Lazy load all page components for better build performance
@@ -159,6 +160,7 @@ function App() {
             warningTime={5 * 60 * 1000}  // 5 minutes before expiry
             sessionTimeout={30 * 60 * 1000}  // 30 minutes total session
           />
+          <OfflineRetryBanner />
           <ErrorBoundary level="page">
             <NetworkErrorBoundary>
               <AuthErrorBoundary>

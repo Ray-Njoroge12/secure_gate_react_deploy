@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { navigateTo } from '../../utils/appNavigation';
 import { Card, Button, PageHeader } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -150,7 +151,7 @@ const ManualCheck = () => {
         backTo="/dashboard/guard"
         actions={
           <Button
-            onClick={() => window.location.href = '/dashboard/guard/scan-qr'}
+            onClick={() => navigateTo('/dashboard/guard/scan-qr')}
             variant="outline"
           >
             <QrCode className="w-4 h-4 mr-2" />

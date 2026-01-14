@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import logger from 'utils/logger';
+import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -18,10 +19,16 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState(authStateMachine.getState());
 
   // Initialize auth state on app start
   useEffect(() => {
     initializeAuth();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = authStateMachine.subscribe(setAuthState);
+    return () => unsubscribe();
   }, []);
 
   const initializeAuth = async () => {
@@ -38,11 +45,18 @@ export const AuthProvider = ({ children }) => {
         const userData = data.data?.user || data.user;
         if (userData) {
           setUser(userData);
+          authStateMachine.transition('AUTHENTICATED');
         }
+      } else {
+        authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
       }
     } catch (error) {
       // User not authenticated - this is normal for first-time visitors
       logger.debug('User not authenticated');
+      authStateMachine.transition('UNAUTHENTICATED', { reason: 'not_authenticated' });
+    }
+    if (!authStateMachine.getState().status || authStateMachine.getState().status === AUTH_STATES.UNKNOWN) {
+      authStateMachine.transition('UNAUTHENTICATED', { reason: 'no_session' });
     }
     setLoading(false);
   };
@@ -79,6 +93,7 @@ export const AuthProvider = ({ children }) => {
     }
     
     setUser(userData);
+    authStateMachine.transition('AUTHENTICATED');
 
     // Do not persist auth/session data in storage; rely on httpOnly cookies only
     return { user: userData };
@@ -97,6 +112,7 @@ export const AuthProvider = ({ children }) => {
 
     // Clear in-memory auth state; no localStorage/sessionStorage usage
     setUser(null);
+    authStateMachine.transition('UNAUTHENTICATED', { reason: 'logout' });
   };
 
   // Check if user has specific role
@@ -163,7 +179,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     register,
     hasRole,
-    hasAnyRole
+    hasAnyRole,
+    authState
   };
 
   return (

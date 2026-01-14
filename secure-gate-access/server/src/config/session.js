@@ -8,6 +8,7 @@ import { RedisStore } from 'connect-redis';
 import { createClient } from 'redis';
 import createMemoryStore from 'memorystore';
 import dotenv from 'dotenv';
+import { getCookieOptions } from '../utils/cookies.js';
 
 dotenv.config();
 
@@ -79,11 +80,8 @@ const sessionConfig = {
   name: 'secure.sid', // Custom session ID name
   proxy: process.env.NODE_ENV === 'production', // Trust proxy in production
   cookie: {
-    httpOnly: true, // Prevent XSS attacks
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    domain: process.env.COOKIE_DOMAIN || undefined
+    ...getCookieOptions(),
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 };
 

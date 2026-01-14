@@ -1,7 +1,6 @@
 // Database health monitoring endpoints
 import { Router } from 'express';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import requireRole from '../middleware/roleMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
 import { getDBStatus, testDBConnection } from '../database/db.enhanced.js';
