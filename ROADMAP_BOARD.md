@@ -135,7 +135,7 @@
 - **Implemented:** Shared role policy helper now standardizes per-route checks, policy map refreshed, and enforcement tests cover guard management, resident features, visitor management, event management, and admin-only monitoring/metrics/reporting endpoints (including delivery stats). ✅
 
 **P1: Observability**
-- **Partially implemented:** Logging service and audit middleware exist; CSRF/session failures emit structured security logs with request IDs and user/estate context, rate-limit events are logged with structured context, auth/estate logs include estate context, login failures + auth/refresh success events are logged, and legacy 401/403 payloads were standardized for requestId propagation, but staging requestId validation is still pending. ⚠️
+- **Partially implemented:** Logging service and audit middleware exist; CSRF/session failures emit structured security logs with request IDs and user/estate context, rate-limit events are logged with structured context, auth/refresh logs now emit structured `event` + `request_id` fields, legacy 401/403 payloads were standardized for requestId propagation (including data minimization access denials), and duplicate request tracing/logging middleware was removed so a single canonical request ID path remains (app-level `requestIdMiddleware` + `requestLogger`). Staging requestId validation is still pending. ⚠️
 
 **P2: Frontend UX hardening**
 - **Implemented:** Centralized auth transitions with a shared state machine, removed remaining `window.location.href` navigation from guard/resident dashboards and error boundaries, and aligned session-expiry messaging across handlers. ✅ (closed)
@@ -151,6 +151,7 @@
 
 * **Goal:** prove one request ID links response headers, error payloads, request logs, and security logs.
 * **Tasks**
+  * Confirm only one request tracing middleware path is active (app-level `requestIdMiddleware` + `requestLogger`), and no duplicate request logging occurs at server bootstrap.
   * Send a request with `X-Request-ID: stage-corr-001` to a known failure endpoint (e.g., `ESTATE_REQUIRED` or CSRF failure).
   * Confirm response header echoes `X-Request-ID`, error payload includes `error.requestId`, and request/security logs contain the same ID.
   * Verify the log aggregator query on that ID returns request-start, request-end, error, and security events.
@@ -221,13 +222,13 @@
 
 ### Remaining implementations
 - **Milestone 1 — Staging correlation validation:** run the correlation validation script and capture evidence bundle. ⚠️
-- **P1 Observability pack:** complete structured auth/refresh logging and standardize legacy 401/403 payloads; validate requestId propagation in staging. ⚠️
+- **P1 Observability pack:** validate requestId propagation in staging. ⚠️
 
 ### Remaining tasks (current focus)
-- Validate requestId propagation in staging by running `./scripts/run-staging-correlation-validation.sh` and capturing the evidence bundle. ⚠️
+- Validate requestId propagation in staging by running `./scripts/run-staging-correlation-validation.sh` and capturing the evidence bundle (ensure only the app-level request tracing/logging middleware is active). ⚠️
 
 ### Remaining tasks snapshot
-- **P1 Observability pack:** Complete structured auth/refresh logging, standardize legacy 401/403 payloads, and validate requestId propagation in staging. ⚠️
+- **P1 Observability pack:** Validate requestId propagation in staging. ⚠️
 
 ### Improvement guidance (to complete remaining work efficiently)
 

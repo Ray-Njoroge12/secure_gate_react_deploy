@@ -13,6 +13,7 @@ fi
 
 REQUEST_ID=${REQUEST_ID:-stage-corr-001}
 OUTPUT_DIR=${OUTPUT_DIR:-staging-correlation}
+export OUTPUT_DIR
 METHOD=${METHOD:-GET}
 
 mkdir -p "${OUTPUT_DIR}"
@@ -40,6 +41,52 @@ curl -sS -X "${METHOD}" \
 
 echo "Saved response headers to ${HEADER_FILE}"
 echo "Saved response body to ${BODY_FILE}"
+
+python - <<'PY'
+import json
+import sys
+from pathlib import Path
+import os
+
+output_dir = Path(os.environ.get("OUTPUT_DIR", "staging-correlation"))
+header_path = output_dir / "response-headers.txt"
+body_path = output_dir / "response-body.json"
+metadata_path = output_dir / "request-metadata.txt"
+request_id = metadata_path.read_text().splitlines()[0].split("=", 1)[1]
+
+headers = header_path.read_text().splitlines()
+header_match = None
+for line in headers:
+    if line.lower().startswith("x-request-id:"):
+        header_match = line.split(":", 1)[1].strip()
+        break
+
+if not header_match:
+    print("Missing X-Request-ID response header.", file=sys.stderr)
+    sys.exit(1)
+
+if header_match != request_id:
+    print(f"X-Request-ID mismatch (expected {request_id}, got {header_match}).", file=sys.stderr)
+    sys.exit(1)
+
+try:
+    payload = json.loads(body_path.read_text())
+except json.JSONDecodeError as exc:
+    print(f"Response body is not valid JSON: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+error_request_id = None
+if isinstance(payload, dict):
+    error = payload.get("error") or {}
+    if isinstance(error, dict):
+        error_request_id = error.get("requestId")
+
+if error_request_id != request_id:
+    print("error.requestId missing or does not match request id.", file=sys.stderr)
+    sys.exit(1)
+
+print("Validated request ID propagation in response headers and error payload.")
+PY
 
 cat <<NEXT
 
