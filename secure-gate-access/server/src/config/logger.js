@@ -62,9 +62,10 @@ const consoleFormat = winston.format.combine(
   winston.format.timestamp({
     format: 'HH:mm:ss.SSS'
   }),
-  winston.format.printf(({ timestamp, level, message, service, requestId, userId }) => {
+  winston.format.printf(({ timestamp, level, message, service, requestId, request_id, userId }) => {
     const serviceTag = service ? `[${service}]` : '';
-    const requestTag = requestId ? `[${requestId.substring(0, 8)}]` : '';
+    const resolvedRequestId = request_id || requestId;
+    const requestTag = resolvedRequestId ? `[${resolvedRequestId.substring(0, 8)}]` : '';
     const userTag = userId ? `[user:${userId}]` : '';
     return `${timestamp} ${level} ${serviceTag}${requestTag}${userTag}: ${message}`;
   })
@@ -284,10 +285,11 @@ export const requestLogger = (req, res, next) => {
 
 // Error logger
 export const errorLogger = (err, req, res, next) => {
-  const requestId = req.id || 'unknown';
+  const requestId = req.requestId || req.correlationId || req.id || 'unknown';
   
   logger.error('Application error', {
     requestId,
+    request_id: requestId,
     error: {
       name: err.name,
       message: err.message,
@@ -308,12 +310,14 @@ export const errorLogger = (err, req, res, next) => {
 
 // Security event logger
 export const logSecurityEvent = (eventType, details, req = null) => {
+  const requestId = req?.requestId || req?.correlationId || req?.id || null;
   const logData = {
     eventType,
     details,
     timestamp: new Date().toISOString(),
     ...(req && {
-      requestId: req.id,
+      requestId,
+      request_id: requestId,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
       userId: req.user?.id
@@ -345,13 +349,15 @@ export const logDatabaseQuery = (query, duration, params = null) => {
 
 // Audit logger
 export const logAuditEvent = (action, resource, details, req = null) => {
+  const requestId = req?.requestId || req?.correlationId || req?.id || null;
   const auditData = {
     action,
     resource,
     details,
     timestamp: new Date().toISOString(),
     ...(req && {
-      requestId: req.id,
+      requestId,
+      request_id: requestId,
       ip: req.ip,
       userId: req.user?.id,
       userRole: req.user?.role
@@ -420,4 +426,3 @@ export const setupLogRotation = () => {
 
 // Export main logger
 export default logger;
-
