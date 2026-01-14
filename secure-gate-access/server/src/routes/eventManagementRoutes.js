@@ -25,6 +25,7 @@ import { Readable } from 'stream';
 import eventManagementService from '../services/eventManagementService.js';
 import loggingService from '../services/loggingService.js';
 import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();

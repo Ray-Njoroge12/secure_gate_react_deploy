@@ -24,8 +24,8 @@ export const correlationIdMiddleware = (req, res, next) => {
   req.correlationId = correlationId;
   req.requestId = correlationId;
   req.id = correlationId;
-  res.setHeader('X-Correlation-Id', correlationId);
-  res.setHeader('X-Request-Id', correlationId);
+  res.setHeader('X-Correlation-ID', correlationId);
+  res.setHeader('X-Request-ID', correlationId);
 
   // Set in logging service for this request (with error handling)
   try {

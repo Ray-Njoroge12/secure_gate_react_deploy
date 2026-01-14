@@ -8,7 +8,7 @@ import express from 'express';
 import healthRoutes from '../src/routes/healthRoutes.js';
 import { enhancedHealthMonitoring } from '../src/services/enhancedHealthService.js';
 import loggingService from '../src/services/loggingService.js';
-import { correlationIdMiddleware } from '../src/middleware/loggingMiddleware.js';
+import { requestIdMiddleware } from '../src/middleware/standardizedErrorHandler.js';
 
 /**
  * Health monitoring integration class
@@ -34,7 +34,7 @@ class HealthMonitoringIntegration {
       // Enhanced health service is already initialized
       // Just ensure it's ready to use
 
-      // Set up health routes with correlation ID middleware
+      // Set up health routes with request ID middleware
       this.setupHealthRoutes();
 
       // Set up health monitoring middleware
@@ -65,11 +65,11 @@ class HealthMonitoringIntegration {
    * Set up health routes with proper middleware
    */
   setupHealthRoutes() {
-    // Create health router with correlation ID middleware
+    // Create health router with request ID middleware
     const healthRouter = express.Router();
     
-    // Apply correlation ID middleware to all health routes
-    healthRouter.use(correlationIdMiddleware);
+    // Apply request ID middleware to all health routes
+    healthRouter.use(requestIdMiddleware);
 
     // Mount health routes
     healthRouter.use('/', healthRoutes);
@@ -79,7 +79,7 @@ class HealthMonitoringIntegration {
 
     loggingService.logAPI('info', 'Health routes registered', null, {
       basePath: '/health',
-      middleware: ['correlationId', 'healthRoutes']
+      middleware: ['requestId', 'healthRoutes']
     });
   }
 
