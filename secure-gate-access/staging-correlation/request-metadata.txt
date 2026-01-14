@@ -1,0 +1,4 @@
+request_id=local-staging-corr-1768403576
+method=GET
+url=http://localhost:5001/api/estates/requirement-check
+timestamp=2026-01-14T15:12:56Z
