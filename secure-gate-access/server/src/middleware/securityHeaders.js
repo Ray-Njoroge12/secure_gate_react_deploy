@@ -265,7 +265,8 @@ export const csrfProtection = (req, res, next) => {
       status: 403,
       route: req.path,
       method: req.method,
-      requestId: req.requestId,
+      request_id: req.headers['x-request-id'] || req.requestId,
+      requestId: req.requestId, // Keep for backward compatibility
       route: req.originalUrl,
       status: 403,
       user_id: req.user?.id ?? null,
@@ -281,7 +282,8 @@ export const csrfProtection = (req, res, next) => {
       route: req.path,
       method: req.method,
       ip: req.ip,
-      requestId: req.requestId,
+      request_id: req.headers['x-request-id'] || req.requestId,
+      requestId: req.requestId, // Keep for backward compatibility
       route: req.originalUrl,
       status: 403,
       user_id: req.user?.id ?? null,

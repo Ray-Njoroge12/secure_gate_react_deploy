@@ -22,7 +22,6 @@ import EnvironmentConfig from './src/config/environment.js';
 import { enhancedHealthMonitoring as healthCheck } from './src/services/enhancedHealthService.js';
 import { createHealthMonitoring } from './integration/health-monitoring-integration.js';
 import loggingService from './src/services/loggingService.js';
-import { correlationIdMiddleware, requestLoggingMiddleware } from './src/middleware/loggingMiddleware.js';
 
 // Enhanced error monitoring imports
 import { createErrorMonitoring } from './integration/error-monitoring-integration.js';
@@ -121,12 +120,6 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-// Apply correlation ID middleware globally
-app.use(correlationIdMiddleware);
-
-// Apply request logging middleware
-app.use(requestLoggingMiddleware);
-
 // Initialize monitoring integrations
 let healthMonitoring = null;
 let errorMonitoring = null;
@@ -136,7 +129,7 @@ async function initializeHealthMonitoring() {
     healthMonitoring = await createHealthMonitoring(app, healthCheck);
     loggingService.logAPI('info', 'Enhanced health monitoring initialized successfully', null, {
       endpoints: ['/health', '/health/live', '/health/ready', '/health/startup', '/health/detailed'],
-      middleware: ['correlationId', 'requestLogging', 'healthMiddleware'],
+      middleware: ['requestId', 'healthMiddleware'],
       gracefulShutdown: true
     });
   } catch (error) {
@@ -443,4 +436,3 @@ async function startServer() {
 
 startServer();
 // touch
-
