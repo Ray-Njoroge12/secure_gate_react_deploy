@@ -40,9 +40,9 @@ VALUES (
   'Africa/Nairobi',
   '+254 700 000 000',
   'Visitor parking available at designated areas near the main gate.',
-  '[\"Present your QR code or visit code to the guard\", \"Valid ID required for entry\", \"Wait for resident approval if status is pending\"]'::jsonb,
+  '["Present your QR code or visit code to the guard", "Valid ID required for entry", "Wait for resident approval if status is pending"]'::jsonb,
   '+254 700 000 000',
-  '[\"en\", \"sw\"]'::jsonb,
+  '["en", "sw"]'::jsonb,
   'North Entrance',
   '24/7',
   '+254 700 000 000'

@@ -278,6 +278,70 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
 
 /**
  * @swagger
+ * /api/auth/verify-email:
+ *   get:
+ *     summary: Verify email address
+ *     description: Verify user email with token from verification email
+ *     tags: [Authentication]
+ */
+router.get('/verify-email', asyncHandler(async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    throw new AppError('Verification token is required', 400, 'VALIDATION_ERROR');
+  }
+
+  // Find user with this verification token
+  const userResult = await userService.db.query(
+    `SELECT id, username, email, verified, verification_expires 
+     FROM users 
+     WHERE verification_token = $1`,
+    [token]
+  );
+
+  if (userResult.rows.length === 0) {
+    throw new AppError('Invalid or expired verification token', 400, 'INVALID_TOKEN');
+  }
+
+  const user = userResult.rows[0];
+
+  // Check if already verified
+  if (user.verified) {
+    return successResponse(res, {
+      message: 'Email already verified'
+    }, 'Email already verified');
+  }
+
+  // Check if token expired
+  if (user.verification_expires && new Date(user.verification_expires) < new Date()) {
+    throw new AppError('Verification token has expired', 400, 'TOKEN_EXPIRED');
+  }
+
+  // Update user to verified
+  await userService.db.query(
+    `UPDATE users 
+     SET verified = true, 
+         verification_token = NULL, 
+         verification_expires = NULL,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [user.id]
+  );
+
+  loggingService.info('Email verified successfully', {
+    userId: user.id,
+    email: user.email
+  });
+
+  successResponse(res, {
+    verified: true,
+    email: user.email
+  }, 'Email verified successfully');
+}));
+
+
+/**
+ * @swagger
  * /api/auth/login:
  *   post:
  *     summary: Authenticate user

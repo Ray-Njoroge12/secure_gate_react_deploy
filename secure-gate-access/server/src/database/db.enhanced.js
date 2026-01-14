@@ -229,6 +229,16 @@ class DatabaseManager extends EventEmitter {
     
     const tables = [
       {
+        name: 'estates',
+        sql: `CREATE TABLE IF NOT EXISTS estates (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          plan_id VARCHAR(50),
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
         name: 'users',
         sql: `CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
@@ -240,6 +250,7 @@ class DatabaseManager extends EventEmitter {
           phone VARCHAR(20),
           area VARCHAR(100),
           house VARCHAR(100),
+          estate_id INT REFERENCES estates(id),
           notify_email BOOLEAN DEFAULT true,
           notify_sms BOOLEAN DEFAULT false,
           verified BOOLEAN DEFAULT false,
@@ -254,6 +265,7 @@ class DatabaseManager extends EventEmitter {
         sql: `CREATE TABLE IF NOT EXISTS visitors (
           id SERIAL PRIMARY KEY,
           name VARCHAR(100) NOT NULL,
+          estate_id INT REFERENCES estates(id),
           phone VARCHAR(20),
           email VARCHAR(100),
           id_number VARCHAR(50),

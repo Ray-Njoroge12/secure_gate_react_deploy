@@ -29,6 +29,15 @@ import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
+const requireRolePolicy = (policy) => {
+  switch (policy) {
+    case 'adminOrResident': return requireRole(['admin', 'resident']);
+    case 'estateUsers': return requireRole(['admin', 'resident', 'guard']);
+    case 'adminOrGuard': return requireRole(['admin', 'guard']);
+    default: return requireRole('admin');
+  }
+};
+
 // Configure multer for CSV upload
 const upload = multer({
   storage: multer.memoryStorage(),
