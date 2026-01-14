@@ -3,6 +3,7 @@ import logger from 'utils/logger';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import errorQueueService from '../services/errorQueueService';
 import { createApiErrorHandler, createErrorContext } from '../utils/apiErrorHandler';
+import { navigateToLogin } from '../utils/authNavigation';
 import { ERROR_TYPES } from '../utils/errorHandling';
 
 const ErrorContext = createContext();
@@ -80,7 +81,7 @@ export const ErrorProvider = ({ children, options = {} }) => {
         context,
         title: 'Authentication Error',
         showRecoveryActions: true,
-        onRetry: () => window.location.href = '/login',
+        onRetry: () => navigateToLogin(),
         type: ERROR_TYPES.AUTHENTICATION,
         persistent: true
       });

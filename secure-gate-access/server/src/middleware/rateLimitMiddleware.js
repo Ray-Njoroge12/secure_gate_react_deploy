@@ -95,6 +95,35 @@ const createStore = () => {
   return undefined; // Use default memory store
 };
 
+const rateLimitErrorCode = 'RATE_LIMIT_EXCEEDED';
+
+const buildRateLimitHandler = ({ message, retryAfter, details = {} }) => {
+  return (req, res) => {
+    const errorResponse = buildErrorResponse({
+      message,
+      errorCode: rateLimitErrorCode,
+      details: {
+        retryAfter,
+        ...details
+      },
+      req
+    });
+
+    loggingService.logSecurity('warn', 'Rate limit exceeded', {
+      code: rateLimitErrorCode,
+      status: 429,
+      method: req.method,
+      route: req.originalUrl,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null,
+      requestId: req.requestId,
+      correlationId: req.correlationId
+    });
+
+    res.status(429).json(errorResponse);
+  };
+};
+
 /**
  * General rate limiting for all API endpoints
  * 100 requests per 15 minutes per IP
@@ -102,10 +131,6 @@ const createStore = () => {
 export const generalRateLimit = () => rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -124,10 +149,6 @@ export const generalRateLimit = () => rateLimit({
 export const authRateLimit = () => rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50,
-  message: {
-    error: 'Too many login attempts, please try again later.',
-    retryAfter: '15 minutes'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -146,10 +167,6 @@ export const authRateLimit = () => rateLimit({
 export const adminRateLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 20,
-  message: {
-    error: 'Too many admin requests, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -168,10 +185,6 @@ export const adminRateLimit = () => rateLimit({
 export const bulkOperationLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3,
-  message: {
-    error: 'Too many bulk operations, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -190,10 +203,6 @@ export const bulkOperationLimit = () => rateLimit({
 export const passwordResetLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3,
-  message: {
-    error: 'Too many password reset requests, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -212,10 +221,6 @@ export const passwordResetLimit = () => rateLimit({
 export const registrationLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 1000,
-  message: {
-    error: 'Too many registration attempts, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -248,10 +253,6 @@ export const speedLimitMiddleware = () => slowDown({
 export const strictRateLimit = () => rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 10,
-  message: {
-    error: 'Too many requests to this sensitive endpoint.',
-    retryAfter: '10 minutes'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -270,10 +271,6 @@ export const strictRateLimit = () => rateLimit({
 export const ddosProtection = () => rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20,
-  message: {
-    error: 'DDoS protection activated. Too many requests.',
-    retryAfter: '1 minute'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -288,14 +285,17 @@ export const ddosProtection = () => rateLimit({
 /**
  * Custom rate limit function for specific use cases
  */
-export const customRateLimit = (options) => {
+export const customRateLimit = (options = {}) => {
+  const fallbackMessage = 'Too many requests, please try again later.';
+  const messageValue = typeof options.message === 'string'
+    ? options.message
+    : options.message?.error || fallbackMessage;
+  const retryAfterValue = typeof options.message === 'object' && options.message?.retryAfter
+    ? options.message.retryAfter
+    : 'later';
   const defaults = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
-    message: {
-      error: 'Too many requests, please try again later.',
-      retryAfter: 'later'
-    },
     standardHeaders: true,
     legacyHeaders: false,
     store: createStore(),

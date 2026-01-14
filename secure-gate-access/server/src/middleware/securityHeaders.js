@@ -235,7 +235,9 @@ export const csrfProtection = (req, res, next) => {
   // Ensure session exists
   if (!req.session) {
     loggingService.logSecurity('warn', 'CSRF validation attempted without session', {
-      path: req.path,
+      code: 'NO_SESSION',
+      status: 500,
+      route: req.path,
       method: req.method,
       requestId: req.requestId,
       route: req.originalUrl,
@@ -259,7 +261,9 @@ export const csrfProtection = (req, res, next) => {
   // Validate token
   if (!token || !sessionToken) {
     loggingService.logSecurity('warn', 'CSRF token missing', {
-      path: req.path,
+      code: 'CSRF_TOKEN_MISSING',
+      status: 403,
+      route: req.path,
       method: req.method,
       requestId: req.requestId,
       route: req.originalUrl,
@@ -272,7 +276,9 @@ export const csrfProtection = (req, res, next) => {
 
   if (token !== sessionToken) {
     loggingService.logSecurity('warn', 'CSRF token mismatch', {
-      path: req.path,
+      code: 'CSRF_VALIDATION_FAILED',
+      status: 403,
+      route: req.path,
       method: req.method,
       ip: req.ip,
       requestId: req.requestId,

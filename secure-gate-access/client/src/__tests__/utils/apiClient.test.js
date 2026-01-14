@@ -17,12 +17,19 @@ jest.mock('../../utils/logger', () => ({
   }
 }));
 
+jest.mock('../../utils/authNavigation', () => ({
+  __esModule: true,
+  navigateToLogin: jest.fn(),
+  navigateToEstateRequired: jest.fn()
+}));
+
 describe('apiClient', () => {
   let axios;
   let requestFulfilled;
   let responseRejected;
   let apiClientModule;
   let instance;
+  let authNavigation;
 
   function setupAxiosMock() {
     instance = jest.fn();
@@ -57,6 +64,7 @@ describe('apiClient', () => {
     jest.clearAllMocks();
 
     axios = require('axios');
+    authNavigation = require('../../utils/authNavigation');
 
     document.head.innerHTML = '';
 
@@ -174,11 +182,11 @@ describe('apiClient', () => {
     };
 
     await expect(responseRejected(error)).rejects.toEqual({
-      message: 'Session expired. Please login again.',
+      message: 'Your session has expired. Please log in again.',
       code: 'UNAUTHORIZED'
     });
 
-    expect(window.location.href).toBe('/login');
+    expect(authNavigation.navigateToLogin).toHaveBeenCalled();
   });
 
   test('response interceptor refreshes CSRF token and retries on CSRF errors', async () => {
@@ -219,7 +227,7 @@ describe('apiClient', () => {
       code: 'ESTATE_REQUIRED'
     });
 
-    expect(window.location.href).toBe('/estate-required');
+    expect(authNavigation.navigateToEstateRequired).toHaveBeenCalledWith({ code: 'ESTATE_REQUIRED' });
   });
 
   test('response interceptor does not retry CSRF refresh twice', async () => {

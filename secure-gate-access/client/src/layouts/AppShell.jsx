@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { BottomNav, FAB } from '../components/ui';
 import { NavigationProvider } from '../contexts/NavigationContext';
+import { navigateToLogin } from '../utils/authNavigation';
 
 export default function AppShell({ 
   role, 
@@ -23,7 +24,7 @@ export default function AppShell({
     } catch (error) {
       console.error('Logout error', error);
     } finally {
-      window.location.href = "/login";
+      navigateToLogin();
     }
   });
 
