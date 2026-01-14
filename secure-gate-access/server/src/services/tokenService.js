@@ -18,12 +18,15 @@ class TokenService {
     }
     
     // Validate secret strength (minimum 32 characters)
-    if (process.env.JWT_SECRET.length < 32) {
-      throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters long for security.');
-    }
-    
-    if (process.env.JWT_REFRESH_SECRET.length < 32) {
-      throw new Error('CRITICAL: JWT_REFRESH_SECRET must be at least 32 characters long for security.');
+    // Validate secret strength (minimum 32 characters) - Production only
+    if (process.env.NODE_ENV === 'production') {
+      if (process.env.JWT_SECRET.length < 32) {
+        throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters long for security.');
+      }
+      
+      if (process.env.JWT_REFRESH_SECRET.length < 32) {
+        throw new Error('CRITICAL: JWT_REFRESH_SECRET must be at least 32 characters long for security.');
+      }
     }
     
     this.accessTokenSecret = process.env.JWT_SECRET;

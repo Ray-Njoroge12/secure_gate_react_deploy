@@ -81,7 +81,7 @@ async function run() {
 }
 
 run().catch(async (error) => {
-  console.error('[db:migrate] Failed:', error);
+  console.error('[db:migrate] Failed:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
   try {
     await dbManager.disconnect();
   } catch {

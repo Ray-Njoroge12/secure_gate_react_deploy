@@ -2,17 +2,17 @@
 -- Description: Adds estate_id FK to estates, backfills existing rows, and scopes uniqueness to estate
 
 -- Ensure estates table exists for FK reference
-CREATE TABLE IF NOT EXISTS estates (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Seed default estate for backfill
-INSERT INTO estates (id, name)
-VALUES (1, 'Default Estate')
-ON CONFLICT (id) DO NOTHING;
+-- CREATE TABLE IF NOT EXISTS estates (
+--    id SERIAL PRIMARY KEY,
+--    name VARCHAR(255) NOT NULL,
+--    created_at TIMESTAMP DEFAULT NOW(),
+--    updated_at TIMESTAMP DEFAULT NOW()
+-- );
+-- 
+-- -- Seed default estate for backfill
+-- -- INSERT INTO estates (id, name)
+-- -- VALUES (1, 'Default Estate')
+-- -- ON CONFLICT (id) DO NOTHING;
 
 -- Add estate_id columns
 ALTER TABLE users

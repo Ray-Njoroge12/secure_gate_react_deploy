@@ -10,6 +10,15 @@ import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
+const requireRolePolicy = (policy) => {
+  switch (policy) {
+    case 'adminOnly': return requireRole('admin');
+    case 'guardOnly': return requireRole('guard');
+    case 'adminOrGuard': return requireRole(['admin', 'guard']);
+    default: return requireRole('admin');
+  }
+};
+
 /**
  * @route GET /api/guards
  * @desc Get all guards with performance data

@@ -1,0 +1,15 @@
+⚠️ DATABASE_URL not set - this may cause issues on Render
+[db:migrate] Failed: {
+  "stack": "error: invalid input syntax for type json\n    at C:\\Ben\\SecureGate\\secure_gate_react_deploy\\secure-gate-access\\server\\node_modules\\pg\\lib\\client.js:545:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async file:///C:/Ben/SecureGate/secure_gate_react_deploy/secure-gate-access/server/scripts/migrate.js:72:7\n    at async DatabaseManager.transaction (file:///C:/Ben/SecureGate/secure_gate_react_deploy/secure-gate-access/server/src/database/db.enhanced.js:599:22)\n    at async run (file:///C:/Ben/SecureGate/secure_gate_react_deploy/secure-gate-access/server/scripts/migrate.js:71:5)",
+  "message": "invalid input syntax for type json",
+  "length": 155,
+  "name": "error",
+  "severity": "ERROR",
+  "code": "22P02",
+  "detail": "Token \"\\\" is invalid.",
+  "position": "1140",
+  "where": "JSON data, line 1: [\\...",
+  "file": "jsonfuncs.c",
+  "line": "663",
+  "routine": "json_errsave_error"
+}

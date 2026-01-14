@@ -54,7 +54,6 @@ import adminRoutes from './routes/adminRoutes.js';
 import tenantProvisioningRoutes from './routes/tenantProvisioningRoutes.js';
 import visitorRoutes from './routes/visitorRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js'; // Dashboard routes
-// import residentRoutes from './routes/residentRoutes.js'; // Removed - placeholder implementation
 // import guardRoutes from './routes/guardRoutes.js'; // Removed - placeholder implementation
 import authRoutes from './routes/authRoutes.js';
 import mfaRoutes from './routes/mfaRoutes.js';
