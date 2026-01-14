@@ -5,7 +5,9 @@ import attachRequestAudit from '../middleware/auditLogger.js';
 import backupService from '../services/backupService.js';
 import userService from '../services/userService.js';
 import { dbManager } from '../database/db.enhanced.js';
-import { errorResponse } from '../utils/responseFormatter.js';
+import retentionService from '../services/retentionService.js';
+import retentionScheduler from '../jobs/retentionScheduler.js';
+import { minimizeData } from '../middleware/dataMinimization.js';
 
 const router = express.Router();
 
@@ -86,7 +88,7 @@ const router = express.Router();
  *         $ref: '#/components/responses/ForbiddenError'
  */
 // Admin metrics endpoint
-router.get('/metrics', authenticateToken, requireRole(['admin']), attachRequestAudit, getMetrics);
+router.get('/metrics', authenticateToken, attachRequestAudit, getMetrics);
 
 /**
  * @swagger
@@ -190,7 +192,7 @@ router.get('/metrics', authenticateToken, requireRole(['admin']), attachRequestA
  *         $ref: '#/components/responses/ForbiddenError'
  */
 // Audit logs endpoint
-router.get('/audit-logs', authenticateToken, requireRole(['admin']), attachRequestAudit, getAuditLogs);
+router.get('/audit-logs', authenticateToken, attachRequestAudit, getAuditLogs);
 
 /**
  * @swagger
@@ -262,7 +264,7 @@ router.get('/audit-logs', authenticateToken, requireRole(['admin']), attachReque
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Backup trigger endpoint
-router.post('/backup/trigger', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.post('/backup/trigger', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const result = await backupService.triggerBackup();
     res.json({
@@ -283,84 +285,6 @@ router.post('/backup/trigger', authenticateToken, requireRole(['admin']), attach
   }
 });
 
-/**
- * @swagger
- * /api/admin/backup/restore/tar:
- *   post:
- *     summary: Restore database from TAR backup
- *     description: Restore a database from a TAR backup file (custom format or basebackup)
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - backupPath
- *             properties:
- *               backupPath:
- *                 type: string
- *                 description: Absolute path to the TAR backup file
- *               pgDataDir:
- *                 type: string
- *                 description: Optional PGDATA directory for basebackup restores
- *     responses:
- *       200:
- *         description: TAR restore triggered successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/Success'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         format: { type: string }
- *                         targetDir: { type: string }
- *       400:
- *         $ref: '#/components/responses/BadRequest'
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       403:
- *         $ref: '#/components/responses/ForbiddenError'
- *       500:
- *         description: TAR restore failed
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.post('/backup/restore/tar', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
-  try {
-    const { backupPath, pgDataDir } = req.body;
-    if (!backupPath || !backupPath.endsWith('.tar')) {
-      return res.status(400).json({
-        success: false,
-        message: 'backupPath must reference a .tar file'
-      });
-    }
-
-    const result = await backupService.restoreFromBackup(backupPath, { pgDataDir });
-    return res.json({
-      success: true,
-      message: 'TAR restore triggered successfully',
-      data: result
-    });
-  } catch (error) {
-    console.error('Error restoring from TAR backup:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to restore TAR backup',
-      error: error.message
-    });
-  }
-});
-
 // ==================== USER MANAGEMENT ENDPOINTS ====================
 
 /**
@@ -368,13 +292,12 @@ router.post('/backup/restore/tar', authenticateToken, requireRole(['admin']), at
  * @desc Get all users with optional filtering
  * @access Private (Admin only)
  */
-router.get('/users', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.get('/users', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
     const { role, status, search, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
     
-    const baseSelect = 'SELECT id, username, email, role, status, estate_id, created_at, updated_at FROM users WHERE 1=1';
-    let query = baseSelect;
+    let query = 'SELECT id, username, email, role, status, created_at, updated_at FROM users WHERE 1=1';
     const params = [];
     let paramIndex = 1;
     
@@ -393,7 +316,7 @@ router.get('/users', authenticateToken, requireRole(['admin']), attachRequestAud
     }
     
     // Get total count
-    const countQuery = query.replace(baseSelect, 'SELECT COUNT(*) FROM users WHERE 1=1');
+    const countQuery = query.replace('SELECT id, username, email, role, status, created_at, updated_at', 'SELECT COUNT(*)');
     const countResult = await dbManager.query(countQuery, params);
     const total = parseInt(countResult.rows[0].count);
     
@@ -464,7 +387,7 @@ router.put('/users/:id', authenticateToken, requireRole(['admin']), attachReques
     updates.push(`updated_at = NOW()`);
     params.push(id);
     
-    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, email, role, status, estate_id, updated_at`;
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, email, role, status, updated_at`;
     const result = await dbManager.query(query, params);
     
     if (result.rows.length === 0) {
@@ -540,7 +463,7 @@ router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachReq
  * @desc Get all residents
  * @access Private (Admin only)
  */
-router.get('/residents', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
     const result = await dbManager.query(
       `SELECT id, username, email, phone, unit_number, status, created_at 
@@ -628,7 +551,7 @@ router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attac
  * @desc Get all guards
  * @access Private (Admin only)
  */
-router.get('/guards', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.get('/guards', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
     const result = await dbManager.query(
       `SELECT id, username, email, phone, status, created_at 
@@ -658,17 +581,12 @@ router.get('/guards', authenticateToken, requireRole(['admin']), attachRequestAu
 router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { username, email, phone, password } = req.body;
-    const estateId = req.user?.estate_id;
     
     if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
         message: 'Username, email, and password are required'
       });
-    }
-
-    if (!estateId) {
-      return errorResponse(res, 'Estate assignment required to create guard', 'FORBIDDEN', 403, null, req);
     }
     
     // Use userService to create guard with proper password hashing
@@ -677,8 +595,7 @@ router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestA
       email,
       phone,
       password,
-      role: 'guard',
-      estate_id: estateId
+      role: 'guard'
     });
     
     res.status(201).json({
@@ -766,7 +683,7 @@ router.delete('/guards/:id', authenticateToken, requireRole(['admin']), attachRe
  * @desc Get visitor logs with filtering
  * @access Private (Admin only)
  */
-router.get('/visitors', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.get('/visitors', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, async (req, res) => {
   try {
     const { status, search, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
@@ -777,12 +694,6 @@ router.get('/visitors', authenticateToken, requireRole(['admin']), attachRequest
                  WHERE 1=1`;
     const params = [];
     let paramIndex = 1;
-    const estateId = req.user.estate_id ?? null;
-
-    if (estateId !== null) {
-      query += ` AND v.estate_id = $${paramIndex++}`;
-      params.push(estateId);
-    }
     
     if (status) {
       query += ` AND v.status = $${paramIndex++}`;
@@ -820,7 +731,7 @@ router.get('/visitors', authenticateToken, requireRole(['admin']), attachRequest
  * @desc Get access logs
  * @access Private (Admin only)
  */
-router.get('/access-logs', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.get('/access-logs', authenticateToken, requireRole(['admin']), minimizeData('access'), attachRequestAudit, async (req, res) => {
   try {
     const { type, search, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
@@ -909,6 +820,206 @@ router.get('/incidents-list', authenticateToken, requireRole(['admin']), attachR
     res.status(500).json({
       success: false,
       message: 'Failed to fetch incidents',
+      error: error.message
+    });
+  }
+});
+
+// ==================== DATA RETENTION MANAGEMENT ====================
+
+/**
+ * @route GET /api/admin/retention-settings
+ * @desc Get data retention settings
+ * @access Private (Admin only)
+ */
+router.get('/retention-settings', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const settings = await retentionService.getRetentionSettings();
+    
+    res.json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('Error fetching retention settings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch retention settings',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route PUT /api/admin/retention-settings
+ * @desc Update data retention settings
+ * @access Private (Admin only)
+ */
+router.put('/retention-settings', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { id, type, duration } = req.body;
+    
+    const result = await retentionService.updateRetentionSetting(id, type, duration);
+    
+    res.json({
+      success: true,
+      message: 'Retention setting updated successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error updating retention setting:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update retention setting',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/admin/retention/trigger
+ * @desc Trigger data retention policy
+ * @access Private (Admin only)
+ */
+router.post('/retention/trigger', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    // Trigger retention policy immediately
+    await retentionService.triggerRetentionPolicy();
+    
+    res.json({
+      success: true,
+      message: 'Data retention policy triggered successfully'
+    });
+  } catch (error) {
+    console.error('Error triggering retention policy:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to trigger retention policy',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/admin/retention/logs
+ * @desc Get retention logs
+ * @access Private (Admin only)
+ */
+router.get('/retention/logs', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (page - 1) * limit;
+    
+    const result = await dbManager.query(
+      `SELECT * FROM retention_logs ORDER BY timestamp DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching retention logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch retention logs',
+      error: error.message
+    });
+  }
+});
+
+// ==================== DATA RETENTION ENDPOINTS ====================
+
+/**
+ * @swagger
+ * /api/admin/retention/stats:
+ *   get:
+ *     summary: Get data retention statistics
+ *     description: Retrieve current retention statistics including archived records count
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ */
+router.get('/retention/stats', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const stats = await retentionService.getRetentionStats();
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error fetching retention stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch retention statistics',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/retention/run:
+ *   post:
+ *     summary: Manually trigger data retention job
+ *     description: Run the data retention job immediately (admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Retention job completed successfully
+ */
+router.post('/retention/run', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const results = await retentionService.runRetentionJob();
+    
+    res.json({
+      success: true,
+      message: 'Retention job completed',
+      data: results
+    });
+  } catch (error) {
+    console.error('Error running retention job:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Retention job failed',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/retention/scheduler/status:
+ *   get:
+ *     summary: Get retention scheduler status
+ *     description: Check if the retention scheduler is running
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Scheduler status retrieved
+ */
+router.get('/retention/scheduler/status', authenticateToken, requireRole(['admin']), async (req, res) => {
+  try {
+    const status = retentionScheduler.getStatus();
+    
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    console.error('Error fetching scheduler status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch scheduler status',
       error: error.message
     });
   }
