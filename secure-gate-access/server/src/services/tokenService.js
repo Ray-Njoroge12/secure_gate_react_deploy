@@ -411,7 +411,7 @@ class TokenService {
     try {
       const tokenHash = this.hashToken(token);
       const result = await this.db.query(
-        `SELECT id, user_id, token, expires_at, is_revoked, last_used_at
+        `SELECT id, user_id, token, expires_at, is_revoked, revoked_at, last_used_at
          FROM refresh_tokens
          WHERE token = $1`,
         [tokenHash]
