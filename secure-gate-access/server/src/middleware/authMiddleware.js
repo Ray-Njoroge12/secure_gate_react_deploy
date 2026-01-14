@@ -4,7 +4,8 @@ import { tokenService } from '../services/tokenService.js';
 import loggingService from '../services/loggingService.js';
 import { AppError, asyncHandler } from './standardizedErrorHandler.js';
 
-const DEBUG_AUTH = process.env.DEBUG_AUTH === 'true';
+const DEBUG_AUTH = process.env.DEBUG_AUTH === 'true' &&
+  !['production', 'staging'].includes(process.env.NODE_ENV);
 
 // Enhanced authentication middleware with secure token verification
 export const authenticateToken = asyncHandler(async (req, res, next) => {

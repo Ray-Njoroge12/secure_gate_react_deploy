@@ -4,6 +4,7 @@
  */
 
 import session from 'express-session';
+import { createHash } from 'crypto';
 import { RedisStore } from 'connect-redis';
 import { createClient } from 'redis';
 import createMemoryStore from 'memorystore';
@@ -245,7 +246,6 @@ export const sessionSecurity = (req, res, next) => {
 
 // Generate session fingerprint
 function generateFingerprint(req) {
-  const crypto = require('crypto');
   const components = [
     req.headers['user-agent'] || '',
     req.headers['accept-language'] || '',
@@ -253,8 +253,7 @@ function generateFingerprint(req) {
     req.ip || req.connection.remoteAddress || ''
   ];
   
-  return crypto
-    .createHash('sha256')
+  return createHash('sha256')
     .update(components.join('|'))
     .digest('hex');
 }

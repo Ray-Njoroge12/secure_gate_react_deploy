@@ -26,3 +26,33 @@
 
 /* Import page transitions after Tailwind */
 @import './styles/transitions.css';
+
+@keyframes sg-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sg-confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: sg-fade-in 150ms ease-out;
+}
+
+.animate-confetti {
+  animation: sg-confetti 2s ease-out forwards;
+}

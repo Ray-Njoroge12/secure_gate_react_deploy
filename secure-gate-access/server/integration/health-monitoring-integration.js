@@ -8,7 +8,6 @@ import express from 'express';
 import healthRoutes from '../src/routes/healthRoutes.js';
 import { enhancedHealthMonitoring } from '../src/services/enhancedHealthService.js';
 import loggingService from '../src/services/loggingService.js';
-import { requestIdMiddleware } from '../src/middleware/standardizedErrorHandler.js';
 
 /**
  * Health monitoring integration class
@@ -65,17 +64,12 @@ class HealthMonitoringIntegration {
    * Set up health routes with proper middleware
    */
   setupHealthRoutes() {
-    // Create health router with request ID middleware
     const healthRouter = express.Router();
-    
-    // Apply request ID middleware to all health routes
-    healthRouter.use(requestIdMiddleware);
 
-    // Mount health routes
+    // Mount health routes without double-prefixing /health
     healthRouter.use('/', healthRoutes);
 
-    // Mount the health router
-    this.app.use('/health', healthRouter);
+    this.app.use('/', healthRouter);
 
     loggingService.logAPI('info', 'Health routes registered', null, {
       basePath: '/health',
@@ -235,7 +229,7 @@ export async function createHealthMonitoring(app, healthCheck) {
 export async function validateHealthSetup(app) {
   try {
     // Test health endpoints
-    const request = require('supertest');
+    const { default: request } = await import('supertest');
     
     const tests = [
       '/health',
