@@ -157,7 +157,7 @@
 * **Acceptance criteria**
   * A single bundle (screenshot/snippet) shows response headers + payload + log query with the same request id.
 * **Completion record (staging run)**
-  * **Status:** Pending staging validation run.
+  * **Status:** On hold (staging validation pending).
   * **Request sent:** `STAGING_BASE_URL=https://staging.example.com KNOWN_FAILURE_PATH=/api/estates/requirement-check ./scripts/run-staging-correlation-validation.sh`
   * **Evidence bundle:** `staging-correlation/response-headers.txt`, `staging-correlation/response-body.json`, and log query screenshots/snippets for `stage-corr-001`.
   * **Verified fields:** `X-Request-ID` echoed, `error.requestId` present, request/security logs contain the same `request_id`.
@@ -171,6 +171,11 @@
   * Keep aliases if needed, but standardize dashboards and queries on `request_id`.
 * **Acceptance criteria**
   * One query template works for all log sources.
+* **Completion record (implementation)**
+  * **Status:** Completed (code changes merged).
+  * **Updates:** normalized request id fields in logging service + logger to emit `request_id` consistently.
+  * **Verification:** run a local/staging request and confirm request-start, request-end, error, and security logs include `request_id`.
+  * **Query template:** `request_id="<REQUEST_ID>"`
 
 **Milestone 3 — Error system consolidation (P1)**
 
@@ -181,6 +186,10 @@
   * Ensure status/code/message are always present; `requestId` injected by handler.
 * **Acceptance criteria**
   * CI rule confirms a single error import path and consistent error shape.
+* **Completion record (implementation)**
+  * **Status:** Completed (code changes merged).
+  * **Updates:** consolidated error helpers/constants and request-id middleware into standardized handler, removed legacy handlers/tests, and added a lint gate to block deprecated error modules.
+  * **Verification:** run `npm --prefix secure-gate-access/server run lint:error-handlers`.
 
 **Milestone 4 — Estate lifecycle completion (P1)**
 
@@ -191,6 +200,10 @@
   * Provide a stable “Estate required” UI with next steps.
 * **Acceptance criteria**
   * Estate-less test user always lands on the correct UI with guidance.
+* **Completion record (implementation)**
+  * **Status:** Completed (operational scripts + UI in place).
+  * **Updates:** added estate assignment audit + assignment scripts, ensured seed data includes `estate_id` when the column exists, and the estate-required UI directs users to estate selection/support.
+  * **Verification:** run `npm --prefix secure-gate-access/server run audit:estate` and, if needed, `npm --prefix secure-gate-access/server run assign:estate -- --use-default` or `--estate-id <id>`.
 
 **Milestone 5 — Staging parity + hardening (P1 → P2)**
 
@@ -201,6 +214,10 @@
   * Simulate multi-tab refresh behavior to avoid 429 loops.
 * **Acceptance criteria**
   * Login → mutation → refresh flow matches production config without surprises.
+* **Completion record (implementation)**
+  * **Status:** In progress.
+  * **Updates:** added a staging parity check script to report CSRF, rate limiting, and CORS/cookie env flags.
+  * **Next check:** run `npm --prefix secure-gate-access/server run check:staging-parity` and validate staging config + multi-tab refresh behavior.
 
 ### Remaining tasks snapshot
 - **P1 Observability pack:** Complete structured auth/refresh logging, standardize legacy 401/403 payloads, and validate requestId propagation in staging. ⚠️

@@ -22,11 +22,38 @@ async function columnExists(tableName, columnName) {
   return res.rows.length > 0;
 }
 
+async function tableExists(tableName) {
+  const res = await dbManager.query(
+    `SELECT 1
+     FROM information_schema.tables
+     WHERE table_name = $1
+     LIMIT 1`,
+    [tableName]
+  );
+  return res.rows.length > 0;
+}
+
+async function getDefaultEstateId() {
+  const hasEstatesTable = await tableExists('estates');
+  if (!hasEstatesTable) return null;
+
+  const result = await dbManager.query(
+    `SELECT id
+     FROM estates
+     ORDER BY id ASC
+     LIMIT 1`
+  );
+
+  return result.rows[0]?.id ?? null;
+}
+
 async function upsertUser(user) {
   const passwordHash = await argon2.hash(user.password);
 
   const hasVerificationToken = await columnExists('users', 'verification_token');
   const hasVerificationExpires = await columnExists('users', 'verification_expires');
+  const hasEstateId = await columnExists('users', 'estate_id');
+  const defaultEstateId = hasEstateId ? await getDefaultEstateId() : null;
 
   const columns = [
     'username',
@@ -54,6 +81,11 @@ async function upsertUser(user) {
     user.notifySms ?? false
   ];
 
+  if (hasEstateId) {
+    columns.push('estate_id');
+    values.push(user.estate_id ?? defaultEstateId);
+  }
+
   if (hasVerificationToken) {
     columns.push('verification_token');
     values.push(null);
@@ -79,6 +111,7 @@ async function upsertUser(user) {
     'area = EXCLUDED.area',
     'notify_email = EXCLUDED.notify_email',
     'notify_sms = EXCLUDED.notify_sms',
+    ...(hasEstateId ? ['estate_id = EXCLUDED.estate_id'] : []),
     'updated_at = NOW()'
   ].join(', ');
 

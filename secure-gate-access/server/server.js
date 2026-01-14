@@ -25,7 +25,7 @@ import loggingService from './src/services/loggingService.js';
 import { correlationIdMiddleware, requestLoggingMiddleware } from './src/middleware/loggingMiddleware.js';
 
 // Enhanced error monitoring imports
-import { createErrorMonitoring, createEnhancedErrorHandler } from './integration/error-monitoring-integration.js';
+import { createErrorMonitoring } from './integration/error-monitoring-integration.js';
 
 // Import migration service for auto-migration on startup
 import migrationService from './src/database/migrationService.js';
@@ -153,10 +153,6 @@ async function initializeHealthMonitoring() {
 async function initializeErrorMonitoring() {
   try {
     errorMonitoring = await createErrorMonitoring();
-    
-    // Set up enhanced error handler
-    const enhancedErrorHandler = createEnhancedErrorHandler(errorMonitoring);
-    app.use(enhancedErrorHandler);
     
     loggingService.logAPI('info', 'Enhanced error monitoring initialized successfully', null, {
       thresholds: ['errorRate', 'security', 'system', 'business'],

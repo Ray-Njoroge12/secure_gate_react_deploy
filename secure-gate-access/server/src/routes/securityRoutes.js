@@ -3,7 +3,7 @@ import express from 'express';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { adminRateLimit } from '../middleware/rateLimitMiddleware.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 
 const router = express.Router();
 

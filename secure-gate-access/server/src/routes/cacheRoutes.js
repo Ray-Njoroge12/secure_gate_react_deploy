@@ -5,7 +5,7 @@ import enhancedSessionManager from '../middleware/enhancedSessionMiddleware.js';
 const sessionManager = enhancedSessionManager;
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 
 // Cache routes factory function to inject Redis service
 export default function createCacheRoutes(redisService) {
