@@ -1,4 +1,5 @@
 // server/src/middleware/roleMiddleware.js
+import { errorResponse } from '../utils/responseFormatter.js';
 export function requireRole(...allowedRoles) {
   return (req, res, next) => {
     try {
@@ -9,12 +10,12 @@ export function requireRole(...allowedRoles) {
 
       if (!userRole) {
         console.log('[ROLE] No role found in req.user');
-        return res.status(401).json({ success: false, message: 'Unauthorized - no role' });
+        return errorResponse(res, 'Unauthorized - no role', 'UNAUTHORIZED', 401, null, req);
       }
 
       if (allowedRoles.length && !allowedRoles.includes(userRole)) {
         console.log(`[ROLE] Role "${userRole}" not in allowed roles [${allowedRoles.join(', ')}]`);
-        return res.status(403).json({ success: false, message: 'Forbidden - insufficient role' });
+        return errorResponse(res, 'Forbidden - insufficient role', 'FORBIDDEN', 403, null, req);
       }
 
       console.log('[ROLE] Role check passed');

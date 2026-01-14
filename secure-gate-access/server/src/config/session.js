@@ -8,6 +8,7 @@ import { RedisStore } from 'connect-redis';
 import { createClient } from 'redis';
 import createMemoryStore from 'memorystore';
 import dotenv from 'dotenv';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 dotenv.config();
 
@@ -237,10 +238,7 @@ export const sessionSecurity = (req, res, next) => {
     if (req.session.fingerprint !== currentFingerprint) {
       console.warn('⚠️  Session fingerprint mismatch - possible hijacking attempt');
       sessionUtils.destroySession(req);
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Session security violation' 
-      });
+      return errorResponse(res, 'Session security violation', 'SESSION_SECURITY_VIOLATION', 401, null, req);
     }
   }
   

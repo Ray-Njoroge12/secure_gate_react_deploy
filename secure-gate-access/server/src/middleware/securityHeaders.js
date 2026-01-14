@@ -1,6 +1,7 @@
 import helmet from 'helmet';
 import { randomBytes } from 'crypto';
 import loggingService from '../services/loggingService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 /**
  * Comprehensive security headers configuration
@@ -236,14 +237,13 @@ export const csrfProtection = (req, res, next) => {
     loggingService.logSecurity('warn', 'CSRF validation attempted without session', {
       path: req.path,
       method: req.method,
-      requestId: req.requestId
+      requestId: req.requestId,
+      route: req.originalUrl,
+      status: 500,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    return res.status(500).json({
-      success: false,
-      message: 'Session not initialized',
-      error: { code: 'NO_SESSION', requestId: req.requestId },
-      timestamp: new Date().toISOString()
-    });
+    return errorResponse(res, 'Session not initialized', 'NO_SESSION', 500, null, req);
   }
   
   // Check for CSRF token from multiple sources
@@ -261,14 +261,13 @@ export const csrfProtection = (req, res, next) => {
     loggingService.logSecurity('warn', 'CSRF token missing', {
       path: req.path,
       method: req.method,
-      requestId: req.requestId
+      requestId: req.requestId,
+      route: req.originalUrl,
+      status: 403,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    return res.status(403).json({
-      success: false,
-      message: 'CSRF token missing',
-      error: { code: 'CSRF_TOKEN_MISSING', requestId: req.requestId },
-      timestamp: new Date().toISOString()
-    });
+    return errorResponse(res, 'CSRF token missing', 'CSRF_TOKEN_MISSING', 403, null, req);
   }
 
   if (token !== sessionToken) {
@@ -276,17 +275,13 @@ export const csrfProtection = (req, res, next) => {
       path: req.path,
       method: req.method,
       ip: req.ip,
-      requestId: req.requestId
+      requestId: req.requestId,
+      route: req.originalUrl,
+      status: 403,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    return res.status(403).json({
-      success: false,
-      message: 'Invalid CSRF token',
-      error: {
-        code: 'CSRF_VALIDATION_FAILED',
-        requestId: req.requestId
-      },
-      timestamp: new Date().toISOString()
-    });
+    return errorResponse(res, 'Invalid CSRF token', 'CSRF_VALIDATION_FAILED', 403, null, req);
   }
   
   next();

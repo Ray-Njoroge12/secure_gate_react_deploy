@@ -17,6 +17,7 @@ import notificationMetricsService from '../services/notificationMetricsService.j
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
 import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempotencyResponse } from '../services/idempotencyService.js';
+import { buildErrorPayload, errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -25,7 +26,11 @@ const webhookLimiter = rateLimit({
   max: 60,
   message: 'Too many webhook requests, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many webhook requests, please try again later.', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
 });
 
 const validateWebhookPayload = (schema) => (req, res, next) => {
@@ -280,7 +285,7 @@ router.post('/mailgun/delivered', webhookLimiter, validateWebhookPayload(mailgun
     const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
     if (!mailgunVerification.valid) {
       logWebhookAuthFailure('mailgun', mailgunVerification.reason, req, { timestamp });
-      return res.status(401).json({ error: 'Invalid signature' });
+      return errorResponse(res, 'Invalid signature', 'UNAUTHORIZED', 401, null, req);
     }
 
     const messageId = parsedEvent?.messageId;
@@ -328,7 +333,7 @@ router.post('/mailgun/failed', webhookLimiter, validateWebhookPayload(mailgunWeb
     const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
     if (!mailgunVerification.valid) {
       logWebhookAuthFailure('mailgun', mailgunVerification.reason, req, { timestamp });
-      return res.status(401).json({ error: 'Invalid signature' });
+      return errorResponse(res, 'Invalid signature', 'UNAUTHORIZED', 401, null, req);
     }
 
     const messageId = parsedEvent?.messageId;
@@ -380,7 +385,7 @@ router.post('/mailgun/bounced', webhookLimiter, validateWebhookPayload(mailgunWe
     const mailgunVerification = verifyMailgunSignature(timestamp, token, signature);
     if (!mailgunVerification.valid) {
       logWebhookAuthFailure('mailgun', mailgunVerification.reason, req, { timestamp });
-      return res.status(401).json({ error: 'Invalid signature' });
+      return errorResponse(res, 'Invalid signature', 'UNAUTHORIZED', 401, null, req);
     }
 
     const messageId = parsedEvent?.messageId;
@@ -431,7 +436,7 @@ router.post('/africas-talking/delivery', webhookLimiter, validateWebhookPayload(
     const africaVerification = verifyAfricasTalkingAuth(req);
     if (!africaVerification.valid) {
       logWebhookAuthFailure('africas_talking', africaVerification.reason, req, africaVerification.details || {});
-      return res.status(401).send('Unauthorized');
+      return errorResponse(res, 'Unauthorized', 'UNAUTHORIZED', 401, null, req);
     }
 
     const smsProvider = getSmsProvider('africastalking');
@@ -489,7 +494,7 @@ router.post('/notification/status', webhookLimiter, validateWebhookPayload(gener
     // Verify API key
     if (!apiKey || !safeCompareSignature(process.env.NOTIFICATION_WEBHOOK_API_KEY, apiKey)) {
       logWebhookAuthFailure('generic', 'invalid_api_key', req);
-      return res.status(401).json({ error: 'Invalid API key' });
+      return errorResponse(res, 'Invalid API key', 'UNAUTHORIZED', 401, null, req);
     }
     const { message_id, status, provider, details } = req.body;
 

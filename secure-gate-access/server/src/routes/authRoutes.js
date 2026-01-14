@@ -8,7 +8,7 @@ import { userService } from '../services/userService.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import loggingService from '../services/loggingService.js';
 import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.js';
-import { successResponse, createdResponse, validationErrorResponse, unauthorizedResponse, internalErrorResponse } from '../utils/responseFormatter.js';
+import { successResponse, createdResponse, validationErrorResponse, unauthorizedResponse, internalErrorResponse, errorResponse } from '../utils/responseFormatter.js';
 import { validatePasswordResetRequest, validatePasswordReset, validateRegistration, validateLogin, validateRefreshRequest } from '../validation/authValidation.js';
 import emailService from '../services/emailService.js';
 
@@ -29,14 +29,14 @@ const authLimiter = rateLimit({
     loggingService.warn('Login rate limit exceeded', {
       ip: req.ip,
       userAgent: req.get('user-agent'),
-      requestId: req.requestId
+      requestId: req.requestId,
+      route: req.originalUrl,
+      method: req.method,
+      status: options.statusCode,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    res.status(options.statusCode).json({
-      success: false,
-      message: options.message,
-      error: { code: 'AUTH_RATE_LIMIT', requestId: req.requestId },
-      timestamp: new Date().toISOString()
-    });
+    errorResponse(res, options.message, 'AUTH_RATE_LIMIT', options.statusCode, null, req);
   },
   skip: (req) => {
     // Skip rate limiting in development mode or for health endpoints
@@ -55,14 +55,14 @@ const refreshLimiter = rateLimit({
     loggingService.warn('Refresh rate limit exceeded', {
       ip: req.ip,
       userAgent: req.get('user-agent'),
-      requestId: req.requestId
+      requestId: req.requestId,
+      route: req.originalUrl,
+      method: req.method,
+      status: options.statusCode,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    res.status(options.statusCode).json({
-      success: false,
-      message: options.message,
-      error: { code: 'REFRESH_RATE_LIMIT' },
-      timestamp: new Date().toISOString()
-    });
+    errorResponse(res, options.message, 'REFRESH_RATE_LIMIT', options.statusCode, null, req);
   },
   skip: (req) => {
     if (isDev) return true;
@@ -492,29 +492,83 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
   const refreshToken = isWebClient ? req.cookies?.refreshToken : (getBearerToken(req) || req.body?.refreshToken);
 
   if (!refreshToken) {
+    loggingService.warn('Refresh token missing', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 400,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null,
+      requestId: req.requestId
+    });
     throw new AppError('Refresh token required', 400, 'VALIDATION_ERROR', {
       field: 'refreshToken'
     });
   }
 
-  const decoded = await tokenService.verifyRefreshToken(refreshToken);
+  let decoded;
+  try {
+    decoded = await tokenService.verifyRefreshToken(refreshToken);
+  } catch (error) {
+    loggingService.warn('Refresh token verification failed', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      requestId: req.requestId,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null,
+      error: error.name
+    });
+    throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
+  }
   const userId = Number(decoded.sub || decoded.userId);
   const user = await userService.getUserById(userId);
   
   if (!user) {
+    loggingService.warn('Refresh token user not found', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      requestId: req.requestId,
+      user_id: userId || null,
+      estate_id: null
+    });
     throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
   }
 
   const storedToken = await tokenService.getRefreshTokenRecord(refreshToken);
   if (!storedToken || storedToken.is_revoked) {
+    loggingService.warn('Refresh token revoked or missing', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      requestId: req.requestId,
+      user_id: user.id,
+      estate_id: user.estate_id ?? null
+    });
     throw new AppError('Refresh token has been revoked', 401, 'INVALID_TOKEN');
   }
 
   if (storedToken.user_id !== user.id) {
+    loggingService.warn('Refresh token user mismatch', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      requestId: req.requestId,
+      user_id: user.id,
+      estate_id: user.estate_id ?? null
+    });
     throw new AppError('Refresh token mismatch', 401, 'INVALID_TOKEN');
   }
 
   if (storedToken.expires_at && new Date(storedToken.expires_at) <= new Date()) {
+    loggingService.warn('Refresh token expired', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      requestId: req.requestId,
+      user_id: user.id,
+      estate_id: user.estate_id ?? null
+    });
     throw new AppError('Refresh token expired', 401, 'INVALID_TOKEN');
   }
 

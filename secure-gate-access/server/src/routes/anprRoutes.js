@@ -9,6 +9,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import anprService from '../services/anprService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -21,7 +22,7 @@ router.get('/status', authenticateToken, async (req, res) => {
   const { role } = req.user;
 
   if (!['admin', 'guard'].includes(role)) {
-    return res.status(403).json({ success: false, error: 'Unauthorized' });
+    return errorResponse(res, 'Unauthorized', 'FORBIDDEN', 403, null, req);
   }
 
   res.json({
@@ -45,7 +46,7 @@ router.post('/lookup', authenticateToken, attachRequestAudit, async (req, res) =
     const { plate } = req.body;
 
     if (!['admin', 'guard'].includes(role)) {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+      return errorResponse(res, 'Unauthorized', 'FORBIDDEN', 403, null, req);
     }
 
     if (!plate) {
@@ -84,7 +85,7 @@ router.post('/webhook', async (req, res) => {
       await anprService.logAnprEvent('webhook_invalid', plate || 'unknown', { 
         reason: 'Invalid signature' 
       });
-      return res.status(401).json({ success: false, error: 'Invalid signature' });
+      return errorResponse(res, 'Invalid signature', 'UNAUTHORIZED', 401, null, req);
     }
 
     if (!plate) {
@@ -141,7 +142,7 @@ router.post('/barrier/open', authenticateToken, attachRequestAudit, async (req, 
     const { barrier_id, reason, plate } = req.body;
 
     if (!['admin', 'guard'].includes(role)) {
-      return res.status(403).json({ success: false, error: 'Unauthorized' });
+      return errorResponse(res, 'Unauthorized', 'FORBIDDEN', 403, null, req);
     }
 
     const result = await anprService.requestBarrierOpen({

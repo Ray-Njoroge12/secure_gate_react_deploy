@@ -17,6 +17,7 @@ import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
+import { buildErrorPayload } from '../utils/responseFormatter.js';
 
 import { registerWalkIn, getTodayWalkIns } from '../controllers/walkInController.js';
 import {
@@ -32,13 +33,21 @@ const router = express.Router();
 const inviteLookupLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 40,
-  message: 'Too many invite lookups, please try again later.'
+  message: 'Too many invite lookups, please try again later.',
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many invite lookups, please try again later.', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
 });
 
 const otpLimit = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 5,
-  message: 'Too many OTP attempts, please try again later.'
+  message: 'Too many OTP attempts, please try again later.',
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many OTP attempts, please try again later.', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
 });
 
 /**
@@ -136,6 +145,11 @@ const visitorCreationLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many visitor creation attempts, please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '15 minutes';
+    res.status(429).json(response);
+  }
 });
 
 /**

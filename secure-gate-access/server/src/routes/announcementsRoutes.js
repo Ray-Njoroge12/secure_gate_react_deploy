@@ -6,6 +6,7 @@
 import express from 'express';
 import announcementsService from '../services/announcementsService.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -112,10 +113,7 @@ router.post('/', authMiddleware, async (req, res) => {
   try {
     // Check admin role
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can create announcements'
-      });
+      return errorResponse(res, 'Only admins can create announcements', 'FORBIDDEN', 403, null, req);
     }
 
     const { title, content, priority, targetAudience, expiresAt, isPinned } = req.body;
@@ -156,10 +154,7 @@ router.post('/', authMiddleware, async (req, res) => {
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can update announcements'
-      });
+      return errorResponse(res, 'Only admins can update announcements', 'FORBIDDEN', 403, null, req);
     }
 
     const announcement = await announcementsService.updateAnnouncement(
@@ -195,10 +190,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can delete announcements'
-      });
+      return errorResponse(res, 'Only admins can delete announcements', 'FORBIDDEN', 403, null, req);
     }
 
     const deleted = await announcementsService.deleteAnnouncement(req.params.id, req.user.id);
@@ -229,10 +221,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 router.get('/:id/stats', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can view announcement stats'
-      });
+      return errorResponse(res, 'Only admins can view announcement stats', 'FORBIDDEN', 403, null, req);
     }
 
     const stats = await announcementsService.getAnnouncementStats(req.params.id);
@@ -264,10 +253,7 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
 router.get('/admin/all', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can view all announcements'
-      });
+      return errorResponse(res, 'Only admins can view all announcements', 'FORBIDDEN', 403, null, req);
     }
 
     const includeExpired = req.query.includeExpired === 'true';
