@@ -135,7 +135,7 @@
 - **Implemented:** Shared role policy helper now standardizes per-route checks, policy map refreshed, and enforcement tests cover guard management, resident features, visitor management, event management, and admin-only monitoring/metrics/reporting endpoints (including delivery stats). ✅
 
 **P1: Observability**
-- **Partially implemented:** Logging service and audit middleware exist; CSRF/session failures emit structured security logs with request IDs and user/estate context, rate-limit events are logged with structured context, and auth/estate logs include estate context, but coverage is still incomplete. ⚠️
+- **Partially implemented:** Logging service and audit middleware exist; CSRF/session failures emit structured security logs with request IDs and user/estate context, rate-limit events are logged with structured context, auth/estate logs include estate context, login failures + auth/refresh success events are logged, and legacy 401/403 payloads were standardized for requestId propagation, but staging requestId validation is still pending. ⚠️
 
 **P2: Frontend UX hardening**
 - **Implemented:** Centralized auth transitions with a shared state machine, removed remaining `window.location.href` navigation from guard/resident dashboards and error boundaries, and aligned session-expiry messaging across handlers. ✅ (closed)
@@ -215,9 +215,16 @@
 * **Acceptance criteria**
   * Login → mutation → refresh flow matches production config without surprises.
 * **Completion record (implementation)**
-  * **Status:** In progress.
-  * **Updates:** added a staging parity check script to report CSRF, rate limiting, and CORS/cookie env flags.
+  * **Status:** Completed (implementation).
+  * **Updates:** staging parity script now reports cookie/proxy flags, staging defaults match production for cookie attributes and transport security, staging env validation enforces CSRF/rate limiting expectations, and refresh flow includes a short reuse window for multi-tab refresh collisions.
   * **Next check:** run `npm --prefix secure-gate-access/server run check:staging-parity` and validate staging config + multi-tab refresh behavior.
+
+### Remaining implementations
+- **Milestone 1 — Staging correlation validation:** run the correlation validation script and capture evidence bundle. ⚠️
+- **P1 Observability pack:** complete structured auth/refresh logging and standardize legacy 401/403 payloads; validate requestId propagation in staging. ⚠️
+
+### Remaining tasks (current focus)
+- Validate requestId propagation in staging by running `./scripts/run-staging-correlation-validation.sh` and capturing the evidence bundle. ⚠️
 
 ### Remaining tasks snapshot
 - **P1 Observability pack:** Complete structured auth/refresh logging, standardize legacy 401/403 payloads, and validate requestId propagation in staging. ⚠️
