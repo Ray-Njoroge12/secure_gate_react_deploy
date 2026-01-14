@@ -6,6 +6,7 @@
 
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 import {
   getAnalyticsOverview,
   getVisitorMetrics,
@@ -21,10 +22,7 @@ const requireAdmin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     return next();
   }
-  return res.status(403).json({
-    success: false,
-    error: 'Admin access required'
-  });
+  return errorResponse(res, 'Admin access required', 'FORBIDDEN', 403, null, req);
 };
 
 /**

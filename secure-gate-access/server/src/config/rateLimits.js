@@ -5,7 +5,13 @@
  */
 
 import rateLimit from 'express-rate-limit';
+import { buildErrorPayload } from '../utils/responseFormatter.js';
 import slowDown from 'express-slow-down';
+
+const rateLimitHandler = (message) => (req, res) => {
+  const response = buildErrorPayload(req, res, message, 'RATE_LIMITED');
+  res.status(429).json(response);
+};
 
 /**
  * Rate limiting configuration profiles
@@ -97,7 +103,8 @@ export const RATE_LIMIT_STRATEGIES = {
     },
     message: 'Rate limit exceeded. Please slow down your requests.',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    handler: (req, res) => rateLimitHandler('Rate limit exceeded. Please slow down your requests.')(req, res)
   },
 
   // Adaptive rate limiting - adjusts based on system load
@@ -113,7 +120,8 @@ export const RATE_LIMIT_STRATEGIES = {
     },
     message: 'System under load. Rate limiting adjusted.',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    handler: (req, res) => rateLimitHandler('System under load. Rate limiting adjusted.')(req, res)
   },
 
   // Geographic rate limiting - different limits by region
@@ -134,7 +142,8 @@ export const RATE_LIMIT_STRATEGIES = {
     },
     message: 'Rate limit exceeded for your region.',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    handler: (req, res) => rateLimitHandler('Rate limit exceeded for your region.')(req, res)
   }
 };
 
@@ -253,20 +262,14 @@ export const createRateLimit = (profile, options = {}) => {
     handler: (req, res) => {
       const retryAfter = Math.ceil(req.rateLimit.resetTime / 1000);
       
-      res.status(429).json({
-        success: false,
-        message: config.message,
-        error: {
-          code: 'RATE_LIMIT_EXCEEDED',
-          details: {
-            limit: req.rateLimit.limit,
-            remaining: req.rateLimit.remaining,
-            resetTime: new Date(req.rateLimit.resetTime).toISOString(),
-            retryAfter: retryAfter
-          }
-        },
-        timestamp: new Date().toISOString()
-      });
+      const response = buildErrorPayload(req, res, config.message, 'RATE_LIMIT_EXCEEDED');
+      response.error.details = {
+        limit: req.rateLimit.limit,
+        remaining: req.rateLimit.remaining,
+        resetTime: new Date(req.rateLimit.resetTime).toISOString(),
+        retryAfter: retryAfter
+      };
+      res.status(429).json(response);
     }
   };
 
@@ -425,7 +428,5 @@ export default {
   rateLimitAnalytics,
   getClientIP
 };
-
-
 
 

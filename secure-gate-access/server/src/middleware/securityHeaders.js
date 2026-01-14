@@ -1,7 +1,7 @@
 import helmet from 'helmet';
 import { randomBytes } from 'crypto';
 import loggingService from '../services/loggingService.js';
-import { buildErrorResponse } from './standardizedErrorHandler.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 /**
  * Comprehensive security headers configuration
@@ -239,16 +239,13 @@ export const csrfProtection = (req, res, next) => {
       status: 500,
       route: req.path,
       method: req.method,
-      user_id: req.user?.id ?? null,
-      estate_id: req.user?.estate_id ?? null,
       requestId: req.requestId,
-      correlationId: req.correlationId
+      route: req.originalUrl,
+      status: 500,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    return res.status(500).json(buildErrorResponse({
-      message: 'Session not initialized',
-      errorCode: 'NO_SESSION',
-      req
-    }));
+    return errorResponse(res, 'Session not initialized', 'NO_SESSION', 500, null, req);
   }
   
   // Check for CSRF token from multiple sources
@@ -268,16 +265,13 @@ export const csrfProtection = (req, res, next) => {
       status: 403,
       route: req.path,
       method: req.method,
-      user_id: req.user?.id ?? null,
-      estate_id: req.user?.estate_id ?? null,
       requestId: req.requestId,
-      correlationId: req.correlationId
+      route: req.originalUrl,
+      status: 403,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    return res.status(403).json(buildErrorResponse({
-      message: 'CSRF token missing',
-      errorCode: 'CSRF_TOKEN_MISSING',
-      req
-    }));
+    return errorResponse(res, 'CSRF token missing', 'CSRF_TOKEN_MISSING', 403, null, req);
   }
 
   if (token !== sessionToken) {
@@ -287,16 +281,13 @@ export const csrfProtection = (req, res, next) => {
       route: req.path,
       method: req.method,
       ip: req.ip,
-      user_id: req.user?.id ?? null,
-      estate_id: req.user?.estate_id ?? null,
       requestId: req.requestId,
-      correlationId: req.correlationId
+      route: req.originalUrl,
+      status: 403,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
     });
-    return res.status(403).json(buildErrorResponse({
-      message: 'Invalid CSRF token',
-      errorCode: 'CSRF_VALIDATION_FAILED',
-      req
-    }));
+    return errorResponse(res, 'Invalid CSRF token', 'CSRF_VALIDATION_FAILED', 403, null, req);
   }
   
   next();

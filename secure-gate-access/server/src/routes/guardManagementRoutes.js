@@ -5,8 +5,8 @@
 
 import express from 'express';
 import guardManagementService from '../services/guardManagementService.js';
-import { authenticateToken, requireEstate } from '../middleware/authMiddleware.js';
-import { requireRolePolicy } from '../middleware/rolePolicy.js';
+import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -349,10 +349,7 @@ router.get('/:guardId/performance', authenticateToken, requireEstate, requireRol
 
     // Guards can only view their own metrics
     if (req.user.role === 'guard' && req.user.id !== parseInt(guardId)) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only view your own performance metrics'
-      });
+      return errorResponse(res, 'You can only view your own performance metrics', 'FORBIDDEN', 403, null, req);
     }
 
     const metrics = await guardManagementService.getPerformanceMetrics(
@@ -549,10 +546,7 @@ router.get('/:guardId/training', authenticateToken, requireEstate, requireRolePo
 
     // Guards can only view their own training
     if (req.user.role === 'guard' && req.user.id !== parseInt(guardId)) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only view your own training records'
-      });
+      return errorResponse(res, 'You can only view your own training records', 'FORBIDDEN', 403, null, req);
     }
 
     const training = await guardManagementService.getTrainingRecords(guardId, req.user.estate_id);
