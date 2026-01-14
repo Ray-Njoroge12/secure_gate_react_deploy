@@ -4,8 +4,9 @@
  */
 
 import axios from 'axios';
-import { getCSRFToken } from './csrf';
 import logger from './logger';
+import { navigateToEstateRequired, navigateToLogin } from './authNavigation';
+import { authStateMachine } from './authStateMachine';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -17,6 +18,50 @@ const apiClient = axios.create({
     'X-Requested-With': 'XMLHttpRequest'
   }
 });
+
+let refreshPromise = null;
+
+const waitForOnline = () => {
+  if (navigator.onLine !== false) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const handleOnline = () => {
+      window.removeEventListener('online', handleOnline);
+      resolve();
+    };
+    window.addEventListener('online', handleOnline, { once: true });
+  });
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export const refreshAccessTokenWithRetry = async () => {
+  const maxRetries = 3;
+  let attempt = 0;
+  let lastError;
+
+  while (attempt < maxRetries) {
+    try {
+      await refreshAccessToken();
+      return;
+    } catch (error) {
+      lastError = error;
+      const offline = navigator.onLine === false;
+      if (!offline) {
+        throw error;
+      }
+
+      attempt += 1;
+      await waitForOnline();
+      const backoff = Math.min(1000 * 2 ** (attempt - 1), 8000);
+      await delay(backoff);
+    }
+  }
+
+  throw lastError;
+};
 
 // Request interceptor for auth and CSRF
 apiClient.interceptors.request.use(
@@ -49,6 +94,17 @@ apiClient.interceptors.request.use(
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => {
+    const csrfHeader = response.headers?.['x-csrf-token'];
+    if (csrfHeader) {
+      let metaTag = document.querySelector('meta[name="csrf-token"]');
+      if (!metaTag) {
+        metaTag = document.createElement('meta');
+        metaTag.name = 'csrf-token';
+        document.head.appendChild(metaTag);
+      }
+      metaTag.content = csrfHeader;
+    }
+
     // Log response in development
     if (process.env.NODE_ENV === 'development') {
       logger.debug(`✅ Response from ${response.config.url}:`, response.data);
@@ -86,31 +142,65 @@ apiClient.interceptors.response.use(
 
     // Handle 401 - Unauthorized
     if (error.response.status === 401) {
+      const isAuthEndpoint = originalRequest?.url?.includes('/api/auth/');
+      if (!isAuthEndpoint && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          if (!refreshPromise) {
+            authStateMachine.transition('REFRESH_START');
+            refreshPromise = refreshAccessTokenWithRetry();
+          }
+          await refreshPromise;
+          refreshPromise = null;
+          authStateMachine.transition('REFRESH_SUCCESS');
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          refreshPromise = null;
+          logger.warn('🔒 Token refresh failed', refreshError);
+          authStateMachine.transition('REFRESH_FAILURE', { reason: 'refresh_failed' });
+        }
+      }
+
       // NOTE: httpOnly cookies are cleared by backend on 401
       // No need to clear localStorage tokens
-      
       // Don't redirect if already on login page
       if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+        navigateToLogin();
       }
+      authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
       
       return Promise.reject({
-        message: 'Session expired. Please login again.',
+        message: 'Your session has expired. Please log in again.',
         code: 'UNAUTHORIZED'
       });
     }
 
-    // Handle 403 - Forbidden (CSRF)
+    // Handle 403 - Forbidden (estate required or CSRF)
     if (error.response.status === 403) {
+      const estateCode = error.response.data?.error?.code;
+      if (estateCode === 'ESTATE_REQUIRED' || estateCode === 'ESTATE_INVALID') {
+        if (!window.location.pathname.includes('/estate-required')) {
+          navigateToEstateRequired({ code: estateCode });
+        }
+        authStateMachine.transition('ESTATE_REQUIRED', { reason: estateCode });
+        return Promise.reject({
+          message: error.response.data?.message || 'Estate assignment required.',
+          code: estateCode
+        });
+      }
+
       if (error.response.data?.error?.code === 'CSRF_TOKEN_MISSING' || 
           error.response.data?.error?.code === 'CSRF_VALIDATION_FAILED') {
         logger.error('🛡️ CSRF token error');
         
         // Try to refresh CSRF token
         try {
-          await refreshCSRFToken();
-          // Retry the original request
-          return apiClient(originalRequest);
+          if (!originalRequest._csrfRetry) {
+            originalRequest._csrfRetry = true;
+            await refreshCSRFToken();
+            // Retry the original request
+            return apiClient(originalRequest);
+          }
         } catch (csrfError) {
           logger.error('Failed to refresh CSRF token:', csrfError);
         }
@@ -185,6 +275,15 @@ async function refreshCSRFToken() {
     logger.error('Failed to refresh CSRF token:', error);
     throw error;
   }
+}
+
+// Helper function to refresh access token
+async function refreshAccessToken() {
+  const baseURL = apiClient.defaults.baseURL;
+  await axios.post('/api/auth/refresh', {}, {
+    baseURL,
+    withCredentials: true
+  });
 }
 
 // API methods with timeout handling

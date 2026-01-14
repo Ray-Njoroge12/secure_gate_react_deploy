@@ -7,7 +7,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
-import { successResponse } from '../utils/responseFormatter.js';
+import { errorResponse, successResponse } from '../utils/responseFormatter.js';
 import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
 import * as whatsappService from '../services/whatsappService.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
@@ -37,7 +37,7 @@ router.get('/webhook', (req, res) => {
   
   // Verification failed
   console.warn('[WhatsApp] Webhook verification failed');
-  return res.sendStatus(403);
+  return errorResponse(res, 'Webhook verification failed', 'FORBIDDEN', 403, null, req);
 });
 
 /**
@@ -61,7 +61,7 @@ router.post('/webhook', asyncHandler(async (req, res) => {
         notificationMetricsService.recordWebhookSignatureFailure('whatsapp', 'invalid_signature', {
           headerSignature: signature
         });
-        return res.sendStatus(403);
+        return errorResponse(res, 'Invalid signature', 'FORBIDDEN', 403, null, req);
       }
     }
   }
@@ -99,7 +99,7 @@ router.post('/webhook', asyncHandler(async (req, res) => {
   }
   
   // Not a WhatsApp webhook
-  return res.sendStatus(404);
+  return errorResponse(res, 'Webhook not found', 'NOT_FOUND', 404, null, req);
 }));
 
 /**

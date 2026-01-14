@@ -7,13 +7,15 @@
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import { PASS_STATUS } from '../constants/statuses.js';
 import logger from '../config/logger.js';
+import { errorResponse, successResponse } from '../utils/responseFormatter.js';
 import websocketService from '../services/websocketService.js';
 
 const dbManager = { query: (text, params) => db.query(text, params) };
 
 // Helper functions for consistent responses
-const respond = (res, data) => res.json({ success: true, data });
-const respondError = (res, status, message) => res.status(status).json({ success: false, message });
+const respond = (res, data) => successResponse(res, data);
+const respondError = (req, res, status, message, code) =>
+  errorResponse(res, message, code, status, null, req);
 
 /**
  * Request approval for a walk-in visitor
@@ -24,7 +26,7 @@ export const requestApproval = async (req, res) => {
   try {
     // Authorization: Only guards can request approval
     if (!req.user || req.user.role !== 'guard') {
-      return respondError(res, 403, 'Only guards can request visitor approval');
+      return respondError(req, res, 403, 'Only guards can request visitor approval', 'FORBIDDEN');
     }
 
     const { id } = req.params;
@@ -38,27 +40,27 @@ export const requestApproval = async (req, res) => {
     );
     
     if (!vRes.rows[0]) {
-      return respondError(res, 404, 'Visitor not found');
+      return respondError(req, res, 404, 'Visitor not found', 'NOT_FOUND');
     }
 
     const visitor = vRes.rows[0];
 
     // Validation: Must have resident assigned
     if (!visitor.resident_id) {
-      return respondError(res, 422, 'Cannot request approval: visitor has no assigned resident');
+      return respondError(req, res, 422, 'Cannot request approval: visitor has no assigned resident', 'VALIDATION_ERROR');
     }
 
     // Validation: Check current status
     if (visitor.status === PASS_STATUS.PENDING_APPROVAL) {
-      return respondError(res, 409, 'Approval already requested for this visitor');
+      return respondError(req, res, 409, 'Approval already requested for this visitor', 'CONFLICT');
     }
 
     if (visitor.status === PASS_STATUS.APPROVED) {
-      return respondError(res, 409, 'Visitor already approved');
+      return respondError(req, res, 409, 'Visitor already approved', 'CONFLICT');
     }
 
     if (visitor.status === PASS_STATUS.REJECTED) {
-      return respondError(res, 409, 'Visitor was rejected');
+      return respondError(req, res, 409, 'Visitor was rejected', 'CONFLICT');
     }
 
     // Update visitor status to PENDING_APPROVAL
@@ -103,7 +105,7 @@ export const requestApproval = async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to request visitor approval:', error);
-    respondError(res, 500, 'Failed to request approval');
+    respondError(req, res, 500, 'Failed to request approval', 'INTERNAL_ERROR');
   }
 };
 
@@ -116,7 +118,7 @@ export const approveVisitor = async (req, res) => {
   try {
     // Authorization: Only residents can approve
     if (!req.user || req.user.role !== 'resident') {
-      return respondError(res, 403, 'Only residents can approve visitors');
+      return respondError(req, res, 403, 'Only residents can approve visitors', 'FORBIDDEN');
     }
 
     const { id } = req.params;
@@ -130,19 +132,19 @@ export const approveVisitor = async (req, res) => {
     );
     
     if (!vRes.rows[0]) {
-      return respondError(res, 404, 'Visitor not found');
+      return respondError(req, res, 404, 'Visitor not found', 'NOT_FOUND');
     }
 
     const visitor = vRes.rows[0];
 
     // Authorization: Only the assigned resident can approve
     if (visitor.resident_id !== residentId) {
-      return respondError(res, 403, 'You can only approve your own visitors');
+      return respondError(req, res, 403, 'You can only approve your own visitors', 'FORBIDDEN');
     }
 
     // Validation: Must be in PENDING_APPROVAL status
     if (visitor.status !== PASS_STATUS.PENDING_APPROVAL) {
-      return respondError(res, 422, `Cannot approve: visitor status is ${visitor.status}`);
+      return respondError(req, res, 422, `Cannot approve: visitor status is ${visitor.status}`, 'VALIDATION_ERROR');
     }
 
     // Update visitor status to APPROVED
@@ -192,7 +194,7 @@ export const approveVisitor = async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to approve visitor:', error);
-    respondError(res, 500, 'Failed to approve visitor');
+    respondError(req, res, 500, 'Failed to approve visitor', 'INTERNAL_ERROR');
   }
 };
 
@@ -205,7 +207,7 @@ export const rejectVisitor = async (req, res) => {
   try {
     // Authorization: Only residents can reject
     if (!req.user || req.user.role !== 'resident') {
-      return respondError(res, 403, 'Only residents can reject visitors');
+      return respondError(req, res, 403, 'Only residents can reject visitors', 'FORBIDDEN');
     }
 
     const { id } = req.params;
@@ -219,19 +221,19 @@ export const rejectVisitor = async (req, res) => {
     );
     
     if (!vRes.rows[0]) {
-      return respondError(res, 404, 'Visitor not found');
+      return respondError(req, res, 404, 'Visitor not found', 'NOT_FOUND');
     }
 
     const visitor = vRes.rows[0];
 
     // Authorization: Only the assigned resident can reject
     if (visitor.resident_id !== residentId) {
-      return respondError(res, 403, 'You can only reject your own visitors');
+      return respondError(req, res, 403, 'You can only reject your own visitors', 'FORBIDDEN');
     }
 
     // Validation: Must be in PENDING_APPROVAL status
     if (visitor.status !== PASS_STATUS.PENDING_APPROVAL) {
-      return respondError(res, 422, `Cannot reject: visitor status is ${visitor.status}`);
+      return respondError(req, res, 422, `Cannot reject: visitor status is ${visitor.status}`, 'VALIDATION_ERROR');
     }
 
     // Update visitor status to REJECTED
@@ -277,7 +279,7 @@ export const rejectVisitor = async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to reject visitor:', error);
-    respondError(res, 500, 'Failed to reject visitor');
+    respondError(req, res, 500, 'Failed to reject visitor', 'INTERNAL_ERROR');
   }
 };
 
@@ -290,7 +292,7 @@ export const getPendingApprovals = async (req, res) => {
   try {
     // Authorization: Only residents can view their pending approvals
     if (!req.user || req.user.role !== 'resident') {
-      return respondError(res, 403, 'Only residents can view pending approvals');
+      return respondError(req, res, 403, 'Only residents can view pending approvals', 'FORBIDDEN');
     }
 
     const residentId = req.user.id;
@@ -321,7 +323,7 @@ export const getPendingApprovals = async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to fetch pending approvals:', error);
-    respondError(res, 500, 'Failed to fetch pending approvals');
+    respondError(req, res, 500, 'Failed to fetch pending approvals', 'INTERNAL_ERROR');
   }
 };
 
@@ -334,7 +336,7 @@ export const getApprovalHistory = async (req, res) => {
   try {
     // Authorization: Only residents can view their approval history
     if (!req.user || req.user.role !== 'resident') {
-      return respondError(res, 403, 'Only residents can view approval history');
+      return respondError(req, res, 403, 'Only residents can view approval history', 'FORBIDDEN');
     }
 
     const residentId = req.user.id;
@@ -374,7 +376,7 @@ export const getApprovalHistory = async (req, res) => {
 
   } catch (error) {
     logger.error('Failed to fetch approval history:', error);
-    respondError(res, 500, 'Failed to fetch approval history');
+    respondError(req, res, 500, 'Failed to fetch approval history', 'INTERNAL_ERROR');
   }
 };
 

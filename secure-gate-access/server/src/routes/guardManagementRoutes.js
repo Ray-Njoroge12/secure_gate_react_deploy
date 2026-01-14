@@ -6,15 +6,26 @@
 import express from 'express';
 import guardManagementService from '../services/guardManagementService.js';
 import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
+
+const requireRolePolicy = (policy) => {
+  switch (policy) {
+    case 'adminOnly': return requireRole('admin');
+    case 'guardOnly': return requireRole('guard');
+    case 'adminOrGuard': return requireRole(['admin', 'guard']);
+    default: return requireRole('admin');
+  }
+};
 
 /**
  * @route GET /api/guards
  * @desc Get all guards with performance data
  * @access Admin only
  */
-router.get('/', authenticateToken, requireEstate, requireRole(['admin']), async (req, res) => {
+router.get('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const guards = await guardManagementService.getGuards(req.user.estate_id);
 
@@ -36,7 +47,7 @@ router.get('/', authenticateToken, requireEstate, requireRole(['admin']), async 
  * @desc Get guard dashboard data
  * @access Guard role
  */
-router.get('/dashboard', authenticateToken, requireEstate, requireRole(['guard']), async (req, res) => {
+router.get('/dashboard', authenticateToken, requireEstate, requireRolePolicy('guardOnly'), async (req, res) => {
   try {
     const guardId = req.user.id;
     const estateId = req.user.estate_id;
@@ -61,7 +72,7 @@ router.get('/dashboard', authenticateToken, requireEstate, requireRole(['guard']
  * @desc Create a new shift
  * @access Admin only
  */
-router.post('/shifts', authenticateToken, requireEstate, requireRole(['admin']), async (req, res) => {
+router.post('/shifts', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { guard_id, shift_type, start_time, end_time, post_location, notes } = req.body;
 
@@ -101,7 +112,7 @@ router.post('/shifts', authenticateToken, requireEstate, requireRole(['admin']),
  * @desc Update a scheduled shift
  * @access Admin only
  */
-router.put('/shifts/:shiftId', authenticateToken, requireEstate, requireRole(['admin']), async (req, res) => {
+router.put('/shifts/:shiftId', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { shiftId } = req.params;
     const {
@@ -150,7 +161,7 @@ router.put('/shifts/:shiftId', authenticateToken, requireEstate, requireRole(['a
  * @desc Get shifts for a date range
  * @access Admin, Guard
  */
-router.get('/shifts', authenticateToken, requireEstate, requireRole(['admin', 'guard']), async (req, res) => {
+router.get('/shifts', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { start_date, end_date } = req.query;
 
@@ -185,7 +196,7 @@ router.get('/shifts', authenticateToken, requireEstate, requireRole(['admin', 'g
  * @desc Start a shift (check-in)
  * @access Guard only
  */
-router.post('/shifts/:shiftId/start', authenticateToken, requireEstate, requireRole(['guard']), async (req, res) => {
+router.post('/shifts/:shiftId/start', authenticateToken, requireEstate, requireRolePolicy('guardOnly'), async (req, res) => {
   try {
     const { shiftId } = req.params;
     const guardId = req.user.id;
@@ -211,7 +222,7 @@ router.post('/shifts/:shiftId/start', authenticateToken, requireEstate, requireR
  * @desc End a shift (check-out)
  * @access Guard only
  */
-router.post('/shifts/:shiftId/end', authenticateToken, requireEstate, requireRole(['guard']), async (req, res) => {
+router.post('/shifts/:shiftId/end', authenticateToken, requireEstate, requireRolePolicy('guardOnly'), async (req, res) => {
   try {
     const { shiftId } = req.params;
     const { handover_notes } = req.body;
@@ -238,7 +249,7 @@ router.post('/shifts/:shiftId/end', authenticateToken, requireEstate, requireRol
  * @desc Create handover note
  * @access Guard only
  */
-router.post('/handover', authenticateToken, requireEstate, requireRole(['guard']), async (req, res) => {
+router.post('/handover', authenticateToken, requireEstate, requireRolePolicy('guardOnly'), async (req, res) => {
   try {
     const { shift_id, to_guard_id, notes, incidents_summary, equipment_status } = req.body;
 
@@ -278,7 +289,7 @@ router.post('/handover', authenticateToken, requireEstate, requireRole(['guard']
  * @desc Get handover notes for a shift
  * @access Guard, Admin
  */
-router.get('/handover/:shiftId', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.get('/handover/:shiftId', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { shiftId } = req.params;
     const notes = await guardManagementService.getHandoverNotes(shiftId, req.user.estate_id);
@@ -301,7 +312,7 @@ router.get('/handover/:shiftId', authenticateToken, requireEstate, requireRole([
  * @desc Record performance metric
  * @access Admin only
  */
-router.post('/performance', authenticateToken, requireEstate, requireRole(['admin']), async (req, res) => {
+router.post('/performance', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { guard_id, shift_id, metric_type, rating, notes } = req.body;
 
@@ -341,17 +352,14 @@ router.post('/performance', authenticateToken, requireEstate, requireRole(['admi
  * @desc Get performance metrics for a guard
  * @access Admin, Guard (own metrics)
  */
-router.get('/:guardId/performance', authenticateToken, requireEstate, requireRole(['admin', 'guard']), async (req, res) => {
+router.get('/:guardId/performance', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { guardId } = req.params;
     const { start_date, end_date } = req.query;
 
     // Guards can only view their own metrics
     if (req.user.role === 'guard' && req.user.id !== parseInt(guardId)) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only view your own performance metrics'
-      });
+      return errorResponse(res, 'You can only view your own performance metrics', 'FORBIDDEN', 403, null, req);
     }
 
     const metrics = await guardManagementService.getPerformanceMetrics(
@@ -379,7 +387,7 @@ router.get('/:guardId/performance', authenticateToken, requireEstate, requireRol
  * @desc Checkout equipment
  * @access Guard, Admin
  */
-router.post('/equipment/checkout', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/equipment/checkout', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { guard_id, shift_id, equipment_type, equipment_id, notes } = req.body;
     const isAdmin = req.user.role === 'admin';
@@ -427,7 +435,7 @@ router.post('/equipment/checkout', authenticateToken, requireEstate, requireRole
  * @desc Return equipment
  * @access Guard, Admin
  */
-router.post('/equipment/:checkoutId/return', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/equipment/:checkoutId/return', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { checkoutId } = req.params;
     const { guard_id, condition, notes } = req.body;
@@ -468,7 +476,7 @@ router.post('/equipment/:checkoutId/return', authenticateToken, requireEstate, r
  * @desc Get equipment checkout status
  * @access Guard, Admin
  */
-router.get('/equipment', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.get('/equipment', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { guard_id, status } = req.query;
     const guardId = req.user.role === 'guard' ? req.user.id : (guard_id || null);
@@ -493,7 +501,7 @@ router.get('/equipment', authenticateToken, requireEstate, requireRole(['guard',
  * @desc Add training record
  * @access Admin only
  */
-router.post('/:guardId/training', authenticateToken, requireEstate, requireRole(['admin']), async (req, res) => {
+router.post('/:guardId/training', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { guardId } = req.params;
     const {
@@ -542,16 +550,13 @@ router.post('/:guardId/training', authenticateToken, requireEstate, requireRole(
  * @desc Get training records
  * @access Guard (own), Admin (all)
  */
-router.get('/:guardId/training', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.get('/:guardId/training', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { guardId } = req.params;
 
     // Guards can only view their own training
     if (req.user.role === 'guard' && req.user.id !== parseInt(guardId)) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only view your own training records'
-      });
+      return errorResponse(res, 'You can only view your own training records', 'FORBIDDEN', 403, null, req);
     }
 
     const training = await guardManagementService.getTrainingRecords(guardId, req.user.estate_id);

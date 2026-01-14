@@ -104,7 +104,7 @@ jest.unstable_mockModule('../../src/services/auditLogger.js', () => ({
   default: mockAuditLogger
 }));
 
-jest.unstable_mockModule('../../src/middleware/errorHandler.js', () => ({
+jest.unstable_mockModule('../../src/middleware/standardizedErrorHandler.js', () => ({
   ErrorHelper: mockErrorHelper,
   asyncHandler: mockAsyncHandler
 }));

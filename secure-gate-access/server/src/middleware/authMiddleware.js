@@ -1,6 +1,7 @@
 // server/src/middleware/authMiddleware.js
 import { dbManager } from '../database/db.enhanced.js';
 import { tokenService } from '../services/tokenService.js';
+import loggingService from '../services/loggingService.js';
 import { AppError, asyncHandler } from './standardizedErrorHandler.js';
 
 const DEBUG_AUTH = process.env.DEBUG_AUTH === 'true';
@@ -34,6 +35,14 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     }
 
     if (!token) {
+      loggingService.warn('Authentication token missing', {
+        route: req.originalUrl,
+        method: req.method,
+        status: 401,
+        requestId: req.requestId,
+        user_id: null,
+        estate_id: null
+      });
       // Security: No logging of auth attempts to prevent information disclosure
       throw new AppError('Token required', 401, 'AUTH_TOKEN_MISSING');
     }
@@ -45,8 +54,24 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     } catch (error) {
       // Security: Token verification failure - details logged to secure audit log only
       if (error.name === 'TokenExpiredError') {
+        loggingService.warn('Authentication token expired', {
+          route: req.originalUrl,
+          method: req.method,
+          status: 401,
+          requestId: req.requestId,
+          user_id: null,
+          estate_id: null
+        });
         throw new AppError('Token expired', 401, 'AUTH_TOKEN_EXPIRED');
       } else {
+        loggingService.warn('Authentication token invalid', {
+          route: req.originalUrl,
+          method: req.method,
+          status: 401,
+          requestId: req.requestId,
+          user_id: null,
+          estate_id: null
+        });
         throw new AppError('Invalid token', 401, 'AUTH_TOKEN_INVALID');
       }
     }
@@ -54,21 +79,61 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     // Security: Token validated successfully - no PII logging
 
     // Validate required fields
-    if (!payload.email) {
+    const userIdentifier = payload.email || payload.sub || payload.userId;
+    if (!userIdentifier) {
+      loggingService.warn('Authentication token missing user identifier', {
+        route: req.originalUrl,
+        method: req.method,
+        status: 401,
+        requestId: req.requestId,
+        user_id: null,
+        estate_id: null
+      });
       // Security: Invalid token format - no details logged
       throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
     }
 
     // Look up user in database to get full user info
-    const userQuery = await dbManager.query(
-      `SELECT id, email, username, role, estate_id
-       FROM users
-       WHERE LOWER(email) = LOWER($1)
-         AND estate_id = COALESCE($2, estate_id)`,
-      [payload.email, payload.estate_id ?? null]
-    );
+    let userQuery;
+    if (typeof userIdentifier === 'string' && userIdentifier.includes('@')) {
+      userQuery = await dbManager.query(
+        `SELECT id, email, username, role, estate_id
+         FROM users
+         WHERE LOWER(email) = LOWER($1)
+           AND estate_id = COALESCE($2, estate_id)`,
+        [userIdentifier, payload.estate_id ?? null]
+      );
+    } else {
+      const userId = Number(userIdentifier);
+      if (!Number.isInteger(userId)) {
+        loggingService.warn('Authentication token user identifier invalid', {
+          route: req.originalUrl,
+          method: req.method,
+          status: 401,
+          requestId: req.requestId,
+          user_id: null,
+          estate_id: null
+        });
+        throw new AppError('Invalid token format', 401, 'AUTH_TOKEN_INVALID');
+      }
+      userQuery = await dbManager.query(
+        `SELECT id, email, username, role, estate_id
+         FROM users
+         WHERE id = $1
+           AND estate_id = COALESCE($2, estate_id)`,
+        [userId, payload.estate_id ?? null]
+      );
+    }
 
     if (userQuery.rowCount === 0) {
+      loggingService.warn('Authentication user not found', {
+        route: req.originalUrl,
+        method: req.method,
+        status: 401,
+        requestId: req.requestId,
+        user_id: null,
+        estate_id: payload.estate_id ?? null
+      });
       // Security: User lookup failed - no PII logged
       throw new AppError('User not found', 401, 'AUTH_USER_NOT_FOUND');
     }
@@ -204,12 +269,28 @@ export const requireRole = (...allowedRoles) => {
 
 export const requireEstate = asyncHandler(async (req, res, next) => {
   if (!req.user || req.user.estate_id === undefined || req.user.estate_id === null) {
+    loggingService.warn('Estate required but missing', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 403,
+      requestId: req.requestId,
+      user_id: req.user?.id ?? null,
+      estate_id: null
+    });
     throw new AppError('Estate access required', 403, 'ESTATE_REQUIRED');
   }
 
   const estateId = Number(req.user.estate_id);
   if (!Number.isInteger(estateId) || estateId <= 0) {
-    throw new AppError('Invalid estate', 400, 'ESTATE_INVALID');
+    loggingService.warn('Estate ID invalid', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 403,
+      requestId: req.requestId,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
+    });
+    throw new AppError('Invalid estate', 403, 'ESTATE_INVALID');
   }
 
   const estateCheck = await dbManager.query(
@@ -218,6 +299,14 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
   );
 
   if (estateCheck.rowCount === 0) {
+    loggingService.warn('Estate lookup failed', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 403,
+      requestId: req.requestId,
+      user_id: req.user?.id ?? null,
+      estate_id: estateId
+    });
     throw new AppError('Invalid estate', 403, 'ESTATE_INVALID');
   }
 

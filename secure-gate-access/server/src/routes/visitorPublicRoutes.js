@@ -20,6 +20,7 @@ import {
   getInviteByCode
 } from '../controllers/visitorPublicController.js';
 import { validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
+import { buildErrorPayload } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -31,10 +32,8 @@ const visitorTokenLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    res.status(429).json({
-      success: false,
-      error: 'Rate limit exceeded. Please try again in a minute.'
-    });
+    const response = buildErrorPayload(req, res, 'Rate limit exceeded. Please try again in a minute.', 'RATE_LIMITED');
+    res.status(429).json(response);
   }
 });
 
@@ -44,7 +43,11 @@ const statusPollLimiter = rateLimit({
   max: 30, // 30 requests per minute per IP
   message: 'Too many status checks, please slow down',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many status checks, please slow down', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
 });
 
 // Rate limiter for estate info (most lenient)
@@ -52,7 +55,11 @@ const estateInfoLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // 20 requests per minute per IP
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many estate info requests, please try again later', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
 });
 
 const inviteLookupLimiter = rateLimit({
@@ -60,7 +67,11 @@ const inviteLookupLimiter = rateLimit({
   max: 40,
   message: 'Too many invite lookups, please try again later',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many invite lookups, please try again later', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
 });
 
 // Optional middleware to validate estate ID if provided

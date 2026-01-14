@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdir, readFile } from 'fs/promises';
 import { dbManager } from '../database/db.enhanced.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -45,10 +46,7 @@ router.post('/migrate', async (req, res) => {
     const { secret } = req.body;
     
     if (secret !== SETUP_SECRET) {
-      return res.status(403).json({
-        success: false,
-        message: 'Invalid setup secret'
-      });
+      return errorResponse(res, 'Invalid setup secret', 'FORBIDDEN', 403, null, req);
     }
 
     const logs = [];
@@ -150,10 +148,7 @@ router.post('/seed', async (req, res) => {
     const { secret } = req.body;
     
     if (secret !== SETUP_SECRET) {
-      return res.status(403).json({
-        success: false,
-        message: 'Invalid setup secret'
-      });
+      return errorResponse(res, 'Invalid setup secret', 'FORBIDDEN', 403, null, req);
     }
 
     const logs = [];

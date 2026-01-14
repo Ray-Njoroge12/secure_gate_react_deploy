@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { navigateToLogin } from '../../utils/authNavigation';
 
 const SessionTimeoutWarning = ({ 
   warningTime = 5 * 60 * 1000, // 5 minutes before expiry
@@ -54,10 +55,10 @@ const SessionTimeoutWarning = ({
   const handleLogout = useCallback(async () => {
     try {
       await logout();
-      window.location.href = '/login?session=expired';
+      navigateToLogin({ search: '?session=expired' });
     } catch (error) {
       console.error('Logout error:', error);
-      window.location.href = '/login';
+      navigateToLogin();
     }
   }, [logout]);
 

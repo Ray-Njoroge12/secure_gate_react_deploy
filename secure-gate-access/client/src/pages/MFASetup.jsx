@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/apiClient';
 
 /**
  * MFA Setup Component
@@ -28,9 +28,7 @@ const MFASetup = () => {
     setError('');
     
     try {
-      const response = await axios.post('/api/mfa/setup', {}, {
-        withCredentials: true
-      });
+      const response = await api.post('/api/mfa/setup', {});
       
       if (response.data.success) {
         setMfaData({
@@ -61,10 +59,8 @@ const MFASetup = () => {
     }
     
     try {
-      const response = await axios.post('/api/mfa/verify-setup', {
+      const response = await api.post('/api/mfa/verify-setup', {
         token: verificationToken
-      }, {
-        withCredentials: true
       });
       
       if (response.data.success) {

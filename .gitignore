@@ -5,6 +5,13 @@ node_modules
 .env.development
 .env.test
 .env.production.local
+.env.production
+
+# Production keys and secrets - NEVER COMMIT THESE!
+production-keys-*.txt
+*production-keys*.txt
+*.secret
+*.secrets
 
 # Allow specific production config (no secrets)
 !secure-gate-access/client/.env.production

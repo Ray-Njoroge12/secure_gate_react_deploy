@@ -9,11 +9,29 @@ const getPool = () => {
 };
 
 const run = async () => {
+  await dbManager.initializeAsync();
   const pool = getPool();
   const client = await pool.connect();
   try {
     console.log('Initializing database...');
     await client.query('BEGIN');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS estates (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        plan_id TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    // Seed default estate
+    await client.query(`
+      INSERT INTO estates (name, plan_id) 
+      VALUES ('Default Estate', 'enterprise') 
+      ON CONFLICT DO NOTHING;
+    `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -25,6 +43,10 @@ const run = async () => {
         phone TEXT,
         area TEXT,
         house TEXT,
+        estate_id INT REFERENCES estates(id),
+        verification_token TEXT,
+        verification_expires TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT NOW(),
         created_at TIMESTAMP DEFAULT NOW()
       );
     `);
@@ -32,6 +54,7 @@ const run = async () => {
       CREATE TABLE IF NOT EXISTS visitors (
         id SERIAL PRIMARY KEY,
         name TEXT,
+        estate_id INT REFERENCES estates(id),
         phone TEXT,
         email TEXT,
         purpose TEXT,

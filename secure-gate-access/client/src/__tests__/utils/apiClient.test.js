@@ -1,6 +1,7 @@
 jest.mock('axios', () => ({
   create: jest.fn(),
   get: jest.fn(),
+  post: jest.fn(),
   CancelToken: {
     source: jest.fn(() => ({ token: 'token', cancel: jest.fn() }))
   }
@@ -16,12 +17,19 @@ jest.mock('../../utils/logger', () => ({
   }
 }));
 
+jest.mock('../../utils/authNavigation', () => ({
+  __esModule: true,
+  navigateToLogin: jest.fn(),
+  navigateToEstateRequired: jest.fn()
+}));
+
 describe('apiClient', () => {
   let axios;
   let requestFulfilled;
   let responseRejected;
   let apiClientModule;
   let instance;
+  let authNavigation;
 
   function setupAxiosMock() {
     instance = jest.fn();
@@ -38,6 +46,10 @@ describe('apiClient', () => {
       }
     };
 
+    instance.defaults = {
+      baseURL: 'http://localhost:3001'
+    };
+
     instance.get = jest.fn();
     instance.post = jest.fn();
     instance.put = jest.fn();
@@ -52,6 +64,7 @@ describe('apiClient', () => {
     jest.clearAllMocks();
 
     axios = require('axios');
+    authNavigation = require('../../utils/authNavigation');
 
     document.head.innerHTML = '';
 
@@ -133,9 +146,33 @@ describe('apiClient', () => {
     });
   });
 
-  test('response interceptor handles 401 by redirecting to /login', async () => {
+  test('response interceptor refreshes access token and retries on 401', async () => {
     process.env.NODE_ENV = 'development';
     window.location.pathname = '/dashboard/resident';
+
+    axios.post.mockResolvedValue({ data: { success: true } });
+
+    apiClientModule = require('../../utils/apiClient');
+
+    instance.mockResolvedValue({ data: { ok: true } });
+
+    const error = {
+      response: { status: 401, data: {} },
+      config: { url: '/api/secure', method: 'get' }
+    };
+
+    const result = await responseRejected(error);
+
+    expect(axios.post).toHaveBeenCalledWith('/api/auth/refresh', {}, expect.objectContaining({ withCredentials: true }));
+    expect(instance).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/secure', _retry: true }));
+    expect(result).toEqual({ data: { ok: true } });
+  });
+
+  test('response interceptor handles 401 by redirecting to /login when refresh fails', async () => {
+    process.env.NODE_ENV = 'development';
+    window.location.pathname = '/dashboard/resident';
+
+    axios.post.mockRejectedValue(new Error('refresh failed'));
 
     apiClientModule = require('../../utils/apiClient');
 
@@ -145,11 +182,11 @@ describe('apiClient', () => {
     };
 
     await expect(responseRejected(error)).rejects.toEqual({
-      message: 'Session expired. Please login again.',
+      message: 'Your session has expired. Please log in again.',
       code: 'UNAUTHORIZED'
     });
 
-    expect(window.location.href).toBe('/login');
+    expect(authNavigation.navigateToLogin).toHaveBeenCalled();
   });
 
   test('response interceptor refreshes CSRF token and retries on CSRF errors', async () => {
@@ -172,6 +209,44 @@ describe('apiClient', () => {
     expect(meta?.content).toBe('newcsrf');
     expect(instance).toHaveBeenCalledWith(error.config);
     expect(result).toEqual({ data: { ok: true } });
+  });
+
+  test('response interceptor redirects on estate-required errors', async () => {
+    process.env.NODE_ENV = 'development';
+    window.location.pathname = '/dashboard/resident';
+
+    apiClientModule = require('../../utils/apiClient');
+
+    const error = {
+      response: { status: 403, data: { error: { code: 'ESTATE_REQUIRED' }, message: 'Estate required' } },
+      config: { url: '/api/resident/profile' }
+    };
+
+    await expect(responseRejected(error)).rejects.toEqual({
+      message: 'Estate required',
+      code: 'ESTATE_REQUIRED'
+    });
+
+    expect(authNavigation.navigateToEstateRequired).toHaveBeenCalledWith({ code: 'ESTATE_REQUIRED' });
+  });
+
+  test('response interceptor does not retry CSRF refresh twice', async () => {
+    process.env.NODE_ENV = 'development';
+    axios.get.mockResolvedValue({ data: { csrfToken: 'newcsrf' }, headers: {} });
+
+    apiClientModule = require('../../utils/apiClient');
+
+    const error = {
+      response: { status: 403, data: { error: { code: 'CSRF_TOKEN_MISSING' } } },
+      config: { method: 'post', url: '/api/secure', data: { a: 1 }, _csrfRetry: true }
+    };
+
+    await expect(responseRejected(error)).rejects.toEqual({
+      message: 'Access forbidden',
+      code: 'FORBIDDEN'
+    });
+
+    expect(axios.get).not.toHaveBeenCalled();
   });
 
   test('response interceptor maps 429 rate limit error', async () => {

@@ -8,25 +8,27 @@
 
 import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import RootProvider from "./contexts/RootProvider.jsx";
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles.css"; // Additional app styles
 // BUG-003 FIX: httpInterceptor removed - using httpOnly cookies instead
 // import "./utils/httpInterceptor.js"; // HTTP interceptor for automatic auth headers
-import Loading from "./components/ui/Loading.jsx";
-import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
-import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
-import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
 import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
-import ToastContainer from "./components/ToastContainer.jsx";
-import ErrorQueue from "./components/ErrorQueue.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
 import CookieConsentBanner from "./components/CookieConsentBanner.jsx"; // Privacy: Cookie consent for KDPA compliance
-import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
+import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
+import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
+import ErrorQueue from "./components/ErrorQueue.jsx";
+import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
+import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
+import Loading from "./components/ui/Loading.jsx";
+import ToastContainer from "./components/ToastContainer.jsx";
+import RootProvider from "./contexts/RootProvider.jsx";
+import { refreshCSRFToken } from "./utils/apiClient.js";
+import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
 
 /**
  * Lazy load all page components for better build performance
@@ -40,6 +42,8 @@ const GuestInvite = lazy(() => import("./pages/GuestInvite.jsx"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
 const ProtectedRoute = lazy(() => import("./routes/ProtectedRoute.jsx"));
+const EstateRequired = lazy(() => import("./pages/EstateRequired.jsx"));
+const EstateSelection = lazy(() => import("./pages/EstateSelection.jsx"));
 
 // Security and Privacy pages - MFA and Data Privacy
 const MFASetup = lazy(() => import("./pages/MFASetup.jsx"));
@@ -134,6 +138,10 @@ function App() {
     // Now handled by GlobalKeyboardShortcuts component inside RootProvider
   }, []);
 
+  useEffect(() => {
+    refreshCSRFToken().catch(() => {});
+  }, []);
+
   return (
     <AppErrorBoundary>
       <div ref={appRef}>
@@ -152,6 +160,7 @@ function App() {
             warningTime={5 * 60 * 1000}  // 5 minutes before expiry
             sessionTimeout={30 * 60 * 1000}  // 30 minutes total session
           />
+          <OfflineRetryBanner />
           <ErrorBoundary level="page">
             <NetworkErrorBoundary>
               <AuthErrorBoundary>
@@ -169,6 +178,8 @@ function App() {
             {/* Privacy and Terms routes */}
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/estate-required" element={<EstateRequired />} />
+            <Route path="/estate-selection" element={<EstateSelection />} />
 
             {/* MFA routes - Multi-Factor Authentication */}
             <Route

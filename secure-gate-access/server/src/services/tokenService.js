@@ -18,12 +18,15 @@ class TokenService {
     }
     
     // Validate secret strength (minimum 32 characters)
-    if (process.env.JWT_SECRET.length < 32) {
-      throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters long for security.');
-    }
-    
-    if (process.env.JWT_REFRESH_SECRET.length < 32) {
-      throw new Error('CRITICAL: JWT_REFRESH_SECRET must be at least 32 characters long for security.');
+    // Validate secret strength (minimum 32 characters) - Production only
+    if (process.env.NODE_ENV === 'production') {
+      if (process.env.JWT_SECRET.length < 32) {
+        throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters long for security.');
+      }
+      
+      if (process.env.JWT_REFRESH_SECRET.length < 32) {
+        throw new Error('CRITICAL: JWT_REFRESH_SECRET must be at least 32 characters long for security.');
+      }
     }
     
     this.accessTokenSecret = process.env.JWT_SECRET;
@@ -59,6 +62,28 @@ class TokenService {
       // WARNING: Token revocations will be lost on server restart
       this.redisInitialized = false;
     }
+  }
+
+  getRevocationStoreStatus() {
+    const redisStatus = this.redisService.getStatus();
+    return {
+      storage: redisStatus.usingFallback ? 'memory' : 'redis',
+      redisConnected: redisStatus.connected,
+      usingFallback: redisStatus.usingFallback,
+      redisStats: redisStatus.stats
+    };
+  }
+
+  async checkRevocationStoreHealth() {
+    const status = this.getRevocationStoreStatus();
+    const ping = await this.redisService.ping();
+
+    return {
+      ...status,
+      ping,
+      persistent: !status.usingFallback,
+      alert: status.usingFallback ? 'revocation_fallback_in_use' : null
+    };
   }
 
   /**
@@ -389,7 +414,7 @@ class TokenService {
     try {
       const tokenHash = this.hashToken(token);
       const result = await this.db.query(
-        `SELECT id, user_id, token, expires_at, is_revoked, last_used_at
+        `SELECT id, user_id, token, expires_at, is_revoked, revoked_at, last_used_at
          FROM refresh_tokens
          WHERE token = $1`,
         [tokenHash]

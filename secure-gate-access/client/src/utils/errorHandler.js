@@ -1,6 +1,8 @@
 // client/src/utils/errorHandler.js
 import { useState, useCallback } from 'react';
 import logger from './logger';
+import { navigateToLogin } from './authNavigation';
+import { navigateTo } from './appNavigation';
 
 /**
  * Enhanced error handling utilities for the Secure Gate Access System
@@ -214,7 +216,7 @@ export function getRecoveryActions(errorType, context = '') {
       { label: 'Go Offline', action: 'offline_mode' }
     ],
     [ERROR_TYPES.AUTHENTICATION]: [
-      { label: 'Login Again', action: () => window.location.href = '/login' },
+      { label: 'Login Again', action: () => navigateToLogin() },
       { label: 'Clear Cache', action: () => {
         localStorage.clear();
         sessionStorage.clear();
@@ -223,7 +225,7 @@ export function getRecoveryActions(errorType, context = '') {
     ],
     [ERROR_TYPES.AUTHORIZATION]: [
       { label: 'Go Back', action: () => window.history.back() },
-      { label: 'Home', action: () => window.location.href = '/dashboard' }
+      { label: 'Home', action: () => navigateTo('/dashboard') }
     ],
     [ERROR_TYPES.VALIDATION]: [
       { label: 'Try Again', action: 'retry' },

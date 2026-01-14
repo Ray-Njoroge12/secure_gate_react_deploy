@@ -4,8 +4,9 @@
  */
 
 import express from 'express';
-import { authenticateToken, attachUserFromToken } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 import directionsService from '../services/directionsService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -66,10 +67,7 @@ router.put('/estate', authenticateToken, async (req, res) => {
     const estateId = req.user?.estate_id || getEstateIdFromRequest(req);
     
     if (role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can update estate location'
-      });
+      return errorResponse(res, 'Only admins can update estate location', 'FORBIDDEN', 403, null, req);
     }
 
     if (!estateId) {
