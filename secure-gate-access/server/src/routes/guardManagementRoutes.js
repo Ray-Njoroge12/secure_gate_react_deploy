@@ -6,6 +6,7 @@
 import express from 'express';
 import guardManagementService from '../services/guardManagementService.js';
 import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();

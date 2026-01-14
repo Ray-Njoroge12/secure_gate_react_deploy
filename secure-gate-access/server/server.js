@@ -27,7 +27,7 @@ import loggingService from './src/services/loggingService.js';
 import { createErrorMonitoring } from './integration/error-monitoring-integration.js';
 
 // Import migration service for auto-migration on startup
-import migrationService from './src/database/migrationService.js';
+import migrationService from './src/services/migrationService.js';
 
 // Import data retention scheduler for GDPR compliance
 import retentionScheduler from './src/jobs/retentionScheduler.js';
