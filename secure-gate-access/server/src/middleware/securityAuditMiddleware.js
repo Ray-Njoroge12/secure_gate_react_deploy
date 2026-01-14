@@ -125,7 +125,8 @@ export const securityAuditMiddleware = (req, res, next) => {
 
     if (hasSuspiciousActivity) {
       const securityLog = {
-        requestId,
+        request_id: requestId,
+        requestId, // Keep for backward compatibility
         timestamp: new Date().toISOString(),
         ip: req.ip || req.connection.remoteAddress,
         userAgent: req.headers['user-agent'],
@@ -186,7 +187,8 @@ export const handleRateLimitViolation = (req, res, next) => {
   const requestId = req.headers['x-request-id'] || `rate-limit-${Date.now()}`;
   
   logger.warn('Rate limit exceeded', {
-    requestId,
+    request_id: requestId,
+    requestId, // Keep for backward compatibility
     ip: req.ip || req.connection.remoteAddress,
     userAgent: req.headers['user-agent'],
     url: req.url,
@@ -222,7 +224,8 @@ export const handleAuthFailure = (req, res, next) => {
   const requestId = req.headers['x-request-id'] || `auth-fail-${Date.now()}`;
   
   logger.warn('Authentication failure', {
-    requestId,
+    request_id: requestId,
+    requestId, // Keep for backward compatibility
     ip: req.ip || req.connection.remoteAddress,
     userAgent: req.headers['user-agent'],
     url: req.url,
