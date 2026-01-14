@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import rideshareService from '../services/rideshareService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -20,10 +21,7 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
     const { id: residentId, role } = req.user;
 
     if (!['resident', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only residents can create rideshare entries'
-      });
+      return errorResponse(res, 'Only residents can create rideshare entries', 'FORBIDDEN', 403, null, req);
     }
 
     const result = await rideshareService.createRideshareEntry(residentId, req.body);
@@ -49,10 +47,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const { includeExpired } = req.query;
 
     if (!['resident', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only residents can view their rideshare entries'
-      });
+      return errorResponse(res, 'Only residents can view their rideshare entries', 'FORBIDDEN', 403, null, req);
     }
 
     const entries = await rideshareService.getResidentRideshareEntries(
@@ -98,10 +93,7 @@ router.get('/pending', authenticateToken, async (req, res) => {
     const { role } = req.user;
 
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can view pending rideshare entries'
-      });
+      return errorResponse(res, 'Only guards can view pending rideshare entries', 'FORBIDDEN', 403, null, req);
     }
 
     const entries = await rideshareService.getPendingRideshareEntries();
@@ -123,10 +115,7 @@ router.post('/validate', authenticateToken, async (req, res) => {
     const { credential, method = 'code' } = req.body;
 
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can validate rideshare entries'
-      });
+      return errorResponse(res, 'Only guards can validate rideshare entries', 'FORBIDDEN', 403, null, req);
     }
 
     if (!credential) {
@@ -167,10 +156,7 @@ router.post('/:id/complete', authenticateToken, attachRequestAudit, async (req, 
     const entryId = parseInt(req.params.id);
 
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can complete rideshare entries'
-      });
+      return errorResponse(res, 'Only guards can complete rideshare entries', 'FORBIDDEN', 403, null, req);
     }
 
     const result = await rideshareService.markRideshareCompleted(entryId, guardId);

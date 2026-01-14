@@ -25,6 +25,7 @@ import { Readable } from 'stream';
 import eventManagementService from '../services/eventManagementService.js';
 import loggingService from '../services/loggingService.js';
 import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -174,10 +175,7 @@ router.put('/:id', authenticateToken, requireEstate, async (req, res) => {
     }
 
     if (event.host_id !== user.id && user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized to update this event'
-      });
+      return errorResponse(res, 'Unauthorized to update this event', 'FORBIDDEN', 403, null, req);
     }
 
     const updated = await eventManagementService.updateEvent(id, body, user.estate_id);
@@ -216,10 +214,7 @@ router.delete('/:id', authenticateToken, requireEstate, async (req, res) => {
     }
 
     if (event.host_id !== user.id && user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized to delete this event'
-      });
+      return errorResponse(res, 'Unauthorized to delete this event', 'FORBIDDEN', 403, null, req);
     }
 
     await eventManagementService.deleteEvent(id, user.estate_id);
@@ -512,10 +507,7 @@ router.post('/rsvp', async (req, res) => {
     );
 
     if (!isValid) {
-      return res.status(403).json({
-        success: false,
-        error: 'Invalid RSVP token'
-      });
+      return errorResponse(res, 'Invalid RSVP token', 'FORBIDDEN', 403, null, req);
     }
 
     await eventManagementService.handleRSVP(event_visitor_id, rsvp_status, {
@@ -630,10 +622,7 @@ router.get('/:id/calendar', async (req, res) => {
 
     // Require invitation code for security
     if (!code) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invitation code required to download calendar'
-      });
+      return errorResponse(res, 'Invitation code required to download calendar', 'UNAUTHORIZED', 401, null, req);
     }
 
     // Get event
@@ -650,10 +639,7 @@ router.get('/:id/calendar', async (req, res) => {
     const invitation = invitationResult.find(inv => inv.event_qr_code === code);
 
     if (!invitation) {
-      return res.status(403).json({
-        success: false,
-        error: 'Invalid invitation code for this event'
-      });
+      return errorResponse(res, 'Invalid invitation code for this event', 'FORBIDDEN', 403, null, req);
     }
 
     // Generate calendar file

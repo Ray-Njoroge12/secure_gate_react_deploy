@@ -14,6 +14,7 @@ import express from 'express';
 import emergencyService from '../services/emergencyService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import loggingService from '../services/loggingService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -66,10 +67,7 @@ router.post('/panic', requireRole(['guard']), async (req, res) => {
     loggingService.logError('PANIC_ROUTE_ERROR', { error: error.message });
     
     if (error.message.includes('cooldown')) {
-      return res.status(429).json({
-        success: false,
-        message: error.message
-      });
+      return errorResponse(res, error.message, 'RATE_LIMITED', 429, null, req);
     }
     
     res.status(500).json({
@@ -284,10 +282,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     
   } catch (error) {
     if (error.message.includes('Access denied')) {
-      return res.status(403).json({
-        success: false,
-        message: error.message
-      });
+      return errorResponse(res, error.message, 'FORBIDDEN', 403, null, req);
     }
     
     res.status(404).json({

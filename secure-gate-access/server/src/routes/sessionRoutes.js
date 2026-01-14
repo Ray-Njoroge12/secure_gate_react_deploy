@@ -3,6 +3,7 @@ import express from 'express';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import loggingService from '../services/loggingService.js';
+import { buildErrorPayload, errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
@@ -26,10 +27,7 @@ router.get('/metrics', authenticateToken, async (req, res) => {
         correlationId: req.correlationId
       });
 
-      return res.status(403).json({
-        success: false,
-        message: 'Admin privileges required'
-      });
+      return errorResponse(res, 'Admin privileges required', 'FORBIDDEN', 403, null, req);
     }
 
     const metrics = sessionSecurityService.getSessionMetrics();
@@ -77,10 +75,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
         correlationId: req.correlationId
       });
 
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient privileges'
-      });
+      return errorResponse(res, 'Insufficient privileges', 'FORBIDDEN', 403, null, req);
     }
 
     const sessions = await sessionSecurityService.getUserActiveSessions(parseInt(userId));
@@ -144,10 +139,7 @@ router.delete('/user/:userId/session/:sessionId', authenticateToken, async (req,
         correlationId: req.correlationId
       });
 
-      return res.status(403).json({
-        success: false,
-        message: 'Admin privileges required'
-      });
+      return errorResponse(res, 'Admin privileges required', 'FORBIDDEN', 403, null, req);
     }
 
     // Prevent self-termination of current session
@@ -213,10 +205,7 @@ router.delete('/user/:userId/all', authenticateToken, async (req, res) => {
         correlationId: req.correlationId
       });
 
-      return res.status(403).json({
-        success: false,
-        message: 'Admin privileges required'
-      });
+      return errorResponse(res, 'Admin privileges required', 'FORBIDDEN', 403, null, req);
     }
 
     // Get all user sessions
@@ -328,11 +317,9 @@ router.get('/current/status', authenticateToken, async (req, res) => {
     const validation = await sessionSecurityService.validateSession(req);
 
     if (!validation.valid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid session',
-        reason: validation.reason
-      });
+      const response = buildErrorPayload(req, res, 'Invalid session', 'UNAUTHORIZED');
+      response.error.details = { reason: validation.reason };
+      return res.status(401).json(response);
     }
 
     const sessionData = validation.sessionData;
@@ -374,10 +361,7 @@ router.post('/current/extend', authenticateToken, async (req, res) => {
   try {
     const sessionData = req.session.sessionSecurity;
     if (!sessionData) {
-      return res.status(401).json({
-        success: false,
-        message: 'No active session'
-      });
+      return errorResponse(res, 'No active session', 'UNAUTHORIZED', 401, null, req);
     }
 
     // Update last activity to extend session
@@ -423,10 +407,7 @@ router.post('/reset-metrics', authenticateToken, async (req, res) => {
   try {
     // Check admin privileges
     if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin privileges required'
-      });
+      return errorResponse(res, 'Admin privileges required', 'FORBIDDEN', 403, null, req);
     }
 
     const oldMetrics = sessionSecurityService.resetMetrics();

@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import autoApprovalService from '../services/autoApprovalService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -25,10 +26,7 @@ router.post('/rules', authenticateToken, attachRequestAudit, async (req, res) =>
     const { id: residentId, role } = req.user;
     
     if (!['resident', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only residents can create auto-approval rules'
-      });
+      return errorResponse(res, 'Only residents can create auto-approval rules', 'FORBIDDEN', 403, null, req);
     }
     
     const { ruleName, visitorName, visitorPhone, category, timeRestrictions, notes } = req.body;
@@ -193,10 +191,7 @@ router.post('/check', authenticateToken, async (req, res) => {
     const { role } = req.user;
     
     if (!['guard', 'admin', 'system'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized'
-      });
+      return errorResponse(res, 'Unauthorized', 'FORBIDDEN', 403, null, req);
     }
     
     const { residentId, visitorName, visitorPhone } = req.body;
@@ -264,10 +259,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
     const { role } = req.user;
     
     if (role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can view auto-approval statistics'
-      });
+      return errorResponse(res, 'Only admins can view auto-approval statistics', 'FORBIDDEN', 403, null, req);
     }
     
     const stats = await autoApprovalService.getAutoApprovalStats();
