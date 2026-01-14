@@ -30,7 +30,7 @@ const FlowNavigation = ({
         // Go to first step in flow
         const firstStep = flowInfo?.steps?.[0];
         if (firstStep?.path) {
-          window.location.href = firstStep.path;
+          navigate(firstStep.path);
         }
       }
       // End key to go to last step
@@ -39,7 +39,7 @@ const FlowNavigation = ({
         // Go to last step in flow
         const lastStep = flowInfo?.steps?.[flowInfo.steps.length - 1];
         if (lastStep?.path) {
-          window.location.href = lastStep.path;
+          navigate(lastStep.path);
         }
       }
     };
@@ -49,11 +49,12 @@ const FlowNavigation = ({
       flow.addEventListener('keydown', handleKeyDown);
       return () => flow.removeEventListener('keydown', handleKeyDown);
     }
-  }, [currentPath, userRole, flowName]);
+  }, [currentPath, userRole, flowName, flowInfo, navigate]);
   const { 
     goToNextInFlow, 
     goToPreviousInFlow, 
-    getCurrentFlowStep 
+    getCurrentFlowStep,
+    navigate
   } = useNavigationFlow(userRole);
 
   const flowInfo = getCurrentFlowStep(currentPath);

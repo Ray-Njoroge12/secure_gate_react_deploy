@@ -12,6 +12,7 @@ import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
 import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
@@ -211,6 +212,7 @@ router.post('/',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
   requireEstateContext,
+  requireRolePolicy('adminOrResident'),
   validateRequest(ValidationSchemas.visitorCreation),
   attachRequestAudit,
   createVisitor
@@ -218,34 +220,36 @@ router.post('/',
 router.get('/',
   authenticateToken,
   requireEstateContext,
+  requireRolePolicy('adminOrResident'),
   attachRequestAudit,
   // CacheMiddleware.createMiddleware({ ttl: 300 }), // Temporarily disabled for debugging
   getMyVisitors
 );
-router.post('/:visitorId/pass', authenticateToken, requireEstateContext, attachRequestAudit, createPass);
+router.post('/:visitorId/pass', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, createPass);
 router.post('/bulk-invite',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
   requireEstateContext,
+  requireRolePolicy('adminOrResident'),
   validateRequest(ValidationSchemas.bulkInviteCreation),
   attachRequestAudit,
   bulkInvite
 );
 
 // Guard Operations (guard/admin roles required) - require authentication
-router.post('/:id/check-in', authenticateToken, requireEstateContext, attachRequestAudit, checkInVisitor);
-router.post('/:id/check-out', authenticateToken, requireEstateContext, attachRequestAudit, checkOutVisitor);
+router.post('/:id/check-in', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, checkInVisitor);
+router.post('/:id/check-out', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, checkOutVisitor);
 
 // Walk-in registration (guard only) - Phase G2
-router.post('/walk-in', authenticateToken, requireEstateContext, attachRequestAudit, registerWalkIn);
-router.get('/walk-ins/today', authenticateToken, requireEstateContext, attachRequestAudit, getTodayWalkIns);
+router.post('/walk-in', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, registerWalkIn);
+router.get('/walk-ins/today', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, getTodayWalkIns);
 
 // Approval flow aliases (client compatibility)
-router.post('/:id/request-approval', authenticateToken, requireEstateContext, attachRequestAudit, requestApproval);
-router.post('/:id/approve', authenticateToken, requireEstateContext, attachRequestAudit, approveVisitor);
-router.post('/:id/reject', authenticateToken, requireEstateContext, attachRequestAudit, rejectVisitor);
-router.get('/pending-approvals', authenticateToken, requireEstateContext, attachRequestAudit, getPendingApprovals);
-router.get('/approval-history', authenticateToken, requireEstateContext, attachRequestAudit, getApprovalHistory);
+router.post('/:id/request-approval', authenticateToken, requireEstateContext, requireRolePolicy('guardOnly'), attachRequestAudit, requestApproval);
+router.post('/:id/approve', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, approveVisitor);
+router.post('/:id/reject', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, rejectVisitor);
+router.get('/pending-approvals', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, getPendingApprovals);
+router.get('/approval-history', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, getApprovalHistory);
 
 /**
  * @swagger
@@ -389,15 +393,15 @@ router.post('/self-checkin/:inviteCode',
 );
 
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
-router.delete('/:id', authenticateToken, requireEstateContext, attachRequestAudit, cancelVisitor);
+router.delete('/:id', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, cancelVisitor);
 
 // Admin Operations (admin role required)
-router.get('/active', authenticateToken, requireEstateContext, attachRequestAudit, getActiveVisitors);
-router.get('/report', authenticateToken, requireEstateContext, attachRequestAudit, getVisitorReport);
-router.delete('/:visitorId/revoke', authenticateToken, requireEstateContext, attachRequestAudit, revokeVisitor);
+router.get('/active', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, getActiveVisitors);
+router.get('/report', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, getVisitorReport);
+router.delete('/:visitorId/revoke', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, revokeVisitor);
 
 // Route aliases to match frontend expectations
-router.get('/reports', authenticateToken, requireEstateContext, attachRequestAudit, getVisitorReport); // Alias for /report (plural)
+router.get('/reports', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
 
 // Public invite route alias
 router.get('/invite/:inviteCode',

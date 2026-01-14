@@ -7,6 +7,8 @@
 import express from 'express';
 import { enhancedHealthMonitoring } from '../services/enhancedHealthService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { tokenService } from '../services/tokenService.js';
+import { getCookieAuditInfo } from '../utils/cookies.js';
 
 const router = express.Router();
 
@@ -86,6 +88,8 @@ router.get('/health/ready', async (req, res) => {
 router.get('/health/detailed', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const detailedHealth = await enhancedHealthMonitoring.getDetailedHealth();
+    const revocationStatus = await tokenService.checkRevocationStoreHealth();
+    const cookieAudit = getCookieAuditInfo();
     
     res.status(200).json({
       status: detailedHealth.status,
@@ -94,6 +98,8 @@ router.get('/health/detailed', authenticateToken, requireRole(['admin']), async 
       version: process.env.APP_VERSION || '1.0.0',
       environment: process.env.NODE_ENV || 'development',
       components: detailedHealth.components,
+      tokenRevocation: revocationStatus,
+      cookieConfig: cookieAudit,
       metrics: {
         memory: process.memoryUsage(),
         cpu: process.cpuUsage()

@@ -61,6 +61,28 @@ class TokenService {
     }
   }
 
+  getRevocationStoreStatus() {
+    const redisStatus = this.redisService.getStatus();
+    return {
+      storage: redisStatus.usingFallback ? 'memory' : 'redis',
+      redisConnected: redisStatus.connected,
+      usingFallback: redisStatus.usingFallback,
+      redisStats: redisStatus.stats
+    };
+  }
+
+  async checkRevocationStoreHealth() {
+    const status = this.getRevocationStoreStatus();
+    const ping = await this.redisService.ping();
+
+    return {
+      ...status,
+      ping,
+      persistent: !status.usingFallback,
+      alert: status.usingFallback ? 'revocation_fallback_in_use' : null
+    };
+  }
+
   /**
    * Generate secure access and refresh tokens with standardized claims
    */

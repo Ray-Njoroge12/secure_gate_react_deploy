@@ -11,6 +11,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './AuthContext.js';
 import { ErrorProvider } from './ErrorContext.jsx';
 import { NavigationProvider } from './NavigationContext.jsx';
+import AppNavigationBridge from './AppNavigationBridge.jsx';
+import AuthNavigationBridge from './AuthNavigationBridge.jsx';
 import { LoadingProvider } from './LoadingContext.jsx';
 import { SearchProvider } from './SearchContext.jsx';
 import { BrowserCompatibilityProvider } from './BrowserCompatibilityContext.jsx';
@@ -75,6 +77,8 @@ export const RootProvider = ({ children }) => {
                   <UndoProvider maxHistory={10}>
                     <SearchProvider>
                       <Router>
+                        <AppNavigationBridge />
+                        <AuthNavigationBridge />
                         <NavigationProvider>
                           {children}
                         </NavigationProvider>

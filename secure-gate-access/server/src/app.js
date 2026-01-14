@@ -163,12 +163,20 @@ app.use(dataAccessAuditLogging); // Data access audit logging
 
 // CORS configuration with secure whitelist
 // Uses CLIENT_ORIGIN (primary) + ADDITIONAL_ORIGINS (comma-separated list)
+// Staging: STAGING_CLIENT_ORIGIN + STAGING_ADDITIONAL_ORIGINS (optional)
 // Production: Set CLIENT_ORIGIN to your production domain
-const isProduction = process.env.NODE_ENV === 'production';
-const clientOrigin = process.env.CLIENT_ORIGIN || (isProduction ? null : 'http://localhost:3000');
+const runtimeEnv = process.env.NODE_ENV || 'development';
+const isProduction = runtimeEnv === 'production';
+const isStaging = runtimeEnv === 'staging';
+const clientOrigin = process.env.CLIENT_ORIGIN || (isProduction || isStaging ? null : 'http://localhost:3000');
+const stagingOrigin = process.env.STAGING_CLIENT_ORIGIN || null;
 const additionalOriginsStr = process.env.ADDITIONAL_ORIGINS || '';
-const additionalOrigins = additionalOriginsStr 
+const additionalOrigins = additionalOriginsStr
   ? additionalOriginsStr.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+const stagingAdditionalOriginsStr = process.env.STAGING_ADDITIONAL_ORIGINS || '';
+const stagingAdditionalOrigins = stagingAdditionalOriginsStr
+  ? stagingAdditionalOriginsStr.split(',').map(o => o.trim()).filter(Boolean)
   : [];
 
 const isLocalOrigin = (origin) => {
@@ -190,11 +198,18 @@ if (isProduction) {
   }
 }
 
+if (isStaging) {
+  const stagingPrimary = stagingOrigin || clientOrigin;
+  if (!stagingPrimary) {
+    throw new Error('STAGING_CLIENT_ORIGIN or CLIENT_ORIGIN must be set in staging.');
+  }
+}
+
 // Build allowed origins list
 const allowedOrigins = [
-  clientOrigin,
-  ...additionalOrigins,
-  ...(!isProduction ? [
+  isStaging ? (stagingOrigin || clientOrigin) : clientOrigin,
+  ...(isStaging ? stagingAdditionalOrigins : additionalOrigins),
+  ...(!isProduction && !isStaging ? [
     'http://localhost:3000',                   // Development
     'http://localhost:3001',                   // Alternative dev port
     'http://127.0.0.1:3000'                    // Alternative localhost
@@ -212,8 +227,7 @@ const corsConfig = cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, server-to-server)
     if (!origin) {
-      // In production, you may want to restrict this
-      if (process.env.CORS_ALLOW_NO_ORIGIN === 'false') {
+      if ((isProduction || isStaging) && process.env.CORS_ALLOW_NO_ORIGIN !== 'true') {
         return callback(new Error('CORS policy: Origin header required'));
       }
       return callback(null, true);

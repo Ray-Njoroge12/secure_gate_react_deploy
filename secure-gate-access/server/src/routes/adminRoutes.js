@@ -85,7 +85,7 @@ const router = express.Router();
  *         $ref: '#/components/responses/ForbiddenError'
  */
 // Admin metrics endpoint
-router.get('/metrics', authenticateToken, attachRequestAudit, getMetrics);
+router.get('/metrics', authenticateToken, requireRole(['admin']), attachRequestAudit, getMetrics);
 
 /**
  * @swagger
@@ -189,7 +189,7 @@ router.get('/metrics', authenticateToken, attachRequestAudit, getMetrics);
  *         $ref: '#/components/responses/ForbiddenError'
  */
 // Audit logs endpoint
-router.get('/audit-logs', authenticateToken, attachRequestAudit, getAuditLogs);
+router.get('/audit-logs', authenticateToken, requireRole(['admin']), attachRequestAudit, getAuditLogs);
 
 /**
  * @swagger
@@ -261,7 +261,7 @@ router.get('/audit-logs', authenticateToken, attachRequestAudit, getAuditLogs);
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Backup trigger endpoint
-router.post('/backup/trigger', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/backup/trigger', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const result = await backupService.triggerBackup();
     res.json({

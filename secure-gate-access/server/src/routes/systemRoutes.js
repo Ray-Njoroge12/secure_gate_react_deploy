@@ -1,6 +1,5 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import { requireRole } from '../middleware/roleMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { getIntegrationHealth } from '../services/integrationHealthService.js';
 
 const router = express.Router();

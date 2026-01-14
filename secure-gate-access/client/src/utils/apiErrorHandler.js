@@ -7,6 +7,7 @@
 
 import { createStandardError, retryOperation, ERROR_TYPES } from './errorHandling';
 import { handleApiError } from './errorMapper';
+import { navigateToLogin } from './authNavigation';
 import logger from './logger';
 
 /**
@@ -254,7 +255,7 @@ export class ApiErrorHandler {
    * Redirect to login page
    */
   redirectToLogin() {
-    window.location.href = '/login';
+    navigateToLogin();
   }
 
   /**
@@ -365,7 +366,5 @@ export function createRetryableApiCall(apiCall, retryConfig = {}) {
     );
   };
 }
-
-
 
 
