@@ -11,6 +11,7 @@
  */
 
 import logger from '../config/logger.js';
+import { buildErrorPayload } from '../utils/responseFormatter.js';
 
 /**
  * Data schemas defining what each role can see for different entities
@@ -177,10 +178,12 @@ export function minimizeData(entityType, options = {}) {
 
         if (allowedFields === null) {
           // No access to this data type
-          filteredData = {
-            error: 'Access denied',
-            message: 'You do not have permission to access this data'
-          };
+          filteredData = buildErrorPayload(
+            req,
+            res,
+            'You do not have permission to access this data',
+            'FORBIDDEN'
+          );
           res.status(403);
         } else if (Array.isArray(parsedData)) {
           filteredData = filterArray(parsedData, allowedFields, sensitiveFields);
