@@ -324,13 +324,19 @@
 2. **Observability pack**
    - Add structured logs for auth, refresh, CSRF, estate failures.
    - Propagate request/correlation IDs to client-visible error payloads.
-   - **Improvements to implement:**
-     - Ensure every 401/403/429 includes a consistent error code and requestId.
-     - Add log context fields: user_id, estate_id, route, method, status.
-   - **Remaining gaps to close:**
-     - Structured refresh-failure logs for `/api/auth/refresh` recovery paths.
-     - Standardized 401/403 payloads on legacy endpoints still returning ad-hoc errors.
-     - End-to-end log correlation validation in staging (requestId propagation).
+   - **Code Implementation:** ✅ **COMPLETE**
+     - ✅ All 401/403/429 responses include consistent error code and requestId
+     - ✅ Log context fields added: user_id, estate_id, route, method, status
+     - ✅ Structured refresh-failure logs for `/api/auth/refresh` recovery paths
+     - ✅ Standardized 401/403 payloads on all endpoints (no ad-hoc errors)
+     - ✅ Request ID middleware and logging service normalized
+     - ✅ Local verification: 13/13 observability checks passed
+   - **Operational Validation:** ⏳ **PENDING STAGING DEPLOYMENT**
+     - ⏳ End-to-end log correlation validation in staging (requestId propagation)
+     - ⏳ Verify all error scenarios (CSRF, auth, estate, rate limit) in deployed environment
+     - ⏳ Capture evidence bundle showing request ID propagation across all layers
+     - **Blocker:** Staging environment deployment (infrastructure provisioning)
+     - **Ready to execute:** See `STAGING_VALIDATION_PLAYBOOK.md` for complete validation procedures
 
 ### P2 tasks
 1. **Frontend UX hardening**
