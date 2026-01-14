@@ -11,14 +11,12 @@ import {
 import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
 import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
-import { requireRolePolicy } from '../middleware/rolePolicy.js';
+import { attachUserFromToken, authenticateToken } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
-import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
+import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
-import requireEstateContext from '../middleware/estateContextMiddleware.js';
-import { buildErrorPayload } from '../utils/responseFormatter.js';
+import { minimizeData } from '../middleware/dataMinimization.js';
 
 import { registerWalkIn, getTodayWalkIns } from '../controllers/walkInController.js';
 import {
@@ -30,26 +28,6 @@ import {
 } from '../controllers/visitorApprovalController.js';
 
 const router = express.Router();
-
-const inviteLookupLimit = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 40,
-  message: 'Too many invite lookups, please try again later.',
-  handler: (req, res) => {
-    const response = buildErrorPayload(req, res, 'Too many invite lookups, please try again later.', 'RATE_LIMITED');
-    res.status(429).json(response);
-  }
-});
-
-const otpLimit = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  max: 5,
-  message: 'Too many OTP attempts, please try again later.',
-  handler: (req, res) => {
-    const response = buildErrorPayload(req, res, 'Too many OTP attempts, please try again later.', 'RATE_LIMITED');
-    res.status(429).json(response);
-  }
-});
 
 /**
  * @swagger
@@ -146,11 +124,6 @@ const visitorCreationLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (req, res) => {
-    const response = buildErrorPayload(req, res, 'Too many visitor creation attempts, please try again later.', 'RATE_LIMITED');
-    response.retryAfter = '15 minutes';
-    res.status(429).json(response);
-  }
 });
 
 /**
@@ -225,45 +198,38 @@ const visitorCreationLimit = rateLimit({
 router.post('/',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
-  requireEstateContext,
-  requireRolePolicy('adminOrResident'),
-  validateRequest(ValidationSchemas.visitorCreation),
   attachRequestAudit,
   createVisitor
 );
 router.get('/',
-  authenticateToken,
-  requireEstateContext,
-  requireRolePolicy('adminOrResident'),
+  attachUserFromToken,
+  minimizeData('visitor'),
   attachRequestAudit,
   // CacheMiddleware.createMiddleware({ ttl: 300 }), // Temporarily disabled for debugging
   getMyVisitors
 );
-router.post('/:visitorId/pass', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, createPass);
+router.post('/:visitorId/pass', attachUserFromToken, attachRequestAudit, createPass);
 router.post('/bulk-invite',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
-  requireEstateContext,
-  requireRolePolicy('adminOrResident'),
-  validateRequest(ValidationSchemas.bulkInviteCreation),
   attachRequestAudit,
   bulkInvite
 );
 
 // Guard Operations (guard/admin roles required) - require authentication
-router.post('/:id/check-in', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, checkInVisitor);
-router.post('/:id/check-out', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, checkOutVisitor);
+router.post('/:id/check-in', authenticateToken, attachRequestAudit, checkInVisitor);
+router.post('/:id/check-out', authenticateToken, attachRequestAudit, checkOutVisitor);
 
 // Walk-in registration (guard only) - Phase G2
-router.post('/walk-in', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, registerWalkIn);
-router.get('/walk-ins/today', authenticateToken, requireEstateContext, requireRolePolicy('adminOrGuard'), attachRequestAudit, getTodayWalkIns);
+router.post('/walk-in', authenticateToken, attachRequestAudit, registerWalkIn);
+router.get('/walk-ins/today', authenticateToken, attachRequestAudit, getTodayWalkIns);
 
 // Approval flow aliases (client compatibility)
-router.post('/:id/request-approval', authenticateToken, requireEstateContext, requireRolePolicy('guardOnly'), attachRequestAudit, requestApproval);
-router.post('/:id/approve', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, approveVisitor);
-router.post('/:id/reject', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, rejectVisitor);
-router.get('/pending-approvals', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, getPendingApprovals);
-router.get('/approval-history', authenticateToken, requireEstateContext, requireRolePolicy('residentOnly'), attachRequestAudit, getApprovalHistory);
+router.post('/:id/request-approval', authenticateToken, attachRequestAudit, requestApproval);
+router.post('/:id/approve', authenticateToken, attachRequestAudit, approveVisitor);
+router.post('/:id/reject', authenticateToken, attachRequestAudit, rejectVisitor);
+router.get('/pending-approvals', authenticateToken, attachRequestAudit, getPendingApprovals);
+router.get('/approval-history', authenticateToken, attachRequestAudit, getApprovalHistory);
 
 /**
  * @swagger
@@ -384,43 +350,30 @@ router.get('/approval-history', authenticateToken, requireEstateContext, require
  */
 
 // OTP Operations (public endpoints for visitor verification)
-router.post('/:id/verify-otp', otpLimit, validateRequest(ValidationSchemas.visitorOtp), verifyOtp);
-router.post('/:id/resend-otp', otpLimit, resendOtp);
+router.post('/:id/verify-otp', verifyOtp);
+router.post('/:id/resend-otp', resendOtp);
 
 // Public routes (guests) - cached for performance
 router.get('/bulk-invite/:inviteCode',
-  inviteLookupLimit,
-  validateParams(ValidationSchemas.inviteCodeParam),
   CacheMiddleware.createMiddleware({ ttl: 300 }),
   getBulkInvite
 );
-router.post('/complete/:inviteCode',
-  inviteLookupLimit,
-  validateParams(ValidationSchemas.inviteCodeParam),
-  validateRequest(ValidationSchemas.inviteCompletion),
-  completeInvite
-);
-router.post('/self-checkin/:inviteCode',
-  inviteLookupLimit,
-  validateParams(ValidationSchemas.inviteCodeParam),
-  selfCheckIn
-);
+router.post('/complete/:inviteCode', completeInvite);
+router.post('/self-checkin/:inviteCode', selfCheckIn);
 
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
-router.delete('/:id', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, cancelVisitor);
+router.delete('/:id', attachUserFromToken, attachRequestAudit, cancelVisitor);
 
 // Admin Operations (admin role required)
-router.get('/active', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, getActiveVisitors);
-router.get('/report', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, getVisitorReport);
-router.delete('/:visitorId/revoke', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, revokeVisitor);
+router.get('/active', attachUserFromToken, minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
+router.get('/report', attachUserFromToken, minimizeData('visitor'), attachRequestAudit, getVisitorReport);
+router.delete('/:visitorId/revoke', attachUserFromToken, attachRequestAudit, revokeVisitor);
 
 // Route aliases to match frontend expectations
-router.get('/reports', authenticateToken, requireEstateContext, requireRolePolicy('adminOnly'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
+router.get('/reports', attachUserFromToken, minimizeData('visitor'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
 
 // Public invite route alias
 router.get('/invite/:inviteCode',
-  inviteLookupLimit,
-  validateParams(ValidationSchemas.inviteCodeParam),
   CacheMiddleware.createMiddleware({ ttl: 300 }),
   getBulkInvite
 );
