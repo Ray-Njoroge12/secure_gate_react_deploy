@@ -9,6 +9,7 @@ import { createClient } from 'redis';
 import createMemoryStore from 'memorystore';
 import dotenv from 'dotenv';
 import { errorResponse } from '../utils/responseFormatter.js';
+import { getCookieOptions } from '../utils/cookies.js';
 
 dotenv.config();
 
@@ -78,7 +79,7 @@ const sessionConfig = {
   saveUninitialized: false,
   rolling: true, // Reset expiry on activity
   name: 'secure.sid', // Custom session ID name
-  proxy: process.env.NODE_ENV === 'production', // Trust proxy in production
+  proxy: process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging', // Trust proxy in production/staging
   cookie: {
     ...getCookieOptions(),
     maxAge: 24 * 60 * 60 * 1000 // 24 hours

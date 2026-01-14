@@ -27,6 +27,7 @@ class EnvironmentValidator {
     this.isProduction = process.env.NODE_ENV === 'production';
     this.isDevelopment = process.env.NODE_ENV === 'development';
     this.isTest = process.env.NODE_ENV === 'test';
+    this.isStaging = process.env.NODE_ENV === 'staging';
   }
 
   /**
@@ -47,9 +48,12 @@ class EnvironmentValidator {
     // Optional services
     this.validateOptionalServices();
     
-    // Production-specific validations
+    // Production/staging-specific validations
     if (this.isProduction) {
       this.validateProduction();
+    }
+    if (this.isStaging) {
+      this.validateStaging();
     }
 
     // Report results
@@ -78,7 +82,7 @@ class EnvironmentValidator {
     }
 
     // Validate NODE_ENV
-    const validEnvs = ['development', 'test', 'production'];
+    const validEnvs = ['development', 'test', 'production', 'staging'];
     if (process.env.NODE_ENV && !validEnvs.includes(process.env.NODE_ENV)) {
       this.errors.push(`Invalid NODE_ENV: ${process.env.NODE_ENV}. Must be one of: ${validEnvs.join(', ')}`);
     }
@@ -184,6 +188,15 @@ class EnvironmentValidator {
         this.errors.push('CLIENT_ORIGIN must not point to localhost in production');
       }
     }
+
+    if (this.isStaging) {
+      const stagingOrigin = process.env.STAGING_CLIENT_ORIGIN || process.env.CLIENT_ORIGIN;
+      if (!stagingOrigin) {
+        this.errors.push('STAGING_CLIENT_ORIGIN or CLIENT_ORIGIN is required in staging for CORS');
+      } else if (this.isLocalOrigin(stagingOrigin)) {
+        this.errors.push('STAGING_CLIENT_ORIGIN must not point to localhost in staging');
+      }
+    }
   }
 
   /**
@@ -249,6 +262,31 @@ class EnvironmentValidator {
       if (value && this.isWeakSecret(value)) {
         this.errors.push(`${secret} is too weak for production`);
       }
+    }
+  }
+
+  /**
+   * Validate staging-specific requirements
+   */
+  validateStaging() {
+    if (process.env.ENABLE_CSRF === 'false') {
+      this.errors.push('ENABLE_CSRF must not be "false" in staging');
+    }
+
+    if (process.env.ENABLE_RATE_LIMIT === 'false') {
+      this.errors.push('ENABLE_RATE_LIMIT must not be "false" in staging');
+    }
+
+    if (process.env.SECURE_COOKIES !== 'true') {
+      this.warnings.push('SECURE_COOKIES should be "true" in staging for parity with production');
+    }
+
+    if ((process.env.COOKIE_SAMESITE || '').toLowerCase() !== 'none') {
+      this.warnings.push('COOKIE_SAMESITE should be "none" in staging for cross-site auth flows');
+    }
+
+    if (!process.env.TRUST_PROXY) {
+      this.warnings.push('TRUST_PROXY not configured - may affect client IP detection');
     }
   }
 
@@ -394,4 +432,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 export default EnvironmentValidator;
-

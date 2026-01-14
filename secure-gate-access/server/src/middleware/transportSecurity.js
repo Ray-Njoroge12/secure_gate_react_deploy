@@ -18,12 +18,15 @@ import { getCookieOptions } from '../utils/cookies.js';
  * Redirects HTTP requests to HTTPS in production
  */
 export const httpsEnforcement = (req, res, next) => {
+  const runtimeEnv = process.env.NODE_ENV || 'development';
+  const isProduction = runtimeEnv === 'production';
+  const isStaging = runtimeEnv === 'staging';
   // Skip in development or if already HTTPS
-  if (process.env.NODE_ENV !== 'production' || req.secure || req.headers['x-forwarded-proto'] === 'https') {
+  if ((!isProduction && !isStaging) || req.secure || req.headers['x-forwarded-proto'] === 'https') {
     return next();
   }
 
-  // Log HTTP access attempts in production (with error handling)
+  // Log HTTP access attempts in production/staging (with error handling)
   if (process.env.ENFORCE_HTTPS === 'true') {
     try {
       auditLogger.logSecurityEvent('security.http_access_attempt', {
@@ -52,11 +55,13 @@ export const httpsEnforcement = (req, res, next) => {
  * Adds comprehensive transport security headers
  */
 export const transportSecurityHeaders = (req, res, next) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const runtimeEnv = process.env.NODE_ENV || 'development';
+  const isProduction = runtimeEnv === 'production';
+  const isStaging = runtimeEnv === 'staging';
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
 
   // HTTP Strict Transport Security (HSTS)
-  if (isHttps || isProduction) {
+  if (isHttps || isProduction || isStaging) {
     // HSTS with 2-year max-age, includeSubDomains, and preload
     res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   }
@@ -96,7 +101,9 @@ export const transportSecurityHeaders = (req, res, next) => {
  * Ensures all cookies are set with secure attributes
  */
 export const secureCookieConfig = (req, res, next) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const runtimeEnv = process.env.NODE_ENV || 'development';
+  const isProduction = runtimeEnv === 'production';
+  const isStaging = runtimeEnv === 'staging';
   const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
   const baseOptions = getCookieOptions();
 
@@ -109,14 +116,14 @@ export const secureCookieConfig = (req, res, next) => {
       ...baseOptions,
       ...options,
       httpOnly: options.httpOnly !== false,
-      secure: options.secure ?? ((isProduction && process.env.SECURE_COOKIES === 'true') || isHttps),
+      secure: options.secure ?? (((isProduction || isStaging) && process.env.SECURE_COOKIES === 'true') || isHttps),
       sameSite: options.sameSite ?? baseOptions.sameSite,
       domain: options.domain ?? baseOptions.domain,
       path: options.path ?? baseOptions.path
     };
 
     // Add security validations
-    if (isProduction) {
+    if (isProduction || isStaging) {
       // Ensure secure flag in production
       if (secureOptions.secure !== true && isHttps) {
         console.warn(`🔐 Security Warning: Cookie '${name}' should be secure in production`);
@@ -158,9 +165,11 @@ export const secureCookieConfig = (req, res, next) => {
  * Adds certificate validation headers for enhanced security
  */
 export const certificateSecurityHeaders = (req, res, next) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const runtimeEnv = process.env.NODE_ENV || 'development';
+  const isProduction = runtimeEnv === 'production';
+  const isStaging = runtimeEnv === 'staging';
 
-  if (isProduction) {
+  if (isProduction || isStaging) {
     // Certificate Transparency (Expect-CT)
     // This header is deprecated but still useful for older browsers
     res.setHeader('Expect-CT', 'max-age=86400, enforce');
