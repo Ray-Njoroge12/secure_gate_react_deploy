@@ -27,9 +27,10 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res, next, options) => {
     loggingService.warn('Login rate limit exceeded', {
+      event: 'auth.login.rate_limit',
       ip: req.ip,
       userAgent: req.get('user-agent'),
-      requestId: req.requestId,
+      request_id: req.requestId,
       route: req.originalUrl,
       method: req.method,
       status: options.statusCode,
@@ -53,9 +54,10 @@ const refreshLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res, next, options) => {
     loggingService.warn('Refresh rate limit exceeded', {
+      event: 'auth.refresh.rate_limit',
       ip: req.ip,
       userAgent: req.get('user-agent'),
-      requestId: req.requestId,
+      request_id: req.requestId,
       route: req.originalUrl,
       method: req.method,
       status: options.statusCode,
@@ -182,22 +184,24 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
   
   // BUG-006 FIX: Using proper logging service instead of console.log
   loggingService.info('Registration request received', {
+    event: 'auth.register.requested',
     username,
     email,
     role,
     estateId,
-    requestId: req.requestId
+    request_id: req.requestId
   });
   
   // Validate required fields
   if (!username || !email || !password || !role || estateId == null) {
     loggingService.warn('Registration validation failed - missing fields', {
+      event: 'auth.register.validation_failed',
       hasUsername: !!username,
       hasEmail: !!email,
       hasPassword: !!password,
       hasRole: !!role,
       hasEstateId: estateId != null,
-      requestId: req.requestId
+      request_id: req.requestId
     });
     throw new AppError('Missing required fields', 400, 'VALIDATION_ERROR', {
       missing: { username: !username, email: !email, password: !password, role: !role, estate_id: estateId == null }
@@ -222,7 +226,14 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
   }
 
   // Create user
-  loggingService.info('Attempting to create user', { username, email, role, estateId, requestId: req.requestId });
+  loggingService.info('Attempting to create user', {
+    event: 'auth.register.creating_user',
+    username,
+    email,
+    role,
+    estateId,
+    request_id: req.requestId
+  });
   const user = await userService.createUser({
     username,
     email,
@@ -232,18 +243,20 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
   });
 
   loggingService.info('User created successfully', {
+    event: 'auth.register.success',
     userId: user.id,
     username: user.username,
     role: user.role,
-    requestId: req.requestId
+    request_id: req.requestId
   });
 
   // Send email verification
   try {
-    loggingService.info('Sending verification email', { 
-      email: user.email, 
+    loggingService.info('Sending verification email', {
+      event: 'auth.register.email_send_requested',
+      email: user.email,
       hasToken: !!user.verification_token,
-      requestId: req.requestId
+      request_id: req.requestId
     });
     
     const emailResult = await emailService.sendRegistrationConfirmation(
@@ -252,15 +265,17 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
       user.verification_token
     );
     
-    loggingService.info('Verification email sent successfully', { 
+    loggingService.info('Verification email sent successfully', {
+      event: 'auth.register.email_sent',
       messageId: emailResult?.id || 'unknown',
-      requestId: req.requestId
+      request_id: req.requestId
     });
   } catch (emailError) {
     loggingService.error('Failed to send verification email', {
+      event: 'auth.register.email_failed',
       error: emailError.message,
       email: user.email,
-      requestId: req.requestId
+      request_id: req.requestId
     });
     // Don't fail registration if email fails - user can request resend
   }
@@ -373,10 +388,11 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
     if (authError.message.includes('Invalid credentials') || 
         authError.message.includes('Account is locked')) {
       loggingService.warn('Login failed', {
+        event: 'auth.login.failed',
         route: req.originalUrl,
         method: req.method,
         status: 401,
-        requestId: req.requestId,
+        request_id: req.requestId,
         user_id: null,
         estate_id: estateId ?? null,
         reason: authError.message.includes('Account is locked') ? 'ACCOUNT_LOCKED' : 'INVALID_CREDENTIALS'
@@ -389,10 +405,11 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
   
   if (!user) {
     loggingService.warn('Login failed', {
+      event: 'auth.login.failed',
       route: req.originalUrl,
       method: req.method,
       status: 401,
-      requestId: req.requestId,
+      request_id: req.requestId,
       user_id: null,
       estate_id: estateId ?? null,
       reason: 'INVALID_CREDENTIALS'
@@ -436,10 +453,11 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
   }
 
   loggingService.info('Login successful', {
+    event: 'auth.login.success',
     route: req.originalUrl,
     method: req.method,
     status: 200,
-    requestId: req.requestId,
+    request_id: req.requestId,
     user_id: user.id,
     estate_id: user.estate_id ?? null,
     session_type: isWebClient ? 'cookie' : 'token',
@@ -525,12 +543,13 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
 
   if (!refreshToken) {
     loggingService.warn('Refresh token missing', {
+      event: 'auth.refresh.missing',
       route: req.originalUrl,
       method: req.method,
       status: 400,
       user_id: req.user?.id ?? null,
       estate_id: req.user?.estate_id ?? null,
-      requestId: req.requestId
+      request_id: req.requestId
     });
     throw new AppError('Refresh token required', 400, 'VALIDATION_ERROR', {
       field: 'refreshToken'
@@ -542,10 +561,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
     decoded = await tokenService.verifyRefreshToken(refreshToken);
   } catch (error) {
     loggingService.warn('Refresh token verification failed', {
+      event: 'auth.refresh.verification_failed',
       route: req.originalUrl,
       method: req.method,
       status: 401,
-      requestId: req.requestId,
+      request_id: req.requestId,
       user_id: req.user?.id ?? null,
       estate_id: req.user?.estate_id ?? null,
       error: error.name
@@ -557,10 +577,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
   
   if (!user) {
     loggingService.warn('Refresh token user not found', {
+      event: 'auth.refresh.user_not_found',
       route: req.originalUrl,
       method: req.method,
       status: 401,
-      requestId: req.requestId,
+      request_id: req.requestId,
       user_id: userId || null,
       estate_id: null
     });
@@ -578,10 +599,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
 
     if (!storedToken || !withinReuseWindow) {
       loggingService.warn('Refresh token revoked or missing', {
+        event: 'auth.refresh.revoked',
         route: req.originalUrl,
         method: req.method,
         status: 401,
-        requestId: req.requestId,
+        request_id: req.requestId,
         user_id: user.id,
         estate_id: user.estate_id ?? null
       });
@@ -589,10 +611,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
     }
 
     loggingService.info('Refresh token reused within grace window', {
+      event: 'auth.refresh.reused',
       route: req.originalUrl,
       method: req.method,
       status: 200,
-      requestId: req.requestId,
+      request_id: req.requestId,
       user_id: user.id,
       estate_id: user.estate_id ?? null,
       reuseWindowMs: refreshReuseWindow
@@ -601,10 +624,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
 
   if (storedToken.user_id !== user.id) {
     loggingService.warn('Refresh token user mismatch', {
+      event: 'auth.refresh.user_mismatch',
       route: req.originalUrl,
       method: req.method,
       status: 401,
-      requestId: req.requestId,
+      request_id: req.requestId,
       user_id: user.id,
       estate_id: user.estate_id ?? null
     });
@@ -613,10 +637,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
 
   if (storedToken.expires_at && new Date(storedToken.expires_at) <= new Date()) {
     loggingService.warn('Refresh token expired', {
+      event: 'auth.refresh.expired',
       route: req.originalUrl,
       method: req.method,
       status: 401,
-      requestId: req.requestId,
+      request_id: req.requestId,
       user_id: user.id,
       estate_id: user.estate_id ?? null
     });
@@ -658,10 +683,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
   }
 
   loggingService.info('Refresh token rotated', {
+    event: 'auth.refresh.success',
     route: req.originalUrl,
     method: req.method,
     status: 200,
-    requestId: req.requestId,
+    request_id: req.requestId,
     user_id: user.id,
     estate_id: user.estate_id ?? null,
     session_type: isWebClient ? 'cookie' : 'token',
@@ -853,8 +879,9 @@ router.post(
         } catch (emailError) {
           // Log email failures but do not change the generic client response
           loggingService.error('Password reset email send failed', {
+            event: 'auth.password_reset.email_failed',
             error: emailError.message,
-            requestId: req.requestId
+            request_id: req.requestId
           });
         }
       }
@@ -863,8 +890,9 @@ router.post(
     } catch (error) {
       // Log internal error but avoid leaking details to the client
       loggingService.error('Password reset request failed', {
+        event: 'auth.password_reset.request_failed',
         error: error.message,
-        requestId: req.requestId
+        request_id: req.requestId
       });
 
       successResponse(res, {}, genericMessage);
@@ -888,8 +916,9 @@ router.post(
     } catch (error) {
       // Log details server-side, return safe error to client
       loggingService.error('Password reset with token failed', {
+        event: 'auth.password_reset.token_failed',
         error: error.message,
-        requestId: req.requestId
+        request_id: req.requestId
       });
 
       throw new AppError('Invalid or expired reset token, or password does not meet security requirements.', 400, 'PASSWORD_RESET_FAILED');
