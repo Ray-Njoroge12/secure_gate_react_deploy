@@ -27,6 +27,12 @@ import { correlationIdMiddleware, requestLoggingMiddleware } from './src/middlew
 // Enhanced error monitoring imports
 import { createErrorMonitoring, createEnhancedErrorHandler } from './integration/error-monitoring-integration.js';
 
+// Import migration service for auto-migration on startup
+import migrationService from './src/database/migrationService.js';
+
+// Import data retention scheduler for GDPR compliance
+import retentionScheduler from './src/jobs/retentionScheduler.js';
+
 // Validate environment and get configuration (must await async function)
 const envValidation = await EnvironmentConfig.validateAndReport();
 if (!envValidation.isValid && process.env.NODE_ENV === 'production') {
@@ -48,9 +54,6 @@ import { startDataRetentionScheduler, stopDataRetentionScheduler } from './src/s
 
 // Import WebSocket service for Phase 2.3 real-time features
 import webSocketService from './src/services/websocketService.js';
-
-// Import migration service for auto-migration on startup
-import { runMigrations } from './src/services/migrationService.js';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
@@ -290,7 +293,7 @@ async function startServer() {
       
       // Run migrations automatically after database connection
       console.log('🔄 Running database migrations...');
-      const migrationResult = await runMigrations();
+      const migrationResult = await migrationService.runMigrations();
       if (!migrationResult.success) {
         console.error('❌ Database migration failed:', migrationResult.error);
         if (process.env.NODE_ENV === 'production') {
@@ -355,6 +358,15 @@ async function startServer() {
     console.log('🔌 Initializing WebSocket service for real-time features...');
     webSocketService.initialize(server);
     console.log('✅ WebSocket service initialized successfully');
+
+    // Initialize data retention scheduler for GDPR compliance
+    if (process.env.ENABLE_DATA_RETENTION === 'true') {
+      console.log('📅 Starting data retention scheduler...');
+      retentionScheduler.start();
+      console.log('✅ Data retention scheduler started successfully');
+    } else {
+      console.log('ℹ️  Data retention scheduler disabled (set ENABLE_DATA_RETENTION=true to enable)');
+    }
 
     // Enhanced graceful shutdown handling
     const gracefulShutdown = async (signal) => {
@@ -435,4 +447,4 @@ async function startServer() {
 
 startServer();
 // touch
- 
+

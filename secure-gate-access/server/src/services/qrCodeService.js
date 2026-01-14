@@ -1,38 +1,16 @@
 /**
- * OPTIMIZED QR CODE SERVICE - Phase 2.3 with Performance Improvements
- * Handles QR code generation, validation, and management with timeout protection
+ * OPTIMIZED QR CODE SERVICE - Phase 4 with Token-Based Privacy
+ * Handles QR code generation, validation, and management with PII protection
+ * 
+ * SECURITY UPDATE: QR codes now use opaque tokens instead of embedding visitor PII
  */
 
 import QRCode from 'qrcode';
 import { randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { dbManager } from '../database/db.enhanced.js';
-import EnvironmentConfig from '../config/environment.js';
-
-let environmentValidationPromise = null;
-
-const ensureEnvironmentValidated = async () => {
-  if (process.env.NODE_ENV === 'test') {
-    return;
-  }
-
-  if (!environmentValidationPromise) {
-    environmentValidationPromise = EnvironmentConfig.validateAndReport(false);
-  }
-
-  await environmentValidationPromise;
-};
-
-const requireJwtSecret = async () => {
-  await ensureEnvironmentValidated();
-
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET is required to generate and validate QR codes.');
-  }
-
-  return jwtSecret;
-};
+import qrTokenService from './qrTokenService.js';
+import logger from '../config/logger.js';
 
 // Query timeout wrapper
 const withTimeout = async (queryPromise, timeoutMs = 5000) => {
@@ -61,14 +39,13 @@ class OptimizedQRCodeService {
 
   /**
    * Generate QR code for visitor invitation with timeout protection
+   * SECURITY: Uses opaque tokens - no PII embedded in QR code
    */
   async generateVisitorQR(visitorData, options = {}) {
-    const jwtSecret = await requireJwtSecret();
-
     try {
       const qrId = randomUUID();
 
-      // Policy A: Expire at end-of-day of the visit date (estate/estate policy)
+      // Policy A: Expire at end-of-day of the visit date (estate policy)
       let expirationTime = new Date(Date.now() + (24 * 60 * 60 * 1000)); // fallback
       if (visitorData?.date_of_visit) {
         const visitDate = new Date(visitorData.date_of_visit);
@@ -78,30 +55,32 @@ class OptimizedQRCodeService {
         }
       }
 
-      // Create secure payload
-      const payload = {
-        qrId: qrId,
-        visitorId: visitorData.id,
-        type: 'visitor_invite',
-        name: visitorData.name,
-        phone: visitorData.phone,
-        purpose: visitorData.purpose,
-        validFrom: visitorData.date_of_visit,
-        expiresAt: expirationTime.toISOString(),
-        timestamp: new Date().toISOString()
-      };
+      const expiresInMs = expirationTime.getTime() - Date.now();
 
-      // Generate JWT token with timeout
-      const expiresInSeconds = Math.max(1, Math.floor((expirationTime.getTime() - Date.now()) / 1000));
-      const token = jwt.sign(payload, jwtSecret, { expiresIn: expiresInSeconds });
+      // SECURITY FIX: Generate opaque token instead of embedding PII
+      const tokenResult = await qrTokenService.createToken(
+        visitorData.id,
+        qrId,
+        {
+          expiresIn: expiresInMs,
+          maxScans: options.maxScans || 10,
+          createdByUserId: visitorData.createdBy || null
+        }
+      );
 
-      // Generate QR code data URL with timeout
+      if (!tokenResult.success) {
+        throw new Error('Failed to create QR token');
+      }
+
+      const opaqueToken = tokenResult.data.token;
+
+      // Create minimal QR payload (NO PII)
       const qrData = JSON.stringify({
-        token: token,
+        token: opaqueToken, // Opaque token only
         qrId: qrId,
-        type: 'visitor_access'
-      });
-
+        type: 'visitor_access',
+        v: '2.0' // Version indicator for tokenized QR codes
+      });      
       const qrCodeOptions = { ...this.defaultOptions, ...options };
       
       // Wrap QR generation with timeout
@@ -112,28 +91,38 @@ class OptimizedQRCodeService {
         )
       ]);
 
-      // Store QR code data in database with timeout
+      // Store QR code data in database with timeout (legacy JWT for backward compat)
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+      const expiresInSeconds = Math.max(1, Math.floor(expiresInMs / 1000));
+      const legacyToken = jwt.sign({ qrId, type: 'visitor_access' }, jwtSecret, { expiresIn: expiresInSeconds });
+
       const qrRecord = await withTimeout(
         dbManager.query(
           `INSERT INTO qr_codes (qr_id, visitor_id, token, data_url, expires_at, status, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, NOW())
            RETURNING qr_id, expires_at, status, created_at`,
-          [qrId, visitorData.id, token, qrCodeDataURL, expirationTime, 'active']
+          [qrId, visitorData.id, legacyToken, qrCodeDataURL, expirationTime, 'active']
         ),
         2000
       );
+
+      logger.info('[QRCodeService] Generated tokenized QR code', {
+        qrId,
+        visitorId: visitorData.id,
+        tokenized: true
+      });
 
       return {
         success: true,
         data: {
           qrId: qrId,
           qrCodeDataUrl: qrCodeDataURL,
-          token: token,
+          token: opaqueToken, // Return opaque token
           expiresAt: expirationTime,
+          tokenized: true, // Indicate this is a tokenized QR
           visitor: {
-            id: visitorData.id,
-            name: visitorData.name,
-            purpose: visitorData.purpose
+            id: visitorData.id
+            // NO PII in response - use token to retrieve data
           }
         }
       };
@@ -157,45 +146,60 @@ class OptimizedQRCodeService {
     }
   }
 
-  parseQrToken(qrData) {
-    let parsedData;
-    try {
-      parsedData = JSON.parse(qrData);
-    } catch {
-      return {
-        success: false,
-        error: 'Invalid QR code format',
-        code: 400
-      };
-    }
-
-    const { token, qrId } = parsedData;
-    if (!token || !qrId) {
-      return {
-        success: false,
-        error: 'Missing required QR code data',
-        code: 400
-      };
-    }
-
-    return { success: true, data: { token, qrId } };
-  }
-
   /**
    * Validate QR code with timeout protection
+   * SECURITY: Uses token validation - retrieves visitor data from database
    */
   async validateQR(qrData, options = {}) {
-    const jwtSecret = await requireJwtSecret();
-
     try {
-      const parsed = this.parseQrToken(qrData);
-      if (!parsed.success) {
-        return parsed;
+      let parsedData;
+      try {
+        parsedData = JSON.parse(qrData);
+      } catch {
+        return {
+          success: false,
+          error: 'Invalid QR code format',
+          code: 400
+        };
       }
 
-      const { token, qrId } = parsed.data;
+      const { token, qrId, v: version } = parsedData;
+      if (!token || !qrId) {
+        return {
+          success: false,
+          error: 'Missing required QR code data',
+          code: 400
+        };
+      }
 
+      // SECURITY FIX: Use token-based validation (v2.0+)
+      if (version === '2.0') {
+        const tokenResult = await qrTokenService.validateToken(token);
+        
+        if (!tokenResult.success) {
+          return {
+            success: false,
+            error: tokenResult.error,
+            code: tokenResult.code === 'TOKEN_EXPIRED' ? 410 : 401
+          };
+        }
+
+        // Return visitor data retrieved from database via token
+        return {
+          success: true,
+          data: {
+            qrId: qrId,
+            visitor: tokenResult.data.visitor,
+            scanCount: tokenResult.data.scanCount,
+            maxScans: tokenResult.data.maxScans,
+            tokenized: true
+          }
+        };
+      }
+
+      // Legacy validation for old QR codes (backward compatibility)
       // Verify JWT token
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
       let payload;
       try {
         payload = jwt.verify(token, jwtSecret);
@@ -203,14 +207,6 @@ class OptimizedQRCodeService {
         return {
           success: false,
           error: 'Invalid or expired QR code',
-          code: 401
-        };
-      }
-
-      if (payload?.qrId && payload.qrId !== qrId) {
-        return {
-          success: false,
-          error: 'QR code token mismatch',
           code: 401
         };
       }
@@ -243,8 +239,8 @@ class OptimizedQRCodeService {
         };
       }
 
-      // Check status (allow used if explicitly requested)
-      if (qrRecord.status !== 'active' && !(options.allowUsed && qrRecord.status === 'used')) {
+      // Check status
+      if (qrRecord.status !== 'active') {
         return {
           success: false,
           error: 'QR code is not active',
@@ -255,7 +251,7 @@ class OptimizedQRCodeService {
       // Get visitor data with timeout
       const visitorResult = await withTimeout(
         dbManager.query(
-          'SELECT id, name, phone, email, purpose, date_of_visit, status, estate_id FROM visitors WHERE id = $1',
+          'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',
           [qrRecord.visitor_id]
         ),
         2000
@@ -293,122 +289,6 @@ class OptimizedQRCodeService {
         };
       }
       
-      return {
-        success: false,
-        error: 'Failed to validate QR code',
-        code: 500
-      };
-    }
-  }
-
-  /**
-   * Validate and consume QR code (single-use enforcement)
-   */
-  async consumeQRCode(qrData, options = {}) {
-    const jwtSecret = await requireJwtSecret();
-
-    try {
-      const parsed = this.parseQrToken(qrData);
-      if (!parsed.success) {
-        return parsed;
-      }
-
-      const { token, qrId } = parsed.data;
-
-      let payload;
-      try {
-        payload = jwt.verify(token, jwtSecret);
-      } catch (error) {
-        return {
-          success: false,
-          error: 'Invalid or expired QR code',
-          code: 401
-        };
-      }
-
-      if (payload?.qrId && payload.qrId !== qrId) {
-        return {
-          success: false,
-          error: 'QR code token mismatch',
-          code: 401
-        };
-      }
-
-      const qrUpdate = await withTimeout(
-        dbManager.query(
-          `UPDATE qr_codes
-           SET status = 'used',
-               scan_count = COALESCE(scan_count, 0) + 1,
-               first_used_at = COALESCE(first_used_at, NOW()),
-               used_by_guard_id = $2
-           WHERE qr_id = $1
-             AND status = 'active'
-             AND expires_at > NOW()
-           RETURNING qr_id, visitor_id, status, expires_at, data_url, created_at, scan_count`,
-          [qrId, options.guardId || null]
-        ),
-        2000
-      );
-
-      if (qrUpdate.rows.length === 0) {
-        const qrCheck = await withTimeout(
-          dbManager.query(
-            'SELECT qr_id, status, expires_at FROM qr_codes WHERE qr_id = $1',
-            [qrId]
-          ),
-          2000
-        );
-
-        if (qrCheck.rows.length === 0) {
-          return { success: false, error: 'QR code not found', code: 404 };
-        }
-
-        const qrRecord = qrCheck.rows[0];
-        if (new Date() > new Date(qrRecord.expires_at)) {
-          return { success: false, error: 'QR code has expired', code: 410 };
-        }
-
-        if (qrRecord.status === 'used') {
-          return { success: false, error: 'QR code has already been used', code: 403 };
-        }
-
-        return { success: false, error: 'QR code is not active', code: 403 };
-      }
-
-      const qrRecord = qrUpdate.rows[0];
-      const visitorResult = await withTimeout(
-        dbManager.query(
-          'SELECT id, name, phone, email, purpose, date_of_visit, status, estate_id FROM visitors WHERE id = $1',
-          [qrRecord.visitor_id]
-        ),
-        2000
-      );
-
-      if (visitorResult.rows.length === 0) {
-        return { success: false, error: 'Associated visitor not found', code: 404 };
-      }
-
-      return {
-        success: true,
-        data: {
-          qrId: qrRecord.qr_id,
-          visitor: visitorResult.rows[0],
-          qrCode: qrRecord,
-          payload,
-          validUntil: qrRecord.expires_at
-        }
-      };
-    } catch (error) {
-      console.error('[QRCodeService] consumeQRCode error:', error);
-
-      if (error.message === 'Database query timeout') {
-        return {
-          success: false,
-          error: 'Request timeout - please try again',
-          code: 408
-        };
-      }
-
       return {
         success: false,
         error: 'Failed to validate QR code',
@@ -505,8 +385,8 @@ class OptimizedQRCodeService {
   // Compatibility wrappers for existing routes (qrCodeRoutes.js)
   // ---------------------------------------------------------------------------
 
-  async validateQRCode(qrToken, options = {}) {
-    const validation = await this.validateQR(qrToken, options);
+  async validateQRCode(qrToken) {
+    const validation = await this.validateQR(qrToken);
     if (!validation.success) {
       return {
         valid: false,

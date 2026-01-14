@@ -13,20 +13,57 @@
 
 import argon2 from 'argon2';
 import { dbManager } from '../database/db.enhanced.js';
-import { camelize, respond, respondError } from '../utils/respond.js';
+import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 import QRCodeService from '../services/qrCodeService.js';
 import { sendVisitorInviteSms, sendVisitorInviteEmail, sendOtpVerificationSms, sendOtpVerificationEmail } from '../services/notificationService.js';
 import encryptionService from '../services/encryptionService.js';
 import { generateOTP, generateSecureToken } from '../utils/tokenHelper.js';
 import { sanitizeString } from '../utils/sanitizeInput.js';
-import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempotencyResponse } from '../services/idempotencyService.js';
+
+/**
+ * Decrypt visitor ID number if encrypted version exists
+ * Falls back to plaintext for backward compatibility
+ */
+async function decryptIdNumber(visitor) {
+  if (!visitor) return visitor;
+  
+  // If encrypted version exists, decrypt it
+  if (visitor.id_number_encrypted) {
+    try {
+      visitor.id_number = await encryptionService.decrypt(visitor.id_number_encrypted);
+    } catch (error) {
+      console.error(`Failed to decrypt ID number for visitor ${visitor.id}:`, error.message);
+      // Keep plaintext if decryption fails
+    }
+  }
+  
+  // Remove encrypted fields from response (security: don't expose encrypted data)
+  delete visitor.id_number_encrypted;
+  delete visitor.id_number_encrypted_at;
+  
+  return visitor;
+}
+
+/**
+ * Decrypt ID numbers for multiple visitors
+ */
+async function decryptVisitorList(visitors) {
+  if (!visitors || !Array.isArray(visitors)) return [];
+  return Promise.all(visitors.map(v => decryptIdNumber(v)));
+}
 
 function getOtpExpiryMinutes() {
   return parseInt(process.env.OTP_EXPIRY_MINUTES, 10) || 15;
 }
 
 function shouldEchoOtp() {
+  // CRITICAL SECURITY: Never echo OTP in production environment
+  // This prevents OTP leakage in API responses, logs, and monitoring tools
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  // Only allow OTP echo in development/test environments for debugging
   return process.env.OTP_DEBUG_ECHO === 'true';
 }
 
@@ -86,6 +123,9 @@ export const createVisitor = async (req, res) => {
       date_of_visit, // Accept both camelCase and snake_case
       time,
       vehiclePlate,
+      vehicle_plate,
+      idNumber,
+      id_number,
       allowResidenceLocation,
       allow_residence_location,
       unitPin,
@@ -117,7 +157,7 @@ export const createVisitor = async (req, res) => {
 
     // Get resident info
     const residentResult = await dbManager.query(
-      'SELECT id, username, email as resident_email, estate_id FROM users WHERE email = $1',
+      'SELECT id, username, email as resident_email FROM users WHERE email = $1',
       [req.user.email]
     );
 
@@ -127,11 +167,6 @@ export const createVisitor = async (req, res) => {
 
     const resident = residentResult.rows[0];
     const residentId = resident.id;
-    const estateId = resident.estate_id ?? req.user.estate_id ?? 1;
-
-    if (!estateId) {
-      return respondError(res, 400, 'Estate context is required to create visitors');
-    }
 
     // Determine initial status
     const initialStatus = requestedStatus === 'pending_confirmation'
@@ -155,15 +190,27 @@ export const createVisitor = async (req, res) => {
       : null;
     const unitPinEncryptedAt = unitPinEncrypted ? new Date() : null;
 
+    // ID Number encryption (GDPR Article 32 compliance)
+    const rawIdNumber = (idNumber ?? id_number);
+    const idNumberPlain = typeof rawIdNumber === 'string' && rawIdNumber.trim() ? rawIdNumber.trim() : null;
+    const idNumberEncrypted = idNumberPlain
+      ? await encryptionService.encrypt(idNumberPlain)
+      : null;
+    const idNumberEncryptedAt = idNumberEncrypted ? new Date() : null;
+
+    // Vehicle plate sanitization
+    const vehiclePlateFinal = vehiclePlate || vehicle_plate;
+
     const result = await dbManager.query(
       `INSERT INTO visitors (
         name, phone, email, purpose, date_of_visit, time_of_visit,
-        vehicle_plate, resident_id, host_id,
+        vehicle_plate, id_number, id_number_encrypted, id_number_encrypted_at,
+        resident_id, host_id,
         invite_code, visitor_token, token_expires_at,
         allow_residence_location, unit_pin_encrypted, unit_pin_encrypted_at,
         consent_given, consent_timestamp, consent_type, consent_version,
-        status, created_by, estate_id, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, NOW())
+        status, created_by, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW())
        RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit,
                  invite_code, visitor_token, token_expires_at, status, created_at`,
       [
@@ -173,7 +220,10 @@ export const createVisitor = async (req, res) => {
         sanitizeString(purpose || 'Visit'),
         finalDateOfVisit,
         time || null,
-        vehiclePlate ? sanitizeString(vehiclePlate) : null,
+        vehiclePlateFinal ? sanitizeString(vehiclePlateFinal) : null,
+        idNumberPlain, // Store plaintext during transition period
+        idNumberEncrypted, // NEW: Encrypted version
+        idNumberEncryptedAt, // NEW: Encryption timestamp
         residentId,
         residentId, // Set host_id to same value as resident_id
         inviteCode,
@@ -187,8 +237,7 @@ export const createVisitor = async (req, res) => {
         consent_type || 'data_processing',
         consent_version || '1.0',
         initialStatus,
-        req.user.email,
-        estateId
+        req.user.email
       ]
     );
 
@@ -275,7 +324,6 @@ export const getMyVisitors = async (req, res) => {
     }
 
     const role = req.user.role;
-    const estateId = req.user.estate_id ?? 1;
 
     // Get pagination params
     const page = parseInt(req.query.page) || 1;
@@ -283,7 +331,10 @@ export const getMyVisitors = async (req, res) => {
     const offset = (page - 1) * limit;
     const status = req.query.status;
 
-    let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, vehicle_plate, status, check_in, check_out, visitor_token, token_expires_at, invite_code, created_at, host_id, resident_id
+    let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
+                        vehicle_plate, id_number, id_number_encrypted, id_number_encrypted_at,
+                        status, check_in, check_out, visitor_token, token_expires_at, 
+                        invite_code, created_at, host_id, resident_id
                  FROM visitors`;
     const params = [];
 
@@ -298,11 +349,10 @@ export const getMyVisitors = async (req, res) => {
       }
 
       const residentId = residentResult.rows[0].id;
-      query += ` WHERE (host_id = $1 OR resident_id = $1) AND estate_id = $2`;
-      params.push(residentId, estateId);
+      query += ` WHERE (host_id = $1 OR resident_id = $1)`;
+      params.push(residentId);
     } else if (role === 'guard' || role === 'admin') {
-      query += ` WHERE estate_id = $1`;
-      params.push(estateId);
+      query += ` WHERE 1=1`;
     } else {
       return respondError(res, 403, 'Forbidden');
     }
@@ -321,25 +371,27 @@ export const getMyVisitors = async (req, res) => {
     let countQuery = 'SELECT COUNT(*) FROM visitors';
     const countParams = [];
     if (role === 'resident') {
-      countQuery += ' WHERE (host_id = $1 OR resident_id = $1) AND estate_id = $2';
-      countParams.push(params[0], estateId);
+      countQuery += ' WHERE (host_id = $1 OR resident_id = $1)';
+      countParams.push(params[0]);
       if (status) {
-        countQuery += ' AND status = $3';
+        countQuery += ' AND status = $2';
         countParams.push(String(status).toLowerCase());
       }
     } else {
-      countQuery += ' WHERE estate_id = $1';
-      countParams.push(estateId);
+      countQuery += ' WHERE 1=1';
       if (status) {
-        countQuery += ` AND status = $2`;
+        countQuery += ` AND status = $1`;
         countParams.push(String(status).toLowerCase());
       }
     }
     const countResult = await dbManager.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
 
+    // Decrypt ID numbers for all visitors
+    const visitorsDecrypted = await decryptVisitorList(result.rows);
+
     respond(res, {
-      visitors: result.rows,
+      visitors: visitorsDecrypted,
       pagination: {
         page,
         limit,
@@ -501,29 +553,6 @@ export const bulkInvite = async (req, res) => {
 
     const OTP_EXPIRY_MINUTES = getOtpExpiryMinutes();
     const CLIENT_ORIGIN = getClientOrigin();
-    const idempotencyKey = getIdempotencyKey(req);
-    const requestHash = idempotencyKey
-      ? buildRequestHash({
-        method: req.method,
-        path: req.originalUrl,
-        body: req.body,
-        userId: req.user.id
-      })
-      : null;
-
-    if (idempotencyKey) {
-      const idempotencyResult = await resolveIdempotency({
-        key: idempotencyKey,
-        scope: 'bulk-invite',
-        requestHash
-      });
-      if (idempotencyResult.conflict) {
-        return respondError(res, 409, 'Idempotency key reuse with different request payload');
-      }
-      if (idempotencyResult.hit) {
-        return res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
-      }
-    }
 
     const { eventName, date, time, numGuests, guests } = req.body;
 
@@ -545,7 +574,7 @@ export const bulkInvite = async (req, res) => {
 
     // Get resident info
     const residentResult = await dbManager.query(
-      'SELECT id, email, estate_id FROM users WHERE email = $1',
+      'SELECT id, email FROM users WHERE email = $1',
       [req.user.email]
     );
 
@@ -554,7 +583,6 @@ export const bulkInvite = async (req, res) => {
     }
 
     const resident = residentResult.rows[0];
-    const estateId = resident.estate_id ?? req.user.estate_id ?? 1;
 
     // Generate unique invite code
     const inviteCode = generateSecureToken(16);
@@ -612,8 +640,8 @@ export const bulkInvite = async (req, res) => {
               resident_id, bulk_invite_id,
               visitor_token, token_expires_at,
               otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
-              status, estate_id, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, $13, $14, NOW())
+              status, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, $13, NOW())
              RETURNING id, name, phone, email, purpose, status, visitor_token`,
             [
               name.trim(),
@@ -628,8 +656,7 @@ export const bulkInvite = async (req, res) => {
               tokenExpiresAt,
               otpHash,
               otpExpiresAt,
-              PASS_STATUS.PENDING,
-              estateId
+              PASS_STATUS.PENDING
             ]
           );
 
@@ -656,7 +683,7 @@ export const bulkInvite = async (req, res) => {
       preRegistered: createdVisitors.length
     });
 
-    const responseData = {
+    respond(res, {
       message: 'Event invite created successfully',
       bulkInviteId: bulkInvite.id,
       inviteCode,
@@ -669,20 +696,7 @@ export const bulkInvite = async (req, res) => {
       expiresAt: bulkInvite.expires_at,
       guests: createdVisitors.length > 0 ? createdVisitors : undefined,
       errors: errors.length > 0 ? errors : undefined
-    };
-
-    const responseBody = { success: true, data: camelize(responseData) };
-    if (idempotencyKey) {
-      await storeIdempotencyResponse({
-        key: idempotencyKey,
-        scope: 'bulk-invite',
-        requestHash,
-        responseCode: 201,
-        responseBody
-      });
-    }
-
-    res.status(201).json(responseBody);
+    }, 201);
 
   } catch (error) {
     console.error('[bulkInvite] Error:', error);
@@ -833,11 +847,9 @@ export const completeInvite = async (req, res) => {
 
         // Resolve resident id from bulk_invites.created_by (email)
         let residentId = null;
-        let estateId = 1;
         if (bulkInvite.created_by) {
-          const residentRes = await client.query('SELECT id, estate_id FROM users WHERE email = $1', [bulkInvite.created_by]);
+          const residentRes = await client.query('SELECT id FROM users WHERE email = $1', [bulkInvite.created_by]);
           residentId = residentRes.rows[0]?.id || null;
-          estateId = residentRes.rows[0]?.estate_id ?? estateId;
         }
 
         const visitorToken = generateVisitorToken();
@@ -853,8 +865,8 @@ export const completeInvite = async (req, res) => {
             visitor_token, token_expires_at,
             otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
             consent_given, consent_timestamp, consent_type, consent_version,
-            status, estate_id, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, true, $13, $14, $15, $16, $17, NOW())
+            status, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, true, $13, $14, $15, $16, NOW())
            RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
           [
             name.trim(),
@@ -872,8 +884,7 @@ export const completeInvite = async (req, res) => {
             consent_timestamp ? new Date(consent_timestamp) : new Date(),
             consent_type || 'data_processing',
             consent_version || '1.0',
-            PASS_STATUS.OTP_SENT,
-            estateId
+            PASS_STATUS.OTP_SENT
           ]
         );
 
@@ -1090,7 +1101,7 @@ export const cancelVisitor = async (req, res) => {
 
     // Get the visitor
     const vRes = await dbManager.query(
-      'SELECT id, resident_id, host_id, name, status, estate_id FROM visitors WHERE id = $1',
+      'SELECT id, resident_id, host_id, name, status FROM visitors WHERE id = $1',
       [id]
     );
     const visitor = vRes.rows[0];
@@ -1116,17 +1127,12 @@ export const cancelVisitor = async (req, res) => {
       if (visitor.host_id !== residentId && visitor.resident_id !== residentId) {
         return respondError(res, 403, 'You can only cancel your own visitors');
       }
-      if (visitor.estate_id !== req.user.estate_id) {
-        return respondError(res, 403, 'Visitor does not belong to your estate');
-      }
     } else if (role !== 'admin') {
       return respondError(res, 403, 'Forbidden');
-    } else if (visitor.estate_id !== req.user.estate_id) {
-      return respondError(res, 403, 'Visitor does not belong to your estate');
     }
 
     // Delete the visitor
-    await dbManager.query('DELETE FROM visitors WHERE id = $1 AND estate_id = $2', [id, req.user.estate_id]);
+    await dbManager.query('DELETE FROM visitors WHERE id = $1', [id]);
 
     await req.audit?.('visitor.cancel', 'visitor', String(id), { 
       outcome: 'success', 
