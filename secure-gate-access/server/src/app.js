@@ -27,13 +27,12 @@ import {
   securityEventLogger
 } from './middleware/securityHeadersMiddleware.js';
 import securityAuditMiddleware, { handleRateLimitViolation, handleAuthFailure } from './middleware/securityAuditMiddleware.js';
-import enhancedErrorHandler, { asyncErrorHandler, gracefulShutdownHandler } from './middleware/enhancedErrorHandler.js';
 import {
   transportSecurityStack,
   initializeTransportSecurity
 } from './middleware/transportSecurity.js';
-import { requestIdMiddleware } from './middleware/errorHandler.js';
-import { errorHandler, notFoundHandler } from './middleware/standardizedErrorHandler.js';
+import { errorHandler, notFoundHandler, requestIdMiddleware } from './middleware/standardizedErrorHandler.js';
+import { gracefulShutdownHandler } from './middleware/gracefulShutdown.js';
 import { responseMiddleware } from './utils/responseUtils.js';
 import swaggerMiddleware from './config/swagger.js';
 import { debugMiddleware, timeoutMiddleware } from './middleware/debugMiddleware.js';
