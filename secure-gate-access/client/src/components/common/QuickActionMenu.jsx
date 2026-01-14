@@ -13,6 +13,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { navigateTo } from '../../utils/appNavigation';
 
 const defaultActions = {
   resident: [
@@ -49,7 +50,7 @@ const ActionItem = ({
     if (onClick) {
       onClick();
     } else if (href) {
-      window.location.href = href;
+      navigateTo(href);
     }
   };
 

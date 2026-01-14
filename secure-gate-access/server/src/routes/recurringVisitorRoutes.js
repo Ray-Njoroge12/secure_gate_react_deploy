@@ -7,6 +7,7 @@ import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import recurringVisitorService from '../services/recurringVisitorService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -20,10 +21,7 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
     const { id: residentId, role } = req.user;
 
     if (!['resident', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only residents can create recurring passes'
-      });
+      return errorResponse(res, 'Only residents can create recurring passes', 'FORBIDDEN', 403, null, req);
     }
 
     const result = await recurringVisitorService.createRecurringPass(residentId, req.body);
@@ -49,10 +47,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const { status, includeExpired } = req.query;
 
     if (!['resident', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only residents can view their recurring passes'
-      });
+      return errorResponse(res, 'Only residents can view their recurring passes', 'FORBIDDEN', 403, null, req);
     }
 
     const passes = await recurringVisitorService.getResidentRecurringPasses(residentId, {
@@ -214,10 +209,7 @@ router.post('/validate', authenticateToken, async (req, res) => {
     const { credential, method = 'pin' } = req.body;
 
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can validate passes'
-      });
+      return errorResponse(res, 'Only guards can validate passes', 'FORBIDDEN', 403, null, req);
     }
 
     if (!credential) {

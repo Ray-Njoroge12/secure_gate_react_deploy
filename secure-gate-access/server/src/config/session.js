@@ -8,6 +8,8 @@ import { RedisStore } from 'connect-redis';
 import { createClient } from 'redis';
 import createMemoryStore from 'memorystore';
 import dotenv from 'dotenv';
+import { errorResponse } from '../utils/responseFormatter.js';
+import { getCookieOptions } from '../utils/cookies.js';
 
 dotenv.config();
 
@@ -77,13 +79,10 @@ const sessionConfig = {
   saveUninitialized: false,
   rolling: true, // Reset expiry on activity
   name: 'secure.sid', // Custom session ID name
-  proxy: process.env.NODE_ENV === 'production', // Trust proxy in production
+  proxy: process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging', // Trust proxy in production/staging
   cookie: {
-    httpOnly: true, // Prevent XSS attacks
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    domain: process.env.COOKIE_DOMAIN || undefined
+    ...getCookieOptions(),
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 };
 
@@ -237,10 +236,7 @@ export const sessionSecurity = (req, res, next) => {
     if (req.session.fingerprint !== currentFingerprint) {
       console.warn('⚠️  Session fingerprint mismatch - possible hijacking attempt');
       sessionUtils.destroySession(req);
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Session security violation' 
-      });
+      return errorResponse(res, 'Session security violation', 'SESSION_SECURITY_VIOLATION', 401, null, req);
     }
   }
   

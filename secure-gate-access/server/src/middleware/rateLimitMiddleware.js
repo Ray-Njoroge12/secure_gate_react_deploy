@@ -1,6 +1,7 @@
 // server/src/middleware/rateLimitMiddleware.js
 import rateLimit from 'express-rate-limit';
 import slowDown from 'express-slow-down';
+import { buildErrorPayload } from '../utils/responseFormatter.js';
 
 /**
  * Updated Rate Limiting Middleware compatible with express-rate-limit v7+
@@ -94,6 +95,35 @@ const createStore = () => {
   return undefined; // Use default memory store
 };
 
+const rateLimitErrorCode = 'RATE_LIMIT_EXCEEDED';
+
+const buildRateLimitHandler = ({ message, retryAfter, details = {} }) => {
+  return (req, res) => {
+    const errorResponse = buildErrorResponse({
+      message,
+      errorCode: rateLimitErrorCode,
+      details: {
+        retryAfter,
+        ...details
+      },
+      req
+    });
+
+    loggingService.logSecurity('warn', 'Rate limit exceeded', {
+      code: rateLimitErrorCode,
+      status: 429,
+      method: req.method,
+      route: req.originalUrl,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null,
+      requestId: req.requestId,
+      correlationId: req.correlationId
+    });
+
+    res.status(429).json(errorResponse);
+  };
+};
+
 /**
  * General rate limiting for all API endpoints
  * 100 requests per 15 minutes per IP
@@ -101,19 +131,14 @@ const createStore = () => {
 export const generalRateLimit = () => rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `general:${getClientIP(req)}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many requests from this IP, please try again later.',
-      retryAfter: '15 minutes'
-    });
+    const response = buildErrorPayload(req, res, 'Too many requests from this IP, please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '15 minutes';
+    res.status(429).json(response);
   }
 });
 
@@ -124,19 +149,14 @@ export const generalRateLimit = () => rateLimit({
 export const authRateLimit = () => rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50,
-  message: {
-    error: 'Too many login attempts, please try again later.',
-    retryAfter: '15 minutes'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `auth:${getClientIP(req)}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many login attempts, please try again later.',
-      retryAfter: '15 minutes'
-    });
+    const response = buildErrorPayload(req, res, 'Too many login attempts, please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '15 minutes';
+    res.status(429).json(response);
   }
 });
 
@@ -147,19 +167,14 @@ export const authRateLimit = () => rateLimit({
 export const adminRateLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 20,
-  message: {
-    error: 'Too many admin requests, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `admin:${req.user?.id || getClientIP(req)}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many admin requests, please try again later.',
-      retryAfter: '1 hour'
-    });
+    const response = buildErrorPayload(req, res, 'Too many admin requests, please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '1 hour';
+    res.status(429).json(response);
   }
 });
 
@@ -170,19 +185,14 @@ export const adminRateLimit = () => rateLimit({
 export const bulkOperationLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3,
-  message: {
-    error: 'Too many bulk operations, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `bulk:${req.user?.id || getClientIP(req)}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many bulk operations, please try again later.',
-      retryAfter: '1 hour'
-    });
+    const response = buildErrorPayload(req, res, 'Too many bulk operations, please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '1 hour';
+    res.status(429).json(response);
   }
 });
 
@@ -193,19 +203,14 @@ export const bulkOperationLimit = () => rateLimit({
 export const passwordResetLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3,
-  message: {
-    error: 'Too many password reset requests, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `pwd_reset:${getClientIP(req)}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many password reset requests, please try again later.',
-      retryAfter: '1 hour'
-    });
+    const response = buildErrorPayload(req, res, 'Too many password reset requests, please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '1 hour';
+    res.status(429).json(response);
   }
 });
 
@@ -216,19 +221,14 @@ export const passwordResetLimit = () => rateLimit({
 export const registrationLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 1000,
-  message: {
-    error: 'Too many registration attempts, please try again later.',
-    retryAfter: '1 hour'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `register:${getClientIP(req)}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many registration attempts, please try again later.',
-      retryAfter: '1 hour'
-    });
+    const response = buildErrorPayload(req, res, 'Too many registration attempts, please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '1 hour';
+    res.status(429).json(response);
   }
 });
 
@@ -253,19 +253,14 @@ export const speedLimitMiddleware = () => slowDown({
 export const strictRateLimit = () => rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 10,
-  message: {
-    error: 'Too many requests to this sensitive endpoint.',
-    retryAfter: '10 minutes'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `strict:${req.user?.id || getClientIP(req)}:${req.path}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many requests to this sensitive endpoint.',
-      retryAfter: '10 minutes'
-    });
+    const response = buildErrorPayload(req, res, 'Too many requests to this sensitive endpoint.', 'RATE_LIMITED');
+    response.retryAfter = '10 minutes';
+    res.status(429).json(response);
   }
 });
 
@@ -276,42 +271,41 @@ export const strictRateLimit = () => rateLimit({
 export const ddosProtection = () => rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20,
-  message: {
-    error: 'DDoS protection activated. Too many requests.',
-    retryAfter: '1 minute'
-  },
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
   keyGenerator: (req) => `ddos:${getClientIP(req)}`,
   handler: (req, res) => {
-    res.status(429).json({
-      error: 'DDoS protection activated. Too many requests.',
-      retryAfter: '1 minute'
-    });
+    const response = buildErrorPayload(req, res, 'DDoS protection activated. Too many requests.', 'RATE_LIMITED');
+    response.retryAfter = '1 minute';
+    res.status(429).json(response);
   }
 });
 
 /**
  * Custom rate limit function for specific use cases
  */
-export const customRateLimit = (options) => {
+export const customRateLimit = (options = {}) => {
+  const fallbackMessage = 'Too many requests, please try again later.';
+  const messageValue = typeof options.message === 'string'
+    ? options.message
+    : options.message?.error || fallbackMessage;
+  const retryAfterValue = typeof options.message === 'object' && options.message?.retryAfter
+    ? options.message.retryAfter
+    : 'later';
   const defaults = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
-    message: {
-      error: 'Too many requests, please try again later.',
-      retryAfter: 'later'
-    },
     standardHeaders: true,
     legacyHeaders: false,
     store: createStore(),
     keyGenerator: (req) => `custom:${getClientIP(req)}`,
     handler: (req, res) => {
-      res.status(429).json(options.message || {
-        error: 'Too many requests, please try again later.',
-        retryAfter: 'later'
-      });
+      const message = options.message?.error || 'Too many requests, please try again later.';
+      const retryAfter = options.message?.retryAfter || 'later';
+      const response = buildErrorPayload(req, res, message, 'RATE_LIMITED');
+      response.retryAfter = retryAfter;
+      res.status(429).json(response);
     }
   };
 

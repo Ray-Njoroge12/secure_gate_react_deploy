@@ -27,13 +27,12 @@ import {
   securityEventLogger
 } from './middleware/securityHeadersMiddleware.js';
 import securityAuditMiddleware, { handleRateLimitViolation, handleAuthFailure } from './middleware/securityAuditMiddleware.js';
-import enhancedErrorHandler, { asyncErrorHandler, gracefulShutdownHandler } from './middleware/enhancedErrorHandler.js';
 import {
   transportSecurityStack,
   initializeTransportSecurity
 } from './middleware/transportSecurity.js';
-import { requestIdMiddleware } from './middleware/errorHandler.js';
-import { errorHandler, notFoundHandler } from './middleware/standardizedErrorHandler.js';
+import { errorHandler, notFoundHandler, requestIdMiddleware } from './middleware/standardizedErrorHandler.js';
+import { gracefulShutdownHandler } from './middleware/gracefulShutdown.js';
 import { responseMiddleware } from './utils/responseUtils.js';
 import swaggerMiddleware from './config/swagger.js';
 import { debugMiddleware, timeoutMiddleware } from './middleware/debugMiddleware.js';
@@ -55,10 +54,10 @@ import adminRoutes from './routes/adminRoutes.js';
 import tenantProvisioningRoutes from './routes/tenantProvisioningRoutes.js';
 import visitorRoutes from './routes/visitorRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js'; // Dashboard routes
-// import residentRoutes from './routes/residentRoutes.js'; // Removed - placeholder implementation
 // import guardRoutes from './routes/guardRoutes.js'; // Removed - placeholder implementation
 import authRoutes from './routes/authRoutes.js';
 import mfaRoutes from './routes/mfaRoutes.js';
+import estateRoutes from './routes/estateRoutes.js';
 import dataPrivacyRoutes from './routes/dataPrivacyRoutes.js';
 import kenyaDPARoutes from './routes/kenyaDPARoutes.js'; // Phase 2.3: Kenya DPA compliance (DPO & ODPC)
 import breachNotificationRoutes from './routes/breachNotificationRoutes.js'; // Phase 2.4: 72-hour breach notification
@@ -162,12 +161,20 @@ app.use(dataAccessAuditLogging); // Data access audit logging
 
 // CORS configuration with secure whitelist
 // Uses CLIENT_ORIGIN (primary) + ADDITIONAL_ORIGINS (comma-separated list)
+// Staging: STAGING_CLIENT_ORIGIN + STAGING_ADDITIONAL_ORIGINS (optional)
 // Production: Set CLIENT_ORIGIN to your production domain
-const isProduction = process.env.NODE_ENV === 'production';
-const clientOrigin = process.env.CLIENT_ORIGIN || (isProduction ? null : 'http://localhost:3000');
+const runtimeEnv = process.env.NODE_ENV || 'development';
+const isProduction = runtimeEnv === 'production';
+const isStaging = runtimeEnv === 'staging';
+const clientOrigin = process.env.CLIENT_ORIGIN || (isProduction || isStaging ? null : 'http://localhost:3000');
+const stagingOrigin = process.env.STAGING_CLIENT_ORIGIN || null;
 const additionalOriginsStr = process.env.ADDITIONAL_ORIGINS || '';
-const additionalOrigins = additionalOriginsStr 
+const additionalOrigins = additionalOriginsStr
   ? additionalOriginsStr.split(',').map(o => o.trim()).filter(Boolean)
+  : [];
+const stagingAdditionalOriginsStr = process.env.STAGING_ADDITIONAL_ORIGINS || '';
+const stagingAdditionalOrigins = stagingAdditionalOriginsStr
+  ? stagingAdditionalOriginsStr.split(',').map(o => o.trim()).filter(Boolean)
   : [];
 
 const isLocalOrigin = (origin) => {
@@ -189,11 +196,18 @@ if (isProduction) {
   }
 }
 
+if (isStaging) {
+  const stagingPrimary = stagingOrigin || clientOrigin;
+  if (!stagingPrimary) {
+    throw new Error('STAGING_CLIENT_ORIGIN or CLIENT_ORIGIN must be set in staging.');
+  }
+}
+
 // Build allowed origins list
 const allowedOrigins = [
-  clientOrigin,
-  ...additionalOrigins,
-  ...(!isProduction ? [
+  isStaging ? (stagingOrigin || clientOrigin) : clientOrigin,
+  ...(isStaging ? stagingAdditionalOrigins : additionalOrigins),
+  ...(!isProduction && !isStaging ? [
     'http://localhost:3000',                   // Development
     'http://localhost:3001',                   // Alternative dev port
     'http://127.0.0.1:3000'                    // Alternative localhost
@@ -211,8 +225,7 @@ const corsConfig = cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, server-to-server)
     if (!origin) {
-      // In production, you may want to restrict this
-      if (process.env.CORS_ALLOW_NO_ORIGIN === 'false') {
+      if ((isProduction || isStaging) && process.env.CORS_ALLOW_NO_ORIGIN !== 'true') {
         return callback(new Error('CORS policy: Origin header required'));
       }
       return callback(null, true);
@@ -379,6 +392,9 @@ app.use('/api/system', systemRoutes); // System info, status, database health ro
 // app.use('/api/auth', debugMiddleware('BEFORE_AUTH_ROUTES')); // Disabled for production
 app.use('/api/auth', authRoutes);
 // app.use('/api/auth', debugMiddleware('AFTER_AUTH_ROUTES')); // Disabled for production
+
+// Estate onboarding routes (requires auth, no estate required)
+app.use('/api/estates', estateRoutes);
 
 // MFA routes
 app.use('/api/mfa', mfaRoutes);

@@ -5,6 +5,7 @@ import createMemoryStore from 'memorystore';
 import crypto from 'crypto';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import loggingService from '../services/loggingService.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const MemoryStore = createMemoryStore(session);
 
@@ -289,10 +290,7 @@ class EnhancedSessionManager {
             correlationId: req.correlationId
           });
 
-          return res.status(403).json({
-            success: false,
-            message: 'Insufficient privileges for this operation'
-          });
+          return errorResponse(res, 'Insufficient privileges for this operation', 'FORBIDDEN', 403, null, req);
         }
 
         // For elevated operations, regenerate session for security

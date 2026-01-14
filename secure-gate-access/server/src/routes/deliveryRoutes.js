@@ -9,6 +9,7 @@ import auditLoggerFactory from '../middleware/auditLogger.js';
 import deliveryService from '../services/deliveryService.js';
 import { sendDeliveryNotification, sendHandoffDecisionNotification } from '../services/notificationService.js';
 import multer from 'multer';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -42,10 +43,7 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
     const { role, id: guardId } = req.user;
     
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can register deliveries'
-      });
+      return errorResponse(res, 'Only guards can register deliveries', 'FORBIDDEN', 403, null, req);
     }
     
     const { trackingNumber, carrierName, recipientId, packageDescription, packageSize, notes } = req.body;
@@ -95,10 +93,7 @@ router.post('/:id/photo', authenticateToken, upload.single('photo'), async (req,
     const deliveryId = parseInt(req.params.id);
     
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can add delivery photos'
-      });
+      return errorResponse(res, 'Only guards can add delivery photos', 'FORBIDDEN', 403, null, req);
     }
     
     if (!req.file) {
@@ -164,10 +159,7 @@ router.get('/pending', authenticateToken, async (req, res) => {
     const { role } = req.user;
     
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can view pending deliveries'
-      });
+      return errorResponse(res, 'Only guards can view pending deliveries', 'FORBIDDEN', 403, null, req);
     }
     
     const deliveries = await deliveryService.getPendingDeliveries();
@@ -230,7 +222,10 @@ router.get('/:id/photo', authenticateToken, async (req, res) => {
     const result = await deliveryService.getDeliveryPhoto(deliveryId, requesterId);
     
     if (!result.success) {
-      return res.status(result.error === 'Access denied' ? 403 : 404).json(result);
+      if (result.error === 'Access denied') {
+        return errorResponse(res, 'Access denied', 'FORBIDDEN', 403, null, req);
+      }
+      return res.status(404).json(result);
     }
     
     res.set('Content-Type', result.mimeType);
@@ -280,10 +275,7 @@ router.post('/:id/notify', authenticateToken, async (req, res) => {
     const deliveryId = parseInt(req.params.id);
     
     if (!['guard', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only guards can send delivery notifications'
-      });
+      return errorResponse(res, 'Only guards can send delivery notifications', 'FORBIDDEN', 403, null, req);
     }
     
     const result = await deliveryService.notifyResidentOfDelivery(deliveryId);
@@ -306,10 +298,7 @@ router.post('/:id/handoff', authenticateToken, attachRequestAudit, async (req, r
     const { preference } = req.body;
 
     if (!['resident', 'admin'].includes(role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Only residents can set delivery handoff preference'
-      });
+      return errorResponse(res, 'Only residents can set delivery handoff preference', 'FORBIDDEN', 403, null, req);
     }
 
     const result = await deliveryService.setDeliveryHandoffPreference(deliveryId, residentId, preference);
@@ -340,10 +329,7 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
     const { role } = req.user;
     
     if (role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Only admins can view delivery statistics'
-      });
+      return errorResponse(res, 'Only admins can view delivery statistics', 'FORBIDDEN', 403, null, req);
     }
     
     const stats = await deliveryService.getDeliveryStats();

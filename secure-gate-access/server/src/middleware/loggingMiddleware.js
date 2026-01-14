@@ -24,8 +24,8 @@ export const correlationIdMiddleware = (req, res, next) => {
   req.correlationId = correlationId;
   req.requestId = correlationId;
   req.id = correlationId;
-  res.setHeader('X-Correlation-Id', correlationId);
-  res.setHeader('X-Request-Id', correlationId);
+  res.setHeader('X-Correlation-ID', correlationId);
+  res.setHeader('X-Request-ID', correlationId);
 
   // Set in logging service for this request (with error handling)
   try {
@@ -102,6 +102,20 @@ export const requestLoggingMiddleware = (req, res, next) => {
         slow: duration >= 2000
       }
     });
+
+    if (res.statusCode === 403 || res.statusCode === 429) {
+      loggingService.logSecurity('warn', 'Security response emitted', {
+        correlationId: req.correlationId,
+        request_id: req.requestId || req.correlationId,
+        user_id: req.user?.id ?? null,
+        estate_id: req.user?.estate_id ?? null,
+        role: req.user?.role ?? null,
+        route: req.originalUrl,
+        status: res.statusCode,
+        method: req.method,
+        code: res.statusCode === 429 ? 'RATE_LIMITED' : 'FORBIDDEN'
+      });
+    }
 
     // Log to performance logger if slow
     if (duration > 1000) {

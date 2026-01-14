@@ -1,12 +1,14 @@
 import express from 'express';
+import { randomBytes } from 'crypto';
 import rateLimit from 'express-rate-limit';
-import { authenticateToken, attachUserFromToken } from '../middleware/authMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 import { tokenService } from '../services/tokenService.js';
+import { getCookieOptions } from '../utils/cookies.js';
 import { userService } from '../services/userService.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import loggingService from '../services/loggingService.js';
 import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.js';
-import { successResponse, createdResponse, validationErrorResponse, unauthorizedResponse, internalErrorResponse } from '../utils/responseFormatter.js';
+import { successResponse, createdResponse, validationErrorResponse, unauthorizedResponse, internalErrorResponse, errorResponse } from '../utils/responseFormatter.js';
 import { validatePasswordResetRequest, validatePasswordReset, validateRegistration, validateLogin, validateRefreshRequest } from '../validation/authValidation.js';
 import emailService from '../services/emailService.js';
 
@@ -15,18 +17,63 @@ const router = express.Router();
 // Rate limiting for authentication endpoints (more aggressive)
 // Skip in development/test mode to allow testing
 const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+const authLimiterMax = Number.parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10);
+const refreshLimiterMax = Number.parseInt(process.env.REFRESH_RATE_LIMIT_MAX, 10);
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 100 : 5, // Higher limit in dev, strict in production
+  max: Number.isFinite(authLimiterMax) ? authLimiterMax : (isDev ? 100 : 5), // Higher limit in dev, strict in production
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    loggingService.warn('Login rate limit exceeded', {
+      event: 'auth.login.rate_limit',
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      request_id: req.requestId,
+      route: req.originalUrl,
+      method: req.method,
+      status: options.statusCode,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
+    });
+    errorResponse(res, options.message, 'AUTH_RATE_LIMIT', options.statusCode, null, req);
+  },
   skip: (req) => {
     // Skip rate limiting in development mode or for health endpoints
     if (isDev) return true;
     return req.path === '/health' || req.path === '/api/health';
   }
 });
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number.isFinite(refreshLimiterMax) ? refreshLimiterMax : (isDev ? 300 : 60),
+  message: 'Too many refresh attempts, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    loggingService.warn('Refresh rate limit exceeded', {
+      event: 'auth.refresh.rate_limit',
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      request_id: req.requestId,
+      route: req.originalUrl,
+      method: req.method,
+      status: options.statusCode,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null
+    });
+    errorResponse(res, options.message, 'REFRESH_RATE_LIMIT', options.statusCode, null, req);
+  },
+  skip: (req) => {
+    if (isDev) return true;
+    return req.path === '/health' || req.path === '/api/health';
+  }
+});
+
+const refreshReuseWindowMs = Number.parseInt(process.env.REFRESH_REUSE_WINDOW_MS, 10);
+const refreshReuseWindow = Number.isFinite(refreshReuseWindowMs) ? refreshReuseWindowMs : 30000;
 
 const getClientPlatform = (req) => {
   const header = req.headers['x-client-platform'] || req.headers['x-client-type'];
@@ -133,27 +180,31 @@ const getBearerToken = (req) => {
 // User registration
 // BUG-001 FIX: Rate limiter re-enabled for production security
 router.post('/register', authLimiter, validateRegistration, attachRequestAudit(), asyncHandler(async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, estate_id: estateId } = req.body;
   
   // BUG-006 FIX: Using proper logging service instead of console.log
   loggingService.info('Registration request received', {
+    event: 'auth.register.requested',
     username,
     email,
     role,
-    requestId: req.requestId
+    estateId,
+    request_id: req.requestId
   });
   
   // Validate required fields
-  if (!username || !email || !password || !role) {
+  if (!username || !email || !password || !role || estateId == null) {
     loggingService.warn('Registration validation failed - missing fields', {
+      event: 'auth.register.validation_failed',
       hasUsername: !!username,
       hasEmail: !!email,
       hasPassword: !!password,
       hasRole: !!role,
-      requestId: req.requestId
+      hasEstateId: estateId != null,
+      request_id: req.requestId
     });
     throw new AppError('Missing required fields', 400, 'VALIDATION_ERROR', {
-      missing: { username: !username, email: !email, password: !password, role: !role }
+      missing: { username: !username, email: !email, password: !password, role: !role, estate_id: estateId == null }
     });
   }
 
@@ -175,27 +226,37 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
   }
 
   // Create user
-  loggingService.info('Attempting to create user', { username, email, role, requestId: req.requestId });
+  loggingService.info('Attempting to create user', {
+    event: 'auth.register.creating_user',
+    username,
+    email,
+    role,
+    estateId,
+    request_id: req.requestId
+  });
   const user = await userService.createUser({
     username,
     email,
     password,
-    role
+    role,
+    estate_id: estateId
   });
 
   loggingService.info('User created successfully', {
+    event: 'auth.register.success',
     userId: user.id,
     username: user.username,
     role: user.role,
-    requestId: req.requestId
+    request_id: req.requestId
   });
 
   // Send email verification
   try {
-    loggingService.info('Sending verification email', { 
-      email: user.email, 
+    loggingService.info('Sending verification email', {
+      event: 'auth.register.email_send_requested',
+      email: user.email,
       hasToken: !!user.verification_token,
-      requestId: req.requestId
+      request_id: req.requestId
     });
     
     const emailResult = await emailService.sendRegistrationConfirmation(
@@ -204,15 +265,17 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
       user.verification_token
     );
     
-    loggingService.info('Verification email sent successfully', { 
+    loggingService.info('Verification email sent successfully', {
+      event: 'auth.register.email_sent',
       messageId: emailResult?.id || 'unknown',
-      requestId: req.requestId
+      request_id: req.requestId
     });
   } catch (emailError) {
     loggingService.error('Failed to send verification email', {
+      event: 'auth.register.email_failed',
       error: emailError.message,
       email: user.email,
-      requestId: req.requestId
+      request_id: req.requestId
     });
     // Don't fail registration if email fails - user can request resend
   }
@@ -227,6 +290,70 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
     }
   }, 'User registered successfully');
 }));
+
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   get:
+ *     summary: Verify email address
+ *     description: Verify user email with token from verification email
+ *     tags: [Authentication]
+ */
+router.get('/verify-email', asyncHandler(async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    throw new AppError('Verification token is required', 400, 'VALIDATION_ERROR');
+  }
+
+  // Find user with this verification token
+  const userResult = await userService.db.query(
+    `SELECT id, username, email, verified, verification_expires 
+     FROM users 
+     WHERE verification_token = $1`,
+    [token]
+  );
+
+  if (userResult.rows.length === 0) {
+    throw new AppError('Invalid or expired verification token', 400, 'INVALID_TOKEN');
+  }
+
+  const user = userResult.rows[0];
+
+  // Check if already verified
+  if (user.verified) {
+    return successResponse(res, {
+      message: 'Email already verified'
+    }, 'Email already verified');
+  }
+
+  // Check if token expired
+  if (user.verification_expires && new Date(user.verification_expires) < new Date()) {
+    throw new AppError('Verification token has expired', 400, 'TOKEN_EXPIRED');
+  }
+
+  // Update user to verified
+  await userService.db.query(
+    `UPDATE users 
+     SET verified = true, 
+         verification_token = NULL, 
+         verification_expires = NULL,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [user.id]
+  );
+
+  loggingService.info('Email verified successfully', {
+    userId: user.id,
+    email: user.email
+  });
+
+  successResponse(res, {
+    verified: true,
+    email: user.email
+  }, 'Email verified successfully');
+}));
+
 
 /**
  * @swagger
@@ -324,6 +451,16 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
     // Handle authentication errors (invalid credentials, account locked, etc.)
     if (authError.message.includes('Invalid credentials') || 
         authError.message.includes('Account is locked')) {
+      loggingService.warn('Login failed', {
+        event: 'auth.login.failed',
+        route: req.originalUrl,
+        method: req.method,
+        status: 401,
+        request_id: req.requestId,
+        user_id: null,
+        estate_id: estateId ?? null,
+        reason: authError.message.includes('Account is locked') ? 'ACCOUNT_LOCKED' : 'INVALID_CREDENTIALS'
+      });
       throw new AppError(authError.message, 401, 'INVALID_CREDENTIALS');
     }
     // Re-throw unexpected errors to be caught by outer catch block
@@ -331,6 +468,16 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
   }
   
   if (!user) {
+    loggingService.warn('Login failed', {
+      event: 'auth.login.failed',
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      request_id: req.requestId,
+      user_id: null,
+      estate_id: estateId ?? null,
+      reason: 'INVALID_CREDENTIALS'
+    });
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
@@ -352,30 +499,34 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
   );
 
   // BUG-008 FIX: Set tokens as httpOnly cookies instead of returning in body
-  const isProduction = process.env.NODE_ENV === 'production';
-  const cookieSameSite = isProduction ? 'none' : 'lax';
-  const cookieSecure = isProduction;
+  const cookieOptions = getCookieOptions();
   
   // Set access token cookie
   // For cross-site (Netlify frontend + Render backend), use sameSite: 'none' + secure: true
   if (isWebClient) {
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: cookieSecure, // Must be true for sameSite: 'none'
-      sameSite: cookieSameSite, // Required for cross-site cookies
+      ...cookieOptions,
       maxAge: 15 * 60 * 1000, // 15 minutes
-      path: '/'
     });
 
     // Set refresh token cookie
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSameSite,
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/'
     });
   }
+
+  loggingService.info('Login successful', {
+    event: 'auth.login.success',
+    route: req.originalUrl,
+    method: req.method,
+    status: 200,
+    request_id: req.requestId,
+    user_id: user.id,
+    estate_id: user.estate_id ?? null,
+    session_type: isWebClient ? 'cookie' : 'token',
+    client_platform: platform
+  });
 
   successResponse(res, {
     user: {
@@ -449,39 +600,123 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Token refresh
-router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(), asyncHandler(async (req, res) => {
+router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAudit(), asyncHandler(async (req, res) => {
   const platform = getClientPlatform(req);
   const isWebClient = platform === 'web';
   const refreshToken = isWebClient ? req.cookies?.refreshToken : (getBearerToken(req) || req.body?.refreshToken);
 
   if (!refreshToken) {
+    loggingService.warn('Refresh token missing', {
+      event: 'auth.refresh.missing',
+      route: req.originalUrl,
+      method: req.method,
+      status: 400,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null,
+      request_id: req.requestId
+    });
     throw new AppError('Refresh token required', 400, 'VALIDATION_ERROR', {
       field: 'refreshToken'
     });
   }
 
-  const decoded = await tokenService.verifyRefreshToken(refreshToken);
+  let decoded;
+  try {
+    decoded = await tokenService.verifyRefreshToken(refreshToken);
+  } catch (error) {
+    loggingService.warn('Refresh token verification failed', {
+      event: 'auth.refresh.verification_failed',
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      request_id: req.requestId,
+      user_id: req.user?.id ?? null,
+      estate_id: req.user?.estate_id ?? null,
+      error: error.name
+    });
+    throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
+  }
   const userId = Number(decoded.sub || decoded.userId);
   const user = await userService.getUserById(userId);
   
   if (!user) {
+    loggingService.warn('Refresh token user not found', {
+      event: 'auth.refresh.user_not_found',
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      request_id: req.requestId,
+      user_id: userId || null,
+      estate_id: null
+    });
     throw new AppError('Invalid refresh token', 401, 'INVALID_TOKEN');
   }
 
   const storedToken = await tokenService.getRefreshTokenRecord(refreshToken);
   if (!storedToken || storedToken.is_revoked) {
-    throw new AppError('Refresh token has been revoked', 401, 'INVALID_TOKEN');
+    const revokedAt = storedToken?.revoked_at ? new Date(storedToken.revoked_at) : null;
+    const withinReuseWindow = Boolean(
+      storedToken?.is_revoked
+      && revokedAt
+      && Date.now() - revokedAt.getTime() <= refreshReuseWindow
+    );
+
+    if (!storedToken || !withinReuseWindow) {
+      loggingService.warn('Refresh token revoked or missing', {
+        event: 'auth.refresh.revoked',
+        route: req.originalUrl,
+        method: req.method,
+        status: 401,
+        request_id: req.requestId,
+        user_id: user.id,
+        estate_id: user.estate_id ?? null
+      });
+      throw new AppError('Refresh token has been revoked', 401, 'INVALID_TOKEN');
+    }
+
+    loggingService.info('Refresh token reused within grace window', {
+      event: 'auth.refresh.reused',
+      route: req.originalUrl,
+      method: req.method,
+      status: 200,
+      request_id: req.requestId,
+      user_id: user.id,
+      estate_id: user.estate_id ?? null,
+      reuseWindowMs: refreshReuseWindow
+    });
   }
 
   if (storedToken.user_id !== user.id) {
+    loggingService.warn('Refresh token user mismatch', {
+      event: 'auth.refresh.user_mismatch',
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      request_id: req.requestId,
+      user_id: user.id,
+      estate_id: user.estate_id ?? null
+    });
     throw new AppError('Refresh token mismatch', 401, 'INVALID_TOKEN');
   }
 
   if (storedToken.expires_at && new Date(storedToken.expires_at) <= new Date()) {
+    loggingService.warn('Refresh token expired', {
+      event: 'auth.refresh.expired',
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      request_id: req.requestId,
+      user_id: user.id,
+      estate_id: user.estate_id ?? null
+    });
     throw new AppError('Refresh token expired', 401, 'INVALID_TOKEN');
   }
 
-  await tokenService.revokeRefreshToken(refreshToken);
+  await tokenService.markRefreshTokenUsed(refreshToken);
+
+  if (!storedToken.is_revoked) {
+    await tokenService.revokeRefreshToken(refreshToken);
+  }
 
   const { accessToken, refreshToken: nextRefreshToken, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
   const refreshInfo = tokenService.getTokenInfo(nextRefreshToken);
@@ -497,33 +732,62 @@ router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(
     }
   );
 
-  const isProduction = process.env.NODE_ENV === 'production';
-  const cookieSameSite = isProduction ? 'none' : 'lax';
-  const cookieSecure = isProduction;
+  const cookieOptions = getCookieOptions();
 
   if (isWebClient) {
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSameSite,
+      ...cookieOptions,
       maxAge: 15 * 60 * 1000,
-      path: '/'
     });
 
     res.cookie('refreshToken', nextRefreshToken, {
-      httpOnly: true,
-      secure: cookieSecure,
-      sameSite: cookieSameSite,
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
     });
   }
+
+  loggingService.info('Refresh token rotated', {
+    event: 'auth.refresh.success',
+    route: req.originalUrl,
+    method: req.method,
+    status: 200,
+    request_id: req.requestId,
+    user_id: user.id,
+    estate_id: user.estate_id ?? null,
+    session_type: isWebClient ? 'cookie' : 'token',
+    client_platform: platform
+  });
 
   successResponse(res, {
     ...(isWebClient
       ? { session: { type: 'cookie' } }
       : { accessToken, refreshToken: nextRefreshToken, tokenType, expiresIn })
   }, 'Token refreshed successfully');
+}));
+
+/**
+ * @swagger
+ * /api/auth/csrf-token:
+ *   get:
+ *     summary: Get CSRF token
+ *     description: Returns the current CSRF token for the session
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: CSRF token retrieved successfully
+ */
+router.get('/csrf-token', asyncHandler(async (req, res) => {
+  if (!req.session) {
+    throw new AppError('Session not initialized', 500, 'NO_SESSION');
+  }
+
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = randomBytes(32).toString('hex');
+  }
+
+  res.setHeader('X-CSRF-Token', req.session.csrfToken);
+
+  successResponse(res, { csrfToken: req.session.csrfToken }, 'CSRF token issued');
 }));
 
 /**
@@ -553,7 +817,7 @@ router.post('/refresh', authLimiter, validateRefreshRequest, attachRequestAudit(
 // User logout
 router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(async (req, res) => {
   // BUG-008 FIX: Clear httpOnly cookies on logout
-  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieOptions = getCookieOptions();
   const accessToken = getBearerToken(req) || req.cookies?.accessToken;
   const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
@@ -564,19 +828,8 @@ router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(asy
     await tokenService.revokeRefreshToken(refreshToken);
   }
   
-  res.clearCookie('accessToken', {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
-    path: '/'
-  });
-  
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
-    path: '/'
-  });
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
 
   successResponse(res, {}, 'Logout successful');
 }));
@@ -690,8 +943,9 @@ router.post(
         } catch (emailError) {
           // Log email failures but do not change the generic client response
           loggingService.error('Password reset email send failed', {
+            event: 'auth.password_reset.email_failed',
             error: emailError.message,
-            requestId: req.requestId
+            request_id: req.requestId
           });
         }
       }
@@ -700,8 +954,9 @@ router.post(
     } catch (error) {
       // Log internal error but avoid leaking details to the client
       loggingService.error('Password reset request failed', {
+        event: 'auth.password_reset.request_failed',
         error: error.message,
-        requestId: req.requestId
+        request_id: req.requestId
       });
 
       successResponse(res, {}, genericMessage);
@@ -725,8 +980,9 @@ router.post(
     } catch (error) {
       // Log details server-side, return safe error to client
       loggingService.error('Password reset with token failed', {
+        event: 'auth.password_reset.token_failed',
         error: error.message,
-        requestId: req.requestId
+        request_id: req.requestId
       });
 
       throw new AppError('Invalid or expired reset token, or password does not meet security requirements.', 400, 'PASSWORD_RESET_FAILED');

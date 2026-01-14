@@ -2,8 +2,9 @@ import { dbManager } from '../database/db.enhanced.js';
 import { auditLog } from '../services/auditService.js';
 import { tokenService, passwordService, accountSecurity } from '../services/tokenService.js';
 import auditLogger from '../services/auditLogger.js';
-import { ErrorHelper } from '../middleware/errorHandler.js';
+import { ErrorHelper } from '../middleware/standardizedErrorHandler.js';
 import { ResponseUtil, sanitizeUser } from '../utils/responseUtils.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import loggingService from '../services/loggingService.js';
 
@@ -73,7 +74,7 @@ export async function loginUser(req, res) {
         email,
         reason: 'user_not_found'
       });
-      return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
+      return errorResponse(res, 'Invalid credentials', 'INVALID_CREDENTIALS', 401, null, req);
     }
 
     if (accountSecurity.isAccountLocked(user.id)) {
@@ -121,10 +122,7 @@ export async function loginUser(req, res) {
 
       if (attemptInfo?.isLocked) {
         auditLogger.logAccountLockout(user.id, req.ip, 'too_many_failed_attempts', attemptInfo?.totalAttempts);
-        return res.status(401).json({
-          status: 'error',
-          message: 'Too many failed attempts. Account temporarily locked.'
-        });
+        return errorResponse(res, 'Too many failed attempts. Account temporarily locked.', 'ACCOUNT_LOCKED', 401, null, req);
       }
 
       let message = 'Invalid credentials';
@@ -132,7 +130,7 @@ export async function loginUser(req, res) {
         message = `${message}. ${attemptInfo.remainingAttempts} attempts remaining before lockout`;
       }
 
-      return res.status(401).json({ status: 'error', message });
+      return errorResponse(res, message, 'INVALID_CREDENTIALS', 401, null, req);
     }
 
     accountSecurity.clearFailedAttempts(user.id);
@@ -185,14 +183,14 @@ export async function loginUser(req, res) {
 export async function refreshToken(req, res) {
   const refresh = req?.cookies?.refreshToken;
   if (!refresh) {
-    return res.status(401).json({ status: 'error', message: 'Refresh token not provided' });
+    return errorResponse(res, 'Refresh token not provided', 'REFRESH_TOKEN_MISSING', 401, null, req);
   }
 
   let decoded;
   try {
     decoded = tokenService.verifyRefreshToken(refresh);
   } catch (err) {
-    return res.status(401).json({ status: 'error', message: 'Invalid or expired refresh token' });
+    return errorResponse(res, 'Invalid or expired refresh token', 'INVALID_REFRESH_TOKEN', 401, null, req);
   }
 
   try {
@@ -200,7 +198,7 @@ export async function refreshToken(req, res) {
     const user = userResult?.rows?.[0];
 
     if (!user) {
-      return res.status(401).json({ status: 'error', message: 'User not found' });
+      return errorResponse(res, 'User not found', 'AUTH_USER_NOT_FOUND', 401, null, req);
     }
 
     const tokens = tokenService.generateTokens({

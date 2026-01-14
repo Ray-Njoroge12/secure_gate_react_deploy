@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { navigateTo } from '../../utils/appNavigation';
 import { Card, Button, PageHeader } from '../../components/ui';
 import QRScanner from '../../components/QRScanner';
 import { QrCode, RefreshCw, Search, CheckCircle, XCircle } from 'lucide-react';
@@ -263,7 +264,7 @@ const ScanQR = () => {
             If QR scanning is not available, you can manually enter visitor information.
           </p>
           <Button 
-            onClick={() => window.location.href = '/dashboard/guard/manual-check'}
+            onClick={() => navigateTo('/dashboard/guard/manual-check')}
             variant="outline"
           >
             Go to Manual Check

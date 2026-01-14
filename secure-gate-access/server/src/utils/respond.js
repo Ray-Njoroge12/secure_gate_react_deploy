@@ -1,4 +1,6 @@
 // server/src/utils/respond.js
+import { buildErrorPayload } from './responseFormatter.js';
+
 export function toCamel(s) {
   return s.replace(/_([a-z])/g, (_, p) => p.toUpperCase());
 }
@@ -22,8 +24,21 @@ export function respond(res, data) {
   return res.status(status).json({ success: true, data: camelize(data) });
 }
 
-export function respondError(res, code, message) {
-  return res.status(code).json({ success: false, error: { code, message } });
+const statusCodeMap = {
+  400: 'VALIDATION_ERROR',
+  401: 'UNAUTHORIZED',
+  403: 'FORBIDDEN',
+  404: 'NOT_FOUND',
+  409: 'CONFLICT',
+  422: 'VALIDATION_ERROR',
+  429: 'RATE_LIMIT_EXCEEDED',
+  500: 'INTERNAL_ERROR'
+};
+
+export function respondError(res, code, message, req = null) {
+  const errorCode = statusCodeMap[code] || 'ERROR';
+  const response = buildErrorPayload(req, res, message, errorCode);
+  return res.status(code).json(response);
 }
 
 export default { respond, respondError, camelize, toCamel };

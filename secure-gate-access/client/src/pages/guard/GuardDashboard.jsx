@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { navigateTo } from "../../utils/appNavigation";
 import { useLocation, useNavigate } from "react-router-dom";
 import logger from 'utils/logger';
 import { useAuth } from "../../contexts/AuthContext";
@@ -660,7 +661,7 @@ function mask(value){
 function QuickActionTile({ href, icon, title, subtitle, color }) {
   return (
     <div 
-      onClick={() => window.location.href = href}
+      onClick={() => navigateTo(href)}
       className="cursor-pointer"
     >
       <div className={`${color} text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200 h-full`}>

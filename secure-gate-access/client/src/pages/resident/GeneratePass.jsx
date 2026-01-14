@@ -1,5 +1,6 @@
 // client/src/pages/resident/GeneratePass.jsx
 import React, { useState, useEffect } from "react";
+import { navigateTo } from "../../utils/appNavigation";
 import { PageHeader, Card, Button, EmptyState } from "../../components/ui";
 import { getMyVisitors, createPass } from "../../services/passService";
 import logger from 'utils/logger';
@@ -115,7 +116,7 @@ export default function GeneratePass(){
               title="No Approved Visitors"
               description="You need to add and approve visitors before generating passes"
               actionLabel="Add Visitor"
-              onAction={() => window.location.href = '/resident/quick-invite'}
+              onAction={() => navigateTo('/resident/quick-invite')}
             />
           </Card>
         )}
@@ -262,7 +263,7 @@ export default function GeneratePass(){
                 </Button>
                 <Button
                   className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                  onClick={() => window.location.href = '/dashboard/resident'}
+                  onClick={() => navigateTo('/dashboard/resident')}
                 >
                   Done
                 </Button>

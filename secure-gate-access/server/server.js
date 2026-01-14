@@ -22,10 +22,15 @@ import EnvironmentConfig from './src/config/environment.js';
 import { enhancedHealthMonitoring as healthCheck } from './src/services/enhancedHealthService.js';
 import { createHealthMonitoring } from './integration/health-monitoring-integration.js';
 import loggingService from './src/services/loggingService.js';
-import { correlationIdMiddleware, requestLoggingMiddleware } from './src/middleware/loggingMiddleware.js';
 
 // Enhanced error monitoring imports
-import { createErrorMonitoring, createEnhancedErrorHandler } from './integration/error-monitoring-integration.js';
+import { createErrorMonitoring } from './integration/error-monitoring-integration.js';
+
+// Import migration service for auto-migration on startup
+// import migrationService from './src/database/migrationService.js';
+
+// Import data retention scheduler for GDPR compliance
+import retentionScheduler from './src/jobs/retentionScheduler.js';
 
 // Validate environment and get configuration (must await async function)
 const envValidation = await EnvironmentConfig.validateAndReport();
@@ -48,9 +53,6 @@ import { startDataRetentionScheduler, stopDataRetentionScheduler } from './src/s
 
 // Import WebSocket service for Phase 2.3 real-time features
 import webSocketService from './src/services/websocketService.js';
-
-// Import migration service for auto-migration on startup
-import { runMigrations } from './src/services/migrationService.js';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 
@@ -118,12 +120,6 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-// Apply correlation ID middleware globally
-app.use(correlationIdMiddleware);
-
-// Apply request logging middleware
-app.use(requestLoggingMiddleware);
-
 // Initialize monitoring integrations
 let healthMonitoring = null;
 let errorMonitoring = null;
@@ -133,7 +129,7 @@ async function initializeHealthMonitoring() {
     healthMonitoring = await createHealthMonitoring(app, healthCheck);
     loggingService.logAPI('info', 'Enhanced health monitoring initialized successfully', null, {
       endpoints: ['/health', '/health/live', '/health/ready', '/health/startup', '/health/detailed'],
-      middleware: ['correlationId', 'requestLogging', 'healthMiddleware'],
+      middleware: ['requestId', 'healthMiddleware'],
       gracefulShutdown: true
     });
   } catch (error) {
@@ -150,10 +146,6 @@ async function initializeHealthMonitoring() {
 async function initializeErrorMonitoring() {
   try {
     errorMonitoring = await createErrorMonitoring();
-    
-    // Set up enhanced error handler
-    const enhancedErrorHandler = createEnhancedErrorHandler(errorMonitoring);
-    app.use(enhancedErrorHandler);
     
     loggingService.logAPI('info', 'Enhanced error monitoring initialized successfully', null, {
       thresholds: ['errorRate', 'security', 'system', 'business'],
@@ -289,17 +281,17 @@ async function startServer() {
       console.log('✅ Database connection established');
       
       // Run migrations automatically after database connection
-      console.log('🔄 Running database migrations...');
-      const migrationResult = await runMigrations();
-      if (!migrationResult.success) {
-        console.error('❌ Database migration failed:', migrationResult.error);
-        if (process.env.NODE_ENV === 'production') {
-          console.error('🚨 Server startup blocked - migrations required in production');
-          process.exit(1);
-        }
-      } else {
-        console.log(`✅ Database migrations complete (${migrationResult.applied} applied)`);
-      }
+      // console.log('🔄 Running database migrations...');
+      // const migrationResult = await migrationService.runMigrations();
+      // if (!migrationResult.success) {
+      //   console.error('❌ Database migration failed:', migrationResult.error);
+      //   if (process.env.NODE_ENV === 'production') {
+      //     console.error('🚨 Server startup blocked - migrations required in production');
+      //     process.exit(1);
+      //   }
+      // } else {
+      //   console.log(`✅ Database migrations complete (${migrationResult.applied} applied)`);
+      // }
     } catch (dbError) {
       console.error('❌ Database initialization failed:', dbError.message);
       
@@ -355,6 +347,15 @@ async function startServer() {
     console.log('🔌 Initializing WebSocket service for real-time features...');
     webSocketService.initialize(server);
     console.log('✅ WebSocket service initialized successfully');
+
+    // Initialize data retention scheduler for GDPR compliance
+    if (process.env.ENABLE_DATA_RETENTION === 'true') {
+      console.log('📅 Starting data retention scheduler...');
+      retentionScheduler.start();
+      console.log('✅ Data retention scheduler started successfully');
+    } else {
+      console.log('ℹ️  Data retention scheduler disabled (set ENABLE_DATA_RETENTION=true to enable)');
+    }
 
     // Enhanced graceful shutdown handling
     const gracefulShutdown = async (signal) => {
@@ -435,4 +436,3 @@ async function startServer() {
 
 startServer();
 // touch
- 

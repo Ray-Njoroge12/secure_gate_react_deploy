@@ -148,7 +148,7 @@ describe('LoggingMiddleware', () => {
       
       correlationIdMiddleware(mockReq, mockRes, nextFn);
       
-      expect(mockRes.setHeader).toHaveBeenCalledWith('X-Correlation-Id', 'test-response-header-id');
+      expect(mockRes.setHeader).toHaveBeenCalledWith('X-Correlation-ID', 'test-response-header-id');
     });
 
     it('should set correlation ID in logging service', () => {
@@ -1094,7 +1094,7 @@ describe('LoggingMiddleware', () => {
         correlationIdMiddleware(mockReq, mockRes, nextFn);
         
         expect(mockRes.setHeader).toHaveBeenCalledWith(
-          'X-Correlation-Id',
+          'X-Correlation-ID',
           'test-header-correlation-id'
         );
       });

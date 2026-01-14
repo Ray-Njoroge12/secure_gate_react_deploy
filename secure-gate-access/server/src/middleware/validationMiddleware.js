@@ -1,6 +1,6 @@
 // Input validation framework using Joi
 import Joi from 'joi';
-import { ErrorHelper, ERROR_CODES } from './errorHandler.js';
+import { ErrorHelper, ERROR_CODES } from './standardizedErrorHandler.js';
 
 /**
  * Common validation schemas and patterns

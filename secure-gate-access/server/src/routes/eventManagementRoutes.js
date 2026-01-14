@@ -25,8 +25,19 @@ import { Readable } from 'stream';
 import eventManagementService from '../services/eventManagementService.js';
 import loggingService from '../services/loggingService.js';
 import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
+import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
+
+const requireRolePolicy = (policy) => {
+  switch (policy) {
+    case 'adminOrResident': return requireRole(['admin', 'resident']);
+    case 'estateUsers': return requireRole(['admin', 'resident', 'guard']);
+    case 'adminOrGuard': return requireRole(['admin', 'guard']);
+    default: return requireRole('admin');
+  }
+};
 
 // Configure multer for CSV upload
 const upload = multer({
@@ -52,7 +63,7 @@ const upload = multer({
  * @desc Create a new event
  * @access Admin, Resident (host)
  */
-router.post('/', authenticateToken, requireEstate, async (req, res) => {
+router.post('/', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { body, user } = req;
 
@@ -94,7 +105,7 @@ router.post('/', authenticateToken, requireEstate, async (req, res) => {
  * @desc Get all events for user's estate
  * @access Authenticated
  */
-router.get('/', authenticateToken, requireEstate, async (req, res) => {
+router.get('/', authenticateToken, requireEstate, requireRolePolicy('estateUsers'), async (req, res) => {
   try {
     const { user, query } = req;
 
@@ -130,7 +141,7 @@ router.get('/', authenticateToken, requireEstate, async (req, res) => {
  * @desc Get event by ID with analytics
  * @access Authenticated
  */
-router.get('/:id', authenticateToken, requireEstate, async (req, res) => {
+router.get('/:id', authenticateToken, requireEstate, requireRolePolicy('estateUsers'), async (req, res) => {
   try {
     const event = await eventManagementService.getEventById(req.params.id, req.user.estate_id);
 
@@ -159,7 +170,7 @@ router.get('/:id', authenticateToken, requireEstate, async (req, res) => {
  * @desc Update event
  * @access Admin, Event Host
  */
-router.put('/:id', authenticateToken, requireEstate, async (req, res) => {
+router.put('/:id', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { body, user } = req;
@@ -174,10 +185,7 @@ router.put('/:id', authenticateToken, requireEstate, async (req, res) => {
     }
 
     if (event.host_id !== user.id && user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized to update this event'
-      });
+      return errorResponse(res, 'Unauthorized to update this event', 'FORBIDDEN', 403, null, req);
     }
 
     const updated = await eventManagementService.updateEvent(id, body, user.estate_id);
@@ -201,7 +209,7 @@ router.put('/:id', authenticateToken, requireEstate, async (req, res) => {
  * @desc Delete event
  * @access Admin, Event Host
  */
-router.delete('/:id', authenticateToken, requireEstate, async (req, res) => {
+router.delete('/:id', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { user } = req;
@@ -216,10 +224,7 @@ router.delete('/:id', authenticateToken, requireEstate, async (req, res) => {
     }
 
     if (event.host_id !== user.id && user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Unauthorized to delete this event'
-      });
+      return errorResponse(res, 'Unauthorized to delete this event', 'FORBIDDEN', 403, null, req);
     }
 
     await eventManagementService.deleteEvent(id, user.estate_id);
@@ -246,7 +251,7 @@ router.delete('/:id', authenticateToken, requireEstate, async (req, res) => {
  * @desc Add single visitor to event
  * @access Admin, Event Host
  */
-router.post('/:id/invitations', authenticateToken, requireEstate, async (req, res) => {
+router.post('/:id/invitations', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { body } = req;
@@ -279,7 +284,7 @@ router.post('/:id/invitations', authenticateToken, requireEstate, async (req, re
  * @desc Upload CSV file with bulk invitations OR send JSON array
  * @access Admin, Event Host
  */
-router.post('/:id/bulk-invitations', authenticateToken, requireEstate, upload.single('csv'), async (req, res) => {
+router.post('/:id/bulk-invitations', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), upload.single('csv'), async (req, res) => {
   try {
     const { id } = req.params;
     const { user } = req;
@@ -384,7 +389,7 @@ router.post('/:id/bulk-invitations', authenticateToken, requireEstate, upload.si
  * @desc Send invitations to all pending visitors
  * @access Admin, Event Host
  */
-router.post('/:id/send-invitations', authenticateToken, requireEstate, async (req, res) => {
+router.post('/:id/send-invitations', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -413,7 +418,7 @@ router.post('/:id/send-invitations', authenticateToken, requireEstate, async (re
  * @desc Get event attendees with filters
  * @access Admin, Event Host
  */
-router.get('/:id/attendees', authenticateToken, requireEstate, async (req, res) => {
+router.get('/:id/attendees', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { query } = req;
@@ -444,7 +449,7 @@ router.get('/:id/attendees', authenticateToken, requireEstate, async (req, res) 
  * @desc Get event statistics
  * @access Admin, Event Host
  */
-router.get('/:id/statistics', authenticateToken, requireEstate, async (req, res) => {
+router.get('/:id/statistics', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -512,10 +517,7 @@ router.post('/rsvp', async (req, res) => {
     );
 
     if (!isValid) {
-      return res.status(403).json({
-        success: false,
-        error: 'Invalid RSVP token'
-      });
+      return errorResponse(res, 'Invalid RSVP token', 'FORBIDDEN', 403, null, req);
     }
 
     await eventManagementService.handleRSVP(event_visitor_id, rsvp_status, {
@@ -541,7 +543,7 @@ router.post('/rsvp', async (req, res) => {
  * @desc Check in to event with QR code
  * @access Guard
  */
-router.post('/check-in', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/check-in', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { event_qr_code } = req.body;
 
@@ -580,7 +582,7 @@ router.post('/check-in', authenticateToken, requireEstate, requireRole(['guard',
  * @desc Check out from event with QR code
  * @access Guard
  */
-router.post('/check-out', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/check-out', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { event_qr_code } = req.body;
 
@@ -630,10 +632,7 @@ router.get('/:id/calendar', async (req, res) => {
 
     // Require invitation code for security
     if (!code) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invitation code required to download calendar'
-      });
+      return errorResponse(res, 'Invitation code required to download calendar', 'UNAUTHORIZED', 401, null, req);
     }
 
     // Get event
@@ -650,10 +649,7 @@ router.get('/:id/calendar', async (req, res) => {
     const invitation = invitationResult.find(inv => inv.event_qr_code === code);
 
     if (!invitation) {
-      return res.status(403).json({
-        success: false,
-        error: 'Invalid invitation code for this event'
-      });
+      return errorResponse(res, 'Invalid invitation code for this event', 'FORBIDDEN', 403, null, req);
     }
 
     // Generate calendar file

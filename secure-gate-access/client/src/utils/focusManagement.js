@@ -342,6 +342,8 @@ export class KeyboardShortcutManager {
    * @returns {string} Key combination string
    */
   getKeyString(event) {
+    if (!event || !event.key) return '';
+
     const parts = [];
     
     if (event.ctrlKey) parts.push('ctrl');
