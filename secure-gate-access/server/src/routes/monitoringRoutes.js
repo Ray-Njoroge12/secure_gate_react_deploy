@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import monitoringDashboard from '../services/monitoringDashboardService.js';
 import { logAuditEvent } from '../middleware/loggingMiddleware.js';
 import loggingService from '../services/loggingService.js';

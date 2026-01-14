@@ -98,6 +98,48 @@ class RedisService extends EventEmitter {
     return true;
   }
 
+  getStatus() {
+    return {
+      connected: this.isConnected,
+      usingFallback: this.usingFallback,
+      stats: this.cacheStats
+    };
+  }
+
+  async ping() {
+    if (this.usingFallback) {
+      return {
+        ok: false,
+        mode: 'fallback',
+        message: 'Using in-memory fallback cache'
+      };
+    }
+
+    if (!this.client || !this.isConnected) {
+      return {
+        ok: false,
+        mode: 'redis',
+        message: 'Redis client not connected'
+      };
+    }
+
+    try {
+      const start = Date.now();
+      await this.client.ping();
+      return {
+        ok: true,
+        mode: 'redis',
+        latencyMs: Date.now() - start
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        mode: 'redis',
+        message: error.message
+      };
+    }
+  }
+
   /**
    * Handle Redis reconnection attempts
    */
