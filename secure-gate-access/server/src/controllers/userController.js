@@ -2,7 +2,7 @@ import { dbManager } from '../database/db.enhanced.js';
 import { auditLog } from '../services/auditService.js';
 import { tokenService, passwordService, accountSecurity } from '../services/tokenService.js';
 import auditLogger from '../services/auditLogger.js';
-import { ErrorHelper } from '../middleware/errorHandler.js';
+import { ErrorHelper } from '../middleware/standardizedErrorHandler.js';
 import { ResponseUtil, sanitizeUser } from '../utils/responseUtils.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 import sessionSecurityService from '../services/sessionSecurityService.js';

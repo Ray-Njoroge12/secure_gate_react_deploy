@@ -220,9 +220,16 @@ class LoggingService {
     logger.logWithCorrelation = (level, message, meta = {}, correlationId = null) => {
       this.updateLogStats(level, name);
 
+      const normalizedRequestId = meta.request_id
+        || meta.requestId
+        || meta.correlationId
+        || correlationId
+        || this.getCorrelationId();
+
       const logData = {
         ...meta,
-        correlationId: correlationId || this.getCorrelationId()
+        correlationId: correlationId || this.getCorrelationId(),
+        ...(normalizedRequestId && { request_id: normalizedRequestId })
       };
 
       logger.log(level, message, logData);
