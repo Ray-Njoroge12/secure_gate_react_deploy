@@ -70,6 +70,9 @@ const refreshLimiter = rateLimit({
   }
 });
 
+const refreshReuseWindowMs = Number.parseInt(process.env.REFRESH_REUSE_WINDOW_MS, 10);
+const refreshReuseWindow = Number.isFinite(refreshReuseWindowMs) ? refreshReuseWindowMs : 30000;
+
 const getClientPlatform = (req) => {
   const header = req.headers['x-client-platform'] || req.headers['x-client-type'];
   if (typeof header === 'string') {
@@ -369,6 +372,15 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
     // Handle authentication errors (invalid credentials, account locked, etc.)
     if (authError.message.includes('Invalid credentials') || 
         authError.message.includes('Account is locked')) {
+      loggingService.warn('Login failed', {
+        route: req.originalUrl,
+        method: req.method,
+        status: 401,
+        requestId: req.requestId,
+        user_id: null,
+        estate_id: estateId ?? null,
+        reason: authError.message.includes('Account is locked') ? 'ACCOUNT_LOCKED' : 'INVALID_CREDENTIALS'
+      });
       throw new AppError(authError.message, 401, 'INVALID_CREDENTIALS');
     }
     // Re-throw unexpected errors to be caught by outer catch block
@@ -376,6 +388,15 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
   }
   
   if (!user) {
+    loggingService.warn('Login failed', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 401,
+      requestId: req.requestId,
+      user_id: null,
+      estate_id: estateId ?? null,
+      reason: 'INVALID_CREDENTIALS'
+    });
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
@@ -413,6 +434,17 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
   }
+
+  loggingService.info('Login successful', {
+    route: req.originalUrl,
+    method: req.method,
+    status: 200,
+    requestId: req.requestId,
+    user_id: user.id,
+    estate_id: user.estate_id ?? null,
+    session_type: isWebClient ? 'cookie' : 'token',
+    client_platform: platform
+  });
 
   successResponse(res, {
     user: {
@@ -537,15 +569,34 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
 
   const storedToken = await tokenService.getRefreshTokenRecord(refreshToken);
   if (!storedToken || storedToken.is_revoked) {
-    loggingService.warn('Refresh token revoked or missing', {
+    const revokedAt = storedToken?.revoked_at ? new Date(storedToken.revoked_at) : null;
+    const withinReuseWindow = Boolean(
+      storedToken?.is_revoked
+      && revokedAt
+      && Date.now() - revokedAt.getTime() <= refreshReuseWindow
+    );
+
+    if (!storedToken || !withinReuseWindow) {
+      loggingService.warn('Refresh token revoked or missing', {
+        route: req.originalUrl,
+        method: req.method,
+        status: 401,
+        requestId: req.requestId,
+        user_id: user.id,
+        estate_id: user.estate_id ?? null
+      });
+      throw new AppError('Refresh token has been revoked', 401, 'INVALID_TOKEN');
+    }
+
+    loggingService.info('Refresh token reused within grace window', {
       route: req.originalUrl,
       method: req.method,
-      status: 401,
+      status: 200,
       requestId: req.requestId,
       user_id: user.id,
-      estate_id: user.estate_id ?? null
+      estate_id: user.estate_id ?? null,
+      reuseWindowMs: refreshReuseWindow
     });
-    throw new AppError('Refresh token has been revoked', 401, 'INVALID_TOKEN');
   }
 
   if (storedToken.user_id !== user.id) {
@@ -572,7 +623,11 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
     throw new AppError('Refresh token expired', 401, 'INVALID_TOKEN');
   }
 
-  await tokenService.revokeRefreshToken(refreshToken);
+  await tokenService.markRefreshTokenUsed(refreshToken);
+
+  if (!storedToken.is_revoked) {
+    await tokenService.revokeRefreshToken(refreshToken);
+  }
 
   const { accessToken, refreshToken: nextRefreshToken, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
   const refreshInfo = tokenService.getTokenInfo(nextRefreshToken);
@@ -601,6 +656,17 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
   }
+
+  loggingService.info('Refresh token rotated', {
+    route: req.originalUrl,
+    method: req.method,
+    status: 200,
+    requestId: req.requestId,
+    user_id: user.id,
+    estate_id: user.estate_id ?? null,
+    session_type: isWebClient ? 'cookie' : 'token',
+    client_platform: platform
+  });
 
   successResponse(res, {
     ...(isWebClient
