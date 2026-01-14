@@ -40,6 +40,27 @@ export class AppError extends Error {
   }
 }
 
+export const buildErrorResponse = ({ message, errorCode = 'INTERNAL_ERROR', details = null, req = null }) => {
+  const errorResponse = {
+    success: false,
+    message,
+    error: {
+      code: errorCode
+    },
+    timestamp: new Date().toISOString()
+  };
+
+  if (details) {
+    errorResponse.error.details = details;
+  }
+
+  if (req?.requestId) {
+    errorResponse.error.requestId = req.requestId;
+  }
+
+  return errorResponse;
+};
+
 /**
  * Global error handler middleware
  */
@@ -144,14 +165,11 @@ export const errorHandler = (err, req, res, next) => {
   }
   
   // Build error response
-  const errorResponse = {
-    success: false,
+  const errorResponse = buildErrorResponse({
     message,
-    error: {
-      code: errorCode
-    },
-    timestamp: new Date().toISOString()
-  };
+    errorCode,
+    req
+  });
   
   // SECURITY FIX: Never expose stack traces in API responses
   // Stack traces are logged to console, not sent to client
@@ -164,11 +182,6 @@ export const errorHandler = (err, req, res, next) => {
     if (Object.keys(safeDetails).length > 0) {
       errorResponse.error.details = safeDetails;
     }
-  }
-  
-  // Add request ID if available
-  if (req.requestId) {
-    errorResponse.error.requestId = req.requestId;
   }
   
   // Send JSON response (never HTML)
@@ -198,6 +211,7 @@ export const asyncHandler = (fn) => {
 
 export default {
   AppError,
+  buildErrorResponse,
   errorHandler,
   notFoundHandler,
   asyncHandler

@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { navigateTo } from '../../utils/appNavigation';
 import { 
   Card, 
   Button, 
@@ -195,7 +196,7 @@ const FavoriteVisitors = () => {
       email: favorite.visitor_email || '',
       from_favorite: favorite.id
     });
-    window.location.href = `/resident/add-visitor?${params.toString()}`;
+    navigateTo(`/resident/add-visitor?${params.toString()}`);
   }, []);
 
   // Format date for display

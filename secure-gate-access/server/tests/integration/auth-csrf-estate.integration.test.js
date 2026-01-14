@@ -107,6 +107,7 @@ describe('Auth, CSRF, and estate integration', () => {
 
     expect(response.status).toBe(403);
     expect(response.body.error?.code).toBe('CSRF_VALIDATION_FAILED');
+    expect(response.body.error?.requestId).toBeTruthy();
   });
 
   it('returns ESTATE_REQUIRED for estate-less users', async () => {
@@ -144,5 +145,6 @@ describe('Auth, CSRF, and estate integration', () => {
 
     expect(profileResponse.status).toBe(403);
     expect(profileResponse.body.error?.code).toBe('ESTATE_REQUIRED');
+    expect(profileResponse.body.error?.requestId).toBeTruthy();
   });
 });

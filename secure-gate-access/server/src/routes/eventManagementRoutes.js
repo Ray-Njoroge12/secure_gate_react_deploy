@@ -24,7 +24,8 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import eventManagementService from '../services/eventManagementService.js';
 import loggingService from '../services/loggingService.js';
-import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireEstate } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 
 const router = express.Router();
 
@@ -52,7 +53,7 @@ const upload = multer({
  * @desc Create a new event
  * @access Admin, Resident (host)
  */
-router.post('/', authenticateToken, requireEstate, async (req, res) => {
+router.post('/', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { body, user } = req;
 
@@ -94,7 +95,7 @@ router.post('/', authenticateToken, requireEstate, async (req, res) => {
  * @desc Get all events for user's estate
  * @access Authenticated
  */
-router.get('/', authenticateToken, requireEstate, async (req, res) => {
+router.get('/', authenticateToken, requireEstate, requireRolePolicy('estateUsers'), async (req, res) => {
   try {
     const { user, query } = req;
 
@@ -130,7 +131,7 @@ router.get('/', authenticateToken, requireEstate, async (req, res) => {
  * @desc Get event by ID with analytics
  * @access Authenticated
  */
-router.get('/:id', authenticateToken, requireEstate, async (req, res) => {
+router.get('/:id', authenticateToken, requireEstate, requireRolePolicy('estateUsers'), async (req, res) => {
   try {
     const event = await eventManagementService.getEventById(req.params.id, req.user.estate_id);
 
@@ -159,7 +160,7 @@ router.get('/:id', authenticateToken, requireEstate, async (req, res) => {
  * @desc Update event
  * @access Admin, Event Host
  */
-router.put('/:id', authenticateToken, requireEstate, async (req, res) => {
+router.put('/:id', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { body, user } = req;
@@ -201,7 +202,7 @@ router.put('/:id', authenticateToken, requireEstate, async (req, res) => {
  * @desc Delete event
  * @access Admin, Event Host
  */
-router.delete('/:id', authenticateToken, requireEstate, async (req, res) => {
+router.delete('/:id', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { user } = req;
@@ -246,7 +247,7 @@ router.delete('/:id', authenticateToken, requireEstate, async (req, res) => {
  * @desc Add single visitor to event
  * @access Admin, Event Host
  */
-router.post('/:id/invitations', authenticateToken, requireEstate, async (req, res) => {
+router.post('/:id/invitations', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { body } = req;
@@ -279,7 +280,7 @@ router.post('/:id/invitations', authenticateToken, requireEstate, async (req, re
  * @desc Upload CSV file with bulk invitations OR send JSON array
  * @access Admin, Event Host
  */
-router.post('/:id/bulk-invitations', authenticateToken, requireEstate, upload.single('csv'), async (req, res) => {
+router.post('/:id/bulk-invitations', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), upload.single('csv'), async (req, res) => {
   try {
     const { id } = req.params;
     const { user } = req;
@@ -384,7 +385,7 @@ router.post('/:id/bulk-invitations', authenticateToken, requireEstate, upload.si
  * @desc Send invitations to all pending visitors
  * @access Admin, Event Host
  */
-router.post('/:id/send-invitations', authenticateToken, requireEstate, async (req, res) => {
+router.post('/:id/send-invitations', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -413,7 +414,7 @@ router.post('/:id/send-invitations', authenticateToken, requireEstate, async (re
  * @desc Get event attendees with filters
  * @access Admin, Event Host
  */
-router.get('/:id/attendees', authenticateToken, requireEstate, async (req, res) => {
+router.get('/:id/attendees', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
     const { query } = req;
@@ -444,7 +445,7 @@ router.get('/:id/attendees', authenticateToken, requireEstate, async (req, res) 
  * @desc Get event statistics
  * @access Admin, Event Host
  */
-router.get('/:id/statistics', authenticateToken, requireEstate, async (req, res) => {
+router.get('/:id/statistics', authenticateToken, requireEstate, requireRolePolicy('adminOrResident'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -541,7 +542,7 @@ router.post('/rsvp', async (req, res) => {
  * @desc Check in to event with QR code
  * @access Guard
  */
-router.post('/check-in', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/check-in', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { event_qr_code } = req.body;
 
@@ -580,7 +581,7 @@ router.post('/check-in', authenticateToken, requireEstate, requireRole(['guard',
  * @desc Check out from event with QR code
  * @access Guard
  */
-router.post('/check-out', authenticateToken, requireEstate, requireRole(['guard', 'admin']), async (req, res) => {
+router.post('/check-out', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { event_qr_code } = req.body;
 

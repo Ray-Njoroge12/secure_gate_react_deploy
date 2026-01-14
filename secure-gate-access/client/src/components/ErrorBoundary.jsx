@@ -14,6 +14,7 @@
 import React from 'react';
 import * as Sentry from '@sentry/react';
 import { captureException, showReportDialog } from '../config/sentry';
+import { navigateTo } from '../utils/appNavigation';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -152,7 +153,7 @@ class ErrorBoundary extends React.Component {
               )}
 
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => navigateTo('/')}
                 style={styles.secondaryButton}
               >
                 Go to Home

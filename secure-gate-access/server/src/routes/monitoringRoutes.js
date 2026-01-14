@@ -5,34 +5,13 @@
  */
 
 import express from 'express';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import monitoringDashboard from '../services/monitoringDashboardService.js';
 import { logAuditEvent } from '../middleware/loggingMiddleware.js';
 import loggingService from '../services/loggingService.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
-
-// Simple role check middleware
-const requireRole = (roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Insufficient permissions'
-      });
-    }
-
-    next();
-  };
-};
 
 /**
  * @route GET /api/monitoring/metrics

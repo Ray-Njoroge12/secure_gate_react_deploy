@@ -45,6 +45,8 @@ describe('Rate limiting integration', () => {
     const rateLimited = responses.filter(response => response.status === 429);
 
     expect(rateLimited.length).toBeGreaterThan(0);
+    expect(rateLimited[0].body.error?.code).toBe('RATE_LIMIT_EXCEEDED');
+    expect(rateLimited[0].body.error?.requestId).toBeTruthy();
   });
 
   it('rate limits refresh attempts under burst traffic', async () => {
@@ -63,5 +65,7 @@ describe('Rate limiting integration', () => {
     const rateLimited = responses.filter(response => response.status === 429);
 
     expect(rateLimited.length).toBeGreaterThan(0);
+    expect(rateLimited[0].body.error?.code).toBe('RATE_LIMIT_EXCEEDED');
+    expect(rateLimited[0].body.error?.requestId).toBeTruthy();
   });
 });

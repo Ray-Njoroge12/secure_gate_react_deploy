@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import logger from 'utils/logger';
 import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
+import { navigateTo } from '../../utils/appNavigation';
 import './ErrorBoundary.css';
 
 class ErrorBoundary extends Component {
@@ -142,7 +143,7 @@ class ErrorBoundary extends Component {
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    navigateTo('/');
   };
 
   handleReportBug = () => {
