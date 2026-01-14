@@ -42,7 +42,7 @@ services:
       PGDATABASE: ${PGDATABASE:-secure_gate_staging}
       JWT_SECRET: ${JWT_SECRET:-staging-jwt-secret-min-32-chars-change-in-prod}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-staging-refresh-secret-change-in-prod}
-      EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-false}
+      EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       ENABLE_CORRELATION_ID: ${ENABLE_CORRELATION_ID:-true}
       ENABLE_ENHANCED_HEALTH: ${ENABLE_ENHANCED_HEALTH:-true}
@@ -52,6 +52,14 @@ services:
       CLIENT_ORIGIN: http://localhost:3001
       STAGING_CLIENT_ORIGIN: http://localhost:3001
       CORS_ORIGIN: http://localhost:3001
+      # MailHog SMTP Configuration
+      EMAIL_PROVIDER: smtp
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      EMAIL_FROM: noreply@securegate.local
+      EMAIL_FROM_NAME: Secure Gate Access
     ports:
       - "5001:5001"
     volumes:
@@ -82,6 +90,22 @@ services:
       - "3001:80"
     networks:
       - staging-network
+
+  # MailHog - Email testing tool
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: securegate-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    networks:
+      - staging-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgres_staging_data:

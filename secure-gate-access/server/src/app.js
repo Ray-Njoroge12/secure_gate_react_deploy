@@ -491,25 +491,6 @@ app.use('/api/resident', residentRoutes);
 app.use('/api/check-in', checkInRoutes);
 app.use('/api/check-out', checkOutRoutes);
 
-// Simple health endpoints (always return healthy - used for basic availability checks)
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0'
-  });
-});
-
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: process.env.npm_package_version || '1.0.0'
-  });
-});
-
 // Health routes (explicit mounting for clarity)
 app.use('/api', healthRoutes);
 
