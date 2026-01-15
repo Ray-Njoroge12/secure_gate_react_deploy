@@ -28,8 +28,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy application code
 COPY --chown=securegate:nodejs . .
 
-# Create logs directory
-RUN mkdir -p logs && chown securegate:nodejs logs
+# Create writable directories
+RUN mkdir -p logs data && chown -R securegate:nodejs logs data
 
 # Switch to non-root user
 USER securegate
@@ -39,7 +39,7 @@ EXPOSE 5001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" || exit 1
+  CMD node -e "require('http').get('http://127.0.0.1:5001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" || exit 1
 
 # Environment variables
 ENV NODE_ENV=production

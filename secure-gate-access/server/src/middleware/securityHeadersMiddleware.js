@@ -138,10 +138,14 @@ export const customSecurityHeaders = (req, res, next) => {
     }
 
     // Add request ID for tracking
-    if (!req.headers['x-request-id']) {
-      req.headers['x-request-id'] = generateRequestId();
+    const requestId = req.requestId || req.correlationId || req.headers['x-request-id'] || generateRequestId();
+    req.requestId = requestId;
+    req.correlationId = req.correlationId || requestId;
+    req.headers['x-request-id'] = requestId;
+    res.set('X-Request-ID', requestId);
+    if (!res.getHeader('X-Correlation-ID')) {
+      res.set('X-Correlation-ID', req.correlationId);
     }
-    res.set('X-Request-ID', req.headers['x-request-id']);
 
     next();
   } catch (error) {

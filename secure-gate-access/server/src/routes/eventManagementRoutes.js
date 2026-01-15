@@ -24,20 +24,11 @@ import csv from 'csv-parser';
 import { Readable } from 'stream';
 import eventManagementService from '../services/eventManagementService.js';
 import loggingService from '../services/loggingService.js';
-import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireEstate } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
-
-const requireRolePolicy = (policy) => {
-  switch (policy) {
-    case 'adminOrResident': return requireRole(['admin', 'resident']);
-    case 'estateUsers': return requireRole(['admin', 'resident', 'guard']);
-    case 'adminOrGuard': return requireRole(['admin', 'guard']);
-    default: return requireRole('admin');
-  }
-};
 
 // Configure multer for CSV upload
 const upload = multer({

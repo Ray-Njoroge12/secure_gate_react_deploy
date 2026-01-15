@@ -5,20 +5,11 @@
 
 import express from 'express';
 import guardManagementService from '../services/guardManagementService.js';
-import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireEstate } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
-
-const requireRolePolicy = (policy) => {
-  switch (policy) {
-    case 'adminOnly': return requireRole('admin');
-    case 'guardOnly': return requireRole('guard');
-    case 'adminOrGuard': return requireRole(['admin', 'guard']);
-    default: return requireRole('admin');
-  }
-};
 
 /**
  * @route GET /api/guards
