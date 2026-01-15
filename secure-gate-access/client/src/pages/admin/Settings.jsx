@@ -103,7 +103,7 @@ export default function Settings() {
   ];
 
   const inputClass = "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent";
-  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
+  const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1";
 
   const formatDateValue = (dateValue) => {
     if (!dateValue) {
@@ -235,7 +235,7 @@ export default function Settings() {
       <PageHeader 
         title="Admin Settings"
         subtitle="Configure system-wide settings and preferences"
-        icon={<SettingsIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
+        icon={<SettingsIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
         showBack={true}
         backTo="/dashboard/admin"
       />
@@ -251,7 +251,7 @@ export default function Settings() {
                 className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
                   activeTab === tab.key 
                     ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >
                 {tab.icon}
@@ -310,7 +310,7 @@ export default function Settings() {
                     />
                     <div>
                       <span className="font-medium text-gray-900 dark:text-white">Require OTP Verification</span>
-                      <p className="text-sm text-gray-500">Visitors must verify via OTP before entry</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Visitors must verify via OTP before entry</p>
                     </div>
                   </label>
                   
@@ -323,7 +323,7 @@ export default function Settings() {
                     />
                     <div>
                       <span className="font-medium text-gray-900 dark:text-white">Auto-approve Frequent Visitors</span>
-                      <p className="text-sm text-gray-500">Skip approval for visitors with 5+ successful visits</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Skip approval for visitors with 5+ successful visits</p>
                     </div>
                   </label>
                   
@@ -387,7 +387,7 @@ export default function Settings() {
                     />
                     <div>
                       <span className="font-medium text-gray-900 dark:text-white">Enforce Strong Passwords</span>
-                      <p className="text-sm text-gray-500">Require 8+ characters with uppercase, lowercase, number, and symbol</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Require 8+ characters with uppercase, lowercase, number, and symbol</p>
                     </div>
                   </label>
                   
@@ -400,7 +400,7 @@ export default function Settings() {
                     />
                     <div>
                       <span className="font-medium text-gray-900 dark:text-white">Require 2FA for Admins</span>
-                      <p className="text-sm text-gray-500">Mandatory two-factor authentication for admin accounts</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Mandatory two-factor authentication for admin accounts</p>
                     </div>
                   </label>
                   
@@ -413,7 +413,7 @@ export default function Settings() {
                     />
                     <div>
                       <span className="font-medium text-gray-900 dark:text-white">IP Whitelisting</span>
-                      <p className="text-sm text-gray-500">Restrict admin access to specific IP addresses</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Restrict admin access to specific IP addresses</p>
                     </div>
                   </label>
                 </div>
@@ -477,7 +477,7 @@ export default function Settings() {
                     />
                     <div>
                       <span className="font-medium text-gray-900 dark:text-white">Enable SSL/TLS</span>
-                      <p className="text-sm text-gray-500">Use secure connection for email sending</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Use secure connection for email sending</p>
                     </div>
                   </label>
                 </div>
@@ -498,15 +498,15 @@ export default function Settings() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Appearance</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   Choose how SecureGate looks to you.
                 </p>
               </div>
               <ThemeRadioGroup />
               <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>
-                  {theme === 'system' && <span className="ml-1 text-gray-500">(following system preference)</span>}
+                  {theme === 'system' && <span className="ml-1 text-gray-500 dark:text-gray-300">(following system preference)</span>}
                 </p>
               </div>
             </div>
@@ -517,13 +517,13 @@ export default function Settings() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Compliance Administration</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   Manage Data Protection Officer and ODPC registration details.
                 </p>
               </div>
 
               {complianceLoading && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
+                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-200">
                   Loading compliance settings...
                 </div>
               )}
@@ -664,13 +664,13 @@ export default function Settings() {
 
                   <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                     <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Policy Metadata</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       <strong>Last Updated:</strong> {formatDateValue(policyMetadata.last_updated_at)}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       <strong>Last Reviewed:</strong> {formatDateValue(policyMetadata.last_reviewed_at)}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       <strong>Review Status:</strong>{" "}
                       {policyMetadata.last_review_status === "verified"
                         ? "Verified"
@@ -679,7 +679,7 @@ export default function Settings() {
                           : "Needs Attention"}
                     </p>
                     {policyMetadata.last_review_notes?.length > 0 && (
-                      <ul className="mt-2 list-disc list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1">
+                      <ul className="mt-2 list-disc list-inside text-sm text-gray-600 dark:text-gray-200 space-y-1">
                         {policyMetadata.last_review_notes.map((note, index) => (
                           <li key={`${note}-${index}`}>{note}</li>
                         ))}
@@ -697,15 +697,15 @@ export default function Settings() {
 
                   <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
                     <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Retention Policy Overview</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       Legal basis: {retentionPolicy.legalBasis || "Kenya Data Protection Act 2019"}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       Last updated: {formatDateValue(retentionPolicy.lastUpdated)}
                     </p>
                     <div className="mt-4 space-y-3">
                       {retentionPolicy.policies.length === 0 ? (
-                        <p className="text-sm text-gray-500">No retention policies configured.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">No retention policies configured.</p>
                       ) : (
                         retentionPolicy.policies.map((policy) => (
                           <div
@@ -716,7 +716,7 @@ export default function Settings() {
                               <p className="text-sm font-medium text-gray-900 dark:text-white">
                                 {policy.category || policy.table_name}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                              <p className="text-xs text-gray-500 dark:text-gray-300">
                                 Table: {policy.table_name}
                               </p>
                             </div>
@@ -724,7 +724,7 @@ export default function Settings() {
                               <p className="text-sm text-gray-700 dark:text-gray-200">
                                 {policy.retention_days} days
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                              <p className="text-xs text-gray-500 dark:text-gray-300">
                                 {policy.auto_delete ? "Auto delete" : "Manual retention"}
                               </p>
                             </div>
@@ -732,7 +732,7 @@ export default function Settings() {
                         ))
                       )}
                     </div>
-                    <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                    <p className="mt-4 text-xs text-gray-500 dark:text-gray-300">
                       Contact {retentionPolicy.contactEmail || "privacy@securegate.com"} for retention adjustments.
                     </p>
                   </div>

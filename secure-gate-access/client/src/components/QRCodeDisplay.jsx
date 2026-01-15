@@ -127,7 +127,7 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
           </div>
         )}
         
-        <div className="mt-3 text-sm text-slate-600 text-center">
+        <div className="mt-3 text-sm text-slate-600 dark:text-slate-200 text-center">
           <p>Present this QR code or OTP at the gate for entry</p>
         </div>
       </div>

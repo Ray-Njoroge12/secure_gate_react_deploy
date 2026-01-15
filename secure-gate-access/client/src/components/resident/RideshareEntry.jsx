@@ -121,8 +121,8 @@ const RideshareEntry = () => {
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">🚗 Rideshare Entry</h2>
-            <p className="text-sm text-gray-500">Quick access for Uber, Bolt & Taxi</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🚗 Rideshare Entry</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Quick access for Uber, Bolt & Taxi</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
@@ -151,7 +151,7 @@ const RideshareEntry = () => {
                 Valid until {new Date(success.expires_at).toLocaleTimeString()}
               </p>
             </div>
-            <button onClick={() => setSuccess(null)} className="text-gray-400 hover:text-gray-600">✕</button>
+            <button onClick={() => setSuccess(null)} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</button>
           </div>
         </div>
       )}
@@ -256,7 +256,7 @@ const RideshareEntry = () => {
 
       <div className="divide-y divide-gray-200">
         {entries.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">🚕</span>
             <p className="mt-2">No active rideshare entries</p>
             <p className="text-sm">Create an entry when your Uber/Bolt arrives</p>
@@ -275,7 +275,7 @@ const RideshareEntry = () => {
                     </span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{entry.driver_name}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{entry.driver_name}</span>
                         <span className={`px-2 py-0.5 text-xs rounded-full ${
                           entry.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           entry.status === 'arrived' ? 'bg-green-100 text-green-800' :
@@ -284,11 +284,11 @@ const RideshareEntry = () => {
                           {entry.status}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-200">
                         {entry.vehicle_plate}
                         {entry.vehicle_description && ` • ${entry.vehicle_description}`}
                       </p>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
+                      <div className="mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-300">
                         <span>Code: <span className="font-mono font-bold">{entry.access_code}</span></span>
                         <span>⏱️ {getTimeRemaining(entry.expires_at)}</span>
                       </div>
@@ -309,7 +309,7 @@ const RideshareEntry = () => {
         )}
       </div>
 
-      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
         💡 Share the access code with your driver. Guards will verify before entry.
       </div>
     </div>

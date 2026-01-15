@@ -400,7 +400,7 @@ const OnboardingTour = ({
 
         <div className="p-5">
           {/* Step indicator */}
-          <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <div className="text-xs text-gray-500 dark:text-gray-300 mb-2">
             Step {currentStepIndex + 1} of {totalSteps}
           </div>
 
@@ -413,7 +413,7 @@ const OnboardingTour = ({
           </h3>
 
           {/* Content */}
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-200 mb-4">
             {currentStep.content}
           </p>
 
@@ -421,7 +421,7 @@ const OnboardingTour = ({
           <div className="flex items-center justify-between">
             <button
               onClick={handleSkip}
-              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="text-sm text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
             >
               Skip tour
             </button>
@@ -430,7 +430,7 @@ const OnboardingTour = ({
               {currentStepIndex > 0 && (
                 <button
                   onClick={handlePrevious}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   ← Back
                 </button>
@@ -445,7 +445,7 @@ const OnboardingTour = ({
           </div>
 
           {/* Keyboard hint */}
-          <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-3">
+          <p className="text-xs text-center text-gray-400 dark:text-gray-500 dark:text-gray-300 mt-3">
             Use arrow keys to navigate, Esc to skip
           </p>
         </div>

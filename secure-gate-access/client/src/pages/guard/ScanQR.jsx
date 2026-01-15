@@ -92,7 +92,7 @@ const ScanQR = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Scan QR Code"
         subtitle="Quick check-in by scanning visitor passes"
@@ -171,10 +171,10 @@ const ScanQR = () => {
                     
                     {scannedData.visitorInfo && (
                       <div className="bg-white rounded-lg p-3 mb-4 w-full border border-gray-200">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-200">
                           <span className="font-medium">Name:</span> {scannedData.visitorInfo.name}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-200">
                           <span className="font-medium">Time:</span> {new Date().toLocaleTimeString()}
                         </p>
                       </div>
@@ -194,7 +194,7 @@ const ScanQR = () => {
                     
                     {/* Secondary Guidance */}
                     {scannedData.status === 'error' && (
-                      <p className="text-xs text-gray-600 mt-3">
+                      <p className="text-xs text-gray-600 dark:text-gray-200 mt-3">
                         Try manual check if scanning continues to fail
                       </p>
                     )}
@@ -237,7 +237,7 @@ const ScanQR = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 8h4m0 0V4m0 4h12m0 0V4m0 4v4M4 16h4m0 0v4m0-4h12m0 0v4" />
                     </svg>
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-gray-200">
                     {testMode ? 'Enter QR code above or click "Start Scanning"' : 'Click "Start Scanning" to begin'}
                   </p>
                 </div>
@@ -260,7 +260,7 @@ const ScanQR = () => {
           <Card.Title>Manual Entry</Card.Title>
         </Card.Header>
         <Card.Content>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 dark:text-gray-200 mb-4">
             If QR scanning is not available, you can manually enter visitor information.
           </p>
           <Button 
@@ -277,3 +277,4 @@ const ScanQR = () => {
 };
 
 export default ScanQR;
+

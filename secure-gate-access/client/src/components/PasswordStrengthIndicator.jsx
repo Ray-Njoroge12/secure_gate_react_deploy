@@ -63,7 +63,7 @@ const PasswordStrengthIndicator = ({ password, className = '' }) => {
   };
 
   const textColorClasses = {
-    gray: 'text-gray-600',
+    gray: 'text-gray-600 dark:text-gray-200',
     red: 'text-red-600',
     orange: 'text-orange-600',
     yellow: 'text-yellow-600',
@@ -93,23 +93,23 @@ const PasswordStrengthIndicator = ({ password, className = '' }) => {
 
       {/* Requirements checklist */}
       <div className="text-xs space-y-1">
-        <div className={`flex items-center ${checks?.length ? 'text-green-600' : 'text-gray-500'}`}>
+        <div className={`flex items-center ${checks?.length ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
           <span className="mr-2">{checks?.length ? '✓' : '○'}</span>
           At least 8 characters
         </div>
-        <div className={`flex items-center ${checks?.lowercase ? 'text-green-600' : 'text-gray-500'}`}>
+        <div className={`flex items-center ${checks?.lowercase ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
           <span className="mr-2">{checks?.lowercase ? '✓' : '○'}</span>
           One lowercase letter
         </div>
-        <div className={`flex items-center ${checks?.uppercase ? 'text-green-600' : 'text-gray-500'}`}>
+        <div className={`flex items-center ${checks?.uppercase ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
           <span className="mr-2">{checks?.uppercase ? '✓' : '○'}</span>
           One uppercase letter
         </div>
-        <div className={`flex items-center ${checks?.number ? 'text-green-600' : 'text-gray-500'}`}>
+        <div className={`flex items-center ${checks?.number ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
           <span className="mr-2">{checks?.number ? '✓' : '○'}</span>
           One number
         </div>
-        <div className={`flex items-center ${checks?.special ? 'text-green-600' : 'text-gray-500'}`}>
+        <div className={`flex items-center ${checks?.special ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
           <span className="mr-2">{checks?.special ? '✓' : '○'}</span>
           One special character (@$!%*?&)
         </div>

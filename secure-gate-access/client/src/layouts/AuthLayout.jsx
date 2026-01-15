@@ -71,7 +71,7 @@ export default function AuthLayout({ title, subtitle, children }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900">SecureGate</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">SecureGate</h2>
         </div>
         
         {/* Auth Card */}
@@ -82,8 +82,8 @@ export default function AuthLayout({ title, subtitle, children }) {
           <div className="p-8">
             {/* Title & Subtitle */}
             <div className="mb-6">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">{title}</h1>
-              {subtitle && <p className="text-lg text-gray-600">{subtitle}</p>}
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{title}</h1>
+              {subtitle && <p className="text-lg text-gray-600 dark:text-gray-200">{subtitle}</p>}
             </div>
             
             {/* Content */}
@@ -92,7 +92,7 @@ export default function AuthLayout({ title, subtitle, children }) {
         </div>
         
         {/* Footer */}
-        <p className="text-xs text-gray-500 text-center mt-6">
+        <p className="text-xs text-gray-500 dark:text-gray-300 text-center mt-6">
           &copy; 2025 SecureGate • Privacy • Terms
         </p>
       </main>

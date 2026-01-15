@@ -300,7 +300,7 @@ const BulkInviteWizard = () => {
             </div>
 
             {/* CSV Upload Section */}
-            <Card>
+            <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
               <Card.Header>
                 <Card.Title className="text-slate-200">CSV Upload</Card.Title>
               </Card.Header>
@@ -352,7 +352,7 @@ const BulkInviteWizard = () => {
 
             {/* Guest List Preview */}
             {stepData.guestData && stepData.guestData.length > 0 && (
-              <Card>
+              <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <Card.Header>
                   <Card.Title className="text-slate-200">
                     Guest List ({stepData.guestData.length} guests)
@@ -366,7 +366,7 @@ const BulkInviteWizard = () => {
                           <div className="text-slate-200 font-medium">{guest.name}</div>
                           <div className="text-slate-400 text-sm">{guest.email}</div>
                           {guest.phone && (
-                            <div className="text-slate-500 text-sm">{guest.phone}</div>
+                            <div className="text-slate-500 dark:text-slate-300 text-sm">{guest.phone}</div>
                           )}
                         </div>
                         <Badge variant="success" size="sm">
@@ -395,7 +395,7 @@ const BulkInviteWizard = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
+              <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <Card.Header>
                   <Card.Title className="text-slate-200">Event Details</Card.Title>
                 </Card.Header>
@@ -419,7 +419,7 @@ const BulkInviteWizard = () => {
                 </Card.Content>
               </Card>
 
-              <Card>
+              <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <Card.Header>
                   <Card.Title className="text-slate-200">
                     Guest List ({allStepData[1]?.guestData?.length || 0} guests)
@@ -479,7 +479,7 @@ const BulkInviteWizard = () => {
 
       {/* Generated Invitations Display - Enhanced */}
       {inviteData && (
-        <Card className="mb-6 border-2 border-green-500">
+        <Card className="mb-6 border-2 border-green-500 bg-white dark:bg-slate-800">
           <Card.Header className="bg-green-500/10">
             <Card.Title className="text-green-400 flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />

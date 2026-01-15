@@ -127,7 +127,7 @@ const AnnouncementsBanner = ({
               <p className={`mt-1 text-sm ${style.text} opacity-90`}>
                 {announcement.content}
               </p>
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-300">
                 {new Date(announcement.created_at).toLocaleDateString(undefined, {
                   month: 'short',
                   day: 'numeric',

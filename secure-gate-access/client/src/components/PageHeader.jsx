@@ -3,6 +3,7 @@ import React from 'react';
 import { useNavigation } from '../contexts/NavigationContext';
 import Breadcrumbs from './ui/Breadcrumbs';
 import { Button } from './ui';
+import { ArrowLeft } from 'lucide-react';
 
 const PageHeader = ({ 
   title = null,
@@ -42,11 +43,9 @@ const PageHeader = ({
               variant="ghost"
               size="sm"
               onClick={handleBack}
-              className="mb-4 text-slate-400 hover:text-slate-200"
+              className="mb-4 text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white"
               icon={
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
+                <ArrowLeft className="w-4 h-4 mr-2" />
               }
             >
               Back
@@ -54,13 +53,13 @@ const PageHeader = ({
           )}
 
           {/* Page Title */}
-          <h1 className="text-2xl font-bold text-slate-100 mb-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             {displayTitle}
           </h1>
 
           {/* Subtitle */}
           {subtitle && (
-            <p className="text-slate-400 text-base">
+            <p className="text-gray-600 dark:text-gray-300 text-base">
               {subtitle}
             </p>
           )}

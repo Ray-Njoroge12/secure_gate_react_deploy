@@ -122,8 +122,8 @@ const AutoApprovalRules = () => {
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">🤖 Auto-Approval Rules</h2>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🤖 Auto-Approval Rules</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               Trusted visitors are automatically approved without your confirmation
             </p>
           </div>
@@ -164,7 +164,7 @@ const AutoApprovalRules = () => {
       {/* Rules List */}
       <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
         {rules.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">📋</span>
             <p className="mt-2">No auto-approval rules yet</p>
             <p className="text-sm">Create rules to automatically approve trusted visitors</p>
@@ -179,16 +179,16 @@ const AutoApprovalRules = () => {
                   </span>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium text-gray-900">{rule.ruleName}</h3>
+                      <h3 className="font-medium text-gray-900 dark:text-white">{rule.ruleName}</h3>
                       <span className={`px-2 py-0.5 text-xs rounded-full ${
                         rule.isActive 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-600'
+                          : 'bg-gray-100 text-gray-600 dark:text-gray-200'
                       }`}>
                         {rule.isActive ? 'Active' : 'Paused'}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">
                       {rule.matchCriteria?.visitorName && (
                         <span>Name: {rule.matchCriteria.visitorName}</span>
                       )}
@@ -196,7 +196,7 @@ const AutoApprovalRules = () => {
                         <span className="ml-2">Phone: {rule.matchCriteria.visitorPhone}</span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                       📅 {formatTimeRestrictions(rule.timeRestrictions)}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
@@ -222,7 +222,7 @@ const AutoApprovalRules = () => {
                   </button>
                   <button
                     onClick={() => setEditingRule(rule)}
-                    className="p-1 text-gray-400 hover:text-gray-600"
+                    className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-200"
                   >
                     ✏️
                   </button>
@@ -409,7 +409,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
               placeholder="Visitor phone number"
               className="w-full border-gray-300 rounded-md shadow-sm"
             />
-            <p className="text-xs text-gray-500">Enter name, phone, or both</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300">Enter name, phone, or both</p>
           </div>
 
           {/* Time Restrictions */}
@@ -443,7 +443,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
                 onChange={handleChange}
                 className="border-gray-300 rounded-md shadow-sm"
               />
-              <span className="text-gray-500">to</span>
+              <span className="text-gray-500 dark:text-gray-300">to</span>
               <input
                 type="time"
                 name="endTime"
@@ -452,12 +452,12 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
                 className="border-gray-300 rounded-md shadow-sm"
               />
             </div>
-            <p className="text-xs text-gray-500">Leave empty for anytime approval</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300">Leave empty for anytime approval</p>
           </div>
 
           {/* Privacy Notice */}
           <div className="bg-gray-50 p-3 rounded-md">
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-200">
               🔒 This rule is encrypted and only you can see its details.
             </p>
           </div>

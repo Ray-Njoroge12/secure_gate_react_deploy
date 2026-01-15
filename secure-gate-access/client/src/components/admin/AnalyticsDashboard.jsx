@@ -63,7 +63,7 @@ const BarChart = ({ data = [], labels = [], color = '#10b981', height = 200 }) =
   return (
     <div className="relative" style={{ height }}>
       {/* Y-axis labels */}
-      <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-gray-500">
+      <div className="absolute left-0 top-0 bottom-8 w-8 flex flex-col justify-between text-xs text-gray-500 dark:text-gray-300">
         <span>{max}</span>
         <span>{Math.round(max / 2)}</span>
         <span>0</span>
@@ -82,7 +82,7 @@ const BarChart = ({ data = [], labels = [], color = '#10b981', height = 200 }) =
               }}
               title={`${labels[index] || index}: ${value}`}
             />
-            <span className="text-xs text-gray-500 mt-1 truncate w-full text-center">
+            <span className="text-xs text-gray-500 dark:text-gray-300 mt-1 truncate w-full text-center">
               {labels[index] || ''}
             </span>
           </div>
@@ -169,7 +169,7 @@ const DoughnutChart = ({ data = [], labels = [], colors = [], size = 160 }) => {
           x={size / 2}
           y={size / 2 + 16}
           textAnchor="middle"
-          className="text-xs fill-current text-gray-500"
+          className="text-xs fill-current text-gray-500 dark:text-gray-300"
         >
           Total
         </text>
@@ -183,8 +183,8 @@ const DoughnutChart = ({ data = [], labels = [], colors = [], size = 160 }) => {
               className="w-3 h-3 rounded-full" 
               style={{ backgroundColor: segment.color }}
             />
-            <span className="text-gray-700 dark:text-gray-300">{segment.label}</span>
-            <span className="text-gray-500 ml-auto">{segment.percentage}%</span>
+            <span className="text-gray-700 dark:text-gray-200">{segment.label}</span>
+            <span className="text-gray-500 dark:text-gray-300 ml-auto">{segment.percentage}%</span>
           </div>
         ))}
       </div>
@@ -229,7 +229,7 @@ const WeeklyHeatmap = ({ data = {} }) => {
         <div className="flex gap-1 mb-1">
           <div className="w-12" />
           {days.map(day => (
-            <div key={day} className="flex-1 text-center text-xs text-gray-500 font-medium">
+            <div key={day} className="flex-1 text-center text-xs text-gray-500 dark:text-gray-300 font-medium">
               {day}
             </div>
           ))}
@@ -238,7 +238,7 @@ const WeeklyHeatmap = ({ data = {} }) => {
         {/* Grid */}
         {hours.map(hour => (
           <div key={hour} className="flex gap-1 mb-1">
-            <div className="w-12 text-xs text-gray-500 flex items-center">{hour}</div>
+            <div className="w-12 text-xs text-gray-500 dark:text-gray-300 flex items-center">{hour}</div>
             {days.map(day => (
               <div
                 key={`${day}-${hour}`}
@@ -250,7 +250,7 @@ const WeeklyHeatmap = ({ data = {} }) => {
         ))}
         
         {/* Legend */}
-        <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
+        <div className="flex items-center gap-2 mt-4 text-xs text-gray-500 dark:text-gray-300">
           <span>Less</span>
           <div className="flex gap-1">
             {['bg-green-100', 'bg-green-200', 'bg-green-300', 'bg-green-400', 'bg-green-500'].map((color, i) => (
@@ -277,7 +277,7 @@ const StatCard = ({
   const changeColors = {
     positive: 'text-green-600 bg-green-50',
     negative: 'text-red-600 bg-red-50',
-    neutral: 'text-gray-600 bg-gray-50',
+    neutral: 'text-gray-600 dark:text-gray-200 bg-gray-50',
   };
 
   const changeIcons = {
@@ -299,7 +299,7 @@ const StatCard = ({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</h3>
+        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{title}</h3>
         {icon && <span className="text-2xl">{icon}</span>}
       </div>
       
@@ -443,7 +443,7 @@ const AnalyticsDashboard = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Analytics Dashboard</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
             Visitor insights and activity metrics
           </p>
         </div>
@@ -457,7 +457,7 @@ const AnalyticsDashboard = ({
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                 selectedRange === range.value
                   ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               {range.label}
@@ -537,7 +537,7 @@ const AnalyticsDashboard = ({
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Weekly Activity Pattern
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
           Traffic intensity by day and time
         </p>
         <WeeklyHeatmap data={analyticsData.heatmap} />
@@ -550,7 +550,7 @@ const AnalyticsDashboard = ({
           <button
             onClick={() => setShowExportMenu(!showExportMenu)}
             disabled={isExporting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isExporting ? '⏳ Exporting...' : '📊 Export CSV'}
             <span className="text-xs">▼</span>
@@ -562,25 +562,25 @@ const AnalyticsDashboard = ({
               <div className="py-1">
                 <button
                   onClick={() => handleCSVExport('visitors')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   📋 Visitor Log (Detailed)
                 </button>
                 <button
                   onClick={() => handleCSVExport('hourly')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   ⏰ Hourly Activity
                 </button>
                 <button
                   onClick={() => handleCSVExport('purpose')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   🎯 Purpose Distribution
                 </button>
                 <button
                   onClick={() => handleCSVExport('full')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   📊 Full Analytics Summary
                 </button>

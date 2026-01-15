@@ -62,7 +62,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
         `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
           isActive 
             ? "bg-brand-600 text-white shadow-sm" 
-            : "text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white"
+            : "text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
         }`
       }
       aria-label={`Navigate to ${children}`}
@@ -83,7 +83,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
           )}
         </div>
         {description && (
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 truncate">
+          <p className="text-xs text-gray-500 dark:text-slate-300 mt-0.5 truncate">
             {description}
           </p>
         )}

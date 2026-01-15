@@ -53,7 +53,7 @@ const AccessibleButton = forwardRef(({
     ],
     secondary: [
       'bg-gray-200',
-      'text-gray-900',
+      'text-gray-900 dark:text-white',
       'hover:bg-gray-300',
       'focus:ring-gray-500',
       'active:bg-gray-400'

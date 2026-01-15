@@ -264,13 +264,13 @@ class ErrorBoundary extends React.Component {
                 <div className="mx-auto mb-4">
                   {getErrorIcon()}
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   {errorMessage.title}
                 </h2>
-                <p className="text-gray-600 mb-2">
+                <p className="text-gray-600 dark:text-gray-200 mb-2">
                   {errorMessage.message}
                 </p>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-300 mb-4">
                   {errorMessage.suggestion}
                 </p>
                 
@@ -280,7 +280,7 @@ class ErrorBoundary extends React.Component {
                       Error ID: <code className="font-mono bg-gray-200 px-1 rounded">{errorId}</code>
                     </p>
                     {retryCount > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                         Retry attempt: {retryCount}/{this.maxRetries}
                       </p>
                     )}
@@ -318,7 +318,7 @@ class ErrorBoundary extends React.Component {
                 {/* Recovery actions based on error type */}
                 {recoveryActions && recoveryActions.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-600 text-center">Or try:</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-200 text-center">Or try:</p>
                     <div className="grid grid-cols-2 gap-2">
                       {recoveryActions.slice(0, 4).map((action, index) => (
                         <Button
@@ -371,7 +371,7 @@ class ErrorBoundary extends React.Component {
             </Card.Content>
 
             <Card.Footer>
-              <div className="text-center text-xs text-gray-500">
+              <div className="text-center text-xs text-gray-500 dark:text-gray-300">
                 {retryCount >= this.maxRetries ? (
                   <span className="text-red-600">
                     Maximum retry attempts reached. Please contact support.

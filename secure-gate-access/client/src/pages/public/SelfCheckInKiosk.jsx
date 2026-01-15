@@ -587,19 +587,19 @@ const SelfCheckInKiosk = () => {
   // Render Scan QR step for pre-registered visitors
   const renderScanQR = () => (
     <div className="kiosk-scan-qr">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{getText('scanQR')}</h2>
-        <p className="text-gray-600 mb-6">Enter your invite code or scan your QR code</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{getText('scanQR')}</h2>
+        <p className="text-gray-600 dark:text-gray-200 mb-6">Enter your invite code or scan your QR code</p>
         
         {/* QR Scanner Placeholder */}
         <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 text-center">
           <div className="text-6xl mb-4">📷</div>
-          <p className="text-gray-600 mb-2">QR Scanner</p>
-          <p className="text-sm text-gray-500">Point your QR code at the camera</p>
+          <p className="text-gray-600 dark:text-gray-200 mb-2">QR Scanner</p>
+          <p className="text-sm text-gray-500 dark:text-gray-300">Point your QR code at the camera</p>
         </div>
 
         {/* Manual Code Entry */}
         <div className="space-y-4">
-          <div className="text-center text-gray-500 text-sm">- OR -</div>
+          <div className="text-center text-gray-500 dark:text-gray-300 text-sm">- OR -</div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Enter Invite Code</label>
             <input

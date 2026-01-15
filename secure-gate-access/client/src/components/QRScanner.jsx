@@ -245,7 +245,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
               variant="ghost"
               size="sm"
               onClick={handleClose}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-gray-300 hover:text-gray-700"
             >
               ✕
             </Button>
@@ -343,7 +343,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
             </Button>
           </div>
 
-          <div className="mt-4 text-sm text-gray-600">
+          <div className="mt-4 text-sm text-gray-600 dark:text-gray-200">
             <p>• Point your camera at a QR code</p>
             <p>• Make sure the QR code is well-lit and in focus</p>
             <p>• The scanner will automatically detect and process the code</p>

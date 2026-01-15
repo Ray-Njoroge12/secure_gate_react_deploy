@@ -106,10 +106,10 @@ const VisitorConfirmationPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your invitation...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-200">Loading your invitation...</p>
         </div>
       </div>
     );
@@ -117,13 +117,13 @@ const VisitorConfirmationPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
           <div className="text-center">
             <div className="text-red-500 text-5xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Invitation Not Found</h2>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <p className="text-sm text-gray-500">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Invitation Not Found</h2>
+            <p className="text-gray-600 dark:text-gray-200 mb-6">{error}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               Please check your invitation link or contact the estate administration.
             </p>
           </div>
@@ -146,7 +146,7 @@ const VisitorConfirmationPage = () => {
 
             {/* Visitor Details */}
             <div className="p-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Visit Details</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Visit Details</h2>
               <div className="space-y-3">
                 <div className="flex items-center text-gray-700">
                   <span className="font-medium mr-2">📅 Date:</span>
@@ -174,10 +174,10 @@ const VisitorConfirmationPage = () => {
           {/* QR Code Section */}
           {qrCode && (
             <div className="bg-white rounded-lg shadow-xl p-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 text-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center">
                 Your Digital Pass
               </h2>
-              <p className="text-gray-600 text-center mb-6">
+              <p className="text-gray-600 dark:text-gray-200 text-center mb-6">
                 Show this QR code to the guard at the gate for fast check-in
               </p>
 
@@ -192,13 +192,13 @@ const VisitorConfirmationPage = () => {
               )}
 
               {qrCode.message && (
-                <p className="text-center text-gray-600 mb-4">
+                <p className="text-center text-gray-600 dark:text-gray-200 mb-4">
                   {qrCode.message}
                 </p>
               )}
 
               {qrCode.expiresAt && (
-                <p className="text-center text-sm text-gray-500">
+                <p className="text-center text-sm text-gray-500 dark:text-gray-300">
                   Valid until {new Date(qrCode.expiresAt).toLocaleString()}
                 </p>
               )}
@@ -233,7 +233,7 @@ const VisitorConfirmationPage = () => {
 
           {/* Visitor Details */}
           <div className="p-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Visit Details</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Visit Details</h2>
             <div className="space-y-3 mb-6">
               <div className="flex items-center text-gray-700">
                 <span className="font-medium mr-2">👤 Name:</span>
@@ -266,10 +266,10 @@ const VisitorConfirmationPage = () => {
 
             {/* Consent Form */}
             <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Consent & Privacy
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-200 mb-4">
                 To complete your confirmation, please review and accept the following:
               </p>
 
@@ -317,7 +317,7 @@ const VisitorConfirmationPage = () => {
                 </label>
               </div>
 
-              <p className="text-xs text-gray-500 mt-4">
+              <p className="text-xs text-gray-500 dark:text-gray-300 mt-4">
                 <strong className="text-red-600">*</strong> Required fields
               </p>
             </div>
@@ -342,7 +342,7 @@ const VisitorConfirmationPage = () => {
               )}
             </button>
 
-            <p className="text-center text-sm text-gray-500 mt-4">
+            <p className="text-center text-sm text-gray-500 dark:text-gray-300 mt-4">
               After confirmation, you'll receive a QR code via email for fast check-in at the gate
             </p>
           </div>
@@ -353,3 +353,4 @@ const VisitorConfirmationPage = () => {
 };
 
 export default VisitorConfirmationPage;
+

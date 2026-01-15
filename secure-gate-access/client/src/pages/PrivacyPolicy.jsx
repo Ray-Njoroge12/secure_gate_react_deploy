@@ -177,7 +177,7 @@ const PrivacyPolicy = () => {
               <Shield className="h-5 w-5 text-green-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Security and Access Control</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Managing visitor access, monitoring entry/exit, and maintaining building security.
                 </p>
               </div>
@@ -186,7 +186,7 @@ const PrivacyPolicy = () => {
               <UserCheck className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">User Management</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Creating and managing user accounts, authentication, and authorization.
                 </p>
               </div>
@@ -195,7 +195,7 @@ const PrivacyPolicy = () => {
               <Eye className="h-5 w-5 text-purple-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Audit and Compliance</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Maintaining audit trails, compliance reporting, and legal obligations.
                 </p>
               </div>
@@ -204,7 +204,7 @@ const PrivacyPolicy = () => {
               <Mail className="h-5 w-5 text-orange-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Communication</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Sending notifications, alerts, and important updates (with your consent).
                 </p>
               </div>
@@ -270,19 +270,19 @@ const PrivacyPolicy = () => {
           <div className="space-y-3">
             <div className="border-l-4 border-blue-500 pl-4">
               <h4 className="font-semibold">Legal Requirements</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 When required by law, court order, or government request.
               </p>
             </div>
             <div className="border-l-4 border-green-500 pl-4">
               <h4 className="font-semibold">Security Purposes</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 With security personnel and law enforcement for safety and security.
               </p>
             </div>
             <div className="border-l-4 border-purple-500 pl-4">
               <h4 className="font-semibold">Service Providers</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 With trusted third-party service providers under strict data protection agreements.
               </p>
             </div>
@@ -309,21 +309,21 @@ const PrivacyPolicy = () => {
                 <Eye className="h-4 w-4 text-blue-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Access</h4>
-                  <p className="text-xs text-gray-600">Request copies of your personal data</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-200">Request copies of your personal data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <FileText className="h-4 w-4 text-green-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Rectification</h4>
-                  <p className="text-xs text-gray-600">Correct inaccurate or incomplete data</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-200">Correct inaccurate or incomplete data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Database className="h-4 w-4 text-purple-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Portability</h4>
-                  <p className="text-xs text-gray-600">Receive your data in a portable format</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-200">Receive your data in a portable format</p>
                 </div>
               </div>
             </div>
@@ -332,21 +332,21 @@ const PrivacyPolicy = () => {
                 <Lock className="h-4 w-4 text-red-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Erasure</h4>
-                  <p className="text-xs text-gray-600">Request deletion of your personal data</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-200">Request deletion of your personal data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <Shield className="h-4 w-4 text-orange-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Restrict</h4>
-                  <p className="text-xs text-gray-600">Limit how we process your data</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-200">Limit how we process your data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
                 <UserCheck className="h-4 w-4 text-indigo-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Object</h4>
-                  <p className="text-xs text-gray-600">Object to certain data processing</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-200">Object to certain data processing</p>
                 </div>
               </div>
             </div>
@@ -372,7 +372,7 @@ const PrivacyPolicy = () => {
               <div className="w-3 h-3 bg-green-500 rounded-full mt-2"></div>
               <div>
                 <h4 className="font-semibold">Necessary Cookies</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Essential for website functionality, authentication, and security.
                 </p>
               </div>
@@ -381,7 +381,7 @@ const PrivacyPolicy = () => {
               <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
               <div>
                 <h4 className="font-semibold">Analytics Cookies</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Help us understand how you use our website (optional).
                 </p>
               </div>
@@ -390,7 +390,7 @@ const PrivacyPolicy = () => {
               <div className="w-3 h-3 bg-purple-500 rounded-full mt-2"></div>
               <div>
                 <h4 className="font-semibold">Preference Cookies</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Remember your settings and preferences (optional).
                 </p>
               </div>
@@ -417,7 +417,7 @@ const PrivacyPolicy = () => {
               <h4 className="font-semibold">Data Protection Officer (DPO)</h4>
               {dpoInfo ? (
                 <>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-200">
                     <strong>Name:</strong> {dpoInfo.name}<br/>
                     <strong>Email:</strong> {dpoInfo.email}<br/>
                     <strong>Phone:</strong> {dpoInfo.phone}<br/>
@@ -430,14 +430,14 @@ const PrivacyPolicy = () => {
                   ) : null}
                 </>
               ) : (
-                <p className="text-sm text-gray-500">Loading...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-300">Loading...</p>
               )}
             </div>
             <div className="space-y-2">
               <h4 className="font-semibold">ODPC Registration</h4>
               {odpcInfo ? (
                 <>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-200">
                     <strong>Status:</strong> {odpcMissing ? 'Not configured' : odpcInfo.status === 'active' ? 'Registered' : 'Pending Registration'}<br/>
                     <strong>Registration Number:</strong> {odpcInfo.registration_number || 'Not configured'}<br/>
                     <strong>Data Controller:</strong> {odpcInfo.data_controller_name}
@@ -449,13 +449,13 @@ const PrivacyPolicy = () => {
                   ) : null}
                 </>
               ) : (
-                <p className="text-sm text-gray-500">Loading...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-300">Loading...</p>
               )}
             </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg mt-4">
             <h4 className="font-semibold mb-2">General Privacy Inquiries</h4>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-200">
               Email: privacy@securegate.com<br/>
               Phone: +254 700 000 001<br/>
               Response Time: Within 72 hours
@@ -474,11 +474,11 @@ const PrivacyPolicy = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-          <p className="text-lg text-gray-600 mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Privacy Policy</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-200 mb-4">
             Your privacy and data protection rights under Kenya DPA 2019
           </p>
           <div className="flex justify-center gap-2">
@@ -541,3 +541,4 @@ const PrivacyPolicy = () => {
 };
 
 export default PrivacyPolicy;
+

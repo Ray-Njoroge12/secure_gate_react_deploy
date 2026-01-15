@@ -213,7 +213,7 @@ const SessionTimeoutWarning = ({
           {/* Description */}
           <p 
             id="session-timeout-description"
-            className="text-center text-gray-600 dark:text-gray-300 mb-4"
+            className="text-center text-gray-600 dark:text-gray-200 mb-4"
           >
             Your session will expire due to inactivity. Would you like to continue?
           </p>
@@ -223,7 +223,7 @@ const SessionTimeoutWarning = ({
             <span className="text-3xl font-mono font-bold text-yellow-600 dark:text-yellow-400">
               {formatCountdown(countdown)}
             </span>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
               Time remaining
             </p>
           </div>
@@ -240,7 +240,7 @@ const SessionTimeoutWarning = ({
           <div className="flex gap-3">
             <button
               onClick={handleLogout}
-              className="flex-1 py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="flex-1 py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Log Out Now
             </button>
@@ -254,7 +254,7 @@ const SessionTimeoutWarning = ({
           </div>
 
           {/* Keyboard hint */}
-          <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-4">
+          <p className="text-xs text-center text-gray-400 dark:text-gray-500 dark:text-gray-300 mt-4">
             Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Enter</kbd> to stay logged in
           </p>
         </div>

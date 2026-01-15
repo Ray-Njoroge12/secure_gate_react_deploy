@@ -50,8 +50,8 @@ const RecurringPassValidator = () => {
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">🔑 Recurring Pass Check</h2>
-        <p className="text-sm text-gray-500">Validate daily workers & regular visitors</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🔑 Recurring Pass Check</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-300">Validate daily workers & regular visitors</p>
       </div>
 
       <div className="p-4">
@@ -131,7 +131,7 @@ const RecurringPassValidator = () => {
                   {result.pass.vehiclePlate && (
                     <p><span className="font-medium">Vehicle:</span> {result.pass.vehiclePlate}</p>
                   )}
-                  <p className="text-gray-500">Total entries: {result.pass.totalEntries + 1}</p>
+                  <p className="text-gray-500 dark:text-gray-300">Total entries: {result.pass.totalEntries + 1}</p>
                 </div>
                 <p className="mt-3 text-green-700 font-medium">Entry recorded ✓</p>
               </div>
@@ -143,7 +143,7 @@ const RecurringPassValidator = () => {
                 </div>
                 <p className="text-red-700">{result.error}</p>
                 {result.passInfo && (
-                  <div className="mt-2 text-sm text-gray-600">
+                  <div className="mt-2 text-sm text-gray-600 dark:text-gray-200">
                     <p>Pass holder: {result.passInfo.visitorName}</p>
                     <p>Status: {result.passInfo.status}</p>
                   </div>
@@ -161,7 +161,7 @@ const RecurringPassValidator = () => {
         )}
       </div>
 
-      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
         💡 Recurring passes are pre-authorized by residents for regular visitors
       </div>
     </div>

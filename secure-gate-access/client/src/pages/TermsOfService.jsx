@@ -106,7 +106,7 @@ const TermsOfService = () => {
               <Shield className="h-5 w-5 text-green-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Security Responsibilities</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Maintain the confidentiality of your account credentials and notify us immediately 
                   of any unauthorized access.
                 </p>
@@ -116,7 +116,7 @@ const TermsOfService = () => {
               <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Accurate Information</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Provide accurate, complete, and up-to-date information when registering visitors 
                   or updating your profile.
                 </p>
@@ -126,7 +126,7 @@ const TermsOfService = () => {
               <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Compliance</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Comply with all applicable laws, regulations, and building security policies.
                 </p>
               </div>
@@ -184,19 +184,19 @@ const TermsOfService = () => {
           <div className="space-y-3">
             <div className="border-l-4 border-blue-500 pl-4">
               <h4 className="font-semibold">Data Collection</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 We collect only necessary information for security and access control purposes.
               </p>
             </div>
             <div className="border-l-4 border-green-500 pl-4">
               <h4 className="font-semibold">Data Security</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 We implement industry-standard security measures to protect your data.
               </p>
             </div>
             <div className="border-l-4 border-purple-500 pl-4">
               <h4 className="font-semibold">Your Rights</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 You have the right to access, rectify, delete, and port your personal data.
               </p>
             </div>
@@ -226,7 +226,7 @@ const TermsOfService = () => {
               <FileText className="h-5 w-5 text-blue-600 mt-1" />
               <div>
                 <h4 className="font-semibold">Service Content</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   You may not copy, modify, distribute, sell, or lease any part of our Service.
                 </p>
               </div>
@@ -235,7 +235,7 @@ const TermsOfService = () => {
               <Shield className="h-5 w-5 text-green-600 mt-1" />
               <div>
                 <h4 className="font-semibold">User Content</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   You retain ownership of content you provide, but grant us license to use it 
                   for Service operation.
                 </p>
@@ -335,7 +335,7 @@ const TermsOfService = () => {
               <Gavel className="h-5 w-5 text-blue-600 mt-1" />
               <div>
                 <h4 className="font-semibold">Jurisdiction</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   Any disputes arising from these Terms shall be subject to the exclusive 
                   jurisdiction of the courts of Kenya.
                 </p>
@@ -345,7 +345,7 @@ const TermsOfService = () => {
               <Shield className="h-5 w-5 text-green-600 mt-1" />
               <div>
                 <h4 className="font-semibold">Compliance</h4>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   These Terms comply with Kenya Data Protection Act 2019 and other applicable 
                   Kenyan laws and regulations.
                 </p>
@@ -365,7 +365,7 @@ const TermsOfService = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <h4 className="font-semibold">Legal Department</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 Email: legal@securegate.com<br/>
                 Phone: +254 700 000 000<br/>
                 Address: Nairobi, Kenya
@@ -373,7 +373,7 @@ const TermsOfService = () => {
             </div>
             <div className="space-y-2">
               <h4 className="font-semibold">Customer Support</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 Email: support@securegate.com<br/>
                 Phone: +254 700 000 001<br/>
                 Response Time: 24 hours
@@ -392,11 +392,11 @@ const TermsOfService = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Terms of Service</h1>
-          <p className="text-lg text-gray-600 mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Terms of Service</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-200 mb-4">
             Legal terms governing the use of Secure Gate Access Control System
           </p>
           <div className="flex justify-center gap-2">
@@ -459,5 +459,6 @@ const TermsOfService = () => {
 };
 
 export default TermsOfService;
+
 
 

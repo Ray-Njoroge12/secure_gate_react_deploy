@@ -55,8 +55,8 @@ const GuardAnalytics = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Guard Analytics</h1>
-          <p className="text-gray-600 mt-1">Operational insights and trends</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Guard Analytics</h1>
+          <p className="text-gray-600 dark:text-gray-200 mt-1">Operational insights and trends</p>
         </div>
         <Button onClick={fetchAnalytics} disabled={isLoading('analytics')}>
           {isLoading('analytics') ? 'Refreshing...' : 'Refresh'}
@@ -103,10 +103,10 @@ const GuardAnalytics = () => {
                     <Clock className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">
                       {analytics.approvalStats.avgApprovalTimeMinutes}m
                     </div>
-                    <div className="text-sm text-gray-600">Avg Approval Time</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-200">Avg Approval Time</div>
                   </div>
                 </div>
               </Card.Content>
@@ -119,10 +119,10 @@ const GuardAnalytics = () => {
                     <Users className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">
                       {analytics.approvalStats.totalApproved}
                     </div>
-                    <div className="text-sm text-gray-600">Total Approvals</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-200">Total Approvals</div>
                   </div>
                 </div>
               </Card.Content>
@@ -135,10 +135,10 @@ const GuardAnalytics = () => {
                     <AlertCircle className="w-6 h-6 text-red-600" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">
                       {analytics.incidentsByCategory.reduce((sum, cat) => sum + cat.count, 0)}
                     </div>
-                    <div className="text-sm text-gray-600">Total Incidents</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-200">Total Incidents</div>
                   </div>
                 </div>
               </Card.Content>
@@ -180,7 +180,7 @@ const GuardAnalytics = () => {
               <div className="space-y-2">
                 {analytics.visitsByHour.map(item => (
                   <div key={item.hour} className="flex items-center gap-4">
-                    <div className="w-16 text-sm text-gray-600">{item.hour}:00</div>
+                    <div className="w-16 text-sm text-gray-600 dark:text-gray-200">{item.hour}:00</div>
                     <div className="flex-1">
                       <div
                         className="bg-blue-500 h-8 rounded flex items-center justify-end px-2 text-white text-sm font-medium"
@@ -206,12 +206,12 @@ const GuardAnalytics = () => {
                   {analytics.incidentsByCategory.map(incident => (
                     <div key={`${incident.category}-${incident.severity}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
-                        <div className="font-medium text-gray-900 capitalize">
+                        <div className="font-medium text-gray-900 dark:text-white capitalize">
                           {incident.category.replace('_', ' ')}
                         </div>
-                        <div className="text-sm text-gray-600 capitalize">{incident.severity} severity</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-200 capitalize">{incident.severity} severity</div>
                       </div>
-                      <div className="text-2xl font-bold text-gray-900">{incident.count}</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-white">{incident.count}</div>
                     </div>
                   ))}
                 </div>
@@ -234,13 +234,13 @@ const GuardAnalytics = () => {
                           {index + 1}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900">{resident.name}</div>
-                          <div className="text-xs text-gray-600">{resident.email}</div>
+                          <div className="font-medium text-gray-900 dark:text-white">{resident.name}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-200">{resident.email}</div>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-green-600">{resident.approvals}</div>
-                        <div className="text-xs text-gray-600">approvals</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-200">approvals</div>
                       </div>
                     </div>
                   ))}

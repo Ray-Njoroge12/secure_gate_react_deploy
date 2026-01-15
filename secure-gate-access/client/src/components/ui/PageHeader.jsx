@@ -64,25 +64,25 @@ const PageHeader = ({
 
   // Variant styles
   const variantStyles = {
-    default: 'bg-white border-b border-gray-200',
+    default: 'bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800',
     transparent: 'bg-transparent',
     gradient: 'bg-gradient-to-r from-green-500 to-green-600 text-white',
   };
 
   const textStyles = {
     default: {
-      title: 'text-gray-900',
-      subtitle: 'text-gray-500',
-      breadcrumb: 'text-gray-500',
-      breadcrumbActive: 'text-gray-900',
-      icon: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+      title: 'text-gray-900 dark:text-white',
+      subtitle: 'text-gray-500 dark:text-gray-300',
+      breadcrumb: 'text-gray-500 dark:text-gray-300',
+      breadcrumbActive: 'text-gray-900 dark:text-white',
+      icon: 'text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800',
     },
     transparent: {
-      title: 'text-gray-900',
-      subtitle: 'text-gray-500',
-      breadcrumb: 'text-gray-500',
-      breadcrumbActive: 'text-gray-900',
-      icon: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+      title: 'text-gray-900 dark:text-white',
+      subtitle: 'text-gray-500 dark:text-gray-300',
+      breadcrumb: 'text-gray-500 dark:text-gray-300',
+      breadcrumbActive: 'text-gray-900 dark:text-white',
+      icon: 'text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:text-white hover:bg-gray-100',
     },
     gradient: {
       title: 'text-white',

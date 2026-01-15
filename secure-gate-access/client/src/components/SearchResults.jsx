@@ -27,7 +27,7 @@ const SearchResults = ({
           <Card.Content className="p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-200">
                   {hasResults ? `${data.length} results` : 'No results'}
                 </span>
                 
@@ -103,11 +103,11 @@ const SearchResults = ({
                   <Card.Content className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-gray-900">
+                        <h3 className="font-medium text-gray-900 dark:text-white">
                           {item.name || item.title || `Item ${index + 1}`}
                         </h3>
                         {item.description && (
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">
                             {item.description}
                           </p>
                         )}
@@ -128,10 +128,10 @@ const SearchResults = ({
         <Card>
           <Card.Content className="p-8 text-center">
             <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {emptyMessage}
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-200 mb-4">
               {hasSearchTerm || hasFilters
                 ? "Try adjusting your search terms or filters"
                 : "Start typing to search or apply filters"

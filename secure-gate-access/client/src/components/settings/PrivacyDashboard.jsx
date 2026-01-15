@@ -198,8 +198,8 @@ const PrivacyDashboard = ({ className = '' }) => {
               📊
             </div>
             <div>
-              <h4 className="font-medium text-gray-900">Data We Store</h4>
-              <p className="text-sm text-gray-500">View your data inventory</p>
+              <h4 className="font-medium text-gray-900 dark:text-white">Data We Store</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-300">View your data inventory</p>
             </div>
           </div>
           <button
@@ -216,8 +216,8 @@ const PrivacyDashboard = ({ className = '' }) => {
               📥
             </div>
             <div>
-              <h4 className="font-medium text-gray-900">Export Your Data</h4>
-              <p className="text-sm text-gray-500">Download in portable format</p>
+              <h4 className="font-medium text-gray-900 dark:text-white">Export Your Data</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-300">Download in portable format</p>
             </div>
           </div>
           <button
@@ -234,8 +234,8 @@ const PrivacyDashboard = ({ className = '' }) => {
               ⚙️
             </div>
             <div>
-              <h4 className="font-medium text-gray-900">Privacy Preferences</h4>
-              <p className="text-sm text-gray-500">Control your privacy settings</p>
+              <h4 className="font-medium text-gray-900 dark:text-white">Privacy Preferences</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-300">Control your privacy settings</p>
             </div>
           </div>
           <button
@@ -252,8 +252,8 @@ const PrivacyDashboard = ({ className = '' }) => {
               ✅
             </div>
             <div>
-              <h4 className="font-medium text-gray-900">Consent History</h4>
-              <p className="text-sm text-gray-500">View your consent records</p>
+              <h4 className="font-medium text-gray-900 dark:text-white">Consent History</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-300">View your consent records</p>
             </div>
           </div>
           <button
@@ -271,8 +271,8 @@ const PrivacyDashboard = ({ className = '' }) => {
   const renderDataInventory = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Data Inventory</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Your Data Inventory</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-4">
           This is a summary of the personal data we store about you.
         </p>
       </div>
@@ -281,28 +281,28 @@ const PrivacyDashboard = ({ className = '' }) => {
         <div className="space-y-4">
           {/* Personal Info */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-3">Personal Information</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Personal Information</h4>
             <dl className="grid grid-cols-2 gap-2 text-sm">
-              <dt className="text-gray-500">Name:</dt>
-              <dd className="text-gray-900">{dataInventory.personalInfo?.name || 'Not set'}</dd>
-              <dt className="text-gray-500">Email:</dt>
-              <dd className="text-gray-900">{dataInventory.personalInfo?.email || 'Not set'}</dd>
-              <dt className="text-gray-500">Phone:</dt>
-              <dd className="text-gray-900">{dataInventory.personalInfo?.phone || 'Not set'}</dd>
-              <dt className="text-gray-500">Unit:</dt>
-              <dd className="text-gray-900">{dataInventory.personalInfo?.unit || 'Not set'}</dd>
+              <dt className="text-gray-500 dark:text-gray-300">Name:</dt>
+              <dd className="text-gray-900 dark:text-white">{dataInventory.personalInfo?.name || 'Not set'}</dd>
+              <dt className="text-gray-500 dark:text-gray-300">Email:</dt>
+              <dd className="text-gray-900 dark:text-white">{dataInventory.personalInfo?.email || 'Not set'}</dd>
+              <dt className="text-gray-500 dark:text-gray-300">Phone:</dt>
+              <dd className="text-gray-900 dark:text-white">{dataInventory.personalInfo?.phone || 'Not set'}</dd>
+              <dt className="text-gray-500 dark:text-gray-300">Unit:</dt>
+              <dd className="text-gray-900 dark:text-white">{dataInventory.personalInfo?.unit || 'Not set'}</dd>
             </dl>
           </div>
 
           {/* Visitors */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-gray-900">Visitor Records</h4>
-              <span className="text-sm text-gray-500">
+              <h4 className="font-medium text-gray-900 dark:text-white">Visitor Records</h4>
+              <span className="text-sm text-gray-500 dark:text-gray-300">
                 {dataInventory.visitors?.length || 0} records
               </span>
             </div>
-            <p className="text-sm text-gray-600 mb-3">
+            <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
               Records of visitors you've invited or who have checked in.
             </p>
             <button
@@ -316,12 +316,12 @@ const PrivacyDashboard = ({ className = '' }) => {
           {/* Deliveries */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-gray-900">Delivery Records</h4>
-              <span className="text-sm text-gray-500">
+              <h4 className="font-medium text-gray-900 dark:text-white">Delivery Records</h4>
+              <span className="text-sm text-gray-500 dark:text-gray-300">
                 {dataInventory.deliveries?.length || 0} records
               </span>
             </div>
-            <p className="text-sm text-gray-600 mb-3">
+            <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
               Records of packages and deliveries received.
             </p>
             <button
@@ -335,18 +335,18 @@ const PrivacyDashboard = ({ className = '' }) => {
           {/* Activity Logs */}
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-gray-900">Activity Logs</h4>
-              <span className="text-sm text-gray-500">
+              <h4 className="font-medium text-gray-900 dark:text-white">Activity Logs</h4>
+              <span className="text-sm text-gray-500 dark:text-gray-300">
                 Last 90 days
               </span>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-200">
               Login history and system actions. Retained for security and automatically deleted after 90 days.
             </p>
           </div>
         </div>
       ) : (
-        <p className="text-gray-500">Loading data inventory...</p>
+        <p className="text-gray-500 dark:text-gray-300">Loading data inventory...</p>
       )}
     </div>
   );
@@ -355,16 +355,16 @@ const PrivacyDashboard = ({ className = '' }) => {
   const renderDataExport = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Export Your Data</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export Your Data</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-4">
           Download a copy of your personal data in a portable format. This includes all data 
           associated with your account.
         </p>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h4 className="font-medium text-gray-900 mb-4">What's included:</h4>
-        <ul className="space-y-2 text-sm text-gray-600 mb-6">
+        <h4 className="font-medium text-gray-900 dark:text-white mb-4">What's included:</h4>
+        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-200 mb-6">
           <li className="flex items-center gap-2">
             <span className="text-green-500">✓</span> Personal profile information
           </li>
@@ -399,7 +399,7 @@ const PrivacyDashboard = ({ className = '' }) => {
               {exportStatus.message}
             </p>
             {exportStatus.status === 'completed' && exportStatus.expiresAt && (
-              <p className="mt-2 text-xs text-gray-600">
+              <p className="mt-2 text-xs text-gray-600 dark:text-gray-200">
                 Download available until {new Date(exportStatus.expiresAt).toLocaleString()}.
               </p>
             )}
@@ -412,7 +412,7 @@ const PrivacyDashboard = ({ className = '' }) => {
               </button>
             )}
             {exportStatus.status === 'completed' && exportStatus.downloadAvailable === false && (
-              <p className="mt-3 text-xs text-gray-600">
+              <p className="mt-3 text-xs text-gray-600 dark:text-gray-200">
                 The download window has expired. Please request a new export.
               </p>
             )}
@@ -441,8 +441,8 @@ const PrivacyDashboard = ({ className = '' }) => {
   const renderPreferences = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Privacy Preferences</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Privacy Preferences</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-4">
           Control how your data is used and shared within SecureGate.
         </p>
       </div>
@@ -452,8 +452,8 @@ const PrivacyDashboard = ({ className = '' }) => {
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-gray-900">Show Visitor Frequency to Guards</h4>
-              <p className="text-sm text-gray-500 mt-1">
+              <h4 className="font-medium text-gray-900 dark:text-white">Show Visitor Frequency to Guards</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                 Allow guards to see how often your visitors check in
               </p>
             </div>
@@ -474,8 +474,8 @@ const PrivacyDashboard = ({ className = '' }) => {
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-gray-900">Allow Delivery Photos</h4>
-              <p className="text-sm text-gray-500 mt-1">
+              <h4 className="font-medium text-gray-900 dark:text-white">Allow Delivery Photos</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                 Allow guards to capture photos of your packages
               </p>
             </div>
@@ -496,8 +496,8 @@ const PrivacyDashboard = ({ className = '' }) => {
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-gray-900">Receive Non-Critical Announcements</h4>
-              <p className="text-sm text-gray-500 mt-1">
+              <h4 className="font-medium text-gray-900 dark:text-white">Receive Non-Critical Announcements</h4>
+              <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                 Receive maintenance, events, and general updates
               </p>
             </div>
@@ -524,8 +524,8 @@ const PrivacyDashboard = ({ className = '' }) => {
   const renderConsents = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Consent History</h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Consent History</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-4">
           A record of the consents you've given and their current status.
         </p>
       </div>
@@ -534,13 +534,13 @@ const PrivacyDashboard = ({ className = '' }) => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 Consent Type
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 Last Updated
               </th>
             </tr>
@@ -549,7 +549,7 @@ const PrivacyDashboard = ({ className = '' }) => {
             {consents.length > 0 ? (
               consents.map((consent, index) => (
                 <tr key={index}>
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                  <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
                     {consent.type}
                   </td>
                   <td className="px-4 py-3">
@@ -561,14 +561,14 @@ const PrivacyDashboard = ({ className = '' }) => {
                       {consent.granted ? 'Granted' : 'Withdrawn'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
+                  <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-300">
                     {new Date(consent.timestamp).toLocaleDateString()}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="3" className="px-4 py-6 text-center text-gray-500">
+                <td colSpan="3" className="px-4 py-6 text-center text-gray-500 dark:text-gray-300">
                   No consent records found
                 </td>
               </tr>
@@ -582,7 +582,7 @@ const PrivacyDashboard = ({ className = '' }) => {
   if (loading) {
     return (
       <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-8 ${className}`}>
-        <div className="text-center text-gray-500">Loading privacy dashboard...</div>
+        <div className="text-center text-gray-500 dark:text-gray-300">Loading privacy dashboard...</div>
       </div>
     );
   }
@@ -591,8 +591,8 @@ const PrivacyDashboard = ({ className = '' }) => {
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">🔒 Privacy Dashboard</h2>
-        <p className="text-sm text-gray-500">Manage your personal data and privacy settings</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🔒 Privacy Dashboard</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-300">Manage your personal data and privacy settings</p>
       </div>
 
       {/* Error Display */}
@@ -624,7 +624,7 @@ const PrivacyDashboard = ({ className = '' }) => {
               className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
               {tab.label}

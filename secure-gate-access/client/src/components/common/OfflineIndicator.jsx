@@ -150,34 +150,34 @@ const OfflineIndicator = ({
       {/* Tooltip / Details Panel */}
       {showTooltip && showDetails && (
         <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-lg shadow-xl border border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
             Sync Status
           </h4>
           
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Connection:</span>
+              <span className="text-gray-500 dark:text-gray-300">Connection:</span>
               <span className={status.isOnline ? 'text-green-600' : 'text-yellow-600'}>
                 {status.isOnline ? 'Connected' : 'Offline'}
               </span>
             </div>
             
             <div className="flex justify-between">
-              <span className="text-gray-500">Last Sync:</span>
+              <span className="text-gray-500 dark:text-gray-300">Last Sync:</span>
               <span className="text-gray-700">
                 {formatLastSync(status.lastDownload)}
               </span>
             </div>
             
             <div className="flex justify-between">
-              <span className="text-gray-500">Pending:</span>
+              <span className="text-gray-500 dark:text-gray-300">Pending:</span>
               <span className="text-gray-700">
                 {status.pendingChangesCount} changes
               </span>
             </div>
             
             <div className="flex justify-between">
-              <span className="text-gray-500">Offline Data:</span>
+              <span className="text-gray-500 dark:text-gray-300">Offline Data:</span>
               <span className={status.hasOfflineData ? 'text-green-600' : 'text-gray-400'}>
                 {status.hasOfflineData ? 'Available' : 'Not cached'}
               </span>

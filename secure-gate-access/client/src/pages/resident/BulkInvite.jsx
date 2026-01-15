@@ -4,6 +4,8 @@ import { bulkInvite } from "../../services/visitorService";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
 import { Button, Input, Card, PageHeader } from "../../components/ui";
+import AppShell from "../../layouts/AppShell";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
 import phoneValidator from "../../utils/phoneValidator";
 import { 
   Users, 
@@ -31,6 +33,7 @@ const BulkInvite = () => {
   const fileInputRef = React.createRef(null);
   const { handleError, handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
+  const role = useCurrentRole();
   
   const [formData, setFormData] = useState({
     eventName: "",
@@ -266,7 +269,7 @@ const BulkInvite = () => {
             w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-sm md:text-base
             ${currentStep >= step 
               ? 'bg-green-500 text-white' 
-              : 'bg-gray-200 text-gray-500'}
+              : 'bg-gray-200 text-gray-500 dark:text-gray-300'}
           `}>
             {currentStep > step ? '✓' : step}
           </div>
@@ -310,7 +313,8 @@ const BulkInvite = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell role={role}>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Bulk Invite"
         subtitle={stepSubtitles[currentStep]}
@@ -326,8 +330,8 @@ const BulkInvite = () => {
       {/* Step 1: Upload CSV */}
       {currentStep === 1 && (
         <Card>
-          <Card.Header className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
-            <Card.Title className="flex items-center">
+          <Card.Header className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-slate-800 dark:to-slate-700 border-b border-blue-200 dark:border-slate-600">
+            <Card.Title className="flex items-center text-blue-900 dark:text-blue-100">
               <span className="text-2xl mr-3">📁</span>
               Step 1: Upload CSV File
             </Card.Title>
@@ -340,7 +344,7 @@ const BulkInvite = () => {
                   accept=".csv"
                   onChange={handleCsvFile}
                   disabled={isLoading('bulkInvite')}
-                  className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer"
+                  className="block w-full text-sm text-gray-600 dark:text-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-700 dark:file:text-blue-300 cursor-pointer"
                 />
                 
                 <textarea
@@ -352,10 +356,10 @@ const BulkInvite = () => {
                   placeholder={`Paste CSV here (headers optional)\nname,email,phone\nJohn Doe,john@example.com,0712345678`}
                   rows={6}
                   disabled={isLoading('bulkInvite')}
-                  className="w-full p-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full p-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 
-                <p className="text-xs text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <p className="text-xs text-gray-600 dark:text-gray-200 bg-blue-50 dark:bg-slate-800/50 p-3 rounded-lg border border-blue-200 dark:border-slate-700">
                   📄 <strong>Required columns:</strong> name, email. Phone optional (format 0xxxxxxxxx).<br/>
                   ⚠️ Duplicates by email are removed. Max 50 guests.
                 </p>
@@ -364,8 +368,8 @@ const BulkInvite = () => {
 
             {/* Show parsed data count */}
             {parsedData.length > 0 && (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 font-medium">
+              <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <p className="text-green-800 dark:text-green-300 font-medium">
                   ✅ Found {parsedData.length} visitor{parsedData.length !== 1 ? 's' : ''} in your CSV
                 </p>
                 <Button 
@@ -383,9 +387,9 @@ const BulkInvite = () => {
       {/* Step 2: Review & Select */}
       {currentStep === 2 && (
         <Card>
-          <Card.Header className="bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
+          <Card.Header className="bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-800 dark:to-slate-700 border-b border-green-200 dark:border-slate-600">
             <div className="flex items-center justify-between">
-              <Card.Title className="flex items-center">
+              <Card.Title className="flex items-center text-green-900 dark:text-green-100">
                 <span className="text-2xl mr-3">👥</span>
                 Step 2: Review Visitors
               </Card.Title>
@@ -397,23 +401,23 @@ const BulkInvite = () => {
                   onChange={toggleAllSelection}
                   className="w-4 h-4 text-green-600 rounded"
                 />
-                <label htmlFor="selectAll" className="text-sm font-medium text-gray-700">
+                <label htmlFor="selectAll" className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   Select All
                 </label>
               </div>
             </div>
           </Card.Header>
           <Card.Content>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
               {parsedData.map((visitor) => (
                 <div 
                   key={visitor.id}
                   className={`p-3 md:p-4 border rounded-lg ${
                     visitor.hasError 
-                      ? 'border-red-300 bg-red-50'
+                      ? 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800'
                       : selectedRows.includes(visitor.id)
-                      ? 'border-green-300 bg-green-50'
-                      : 'border-gray-200 bg-white'
+                      ? 'border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-800'
+                      : 'border-gray-200 bg-white dark:bg-slate-800 dark:border-slate-700'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -426,18 +430,18 @@ const BulkInvite = () => {
                       />
                     )}
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">{visitor.name}</div>
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="font-medium text-gray-900 dark:text-white">{visitor.name}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-200 mt-1">
                         📱 {visitor.phone}
                         {visitor.email && ` • ✉️ ${visitor.email}`}
                       </div>
                       {visitor.date && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                           📅 {visitor.date}
                         </div>
                       )}
                       {visitor.hasError && (
-                        <div className="text-xs text-red-600 mt-2 font-medium">
+                        <div className="text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
                           ⚠️ Missing required information
                         </div>
                       )}
@@ -470,8 +474,8 @@ const BulkInvite = () => {
       {/* Step 3: Confirmation */}
       {currentStep === 3 && (
         <Card>
-          <Card.Header className="bg-gradient-to-r from-purple-50 to-purple-100 border-b border-purple-200">
-            <Card.Title className="flex items-center">
+          <Card.Header className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-slate-800 dark:to-slate-700 border-b border-purple-200 dark:border-slate-600">
+            <Card.Title className="flex items-center text-purple-900 dark:text-purple-100">
               <span className="text-2xl mr-3">🚀</span>
               Step 3: Sending Invitations
             </Card.Title>
@@ -480,7 +484,7 @@ const BulkInvite = () => {
             {isUploading ? (
               <div className="text-center">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mb-4"></div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   Processing your invitations...
                 </h3>
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
@@ -489,7 +493,7 @@ const BulkInvite = () => {
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   {uploadProgress}% complete
                 </p>
               </div>
@@ -500,10 +504,10 @@ const BulkInvite = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                   All invitations sent successfully!
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 dark:text-gray-200 mb-6">
                   Your visitors will receive their invitation details via SMS/email
                 </p>
                 <div className="flex flex-col md:flex-row gap-3 justify-center">
@@ -533,7 +537,7 @@ const BulkInvite = () => {
               </div>
             ) : (
               <div className="text-center">
-                <p className="text-gray-600">Preparing to send invitations...</p>
+                <p className="text-gray-600 dark:text-gray-200">Preparing to send invitations...</p>
               </div>
             )}
           </Card.Content>
@@ -541,8 +545,10 @@ const BulkInvite = () => {
       )}
       {/* Error and Success messages are now handled by ErrorContext */}
       </div>
-    </div>
+      </div>
+    </AppShell>
   );
 };
 
 export default BulkInvite;
+

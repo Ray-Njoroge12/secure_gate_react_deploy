@@ -46,7 +46,7 @@ export default function Settings() {
       <PageHeader 
         title="Settings"
         subtitle="Manage your guard profile and preferences"
-        icon={<SettingsIcon className="w-6 h-6 text-gray-600 dark:text-gray-400" />}
+        icon={<SettingsIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
         showBack={true}
         backTo="/dashboard/guard"
       />
@@ -62,7 +62,7 @@ export default function Settings() {
                 className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
                   activeTab === tab.key 
                     ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
               >
                 {tab.icon}
@@ -90,7 +90,7 @@ export default function Settings() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
                   <input 
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" 
                     placeholder="Your name" 
@@ -99,7 +99,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
                   <input 
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" 
                     placeholder="Email address" 
@@ -109,7 +109,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
                   <input 
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" 
                     placeholder="Phone number" 
@@ -137,7 +137,7 @@ export default function Settings() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Emergency Settings</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   View your panic button history and privacy information.
                 </p>
               </div>
@@ -187,7 +187,7 @@ export default function Settings() {
                   />
                   <div>
                     <span className="font-medium text-gray-900 dark:text-white">Two-Factor Authentication</span>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Add extra security to your account</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">Add extra security to your account</p>
                   </div>
                 </label>
                 
@@ -200,7 +200,7 @@ export default function Settings() {
                   />
                   <div>
                     <span className="font-medium text-gray-900 dark:text-white">Login History</span>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Track recent login activity</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">Track recent login activity</p>
                   </div>
                 </label>
               </div>
@@ -216,15 +216,15 @@ export default function Settings() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Appearance</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   Choose how SecureGate looks to you.
                 </p>
               </div>
               <ThemeRadioGroup />
               <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>
-                  {theme === 'system' && <span className="ml-1 text-gray-500">(following system preference)</span>}
+                  {theme === 'system' && <span className="ml-1 text-gray-500 dark:text-gray-300">(following system preference)</span>}
                 </p>
               </div>
             </div>

@@ -74,7 +74,7 @@ const FlowNavigation = ({
       {/* Progress indicator */}
       {showProgress && (
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-200">
             Step {flowInfo.currentStep} of {flowInfo.totalSteps}
           </span>
           <div className="flex space-x-1">

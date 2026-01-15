@@ -156,7 +156,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
               onClick={handleDownloadICS}
               className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 border-t border-gray-100 dark:border-slate-700"
             >
-              <Download className="w-5 h-5 text-gray-500" />
+              <Download className="w-5 h-5 text-gray-500 dark:text-gray-300" />
               Download .ics (Apple/Outlook)
             </button>
             
@@ -299,13 +299,13 @@ export default function GuestInvite() {
       <div className="max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg mx-auto">
         <Card>
           <Card.Header>
-            <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900 text-center">Guest Invitation</h1>
+            <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white text-center">Guest Invitation</h1>
             {inviteData && (
               <div className="mt-3 xs:mt-4 text-center">
                 <Badge variant="info" className="mb-2 text-xs xs:text-sm">
                   {inviteTitle}
                 </Badge>
-                <div className="text-xs xs:text-sm text-gray-600 space-y-1">
+                <div className="text-xs xs:text-sm text-gray-600 dark:text-gray-200 space-y-1">
                   {(inviteDate || inviteTime) && (
                     <p>
                       {inviteDate || 'Date TBD'}{inviteTime ? ` at ${inviteTime}` : ''}
@@ -344,10 +344,10 @@ export default function GuestInvite() {
                 {/* Visitor Details */}
                 <Card className="bg-gray-50">
                   <Card.Header>
-                    <h3 className="font-medium text-gray-900">Your Visit Details</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-white">Your Visit Details</h3>
                   </Card.Header>
                   <Card.Content>
-                    <div className="text-sm text-gray-600 space-y-2">
+                    <div className="text-sm text-gray-600 dark:text-gray-200 space-y-2">
                       <div className="flex justify-between">
                         <span className="font-medium">Name:</span>
                         <span>{visitor.name}</span>
@@ -368,7 +368,7 @@ export default function GuestInvite() {
                   </Card.Content>
                 </Card>
 
-                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
+                <div className="text-sm text-gray-600 dark:text-gray-200 bg-blue-50 p-3 rounded-md">
                   <p className="font-medium text-blue-800 mb-1">Entry Instructions:</p>
                   <p>Present the QR code above at the gate, or provide the OTP to security.</p>
                 </div>
@@ -457,7 +457,7 @@ export default function GuestInvite() {
                       disabled={submitting}
                       className="mt-1 h-4 w-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
                     />
-                    <label htmlFor="consent" className="text-sm text-gray-600">
+                    <label htmlFor="consent" className="text-sm text-gray-600 dark:text-gray-200">
                       I consent to the collection and processing of my personal data for visitor registration and estate access management, in accordance with the Kenya Data Protection Act 2019.
                     </label>
                   </div>
@@ -486,7 +486,7 @@ export default function GuestInvite() {
           </Card.Content>
 
           <Card.Footer>
-            <div className="text-center text-xs text-gray-500">
+            <div className="text-center text-xs text-gray-500 dark:text-gray-300">
               Powered by SecureGate Access System
             </div>
           </Card.Footer>

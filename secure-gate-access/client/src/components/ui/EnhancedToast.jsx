@@ -258,7 +258,7 @@ const Toast = ({
                 {undo && undoCountdown > 0 && (
                   <button
                     onClick={handleUndo}
-                    className="text-sm font-medium text-gray-600 hover:text-gray-500 dark:text-gray-400 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 rounded px-2 py-1"
+                    className="text-sm font-medium text-gray-600 dark:text-gray-200 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 rounded px-2 py-1"
                   >
                     {undo.label || 'Undo'} ({undoCountdown}s)
                   </button>
@@ -270,7 +270,7 @@ const Toast = ({
           {/* Dismiss button */}
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            className="flex-shrink-0 p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
             aria-label="Dismiss notification"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,7 @@ const ToastContainer = ({ toasts, onDismiss, position = 'top-right', maxVisible 
     >
       {/* Hidden toast count indicator */}
       {hiddenCount > 0 && (
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-3 py-1 shadow-sm self-center pointer-events-auto">
+        <div className="text-center text-sm text-gray-500 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-full px-3 py-1 shadow-sm self-center pointer-events-auto">
           +{hiddenCount} more notification{hiddenCount > 1 ? 's' : ''}
         </div>
       )}

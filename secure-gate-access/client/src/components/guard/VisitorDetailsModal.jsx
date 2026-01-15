@@ -142,22 +142,22 @@ export default function VisitorDetailsModal({
           <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Check-in Time */}
             <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <Clock className="w-3.5 h-3.5" />
                 Check-in
               </div>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {formatTime(visitor.check_in_time || visitor.checkInTime)}
               </p>
             </div>
 
             {/* Duration / Check-out */}
             <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <Clock className="w-3.5 h-3.5" />
                 {visitor.check_out_time ? 'Check-out' : 'Duration'}
               </div>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {visitor.check_out_time 
                   ? formatTime(visitor.check_out_time)
                   : visitor.duration || 'In progress'
@@ -167,22 +167,22 @@ export default function VisitorDetailsModal({
 
             {/* Host */}
             <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <User className="w-3.5 h-3.5" />
                 Host
               </div>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {visitor.host || visitor.resident_name || 'N/A'}
               </p>
             </div>
 
             {/* Visit Date */}
             <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <Calendar className="w-3.5 h-3.5" />
                 Date
               </div>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
                 {formatDate(visitor.date_of_visit || visitor.created_at)}
               </p>
             </div>
@@ -190,11 +190,11 @@ export default function VisitorDetailsModal({
             {/* Vehicle (if present) */}
             {(visitor.vehicleNumber || visitor.vehicle_number) && (
               <div className="bg-gray-50 rounded-lg p-3 col-span-2">
-                <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                   <Car className="w-3.5 h-3.5" />
                   Vehicle
                 </div>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {visitor.vehicleNumber || visitor.vehicle_number}
                 </p>
               </div>
@@ -203,11 +203,11 @@ export default function VisitorDetailsModal({
             {/* Phone (if present) */}
             {(visitor.phone || visitor.phone_number) && (
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                   <Phone className="w-3.5 h-3.5" />
                   Phone
                 </div>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {visitor.phone || visitor.phone_number}
                 </p>
               </div>
@@ -216,11 +216,11 @@ export default function VisitorDetailsModal({
             {/* Email (if present) */}
             {visitor.email && (
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                   <Mail className="w-3.5 h-3.5" />
                   Email
                 </div>
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {visitor.email}
                 </p>
               </div>

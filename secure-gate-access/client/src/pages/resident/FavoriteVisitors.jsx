@@ -18,6 +18,8 @@ import {
   SearchBar
 } from '../../components/ui';
 import { useTheme } from '../../contexts/ThemeContext';
+import AppShell from '../../layouts/AppShell';
+import { useCurrentRole } from '../../hooks/useCurrentRole';
 import { 
   Star, 
   Plus, 
@@ -50,6 +52,7 @@ const RELATIONSHIP_TYPES = [
  */
 const FavoriteVisitors = () => {
   const { isDark } = useTheme();
+  const role = useCurrentRole();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,7 +85,15 @@ const FavoriteVisitors = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch favorites');
+        if (response.status === 404) {
+           setFavorites([]);
+           return;
+        }
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch favorites');
       }
       
       const data = await response.json();
@@ -216,23 +227,18 @@ const FavoriteVisitors = () => {
     return found?.icon || '👤';
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loading size="large" message="Loading your favorites..." />
-      </div>
-    );
-  }
+
 
   return (
-    <div className="space-y-6">
+    <AppShell role={role}>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
             Favorite Visitors
           </h1>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'}`}>
             Save frequently visiting guests for quick invites
           </p>
         </div>
@@ -246,11 +252,20 @@ const FavoriteVisitors = () => {
         </Button>
       </div>
 
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+             <div key={i} className={`h-40 rounded-xl animate-pulse ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`} />
+          ))}
+        </div>
+      ) : (
+        <>
+
       {/* Search Bar */}
       {favorites.length > 0 && (
         <div className="relative">
           <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${
-            isDark ? 'text-gray-400' : 'text-gray-500'
+            isDark ? 'text-gray-400' : 'text-gray-500 dark:text-gray-300'
           }`} />
           <input
             type="text"
@@ -260,7 +275,7 @@ const FavoriteVisitors = () => {
             className={`w-full pl-10 pr-4 py-3 rounded-lg border ${
               isDark 
                 ? 'bg-slate-800 border-slate-600 text-white placeholder-gray-400'
-                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                : 'bg-white border-gray-300 text-gray-900 dark:text-white placeholder-gray-500'
             } focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent`}
           />
         </div>
@@ -269,7 +284,7 @@ const FavoriteVisitors = () => {
       {/* Error State */}
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-700 dark:text-red-400">{error}</p>
+          <p className="text-red-700 dark:text-red-200">{error}</p>
           <Button 
             variant="ghost" 
             size="sm" 
@@ -288,12 +303,12 @@ const FavoriteVisitors = () => {
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
               isDark ? 'bg-slate-700' : 'bg-gray-100'
             }`}>
-              <Heart className={`w-8 h-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+              <Heart className={`w-8 h-8 ${isDark ? 'text-gray-400' : 'text-gray-500 dark:text-gray-300'}`} />
             </div>
-            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
               No Favorite Visitors Yet
             </h3>
-            <p className={`text-sm mb-6 max-w-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className={`text-sm mb-6 max-w-sm ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'}`}>
               Add your frequently visiting guests here for quick one-tap invites. 
               Save time by not entering their details every time!
             </p>
@@ -308,11 +323,11 @@ const FavoriteVisitors = () => {
       {/* No Search Results */}
       {!error && favorites.length > 0 && filteredFavorites.length === 0 && (
         <Card className={`p-8 text-center ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
-          <Search className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-          <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <Search className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-400'}`} />
+          <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
             No Results Found
           </h3>
-          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'}`}>
             No favorites match "{searchQuery}". Try a different search term.
           </p>
         </Card>
@@ -336,7 +351,7 @@ const FavoriteVisitors = () => {
                     {getRelationshipIcon(favorite.relationship)}
                   </div>
                   <div>
-                    <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                       {favorite.visitor_name}
                     </h3>
                     <Badge variant="secondary" size="sm">
@@ -351,7 +366,7 @@ const FavoriteVisitors = () => {
                     className={`p-2 rounded-lg transition-colors ${
                       isDark 
                         ? 'hover:bg-slate-700 text-gray-400 hover:text-white'
-                        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                        : 'hover:bg-gray-100 text-gray-500 dark:text-gray-300 hover:text-gray-700'
                     }`}
                     aria-label="Edit favorite"
                   >
@@ -362,7 +377,7 @@ const FavoriteVisitors = () => {
                     className={`p-2 rounded-lg transition-colors ${
                       isDark 
                         ? 'hover:bg-red-900/30 text-gray-400 hover:text-red-400'
-                        : 'hover:bg-red-50 text-gray-500 hover:text-red-600'
+                        : 'hover:bg-red-50 text-gray-500 dark:text-gray-300 hover:text-red-600'
                     }`}
                     aria-label="Delete favorite"
                   >
@@ -375,7 +390,7 @@ const FavoriteVisitors = () => {
               <div className="space-y-2 mb-4">
                 {favorite.visitor_phone && (
                   <div className={`flex items-center gap-2 text-sm ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
+                    isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'
                   }`}>
                     <Phone className="w-4 h-4" />
                     <span>{favorite.visitor_phone}</span>
@@ -383,7 +398,7 @@ const FavoriteVisitors = () => {
                 )}
                 {favorite.visitor_email && (
                   <div className={`flex items-center gap-2 text-sm ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
+                    isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'
                   }`}>
                     <Mail className="w-4 h-4" />
                     <span className="truncate">{favorite.visitor_email}</span>
@@ -396,7 +411,7 @@ const FavoriteVisitors = () => {
                 isDark ? 'border-slate-700' : 'border-gray-200'
               }`}>
                 <div className={`flex items-center gap-4 text-xs ${
-                  isDark ? 'text-gray-500' : 'text-gray-500'
+                  isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-500 dark:text-gray-300'
                 }`}>
                   <span className="flex items-center gap-1">
                     <Users className="w-3 h-3" />
@@ -445,7 +460,7 @@ const FavoriteVisitors = () => {
               className={`w-full px-3 py-2 rounded-lg border ${
                 isDark 
                   ? 'bg-slate-700 border-slate-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
+                  : 'bg-white border-gray-300 text-gray-900 dark:text-white'
               } focus:outline-none focus:ring-2 focus:ring-brand-500`}
             />
           </div>
@@ -465,7 +480,7 @@ const FavoriteVisitors = () => {
                 className={`w-full px-3 py-2 rounded-lg border ${
                   isDark 
                     ? 'bg-slate-700 border-slate-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
+                    : 'bg-white border-gray-300 text-gray-900 dark:text-white'
                 } focus:outline-none focus:ring-2 focus:ring-brand-500`}
               />
             </div>
@@ -483,7 +498,7 @@ const FavoriteVisitors = () => {
                 className={`w-full px-3 py-2 rounded-lg border ${
                   isDark 
                     ? 'bg-slate-700 border-slate-600 text-white'
-                    : 'bg-white border-gray-300 text-gray-900'
+                    : 'bg-white border-gray-300 text-gray-900 dark:text-white'
                 } focus:outline-none focus:ring-2 focus:ring-brand-500`}
               />
             </div>
@@ -501,7 +516,7 @@ const FavoriteVisitors = () => {
               className={`w-full px-3 py-2 rounded-lg border ${
                 isDark 
                   ? 'bg-slate-700 border-slate-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
+                  : 'bg-white border-gray-300 text-gray-900 dark:text-white'
               } focus:outline-none focus:ring-2 focus:ring-brand-500`}
             >
               {RELATIONSHIP_TYPES.map(type => (
@@ -526,12 +541,12 @@ const FavoriteVisitors = () => {
               className={`w-full px-3 py-2 rounded-lg border ${
                 isDark 
                   ? 'bg-slate-700 border-slate-600 text-white'
-                  : 'bg-white border-gray-300 text-gray-900'
+                  : 'bg-white border-gray-300 text-gray-900 dark:text-white'
               } focus:outline-none focus:ring-2 focus:ring-brand-500`}
             />
           </div>
 
-          <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+          <p className={`text-xs ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-500 dark:text-gray-300'}`}>
             * Either phone or email is required for identification
           </p>
 
@@ -572,7 +587,7 @@ const FavoriteVisitors = () => {
         title="Delete Favorite"
       >
         <div className="space-y-4">
-          <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>
+          <p className={isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'}>
             Are you sure you want to remove this visitor from your favorites? 
             This action cannot be undone.
           </p>
@@ -594,7 +609,10 @@ const FavoriteVisitors = () => {
           </div>
         </div>
       </Modal>
-    </div>
+      </>
+      )}
+      </div>
+    </AppShell>
   );
 };
 

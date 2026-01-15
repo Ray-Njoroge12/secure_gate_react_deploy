@@ -63,7 +63,7 @@ const EmptyState = ({
                 variant === 'warning' ? 'text-amber-600' : 
                 variant === 'error' ? 'text-red-600' :
                 variant === 'search' ? 'text-purple-600' :
-                'text-gray-500'}
+                'text-gray-500 dark:text-gray-300'}
             `} />
           </div>
         </div>
@@ -71,14 +71,14 @@ const EmptyState = ({
 
       {/* Title */}
       {title && (
-        <h3 className={`${compact ? 'text-base' : 'text-lg md:text-xl'} font-semibold text-gray-900 mb-2`}>
+        <h3 className={`${compact ? 'text-base' : 'text-lg md:text-xl'} font-semibold text-gray-900 dark:text-white mb-2`}>
           {title}
         </h3>
       )}
 
       {/* Description */}
       {description && (
-        <p className={`${compact ? 'text-sm' : 'text-sm md:text-base'} text-gray-600 ${primaryAction || secondaryAction ? 'mb-4 md:mb-6' : ''} max-w-md`}>
+        <p className={`${compact ? 'text-sm' : 'text-sm md:text-base'} text-gray-600 dark:text-gray-200 ${primaryAction || secondaryAction ? 'mb-4 md:mb-6' : ''} max-w-md`}>
           {description}
         </p>
       )}

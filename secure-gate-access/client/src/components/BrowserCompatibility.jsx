@@ -76,7 +76,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
       case 'info':
         return 'text-blue-600';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-gray-200';
     }
   };
 
@@ -104,7 +104,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
       case 'network':
         return 'text-blue-600';
       default:
-        return 'text-gray-600';
+        return 'text-gray-600 dark:text-gray-200';
     }
   };
 
@@ -130,7 +130,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
             <span className="text-2xl">{getBrowserIcon(browser)}</span>
             <div>
               <h2 className="text-xl font-semibold">Browser Compatibility</h2>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 {browser.charAt(0).toUpperCase() + browser.slice(1)} {version}
               </p>
             </div>
@@ -156,18 +156,18 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
         {/* Browser Status */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <h3 className="font-medium text-gray-900">Browser Information</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">Browser Information</h3>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Browser:</span>
+                <span className="text-gray-600 dark:text-gray-200">Browser:</span>
                 <span className="font-medium">{browser.charAt(0).toUpperCase() + browser.slice(1)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Version:</span>
+                <span className="text-gray-600 dark:text-gray-200">Version:</span>
                 <span className="font-medium">{version}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
+                <span className="text-gray-600 dark:text-gray-200">Status:</span>
                 <span className={`font-medium ${getStatusColor(meetsRequirements)}`}>
                   {meetsRequirements ? 'Supported' : 'Not Supported'}
                 </span>
@@ -176,20 +176,20 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-medium text-gray-900">System Information</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">System Information</h3>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Platform:</span>
+                <span className="text-gray-600 dark:text-gray-200">Platform:</span>
                 <span className="font-medium">{navigator.platform}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">User Agent:</span>
+                <span className="text-gray-600 dark:text-gray-200">User Agent:</span>
                 <span className="font-medium text-xs truncate" title={navigator.userAgent}>
                   {navigator.userAgent.substring(0, 50)}...
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Language:</span>
+                <span className="text-gray-600 dark:text-gray-200">Language:</span>
                 <span className="font-medium">{navigator.language}</span>
               </div>
             </div>
@@ -199,7 +199,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
         {/* Issues */}
         {issues.length > 0 && (
           <div className="space-y-3">
-            <h3 className="font-medium text-gray-900">Issues Found</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">Issues Found</h3>
             <div className="space-y-2">
               {issues.map((issue, index) => (
                 <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
@@ -212,7 +212,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
                       {issue.message}
                     </div>
                     {issue.fix && (
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-200 mt-1">
                         {issue.fix}
                       </div>
                     )}
@@ -226,7 +226,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
         {/* Recommendations */}
         {recommendations.length > 0 && (
           <div className="space-y-3">
-            <h3 className="font-medium text-gray-900">Recommendations</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">Recommendations</h3>
             <div className="space-y-2">
               {recommendations.map((rec, index) => (
                 <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
@@ -236,7 +236,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
                       {rec.message}
                     </div>
                     {rec.suggestion && (
-                      <div className="text-sm text-gray-600 mt-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-200 mt-1">
                         {rec.suggestion}
                       </div>
                     )}
@@ -250,7 +250,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
         {/* Browser Download Links */}
         {!meetsRequirements && (
           <div className="space-y-3">
-            <h3 className="font-medium text-gray-900">Recommended Browsers</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">Recommended Browsers</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Object.entries(downloadLinks).map(([browserName, url]) => (
                 <Button
@@ -271,7 +271,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
         {showFullDetails && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-gray-900">Feature Support</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white">Feature Support</h3>
               <Button
                 variant="ghost"
                 size="sm"

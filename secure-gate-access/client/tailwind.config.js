@@ -123,7 +123,7 @@ module.exports = {
           secondary: '#cbd5e1',  // Secondary text
           tertiary: '#94a3b8',   // Tertiary text
           inverse: '#0f172a',    // Text on light backgrounds
-          muted: '#64748b',      // Muted text
+          muted: 'var(--color-text-muted)',      // Muted text
           disabled: '#475569',   // Disabled text
         },
         

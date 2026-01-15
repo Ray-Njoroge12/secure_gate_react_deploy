@@ -133,7 +133,7 @@ const ConsentForm = ({
                 </Label>
                 
                 {/* Privacy Policy Link */}
-                <div className="flex items-center gap-2 text-xs text-gray-600">
+                <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-200">
                   <FileText className="h-3 w-3" />
                   <span>I have read and agree to the</span>
                   <Link 
@@ -211,7 +211,7 @@ const ConsentForm = ({
 
           {/* Consent Withdrawal Notice */}
           <div className="border-t pt-3">
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-200">
               <strong>Withdraw Consent:</strong> You can withdraw your consent at any time by contacting us. 
               Withdrawal will not affect the lawfulness of processing based on consent before its withdrawal.
             </p>
@@ -221,7 +221,7 @@ const ConsentForm = ({
 
       {/* Validation Helper */}
       {required && (
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 dark:text-gray-300">
           <span className="text-red-500">*</span> Required - You must provide consent to proceed with visitor registration.
         </div>
       )}

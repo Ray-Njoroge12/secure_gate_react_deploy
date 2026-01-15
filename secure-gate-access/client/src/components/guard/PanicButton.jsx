@@ -268,8 +268,8 @@ const PanicButton = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Emergency Alert</h2>
-          <p className="text-gray-600 mt-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Emergency Alert</h2>
+          <p className="text-gray-600 dark:text-gray-200 mt-2">
             This will immediately notify all security personnel and administrators.
           </p>
         </div>
@@ -372,9 +372,9 @@ const PanicButton = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Alert Failed</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <p className="text-sm text-gray-500 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Alert Failed</h2>
+          <p className="text-gray-600 dark:text-gray-200 mb-4">{error}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-300 mb-6">
             If this is a real emergency, please call for help directly.
           </p>
           <div className="flex gap-3">
@@ -401,10 +401,10 @@ const PanicButton = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Panic Button Privacy</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Panic Button Privacy</h2>
           <button
             onClick={() => setShowPrivacyInfo(false)}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-gray-500 dark:text-gray-300 hover:text-gray-700"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -414,20 +414,20 @@ const PanicButton = ({
         
         {privacyInfo ? (
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               Last updated: {privacyInfo.lastUpdated}
             </p>
             {privacyInfo.policies?.map((policy, index) => (
               <div key={index} className="border-b border-gray-100 pb-4">
-                <h3 className="font-medium text-gray-900">{policy.item}</h3>
-                <p className="text-sm text-gray-600 mt-1">{policy.description}</p>
+                <h3 className="font-medium text-gray-900 dark:text-white">{policy.item}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">{policy.description}</p>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-8">
             <div className="animate-spin w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading privacy information...</p>
+            <p className="text-gray-500 dark:text-gray-300">Loading privacy information...</p>
           </div>
         )}
         

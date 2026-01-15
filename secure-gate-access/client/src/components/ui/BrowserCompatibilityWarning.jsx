@@ -200,7 +200,7 @@ const BrowserCompatibilityWarning = memo(({
                   <div className="space-y-2">
                     {recommendations.performance && recommendations.performance.length > 0 && (
                       <div>
-                        <h5 className="text-xs font-medium text-gray-600">Performance:</h5>
+                        <h5 className="text-xs font-medium text-gray-600 dark:text-gray-200">Performance:</h5>
                         <ul className="space-y-1">
                           {recommendations.performance.map((rec, index) => (
                             <li key={index} className="text-xs flex items-start gap-2">
@@ -214,7 +214,7 @@ const BrowserCompatibilityWarning = memo(({
 
                     {recommendations.security && recommendations.security.length > 0 && (
                       <div>
-                        <h5 className="text-xs font-medium text-gray-600">Security:</h5>
+                        <h5 className="text-xs font-medium text-gray-600 dark:text-gray-200">Security:</h5>
                         <ul className="space-y-1">
                           {recommendations.security.map((rec, index) => (
                             <li key={index} className="text-xs flex items-start gap-2">
@@ -228,7 +228,7 @@ const BrowserCompatibilityWarning = memo(({
 
                     {recommendations.features && recommendations.features.length > 0 && (
                       <div>
-                        <h5 className="text-xs font-medium text-gray-600">Features:</h5>
+                        <h5 className="text-xs font-medium text-gray-600 dark:text-gray-200">Features:</h5>
                         <ul className="space-y-1">
                           {recommendations.features.map((rec, index) => (
                             <li key={index} className="text-xs flex items-start gap-2">

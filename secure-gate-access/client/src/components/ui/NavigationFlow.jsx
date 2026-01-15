@@ -217,7 +217,7 @@ const NavigationFlow = ({
                           ? 'bg-brand-600 text-white' 
                           : isAccessible
                             ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            : 'bg-slate-800 text-slate-500 dark:text-slate-300 cursor-not-allowed'
                       }
                     `}
                     aria-label={`Step ${index + 1}${isCurrent ? ' (current)' : ''}${isCompleted ? ' (completed)' : ''}`}

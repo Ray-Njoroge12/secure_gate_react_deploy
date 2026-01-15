@@ -41,7 +41,7 @@ const getEventIcon = (type) => {
     case 'security.alert':
       return <AlertTriangle className="w-4 h-4 text-red-500" />;
     default:
-      return <Clock className="w-4 h-4 text-gray-500" />;
+      return <Clock className="w-4 h-4 text-gray-500 dark:text-gray-300" />;
   }
 };
 
@@ -154,7 +154,7 @@ export function LiveVisitorFeed({
             'bg-red-500'
           }`} />
           <h3 className="font-semibold text-gray-900 dark:text-white">Live Activity</h3>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-gray-500 dark:text-gray-300">
             {events.length} events
           </span>
         </div>
@@ -167,9 +167,9 @@ export function LiveVisitorFeed({
               title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
             >
               {soundEnabled ? (
-                <Volume2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <Volume2 className="w-4 h-4 text-gray-600 dark:text-gray-300" />
               ) : (
-                <VolumeX className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                <VolumeX className="w-4 h-4 text-gray-400 dark:text-gray-500 dark:text-gray-300" />
               )}
             </button>
             {onRefresh && (
@@ -178,7 +178,7 @@ export function LiveVisitorFeed({
                 className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                 title="Refresh"
               >
-                <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-300" />
               </button>
             )}
             {connectionStatus === 'connected' ? (
@@ -198,7 +198,7 @@ export function LiveVisitorFeed({
         }`}
       >
         {visibleEvents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-300">
             <Clock className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No recent activity</p>
             <p className="text-xs opacity-75">Events will appear here in real-time</p>
@@ -221,11 +221,11 @@ export function LiveVisitorFeed({
                       {getEventDescription(event)}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-gray-500 dark:text-gray-300">
                         {formatRelativeTime(event.timestamp)}
                       </span>
                       {event.location && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-300">
                           • {event.location}
                         </span>
                       )}
@@ -247,7 +247,7 @@ export function LiveVisitorFeed({
       {hasMore && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-4 py-2 flex items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 transition-colors"
+          className="w-full px-4 py-2 flex items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 transition-colors"
         >
           {isExpanded ? (
             <>
@@ -280,12 +280,12 @@ export function LiveStatsBar({
           <div className={`w-2 h-2 rounded-full ${
             connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'
           }`} />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
             Live Stats
           </span>
         </div>
         {lastUpdate && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-gray-500 dark:text-gray-300">
             Updated {formatRelativeTime(lastUpdate)}
           </span>
         )}
@@ -296,28 +296,28 @@ export function LiveStatsBar({
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
             {stats.todayCheckIns || 0}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">Today's Check-ins</div>
+          <div className="text-xs text-gray-600 dark:text-gray-300">Today's Check-ins</div>
         </div>
         
         <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {stats.currentlyOnPremises || 0}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">On Premises</div>
+          <div className="text-xs text-gray-600 dark:text-gray-300">On Premises</div>
         </div>
         
         <div className="text-center p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
           <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
             {stats.pendingApprovals || 0}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">Pending</div>
+          <div className="text-xs text-gray-600 dark:text-gray-300">Pending</div>
         </div>
         
         <div className="text-center p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
           <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
             {stats.recentArrivals || 0}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">Recent Arrivals</div>
+          <div className="text-xs text-gray-600 dark:text-gray-300">Recent Arrivals</div>
         </div>
       </div>
     </div>
