@@ -268,10 +268,10 @@ export default function GuardDashboard() {
       {/* Enhanced: Live Connection Status Header */}
       <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 mb-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-gray-900">Guard Station</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Guard Station</h2>
           <LiveConnectionStatus isConnected={isConnected} showLabel={true} />
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-gray-500 dark:text-gray-300">
           {active.length} active visitor{active.length !== 1 ? 's' : ''}
         </div>
       </div>
@@ -343,7 +343,7 @@ export default function GuardDashboard() {
             </div>
             <div className="flex-1 md:flex-none">
               <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm md:text-base">Walk-In Registration</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-300 md:mt-1">New visitor</p>
+              <p className="text-xs text-gray-600 dark:text-gray-200 md:mt-1">New visitor</p>
             </div>
           </div>
         </div>
@@ -427,7 +427,7 @@ export default function GuardDashboard() {
             <StatusBadge 
               label="Exited" 
               value={isSearching || hasFilters ? getFilteredStatusCount('EXITED') : getStatusCount('EXITED')} 
-              color="text-gray-600 bg-gray-50" 
+              color="text-gray-600 dark:text-gray-200 bg-gray-50" 
             />
             <StatusBadge 
               label="Revoked" 
@@ -436,7 +436,7 @@ export default function GuardDashboard() {
             />
           </div>
           {(isSearching || hasFilters) && (
-            <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
+            <div className="mt-4 text-sm text-gray-600 dark:text-gray-200">
               Showing {filteredActive.length} of {active.length} visitors
               {searchTerm && ` for "${searchTerm}"`}
             </div>
@@ -465,8 +465,8 @@ export default function GuardDashboard() {
                 {/* PHASE A5: Improved empty state messages */}
                 {isSearching || hasFilters ? (
                   <div>
-                    <p className="text-gray-900 font-medium mb-1">No visitors match your criteria</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">No visitors match your criteria</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
                       Try adjusting your search or filters
                     </p>
                     <Button
@@ -482,8 +482,8 @@ export default function GuardDashboard() {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-gray-900 font-medium mb-1">No active visitors right now</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">No active visitors right now</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       Visitors will appear here when they check in
                     </p>
                   </div>
@@ -516,8 +516,8 @@ export default function GuardDashboard() {
                 {/* PHASE A5: Improved empty state messages - Desktop */}
                 {isSearching || hasFilters ? (
                   <div>
-                    <p className="text-gray-900 font-medium mb-1">No visitors match your criteria</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">No visitors match your criteria</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
                       Try adjusting your search or filters
                     </p>
                     <Button
@@ -533,8 +533,8 @@ export default function GuardDashboard() {
                   </div>
                 ) : (
                   <div>
-                    <p className="text-gray-900 font-medium mb-1">No active visitors right now</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-gray-900 dark:text-white font-medium mb-1">No active visitors right now</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       Visitors will appear here when they check in
                     </p>
                   </div>
@@ -603,7 +603,7 @@ export default function GuardDashboard() {
       />
       
       {/* Phase 3: Offline Indicator */}
-      <OfflineIndicator position="top-right" />
+
       
       {/* Phase 3: Community Announcements */}
       <AnnouncementsBanner showDismiss={true} className="mb-4" />
@@ -696,15 +696,15 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
     >
       <div className="flex justify-between items-start">
         <div>
-          <div className="font-medium text-gray-900">{visitor.name || `#${visitor.id}`}</div>
-          <div className="text-sm text-gray-500">Host: {visitor.host ? mask(visitor.host) : '-'}</div>
+          <div className="font-medium text-gray-900 dark:text-white">{visitor.name || `#${visitor.id}`}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-300">Host: {visitor.host ? mask(visitor.host) : '-'}</div>
         </div>
         <div className="flex-shrink-0">
           <span className={getStatusChipClass(visitor.status, 'sm')}>{getStatusIcon(visitor.status)} {visitor.status||'-'}</span>
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+      <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-200">
         <div>In: {visitor.check_in_time || '-'}</div>
         <div>Out: {visitor.check_out_time || '-'}</div>
       </div>

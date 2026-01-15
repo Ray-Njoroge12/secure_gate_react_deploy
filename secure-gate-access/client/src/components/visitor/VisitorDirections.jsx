@@ -102,7 +102,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
       {/* Map App Links */}
       <div className="p-4 border-b border-gray-200">
-        <p className="text-sm text-gray-600 mb-3">Open in your favorite maps app:</p>
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">Open in your favorite maps app:</p>
         <div className="flex gap-2">
           <button
             onClick={() => openInMaps('google')}
@@ -111,7 +111,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
           >
             <div className="flex flex-col items-center">
               <span className="text-2xl mb-1">🗺️</span>
-              <span className="text-xs text-gray-600">Google Maps</span>
+              <span className="text-xs text-gray-600 dark:text-gray-200">Google Maps</span>
             </div>
           </button>
           <button
@@ -121,7 +121,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
           >
             <div className="flex flex-col items-center">
               <span className="text-2xl mb-1">🍎</span>
-              <span className="text-xs text-gray-600">Apple Maps</span>
+              <span className="text-xs text-gray-600 dark:text-gray-200">Apple Maps</span>
             </div>
           </button>
           <button
@@ -131,7 +131,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
           >
             <div className="flex flex-col items-center">
               <span className="text-2xl mb-1">🚗</span>
-              <span className="text-xs text-gray-600">Waze</span>
+              <span className="text-xs text-gray-600 dark:text-gray-200">Waze</span>
             </div>
           </button>
         </div>
@@ -140,16 +140,16 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       {/* General Directions */}
       {(directions?.fromHighway || directions?.fromCity) && (
         <div className="p-4 border-b border-gray-200">
-          <h3 className="font-medium text-gray-900 mb-2">General Directions</h3>
+          <h3 className="font-medium text-gray-900 dark:text-white mb-2">General Directions</h3>
           {directions.fromHighway && (
             <div className="mb-3">
-              <p className="text-xs text-gray-500 uppercase">From Highway</p>
+              <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">From Highway</p>
               <p className="text-sm text-gray-700">{directions.fromHighway}</p>
             </div>
           )}
           {directions.fromCity && (
             <div>
-              <p className="text-xs text-gray-500 uppercase">From City Center</p>
+              <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">From City Center</p>
               <p className="text-sm text-gray-700">{directions.fromCity}</p>
             </div>
           )}
@@ -159,7 +159,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       {/* Custom Instructions from Host */}
       {directions?.customInstructions && (
         <div className="p-4 border-b border-gray-200 bg-yellow-50">
-          <h3 className="font-medium text-gray-900 mb-2 flex items-center gap-2">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             <span>💬</span> Message from {directions.hostName}
           </h3>
           <p className="text-sm text-gray-700">{directions.customInstructions}</p>
@@ -169,8 +169,8 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       {/* Building Area */}
       {directions?.buildingArea && (
         <div className="p-4 border-b border-gray-200">
-          <h3 className="font-medium text-gray-900 mb-1">Once Inside</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-1">Once Inside</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-200">
             Ask the guard at the gate to direct you to <strong>{directions.buildingArea}</strong>
           </p>
         </div>
@@ -178,12 +178,12 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
       {directions?.unitPin && (
         <div className="p-4 border-b border-gray-200 bg-emerald-50">
-          <h3 className="font-medium text-gray-900 mb-2">Unit PIN</h3>
+          <h3 className="font-medium text-gray-900 dark:text-white mb-2">Unit PIN</h3>
           <div className="flex items-center justify-between bg-white border border-emerald-200 rounded-lg px-4 py-3">
             <span className="font-mono text-lg text-emerald-800">{directions.unitPin}</span>
             <span className="text-xs text-emerald-700">Show at gate if asked</span>
           </div>
-          <p className="text-xs text-gray-600 mt-2">
+          <p className="text-xs text-gray-600 dark:text-gray-200 mt-2">
             This PIN is only shared because your host enabled it for this invite.
           </p>
         </div>
@@ -207,7 +207,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
             </>
           )}
         </button>
-        <p className="text-xs text-gray-500 text-center mt-2">
+        <p className="text-xs text-gray-500 dark:text-gray-300 text-center mt-2">
           🔒 {directions?.privacyNotice || 'Shows gate location only, not your specific unit.'}
         </p>
       </div>

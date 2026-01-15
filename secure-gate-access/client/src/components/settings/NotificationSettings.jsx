@@ -172,8 +172,8 @@ const NotificationSettings = ({ className = '' }) => {
   };
 
   const cardClass = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white';
-  const textClass = isDark ? 'text-white' : 'text-gray-900';
-  const mutedClass = isDark ? 'text-gray-400' : 'text-gray-600';
+  const textClass = isDark ? 'text-white' : 'text-gray-900 dark:text-white';
+  const mutedClass = isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200';
   const borderClass = isDark ? 'border-slate-700' : 'border-gray-200';
 
   return (

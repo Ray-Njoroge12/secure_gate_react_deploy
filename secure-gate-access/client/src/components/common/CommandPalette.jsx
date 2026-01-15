@@ -463,7 +463,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
               className="flex-1 bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               autoComplete="off"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-mono text-gray-500 bg-gray-100 dark:bg-slate-700 rounded">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-mono text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 rounded">
               esc
             </kbd>
           </div>
@@ -474,14 +474,14 @@ const CommandPalette = ({ isOpen, onClose }) => {
             className="max-h-[400px] overflow-y-auto p-2"
           >
             {filteredCommands.length === 0 ? (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+              <div className="py-8 text-center text-gray-500 dark:text-gray-300">
                 <p>No commands found</p>
                 <p className="text-sm mt-1">Try a different search term</p>
               </div>
             ) : (
               Object.entries(groupedCommands).map(([category, items]) => (
                 <div key={category} className="mb-4 last:mb-0">
-                  <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     {category}
                   </div>
                   {items.map((command) => {
@@ -497,18 +497,18 @@ const CommandPalette = ({ isOpen, onClose }) => {
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                           isSelected 
                             ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' 
-                            : 'hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-gray-300'
+                            : 'hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-gray-200'
                         }`}
                       >
                         <span className="text-xl">{command.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{command.label}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          <div className="text-sm text-gray-500 dark:text-gray-300 truncate">
                             {command.description}
                           </div>
                         </div>
                         {command.shortcut && (
-                          <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-mono text-gray-500 bg-gray-100 dark:bg-slate-700 rounded">
+                          <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-mono text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 rounded">
                             {command.shortcut}
                           </kbd>
                         )}
@@ -521,7 +521,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <div className="px-4 py-2 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-300">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">
                 <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 rounded">↑↓</kbd>

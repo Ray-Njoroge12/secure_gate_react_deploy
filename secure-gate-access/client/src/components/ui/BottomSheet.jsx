@@ -325,7 +325,7 @@ const BottomSheet = ({
                 </h2>
                 <button
                   onClick={handleClose}
-                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                   aria-label="Close"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

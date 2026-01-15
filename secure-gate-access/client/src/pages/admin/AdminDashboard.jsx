@@ -255,7 +255,7 @@ export default function AdminDashboard() {
     if (status === 'healthy') return 'text-green-600 bg-green-50';
     if (status === 'degraded' || status === 'warning') return 'text-yellow-700 bg-yellow-50';
     if (status === 'unhealthy' || status === 'error') return 'text-red-600 bg-red-50';
-    return 'text-gray-600 bg-gray-50';
+    return 'text-gray-600 dark:text-gray-200 bg-gray-50';
   };
 
   const healthComponents = Object.entries(healthDetails?.components || {});
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
       />
       
       {/* Phase 3: Offline Indicator */}
-      <OfflineIndicator position="top-right" />
+
       
       {/* Phase 3: Community Announcements */}
       <AnnouncementsBanner showDismiss={true} className="mb-4" />
@@ -291,21 +291,21 @@ export default function AdminDashboard() {
       {/* Admin Views Quick Links */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Admin Views</h2>
-          <p className="text-sm text-gray-600 mt-1">Jump to operational health, audit, and queue recovery panels</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Admin Views</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Jump to operational health, audit, and queue recovery panels</p>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <a href="#health-metrics" className="border border-gray-200 rounded-md p-4 hover:border-blue-500">
-            <h3 className="text-sm font-semibold text-gray-900">Health Metrics</h3>
-            <p className="text-xs text-gray-600 mt-1">Status of database, queues, and integrations</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Health Metrics</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-200 mt-1">Status of database, queues, and integrations</p>
           </a>
           <a href="#audit-logs" className="border border-gray-200 rounded-md p-4 hover:border-blue-500">
-            <h3 className="text-sm font-semibold text-gray-900">Audit Logs</h3>
-            <p className="text-xs text-gray-600 mt-1">Track admin actions and sensitive events</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Audit Logs</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-200 mt-1">Track admin actions and sensitive events</p>
           </a>
           <a href="#queue-failures" className="border border-gray-200 rounded-md p-4 hover:border-blue-500">
-            <h3 className="text-sm font-semibold text-gray-900">Queue Failures</h3>
-            <p className="text-xs text-gray-600 mt-1">Retry DLQ notifications and review failures</p>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Queue Failures</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-200 mt-1">Retry DLQ notifications and review failures</p>
           </a>
         </div>
       </div>
@@ -314,8 +314,8 @@ export default function AdminDashboard() {
       <div id="health-metrics" data-tour="health-metrics" className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Health Metrics</h2>
-            <p className="text-sm text-gray-600 mt-1">Live component status and environment checks</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Health Metrics</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Live component status and environment checks</p>
           </div>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${healthStatusColor(healthDetails?.status)}`}>
             {healthDetails?.status || (healthLoading ? 'loading' : 'unknown')}
@@ -328,23 +328,23 @@ export default function AdminDashboard() {
             </div>
           )}
           {healthLoading ? (
-            <div className="text-sm text-gray-500">Loading health details...</div>
+            <div className="text-sm text-gray-500 dark:text-gray-300">Loading health details...</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {healthComponents.length === 0 && (
-                <div className="text-sm text-gray-500">No component health data available.</div>
+                <div className="text-sm text-gray-500 dark:text-gray-300">No component health data available.</div>
               )}
               {healthComponents.map(([component, detail]) => (
                 <div key={component} className="border border-gray-200 rounded-md p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-gray-900 capitalize">{component.replace(/_/g, ' ')}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{component.replace(/_/g, ' ')}</h3>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${healthStatusColor(detail?.status)}`}>
                       {detail?.status || 'unknown'}
                     </span>
                   </div>
-                  {detail?.message && <p className="text-xs text-gray-600">{detail.message}</p>}
+                  {detail?.message && <p className="text-xs text-gray-600 dark:text-gray-200">{detail.message}</p>}
                   {detail?.metrics && (
-                    <pre className="mt-2 text-xs text-gray-500 whitespace-pre-wrap">
+                    <pre className="mt-2 text-xs text-gray-500 dark:text-gray-300 whitespace-pre-wrap">
                       {JSON.stringify(detail.metrics, null, 2)}
                     </pre>
                   )}
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
       {/* Audit Logs Section */}
       <div id="audit-logs" data-tour="audit-logs" className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex flex-row items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Audit Logs</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Audit Logs</h2>
           <div className="flex items-center gap-2">
             <label htmlFor="audit-logs-limit" className="sr-only">Audit logs per page</label>
             <select
@@ -389,7 +389,7 @@ export default function AdminDashboard() {
           />
           
           {/* Results Summary */}
-          <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-200 mb-4">
             <div>
               {isSearching || hasFilters ? (
                 <>
@@ -430,12 +430,12 @@ export default function AdminDashboard() {
               )}
             </>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-300">
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <h3 className="text-lg font-medium text-gray-900 mt-2">No audit logs found</h3>
-              <p className="text-gray-600 mt-1">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mt-2">No audit logs found</h3>
+              <p className="text-gray-600 dark:text-gray-200 mt-1">
                 {isSearching || hasFilters ? 'Try adjusting your search terms or filters' : 'Audit logs will appear here as system activity occurs'}
               </p>
               {(isSearching || hasFilters) && (
@@ -458,10 +458,10 @@ export default function AdminDashboard() {
       <div id="queue-failures" data-tour="queue-failures" className="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Notification Queue Failures</h2>
-            <p className="text-sm text-gray-600 mt-1">Retry failed SMS/email deliveries from the dead-letter queue</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notification Queue Failures</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Retry failed SMS/email deliveries from the dead-letter queue</p>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-200">
             DLQ: {queueStats?.deadLetter?.total ?? 0} total / {queueStats?.deadLetter?.waiting ?? 0} waiting
           </div>
         </div>
@@ -472,12 +472,12 @@ export default function AdminDashboard() {
             </div>
           )}
           {queueLoading ? (
-            <div className="text-sm text-gray-500">Loading queue failures...</div>
+            <div className="text-sm text-gray-500 dark:text-gray-300">Loading queue failures...</div>
           ) : (
             <Table headers={queueHeaders} rows={queueRows} loading={queueLoading} />
           )}
           {!queueLoading && queueFailures.length === 0 && (
-            <div className="text-sm text-gray-500 mt-4">No failed notifications in the dead-letter queue.</div>
+            <div className="text-sm text-gray-500 dark:text-gray-300 mt-4">No failed notifications in the dead-letter queue.</div>
           )}
         </div>
       </div>
@@ -496,8 +496,8 @@ export default function AdminDashboard() {
       <div className="mt-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Privacy & Data Management</h2>
-            <p className="text-sm text-gray-600 mt-1">System-wide privacy controls and data subject request management</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Privacy & Data Management</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">System-wide privacy controls and data subject request management</p>
           </div>
           <div className="p-6">
             <PrivacyDashboard isAdmin={true} />

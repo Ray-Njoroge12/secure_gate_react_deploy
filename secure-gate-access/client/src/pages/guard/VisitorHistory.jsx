@@ -46,7 +46,7 @@ export default function VisitorHistory() {
     <Layout title="Visitor History" role="guard" showBreadcrumbs={true}>
       <Card className="mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Visitor History</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Visitor History</h2>
           <SearchFilter
             value={searchTerm}
             onChange={setSearchTerm}

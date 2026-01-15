@@ -250,6 +250,7 @@
   --color-badge-bg: rgba(255, 255, 255, 0.1);
   --color-skeleton: #334155;
   --color-skeleton-shimmer: #475569;
+  --color-text-muted: #cbd5e1; /* Lighter gray for dark mode legibility */
 }
 
 /* Light theme */

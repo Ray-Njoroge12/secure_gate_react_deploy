@@ -350,7 +350,7 @@ const QuickInvite = () => {
             <div className="p-6 space-y-6">
               {/* What happens next */}
               <div className="bg-blue-50 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                   <Info className="w-5 h-5 text-blue-500" />
                   What happens next?
                 </h3>
@@ -372,7 +372,7 @@ const QuickInvite = () => {
 
               {/* Share options */}
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 font-medium">Share invite via:</p>
+                <p className="text-sm text-gray-600 dark:text-gray-200 font-medium">Share invite via:</p>
                 
                 {/* WhatsApp Share Buttons */}
                 <div className="space-y-2">
@@ -451,11 +451,11 @@ const QuickInvite = () => {
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Back to dashboard"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-200" />
             </button>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Quick Invite</h1>
-              <p className="text-sm text-gray-500">Invite a guest in seconds</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Quick Invite</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-300">Invite a guest in seconds</p>
             </div>
           </div>
         </div>
@@ -525,7 +525,7 @@ const QuickInvite = () => {
                     disabled={loading}
                   />
                 </div>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
+                <p className="text-xs text-gray-500 dark:text-gray-300 flex items-center gap-1">
                   <Smartphone className="w-3 h-3" />
                   They'll receive an SMS with the invite link
                 </p>
@@ -554,7 +554,7 @@ const QuickInvite = () => {
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
                       {chip.sublabel && (
-                        <div className="text-xs text-gray-500 mt-0.5">{chip.sublabel}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
                       )}
                     </button>
                   ))}
@@ -592,7 +592,7 @@ const QuickInvite = () => {
                       }`}
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{chip.sublabel}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
                     </button>
                   ))}
                 </div>
@@ -619,8 +619,8 @@ const QuickInvite = () => {
                     disabled={loading}
                   />
                   <div>
-                    <div className="text-sm font-medium text-gray-900">Allow unit PIN sharing</div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">Allow unit PIN sharing</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-200">
                       If enabled, your guest will see a unit PIN on their pass page. This is optional and can be left off for privacy.
                     </div>
                   </div>
@@ -646,7 +646,7 @@ const QuickInvite = () => {
               </div>
 
               {/* Info note */}
-              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
+              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 dark:text-gray-200">
                 <p className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <span>
@@ -678,7 +678,7 @@ const QuickInvite = () => {
         </Card>
 
         {/* Quick tips */}
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-300">
           <p>💡 Tip: Your guest can add purpose, vehicle info, and more when they open the link</p>
         </div>
       </div>

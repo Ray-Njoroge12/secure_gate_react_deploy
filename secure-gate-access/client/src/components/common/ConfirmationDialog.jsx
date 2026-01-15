@@ -186,7 +186,7 @@ const ConfirmationDialog = ({
             {/* Title */}
             <h3 
               id="dialog-title"
-              className="text-lg font-semibold text-gray-900 text-center mb-2"
+              className="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2"
             >
               {title || variantStyle.title}
             </h3>
@@ -194,7 +194,7 @@ const ConfirmationDialog = ({
             {/* Message */}
             <p 
               id="dialog-description"
-              className="text-gray-600 text-center mb-4"
+              className="text-gray-600 dark:text-gray-200 text-center mb-4"
             >
               {message}
             </p>

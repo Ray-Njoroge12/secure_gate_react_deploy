@@ -387,13 +387,13 @@ export default function ManageGuards() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Guard Directory</h2>
-              <p className="text-sm text-slate-500">Active guard accounts and contact details.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-300">Active guard accounts and contact details.</p>
             </div>
-            <div className="text-sm text-slate-500">{loading ? 'Loading...' : `${guards.length} guards`}</div>
+            <div className="text-sm text-slate-500 dark:text-slate-300">{loading ? 'Loading...' : `${guards.length} guards`}</div>
           </div>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600">
+              <thead className="bg-slate-50 text-slate-600 dark:text-slate-200">
                 <tr>
                   <th className="text-left px-4 py-2">Name</th>
                   <th className="text-left px-4 py-2">Email</th>
@@ -421,17 +421,17 @@ export default function ManageGuards() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Shift Scheduling</h2>
-              <p className="text-sm text-slate-500">Create, review, and update guard shifts.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-300">Create, review, and update guard shifts.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <label className="text-sm text-slate-600">Start</label>
+              <label className="text-sm text-slate-600 dark:text-slate-200">Start</label>
               <input
                 type="date"
                 value={shiftFilters.start_date}
                 onChange={(event) => setShiftFilters((prev) => ({ ...prev, start_date: event.target.value }))}
                 className="border border-slate-200 rounded-md px-2 py-1 text-sm"
               />
-              <label className="text-sm text-slate-600">End</label>
+              <label className="text-sm text-slate-600 dark:text-slate-200">End</label>
               <input
                 type="date"
                 value={shiftFilters.end_date}
@@ -452,7 +452,7 @@ export default function ManageGuards() {
             <form onSubmit={handleCreateShift} className="space-y-4">
               <h3 className="text-md font-semibold text-slate-800">Create Shift</h3>
               <div>
-                <label className="block text-sm text-slate-600">Guard</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                 <select
                   value={shiftForm.guard_id}
                   onChange={(event) => setShiftForm((prev) => ({ ...prev, guard_id: event.target.value }))}
@@ -467,7 +467,7 @@ export default function ManageGuards() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-slate-600">Shift Type</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Shift Type</label>
                   <select
                     value={shiftForm.shift_type}
                     onChange={(event) => setShiftForm((prev) => ({ ...prev, shift_type: event.target.value }))}
@@ -479,7 +479,7 @@ export default function ManageGuards() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">Post</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Post</label>
                   <input
                     type="text"
                     value={shiftForm.post_location}
@@ -491,7 +491,7 @@ export default function ManageGuards() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-slate-600">Start Time</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Start Time</label>
                   <input
                     type="datetime-local"
                     value={shiftForm.start_time}
@@ -501,7 +501,7 @@ export default function ManageGuards() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">End Time</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">End Time</label>
                   <input
                     type="datetime-local"
                     value={shiftForm.end_time}
@@ -512,7 +512,7 @@ export default function ManageGuards() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Notes</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
                 <textarea
                   value={shiftForm.notes}
                   onChange={(event) => setShiftForm((prev) => ({ ...prev, notes: event.target.value }))}
@@ -533,7 +533,7 @@ export default function ManageGuards() {
               {editingShift ? (
                 <>
                   <div>
-                    <label className="block text-sm text-slate-600">Guard</label>
+                    <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                     <select
                       value={editingShift.guard_id}
                       onChange={(event) => setEditingShift((prev) => ({ ...prev, guard_id: Number(event.target.value) }))}
@@ -546,7 +546,7 @@ export default function ManageGuards() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm text-slate-600">Shift Type</label>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Shift Type</label>
                       <select
                         value={editingShift.shift_type}
                         onChange={(event) => setEditingShift((prev) => ({ ...prev, shift_type: event.target.value }))}
@@ -558,7 +558,7 @@ export default function ManageGuards() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-slate-600">Status</label>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Status</label>
                       <select
                         value={editingShift.status}
                         onChange={(event) => setEditingShift((prev) => ({ ...prev, status: event.target.value }))}
@@ -571,7 +571,7 @@ export default function ManageGuards() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm text-slate-600">Start Time</label>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Start Time</label>
                       <input
                         type="datetime-local"
                         value={editingShift.start_time ? editingShift.start_time.slice(0, 16) : ''}
@@ -580,7 +580,7 @@ export default function ManageGuards() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-slate-600">End Time</label>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">End Time</label>
                       <input
                         type="datetime-local"
                         value={editingShift.end_time ? editingShift.end_time.slice(0, 16) : ''}
@@ -590,7 +590,7 @@ export default function ManageGuards() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600">Post</label>
+                    <label className="block text-sm text-slate-600 dark:text-slate-200">Post</label>
                     <input
                       type="text"
                       value={editingShift.post_location || ''}
@@ -599,7 +599,7 @@ export default function ManageGuards() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-600">Notes</label>
+                    <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
                     <textarea
                       value={editingShift.notes || ''}
                       onChange={(event) => setEditingShift((prev) => ({ ...prev, notes: event.target.value }))}
@@ -613,14 +613,14 @@ export default function ManageGuards() {
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-slate-500">Select a shift from the table below to edit scheduling details.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-300">Select a shift from the table below to edit scheduling details.</p>
               )}
             </form>
           </div>
 
           <div className="mt-6 overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-slate-600">
+              <thead className="bg-slate-50 text-slate-600 dark:text-slate-200">
                 <tr>
                   <th className="text-left px-4 py-2">Guard</th>
                   <th className="text-left px-4 py-2">Type</th>
@@ -658,7 +658,7 @@ export default function ManageGuards() {
 
         <section className="bg-white shadow-sm border border-slate-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-slate-900">Handover Notes</h2>
-          <p className="text-sm text-slate-500">Review guard-to-guard shift handovers.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-300">Review guard-to-guard shift handovers.</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <select
               value={handoverShiftId}
@@ -682,17 +682,17 @@ export default function ManageGuards() {
           </div>
           <div className="mt-4 space-y-3">
             {handoverNotes.length === 0 ? (
-              <p className="text-sm text-slate-500">No handover notes loaded.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-300">No handover notes loaded.</p>
             ) : (
               handoverNotes.map((note) => (
                 <div key={note.id} className="border border-slate-200 rounded-md p-4">
-                  <div className="flex flex-wrap justify-between text-sm text-slate-500">
+                  <div className="flex flex-wrap justify-between text-sm text-slate-500 dark:text-slate-300">
                     <span>From: {note.from_guard_name || note.from_guard_id}</span>
                     <span>{note.created_at ? formatDateTime(note.created_at) : ''}</span>
                   </div>
                   <p className="mt-2 text-slate-700">{note.notes}</p>
                   {(note.incidents_summary || note.equipment_status) && (
-                    <div className="mt-2 text-sm text-slate-600">
+                    <div className="mt-2 text-sm text-slate-600 dark:text-slate-200">
                       {note.incidents_summary && <p>Incidents: {note.incidents_summary}</p>}
                       {note.equipment_status && <p>Equipment: {note.equipment_status}</p>}
                     </div>
@@ -709,7 +709,7 @@ export default function ManageGuards() {
             <form onSubmit={handleRecordPerformance} className="space-y-4">
               <h3 className="text-md font-semibold text-slate-800">Record Metric</h3>
               <div>
-                <label className="block text-sm text-slate-600">Guard</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                 <select
                   value={performanceForm.guard_id}
                   onChange={(event) => setPerformanceForm((prev) => ({ ...prev, guard_id: event.target.value }))}
@@ -724,7 +724,7 @@ export default function ManageGuards() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-slate-600">Metric</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Metric</label>
                   <select
                     value={performanceForm.metric_type}
                     onChange={(event) => setPerformanceForm((prev) => ({ ...prev, metric_type: event.target.value }))}
@@ -736,7 +736,7 @@ export default function ManageGuards() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">Rating (0-5)</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Rating (0-5)</label>
                   <input
                     type="number"
                     min="0"
@@ -749,7 +749,7 @@ export default function ManageGuards() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Shift ID (optional)</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Shift ID (optional)</label>
                 <input
                   type="text"
                   value={performanceForm.shift_id}
@@ -758,7 +758,7 @@ export default function ManageGuards() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Notes</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
                 <textarea
                   value={performanceForm.notes}
                   onChange={(event) => setPerformanceForm((prev) => ({ ...prev, notes: event.target.value }))}
@@ -772,7 +772,7 @@ export default function ManageGuards() {
             <div className="space-y-4">
               <h3 className="text-md font-semibold text-slate-800">View Metrics</h3>
               <div>
-                <label className="block text-sm text-slate-600">Guard</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                 <select
                   value={performanceQuery.guard_id}
                   onChange={(event) => setPerformanceQuery((prev) => ({ ...prev, guard_id: event.target.value }))}
@@ -786,7 +786,7 @@ export default function ManageGuards() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-slate-600">Start Date</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Start Date</label>
                   <input
                     type="date"
                     value={performanceQuery.start_date}
@@ -795,7 +795,7 @@ export default function ManageGuards() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">End Date</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">End Date</label>
                   <input
                     type="date"
                     value={performanceQuery.end_date}
@@ -809,7 +809,7 @@ export default function ManageGuards() {
               </button>
               {performanceData && (
                 <div className="border border-slate-200 rounded-md p-4">
-                  <div className="text-sm text-slate-600">Average rating: {performanceData.statistics?.average_rating || '—'}</div>
+                  <div className="text-sm text-slate-600 dark:text-slate-200">Average rating: {performanceData.statistics?.average_rating || '—'}</div>
                   <ul className="mt-2 space-y-2 text-sm text-slate-700">
                     {performanceData.metrics?.map((metric) => (
                       <li key={metric.id} className="flex justify-between">
@@ -830,7 +830,7 @@ export default function ManageGuards() {
             <form onSubmit={handleCheckoutEquipment} className="space-y-4">
               <h3 className="text-md font-semibold text-slate-800">Checkout Equipment</h3>
               <div>
-                <label className="block text-sm text-slate-600">Guard</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                 <select
                   value={equipmentForm.guard_id}
                   onChange={(event) => setEquipmentForm((prev) => ({ ...prev, guard_id: event.target.value }))}
@@ -845,7 +845,7 @@ export default function ManageGuards() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-slate-600">Equipment Type</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Equipment Type</label>
                   <select
                     value={equipmentForm.equipment_type}
                     onChange={(event) => setEquipmentForm((prev) => ({ ...prev, equipment_type: event.target.value }))}
@@ -857,7 +857,7 @@ export default function ManageGuards() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">Equipment ID</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Equipment ID</label>
                   <input
                     type="text"
                     value={equipmentForm.equipment_id}
@@ -868,7 +868,7 @@ export default function ManageGuards() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Shift ID (optional)</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Shift ID (optional)</label>
                 <input
                   type="text"
                   value={equipmentForm.shift_id}
@@ -877,7 +877,7 @@ export default function ManageGuards() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Notes</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
                 <textarea
                   value={equipmentForm.notes}
                   onChange={(event) => setEquipmentForm((prev) => ({ ...prev, notes: event.target.value }))}
@@ -916,17 +916,17 @@ export default function ManageGuards() {
               </div>
               <div className="space-y-3">
                 {equipmentCheckouts.length === 0 ? (
-                  <p className="text-sm text-slate-500">No equipment records available.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-300">No equipment records available.</p>
                 ) : (
                   equipmentCheckouts.map((checkout) => (
                     <div key={checkout.id} className="border border-slate-200 rounded-md p-4">
-                      <div className="flex flex-wrap justify-between text-sm text-slate-600">
+                      <div className="flex flex-wrap justify-between text-sm text-slate-600 dark:text-slate-200">
                         <span>{checkout.equipment_type} • {checkout.equipment_id}</span>
                         <span className="capitalize">{checkout.status}</span>
                       </div>
-                      <div className="mt-1 text-sm text-slate-500">Guard: {checkout.guard_name || checkout.guard_id}</div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-300">Guard: {checkout.guard_name || checkout.guard_id}</div>
                       <div className="mt-2 flex flex-wrap items-center gap-3">
-                        <span className="text-xs text-slate-500">Checked out: {formatDateTime(checkout.checkout_time)}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-300">Checked out: {formatDateTime(checkout.checkout_time)}</span>
                         {checkout.status === 'checked_out' && (
                           <button
                             type="button"
@@ -951,7 +951,7 @@ export default function ManageGuards() {
             <form onSubmit={handleAddTraining} className="space-y-4">
               <h3 className="text-md font-semibold text-slate-800">Add Training Record</h3>
               <div>
-                <label className="block text-sm text-slate-600">Guard</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                 <select
                   value={trainingForm.guard_id}
                   onChange={(event) => setTrainingForm((prev) => ({ ...prev, guard_id: event.target.value }))}
@@ -965,7 +965,7 @@ export default function ManageGuards() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Training Type</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Training Type</label>
                 <select
                   value={trainingForm.training_type}
                   onChange={(event) => setTrainingForm((prev) => ({ ...prev, training_type: event.target.value }))}
@@ -977,7 +977,7 @@ export default function ManageGuards() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Training Name</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Training Name</label>
                 <input
                   type="text"
                   value={trainingForm.training_name}
@@ -988,7 +988,7 @@ export default function ManageGuards() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm text-slate-600">Completion Date</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Completion Date</label>
                   <input
                     type="date"
                     value={trainingForm.completion_date}
@@ -998,7 +998,7 @@ export default function ManageGuards() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-600">Expiry Date</label>
+                  <label className="block text-sm text-slate-600 dark:text-slate-200">Expiry Date</label>
                   <input
                     type="date"
                     value={trainingForm.expiry_date}
@@ -1008,7 +1008,7 @@ export default function ManageGuards() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Certificate Number</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Certificate Number</label>
                 <input
                   type="text"
                   value={trainingForm.certificate_number}
@@ -1017,7 +1017,7 @@ export default function ManageGuards() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-600">Notes</label>
+                <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
                 <textarea
                   value={trainingForm.notes}
                   onChange={(event) => setTrainingForm((prev) => ({ ...prev, notes: event.target.value }))}
@@ -1051,16 +1051,16 @@ export default function ManageGuards() {
               </div>
               <div className="space-y-3">
                 {trainingRecords.length === 0 ? (
-                  <p className="text-sm text-slate-500">No training records loaded.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-300">No training records loaded.</p>
                 ) : (
                   trainingRecords.map((record) => (
                     <div key={record.id} className="border border-slate-200 rounded-md p-4">
-                      <div className="flex flex-wrap justify-between text-sm text-slate-600">
+                      <div className="flex flex-wrap justify-between text-sm text-slate-600 dark:text-slate-200">
                         <span className="font-medium">{record.training_name}</span>
                         <span className="capitalize">{record.status}</span>
                       </div>
-                      <div className="text-sm text-slate-500">Completed: {formatDate(record.completion_date)}</div>
-                      {record.expiry_date && <div className="text-sm text-slate-500">Expires: {formatDate(record.expiry_date)}</div>}
+                      <div className="text-sm text-slate-500 dark:text-slate-300">Completed: {formatDate(record.completion_date)}</div>
+                      {record.expiry_date && <div className="text-sm text-slate-500 dark:text-slate-300">Expires: {formatDate(record.expiry_date)}</div>}
                     </div>
                   ))
                 )}

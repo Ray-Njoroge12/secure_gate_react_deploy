@@ -68,7 +68,7 @@ const BrowserCompatibilityWarning = () => {
       case 'info':
         return 'text-blue-600 bg-blue-50 border-blue-200';
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'text-gray-600 dark:text-gray-200 bg-gray-50 border-gray-200';
     }
   };
 
@@ -84,7 +84,7 @@ const BrowserCompatibilityWarning = () => {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">{getBrowserIcon(browser)}</span>
-                <h3 className="text-sm font-medium text-gray-900">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                   Browser Compatibility Issue
                 </h3>
                 <Button
@@ -97,7 +97,7 @@ const BrowserCompatibilityWarning = () => {
                 </Button>
               </div>
               
-              <p className="text-sm text-gray-600 mb-3">
+              <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
                 {browser.charAt(0).toUpperCase() + browser.slice(1)} {version} has compatibility issues.
               </p>
               
@@ -135,7 +135,7 @@ const BrowserCompatibilityWarning = () => {
               {browserRecommendations.length > 0 && (
                 <div className="mb-3">
                   <h4 className="text-xs font-medium text-gray-700 mb-1">Recommendations:</h4>
-                  <ul className="text-xs text-gray-600 space-y-1">
+                  <ul className="text-xs text-gray-600 dark:text-gray-200 space-y-1">
                     {browserRecommendations.map((rec, index) => (
                       <li key={index} className="flex items-start gap-1">
                         <span className="text-blue-500 mt-0.5">•</span>
@@ -150,7 +150,7 @@ const BrowserCompatibilityWarning = () => {
               <div className="flex flex-col gap-2">
                 {!isSupported && (
                   <div className="space-y-2">
-                    <p className="text-xs text-gray-600">Recommended browsers:</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-200">Recommended browsers:</p>
                     <div className="flex flex-wrap gap-1">
                       {Object.entries(downloadLinks).map(([browserName, url]) => (
                         <Button

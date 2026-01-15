@@ -106,11 +106,11 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
         <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Log Incident</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Log Incident</h2>
             <button
               onClick={handleClose}
               disabled={isSubmitting}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 dark:text-gray-200 transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
@@ -162,8 +162,8 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                       className="mt-1 mr-3"
                     />
                     <div>
-                      <div className="font-medium text-gray-900">{cat.label}</div>
-                      <div className="text-xs text-gray-600 mt-0.5">{cat.description}</div>
+                      <div className="font-medium text-gray-900 dark:text-white">{cat.label}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-200 mt-0.5">{cat.description}</div>
                     </div>
                   </label>
                 ))}
@@ -185,7 +185,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                       px-4 py-2 rounded-lg border-2 font-medium transition-all
                       ${formData.severity === level.value 
                         ? `${level.color} border-current` 
-                        : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300'
+                        : 'bg-gray-50 border-gray-200 text-gray-600 dark:text-gray-200 hover:border-gray-300'
                       }
                     `}
                   >
@@ -208,7 +208,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                 Be as specific as possible. Include time, location, and any witnesses.
               </div>
             </div>

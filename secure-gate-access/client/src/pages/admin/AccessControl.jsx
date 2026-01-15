@@ -39,7 +39,7 @@ import {
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     active: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: <CheckCircle className="w-3 h-3" />, label: 'Active' },
-    inactive: { color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400', icon: <XCircle className="w-3 h-3" />, label: 'Inactive' },
+    inactive: { color: 'bg-gray-100 text-gray-600 dark:text-gray-200 dark:bg-gray-800 dark:text-gray-300', icon: <XCircle className="w-3 h-3" />, label: 'Inactive' },
     suspended: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: <AlertTriangle className="w-3 h-3" />, label: 'Suspended' },
     lost: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', icon: <AlertTriangle className="w-3 h-3" />, label: 'Lost' },
   };
@@ -66,7 +66,7 @@ const ZoneBadge = ({ zone }) => {
   };
   
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${zoneColors[zone] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'}`}>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${zoneColors[zone] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}`}>
       <MapPin className="w-3 h-3" />
       {zone || 'Unknown'}
     </span>
@@ -92,7 +92,7 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
           </div>
           
           <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
               <Shield className="w-4 h-4" />
               <span className="truncate">{card.holder || 'Unassigned'}</span>
             </div>
@@ -106,7 +106,7 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
         <div className="flex flex-col gap-2 ml-3">
           <button 
             onClick={() => onEdit(card)}
-            className="p-2 text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 rounded-lg transition-colors"
+            className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 rounded-lg transition-colors"
             aria-label={`Edit card ${card.id}`}
           >
             <Edit className="w-4 h-4" />
@@ -114,7 +114,7 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
           {card.status === 'active' ? (
             <button 
               onClick={() => onDisable(card)}
-              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               aria-label={`Disable card ${card.id}`}
             >
               <Lock className="w-4 h-4" />
@@ -122,7 +122,7 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
           ) : (
             <button 
               onClick={() => onDisable(card)}
-              className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-300 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
               aria-label={`Enable card ${card.id}`}
             >
               <Unlock className="w-4 h-4" />
@@ -131,7 +131,7 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
           {!card.holder && (
             <button 
               onClick={() => onAssign(card)}
-              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
               aria-label={`Assign card ${card.id}`}
             >
               <UserPlus className="w-4 h-4" />
@@ -181,19 +181,19 @@ const CardModal = ({ card, isOpen, onClose, onSave, mode = 'edit' }) => {
     <Modal isOpen={isOpen} onClose={onClose} title={mode === 'assign' ? 'Assign Card' : 'Edit Access Card'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
             Card ID
           </label>
           <input
             type="text"
             value={card?.id || ''}
             disabled
-            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-400"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-500 dark:text-gray-300"
           />
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
             Card Holder
           </label>
           <input
@@ -206,7 +206,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, mode = 'edit' }) => {
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
             Access Zone
           </label>
           <select
@@ -223,7 +223,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, mode = 'edit' }) => {
         
         {mode !== 'assign' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               Status
             </label>
             <select
@@ -266,7 +266,7 @@ const StatsCard = ({ title, value, icon: Icon, color }) => (
   <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-300">{title}</p>
         <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
       </div>
       <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center`}>
@@ -494,7 +494,7 @@ export default function AccessControl() {
                   variant="ghost"
                   size="sm"
                   onClick={clearFilters}
-                  className="mt-2 text-gray-500 hover:text-gray-700"
+                  className="mt-2 text-gray-500 dark:text-gray-300 hover:text-gray-700"
                 >
                   Clear all filters
                 </Button>
@@ -503,7 +503,7 @@ export default function AccessControl() {
           )}
 
           {/* Results summary */}
-          <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
             {isSearching || hasFilters ? (
               <>Showing {filteredCards.length} of {cards.length} cards</>
             ) : (
@@ -546,11 +546,11 @@ export default function AccessControl() {
           </>
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-12 text-center">
-            <CreditCard className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <CreditCard className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 dark:text-gray-200 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {isSearching || hasFilters ? 'No cards found' : 'No access cards'}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-gray-500 dark:text-gray-300 mb-4">
               {isSearching || hasFilters 
                 ? 'Try adjusting your search or filters'
                 : 'Add your first access card to get started'

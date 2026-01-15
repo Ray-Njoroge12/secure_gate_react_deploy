@@ -201,7 +201,7 @@ const ResponsiveTable = memo(({
                     <div className="flex items-center gap-2">
                       <span>{column.label}</span>
                       {column.sortable && (
-                        <span className="text-slate-500" aria-hidden="true">
+                        <span className="text-slate-500 dark:text-slate-300" aria-hidden="true">
                           {renderSortIcon(column.key)}
                         </span>
                       )}
@@ -287,7 +287,7 @@ const ResponsiveTable = memo(({
       {/* Column priority indicator for mobile */}
       {isMobile && columns.some(col => col.priority > 2) && (
         <div className="px-4 py-2 border-t border-slate-700">
-          <p className="text-xs text-slate-500 text-center">
+          <p className="text-xs text-slate-500 dark:text-slate-300 text-center">
             Showing {visibleColumns.length} of {columns.length} columns. 
             Switch to desktop view to see all columns.
           </p>

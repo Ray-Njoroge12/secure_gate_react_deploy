@@ -82,7 +82,7 @@ const WidgetItem = ({ widget, onToggleVisibility, onDragStart, onDragOver, onDro
       <span className="text-lg">{widget.icon}</span>
       
       <span className={`flex-1 text-sm font-medium ${
-        widget.visible ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
+        widget.visible ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'
       }`}>
         {widget.name}
       </span>
@@ -189,7 +189,7 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
+              className="p-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
             >
               <X className="w-5 h-5" />
             </button>
@@ -197,11 +197,11 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
           
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
               Drag to reorder widgets. Click the eye icon to show/hide.
             </p>
             
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            <div className="text-xs text-gray-500 dark:text-gray-300 mb-3">
               {visibleCount} of {widgets.length} widgets visible
             </div>
             
@@ -228,7 +228,7 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
               variant="ghost"
               size="sm"
               onClick={handleReset}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 dark:text-gray-300 hover:text-gray-700"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset to Default

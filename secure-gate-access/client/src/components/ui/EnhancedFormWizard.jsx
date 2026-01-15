@@ -648,7 +648,7 @@ const EnhancedFormWizard = ({
       {/* Draft Status */}
       {lastSaved && (
         <div className="mt-4 text-center">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-300">
             Last saved: {lastSaved.toLocaleTimeString()}
           </p>
         </div>

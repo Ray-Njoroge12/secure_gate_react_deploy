@@ -103,7 +103,7 @@ const IconButton = memo(React.forwardRef(({
   const variantClasses = {
     ghost: `
       bg-transparent
-      text-slate-600 dark:text-slate-300
+      text-slate-600 dark:text-slate-200
       hover:bg-slate-100 dark:hover:bg-slate-800
       hover:text-slate-900 dark:hover:text-slate-100
       active:bg-slate-200 dark:active:bg-slate-700
@@ -112,7 +112,7 @@ const IconButton = memo(React.forwardRef(({
     outlined: `
       bg-transparent
       border-2 border-slate-300 dark:border-slate-600
-      text-slate-600 dark:text-slate-300
+      text-slate-600 dark:text-slate-200
       hover:border-slate-400 dark:hover:border-slate-500
       hover:bg-slate-50 dark:hover:bg-slate-800
       active:bg-slate-100 dark:active:bg-slate-700

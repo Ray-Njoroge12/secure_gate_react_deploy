@@ -123,7 +123,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
       <div className="bg-white rounded-lg shadow p-6 text-center">
         <div className="text-6xl mb-4">✅</div>
         <h3 className="text-xl font-semibold text-green-600">Delivery Registered!</h3>
-        <p className="text-gray-600 mt-2">Resident has been notified</p>
+        <p className="text-gray-600 dark:text-gray-200 mt-2">Resident has been notified</p>
       </div>
     );
   }
@@ -131,8 +131,8 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">📦 Register Delivery</h2>
-        <p className="text-sm text-gray-500 mt-1">Log incoming package for resident</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">📦 Register Delivery</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">Log incoming package for resident</p>
       </div>
 
       <form onSubmit={handleSubmit} className="p-4 space-y-4">
@@ -225,7 +225,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             placeholder="e.g., 1234567890"
             className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
-          <p className="text-xs text-gray-500 mt-1">🔒 Encrypted and visible only to recipient</p>
+          <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">🔒 Encrypted and visible only to recipient</p>
         </div>
 
         {/* Description */}
@@ -282,10 +282,10 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
               className="w-full p-4 border-2 border-dashed border-gray-300 rounded-md text-center hover:border-gray-400"
             >
               <span className="text-3xl">📷</span>
-              <p className="text-sm text-gray-600 mt-1">Tap to capture photo</p>
+              <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Tap to capture photo</p>
             </button>
           )}
-          <p className="text-xs text-gray-500 mt-1">🔒 Photo auto-deletes 30 days after collection</p>
+          <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">🔒 Photo auto-deletes 30 days after collection</p>
         </div>
 
         {/* Notes */}

@@ -89,14 +89,14 @@ class AppErrorBoundary extends React.Component {
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   Something went wrong
                 </h3>
               </div>
             </div>
             
             <div className="mb-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-200">
                 The application encountered an unexpected error. This has been logged and will be investigated.
               </p>
             </div>
@@ -144,7 +144,7 @@ class AppErrorBoundary extends React.Component {
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-300 text-center">
                 If this problem persists, please contact support.
               </p>
             </div>

@@ -85,12 +85,12 @@ const FavoriteCard = ({
             {visitor.name}
           </h4>
           {visitor.relationship && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               {visitor.relationship}
             </p>
           )}
           {visitor.lastVisit && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-300 mt-1">
               Last visit: {visitor.lastVisit}
             </p>
           )}
@@ -98,7 +98,7 @@ const FavoriteCard = ({
       </div>
 
       {/* Quick stats */}
-      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-300">
         <span>📊 {visitor.visitCount || 0} visits</span>
         {visitor.phone && <span className="hidden sm:inline">📱 {visitor.phone}</span>}
       </div>
@@ -185,7 +185,7 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
             </h3>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -196,7 +196,7 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
           {/* Suggestions */}
           {suggestions.length > 0 && (
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-300 mb-2">
                 Recent visitors you might want to add:
               </p>
               <div className="flex flex-wrap gap-2">
@@ -216,7 +216,7 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Name *
               </label>
               <input
@@ -232,7 +232,7 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Phone
               </label>
               <input
@@ -248,7 +248,7 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Email
               </label>
               <input
@@ -261,7 +261,7 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Relationship (optional)
               </label>
               <select
@@ -282,7 +282,7 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+                className="flex-1 px-4 py-2.5 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -364,7 +364,7 @@ const FavoriteVisitors = ({
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Favorite Visitors
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-300">
                 Quick invite your frequent visitors
               </p>
             </div>
@@ -392,7 +392,7 @@ const FavoriteVisitors = ({
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-gray-100 text-sm"
             />
             {searchTerm && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-300">
                 {filteredFavorites.length} found
               </span>
             )}
@@ -416,7 +416,7 @@ const FavoriteVisitors = ({
             <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
               No favorites yet
             </h4>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+            <p className="text-gray-500 dark:text-gray-300 mb-6 max-w-sm mx-auto">
               Add your frequent visitors to favorites for quick one-tap invites
             </p>
             <button
@@ -429,7 +429,7 @@ const FavoriteVisitors = ({
         ) : filteredFavorites.length === 0 ? (
           // No search results
           <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-gray-500 dark:text-gray-300">
               No favorites match "{searchTerm}"
             </p>
             <button

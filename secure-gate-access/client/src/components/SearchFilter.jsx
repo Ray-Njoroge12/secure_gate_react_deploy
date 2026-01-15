@@ -290,7 +290,7 @@ const SearchFilter = ({
       </Card>
 
       {/* Results Summary */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-200">
         <div>
           Showing {paginatedData.length} of {filteredData.length} results
           {searchTerm && ` for "${searchTerm}"`}

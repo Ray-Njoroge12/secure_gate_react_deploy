@@ -37,7 +37,7 @@ import {
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     active: { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-3 h-3" /> },
-    inactive: { color: 'bg-gray-100 text-gray-600', icon: <XCircle className="w-3 h-3" /> },
+    inactive: { color: 'bg-gray-100 text-gray-600 dark:text-gray-200', icon: <XCircle className="w-3 h-3" /> },
     pending: { color: 'bg-yellow-100 text-yellow-800', icon: null },
     suspended: { color: 'bg-red-100 text-red-800', icon: <XCircle className="w-3 h-3" /> }
   };
@@ -65,14 +65,14 @@ const ResidentCard = ({ resident, onEdit, onDeactivate, onEmail }) => (
               </span>
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 truncate">
+              <h3 className="font-medium text-gray-900 dark:text-white truncate">
                 {resident.name || resident.username || 'Unknown'}
               </h3>
               <StatusBadge status={resident.status} />
             </div>
           </div>
           
-          <div className="space-y-1 text-sm text-gray-600">
+          <div className="space-y-1 text-sm text-gray-600 dark:text-gray-200">
             {resident.email && (
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-gray-400" />
@@ -98,14 +98,14 @@ const ResidentCard = ({ resident, onEdit, onDeactivate, onEmail }) => (
         <div className="flex flex-col gap-2 ml-2">
           <button 
             onClick={() => onEdit(resident)}
-            className="p-2 text-gray-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+            className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
             aria-label={`Edit ${resident.name}`}
           >
             <Edit className="w-4 h-4" />
           </button>
           <button 
             onClick={() => onEmail(resident)}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             aria-label={`Email ${resident.name}`}
           >
             <Mail className="w-4 h-4" />
@@ -113,7 +113,7 @@ const ResidentCard = ({ resident, onEdit, onDeactivate, onEmail }) => (
           {resident.status !== 'inactive' && (
             <button 
               onClick={() => onDeactivate(resident)}
-              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               aria-label={`Deactivate ${resident.name}`}
             >
               <Trash2 className="w-4 h-4" />
@@ -426,15 +426,15 @@ export default function ManageResidents() {
         <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4">
           <div className="flex-shrink-0 w-32 sm:w-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-gray-900 dark:text-slate-100">{stats.total}</div>
-            <div className="text-xs text-gray-500 dark:text-slate-400">Total</div>
+            <div className="text-xs text-gray-500 dark:text-slate-300">Total</div>
           </div>
           <div className="flex-shrink-0 w-32 sm:w-auto bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.active}</div>
             <div className="text-xs text-green-600 dark:text-green-400">Active</div>
           </div>
           <div className="flex-shrink-0 w-32 sm:w-auto bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-gray-500 dark:text-slate-300">{stats.inactive}</div>
-            <div className="text-xs text-gray-500 dark:text-slate-400">Inactive</div>
+            <div className="text-2xl font-bold text-gray-500 dark:text-slate-200">{stats.inactive}</div>
+            <div className="text-xs text-gray-500 dark:text-slate-300">Inactive</div>
           </div>
           <div className="flex-shrink-0 w-32 sm:w-auto bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats.pending}</div>
@@ -529,10 +529,10 @@ export default function ManageResidents() {
           <Card className="bg-white">
             <Card.Content className="py-12 text-center">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 {hasFilters || searchTerm ? 'No residents found' : 'No residents yet'}
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-500 dark:text-gray-300 mb-4">
                 {hasFilters || searchTerm 
                   ? 'Try adjusting your search or filters'
                   : 'Add your first resident to get started'
@@ -556,19 +556,19 @@ export default function ManageResidents() {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Resident
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Contact
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Location
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Status
                         </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Actions
                         </th>
                       </tr>
@@ -584,20 +584,20 @@ export default function ManageResidents() {
                                 </span>
                               </div>
                               <div>
-                                <div className="font-medium text-gray-900">
+                                <div className="font-medium text-gray-900 dark:text-white">
                                   {resident.name || resident.username || 'Unknown'}
                                 </div>
-                                <div className="text-sm text-gray-500">ID: {resident.id}</div>
+                                <div className="text-sm text-gray-500 dark:text-gray-300">ID: {resident.id}</div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{resident.email || '-'}</div>
-                            <div className="text-sm text-gray-500">{resident.phone || '-'}</div>
+                            <div className="text-sm text-gray-900 dark:text-white">{resident.email || '-'}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-300">{resident.phone || '-'}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{resident.area || '-'}</div>
-                            <div className="text-sm text-gray-500">{resident.house_number || '-'}</div>
+                            <div className="text-sm text-gray-900 dark:text-white">{resident.area || '-'}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-300">{resident.house_number || '-'}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <StatusBadge status={resident.status} />
@@ -606,14 +606,14 @@ export default function ManageResidents() {
                             <div className="flex items-center justify-end gap-2">
                               <button
                                 onClick={() => handleEdit(resident)}
-                                className="p-2 text-gray-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                                className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
                                 aria-label={`Edit ${resident.name}`}
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleEmail(resident)}
-                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 aria-label={`Email ${resident.name}`}
                               >
                                 <Mail className="w-4 h-4" />
@@ -621,7 +621,7 @@ export default function ManageResidents() {
                               {resident.status !== 'inactive' && (
                                 <button
                                   onClick={() => handleDeactivate(resident)}
-                                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                   aria-label={`Deactivate ${resident.name}`}
                                 >
                                   <Trash2 className="w-4 h-4" />

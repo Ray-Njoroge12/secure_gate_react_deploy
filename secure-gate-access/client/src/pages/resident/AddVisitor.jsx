@@ -5,6 +5,8 @@ import { createVisitor, createPass } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
 import logger from "../../utils/logger";
 import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay, PageHeader } from "../../components/ui";
+import AppShell from "../../layouts/AppShell";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
 import ConsentForm from "../../components/ConsentForm";
 import { 
   User, 
@@ -253,8 +255,11 @@ const AddVisitor = () => {
     setValidationErrors({});
   };
 
+  const role = useCurrentRole();
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell role={role}>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Create Visitor"
         subtitle="Add a new visitor and generate access credentials"
@@ -265,13 +270,13 @@ const AddVisitor = () => {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8">
-        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm">
+        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm">
           <Card.Content className="p-8">
           <form onSubmit={handleSubmit} data-test-id="add-visitor-form" className="space-y-6">
             {/* PHASE B1: Section 1 - Visitor Information */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
-              <h3 className="font-semibold text-gray-900 text-base md:text-lg flex items-center gap-2 mb-4">
-                <User className="w-5 h-5 text-gray-500" />
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 md:p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-base md:text-lg flex items-center gap-2 mb-4">
+                <User className="w-5 h-5 text-gray-500 dark:text-gray-300" />
                 Visitor Information
               </h3>
               
@@ -288,7 +293,7 @@ const AddVisitor = () => {
                     required
                     error={validationErrors.name}
                     icon={<User className="w-4 h-4" />}
-                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
+                    className="border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
                   />
 
                   <Input
@@ -303,7 +308,7 @@ const AddVisitor = () => {
                     error={validationErrors.phone}
                     helperText="Format: 0xxxxxxxxx (10 digits)"
                     icon={<Phone className="w-4 h-4" />}
-                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
+                    className="border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
 
@@ -318,15 +323,15 @@ const AddVisitor = () => {
                   disabled={loading}
                   error={validationErrors.email}
                   icon={<Mail className="w-4 h-4" />}
-                  className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
+                  className="border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
                 />
               </div>
             </div>
 
             {/* PHASE B1: Section 2 - Visit Details */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
-              <h3 className="font-semibold text-gray-900 text-base md:text-lg flex items-center gap-2 mb-4">
-                <Calendar className="w-5 h-5 text-gray-500" />
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 md:p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-base md:text-lg flex items-center gap-2 mb-4">
+                <Calendar className="w-5 h-5 text-gray-500 dark:text-gray-300" />
                 Visit Details
               </h3>
               
@@ -343,7 +348,7 @@ const AddVisitor = () => {
                     required
                     error={validationErrors.dateOfVisit}
                     icon={<Calendar className="w-4 h-4" />}
-                    className="bg-white border-gray-300 text-gray-900 focus:border-green-500 focus:ring-green-500"
+                    className="border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white focus:border-green-500 focus:ring-green-500"
                   />
                   
                   <Input
@@ -357,13 +362,13 @@ const AddVisitor = () => {
                     required
                     error={validationErrors.time}
                     icon={<Clock className="w-4 h-4" />}
-                    className="bg-white border-gray-300 text-gray-900 focus:border-green-500 focus:ring-green-500"
+                    className="border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white focus:border-green-500 focus:ring-green-500"
                   />
                 </div>
                 
                 {/* Purpose Dropdown */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
                     <FileText className="w-4 h-4 inline mr-2 text-gray-400" />
                     Purpose of Visit <span className="text-red-500">*</span>
                   </label>
@@ -374,10 +379,10 @@ const AddVisitor = () => {
                       value={formData.purpose}
                       onChange={(e) => handleInputChange('purpose', e.target.value)}
                       disabled={loading}
-                      className={`w-full px-4 py-3 rounded-lg border appearance-none bg-white ${
+                      className={`w-full px-4 py-3 rounded-lg border appearance-none ${
                         validationErrors.purpose 
-                          ? 'border-red-300 bg-red-50' 
-                          : 'border-gray-300 focus:border-green-500 focus:ring-green-500'
+                          ? 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800' 
+                          : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 focus:border-green-500 focus:ring-green-500 dark:text-white'
                       } focus:outline-none focus:ring-2 focus:ring-green-500/20 pr-10`}
                     >
                       {VISIT_PURPOSES.map((purpose) => (
@@ -406,21 +411,21 @@ const AddVisitor = () => {
                     error={validationErrors.purpose}
                     placeholder="Enter the purpose of visit"
                     icon={<FileText className="w-4 h-4" />}
-                    className="bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
+                    className="border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
                   />
                 )}
               </div>
             </div>
 
             {/* PHASE B1: Section 3 - Options & Consent */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6">
-              <h3 className="font-semibold text-gray-900 text-base md:text-lg flex items-center gap-2 mb-4">
-                <Shield className="w-5 h-5 text-gray-500" />
+            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 md:p-6">
+              <h3 className="font-semibold text-gray-900 dark:text-white text-base md:text-lg flex items-center gap-2 mb-4">
+                <Shield className="w-5 h-5 text-gray-500 dark:text-gray-300" />
                 Options & Consent
               </h3>
               
               <div className="space-y-4">
-                <div className="flex items-start md:items-center gap-3 p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-start md:items-center gap-3 p-3 md:p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg border border-gray-200 dark:border-slate-600">
                   <input
                     type="checkbox"
                     id="generatePass"
@@ -430,12 +435,12 @@ const AddVisitor = () => {
                     disabled={loading}
                     className="w-4 h-4 mt-1 md:mt-0 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
                   />
-                  <label htmlFor="generatePass" className="text-sm text-gray-700 cursor-pointer flex-1">
+                  <label htmlFor="generatePass" className="text-sm text-gray-700 dark:text-gray-200 cursor-pointer flex-1">
                     <div className="flex items-center gap-2">
-                      <QrCode className="w-4 h-4 text-gray-500" />
+                       <QrCode className="w-4 h-4 text-gray-500 dark:text-gray-300" />
                       <span className="font-medium text-sm md:text-base">Generate QR Pass Immediately</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       Creates a QR code pass that the visitor can use for quick check-in
                     </p>
                   </label>
@@ -448,7 +453,7 @@ const AddVisitor = () => {
                   required={true}
                   consentType="data_processing"
                   showDetails={true}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                  className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 border border-gray-200 dark:border-slate-600"
                 />
                 
                 {validationErrors.consent && (
@@ -503,12 +508,12 @@ const AddVisitor = () => {
         title="Creation Failed"
       />
 
-      {/* Success Display */}
       <SuccessDisplay
         success={success}
         onClose={() => setSuccess(null)}
       />
-    </div>
+      </div>
+    </AppShell>
   );
 };
 

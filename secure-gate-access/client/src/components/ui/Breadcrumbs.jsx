@@ -86,7 +86,7 @@ const Breadcrumbs = ({
           <li key={`${crumb.path}-${index}`} className="flex items-center">
             {index > 0 && (
               <svg 
-                className="w-4 h-4 mx-2 text-slate-500 flex-shrink-0" 
+                className="w-4 h-4 mx-2 text-slate-500 dark:text-slate-300 flex-shrink-0" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -102,7 +102,7 @@ const Breadcrumbs = ({
             )}
             
             {crumb.isEllipsis ? (
-              <span className="text-slate-500 px-2" aria-hidden="true">
+              <span className="text-slate-500 dark:text-slate-300 px-2" aria-hidden="true">
                 ...
               </span>
             ) : crumb.isCurrent ? (

@@ -74,7 +74,7 @@ export default function LiveConnectionStatus({
       )}
       
       {lastUpdate && isConnected && (
-        <span className="text-xs text-gray-500 ml-2">
+        <span className="text-xs text-gray-500 dark:text-gray-300 ml-2">
           Updated {lastUpdate}
         </span>
       )}

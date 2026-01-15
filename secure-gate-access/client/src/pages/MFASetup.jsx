@@ -107,7 +107,7 @@ const MFASetup = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             🔐 Enable Two-Factor Authentication
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">
+          <p className="mt-2 text-gray-600 dark:text-gray-200">
             Add an extra layer of security to your account
           </p>
         </div>
@@ -163,7 +163,7 @@ const MFASetup = () => {
           {step === 1 && loading && (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-300">Setting up MFA...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-200">Setting up MFA...</p>
             </div>
           )}
 
@@ -199,7 +199,7 @@ const MFASetup = () => {
 
                 {/* Manual Entry Key */}
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">
                     Can't scan? Enter this code manually:
                   </p>
                   <code className="block p-2 bg-white border border-gray-300 rounded text-center font-mono text-sm">
@@ -246,8 +246,8 @@ const MFASetup = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">MFA Enabled Successfully!</h2>
-                <p className="text-gray-600 mt-2">Your account is now more secure</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">MFA Enabled Successfully!</h2>
+                <p className="text-gray-600 dark:text-gray-200 mt-2">Your account is now more secure</p>
               </div>
 
               <div className="space-y-6">
@@ -300,7 +300,7 @@ const MFASetup = () => {
         </div>
 
         {/* Help Text */}
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-200">
           <p>Need help? Contact support at support@securegate.com</p>
         </div>
       </div>

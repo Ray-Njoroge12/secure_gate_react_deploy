@@ -210,7 +210,7 @@ const EnhancedBreadcrumbs = ({
               {/* Separator */}
               {index > 0 && (
                 <ChevronRight 
-                  className={`${sizeStyles.icon} mx-2 text-slate-500 flex-shrink-0`}
+                  className={`${sizeStyles.icon} mx-2 text-slate-500 dark:text-slate-300 flex-shrink-0`}
                   aria-hidden="true"
                 />
               )}
@@ -219,7 +219,7 @@ const EnhancedBreadcrumbs = ({
               {crumb.isEllipsis ? (
                 <button
                   onClick={() => setIsCollapsed(!isCollapsed)}
-                  className={`${sizeStyles.item} text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
+                  className={`${sizeStyles.item} text-slate-500 dark:text-slate-300 hover:text-slate-300 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
                   aria-label={isCollapsed ? "Expand breadcrumbs" : "Collapse breadcrumbs"}
                   aria-expanded={!isCollapsed}
                 >
@@ -257,7 +257,7 @@ const EnhancedBreadcrumbs = ({
         {collapsible && currentBreadcrumbs.length > maxItems && (
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`ml-4 ${sizeStyles.item} text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
+            className={`ml-4 ${sizeStyles.item} text-slate-500 dark:text-slate-300 hover:text-slate-300 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
             aria-label={isCollapsed ? "Show all breadcrumbs" : "Hide some breadcrumbs"}
             aria-expanded={!isCollapsed}
           >

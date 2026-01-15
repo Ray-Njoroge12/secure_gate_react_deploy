@@ -106,7 +106,7 @@ const RecentVisitors = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-gray-600 mb-3">{error}</p>
+          <p className="text-gray-600 dark:text-gray-200 mb-3">{error}</p>
           <button
             onClick={fetchRecentVisitors}
             className="text-blue-600 hover:text-blue-800 font-medium"
@@ -124,16 +124,16 @@ const RecentVisitors = ({
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Recent Visitors
             </h3>
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+            <span className="text-xs bg-gray-100 text-gray-600 dark:text-gray-200 px-2 py-1 rounded-full">
               Last 7 days
             </span>
           </div>
           <button
             onClick={() => setShowPrivacyNotice(!showPrivacyNotice)}
-            className="text-gray-400 hover:text-gray-600 p-1"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-200 p-1"
             title="Privacy info"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +178,7 @@ const RecentVisitors = ({
       {/* Visitor List */}
       <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
         {filteredVisitors.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
@@ -201,7 +201,7 @@ const RecentVisitors = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900 truncate">
+                      <span className="font-medium text-gray-900 dark:text-white truncate">
                         {visitor.visitorName}
                       </span>
                       {visitBadge && (
@@ -210,7 +210,7 @@ const RecentVisitors = ({
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-500 flex items-center gap-2">
+                    <div className="text-sm text-gray-500 dark:text-gray-300 flex items-center gap-2">
                       <span>→ {visitor.residentName}</span>
                       {visitor.residentUnit && (
                         <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">

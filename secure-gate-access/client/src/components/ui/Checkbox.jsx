@@ -160,7 +160,7 @@ export const Checkbox = React.forwardRef(
             {description && (
               <p 
                 id={descriptionId}
-                className="text-sm text-gray-500 dark:text-slate-400"
+                className="text-sm text-gray-500 dark:text-slate-300"
               >
                 {description}
               </p>

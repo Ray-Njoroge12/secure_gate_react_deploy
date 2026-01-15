@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import { navigateTo } from "../../utils/appNavigation";
 import { PageHeader, Card, Button, EmptyState } from "../../components/ui";
 import { getMyVisitors, createPass } from "../../services/passService";
+import AppShell from "../../layouts/AppShell";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
 import logger from 'utils/logger';
 import { QrCode, RefreshCw, Send, Copy, CheckCircle } from 'lucide-react';
 
@@ -90,8 +92,11 @@ export default function GeneratePass(){
     }
   };
 
+  const role = useCurrentRole();
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell role={role}>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Generate Pass"
         subtitle="Create QR passes for approved visitors"
@@ -124,7 +129,7 @@ export default function GeneratePass(){
         {/* Visitor Selection */}
         {visitors.length > 0 && !result && (
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Select Visitor
             </h2>
             
@@ -211,25 +216,25 @@ export default function GeneratePass(){
                 {/* Details */}
                 <div className="flex-1 text-center md:text-left">
                   <div className="space-y-2 mb-4">
-                    <p className="text-sm text-gray-500">Pass ID</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">Pass ID</p>
                     <p className="font-mono text-lg font-semibold">{result.passId}</p>
                   </div>
                   
                   {result.plainOtp && (
                     <div className="space-y-1 mb-4">
-                      <p className="text-sm text-gray-500">OTP Code</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">OTP Code</p>
                       <p className="font-mono text-2xl font-bold text-green-600">{result.plainOtp}</p>
                     </div>
                   )}
                   
                   <div className="space-y-1 mb-4">
-                    <p className="text-sm text-gray-500">Expires</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">Expires</p>
                     <p className="text-gray-700">{new Date(result.expiresAt).toLocaleString()}</p>
                   </div>
                   
                   {result.inviteLink && (
                     <div className="space-y-2 mb-4">
-                      <p className="text-sm text-gray-500">Invite Link</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Invite Link</p>
                       <div className="flex gap-2">
                         <input 
                           type="text" 
@@ -272,6 +277,8 @@ export default function GeneratePass(){
           </Card>
         )}
       </div>
-    </div>
+      </div>
+    </AppShell>
   );
 }
+

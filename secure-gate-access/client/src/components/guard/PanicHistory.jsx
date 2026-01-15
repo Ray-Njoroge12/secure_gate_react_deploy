@@ -103,7 +103,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
       {/* Header */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             My Emergency History
           </h3>
           <button
@@ -118,7 +118,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
         </div>
         
         {/* Privacy Notice */}
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
           This shows only your own emergency alerts. Location data is not displayed.
         </p>
       </div>
@@ -143,7 +143,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
       {/* History List */}
       <div className="divide-y divide-gray-100">
         {history.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -156,32 +156,32 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-gray-900 dark:text-white font-medium">
                       Emergency #{item.id}
                     </span>
                     {getStatusBadge(item.status, item.is_false_alarm)}
                   </div>
                   
-                  <div className="text-sm text-gray-500 space-y-1">
+                  <div className="text-sm text-gray-500 dark:text-gray-300 space-y-1">
                     <p>
-                      <span className="text-gray-600">Triggered:</span>{' '}
+                      <span className="text-gray-600 dark:text-gray-200">Triggered:</span>{' '}
                       {formatDate(item.triggered_at)}
                     </p>
                     {item.acknowledged_at && (
                       <p>
-                        <span className="text-gray-600">Acknowledged:</span>{' '}
+                        <span className="text-gray-600 dark:text-gray-200">Acknowledged:</span>{' '}
                         {formatDate(item.acknowledged_at)}
                       </p>
                     )}
                     {item.resolved_at && (
                       <p>
-                        <span className="text-gray-600">Resolved:</span>{' '}
+                        <span className="text-gray-600 dark:text-gray-200">Resolved:</span>{' '}
                         {formatDate(item.resolved_at)}
                       </p>
                     )}
                     {item.gate_name && (
                       <p>
-                        <span className="text-gray-600">Gate:</span>{' '}
+                        <span className="text-gray-600 dark:text-gray-200">Gate:</span>{' '}
                         {item.gate_name}
                       </p>
                     )}
@@ -191,7 +191,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
                 {/* Response Time */}
                 {item.acknowledged_at && (
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Response time</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-300">Response time</p>
                     <p className="text-sm font-medium text-gray-700">
                       {Math.round((new Date(item.acknowledged_at) - new Date(item.triggered_at)) / 1000)}s
                     </p>
@@ -206,7 +206,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
       {/* Footer */}
       {history.length > 0 && (
         <div className="p-3 bg-gray-50 border-t border-gray-100 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-300">
             Showing last {history.length} emergency alerts
           </p>
         </div>

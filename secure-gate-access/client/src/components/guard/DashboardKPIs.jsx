@@ -150,7 +150,7 @@ const DashboardKPIs = ({ onFilterClick }) => {
             <div className={`text-3xl font-bold ${kpi.textColor} mb-1`}>
               {kpi.value}
             </div>
-            <div className="text-sm font-medium text-gray-600">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-200">
               {kpi.label}
             </div>
           </div>

@@ -74,7 +74,7 @@ const IncidentList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Incident Reports"
         subtitle="View and manage guard incident reports"
@@ -158,7 +158,7 @@ const IncidentList = () => {
           {incidents.length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <p className="text-gray-600">No incidents found</p>
+              <p className="text-gray-600 dark:text-gray-200">No incidents found</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -171,14 +171,14 @@ const IncidentList = () => {
                     <div className="flex items-start gap-3">
                       <div className="text-2xl">{getCategoryIcon(incident.category)}</div>
                       <div>
-                        <div className="font-medium text-gray-900 capitalize">
+                        <div className="font-medium text-gray-900 dark:text-white capitalize">
                           {incident.category.replace('_', ' ')}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-200">
                           {new Date(incident.created_at).toLocaleString()}
                         </div>
                         {incident.guard_name && (
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                             Reported by: {incident.guard_name}
                           </div>
                         )}
@@ -201,7 +201,7 @@ const IncidentList = () => {
                   </div>
 
                   {incident.visitor_name && (
-                    <div className="text-sm text-gray-600 mb-2">
+                    <div className="text-sm text-gray-600 dark:text-gray-200 mb-2">
                       Related to visitor: <strong>{incident.visitor_name}</strong>
                     </div>
                   )}
@@ -229,3 +229,4 @@ const IncidentList = () => {
 };
 
 export default IncidentList;
+

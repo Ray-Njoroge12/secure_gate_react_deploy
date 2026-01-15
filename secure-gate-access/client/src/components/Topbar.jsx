@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "./ui";
+import Modal from "./ui/Modal";
 import { useAuth } from "../contexts/AuthContext";
 import ThemeToggle from "./ui/ThemeToggle.jsx";
 import NotificationBell from "./ui/NotificationBell.jsx";
@@ -12,6 +13,9 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const [profilePic, setProfilePic] = useState(user?.profilePic || null);
   const navigate = useNavigate();
   const topbarRef = useRef(null);
+  const profileMenuRef = useRef(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const getRoleDisplayName = (role) => {
     const roleNames = {
@@ -44,13 +48,30 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
     }
   }, []);
 
+  // Click outside listener for profile menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   // Update profile pic when user changes
   useEffect(() => {
     setProfilePic(user?.profilePic || null);
   }, [user]);
 
   const handleProfileClick = () => {
-    if (role === "resident") navigate("/dashboard/resident/settings");
+    if (role === "resident") navigate("/resident/settings");
     else if (role === "guard") navigate("/dashboard/guard/settings");
     else if (role === "admin") navigate("/dashboard/admin/settings");
   };
@@ -66,7 +87,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
         {/* Mobile Menu Toggle Button */}
         <button
           onClick={onMenuToggle}
-          className="md:hidden p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          className="md:hidden p-2 text-gray-500 dark:text-slate-300 hover:text-gray-700 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={sidebarOpen}
           aria-controls="main-navigation"
@@ -101,50 +122,100 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
         {/* Notifications */}
         <NotificationBell />
         
-        <button
-          className="profile-btn focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
-          onClick={handleProfileClick}
-          aria-label={`Open ${getRoleDisplayName(role)} settings`}
-          title="Profile Settings"
-        >
-          <div className="w-10 h-10 relative">
-            <div className="w-full h-full rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-green-600 hover:border-green-500 transition-colors">
-              {(profilePic && profilePic !== "") ? (
-                <img 
-                  src={profilePic} 
-                  alt={`${getRoleDisplayName(role)} profile picture`} 
-                  className="w-full h-full object-cover rounded-full" 
-                />
-              ) : (
-                <svg 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  className="text-green-500"
-                  aria-hidden="true"
+        <div className="relative" ref={profileMenuRef}>
+          <button
+            className="profile-btn focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={`Open profile menu`}
+            aria-expanded={isMenuOpen}
+            aria-haspopup="true"
+            title="Profile Menu"
+          >
+            <div className="w-10 h-10 relative">
+              <div className="w-full h-full rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-green-600 hover:border-green-500 transition-colors">
+                {(profilePic && profilePic !== "") ? (
+                  <img 
+                    src={profilePic} 
+                    alt={`${getRoleDisplayName(role)} profile picture`} 
+                    className="w-full h-full object-cover rounded-full" 
+                  />
+                ) : (
+                  <svg 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    className="text-green-500"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" fill="none" />
+                    <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="2" fill="none" />
+                  </svg>
+                )}
+              </div>
+            </div>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleProfileClick(); // Navigates to settings
+                }}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                role="menuitem"
+              >
+                Profile Settings
+              </button>
+              {onLogout && (
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  role="menuitem"
                 >
-                  <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" fill="none" />
-                  <path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
+                  Logout
+                </button>
               )}
             </div>
-          </div>
-        </button>
-
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            className="p-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Logout from application"
-            title="Logout"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        title="Confirm Logout"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600 dark:text-slate-200">
+            Are you sure you want to log out?
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                setShowLogoutConfirm(false);
+                onLogout();
+              }}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </Modal>
     </header>
   );
 }

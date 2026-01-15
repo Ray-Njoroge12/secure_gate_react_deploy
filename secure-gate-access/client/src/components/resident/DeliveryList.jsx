@@ -112,7 +112,7 @@ const DeliveryList = () => {
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900">📦 My Deliveries</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">📦 My Deliveries</h2>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -133,7 +133,7 @@ const DeliveryList = () => {
 
       <div className="divide-y divide-gray-200">
         {deliveries.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">📭</span>
             <p className="mt-2">No deliveries found</p>
           </div>
@@ -143,17 +143,17 @@ const DeliveryList = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {delivery.carrier_name}
                     </span>
                     {getStatusBadge(delivery.status)}
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">
                     {delivery.package_description || 'Package'}
                     {' • '}
                     <span className="capitalize">{delivery.package_size}</span>
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                     Received: {formatDate(delivery.created_at)}
                   </p>
                   {delivery.collected_at && (
@@ -173,7 +173,7 @@ const DeliveryList = () => {
                   )}
                   {delivery.status === 'pending_collection' && (
                     <div className="flex flex-col items-end gap-2">
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 dark:text-gray-200">
                         Handoff: <span className="font-medium">{getHandoffLabel(delivery.handoff_preference)}</span>
                       </div>
 
@@ -197,7 +197,7 @@ const DeliveryList = () => {
                       )}
 
                       {delivery.handoff_preference && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-300">
                           You can change this later from the delivery details.
                         </div>
                       )}
@@ -219,7 +219,7 @@ const DeliveryList = () => {
       </div>
 
       {/* Privacy Notice */}
-      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
         <p>🔒 Privacy: Only you can see your deliveries. Photos auto-delete 30 days after collection.</p>
       </div>
     </div>

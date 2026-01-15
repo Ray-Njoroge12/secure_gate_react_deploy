@@ -115,10 +115,10 @@ const PendingDeliveries = () => {
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               📦 Pending Deliveries
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               {deliveries.length} package{deliveries.length !== 1 ? 's' : ''} awaiting collection
             </p>
           </div>
@@ -140,7 +140,7 @@ const PendingDeliveries = () => {
       {/* Deliveries List */}
       <div className="divide-y divide-gray-200">
         {deliveries.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">📭</span>
             <p className="mt-2">No pending deliveries</p>
           </div>
@@ -151,15 +151,15 @@ const PendingDeliveries = () => {
                 <div className="flex gap-3">
                   <span className="text-2xl">{getSizeIcon(delivery.packageSize)}</span>
                   <div>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-gray-900 dark:text-white">
                       {delivery.carrierName}
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-200">
                       For: <span className="font-medium">{delivery.recipientName}</span>
                       {' • '}
                       Unit: {delivery.recipientUnit}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                       Received {getTimeAgo(delivery.receivedAt)}
                       {' • '}
                       <span className="capitalize">{delivery.packageSize}</span> package
@@ -193,7 +193,7 @@ const PendingDeliveries = () => {
       </div>
 
       {/* Privacy Notice */}
-      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
         🔒 Tracking numbers and package details are visible only to recipients
       </div>
 
@@ -222,12 +222,12 @@ const RegisterDeliveryModal = ({ onClose, onSuccess }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Register New Delivery</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">
             ✕
           </button>
         </div>
         <div className="p-4">
-          <p className="text-gray-500 text-center">
+          <p className="text-gray-500 dark:text-gray-300 text-center">
             Use the full registration form for detailed entry
           </p>
           <button

@@ -85,8 +85,8 @@ const PendingApprovalsQueue = () => {
         <Card.Content>
           <div className="text-center py-8">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <p className="text-gray-600">No visitors waiting for approval</p>
-            <p className="text-sm text-gray-500 mt-1">All walk-ins have been processed</p>
+            <p className="text-gray-600 dark:text-gray-200">No visitors waiting for approval</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">All walk-ins have been processed</p>
           </div>
         </Card.Content>
       </Card>
@@ -112,16 +112,16 @@ const PendingApprovalsQueue = () => {
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <User className="w-4 h-4 text-gray-600" />
-                    <span className="font-semibold text-gray-900">{visitor.name}</span>
+                    <User className="w-4 h-4 text-gray-600 dark:text-gray-200" />
+                    <span className="font-semibold text-gray-900 dark:text-white">{visitor.name}</span>
                   </div>
                   {visitor.phone && (
-                    <div className="text-sm text-gray-600 ml-6">
+                    <div className="text-sm text-gray-600 dark:text-gray-200 ml-6">
                       📱 {visitor.phone}
                     </div>
                   )}
                   {visitor.purpose && (
-                    <div className="text-sm text-gray-600 ml-6 mt-1">
+                    <div className="text-sm text-gray-600 dark:text-gray-200 ml-6 mt-1">
                       💼 {visitor.purpose}
                     </div>
                   )}
@@ -131,7 +131,7 @@ const PendingApprovalsQueue = () => {
                   <Badge variant="warning" className="mb-1">
                     Waiting
                   </Badge>
-                  <div className="text-xs text-gray-600">
+                  <div className="text-xs text-gray-600 dark:text-gray-200">
                     {getTimeWaiting(visitor.approval_requested_at)}
                   </div>
                 </div>

@@ -100,8 +100,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Optimistic update: Clear state immediately for instant UI feedback
+    setUser(null);
+    authStateMachine.transition('UNAUTHENTICATED', { reason: 'logout' });
+
     try {
-      // Call logout endpoint to clear httpOnly cookies and server session
+      // Call logout endpoint to clear httpOnly cookies and server session in background
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
@@ -109,18 +113,12 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       logger.error('Logout error', error);
     }
-
-    // Clear in-memory auth state; no localStorage/sessionStorage usage
-    setUser(null);
-    authStateMachine.transition('UNAUTHENTICATED', { reason: 'logout' });
   };
 
   // Check if user has specific role
   const hasRole = (role) => {
     return user?.role === role;
   };
-
-  // Register new user
   const register = async (userData) => {
     setLoading(true);
     try {

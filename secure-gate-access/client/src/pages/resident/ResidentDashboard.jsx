@@ -174,29 +174,29 @@ const DashboardHome = () => {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* PHASE A1: Mobile-First Above-the-Fold Summary Card */}
-      <div className="md:hidden bg-white border-2 border-green-500 rounded-xl p-4 shadow-sm">
+      <div className="md:hidden bg-white dark:bg-slate-800 border-2 border-green-500 rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Today's Overview</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Today's Overview</h2>
           <span className="text-2xl">📊</span>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="bg-green-50 rounded-lg p-2">
             <div className="text-2xl font-bold text-green-600">{todayExpected}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-300">Expected</div>
+            <div className="text-xs text-gray-600 dark:text-gray-200">Expected</div>
           </div>
           <div className="bg-blue-50 rounded-lg p-2">
             <div className="text-2xl font-bold text-blue-600">{onPremises}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-300">On Site</div>
+            <div className="text-xs text-gray-600 dark:text-gray-200">On Site</div>
           </div>
           <div className="bg-amber-50 rounded-lg p-2">
             <div className="text-2xl font-bold text-amber-600">{todayActive}</div>
-            <div className="text-xs text-gray-600 dark:text-gray-300">Checked In</div>
+            <div className="text-xs text-gray-600 dark:text-gray-200">Checked In</div>
           </div>
         </div>
         {/* Mobile Customize Button */}
         <button
           onClick={() => setShowWidgetCustomizer(true)}
-          className="mt-3 flex items-center justify-center gap-2 w-full py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          className="mt-3 flex items-center justify-center gap-2 w-full py-2 text-sm text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
         >
           <SettingsIcon className="w-4 h-4" />
           Customize Dashboard
@@ -206,14 +206,14 @@ const DashboardHome = () => {
       {/* Hero Section with Gradient Background - Desktop */}
       <div 
         data-tour="dashboard-stats"
-        className="hidden md:block bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-xl p-8 mb-6"
+        className="hidden md:block bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-8 mb-6"
       >
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
               Welcome back! 👋
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
+            <p className="text-lg text-gray-600 dark:text-gray-200">
               {upcomingInvites.length > 0 
                 ? `You have ${upcomingInvites.length} upcoming visitor${upcomingInvites.length > 1 ? 's' : ''} this week`
                 : 'Manage your visitor invitations and access'}
@@ -221,7 +221,7 @@ const DashboardHome = () => {
           </div>
           <button
             onClick={() => setShowWidgetCustomizer(true)}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors border border-green-200 dark:border-slate-600"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-100 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors border border-green-200 dark:border-slate-600"
             title="Customize dashboard widgets"
           >
             <SettingsIcon className="w-4 h-4" />
@@ -233,10 +233,10 @@ const DashboardHome = () => {
         {isWidgetVisible('stats') && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsData.map((stat, index) => (
-            <div key={index} className="bg-white/80 backdrop-blur-sm border border-green-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="text-2xl mb-1">{stat.icon}</div>
               <div className="text-3xl font-bold text-green-600">{stat.value}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">{stat.label}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-200">{stat.label}</div>
             </div>
           ))}
         </div>
@@ -267,10 +267,10 @@ const DashboardHome = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Upcoming Invites */}
         {isWidgetVisible('upcoming-invites') && (
-        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <Card.Content className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-900">Upcoming Invites</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Upcoming Invites</h2>
               {upcomingInvites.length > 0 && (
                 <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                   🟢 {upcomingInvites.length} active
@@ -289,8 +289,8 @@ const DashboardHome = () => {
               {upcomingInvites.map(invite => (
                 <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 border-l-4 border-green-500 rounded-lg hover:bg-gray-100 transition-colors">
                   <div>
-                    <div className="font-medium text-gray-900">👤 {invite.name}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300">📅 {invite.time}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">👤 {invite.name}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-200">📅 {invite.time}</div>
                   </div>
                   <div className="flex gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -300,7 +300,7 @@ const DashboardHome = () => {
                     }`}>
                       {invite.status}
                     </span>
-                    <button className="text-gray-500 hover:text-gray-700 px-2">
+                    <button className="text-gray-500 dark:text-gray-300 hover:text-gray-700 px-2">
                       <span className="text-sm">View</span>
                     </button>
                   </div>
@@ -314,11 +314,11 @@ const DashboardHome = () => {
 
         {/* Recent Visitors */}
         {isWidgetVisible('recent-visitors') && (
-        <Card className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
           <Card.Content className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-900">Recent Visitors</h2>
-              <span className="text-gray-500 hover:text-gray-700 cursor-pointer font-medium text-sm">📊 View All →</span>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
+              <span className="text-gray-500 dark:text-gray-300 hover:text-gray-700 cursor-pointer font-medium text-sm">📊 View All →</span>
             </div>
             
             {loading ? (
@@ -330,10 +330,10 @@ const DashboardHome = () => {
               {recentVisitors.map(visitor => (
                 <div key={visitor.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border-l-4 border-gray-300 hover:bg-gray-100 transition-colors">
                   <div>
-                    <div className="font-medium text-gray-900">👤 {visitor.name}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">👤 {visitor.name}</div>
                     <div className="text-sm text-green-600">✅ Checked in</div>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300">🕐 {visitor.checkedInAt}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-200">🕐 {visitor.checkedInAt}</div>
                 </div>
               ))}
             </div>
@@ -373,11 +373,11 @@ const DashboardHome = () => {
       {/* PHASE A3: Clarified Quick Actions - Mobile Optimized */}
       {isWidgetVisible('quick-actions') && (
       <div data-tour="quick-actions" className="mt-6 md:mt-8">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3 md:mb-4">Quick Actions</h2>
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {/* Visitor Approvals - Highlighted */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 relative"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-900/20 border-2 border-green-200 dark:border-green-800/50 relative"
           onClick={() => navigateTo('/resident/approvals')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
@@ -386,8 +386,8 @@ const DashboardHome = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Approvals</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Walk-in visitors</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Approvals</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Walk-in visitors</p>
             <span className="absolute top-2 right-2 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-medium">
               NEW
             </span>
@@ -397,7 +397,7 @@ const DashboardHome = () => {
         {/* Bulk Invite */}
         <Card 
           data-tour="bulk-invite"
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
           onClick={() => navigateTo('/resident/bulk-invite')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
@@ -406,14 +406,14 @@ const DashboardHome = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Bulk Invite</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Multiple guests</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Bulk Invite</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Multiple guests</p>
           </Card.Content>
         </Card>
 
         {/* Visitor History */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
           onClick={() => navigateTo('/resident/visitor-history')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
@@ -422,39 +422,39 @@ const DashboardHome = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">History</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Past visits</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">History</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Past visits</p>
           </Card.Content>
         </Card>
 
         {/* Settings */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
           onClick={() => navigateTo('/resident/settings')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <svg className="w-6 h-6 md:w-7 md:h-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 md:w-7 md:h-7 text-gray-600 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Settings</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Manage</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Settings</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Manage</p>
           </Card.Content>
         </Card>
 
         {/* Phase 2.1: My Deliveries */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
           onClick={() => navigateTo('/resident/deliveries')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
               <span className="text-2xl">📦</span>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">My Deliveries</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Track packages</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">My Deliveries</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Track packages</p>
             <span className="absolute top-2 right-2 px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full font-medium">
               NEW
             </span>
@@ -463,15 +463,15 @@ const DashboardHome = () => {
 
         {/* Phase 2.2: Auto-Approval Rules */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
           onClick={() => navigateTo('/resident/auto-approval')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
               <span className="text-2xl">🤖</span>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Auto-Approval</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Trusted visitors</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Auto-Approval</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Trusted visitors</p>
             <span className="absolute top-2 right-2 px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full font-medium">
               NEW
             </span>
@@ -480,15 +480,15 @@ const DashboardHome = () => {
 
         {/* Phase 3: Privacy Dashboard */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
           onClick={() => navigateTo('/resident/privacy')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
               <span className="text-2xl">🔒</span>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Privacy</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Your data & rights</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Privacy</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Your data & rights</p>
             <span className="absolute top-2 right-2 px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full font-medium">
               NEW
             </span>
@@ -498,15 +498,15 @@ const DashboardHome = () => {
         {/* Phase 4: Favorite Visitors */}
         <Card 
           data-tour="favorites"
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white border border-gray-200 relative"
+          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
           onClick={() => navigateTo('/resident/favorites')}
         >
           <Card.Content className="p-4 md:p-6 text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-pink-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
               <span className="text-2xl">⭐</span>
             </div>
-            <h3 className="font-semibold text-gray-900 text-sm md:text-base">Favorites</h3>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 hidden md:block">Quick-invite list</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Favorites</h3>
+            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Quick-invite list</p>
             <span className="absolute top-2 right-2 px-2 py-0.5 bg-pink-500 text-white text-xs rounded-full font-medium">
               NEW
             </span>
@@ -537,6 +537,8 @@ export default function ResidentDashboard() {
     navigate("/login");
   };
   
+
+
   const location = useLocation();
   let panel = <DashboardHome />;
   
@@ -564,7 +566,7 @@ export default function ResidentDashboard() {
       />
       
       {/* Phase 3: Offline Indicator */}
-      <OfflineIndicator position="top-right" />
+
       
       {/* Phase 3: Community Announcements */}
       <AnnouncementsBanner showDismiss={true} className="mb-4" />

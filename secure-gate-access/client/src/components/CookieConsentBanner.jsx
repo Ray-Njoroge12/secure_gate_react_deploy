@@ -135,7 +135,7 @@ const CookieConsentBanner = () => {
             <div className="flex-1 space-y-4">
               <div>
                 <h3 className="text-lg font-semibold">Cookie Consent</h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-gray-200">
                   We use cookies to enhance your experience, analyze site traffic, and personalize content. 
                   By clicking "Accept All", you consent to our use of cookies. You can customize your 
                   preferences or learn more in our{' '}
@@ -180,7 +180,7 @@ const CookieConsentBanner = () => {
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Necessary Cookies</Label>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-gray-200">
                           Essential for the website to function properly
                         </p>
                       </div>
@@ -194,7 +194,7 @@ const CookieConsentBanner = () => {
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Analytics Cookies</Label>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-gray-200">
                           Help us understand how visitors interact with our website
                         </p>
                       </div>
@@ -207,7 +207,7 @@ const CookieConsentBanner = () => {
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Marketing Cookies</Label>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-gray-200">
                           Used to deliver relevant advertisements and marketing campaigns
                         </p>
                       </div>
@@ -220,7 +220,7 @@ const CookieConsentBanner = () => {
                     <div className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Preference Cookies</Label>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 dark:text-gray-200">
                           Remember your preferences and settings
                         </p>
                       </div>

@@ -119,8 +119,8 @@ const RecurringPasses = () => {
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">🔄 Recurring Passes</h2>
-            <p className="text-sm text-gray-500">Manage access for daily workers & regular visitors</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🔄 Recurring Passes</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Manage access for daily workers & regular visitors</p>
           </div>
           <div className="flex gap-2">
             <select
@@ -150,7 +150,7 @@ const RecurringPasses = () => {
 
       <div className="divide-y divide-gray-200">
         {passes.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">🔑</span>
             <p className="mt-2">No recurring passes yet</p>
             <p className="text-sm">Create a pass for regular visitors like housekeepers or caregivers</p>
@@ -165,12 +165,12 @@ const RecurringPasses = () => {
                     <span className="text-2xl">{typeInfo.icon}</span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{pass.visitor_name}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{pass.visitor_name}</span>
                         {getStatusBadge(pass.status)}
                       </div>
-                      <p className="text-sm text-gray-600">{typeInfo.label}</p>
-                      {pass.purpose && <p className="text-sm text-gray-500">{pass.purpose}</p>}
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
+                      <p className="text-sm text-gray-600 dark:text-gray-200">{typeInfo.label}</p>
+                      {pass.purpose && <p className="text-sm text-gray-500 dark:text-gray-300">{pass.purpose}</p>}
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-300">
                         <span>📅 {formatDate(pass.valid_from)} - {formatDate(pass.valid_until)}</span>
                         <span>⏰ {pass.allowed_time_start} - {pass.allowed_time_end}</span>
                         {pass.total_entries > 0 && <span>🚪 {pass.total_entries} entries</span>}
@@ -221,7 +221,7 @@ const RecurringPasses = () => {
         )}
       </div>
 
-      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
         🔒 Passes are validated by PIN or QR code. You can suspend or revoke access at any time.
       </div>
 
@@ -298,7 +298,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Create Recurring Pass</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
@@ -474,38 +474,38 @@ const PassDetailsModal = ({ pass, onClose }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Pass Details</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</button>
         </div>
 
         <div className="p-4">
           <div className="text-center mb-4">
             <p className="text-lg font-medium">{pass.visitor_name}</p>
-            <p className="text-gray-500">{pass.pass_type}</p>
+            <p className="text-gray-500 dark:text-gray-300">{pass.pass_type}</p>
           </div>
 
           <div className="bg-gray-100 p-4 rounded-lg text-center mb-4">
-            <p className="text-sm text-gray-600 mb-2">Access PIN</p>
+            <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">Access PIN</p>
             <p className="text-3xl font-mono font-bold tracking-wider">{pass.access_pin}</p>
           </div>
 
           <div className="bg-gray-100 p-4 rounded-lg text-center mb-4">
-            <p className="text-sm text-gray-600 mb-2">QR Token</p>
+            <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">QR Token</p>
             <p className="text-xs font-mono break-all">{pass.qr_code_token}</p>
-            <p className="text-xs text-gray-500 mt-2">Guards can scan this QR code for entry</p>
+            <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">Guards can scan this QR code for entry</p>
           </div>
 
           <div className="mt-4">
             <h4 className="font-medium mb-2">Recent Entries</h4>
             {loadingHistory ? (
-              <p className="text-gray-500 text-sm">Loading...</p>
+              <p className="text-gray-500 dark:text-gray-300 text-sm">Loading...</p>
             ) : history.length === 0 ? (
-              <p className="text-gray-500 text-sm">No entries recorded yet</p>
+              <p className="text-gray-500 dark:text-gray-300 text-sm">No entries recorded yet</p>
             ) : (
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {history.slice(0, 10).map((entry, idx) => (
                   <div key={idx} className="text-sm flex justify-between">
                     <span>{new Date(entry.checked_in_at).toLocaleString()}</span>
-                    <span className="text-gray-500">{entry.entry_method}</span>
+                    <span className="text-gray-500 dark:text-gray-300">{entry.entry_method}</span>
                   </div>
                 ))}
               </div>

@@ -167,8 +167,8 @@ const AnnouncementsAdmin = ({ className = '' }) => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Community Announcements</h2>
-          <p className="text-sm text-gray-500">Manage announcements for residents and guards</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Community Announcements</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-300">Manage announcements for residents and guards</p>
         </div>
         <button
           onClick={() => {
@@ -184,9 +184,9 @@ const AnnouncementsAdmin = ({ className = '' }) => {
       {/* Announcements List */}
       <div className="divide-y divide-gray-200">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading announcements...</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">Loading announcements...</div>
         ) : announcements.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <p className="text-lg">📢 No announcements yet</p>
             <p className="mt-1 text-sm">Create your first announcement to get started</p>
           </div>
@@ -199,7 +199,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-medium text-gray-900">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                       {announcement.title}
                     </h3>
                     <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityBadge(announcement.priority)}`}>
@@ -209,15 +209,15 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                       <span className="text-xs">📌</span>
                     )}
                     {isExpired(announcement.expires_at) && (
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 text-gray-600">
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 text-gray-600 dark:text-gray-200">
                         Expired
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-200 line-clamp-2">
                     {announcement.content}
                   </p>
-                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-300">
                     <span>Audience: {announcement.target_audience}</span>
                     <span>Created: {new Date(announcement.created_at).toLocaleDateString()}</span>
                     {announcement.read_count !== undefined && (
@@ -258,7 +258,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {editingAnnouncement ? 'Edit Announcement' : 'Create Announcement'}
               </h3>
             </div>
@@ -338,7 +338,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-300">
                   Privacy: No individual targeting allowed. Only role-based groups.
                 </p>
               </div>

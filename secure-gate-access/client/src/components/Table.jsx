@@ -61,14 +61,14 @@ export default function Table({ headers = [], rows = [], mobileCardView = true, 
   // Theme-aware class mappings
   const themeClasses = {
     panel: 'bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden',
-    headerCell: 'px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider bg-gray-50 dark:bg-slate-900/50',
+    headerCell: 'px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider bg-gray-50 dark:bg-slate-900/50',
     bodyDivider: 'divide-y divide-gray-200 dark:divide-slate-700',
     row: 'hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors',
     cell: 'px-4 py-3 text-sm text-gray-700 dark:text-slate-200',
     mobileCard: 'bg-gray-50 dark:bg-slate-700/30 rounded-lg p-4 border border-gray-200 dark:border-slate-600',
-    mobileLabel: 'text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider',
+    mobileLabel: 'text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider',
     mobileValue: 'text-sm text-gray-900 dark:text-slate-200 text-right max-w-[60%] break-words',
-    emptyText: 'text-gray-500 dark:text-slate-400',
+    emptyText: 'text-gray-500 dark:text-slate-300',
   };
 
   // Loading state

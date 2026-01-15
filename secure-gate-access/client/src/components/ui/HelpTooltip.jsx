@@ -55,7 +55,7 @@ const PlayIcon = () => (
 
 // Keyboard shortcut badge
 const KeyboardBadge = ({ shortcut }) => (
-  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
     {shortcut}
   </kbd>
 );
@@ -94,7 +94,7 @@ const HelpTooltip = ({
   position = 'top',
   showIcon = true,
   iconSize = 16,
-  iconClassName = 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help',
+  iconClassName = 'text-gray-400 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300 cursor-help',
   triggerOnClick = false,
   dismissable = false,
   dismissKey,

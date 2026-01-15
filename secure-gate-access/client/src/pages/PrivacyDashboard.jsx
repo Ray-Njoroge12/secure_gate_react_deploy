@@ -147,12 +147,12 @@ const PrivacyDashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">🔒 Privacy & Data Control</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🔒 Privacy & Data Control</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-200">
             Manage your personal data in compliance with Kenya Data Protection Act 2019
           </p>
         </div>
@@ -181,7 +181,7 @@ const PrivacyDashboard = () => {
                   className={`flex-1 py-4 px-6 text-center font-medium text-sm border-b-2 transition-colors ${
                     activeTab === tab
                       ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300'
+                      : 'border-transparent text-gray-600 dark:text-gray-200 hover:text-gray-800 hover:border-gray-300'
                   }`}
                 >
                   {tab === 'overview' && '📊 Overview'}
@@ -209,8 +209,8 @@ const PrivacyDashboard = () => {
                         </div>
                       </div>
                       <div className="ml-4 flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">Export Your Data</h3>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Export Your Data</h3>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-200">
                           Download all your personal data in JSON format (Kenya DPA Article 39 - Data Portability)
                         </p>
                         <button
@@ -235,8 +235,8 @@ const PrivacyDashboard = () => {
                         </div>
                       </div>
                       <div className="ml-4 flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">Delete Account</h3>
-                        <p className="mt-1 text-sm text-gray-600">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Delete Account</h3>
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-200">
                           Permanently delete your account and all associated data (Kenya DPA Article 33 - Right to Erasure)
                         </p>
                         <button
@@ -253,25 +253,25 @@ const PrivacyDashboard = () => {
                 {/* Data Summary */}
                 {myData && (
                   <div className="bg-gray-50 rounded-lg p-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Your Data Summary</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Your Data Summary</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-white p-4 rounded-lg">
                         <p className="text-2xl font-bold text-blue-600">{myData.visitorRecordsCreated || 0}</p>
-                        <p className="text-sm text-gray-600">Visitor Records</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-200">Visitor Records</p>
                       </div>
                       <div className="bg-white p-4 rounded-lg">
                         <p className="text-2xl font-bold text-green-600">{myData.recentAccessLogs || 0}</p>
-                        <p className="text-sm text-gray-600">Access Logs</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-200">Access Logs</p>
                       </div>
                       <div className="bg-white p-4 rounded-lg">
                         <p className="text-2xl font-bold text-purple-600">{myData.dataCategories?.length || 0}</p>
-                        <p className="text-sm text-gray-600">Data Categories</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-200">Data Categories</p>
                       </div>
                       <div className="bg-white p-4 rounded-lg">
                         <p className="text-2xl font-bold text-orange-600">
                           {myData.user?.createdAt ? new Date(myData.user.createdAt).toLocaleDateString() : 'N/A'}
                         </p>
-                        <p className="text-sm text-gray-600">Member Since</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-200">Member Since</p>
                       </div>
                     </div>
                   </div>
@@ -297,23 +297,23 @@ const PrivacyDashboard = () => {
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-2">Account Information</h3>
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">Account Information</h3>
                   <dl className="space-y-2">
                     <div className="flex justify-between">
-                      <dt className="text-sm text-gray-600">Username:</dt>
-                      <dd className="text-sm font-medium text-gray-900">{myData.user?.username}</dd>
+                      <dt className="text-sm text-gray-600 dark:text-gray-200">Username:</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white">{myData.user?.username}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-sm text-gray-600">Email:</dt>
-                      <dd className="text-sm font-medium text-gray-900">{myData.user?.email}</dd>
+                      <dt className="text-sm text-gray-600 dark:text-gray-200">Email:</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white">{myData.user?.email}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-sm text-gray-600">Role:</dt>
-                      <dd className="text-sm font-medium text-gray-900">{myData.user?.role}</dd>
+                      <dt className="text-sm text-gray-600 dark:text-gray-200">Role:</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white">{myData.user?.role}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-sm text-gray-600">Last Login:</dt>
-                      <dd className="text-sm font-medium text-gray-900">
+                      <dt className="text-sm text-gray-600 dark:text-gray-200">Last Login:</dt>
+                      <dd className="text-sm font-medium text-gray-900 dark:text-white">
                         {myData.user?.lastLogin ? new Date(myData.user.lastLogin).toLocaleString() : 'Never'}
                       </dd>
                     </div>
@@ -321,8 +321,8 @@ const PrivacyDashboard = () => {
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-2">Data Retention Policy</h3>
-                  <p className="text-sm text-gray-600">{myData.dataRetentionPolicy}</p>
+                  <h3 className="font-medium text-gray-900 dark:text-white mb-2">Data Retention Policy</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-200">{myData.dataRetentionPolicy}</p>
                 </div>
               </div>
             )}
@@ -334,8 +334,8 @@ const PrivacyDashboard = () => {
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{consent.type}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{consent.description}</p>
+                        <h3 className="font-medium text-gray-900 dark:text-white">{consent.type}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">{consent.description}</p>
                         <div className="mt-2 flex items-center text-xs">
                           <span className={`px-2 py-1 rounded ${consent.granted ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                             {consent.granted ? '✓ Granted' : '○ Not Granted'}
@@ -378,8 +378,8 @@ const PrivacyDashboard = () => {
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-medium text-gray-900">{policy.table_name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h3 className="font-medium text-gray-900 dark:text-white">{policy.table_name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">
                           Retained for {policy.retention_days} days
                         </p>
                         {policy.encryption_required && (
@@ -392,7 +392,7 @@ const PrivacyDashboard = () => {
                         {policy.auto_delete ? (
                           <span className="text-xs text-green-600">Auto-delete enabled</span>
                         ) : (
-                          <span className="text-xs text-gray-600">Manual deletion required</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-200">Manual deletion required</span>
                         )}
                       </div>
                     </div>
@@ -400,7 +400,7 @@ const PrivacyDashboard = () => {
                 ))}
 
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-200">
                     For questions about data retention, contact: {retentionPolicy.contactEmail}
                   </p>
                 </div>
@@ -414,7 +414,7 @@ const PrivacyDashboard = () => {
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Request Account Deletion</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Request Account Deletion</h3>
             
             <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
               <p className="text-sm text-red-700">
@@ -475,3 +475,4 @@ const PrivacyDashboard = () => {
 };
 
 export default PrivacyDashboard;
+

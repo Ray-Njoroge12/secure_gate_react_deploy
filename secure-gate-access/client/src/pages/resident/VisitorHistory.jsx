@@ -3,6 +3,8 @@ import logger from 'utils/logger';
 import { Button, SearchFilter, SearchResults, Pagination, ResponsiveTable, Card, PageHeader } from "../../components/ui";
 import { RefreshCw, Download, Filter, Clock } from "lucide-react";
 import { useSearchData } from "../../hooks/useSearch";
+import AppShell from "../../layouts/AppShell";
+import { useCurrentRole } from "../../hooks/useCurrentRole";
 
 function mask(value) {
   if (!value) return "";
@@ -223,8 +225,8 @@ export default function VisitorHistory() {
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">{visitor.name}</h3>
-          <p className="text-sm text-gray-600">📱 {visitor.phone || 'No phone'}</p>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{visitor.name}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-200">📱 {visitor.phone || 'No phone'}</p>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
           visitor.status === 'checked_in' ? 'bg-green-100 text-green-800' :
@@ -236,7 +238,7 @@ export default function VisitorHistory() {
         </span>
       </div>
       
-      <div className="space-y-1 text-sm text-gray-600">
+      <div className="space-y-1 text-sm text-gray-600 dark:text-gray-200">
         <div className="flex items-center gap-2">
           <span className="text-gray-400">📅</span>
           <span>{new Date(visitor.check_in).toLocaleDateString()}</span>
@@ -262,8 +264,11 @@ export default function VisitorHistory() {
     </div>
   );
 
+  const role = useCurrentRole();
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell role={role}>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Visitor History"
         subtitle="View and manage visitor records"
@@ -402,6 +407,8 @@ export default function VisitorHistory() {
         </div>
       )}
       </div>
-    </div>
+      </div>
+    </AppShell>
   );
 }
+

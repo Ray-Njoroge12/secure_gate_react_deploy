@@ -95,7 +95,7 @@ const Pagination = ({
           return (
             <span
               key={`ellipsis-${index}`}
-              className="px-2 py-1 text-gray-500"
+              className="px-2 py-1 text-gray-500 dark:text-gray-300"
             >
               <MoreHorizontal className="h-4 w-4" />
             </span>

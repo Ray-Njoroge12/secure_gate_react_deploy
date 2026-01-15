@@ -66,7 +66,7 @@ const Input = memo(({
   return (
     <div className="space-y-1">
       {label && (
-        <label htmlFor={id} className="block text-sm sm:text-base font-medium text-gray-700 dark:text-slate-300">
+        <label htmlFor={id} className="block text-sm sm:text-base font-medium text-gray-700 dark:text-slate-200">
           {label}
           {required && <span className="text-red-500 dark:text-red-400 ml-1" aria-label="required">*</span>}
         </label>
@@ -75,14 +75,14 @@ const Input = memo(({
       <div className="relative">
         {icon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span className="text-gray-400 dark:text-slate-400">{icon}</span>
+            <span className="text-gray-400 dark:text-slate-300">{icon}</span>
           </div>
         )}
         
         <input
           ref={inputRef}
           id={id}
-          className={`${inputClasses} ${icon ? 'pl-10' : ''}`}
+          className={`${inputClasses} ${icon ? '!pl-11' : ''}`}
           aria-label={ariaLabel || (label ? undefined : props.placeholder)}
           aria-describedby={ariaDescribedby || (error ? `${id}-error` : helperText ? `${id}-helper` : undefined)}
           aria-invalid={ariaInvalid || (error ? 'true' : 'false')}
@@ -98,7 +98,7 @@ const Input = memo(({
       )}
       
       {helperText && !error && (
-        <p id={`${id}-helper`} className="text-sm text-gray-500 dark:text-slate-400">
+        <p id={`${id}-helper`} className="text-sm text-gray-500 dark:text-slate-300">
           {helperText}
         </p>
       )}

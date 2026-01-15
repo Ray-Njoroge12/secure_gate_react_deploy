@@ -117,10 +117,10 @@ const MFAVerify = () => {
             <div className="mb-6 text-center">
               {!useBackupCode ? (
                 <>
-                  <p className="text-gray-700 dark:text-gray-300 mb-2">
+                  <p className="text-gray-700 dark:text-gray-200 mb-2">
                     Open your authenticator app and enter the 6-digit code
                   </p>
-                  <div className="flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center justify-center text-xs text-gray-500 dark:text-gray-300">
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -128,7 +128,7 @@ const MFAVerify = () => {
                   </div>
                 </>
               ) : (
-                <p className="text-gray-700 dark:text-gray-300">
+                <p className="text-gray-700 dark:text-gray-200">
                   Enter one of your 8-character backup codes
                 </p>
               )}
@@ -194,7 +194,7 @@ const MFAVerify = () => {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="w-full text-center text-sm text-gray-600 hover:text-gray-800 hover:underline transition-colors"
+                className="w-full text-center text-sm text-gray-600 dark:text-gray-200 hover:text-gray-800 hover:underline transition-colors"
               >
                 ← Back to login
               </button>
@@ -202,7 +202,7 @@ const MFAVerify = () => {
 
             {/* Security Info */}
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="flex items-start space-x-3 text-xs text-gray-600">
+              <div className="flex items-start space-x-3 text-xs text-gray-600 dark:text-gray-200">
                 <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -216,7 +216,7 @@ const MFAVerify = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-200">
           <p>
             Need help?{' '}
             <a href="/support" className="text-blue-600 hover:text-blue-800 hover:underline">

@@ -157,13 +157,13 @@ const SavePassModal = ({
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Save Your Pass</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Save Your Pass</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -180,7 +180,7 @@ const SavePassModal = ({
               <div className="inline-block px-4 py-1 bg-green-600 text-white text-sm font-semibold rounded-full mb-2">
                 VISITOR PASS
               </div>
-              <h3 className="text-xl font-bold text-gray-900">{passContent.estateName}</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{passContent.estateName}</h3>
             </div>
 
             {/* QR Code */}
@@ -198,36 +198,36 @@ const SavePassModal = ({
             {/* Pass Details */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between py-1 border-b border-gray-200">
-                <span className="text-gray-600">Visitor</span>
-                <span className="font-semibold text-gray-900">{passContent.visitorName}</span>
+                <span className="text-gray-600 dark:text-gray-200">Visitor</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{passContent.visitorName}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-gray-200">
-                <span className="text-gray-600">Host</span>
-                <span className="font-semibold text-gray-900">{passContent.hostName}</span>
+                <span className="text-gray-600 dark:text-gray-200">Host</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{passContent.hostName}</span>
               </div>
               {passContent.hostUnit && (
                 <div className="flex justify-between py-1 border-b border-gray-200">
-                  <span className="text-gray-600">Unit</span>
-                  <span className="font-semibold text-gray-900">{passContent.hostUnit}</span>
+                  <span className="text-gray-600 dark:text-gray-200">Unit</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{passContent.hostUnit}</span>
                 </div>
               )}
               <div className="flex justify-between py-1 border-b border-gray-200">
-                <span className="text-gray-600">Date</span>
-                <span className="font-semibold text-gray-900">{passContent.visitDate}</span>
+                <span className="text-gray-600 dark:text-gray-200">Date</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{passContent.visitDate}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-gray-200">
-                <span className="text-gray-600">Time</span>
-                <span className="font-semibold text-gray-900">{passContent.visitTime}</span>
+                <span className="text-gray-600 dark:text-gray-200">Time</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{passContent.visitTime}</span>
               </div>
               <div className="flex justify-between py-1">
-                <span className="text-gray-600">Purpose</span>
-                <span className="font-semibold text-gray-900">{passContent.purpose}</span>
+                <span className="text-gray-600 dark:text-gray-200">Purpose</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{passContent.purpose}</span>
               </div>
             </div>
 
             {/* Pass Footer */}
             <div className="mt-4 pt-3 border-t border-gray-200 text-center">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-300">
                 Valid until: {passContent.expiresAt}
               </p>
               <p className="text-xs text-gray-400 mt-1">
@@ -246,7 +246,7 @@ const SavePassModal = ({
               className={`p-3 rounded-xl border-2 transition-colors flex flex-col items-center ${
                 saveFormat === 'image'
                   ? 'border-green-500 bg-green-50 text-green-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:text-gray-200'
               }`}
             >
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +261,7 @@ const SavePassModal = ({
               className={`p-3 rounded-xl border-2 transition-colors flex flex-col items-center ${
                 saveFormat === 'pdf'
                   ? 'border-green-500 bg-green-50 text-green-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:text-gray-200'
               }`}
             >
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,7 +325,7 @@ const SavePassModal = ({
           
           <button
             onClick={onClose}
-            className="w-full mt-2 text-gray-600 hover:text-gray-800 font-medium py-2 transition-colors"
+            className="w-full mt-2 text-gray-600 dark:text-gray-200 hover:text-gray-800 font-medium py-2 transition-colors"
           >
             Cancel
           </button>

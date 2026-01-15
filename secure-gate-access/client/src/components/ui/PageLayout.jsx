@@ -90,8 +90,8 @@ export const PageSection = ({
     {(title || actions) && (
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
-          {title && <h2 className="text-lg font-semibold text-gray-900">{title}</h2>}
-          {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+          {title && <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>}
+          {subtitle && <p className="text-sm text-gray-500 dark:text-gray-300 mt-0.5">{subtitle}</p>}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>

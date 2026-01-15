@@ -136,7 +136,7 @@ export default function LoginPage() {
           else if (result.user.role === "resident") navigate("/dashboard/resident");
           else navigate("/");
         }
-      }, 1500);
+      }, 100);
     } catch (err) {
       handleError(err, { 
         context: 'Login',
@@ -228,7 +228,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             {showForgot ? "Reset Password" : "Welcome Back"}
           </h1>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-gray-600 dark:text-gray-200">
             {showForgot 
               ? "Enter your email and we'll send you a reset link" 
               : "Sign in to your SecureGate account"}
@@ -270,7 +270,7 @@ export default function LoginPage() {
                 
                 <button
                   type="button"
-                  className="w-full text-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 text-sm font-medium py-2 transition-colors"
+                  className="w-full text-center text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:text-white dark:hover:text-gray-100 text-sm font-medium py-2 transition-colors"
                   onClick={() => {
                     setShowForgot(false);
                     setEmailError("");
@@ -319,7 +319,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors p-2 -m-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="text-gray-400 hover:text-gray-600 dark:text-gray-200 transition-colors p-2 -m-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
@@ -366,7 +366,7 @@ export default function LoginPage() {
                 </GradientButton>
 
                 {/* Security Features */}
-                <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 dark:text-gray-300">
                   <span className="flex items-center">
                     <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
                     SSL Secured
@@ -384,7 +384,7 @@ export default function LoginPage() {
         {/* Sign Up Link */}
         {!showForgot && (
           <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <span className="text-sm text-gray-600 dark:text-gray-300">
+            <span className="text-sm text-gray-600 dark:text-gray-200">
               Don't have an account?{" "}
               <Link 
                 to="/register" 
@@ -398,7 +398,7 @@ export default function LoginPage() {
 
         {/* Keyboard Shortcuts Hint */}
         <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-gray-500 dark:text-gray-300">
             💡 Press{" "}
             <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded">
               Ctrl

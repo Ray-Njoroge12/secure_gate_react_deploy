@@ -142,7 +142,7 @@ const ManualCheck = () => {
   // Removed getStatusColor - now using consistent statusColors utility
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Manual Check"
         subtitle="Search and verify visitors manually"
@@ -189,7 +189,7 @@ const ManualCheck = () => {
           <Card.Header>
             <Card.Title className="flex items-center">
               <span className="text-lg md:text-xl">Search Results</span>
-              <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
+              <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-600 dark:text-gray-200 text-sm rounded-full">
                 {searchResults.length}
               </span>
             </Card.Title>
@@ -202,15 +202,15 @@ const ManualCheck = () => {
                   {/* Header with Status */}
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 text-base md:text-lg truncate">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-base md:text-lg truncate">
                         {visitor.name}
                       </h3>
                       <div className="space-y-1 mt-1">
-                        <p className="text-sm text-gray-600 flex items-center">
+                        <p className="text-sm text-gray-600 dark:text-gray-200 flex items-center">
                           <span className="mr-2">📱</span>
                           {visitor.phone || 'No phone'}
                         </p>
-                        <p className="text-xs md:text-sm text-gray-500 flex items-center">
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-300 flex items-center">
                           <span className="mr-2">🎫</span>
                           Code: <span className="font-mono ml-1">{visitor.invite_code}</span>
                         </p>
@@ -230,7 +230,7 @@ const ManualCheck = () => {
                         </p>
                       )}
                       {visitor.purpose && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-200">
                           <span className="font-medium">📝 Purpose:</span> {visitor.purpose}
                         </p>
                       )}
@@ -265,7 +265,7 @@ const ManualCheck = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-full md:w-auto text-gray-600 hover:bg-gray-100"
+                      className="w-full md:w-auto text-gray-600 dark:text-gray-200 hover:bg-gray-100"
                       onClick={() => setIncidentModal({ isOpen: true, visitor })}
                     >
                       <span className="mr-1">⚠️</span>
@@ -285,7 +285,7 @@ const ManualCheck = () => {
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p className="text-gray-500 mt-2">No visitors found matching "{searchTerm}"</p>
+            <p className="text-gray-500 dark:text-gray-300 mt-2">No visitors found matching "{searchTerm}"</p>
           </Card.Content>
         </Card>
       )}
@@ -308,3 +308,4 @@ const ManualCheck = () => {
 };
 
 export default ManualCheck;
+

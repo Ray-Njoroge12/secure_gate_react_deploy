@@ -202,7 +202,7 @@ const ErrorAlert = ({
         {!persistent && onClose && (
           <button
             onClick={handleClose}
-            className="flex-shrink-0 ml-3 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            className="flex-shrink-0 ml-3 text-gray-400 hover:text-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
             aria-label="Close alert"
           >
             <X className="w-4 h-4" />

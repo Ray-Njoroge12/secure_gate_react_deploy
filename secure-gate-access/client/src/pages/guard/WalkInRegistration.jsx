@@ -144,7 +144,7 @@ const WalkInRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Walk-In Registration"
         subtitle="Register unexpected visitors at the gate"
@@ -328,3 +328,4 @@ const WalkInRegistration = () => {
 };
 
 export default WalkInRegistration;
+
