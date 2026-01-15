@@ -221,35 +221,39 @@ if (!isProduction) {
   console.log('🌐 CORS configured with', allowedOrigins.length, 'allowed origins');
 }
 
-const corsConfig = cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, server-to-server)
-    if (!origin) {
-      if ((isProduction || isStaging) && process.env.CORS_ALLOW_NO_ORIGIN !== 'true') {
-        return callback(new Error('CORS policy: Origin header required'));
-      }
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // Log blocked origins in development for debugging
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('🚫 CORS blocked origin:', origin);
-      }
-      callback(new Error('CORS policy violation: Origin not allowed'));
-    }
-  },
+const corsBaseOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Request-ID', 'X-CSRF-Token', 'API-Version', 'X-Client-Platform', 'X-Client-Type'],
   exposedHeaders: ['X-CSRF-Token', 'X-Request-ID', 'API-Version', 'API-Version-Status'],
   maxAge: 86400 // Cache preflight for 24 hours
-});
+};
+
+const corsOptionsDelegate = (req, callback) => {
+  const origin = req.header('Origin');
+  const isHealthCheck = req.path === '/health' || req.path === '/api/health';
+
+  // Allow requests with no origin (health checks, mobile apps, Postman, server-to-server)
+  if (!origin) {
+    if ((isProduction || isStaging) && process.env.CORS_ALLOW_NO_ORIGIN !== 'true' && !isHealthCheck) {
+      return callback(new Error('CORS policy: Origin header required'));
+    }
+    return callback(null, { ...corsBaseOptions, origin: true });
+  }
+
+  if (allowedOrigins.indexOf(origin) !== -1) {
+    return callback(null, { ...corsBaseOptions, origin: origin });
+  }
+
+  // Log blocked origins in development for debugging
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('🚫 CORS blocked origin:', origin);
+  }
+  return callback(new Error('CORS policy violation: Origin not allowed'));
+};
 
 // CORS configuration enabled
-app.use(corsConfig);
+app.use(cors(corsOptionsDelegate));
 app.use(cookieParser());
 
 // Sessions must be initialized before CSRF middleware
