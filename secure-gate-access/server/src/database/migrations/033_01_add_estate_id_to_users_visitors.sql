@@ -79,17 +79,44 @@ DROP CONSTRAINT IF EXISTS users_email_key;
 ALTER TABLE visitors
 DROP CONSTRAINT IF EXISTS visitors_invite_code_key;
 
-ALTER TABLE users
-ADD CONSTRAINT users_estate_username_key UNIQUE (estate_id, username);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'users_estate_username_key'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_class WHERE relname = 'users_estate_username_key'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_estate_username_key UNIQUE (estate_id, username);
+  END IF;
 
-ALTER TABLE users
-ADD CONSTRAINT users_estate_email_key UNIQUE (estate_id, email);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'users_estate_email_key'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_class WHERE relname = 'users_estate_email_key'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_estate_email_key UNIQUE (estate_id, email);
+  END IF;
 
-ALTER TABLE users
-ADD CONSTRAINT users_estate_house_key UNIQUE (estate_id, house);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'users_estate_house_key'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_class WHERE relname = 'users_estate_house_key'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_estate_house_key UNIQUE (estate_id, house);
+  END IF;
 
-ALTER TABLE visitors
-ADD CONSTRAINT visitors_estate_invite_code_key UNIQUE (estate_id, invite_code);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'visitors_estate_invite_code_key'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM pg_class WHERE relname = 'visitors_estate_invite_code_key'
+  ) THEN
+    ALTER TABLE visitors
+      ADD CONSTRAINT visitors_estate_invite_code_key UNIQUE (estate_id, invite_code);
+  END IF;
+END $$;
 
 -- Estate ID indexes
 CREATE INDEX IF NOT EXISTS idx_users_estate_id

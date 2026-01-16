@@ -1,6 +1,7 @@
 # Local Staging End-to-End Correlation Validation - COMPLETE ✅
 
 **Date:** January 14, 2026  
+**Revalidated:** January 16, 2026 (file logging enabled)  
 **Environment:** Local Staging (Docker Compose)  
 **Base URL:** http://localhost:5001  
 **Validation Script:** `scripts/run-local-staging-validation.sh`
@@ -15,6 +16,53 @@ The local staging deployment has successfully validated all P1 Observability Pac
 - HTTP response headers (X-Request-ID, X-Correlation-ID)
 - Error payloads (error.requestId field)
 - Backend logs (request_id field in structured logs)
+
+---
+
+## Revalidation (File Logs Enabled)
+
+**Test Requests:** `corr-health-003`, `corr-auth-003`, `corr-csrf-003`
+
+**Evidence (headers/payloads):**
+- `staging-correlation/health-headers-003.txt`
+- `staging-correlation/health-body-003.json`
+- `staging-correlation/auth-headers-003.txt`
+- `staging-correlation/auth-body-003.json`
+- `staging-correlation/csrf-headers-003.txt`
+- `staging-correlation/csrf-body-003.json`
+
+**Evidence (file logs):**
+- `staging-correlation/logs/health-log-snippet-003.txt`
+- `staging-correlation/logs/auth-log-snippet.txt`
+- `staging-correlation/logs/csrf-log-snippet-003.txt`
+
+---
+
+## Local File Logs + Local Loki (Jan 16, 2026)
+
+**Test Requests:** `health`, `login`, `me`, `csrf-token`  
+**Primary Request ID:** `ceaadbe1-2041-4d67-aded-3b31f0ae34d5`
+
+**Evidence (headers/payloads):**
+- `staging-correlation/local-loki/health-headers.txt`
+- `staging-correlation/local-loki/health-body.json`
+- `staging-correlation/local-loki/login-headers.txt`
+- `staging-correlation/local-loki/login-body.json`
+- `staging-correlation/local-loki/me-headers.txt`
+- `staging-correlation/local-loki/me-body.json`
+- `staging-correlation/local-loki/csrf-headers.txt`
+- `staging-correlation/local-loki/csrf-body.json`
+
+**Evidence (file logs from container volume):**
+- `staging-correlation/local-loki/api-log-snippet.txt`
+- `staging-correlation/local-loki/app-log-snippet.txt`
+- `staging-correlation/local-loki/audit-log-snippet.txt`
+
+**Evidence (local Loki queries):**
+- `staging-correlation/local-loki/loki-query.json`
+- `staging-correlation/local-loki/loki-audit-query.json`
+
+**Outcome:** ✅ Request ID observed in response headers, API/app/audit logs, and local Loki query results.
 
 ---
 
@@ -110,20 +158,33 @@ requestId: 'auth-test-1768403576'
 
 ---
 
-### ⚠️ Validation 4: Log Correlation
+### ✅ Validation 4: Log Correlation
 
-**Status:** Partial validation (log file location issue)
+**Status:** Confirmed via file logs (local staging)
 
 **Observed:**
-- ✅ Request IDs found in Docker container logs
+- ✅ Request IDs found in API/security log files
 - ✅ Structured logging confirmed
-- ⚠️ Log aggregation query not tested (would require production log aggregator)
+- ⚠️ Log aggregation query not tested (requires production log aggregator)
 
 **Evidence:**
-Backend logs contain all three test request IDs, confirming log correlation is working:
-```bash
-docker logs securegate-staging-api | grep -E "(local-staging-corr|csrf-test|auth-test)"
-```
+- `staging-correlation/logs/health-log-snippet-003.txt`
+- `staging-correlation/logs/auth-log-snippet.txt`
+- `staging-correlation/logs/csrf-log-snippet-003.txt`
+
+---
+
+### ✅ Validation 5: Local Loki Aggregation Query
+
+**Status:** Confirmed via local Loki (no external credentials)
+
+**Observed:**
+- ✅ Local Loki returns results for `job="securegate-api"` with the login request_id
+- ✅ Local Loki returns results for `job="securegate-audit"` with the same request_id
+
+**Evidence:**
+- `staging-correlation/local-loki/loki-query.json`
+- `staging-correlation/local-loki/loki-audit-query.json`
 
 ---
 
@@ -134,7 +195,9 @@ docker logs securegate-staging-api | grep -E "(local-staging-corr|csrf-test|auth
 | Estate Requirement Check | `local-staging-corr-1768403576` | ✅ PASS | Headers + Payload + Logs |
 | CSRF Failure | `csrf-test-1768403576` | ✅ PASS | Headers + Payload + Logs |
 | Auth Failure (401) | `auth-test-1768403576` | ✅ PASS | Headers + Payload + Logs |
-| Log Correlation | All IDs | ✅ PASS | Docker logs |
+| Health Check (file logs) | `corr-health-003` | ✅ PASS | Headers + Payload + Log file |
+| Auth Failure (file logs) | `corr-auth-003` | ✅ PASS | Headers + Payload + Log file |
+| CSRF Failure (file logs) | `corr-csrf-003` | ✅ PASS | Headers + Payload + Log file |
 
 ---
 

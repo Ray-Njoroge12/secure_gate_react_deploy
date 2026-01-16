@@ -17,6 +17,66 @@ CREATE TABLE IF NOT EXISTS estates (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'estates' AND column_name = 'slug'
+  ) THEN
+    ALTER TABLE estates ADD COLUMN slug VARCHAR(255);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'estates' AND column_name = 'timezone'
+  ) THEN
+    ALTER TABLE estates ADD COLUMN timezone VARCHAR(100) DEFAULT 'UTC';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'estates' AND column_name = 'created_at'
+  ) THEN
+    ALTER TABLE estates ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW();
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'estates' AND column_name = 'updated_at'
+  ) THEN
+    ALTER TABLE estates ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+  END IF;
+END $$;
+
+UPDATE estates
+SET slug = COALESCE(slug, 'estate-' || id);
+
+UPDATE estates
+SET timezone = COALESCE(timezone, 'UTC');
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'estates' AND column_name = 'slug' AND is_nullable = 'YES'
+  ) THEN
+    ALTER TABLE estates ALTER COLUMN slug SET NOT NULL;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'estates' AND column_name = 'timezone' AND is_nullable = 'YES'
+  ) THEN
+    ALTER TABLE estates ALTER COLUMN timezone SET NOT NULL;
+  END IF;
+END $$;
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_estates_slug ON estates(slug);
 CREATE INDEX IF NOT EXISTS idx_estates_name ON estates(name);
 

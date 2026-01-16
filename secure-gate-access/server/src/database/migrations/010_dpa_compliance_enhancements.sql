@@ -2,8 +2,6 @@
 -- Adds consent tracking and data export/deletion support
 -- Created: 2025-12-23
 
-BEGIN;
-
 -- Add consent tracking columns to users table
 ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_given BOOLEAN DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS consent_timestamp TIMESTAMP;
@@ -179,8 +177,6 @@ CREATE TRIGGER update_privacy_settings_updated_at
     BEFORE UPDATE ON user_privacy_settings
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
-
-COMMIT;
 
 -- Grant necessary permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON consent_log TO PUBLIC;
