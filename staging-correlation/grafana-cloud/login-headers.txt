@@ -1,0 +1,39 @@
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 0
+Referrer-Policy: strict-origin-when-cross-origin
+X-Request-ID: c99db735-6b5a-46df-83c4-f8f333eb2c31
+X-Correlation-ID: c99db735-6b5a-46df-83c4-f8f333eb2c31
+Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+Permissions-Policy: accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), display-capture=(), document-domain=(), encrypted-media=(), execution-while-not-rendered=(), execution-while-out-of-viewport=(), fullscreen=(self), gamepad=(), geolocation=(), gyroscope=(), layout-animations=(self), legacy-image-formats=(self), magnetometer=(), microphone=(), midi=(), navigation-override=(), oversized-images=(self), payment=(), picture-in-picture=(), publickey-credentials-get=(), speaker-selection=(), sync-xhr=(), unoptimized-images=(self), unsized-media=(self), usb=(), vibrate=(), vr=(), wake-lock=(), xr-spatial-tracking=()
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+Cross-Origin-Resource-Policy: same-site
+Expect-CT: max-age=86400, enforce
+Content-Security-Policy: default-src 'self';style-src 'self' 'nonce-rzj/MCpHI2l/quOQ/LqWtA==' https://fonts.googleapis.com https://cdn.jsdelivr.net;script-src 'self' 'nonce-rzj/MCpHI2l/quOQ/LqWtA==' https://cdn.jsdelivr.net https://www.google-analytics.com;img-src 'self' data: https: blob:;connect-src 'self' https://secure-gate-api.onrender.com wss://secure-gate-api.onrender.com https://www.google-analytics.com;font-src 'self' https://fonts.gstatic.com data:;object-src 'none';media-src 'self';frame-src 'none';child-src 'none';worker-src 'self' blob:;form-action 'self';frame-ancestors 'none';base-uri 'self';script-src-attr 'none';upgrade-insecure-requests
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Permitted-Cross-Domain-Policies: none
+Cache-Control: no-store, no-cache, must-revalidate, private
+Pragma: no-cache
+Expires: 0
+Surrogate-Control: no-store
+Server: SecureGate
+Access-Control-Allow-Origin: http://localhost:3001
+Vary: Origin, Accept-Encoding
+Access-Control-Allow-Credentials: true
+Access-Control-Expose-Headers: X-CSRF-Token,X-Request-ID,API-Version,API-Version-Status
+X-CSRF-Token: 8642b1498f5eb973104c2a04b3f7402452bdcafacbcb9fc2cd732fe870823c4b
+RateLimit-Policy: 5;w=900
+RateLimit-Limit: 5
+RateLimit-Remaining: 0
+Set-Cookie: accessToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzY4NTQzMjM0LCJqdGkiOiJmYjk3ZGZmMy01MWVkLTQyNDktODYyOC00ZDcwNDdhYzFjYjIiLCJpZCI6MSwiZW1haWwiOiJzdGFnaW5nYWRtaW4xQHNlY3VyZWdhdGUuY29tIiwicm9sZSI6ImFkbWluIiwidXNlcm5hbWUiOiJzdGFnaW5nYWRtaW4xIiwiZXN0YXRlX2lkIjoxLCJ2ZXJpZmllZCI6dHJ1ZSwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2ODU0NDEzNCwiYXVkIjoic2VjdXJlLWdhdGUtY2xpZW50IiwiaXNzIjoic2VjdXJlLWdhdGUtYXBpIn0.IvTLrbKlgsds4a8FZuOo4gEad3IEFV0L27T7zeAd5Bo; Max-Age=900; Path=/; Expires=Fri, 16 Jan 2026 06:15:34 GMT; HttpOnly; Secure; SameSite=None
+Set-Cookie: refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzY4NTQzMjM0LCJqdGkiOiJhMTg1YjA5MS1hYzUwLTQyYzQtODhlOS0zZjU4MzgxOWY0YjIiLCJlbWFpbCI6InN0YWdpbmdhZG1pbjFAc2VjdXJlZ2F0ZS5jb20iLCJlc3RhdGVfaWQiOjEsImFjY2Vzc0p0aSI6ImZiOTdkZmYzLTUxZWQtNDI0OS04NjI4LTRkNzA0N2FjMWNiMiIsInR5cGUiOiJyZWZyZXNoIiwiZXhwIjoxNzY5MTQ4MDM0LCJhdWQiOiJzZWN1cmUtZ2F0ZS1jbGllbnQiLCJpc3MiOiJzZWN1cmUtZ2F0ZS1hcGkifQ.Oi7hcSaRifTvrQrhbF6olwGRmJZ9W4jubRwunn2SPP8; Max-Age=604800; Path=/; Expires=Fri, 23 Jan 2026 06:00:34 GMT; HttpOnly; Secure; SameSite=None
+Content-Type: application/json; charset=utf-8
+Content-Length: 232
+ETag: W/"e8-DLuoM8xoalk/z/8Nd1Cc/4iSpk4"
+Date: Fri, 16 Jan 2026 06:00:34 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+

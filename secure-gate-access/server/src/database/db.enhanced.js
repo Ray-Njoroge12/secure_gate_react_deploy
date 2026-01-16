@@ -335,10 +335,18 @@ class DatabaseManager extends EventEmitter {
           user_id INT,
           action VARCHAR(100) NOT NULL,
           resource VARCHAR(100) NOT NULL DEFAULT 'system',
+          user_role VARCHAR(50),
+          request_id VARCHAR(100),
+          estate_id INTEGER,
           entity_type VARCHAR(50),
           entity_id VARCHAR(100),
+          outcome VARCHAR(20),
+          message TEXT,
           details TEXT,
+          metadata JSONB,
           ip_address INET,
+          user_agent TEXT,
+          timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           created_at TIMESTAMP DEFAULT NOW()
         )`
       },

@@ -40,11 +40,11 @@ CREATE TABLE IF NOT EXISTS qr_tokens (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_qr_tokens_token ON qr_tokens(token);
-CREATE INDEX idx_qr_tokens_visitor_id ON qr_tokens(visitor_id);
-CREATE INDEX idx_qr_tokens_qr_id ON qr_tokens(qr_id);
-CREATE INDEX idx_qr_tokens_status ON qr_tokens(status);
-CREATE INDEX idx_qr_tokens_expires_at ON qr_tokens(expires_at);
+CREATE INDEX IF NOT EXISTS idx_qr_tokens_token ON qr_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_qr_tokens_visitor_id ON qr_tokens(visitor_id);
+CREATE INDEX IF NOT EXISTS idx_qr_tokens_qr_id ON qr_tokens(qr_id);
+CREATE INDEX IF NOT EXISTS idx_qr_tokens_status ON qr_tokens(status);
+CREATE INDEX IF NOT EXISTS idx_qr_tokens_expires_at ON qr_tokens(expires_at);
 
 -- Add column comments for documentation
 COMMENT ON TABLE qr_tokens IS 'Maps opaque tokens to visitor IDs for QR code privacy';

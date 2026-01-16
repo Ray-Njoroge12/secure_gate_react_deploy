@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS guard_shifts (
   notes TEXT,
   handover_notes TEXT,
   estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
+  estate_id INTEGER REFERENCES estates(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS guard_handover_notes (
   incidents_summary TEXT,
   equipment_status TEXT,
   estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
+  estate_id INTEGER REFERENCES estates(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -67,7 +69,8 @@ CREATE TABLE IF NOT EXISTS guard_performance_metrics (
   notes TEXT,
   recorded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   recorded_at TIMESTAMP DEFAULT NOW(),
-  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL
+  estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
+  estate_id INTEGER REFERENCES estates(id) ON DELETE SET NULL
 );
 
 -- Indexes for performance metrics
@@ -96,6 +99,7 @@ CREATE TABLE IF NOT EXISTS guard_equipment_checkout (
   notes TEXT,
   return_notes TEXT,
   estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
+  estate_id INTEGER REFERENCES estates(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -124,6 +128,7 @@ CREATE TABLE IF NOT EXISTS guard_training (
   status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'expired', 'renewed')),
   notes TEXT,
   estate_location_id INTEGER REFERENCES estate_locations(estate_id) ON DELETE SET NULL,
+  estate_id INTEGER REFERENCES estates(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -159,6 +164,127 @@ CREATE INDEX IF NOT EXISTS idx_guard_incidents_incident_id ON guard_incidents(in
 CREATE INDEX IF NOT EXISTS idx_guard_incidents_assigned ON guard_incidents(assigned_at DESC);
 
 COMMENT ON TABLE guard_incidents IS 'Guard incident assignments (many-to-many relationship)';
+
+-- ============================================================================
+-- ESTATE ID BACKFILL + INDEXES (guard tables may exist already)
+-- ============================================================================
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'guard_shifts'
+  ) THEN
+    ALTER TABLE guard_shifts ADD COLUMN IF NOT EXISTS estate_id INTEGER;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'guard_shifts' AND column_name = 'estate_location_id'
+    ) THEN
+      UPDATE guard_shifts
+      SET estate_id = estate_location_id
+      WHERE estate_id IS NULL AND estate_location_id IS NOT NULL;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'guard_shifts_estate_id_fkey'
+    ) THEN
+      ALTER TABLE guard_shifts
+        ADD CONSTRAINT guard_shifts_estate_id_fkey
+        FOREIGN KEY (estate_id) REFERENCES estates(id) ON DELETE SET NULL;
+    END IF;
+    CREATE INDEX IF NOT EXISTS idx_guard_shifts_estate_id ON guard_shifts(estate_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'guard_handover_notes'
+  ) THEN
+    ALTER TABLE guard_handover_notes ADD COLUMN IF NOT EXISTS estate_id INTEGER;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'guard_handover_notes' AND column_name = 'estate_location_id'
+    ) THEN
+      UPDATE guard_handover_notes
+      SET estate_id = estate_location_id
+      WHERE estate_id IS NULL AND estate_location_id IS NOT NULL;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'guard_handover_notes_estate_id_fkey'
+    ) THEN
+      ALTER TABLE guard_handover_notes
+        ADD CONSTRAINT guard_handover_notes_estate_id_fkey
+        FOREIGN KEY (estate_id) REFERENCES estates(id) ON DELETE SET NULL;
+    END IF;
+    CREATE INDEX IF NOT EXISTS idx_guard_handover_notes_estate_id ON guard_handover_notes(estate_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'guard_performance_metrics'
+  ) THEN
+    ALTER TABLE guard_performance_metrics ADD COLUMN IF NOT EXISTS estate_id INTEGER;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'guard_performance_metrics' AND column_name = 'estate_location_id'
+    ) THEN
+      UPDATE guard_performance_metrics
+      SET estate_id = estate_location_id
+      WHERE estate_id IS NULL AND estate_location_id IS NOT NULL;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'guard_performance_metrics_estate_id_fkey'
+    ) THEN
+      ALTER TABLE guard_performance_metrics
+        ADD CONSTRAINT guard_performance_metrics_estate_id_fkey
+        FOREIGN KEY (estate_id) REFERENCES estates(id) ON DELETE SET NULL;
+    END IF;
+    CREATE INDEX IF NOT EXISTS idx_guard_performance_metrics_estate_id ON guard_performance_metrics(estate_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'guard_equipment_checkout'
+  ) THEN
+    ALTER TABLE guard_equipment_checkout ADD COLUMN IF NOT EXISTS estate_id INTEGER;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'guard_equipment_checkout' AND column_name = 'estate_location_id'
+    ) THEN
+      UPDATE guard_equipment_checkout
+      SET estate_id = estate_location_id
+      WHERE estate_id IS NULL AND estate_location_id IS NOT NULL;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'guard_equipment_checkout_estate_id_fkey'
+    ) THEN
+      ALTER TABLE guard_equipment_checkout
+        ADD CONSTRAINT guard_equipment_checkout_estate_id_fkey
+        FOREIGN KEY (estate_id) REFERENCES estates(id) ON DELETE SET NULL;
+    END IF;
+    CREATE INDEX IF NOT EXISTS idx_guard_equipment_checkout_estate_id ON guard_equipment_checkout(estate_id);
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'guard_training'
+  ) THEN
+    ALTER TABLE guard_training ADD COLUMN IF NOT EXISTS estate_id INTEGER;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'guard_training' AND column_name = 'estate_location_id'
+    ) THEN
+      UPDATE guard_training
+      SET estate_id = estate_location_id
+      WHERE estate_id IS NULL AND estate_location_id IS NOT NULL;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint WHERE conname = 'guard_training_estate_id_fkey'
+    ) THEN
+      ALTER TABLE guard_training
+        ADD CONSTRAINT guard_training_estate_id_fkey
+        FOREIGN KEY (estate_id) REFERENCES estates(id) ON DELETE SET NULL;
+    END IF;
+    CREATE INDEX IF NOT EXISTS idx_guard_training_estate_id ON guard_training(estate_id);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- VERIFY TABLES CREATED

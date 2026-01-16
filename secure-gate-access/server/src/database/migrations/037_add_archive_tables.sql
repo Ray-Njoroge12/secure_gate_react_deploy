@@ -94,6 +94,24 @@ CREATE TABLE IF NOT EXISTS data_retention_policies (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Reconcile schema with earlier/later retention migrations
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'data_retention_policies'
+    ) THEN
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS auto_delete BOOLEAN DEFAULT true;
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS category VARCHAR(100);
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS legal_basis TEXT;
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS last_cleanup_at TIMESTAMP;
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS archive_after_days INTEGER;
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS description TEXT;
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS enabled BOOLEAN DEFAULT true;
+        ALTER TABLE data_retention_policies ADD COLUMN IF NOT EXISTS last_run TIMESTAMP;
+    END IF;
+END $$;
+
 -- Insert default retention policies
 INSERT INTO data_retention_policies (table_name, retention_days, description) VALUES
     ('visitors', 730, 'Visitor records: Delete after 730 days (2 years)'),
