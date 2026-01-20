@@ -367,10 +367,12 @@ export const initializeTransportSecurity = () => {
     validation.warnings.forEach(warning => console.warn(`   ⚠️ ${warning}`));
   }
 
-  console.log('🔒 Transport security initialized');
-  console.log(`   HTTPS Enforcement: ${process.env.ENFORCE_HTTPS === 'true' ? '✅' : '❌'}`);
-  console.log(`   Secure Cookies: ${process.env.SECURE_COOKIES === 'true' ? '✅' : '❌'}`);
-  console.log(`   HSTS Enabled: ${process.env.NODE_ENV === 'production' ? '✅' : '⚠️ (dev mode)'}`);
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('🔒 Transport security initialized');
+    console.log(`   HTTPS Enforcement: ${process.env.ENFORCE_HTTPS === 'true' ? '✅' : '❌'}`);
+    console.log(`   Secure Cookies: ${process.env.SECURE_COOKIES === 'true' ? '✅' : '❌'}`);
+    console.log(`   HSTS Enabled: ${process.env.NODE_ENV === 'production' ? '✅' : '⚠️ (dev mode)'}`);
+  }
 
   return validation;
 };

@@ -14,7 +14,7 @@
  * - Audit logs: 7 years (legal requirement)
  */
 
-import pool from '../database/db.enhanced.js';
+import { dbManager } from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
 
 class RetentionService {
@@ -63,6 +63,133 @@ class RetentionService {
       auditLogAnonymize: `${auditLogsAnonymizeYears} years`,
       dryRun: this.config.dryRun
     });
+
+    this.tableColumnsCache = new Map();
+    this.tableColumnTypesCache = new Map();
+    this.accessLogTimestampExpr = null;
+    this.auditLogTimestampExpr = null;
+  }
+
+  async getDbClient() {
+    if (!dbManager.pool) {
+      await dbManager.initializeAsync();
+    }
+    if (!dbManager.pool) {
+      throw new Error('Database connection not initialized');
+    }
+    return dbManager.pool.connect();
+  }
+
+  async getTableColumns(tableName) {
+    if (this.tableColumnsCache.has(tableName)) {
+      return this.tableColumnsCache.get(tableName);
+    }
+
+    const result = await dbManager.query(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = $1
+       ORDER BY ordinal_position`,
+      [tableName]
+    );
+    const columns = result.rows.map((row) => row.column_name);
+    this.tableColumnsCache.set(tableName, columns);
+    return columns;
+  }
+
+  async getTableColumnTypes(tableName) {
+    if (this.tableColumnTypesCache.has(tableName)) {
+      return this.tableColumnTypesCache.get(tableName);
+    }
+
+    const result = await dbManager.query(
+      `SELECT column_name, data_type, udt_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = $1`,
+      [tableName]
+    );
+
+    const columnTypes = new Map();
+    for (const row of result.rows) {
+      const normalizedType = row.data_type === 'USER-DEFINED' ? row.udt_name : row.data_type;
+      columnTypes.set(row.column_name, normalizedType);
+    }
+
+    this.tableColumnTypesCache.set(tableName, columnTypes);
+    return columnTypes;
+  }
+
+  isJsonType(dataType) {
+    return dataType === 'json' || dataType === 'jsonb';
+  }
+
+  async columnExists(tableName, columnName) {
+    const columns = await this.getTableColumns(tableName);
+    return columns.includes(columnName);
+  }
+
+  async getSharedColumns(sourceTable, targetTable) {
+    const [sourceColumns, targetColumns] = await Promise.all([
+      this.getTableColumns(sourceTable),
+      this.getTableColumns(targetTable)
+    ]);
+    const targetSet = new Set(targetColumns);
+    return sourceColumns.filter((column) => targetSet.has(column));
+  }
+
+  async getAccessLogTimestampExpression() {
+    if (this.accessLogTimestampExpr) {
+      return this.accessLogTimestampExpr;
+    }
+
+    const [createdAtExists, logTimeExists] = await Promise.all([
+      this.columnExists('access_logs', 'created_at'),
+      this.columnExists('access_logs', 'log_time')
+    ]);
+
+    if (createdAtExists && logTimeExists) {
+      this.accessLogTimestampExpr = 'COALESCE(created_at, log_time)';
+    } else if (createdAtExists) {
+      this.accessLogTimestampExpr = 'created_at';
+    } else if (logTimeExists) {
+      this.accessLogTimestampExpr = 'log_time';
+    } else {
+      this.accessLogTimestampExpr = 'NOW()';
+    }
+
+    return this.accessLogTimestampExpr;
+  }
+
+  async getAuditLogTimestampExpression() {
+    if (this.auditLogTimestampExpr) {
+      return this.auditLogTimestampExpr;
+    }
+
+    const [createdAtExists, timestampExists] = await Promise.all([
+      this.columnExists('audit_logs', 'created_at'),
+      this.columnExists('audit_logs', 'timestamp')
+    ]);
+
+    if (createdAtExists && timestampExists) {
+      this.auditLogTimestampExpr = 'COALESCE(created_at, timestamp)';
+    } else if (createdAtExists) {
+      this.auditLogTimestampExpr = 'created_at';
+    } else if (timestampExists) {
+      this.auditLogTimestampExpr = 'timestamp';
+    } else {
+      this.auditLogTimestampExpr = 'NOW()';
+    }
+
+    return this.auditLogTimestampExpr;
+  }
+
+  getVisitorExpirySql() {
+    return `COALESCE(
+      check_out_time,
+      check_in_time,
+      (date_of_visit::timestamp + COALESCE(time_of_visit, '00:00'::time)),
+      created_at
+    )`;
   }
 
   /**
@@ -81,6 +208,7 @@ class RetentionService {
       visitorsDeleted: 0,
       accessLogsArchived: 0,
       auditLogsArchived: 0,
+      dryRun: this.config.dryRun,
       errors: [],
       duration: 0
     };
@@ -123,7 +251,27 @@ class RetentionService {
    * Archive visitors whose valid_until date has passed + grace period
    */
   async archiveExpiredVisitors() {
-    const client = await pool.connect();
+    if (this.config.dryRun) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - this.config.visitorGracePeriod);
+
+      const previewQuery = `
+        SELECT COUNT(*) AS count FROM (
+          SELECT id FROM visitors
+          WHERE ${this.getVisitorExpirySql()} < $1
+          AND status != 'archived'
+          ORDER BY ${this.getVisitorExpirySql()} ASC
+          LIMIT $2
+        ) AS preview
+      `;
+
+      const result = await dbManager.query(previewQuery, [cutoffDate, this.config.batchSize]);
+      const count = Number(result.rows[0]?.count || 0);
+      logger.info(`[RetentionService] Dry-run: would archive ${count} expired visitors`);
+      return count;
+    }
+
+    const client = await this.getDbClient();
     let archived = 0;
     
     try {
@@ -136,9 +284,9 @@ class RetentionService {
       // Find expired visitors (batch processing)
       const findQuery = `
         SELECT id FROM visitors
-        WHERE valid_until < $1
+        WHERE ${this.getVisitorExpirySql()} < $1
         AND status != 'archived'
-        ORDER BY valid_until ASC
+        ORDER BY ${this.getVisitorExpirySql()} ASC
         LIMIT $2
       `;
       
@@ -193,7 +341,24 @@ class RetentionService {
    * Implements "right to erasure" (GDPR Article 17)
    */
   async deleteOldArchivedVisitors() {
-    const client = await pool.connect();
+    if (this.config.dryRun) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - this.config.archivedVisitorRetention);
+
+      const previewQuery = `
+        SELECT COUNT(*) AS count
+        FROM visitors_archive
+        WHERE archived_at < $1
+        AND name != 'REDACTED'
+      `;
+
+      const result = await dbManager.query(previewQuery, [cutoffDate]);
+      const count = Number(result.rows[0]?.count || 0);
+      logger.info(`[RetentionService] Dry-run: would anonymize ${count} archived visitors`);
+      return count;
+    }
+
+    const client = await this.getDbClient();
     let deleted = 0;
     
     try {
@@ -202,24 +367,57 @@ class RetentionService {
       // Calculate deletion cutoff
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.config.archivedVisitorRetention);
-      
-      // Delete from archive (anonymize sensitive data instead of full delete)
+
+      const redactions = [
+        { column: 'name', value: 'REDACTED' },
+        { column: 'email', value: 'redacted@privacy.local' },
+        { column: 'phone', value: 'REDACTED' },
+        { column: 'id_number', value: 'REDACTED' },
+        { column: 'id_number_encrypted', value: null },
+        { column: 'vehicle_plate', value: 'REDACTED' },
+        { column: 'name_encrypted', value: null },
+        { column: 'phone_encrypted', value: null },
+        { column: 'email_encrypted', value: null },
+        { column: 'vehicle_plate_encrypted', value: null },
+        { column: 'notes', value: 'Data anonymized per retention policy' },
+        { column: 'additional_info', value: 'REDACTED' },
+        { column: 'consent_data', value: null }
+      ];
+
+      const [archiveColumns, archiveColumnTypes] = await Promise.all([
+        this.getTableColumns('visitors_archive'),
+        this.getTableColumnTypes('visitors_archive')
+      ]);
+      const setClauses = [];
+      const values = [cutoffDate];
+      let paramIndex = 2;
+
+      for (const redaction of redactions) {
+        if (archiveColumns.includes(redaction.column)) {
+          const columnType = archiveColumnTypes.get(redaction.column);
+          const value = this.isJsonType(columnType) && redaction.value !== null
+            ? { redacted: true }
+            : redaction.value;
+          setClauses.push(`${redaction.column} = $${paramIndex++}`);
+          values.push(value);
+        }
+      }
+
+      if (setClauses.length === 0) {
+        await client.query('COMMIT');
+        logger.warn('[RetentionService] No anonymization fields available for visitors_archive');
+        return 0;
+      }
+
       const anonymizeQuery = `
         UPDATE visitors_archive
-        SET 
-          name = 'REDACTED',
-          email = 'redacted@privacy.local',
-          phone = 'REDACTED',
-          id_number = 'REDACTED',
-          id_number_encrypted = NULL,
-          vehicle_plate = 'REDACTED',
-          notes = 'Data anonymized per retention policy'
+        SET ${setClauses.join(', ')}
         WHERE archived_at < $1
         AND name != 'REDACTED'
         RETURNING id
       `;
       
-      const result = await client.query(anonymizeQuery, [cutoffDate]);
+      const result = await client.query(anonymizeQuery, values);
       deleted = result.rowCount;
       
       // Also delete from main table if still there
@@ -249,7 +447,28 @@ class RetentionService {
    * Archive old access logs
    */
   async archiveOldAccessLogs() {
-    const client = await pool.connect();
+    const timestampExpression = await this.getAccessLogTimestampExpression();
+
+    if (this.config.dryRun) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - this.config.accessLogRetention);
+
+      const previewQuery = `
+        SELECT COUNT(*) AS count FROM (
+          SELECT id FROM access_logs
+          WHERE ${timestampExpression} < $1
+          ORDER BY ${timestampExpression} ASC
+          LIMIT $2
+        ) AS preview
+      `;
+
+      const result = await dbManager.query(previewQuery, [cutoffDate, this.config.batchSize]);
+      const count = Number(result.rows[0]?.count || 0);
+      logger.info(`[RetentionService] Dry-run: would archive ${count} access logs`);
+      return count;
+    }
+
+    const client = await this.getDbClient();
     let archived = 0;
     
     try {
@@ -258,16 +477,26 @@ class RetentionService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.config.accessLogRetention);
       
+      const sharedColumns = await this.getSharedColumns('access_logs', 'access_logs_archive');
+      if (sharedColumns.length === 0) {
+        await client.query('COMMIT');
+        logger.warn('[RetentionService] access_logs_archive schema mismatch; skipping archive');
+        return 0;
+      }
+
+      const archiveColumns = sharedColumns.map((column) => `"${column}"`).join(', ');
+      const hasArchivedAt = await this.columnExists('access_logs_archive', 'archived_at');
+
       // Archive old access logs
       const archiveQuery = `
         WITH old_logs AS (
-          SELECT * FROM access_logs
-          WHERE created_at < $1
-          ORDER BY created_at ASC
+          SELECT ${archiveColumns} FROM access_logs
+          WHERE ${timestampExpression} < $1
+          ORDER BY ${timestampExpression} ASC
           LIMIT $2
         )
-        INSERT INTO access_logs_archive
-        SELECT *, NOW() as archived_at
+        INSERT INTO access_logs_archive (${archiveColumns}${hasArchivedAt ? ', archived_at' : ''})
+        SELECT ${archiveColumns}${hasArchivedAt ? ', NOW() as archived_at' : ''}
         FROM old_logs
         RETURNING id
       `;
@@ -304,7 +533,28 @@ class RetentionService {
    * Archive old audit logs (7 year retention)
    */
   async archiveOldAuditLogs() {
-    const client = await pool.connect();
+    const timestampExpression = await this.getAuditLogTimestampExpression();
+
+    if (this.config.dryRun) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - this.config.auditLogRetention);
+
+      const previewQuery = `
+        SELECT COUNT(*) AS count FROM (
+          SELECT id FROM audit_logs
+          WHERE ${timestampExpression} < $1
+          ORDER BY ${timestampExpression} ASC
+          LIMIT $2
+        ) AS preview
+      `;
+
+      const result = await dbManager.query(previewQuery, [cutoffDate, this.config.batchSize]);
+      const count = Number(result.rows[0]?.count || 0);
+      logger.info(`[RetentionService] Dry-run: would archive ${count} audit logs`);
+      return count;
+    }
+
+    const client = await this.getDbClient();
     let archived = 0;
     
     try {
@@ -313,16 +563,26 @@ class RetentionService {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.config.auditLogRetention);
       
+      const sharedColumns = await this.getSharedColumns('audit_logs', 'audit_logs_archive');
+      if (sharedColumns.length === 0) {
+        await client.query('COMMIT');
+        logger.warn('[RetentionService] audit_logs_archive schema mismatch; skipping archive');
+        return 0;
+      }
+
+      const archiveColumns = sharedColumns.map((column) => `"${column}"`).join(', ');
+      const hasArchivedAt = await this.columnExists('audit_logs_archive', 'archived_at');
+
       // Archive very old audit logs
       const archiveQuery = `
         WITH old_logs AS (
-          SELECT * FROM audit_logs
-          WHERE created_at < $1
-          ORDER BY created_at ASC
+          SELECT ${archiveColumns} FROM audit_logs
+          WHERE ${timestampExpression} < $1
+          ORDER BY ${timestampExpression} ASC
           LIMIT $2
         )
-        INSERT INTO audit_logs_archive
-        SELECT *, NOW() as archived_at
+        INSERT INTO audit_logs_archive (${archiveColumns}${hasArchivedAt ? ', archived_at' : ''})
+        SELECT ${archiveColumns}${hasArchivedAt ? ', NOW() as archived_at' : ''}
         FROM old_logs
         RETURNING id
       `;
@@ -364,18 +624,20 @@ class RetentionService {
           action,
           entity_type,
           entity_id,
-          changes,
+          details,
           user_id,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, NOW())
+          created_at,
+          metadata
+        ) VALUES ($1, $2, $3, $4, $5, NOW(), $6)
       `;
       
-      await pool.query(query, [
+      await dbManager.query(query, [
         'data_retention_job',
         'system',
         results.jobId,
-        JSON.stringify(results),
-        null // System job
+        `Retention job ${results.jobId} completed`,
+        null, // System job
+        JSON.stringify(results)
       ]);
     } catch (error) {
       logger.error('[RetentionService] Error logging retention job', error);
@@ -395,11 +657,11 @@ class RetentionService {
         SELECT 
           COUNT(*) FILTER (WHERE status = 'active') as active_count,
           COUNT(*) FILTER (WHERE status = 'archived') as archived_count,
-          COUNT(*) FILTER (WHERE valid_until < NOW()) as expired_count
+          COUNT(*) FILTER (WHERE ${this.getVisitorExpirySql()} < NOW()) as expired_count
         FROM visitors
       `;
       
-      const visitorsResult = await pool.query(visitorsQuery);
+      const visitorsResult = await dbManager.query(visitorsQuery);
       stats.visitors = visitorsResult.rows[0];
       
       // Count archived records
@@ -410,7 +672,7 @@ class RetentionService {
           (SELECT COUNT(*) FROM audit_logs_archive) as audit_logs_archived
       `;
       
-      const archiveResult = await pool.query(archiveQuery);
+      const archiveResult = await dbManager.query(archiveQuery);
       stats.archived = archiveResult.rows[0];
       
       // Get last retention job
@@ -422,7 +684,7 @@ class RetentionService {
         LIMIT 1
       `;
       
-      const lastJobResult = await pool.query(lastJobQuery);
+      const lastJobResult = await dbManager.query(lastJobQuery);
       stats.lastJob = lastJobResult.rows[0] || null;
       
       return stats;

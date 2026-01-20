@@ -28,7 +28,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     if (DEBUG_AUTH) {
       console.log('🔍 AUTH DEBUG:', {
         hasAuthHeader: !!authHeader,
-        authHeaderValue: authHeader ? authHeader.substring(0, 20) + '...' : null,
+        // Security: Do not log token values, only presence
         hasHeaderToken: !!headerToken,
         hasCookieToken: !!cookieToken,
         hasToken: !!token
@@ -101,7 +101,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE LOWER(email) = LOWER($1)
-           AND estate_id = COALESCE($2, estate_id)`,
+           AND estate_id IS NOT DISTINCT FROM $2`,
         [userIdentifier, payload.estate_id ?? null]
       );
     } else {
@@ -121,7 +121,7 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE id = $1
-           AND estate_id = COALESCE($2, estate_id)`,
+           AND estate_id IS NOT DISTINCT FROM $2`,
         [userId, payload.estate_id ?? null]
       );
     }
@@ -186,7 +186,7 @@ export async function attachUserFromToken(req, res, next) {
     // Check both 'accessToken' and 'token' for backward compatibility
     const cookieToken = req.cookies?.accessToken || req.cookies?.token;
     const token = headerToken || cookieToken;
-    
+
     if (!token) return next();
 
     // Use standardized token service
@@ -196,6 +196,15 @@ export async function attachUserFromToken(req, res, next) {
     const userIdentifier = payload.email || payload.sub || payload.userId;
     if (!userIdentifier) return next();
 
+    const estateIdRaw = payload.estate_id;
+    if (estateIdRaw === null || estateIdRaw === undefined) {
+      return next();
+    }
+    const estateId = Number(estateIdRaw);
+    if (!Number.isInteger(estateId) || estateId <= 0) {
+      return next();
+    }
+
     // Look up user in database - support both email and user ID lookups
     let userQuery;
     if (userIdentifier.includes('@')) {
@@ -204,8 +213,8 @@ export async function attachUserFromToken(req, res, next) {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE LOWER(email) = LOWER($1)
-           AND estate_id = COALESCE($2, estate_id)`,
-        [userIdentifier, payload.estate_id ?? null]
+           AND estate_id = $2`,
+        [userIdentifier, estateId]
       );
     } else {
       // ID lookup for standardized tokens (sub claim)
@@ -213,8 +222,8 @@ export async function attachUserFromToken(req, res, next) {
         `SELECT id, email, username, role, estate_id
          FROM users
          WHERE id = $1
-           AND estate_id = COALESCE($2, estate_id)`,
-        [parseInt(userIdentifier), payload.estate_id ?? null]
+           AND estate_id = $2`,
+        [parseInt(userIdentifier, 10), estateId]
       );
     }
 
@@ -225,7 +234,7 @@ export async function attachUserFromToken(req, res, next) {
         email: dbUser.email,
         username: dbUser.username,
         role: dbUser.role,
-        estate_id: dbUser.estate_id ?? payload.estate_id ?? null
+        estate_id: dbUser.estate_id ?? estateId ?? null
       };
     }
   } catch (err) {
@@ -256,7 +265,7 @@ export const authorize = (roles) => {
 export const requireRole = (...allowedRoles) => {
   // Handle both array and spread arguments: requireRole(['admin']) or requireRole('admin')
   const roles = Array.isArray(allowedRoles[0]) ? allowedRoles[0] : allowedRoles;
-  
+
   return (req, res, next) => {
     if (!req.user) {
       throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');

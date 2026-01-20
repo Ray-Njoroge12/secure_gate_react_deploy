@@ -11,10 +11,12 @@ import { dbManager } from '../../../src/database/db.enhanced.js';
 
 describe('Concurrency Integration Tests', () => {
   let testUsers;
+  let estateId;
 
   beforeAll(async () => {
     await setupTestDatabase();
     testUsers = await createTestUsers();
+    estateId = testUsers.resident.estate_id;
   });
 
   afterAll(async () => {
@@ -33,10 +35,10 @@ describe('Concurrency Integration Tests', () => {
     it('should prevent double check-in of same visitor', async () => {
       // Create approved visitor
       const visitorResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        ['Concurrent Visitor', '+254700111111', testUsers.resident.id, 'CONC001', 'approved']
+        ['Concurrent Visitor', '+254700111111', testUsers.resident.id, 'CONC001', 'approved', estateId]
       );
       const visitorId = visitorResult.rows[0].id;
 
@@ -44,7 +46,7 @@ describe('Concurrency Integration Tests', () => {
       const checkIn = async (attemptId) => {
         const result = await dbManager.query(
           `UPDATE visitors 
-           SET status = 'on_premise', check_in = NOW()
+           SET status = 'on_premise', check_in_time = NOW()
            WHERE id = $1 AND status = 'approved'
            RETURNING *`,
           [visitorId]
@@ -76,10 +78,10 @@ describe('Concurrency Integration Tests', () => {
       const visitorIds = [];
       for (let i = 0; i < 10; i++) {
         const result = await dbManager.query(
-          `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING *`,
-          [`Visitor ${i}`, `+2547001111${i.toString().padStart(2, '0')}`, testUsers.resident.id, `MULTI${i}`, 'approved']
+          [`Visitor ${i}`, `+2547001111${i.toString().padStart(2, '0')}`, testUsers.resident.id, `MULTI${i}`, 'approved', estateId]
         );
         visitorIds.push(result.rows[0].id);
       }
@@ -87,7 +89,7 @@ describe('Concurrency Integration Tests', () => {
       // Check in all visitors concurrently
       const checkInPromises = visitorIds.map(id => 
         dbManager.query(
-          `UPDATE visitors SET status = 'on_premise', check_in = NOW()
+          `UPDATE visitors SET status = 'on_premise', check_in_time = NOW()
            WHERE id = $1 AND status = 'approved'
            RETURNING *`,
           [id]
@@ -115,10 +117,10 @@ describe('Concurrency Integration Tests', () => {
     it('should handle concurrent visitor updates without data loss', async () => {
       // Create visitor
       const visitorResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, email, purpose, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO visitors (name, phone, email, purpose, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        ['Update Visitor', '+254700222222', 'update@test.com', 'Original', testUsers.resident.id, 'UPD001', 'pending']
+        ['Update Visitor', '+254700222222', 'update@test.com', 'Original', testUsers.resident.id, 'UPD001', 'pending', estateId]
       );
       const visitorId = visitorResult.rows[0].id;
 
@@ -156,10 +158,10 @@ describe('Concurrency Integration Tests', () => {
     it('should maintain data integrity under concurrent status changes', async () => {
       // Create visitor
       const visitorResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        ['Status Visitor', '+254700444444', testUsers.resident.id, 'STAT001', 'pending']
+        ['Status Visitor', '+254700444444', testUsers.resident.id, 'STAT001', 'pending', estateId]
       );
       const visitorId = visitorResult.rows[0].id;
 
@@ -199,9 +201,9 @@ describe('Concurrency Integration Tests', () => {
         
         try {
           await dbManager.query(
-            `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-             VALUES ($1, $2, $3, $4, $5)`,
-            ['Race Visitor', '+254700555555', testUsers.resident.id, code, 'pending']
+            `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            ['Race Visitor', '+254700555555', testUsers.resident.id, code, 'pending', estateId]
           );
           return { success: true, code };
         } catch (error) {
@@ -250,10 +252,10 @@ describe('Concurrency Integration Tests', () => {
     it('should isolate transactions correctly', async () => {
       // Create initial visitor
       const visitorResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        ['Transaction Visitor', '+254700666666', testUsers.resident.id, 'TRANS001', 'pending']
+        ['Transaction Visitor', '+254700666666', testUsers.resident.id, 'TRANS001', 'pending', estateId]
       );
       const visitorId = visitorResult.rows[0].id;
 
@@ -297,10 +299,10 @@ describe('Concurrency Integration Tests', () => {
 
         // Insert visitor
         const insertResult = await client.query(
-          `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING *`,
-          ['Rollback Visitor', '+254700777777', testUsers.resident.id, 'ROLL001', 'pending']
+          ['Rollback Visitor', '+254700777777', testUsers.resident.id, 'ROLL001', 'pending', estateId]
         );
         const visitorId = insertResult.rows[0].id;
 
@@ -326,16 +328,16 @@ describe('Concurrency Integration Tests', () => {
     it('should handle potential deadlock scenarios', async () => {
       // Create two visitors
       const visitor1Result = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        ['Deadlock Visitor 1', '+254700888881', testUsers.resident.id, 'DEAD001', 'pending']
+        ['Deadlock Visitor 1', '+254700888881', testUsers.resident.id, 'DEAD001', 'pending', estateId]
       );
       const visitor2Result = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        ['Deadlock Visitor 2', '+254700888882', testUsers.resident.id, 'DEAD002', 'pending']
+        ['Deadlock Visitor 2', '+254700888882', testUsers.resident.id, 'DEAD002', 'pending', estateId]
       );
 
       const id1 = visitor1Result.rows[0].id;
@@ -374,10 +376,10 @@ describe('Concurrency Integration Tests', () => {
       // 50 concurrent visitor creations
       const promises = Array(50).fill(null).map((_, i) => 
         dbManager.query(
-          `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING *`,
-          [`Perf Visitor ${i}`, `+25470099${i.toString().padStart(4, '0')}`, testUsers.resident.id, `PERF${i}`, 'pending']
+          [`Perf Visitor ${i}`, `+25470099${i.toString().padStart(4, '0')}`, testUsers.resident.id, `PERF${i}`, 'pending', estateId]
         )
       );
 

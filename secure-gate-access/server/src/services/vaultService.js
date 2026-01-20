@@ -12,7 +12,7 @@
 
 import vault from 'node-vault';
 import loggingService from './loggingService.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 class VaultService {
   constructor() {

@@ -4,7 +4,7 @@
  * Handles webhook dispatch with signing, retry logic, and delivery tracking
  */
 
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import fetch from 'node-fetch';
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import logger from '../config/logger.js';

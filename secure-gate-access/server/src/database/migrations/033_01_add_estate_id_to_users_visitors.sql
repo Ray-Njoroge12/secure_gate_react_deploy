@@ -99,14 +99,14 @@ BEGIN
       ADD CONSTRAINT users_estate_email_key UNIQUE (estate_id, email);
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'users_estate_house_key'
-  ) AND NOT EXISTS (
-    SELECT 1 FROM pg_class WHERE relname = 'users_estate_house_key'
-  ) THEN
-    ALTER TABLE users
-      ADD CONSTRAINT users_estate_house_key UNIQUE (estate_id, house);
-  END IF;
+  -- IF NOT EXISTS (
+  --   SELECT 1 FROM pg_constraint WHERE conname = 'users_estate_house_key'
+  -- ) AND NOT EXISTS (
+  --   SELECT 1 FROM pg_class WHERE relname = 'users_estate_house_key'
+  -- ) THEN
+  --   ALTER TABLE users
+  --     ADD CONSTRAINT users_estate_house_key UNIQUE (estate_id, house);
+  -- END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'visitors_estate_invite_code_key'

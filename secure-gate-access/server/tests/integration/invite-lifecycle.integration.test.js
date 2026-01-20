@@ -56,7 +56,7 @@ describe('Invite lifecycle integration', () => {
   it('creates and completes a visitor invite', async () => {
     const createResponse = await request(app)
       .post('/api/visitors')
-      .set('Cookie', `token=${residentToken}`)
+      .set('Authorization', `Bearer ${residentToken}`)
       .send({
         name: 'Pilot Visitor',
         phone: '+254700999111',

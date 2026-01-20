@@ -39,6 +39,14 @@ CREATE TABLE IF NOT EXISTS recurring_passes (
     total_entries INTEGER DEFAULT 0
 );
 
+-- Ensure required columns exist for legacy recurring_passes tables
+ALTER TABLE recurring_passes ADD COLUMN IF NOT EXISTS resident_id INTEGER REFERENCES users(id);
+ALTER TABLE recurring_passes ADD COLUMN IF NOT EXISTS status VARCHAR(20);
+ALTER TABLE recurring_passes ADD COLUMN IF NOT EXISTS qr_code_token VARCHAR(100);
+ALTER TABLE recurring_passes ADD COLUMN IF NOT EXISTS access_pin VARCHAR(10);
+ALTER TABLE recurring_passes ADD COLUMN IF NOT EXISTS valid_from DATE;
+ALTER TABLE recurring_passes ADD COLUMN IF NOT EXISTS valid_until DATE;
+
 -- Access log for recurring passes
 CREATE TABLE IF NOT EXISTS recurring_pass_entries (
     id SERIAL PRIMARY KEY,

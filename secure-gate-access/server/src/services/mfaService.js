@@ -11,7 +11,7 @@
 
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import loggingService from './loggingService.js';
 import emailService from './emailService.js';
 import smsService from './smsService.js';

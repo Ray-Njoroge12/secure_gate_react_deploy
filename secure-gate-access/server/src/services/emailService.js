@@ -8,8 +8,9 @@ import formData from 'form-data';
 import nodemailer from 'nodemailer';
 import logger from '../config/logger.js';
 import { emailTemplates } from '../templates/email-templates.js';
+import { maskEmail } from '../utils/redaction.js';
 
-class EmailService {
+export class EmailService {
   constructor() {
     this.mailgun = null;
     this.mg = null;
@@ -18,14 +19,14 @@ class EmailService {
     this.initialized = false;
     this.fromEmail = process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@localhost';
     this.fromName = process.env.EMAIL_FROM_NAME || 'Secure Gate Access';
-    
+
     this.initialize();
   }
 
   initialize() {
     try {
       const emailProvider = (process.env.EMAIL_PROVIDER || 'mailgun').toLowerCase();
-      
+
       if (emailProvider === 'smtp') {
         // Initialize SMTP (for MailHog or other SMTP servers)
         this.transporter = nodemailer.createTransport({
@@ -41,11 +42,11 @@ class EmailService {
             rejectUnauthorized: false
           }
         });
-        
+
         this.provider = 'smtp';
         this.initialized = true;
         logger.info(`Email service initialized with SMTP (${process.env.SMTP_HOST}:${process.env.SMTP_PORT})`);
-        
+
       } else if (emailProvider === 'mailgun') {
         // Initialize Mailgun
         const apiKey = process.env.MAILGUN_API_KEY;
@@ -68,7 +69,7 @@ class EmailService {
         this.provider = 'mailgun';
         this.initialized = true;
         logger.info('Email service initialized successfully with Mailgun');
-        
+
       } else {
         logger.warn(`Unknown email provider: ${emailProvider}. Email service will operate in stub mode.`);
         this.initialized = false;
@@ -107,7 +108,7 @@ class EmailService {
   async sendPasswordResetEmail(email, username, resetToken) {
     const subject = 'Reset Your Secure Gate Access Password';
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-    
+
     const html = emailTemplates.passwordResetEmail({
       username: username,
       resetUrl: resetUrl,
@@ -121,7 +122,7 @@ class EmailService {
   async sendRegistrationConfirmation(email, username, verificationToken) {
     const subject = 'Confirm Your Secure Gate Access Registration';
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
-    
+
     const html = emailTemplates.registrationConfirmationEmail({
       username: username,
       verificationUrl: verificationUrl,
@@ -135,9 +136,9 @@ class EmailService {
   async send(to, subject, htmlContent, textContent = null) {
     // Stub mode fallback
     if (!this.initialized) {
-      logger.warn(`[EMAIL STUB] Would send email to ${to}: ${subject}`);
-      return { 
-        success: true, 
+      logger.warn(`[EMAIL STUB] Would send email to ${maskEmail(to)}: ${subject}`);
+      return {
+        success: true,
         stubMode: true,
         message: 'Email service in stub mode - no actual email sent'
       };
@@ -155,8 +156,8 @@ class EmailService {
         };
 
         const info = await this.transporter.sendMail(mailOptions);
-        
-        logger.info(`Email sent successfully via SMTP to ${to}`, {
+
+        logger.info(`Email sent successfully via SMTP to ${maskEmail(to)}`, {
           messageId: info.messageId,
           subject: subject,
           response: info.response
@@ -168,7 +169,7 @@ class EmailService {
           message: 'Email sent successfully via SMTP',
           provider: 'smtp'
         };
-        
+
       } else if (this.provider === 'mailgun') {
         // Send via Mailgun
         const messageData = {
@@ -183,8 +184,8 @@ class EmailService {
         }
 
         const response = await this.mg.messages.create(this.domain, messageData);
-        
-        logger.info(`Email sent successfully via Mailgun to ${to}`, {
+
+        logger.info(`Email sent successfully via Mailgun to ${maskEmail(to)}`, {
           messageId: response.id,
           subject: subject
         });
@@ -198,7 +199,7 @@ class EmailService {
       }
 
     } catch (error) {
-      logger.error(`Failed to send email to ${to}:`, {
+      logger.error(`Failed to send email to ${maskEmail(to)}:`, {
         error: error.message,
         subject: subject,
         stack: error.stack,
@@ -224,8 +225,8 @@ class EmailService {
       if (this.provider === 'smtp') {
         // Verify SMTP connection
         await this.transporter.verify();
-        return { 
-          healthy: true, 
+        return {
+          healthy: true,
           provider: 'SMTP',
           host: process.env.SMTP_HOST,
           port: process.env.SMTP_PORT
@@ -236,10 +237,10 @@ class EmailService {
         return { healthy: true, provider: 'Mailgun', domain: this.domain };
       }
     } catch (error) {
-      return { 
-        healthy: false, 
+      return {
+        healthy: false,
         reason: `Cannot connect to ${this.provider} service`,
-        error: error.message 
+        error: error.message
       };
     }
   }

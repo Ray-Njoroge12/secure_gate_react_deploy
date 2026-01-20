@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS cache_management (
 );
 
 -- Add additional indexes for performance
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
+
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 CREATE INDEX IF NOT EXISTS idx_users_verified ON users(verified);
 
@@ -72,15 +74,27 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_visitors_check_in ON visitors(check_in);
 CREATE INDEX IF NOT EXISTS idx_visitors_check_out ON visitors(check_out);
 
-CREATE INDEX IF NOT EXISTS idx_passes_pass_id ON passes(pass_id);
-CREATE INDEX IF NOT EXISTS idx_passes_created_at ON passes(created_at);
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'passes') THEN
+        CREATE INDEX IF NOT EXISTS idx_passes_pass_id ON passes(pass_id);
+        CREATE INDEX IF NOT EXISTS idx_passes_created_at ON passes(created_at);
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_access_logs_entity_type ON access_logs(entity_type);
 CREATE INDEX IF NOT EXISTS idx_access_logs_entity_id ON access_logs(entity_id);
 CREATE INDEX IF NOT EXISTS idx_access_logs_outcome ON access_logs(outcome);
 
-CREATE INDEX IF NOT EXISTS idx_security_events_user_id ON security_events(user_id);
-CREATE INDEX IF NOT EXISTS idx_security_events_risk_score ON security_events(risk_score);
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'security_events' AND column_name = 'user_id') THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_security_events_user_id ON security_events(user_id)';
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'security_events' AND column_name = 'risk_score') THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_security_events_risk_score ON security_events(risk_score)';
+    END IF;
+END $$;
 
 -- Performance metrics indexes
 CREATE INDEX IF NOT EXISTS idx_performance_metrics_name ON performance_metrics(metric_name);
@@ -105,7 +119,12 @@ CREATE INDEX IF NOT EXISTS idx_cache_last_accessed ON cache_management(last_acce
 -- Create partial indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_visitors_active ON visitors(id) WHERE status IN ('PENDING', 'APPROVED');
 CREATE INDEX IF NOT EXISTS idx_passes_active ON passes(id) WHERE status = 'active' AND expires_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_security_events_unresolved ON security_events(id) WHERE resolved = false;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'security_events' AND column_name = 'resolved') THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_security_events_unresolved ON security_events(id) WHERE resolved = false';
+    END IF;
+END $$;
 
 -- Create function for cleaning up old data
 CREATE OR REPLACE FUNCTION cleanup_old_data()
@@ -115,7 +134,9 @@ BEGIN
     DELETE FROM access_logs WHERE created_at < NOW() - INTERVAL '1 year';
     
     -- Clean up old OTP resend logs (older than 30 days)
-    DELETE FROM otp_resend_log WHERE created_at < NOW() - INTERVAL '30 days';
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'otp_resend_log') THEN
+        EXECUTE 'DELETE FROM otp_resend_log WHERE created_at < NOW() - INTERVAL ''30 days''';
+    END IF;
     
     -- Clean up old performance metrics (older than 6 months)
     DELETE FROM performance_metrics WHERE created_at < NOW() - INTERVAL '6 months';

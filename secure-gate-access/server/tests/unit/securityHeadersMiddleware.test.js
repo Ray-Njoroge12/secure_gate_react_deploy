@@ -103,12 +103,12 @@ describe('Security Headers Middleware', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Spy on console methods
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
     mockReq = {
       method: 'POST',
       path: '/api/test',
@@ -252,7 +252,7 @@ describe('Security Headers Middleware', () => {
 
       // Check that set was called, but not with cache-control for sensitive paths
       const setCalls = mockRes.set.mock.calls;
-      const hasCacheControl = setCalls.some(call => 
+      const hasCacheControl = setCalls.some(call =>
         call[0]['Cache-Control'] === 'no-store, no-cache, must-revalidate, private'
       );
       expect(hasCacheControl).toBe(false);
@@ -604,7 +604,7 @@ describe('Security Headers Middleware', () => {
   describe('securityResponseMiddleware', () => {
     it('should override res.json to add security headers', () => {
       const originalJson = mockRes.json;
-      
+
       securityResponseMiddleware(mockReq, mockRes, mockNext);
 
       // Call the overridden json method
@@ -619,12 +619,12 @@ describe('Security Headers Middleware', () => {
 
     it('should log slow responses as security events', () => {
       jest.useFakeTimers();
-      
+
       securityResponseMiddleware(mockReq, mockRes, mockNext);
-      
+
       // Advance time by 6 seconds
       jest.advanceTimersByTime(6000);
-      
+
       // Trigger finish event
       if (mockRes._finishCallback) {
         mockRes._finishCallback();
@@ -643,12 +643,12 @@ describe('Security Headers Middleware', () => {
 
     it('should not log fast responses', () => {
       jest.useFakeTimers();
-      
+
       securityResponseMiddleware(mockReq, mockRes, mockNext);
-      
+
       // Advance time by only 100ms
       jest.advanceTimersByTime(100);
-      
+
       // Trigger finish event
       if (mockRes._finishCallback) {
         mockRes._finishCallback();
@@ -867,6 +867,8 @@ describe('Security Headers Middleware', () => {
       const firstId = mockReq.headers['x-request-id'];
 
       delete mockReq.headers['x-request-id'];
+      delete mockReq.requestId;
+      delete mockReq.correlationId;
       customSecurityHeaders(mockReq, mockRes, mockNext);
       const secondId = mockReq.headers['x-request-id'];
 

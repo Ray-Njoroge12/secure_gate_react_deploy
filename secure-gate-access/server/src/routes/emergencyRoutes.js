@@ -15,6 +15,7 @@ import emergencyService from '../services/emergencyService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import loggingService from '../services/loggingService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
+import { maskEmail } from '../utils/redaction.js';
 
 const router = express.Router();
 
@@ -41,9 +42,11 @@ router.post('/panic', requireRole(['guard']), async (req, res) => {
     
     // Emit real-time event to all connected admins/guards
     if (req.app.locals.io) {
+      const guardName = result.guard.username || '';
+      const safeGuardName = guardName.includes('@') ? maskEmail(guardName) : guardName;
       req.app.locals.io.emit('emergency:triggered', {
         emergencyId: result.emergency.id,
-        guardName: result.guard.username,
+        guardName: safeGuardName,
         triggeredAt: result.emergency.triggered_at,
         hasLocation: !!(latitude && longitude),
         // Privacy: Don't broadcast exact coordinates
@@ -129,9 +132,13 @@ router.post('/:id/acknowledge', requireRole(['admin', 'guard']), async (req, res
     
     // Notify everyone that help is responding
     if (req.app.locals.io) {
+      const acknowledgedBy = req.user.username || '';
+      const safeAcknowledgedBy = acknowledgedBy.includes('@')
+        ? maskEmail(acknowledgedBy)
+        : acknowledgedBy;
       req.app.locals.io.emit('emergency:acknowledged', {
         emergencyId,
-        acknowledgedBy: req.user.username,
+        acknowledgedBy: safeAcknowledgedBy,
         acknowledgedAt: result.acknowledged_at
       });
     }

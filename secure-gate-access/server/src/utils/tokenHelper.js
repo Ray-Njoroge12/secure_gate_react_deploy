@@ -5,7 +5,7 @@
  */
 
 import EventEmitter from 'events';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // Event bus for visitor lifecycle events
 class VisitorEventBus extends EventEmitter {

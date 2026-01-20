@@ -5,12 +5,13 @@
  */
 
 import express from 'express';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
 import { errorResponse, successResponse } from '../utils/responseFormatter.js';
 import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
 import * as whatsappService from '../services/whatsappService.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
+import { dbManager as db } from '../database/db.enhanced.js';
 
 const router = express.Router();
 
@@ -128,6 +129,17 @@ router.post('/send', authenticateToken, authorize(['admin', 'resident']), asyncH
   if (!result.success) {
     throw new AppError(result.error || 'Failed to send message', 500);
   }
+
+  await recordOutboundNotification({
+    to: result.to || to,
+    messageId: result.messageId,
+    templateName: template_name,
+    metadata: {
+      type: template_name ? 'template' : 'text'
+    },
+    body: message,
+    notificationType: template_name ? 'whatsapp_template' : 'whatsapp_text'
+  });
   
   return successResponse(res, {
     status: 'sent',
@@ -160,6 +172,17 @@ router.post('/notify/visitor-pass', authenticateToken, authorize(['admin', 'resi
   if (!result.success) {
     throw new AppError(result.error || 'Failed to send notification', 500);
   }
+
+  await recordOutboundNotification({
+    to: visitorPhone,
+    messageId: result.messageId,
+    templateName: 'visitor_pass',
+    metadata: {
+      visitorName,
+      residentName: residentName || req.user.name
+    },
+    notificationType: 'whatsapp_visitor_pass'
+  });
   
   return successResponse(res, result, 'Visitor pass notification sent');
 }));
@@ -185,6 +208,18 @@ router.post('/notify/approval-request', authenticateToken, authorize(['admin', '
   if (!result.success) {
     throw new AppError(result.error || 'Failed to send approval request', 500);
   }
+
+  await recordOutboundNotification({
+    to: residentPhone,
+    messageId: result.messageId,
+    templateName: 'approval_request',
+    metadata: {
+      visitorName,
+      visitorPhone,
+      purpose
+    },
+    notificationType: 'whatsapp_approval_request'
+  });
   
   return successResponse(res, result, 'Approval request sent');
 }));
@@ -213,13 +248,95 @@ async function handleIncomingMessage(message, contacts) {
     const messageId = message.id;
     const timestamp = message.timestamp;
     const type = message.type;
-    
+
+    const contact = contacts?.find?.(c => c.wa_id === from) || contacts?.[0];
+    const textBody = message.text?.body
+      || message.button?.text
+      || message.interactive?.button_reply?.title
+      || message.interactive?.list_reply?.title
+      || null;
+
+    const normalizedText = textBody ? textBody.trim().toLowerCase() : null;
+    const command = normalizedText && (normalizedText.startsWith('approve') || normalizedText.startsWith('deny'))
+      ? normalizedText.split(/\s+/)[0]
+      : null;
+
     console.log(`[WhatsApp] Received ${type} message from ${from}:`, message);
-    
-    // TODO: Implement message handling logic
-    // - Check if this is a response to a visitor invite
-    // - Process commands like "APPROVE" or "DENY"
-    // - Store message in database
+
+    await db.query(
+      `INSERT INTO notifications (
+        type,
+        recipient,
+        message_id,
+        status,
+        delivery_status,
+        delivery_provider,
+        delivery_metadata,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+      [
+        'whatsapp',
+        from,
+        messageId,
+        'received',
+        'received',
+        'whatsapp',
+        JSON.stringify({
+          direction: 'incoming',
+          timestamp,
+          type,
+          text: textBody,
+          command,
+          contact,
+          context: message.context || null,
+          raw: message
+        })
+      ]
+    );
+
+    await recordNotificationLog({
+      recipientType: 'external',
+      recipientId: null,
+      recipientPhone: from,
+      notificationType: 'whatsapp_inbound',
+      channel: 'whatsapp',
+      body: textBody,
+      status: 'received',
+      provider: 'whatsapp',
+      providerMessageId: messageId,
+      metadata: {
+        direction: 'incoming',
+        timestamp,
+        type,
+        command,
+        contact,
+        context: message.context || null
+      }
+    });
+
+    if (message.context?.id) {
+      await db.query(
+        `UPDATE notification_log
+         SET metadata = COALESCE(metadata, '{}'::jsonb) || $1::jsonb,
+             updated_at = NOW()
+         WHERE provider_message_id = $2`,
+        [
+          JSON.stringify({
+            whatsappReply: {
+              messageId,
+              from,
+              type,
+              text: textBody,
+              command,
+              timestamp
+            }
+          }),
+          message.context.id
+        ]
+      );
+    }
     
   } catch (error) {
     console.error('[WhatsApp] Error handling incoming message:', error);
@@ -242,11 +359,174 @@ async function handleMessageStatus(status) {
       messageId,
       metadata: { recipientId, errors: status.errors }
     });
-    
-    // TODO: Update message status in database
+
+    const metadata = {
+      whatsappStatus: {
+        recipientId,
+        errors: status.errors,
+        timestamp: status.timestamp
+      }
+    };
+
+    await db.query(
+      `UPDATE notifications
+       SET
+         delivery_status = $1::text,
+         delivery_provider = 'whatsapp',
+         delivered_at = CASE WHEN $1::text = 'delivered' THEN NOW() ELSE delivered_at END,
+         failed_at = CASE WHEN $1::text IN ('failed', 'bounced', 'undelivered') THEN NOW() ELSE failed_at END,
+         failure_reason = $2::text,
+         delivery_metadata = COALESCE(delivery_metadata, '{}'::jsonb) || $3::jsonb,
+         updated_at = NOW()
+       WHERE message_id = $4`,
+      [
+        statusType,
+        status.errors?.[0]?.title || status.errors?.[0]?.message || null,
+        JSON.stringify(metadata),
+        messageId
+      ]
+    );
+
+    await db.query(
+      `UPDATE notification_log
+       SET
+         status = $1,
+         read_at = CASE WHEN $1 = 'read' THEN NOW() ELSE read_at END,
+         metadata = COALESCE(metadata, '{}'::jsonb) || $2::jsonb,
+         updated_at = NOW()
+       WHERE provider_message_id = $3`,
+      [statusType, JSON.stringify(metadata), messageId]
+    );
     
   } catch (error) {
     console.error('[WhatsApp] Error handling status update:', error);
+  }
+}
+
+async function recordOutboundNotification({
+  to,
+  messageId,
+  templateName,
+  metadata = {},
+  body = null,
+  notificationType = null
+}) {
+  if (!messageId) {
+    return;
+  }
+
+  try {
+    await db.query(
+      `INSERT INTO notifications (
+        type,
+        recipient,
+        message_id,
+        status,
+        delivery_status,
+        delivery_provider,
+        delivery_metadata,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+      [
+        'whatsapp',
+        to,
+        messageId,
+        'sent',
+        'sent',
+        'whatsapp',
+        JSON.stringify({
+          direction: 'outgoing',
+          templateName,
+          ...metadata
+        })
+      ]
+    );
+
+    await recordNotificationLog({
+      recipientType: 'external',
+      recipientId: null,
+      recipientPhone: to,
+      notificationType: notificationType || templateName || 'whatsapp_outbound',
+      channel: 'whatsapp',
+      body,
+      status: 'sent',
+      provider: 'whatsapp',
+      providerMessageId: messageId,
+      metadata: {
+        direction: 'outgoing',
+        templateName,
+        body,
+        ...metadata
+      }
+    });
+  } catch (error) {
+    console.warn('[WhatsApp] Failed to record outbound notification:', error.message);
+  }
+}
+
+async function recordNotificationLog({
+  recipientType,
+  recipientId,
+  recipientPhone,
+  notificationType,
+  channel,
+  body,
+  status,
+  provider,
+  providerMessageId,
+  metadata = {}
+}) {
+  try {
+    const sentAt = status === 'sent' ? new Date() : null;
+    await db.query(
+      `INSERT INTO notification_log (
+        recipient_type,
+        recipient_id,
+        recipient_phone,
+        notification_type,
+        channel,
+        language,
+        subject,
+        body,
+        template_name,
+        template_variables,
+        user_id,
+        status,
+        provider,
+        provider_message_id,
+        metadata,
+        sent_at,
+        created_at,
+        updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+        $16,
+        NOW(),
+        NOW()
+      )`,
+      [
+        recipientType,
+        recipientId,
+        recipientPhone,
+        notificationType,
+        channel,
+        'en',
+        null,
+        body,
+        notificationType,
+        JSON.stringify(metadata),
+        recipientId,
+        status,
+        provider,
+        providerMessageId || null,
+        JSON.stringify(metadata),
+        sentAt
+      ]
+    );
+  } catch (error) {
+    console.warn('[WhatsApp] Failed to write notification_log:', error.message);
   }
 }
 

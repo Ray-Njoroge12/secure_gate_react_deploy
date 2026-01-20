@@ -8,7 +8,9 @@ import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator.jsx';
 import phoneValidator from '../utils/phoneValidator.js';
 import passwordValidator from '../utils/passwordValidator.js';
-import logger from 'utils/logger';
+import logger from '../utils/logger';
+import PasswordRequirements from '../components/PasswordRequirements';
+import api from '../utils/apiClient';
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -27,7 +29,6 @@ export default function RegistrationPage() {
     password: '',
     confirmPassword: '',
     role: 'resident',
-    residentialArea: '',
     estateId: '',
     phone: '',
     houseNumber: '',
@@ -39,6 +40,9 @@ export default function RegistrationPage() {
   const [success, setSuccess] = useState(false);
   const [estates, setEstates] = useState([]);
   const [estatesLoading, setEstatesLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [estateError, setEstateError] = useState('');
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -71,13 +75,32 @@ export default function RegistrationPage() {
     const fetchEstates = async () => {
       try {
         setEstatesLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/estates/available`);
-        const data = await response.json();
-        if (response.ok) {
-          setEstates(data?.data?.estates || []);
+        setEstateError('');  // Clear previous errors
+
+        const response = await fetch(`${API_BASE_URL}/api/estates/available`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load estates: ${response.status}`);
         }
+
+        const data = await response.json();
+        setEstates(data?.data?.estates || []);
+
       } catch (err) {
         logger.error('Failed to load estates', err);
+        setEstateError('Unable to load estates list');
+
+        // Show warning but allow registration to continue
+        handleError('Could not load estates list. You can still register - estate will be assigned by administrator.', {
+          context: 'Estate Loading',
+          title: 'Connection Issue',
+          severity: 'warning',
+          autoClose: true,
+          autoCloseDelay: 5000
+        });
       } finally {
         setEstatesLoading(false);
       }
@@ -183,13 +206,7 @@ export default function RegistrationPage() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    if (!formData.residentialArea.trim()) {
-      newErrors.residentialArea = 'Residential area is required';
-    }
-
-    if (!isBulkRegistration && !formData.estateId) {
-      newErrors.estateId = 'Estate selection is required';
-    }
+    // Estate is now optional - admin will assign during activation
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
@@ -210,19 +227,24 @@ export default function RegistrationPage() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    setErrors({});
-    clearAllErrors();
+    clearAllErrors(); // Only clear toast errors, not form field errors
     setLoading(true);
 
+    // Validate form - this sets inline field errors
     if (!validateForm()) {
       setLoading(false);
+      handleError("Please fix the errors highlighted in the form", {
+        context: 'User Registration',
+        title: 'Validation Failed',
+        severity: 'warning'
+      });
       return;
     }
 
     try {
       // Convert phone number to international format for backend
       const internationalPhone = phoneValidator.toInternational(formData.phone.trim(), 'KE');
-      
+
       const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -230,38 +252,67 @@ export default function RegistrationPage() {
           username: formData.username,
           email: formData.email,
           role: formData.role,
-          area: formData.residentialArea,
           phone: internationalPhone,
-          house: formData.role === "resident" ? formData.houseNumber : "", // Backend expects 'house' field
+          house: formData.role === "resident" ? formData.houseNumber : "",
           password: formData.password,
-          estate_id: Number(formData.estateId)
+          estate_id: formData.estateId ? Number(formData.estateId) : null
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        handleError(data.message || "Registration failed", {
-          context: 'User Registration',
-          title: 'Registration Failed',
-          showRecoveryActions: true,
-          onRetry: () => handleRegister(e)
-        });
+        // Handle specific error cases to preserve user context
+        if (res.status === 409 || (data.message && data.message.toLowerCase().includes('already exist'))) {
+          // Duplicate email or username - set inline errors
+          const isDuplicateEmail = data.message.toLowerCase().includes('email');
+          const isDuplicateUsername = data.message.toLowerCase().includes('username');
+
+          if (isDuplicateEmail) {
+            setErrors(prev => ({ ...prev, email: 'This email is already registered. Try logging in instead.' }));
+          }
+          if (isDuplicateUsername) {
+            setErrors(prev => ({ ...prev, username: 'This username is already taken. Please choose another.' }));
+          }
+
+          handleError(data.message, {
+            context: 'User Registration',
+            title: 'Account Already Exists',
+            severity: 'error'
+          });
+        } else {
+          // Generic error - preserve all form state
+          handleError(data.message || "Registration failed. Please try again.", {
+            context: 'User Registration',
+            title: 'Registration Failed',
+            showRecoveryActions: true,
+            onRetry: () => handleRegister(e)
+          });
+        }
         return;
       }
 
-      handleSuccess("Registration successful! Redirecting to login...", {
+      // Success - show detailed message with longer delay
+      handleSuccess(`✅ Registration successful!
+
+📧 Next steps:
+1. Check your email for confirmation
+2. Wait for admin approval (usually 24-48 hours)
+3. You'll receive an activation email once approved
+
+Redirecting to login in 10 seconds...`, {
         context: 'User Registration',
-        title: 'Registration Successful',
+        title: 'Account Pending Approval',
         autoClose: true,
-        autoCloseDelay: 2000
+        autoCloseDelay: 10000  // 10 seconds instead of 5
       });
-      setSuccess(true);
-      setTimeout(() => navigate("/login"), 3000);
+      setSuccess("Account created! Pending Admin approval. You'll receive an email when activated.");
+      setTimeout(() => navigate("/login"), 10000);  // 10 seconds delay
     } catch (err) {
-      handleError(err, {
+      // Network or unexpected errors - preserve form state
+      handleError(err.message || "Network error. Please check your connection and try again.", {
         context: 'User Registration',
-        title: 'Server Error',
+        title: 'Connection Error',
         showRecoveryActions: true,
         onRetry: () => handleRegister(e)
       });
@@ -513,12 +564,11 @@ export default function RegistrationPage() {
                       else setOtpError(e.message || 'Failed to resend OTP');
                     }
                   }}
-                  className={`min-h-[44px] min-w-[44px] px-4 py-2 text-white border-none rounded-md ${
-                    resendCooldown > 0 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-gray-600 cursor-pointer hover:bg-gray-700'
-                  }`}
-                >{resendCooldown>0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</button>
+                  className={`min-h-[44px] min-w-[44px] px-4 py-2 text-white border-none rounded-md ${resendCooldown > 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gray-600 cursor-pointer hover:bg-gray-700'
+                    }`}
+                >{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</button>
               </div>
               {otpError && (
                 <div id="otp-error" className="text-red-600 text-sm mt-2" aria-live="polite">
@@ -648,11 +698,10 @@ export default function RegistrationPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full mt-4 flex justify-center items-center h-12 px-4 border-none rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${
-                loading 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
-              }`}
+              className={`w-full mt-4 flex justify-center items-center h-12 px-4 border-none rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${loading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
+                }`}
             >
               {loading ? (
                 <>
@@ -723,57 +772,48 @@ export default function RegistrationPage() {
           {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
         </div>
 
-        <div>
-          <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
-            Role
-          </label>
-          <select
-            id="role"
-            value={formData.role}
-            onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-          >
-            <option value="resident">Resident</option>
-            <option value="security">Security Guard</option>
-          </select>
-        </div>
+        {/* Role selection removed for public registration - defaults to Resident */
+          /* Guards must be created by Admin */
+        }
 
         <div>
           <label htmlFor="estateId" className="block text-sm font-medium text-gray-700 mb-2">
-            Estate
+            Estate (Optional)
           </label>
           <select
             id="estateId"
             value={formData.estateId}
             onChange={(e) => setFormData(prev => ({ ...prev, estateId: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-            required
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${estateError ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300'
+              }`}
             disabled={estatesLoading}
           >
-            <option value="">{estatesLoading ? 'Loading estates...' : 'Select an estate'}</option>
-            {estates.map((estate) => (
+            <option value="">
+              {estatesLoading
+                ? 'Loading estates...'
+                : estateError
+                  ? 'Administrator will assign (unable to load list)'
+                  : 'Administrator will assign'}
+            </option>
+            {!estateError && estates.map((estate) => (
               <option key={estate.id} value={estate.id}>
                 {estate.name}
               </option>
             ))}
           </select>
+          <p className="text-sm text-gray-500 mt-1">
+            {estateError ? (
+              <span className="text-yellow-600 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {estateError}. You can still register - estate will be assigned by admin.
+              </span>
+            ) : (
+              'ℹ️ Your estate will be assigned by an administrator during account activation'
+            )}
+          </p>
           {errors.estateId && <p className="text-red-600 text-sm mt-1">{errors.estateId}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="residentialArea" className="block text-sm font-medium text-gray-700 mb-2">
-            Residential Area
-          </label>
-          <input
-            id="residentialArea"
-            type="text"
-            placeholder="Enter residential area"
-            value={formData.residentialArea}
-            onChange={(e) => setFormData(prev => ({ ...prev, residentialArea: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-            required
-          />
-          {errors.residentialArea && <p className="text-red-600 text-sm mt-1">{errors.residentialArea}</p>}
         </div>
 
         {formData.role === "resident" && (
@@ -814,16 +854,36 @@ export default function RegistrationPage() {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            placeholder="Enter password"
-            value={formData.password}
-            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-            required
-          />
-          <PasswordStrengthIndicator password={formData.password} />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter password"
+              value={formData.password}
+              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 rounded p-1"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              tabIndex={-1}
+            >
+              {showPassword ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+          </div>
+          <PasswordRequirements password={formData.password} />
           {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
         </div>
 
@@ -834,32 +894,51 @@ export default function RegistrationPage() {
           <div className="relative">
             <input
               id="confirmPassword"
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm your password"
               value={formData.confirmPassword}
               onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-              className={`w-full px-3 py-2 pr-10 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${
-                formData.confirmPassword && formData.password
-                  ? formData.confirmPassword === formData.password
-                    ? 'border-green-300 bg-green-50'
-                    : 'border-red-300 bg-red-50'
-                  : 'border-gray-300'
-              }`}
+              className={`w-full px-3 py-2 pr-12 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${formData.confirmPassword && formData.password
+                ? formData.confirmPassword === formData.password
+                  ? 'border-green-300 bg-green-50'
+                  : 'border-red-300 bg-red-50'
+                : 'border-gray-300'
+                }`}
               required
             />
-            {formData.confirmPassword && formData.password && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                {formData.confirmPassword === formData.password ? (
-                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <div className="absolute right-3 top-2.5 flex items-center gap-2">
+              {formData.confirmPassword && formData.password && (
+                <div className="pointer-events-none">
+                  {formData.confirmPassword === formData.password ? (
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 rounded p-1"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                   </svg>
                 ) : (
-                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 )}
-              </div>
-            )}
+              </button>
+            </div>
           </div>
           {formData.confirmPassword && formData.password && formData.confirmPassword !== formData.password && (
             <p className="text-red-600 text-sm mt-1 flex items-center">
@@ -904,11 +983,10 @@ export default function RegistrationPage() {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full flex justify-center items-center h-12 px-4 border border-transparent rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${
-            loading
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-          }`}
+          className={`w-full flex justify-center items-center h-12 px-4 border border-transparent rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${loading
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
+            }`}
         >
           {loading ? (
             <>

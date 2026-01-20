@@ -215,8 +215,8 @@ describe('Auth Middleware', () => {
         expect(error.message.toLowerCase()).toContain('invalid');
       });
 
-      it('should pass error to next for token without email', async () => {
-        mockVerifyAccessToken.mockResolvedValue({ userId: 123 });
+      it('should pass error to next for token without user identifier', async () => {
+        mockVerifyAccessToken.mockResolvedValue({ estate_id: testUser.estate_id });
 
         authenticateToken(mockReq, mockRes, mockNext);
         await flushPromises();
@@ -315,6 +315,28 @@ describe('Auth Middleware', () => {
 
       await attachUserFromToken(mockReq, mockRes, mockNext);
 
+      expect(mockReq.user).toBeUndefined();
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should skip attaching when token has no estate_id', async () => {
+      mockReq.headers['authorization'] = `Bearer ${validToken}`;
+      mockVerifyAccessToken.mockResolvedValue({ email: testUser.email });
+
+      await attachUserFromToken(mockReq, mockRes, mockNext);
+
+      expect(mockQuery).not.toHaveBeenCalled();
+      expect(mockReq.user).toBeUndefined();
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should skip attaching when token estate_id is invalid', async () => {
+      mockReq.headers['authorization'] = `Bearer ${validToken}`;
+      mockVerifyAccessToken.mockResolvedValue({ email: testUser.email, estate_id: 0 });
+
+      await attachUserFromToken(mockReq, mockRes, mockNext);
+
+      expect(mockQuery).not.toHaveBeenCalled();
       expect(mockReq.user).toBeUndefined();
       expect(mockNext).toHaveBeenCalled();
     });

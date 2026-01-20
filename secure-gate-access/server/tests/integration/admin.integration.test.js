@@ -106,8 +106,8 @@ describe('Admin Operations Integration Tests', () => {
       // Create sample audit logs
       for (let i = 0; i < 5; i++) {
         await dbManager.query(
-          `INSERT INTO audit_logs (action, resource, user_id, user_role, request_id, ip_address, details, timestamp, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())`,
+          `INSERT INTO audit_logs (action, resource, user_id, user_role, request_id, ip_address, details, timestamp, created_at, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW(), $8)`,
           [
             `test.action.${i}`,
             'test_resource',
@@ -115,7 +115,8 @@ describe('Admin Operations Integration Tests', () => {
             'admin',
             `req-${i}`,
             '192.168.1.1',
-            JSON.stringify({ test: `data-${i}` })
+            JSON.stringify({ test: `data-${i}` }),
+            testUsers.admin.estate_id
           ]
         );
       }
@@ -284,7 +285,7 @@ describe('Admin Operations Integration Tests', () => {
         const argon2 = await import('argon2');
         const hashedPassword = await argon2.default.hash('testpass123');
         const tempUser = await dbManager.query(
-          `INSERT INTO users (username, email, password, password_hash, role, verified, status)
+          `INSERT INTO users (username, email, password, password_hash, role, verified, account_status)
            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
           ['temp_user', 'temp@test.com', hashedPassword, hashedPassword, 'resident', true, 'active']
         );
@@ -298,12 +299,12 @@ describe('Admin Operations Integration Tests', () => {
           
           // Check soft delete - status should be 'deleted'
           const deleted = await dbManager.query(
-            'SELECT status FROM users WHERE id = $1',
+            'SELECT account_status FROM users WHERE id = $1',
             [tempUser.rows[0].id]
           );
           
           expect(deleted.rows.length).toBe(1);
-          expect(deleted.rows[0].status).toBe('deleted');
+          expect(deleted.rows[0].account_status).toBe('deleted');
         }
       });
 

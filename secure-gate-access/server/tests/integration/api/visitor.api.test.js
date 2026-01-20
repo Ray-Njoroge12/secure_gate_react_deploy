@@ -331,7 +331,7 @@ describe('Visitor API Integration Tests', () => {
 
     it('should not delete checked-in visitor', async () => {
       const insertResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in_time)
          VALUES ($1, $2, $3, $4, $5, NOW())
          RETURNING *`,
         ['Active Visitor', '+254711111111', testUsers.resident.id, 'ACTIVE001', 'on_premise']
@@ -372,7 +372,7 @@ describe('Visitor API Integration Tests', () => {
 
       const updateResult = await dbManager.query(
         `UPDATE visitors 
-         SET status = 'on_premise', check_in = NOW()
+         SET status = 'on_premise', check_in_time = NOW()
          WHERE id = $1 AND status = 'approved'
          RETURNING *`,
         [visitorId]
@@ -380,7 +380,7 @@ describe('Visitor API Integration Tests', () => {
 
       expect(updateResult.rows).toHaveLength(1);
       expect(updateResult.rows[0].status).toBe('on_premise');
-      expect(updateResult.rows[0].check_in).toBeDefined();
+      expect(updateResult.rows[0].check_in_time).toBeDefined();
     });
 
     it('should reject check-in for pending visitor', async () => {
@@ -395,7 +395,7 @@ describe('Visitor API Integration Tests', () => {
 
       const updateResult = await dbManager.query(
         `UPDATE visitors 
-         SET status = 'on_premise', check_in = NOW()
+         SET status = 'on_premise', check_in_time = NOW()
          WHERE id = $1 AND status = 'approved'
          RETURNING *`,
         [visitorId]
@@ -406,7 +406,7 @@ describe('Visitor API Integration Tests', () => {
 
     it('should prevent double check-in', async () => {
       const insertResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in_time)
          VALUES ($1, $2, $3, $4, $5, NOW())
          RETURNING *`,
         ['Already Checked', '+254711444444', testUsers.resident.id, 'DOUBLE001', 'on_premise']
@@ -416,7 +416,7 @@ describe('Visitor API Integration Tests', () => {
 
       const updateResult = await dbManager.query(
         `UPDATE visitors 
-         SET status = 'on_premise', check_in = NOW()
+         SET status = 'on_premise', check_in_time = NOW()
          WHERE id = $1 AND status = 'approved'
          RETURNING *`,
         [visitorId]
@@ -434,7 +434,7 @@ describe('Visitor API Integration Tests', () => {
       );
 
       await dbManager.query(
-        `UPDATE visitors SET status = 'on_premise', check_in = NOW() WHERE id = $1`,
+        `UPDATE visitors SET status = 'on_premise', check_in_time = NOW() WHERE id = $1`,
         [insertResult.rows[0].id]
       );
 
@@ -460,7 +460,7 @@ describe('Visitor API Integration Tests', () => {
       const checkInTime = new Date(Date.now() - 3600000); // 1 hour ago
 
       const insertResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in_time)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
         ['CheckOut Visitor', '+254711666666', testUsers.resident.id, 'CHECKOUT001', 'on_premise', checkInTime]
@@ -470,7 +470,7 @@ describe('Visitor API Integration Tests', () => {
 
       const updateResult = await dbManager.query(
         `UPDATE visitors 
-         SET status = 'checked_out', check_out = NOW()
+         SET status = 'checked_out', check_out_time = NOW()
          WHERE id = $1 AND status = 'on_premise'
          RETURNING *`,
         [visitorId]
@@ -478,14 +478,14 @@ describe('Visitor API Integration Tests', () => {
 
       expect(updateResult.rows).toHaveLength(1);
       expect(updateResult.rows[0].status).toBe('checked_out');
-      expect(updateResult.rows[0].check_out).toBeDefined();
+      expect(updateResult.rows[0].check_out_time).toBeDefined();
     });
 
     it('should calculate visit duration', async () => {
       const checkInTime = new Date(Date.now() - 7200000); // 2 hours ago
 
       const insertResult = await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in)
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, check_in_time)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
         ['Duration Visitor', '+254711777777', testUsers.resident.id, 'DURATION001', 'on_premise', checkInTime]
@@ -495,16 +495,16 @@ describe('Visitor API Integration Tests', () => {
       const checkOutTime = new Date();
 
       await dbManager.query(
-        `UPDATE visitors SET status = 'checked_out', check_out = $1 WHERE id = $2`,
+        `UPDATE visitors SET status = 'checked_out', check_out_time = $1 WHERE id = $2`,
         [checkOutTime, visitorId]
       );
 
       const visitor = await dbManager.query(
-        'SELECT check_in, check_out FROM visitors WHERE id = $1',
+        'SELECT check_in_time, check_out_time FROM visitors WHERE id = $1',
         [visitorId]
       );
 
-      const duration = new Date(visitor.rows[0].check_out) - new Date(visitor.rows[0].check_in);
+      const duration = new Date(visitor.rows[0].check_out_time) - new Date(visitor.rows[0].check_in_time);
       const durationMinutes = Math.round(duration / 60000);
 
       expect(durationMinutes).toBeGreaterThanOrEqual(119); // ~2 hours
@@ -523,7 +523,7 @@ describe('Visitor API Integration Tests', () => {
 
       const updateResult = await dbManager.query(
         `UPDATE visitors 
-         SET status = 'checked_out', check_out = NOW()
+         SET status = 'checked_out', check_out_time = NOW()
          WHERE id = $1 AND status = 'on_premise'
          RETURNING *`,
         [visitorId]
@@ -548,7 +548,7 @@ describe('Visitor API Integration Tests', () => {
       // Guard can check in (no host_id restriction)
       const updateResult = await dbManager.query(
         `UPDATE visitors 
-         SET status = 'on_premise', check_in = NOW()
+         SET status = 'on_premise', check_in_time = NOW()
          WHERE id = $1 AND status = 'approved'
          RETURNING *`,
         [insertResult.rows[0].id]

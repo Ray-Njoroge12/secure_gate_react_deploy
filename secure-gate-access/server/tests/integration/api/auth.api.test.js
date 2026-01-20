@@ -10,7 +10,7 @@ import { setupTestDatabase, cleanupTestDatabase, createTestUsers, getAuthToken }
 import { dbManager } from '../../../src/database/db.enhanced.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
 
@@ -37,17 +37,27 @@ describe('Authentication API Integration Tests', () => {
         password: 'SecurePass123!',
         role: 'resident',
         phone: '+254700111111',
-        unit: 'B202'
+        house: 'B202'
       };
 
       // Simulate registration logic
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
       const result = await dbManager.query(
-        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, username, email, role, phone, unit, created_at`,
-        [userData.username, userData.email, hashedPassword, hashedPassword, userData.role, userData.phone, userData.unit, true]
+        `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, username, email, role, phone, house, created_at`,
+        [
+          userData.username,
+          userData.email,
+          hashedPassword,
+          hashedPassword,
+          userData.role,
+          userData.phone,
+          userData.house,
+          true,
+          testUsers.resident.estate_id
+        ]
       );
 
       expect(result.rows).toHaveLength(1);
@@ -64,11 +74,11 @@ describe('Authentication API Integration Tests', () => {
       try {
         const hashedPassword = await bcrypt.hash('hashedpass', 10);
         await dbManager.query(
-          `INSERT INTO users (username, email, password, password_hash, role, verified)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          ['duplicate_user', existingEmail, hashedPassword, hashedPassword, 'resident', true]
+          `INSERT INTO users (username, email, password, password_hash, role, verified, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          ['duplicate_user', existingEmail, hashedPassword, hashedPassword, 'resident', true, testUsers.resident.estate_id]
         );
-        fail('Should have thrown duplicate error');
+        throw new Error('Expected duplicate error');
       } catch (error) {
         expect(error.message).toContain('duplicate');
       }
@@ -79,10 +89,18 @@ describe('Authentication API Integration Tests', () => {
       const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
       const result = await dbManager.query(
-        `INSERT INTO users (username, email, password, password_hash, role, verified)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO users (username, email, password, password_hash, role, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
-        [`hashtest_${Date.now()}`, `hashtest_${Date.now()}@test.com`, hashedPassword, hashedPassword, 'resident', true]
+        [
+          `hashtest_${Date.now()}`,
+          `hashtest_${Date.now()}@test.com`,
+          hashedPassword,
+          hashedPassword,
+          'resident',
+          true,
+          testUsers.resident.estate_id
+        ]
       );
 
       // Stored password should not match plain text
@@ -121,8 +139,8 @@ describe('Authentication API Integration Tests', () => {
 
       // Verify password
       const userResult = await dbManager.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
+        'SELECT * FROM users WHERE email = $1 AND estate_id = $2',
+        [email, testUsers.resident.estate_id]
       );
 
       expect(userResult.rows).toHaveLength(1);
@@ -154,8 +172,8 @@ describe('Authentication API Integration Tests', () => {
       const wrongPassword = 'wrongpassword';
 
       const userResult = await dbManager.query(
-        'SELECT * FROM users WHERE email = $1',
-        [email]
+        'SELECT * FROM users WHERE email = $1 AND estate_id = $2',
+        [email, testUsers.resident.estate_id]
       );
 
       const isValid = await bcrypt.compare(wrongPassword, userResult.rows[0].password);
@@ -309,7 +327,7 @@ describe('Authentication API Integration Tests', () => {
 
       // Fetch user
       const result = await dbManager.query(
-        'SELECT id, username, email, role, phone, unit FROM users WHERE id = $1',
+        'SELECT id, username, email, role, phone, house FROM users WHERE id = $1',
         [decoded.id]
       );
 
@@ -335,8 +353,8 @@ describe('Authentication API Integration Tests', () => {
 
       // Check user exists
       const userResult = await dbManager.query(
-        'SELECT id FROM users WHERE email = $1',
-        [email]
+        'SELECT id FROM users WHERE email = $1 AND estate_id = $2',
+        [email, testUsers.resident.estate_id]
       );
 
       expect(userResult.rows).toHaveLength(1);

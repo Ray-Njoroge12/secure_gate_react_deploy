@@ -26,9 +26,17 @@ export const getGuardAnalytics = async (req, res) => {
     const from = fromDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const to = toDate || new Date().toISOString().split('T')[0];
 
-    const estateId = req.user.estate_id ?? null;
-    const estateFilter = estateId !== null ? ' AND estate_id = $3' : '';
-    const estateParams = estateId !== null ? [from, to, estateId] : [from, to];
+    // Fix G-002: Enforce estate scoping
+    const estateId = req.user.estate_id;
+    if (!estateId && req.user.role !== 'admin') {
+      // Only super-admins might lack estate_id, but guards MUST have it
+      throw new Error('Estate context required for analytics');
+    }
+
+    // Always filter by estate unless super-admin explicitly requests otherwise (and super-admin logic implemented elsewhere)
+    // For now, strict estate filtering for safety
+    const estateFilter = ' AND estate_id = $3';
+    const estateParams = [from, to, estateId || -1]; // -1 to return nothing if undefined matches nothing
 
     // 1. Approval time statistics
     const approvalStats = await dbManager.query(`
@@ -62,22 +70,23 @@ export const getGuardAnalytics = async (req, res) => {
         COUNT(*) as count
       FROM incidents
       WHERE created_at BETWEEN $1 AND $2
+      ${estateFilter}
       GROUP BY category, severity
       ORDER BY count DESC
-    `, [from, to]);
+    `, estateParams);
 
     // 4. Top residents by approvals
     const topResidents = await dbManager.query(`
       SELECT 
-        u.full_name,
+        u.username,
         u.email,
         COUNT(*) FILTER (WHERE v.approved_at IS NOT NULL) as approval_count,
         COUNT(*) FILTER (WHERE v.rejected_at IS NOT NULL) as rejection_count
       FROM visitors v
       JOIN users u ON v.resident_id = u.id
       WHERE v.approval_requested_at BETWEEN $1 AND $2
-        ${estateId !== null ? 'AND v.estate_id = $3' : ''}
-      GROUP BY u.id, u.full_name, u.email
+        AND v.estate_id = $3
+      GROUP BY u.id, u.username, u.email
       ORDER BY approval_count DESC
       LIMIT 10
     `, estateParams);
@@ -127,7 +136,7 @@ export const getGuardAnalytics = async (req, res) => {
           count: parseInt(r.count)
         })),
         topResidents: topResidents.rows.map(r => ({
-          name: r.full_name,
+          name: r.username,
           email: r.email,
           approvals: parseInt(r.approval_count),
           rejections: parseInt(r.rejection_count)

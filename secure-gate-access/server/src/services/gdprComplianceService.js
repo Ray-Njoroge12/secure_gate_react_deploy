@@ -14,9 +14,11 @@ import loggingService from './loggingService.js';
 import centralizedLoggingService from './centralizedLoggingService.js';
 import auditTraceabilityService from './auditTraceabilityService.js';
 import rollbackAlertingService from './rollbackAlertingService.js';
+import { dbManager } from '../database/db.enhanced.js';
+import { validateEncryptionConfig } from './encryptionService.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -206,6 +208,109 @@ class GDPRComplianceService {
     loggingService.logInfo('GDPR compliance monitoring started');
   }
 
+  async queryDb(query, params = []) {
+    if (!dbManager?.isInitialized || !dbManager.pool) {
+      return null;
+    }
+
+    try {
+      return await dbManager.pool.query(query, params);
+    } catch (error) {
+      loggingService.logError('GDPR compliance DB query failed', error, {
+        query: query.trim().split('\n')[0]
+      });
+      return null;
+    }
+  }
+
+  async tableExists(tableName) {
+    const result = await this.queryDb(
+      `SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = $1
+      ) AS exists`,
+      [tableName]
+    );
+
+    return result ? result.rows[0]?.exists === true : false;
+  }
+
+  async columnExists(tableName, columnName) {
+    const result = await this.queryDb(
+      `SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
+      ) AS exists`,
+      [tableName, columnName]
+    );
+
+    return result ? result.rows[0]?.exists === true : false;
+  }
+
+  async retentionPolicyExists(tableName) {
+    const result = await this.queryDb(
+      `SELECT EXISTS (
+        SELECT 1
+        FROM data_retention_policies
+        WHERE table_name = $1 AND retention_days > 0
+      ) AS exists`,
+      [tableName]
+    );
+
+    return result ? result.rows[0]?.exists === true : false;
+  }
+
+  async getLatestRetentionRun() {
+    const executionLogExists = await this.tableExists('retention_execution_log');
+    if (executionLogExists) {
+      const result = await this.queryDb(
+        `SELECT MAX(executed_at) AS last_run
+         FROM retention_execution_log`
+      );
+      return result?.rows[0]?.last_run || null;
+    }
+
+    const auditLogExists = await this.tableExists('audit_logs');
+    if (auditLogExists) {
+      const result = await this.queryDb(
+        `SELECT MAX(created_at) AS last_run
+         FROM audit_logs
+         WHERE action = 'data_retention_job'`
+      );
+      return result?.rows[0]?.last_run || null;
+    }
+
+    return null;
+  }
+
+  getCrossBorderConfig() {
+    const mechanism = process.env.CROSS_BORDER_TRANSFER_MECHANISM;
+    const residencyRegion = process.env.DATA_RESIDENCY_REGION || process.env.AWS_REGION || process.env.DB_REGION;
+    const recipientCountries = process.env.CROSS_BORDER_TRANSFER_RECIPIENT_COUNTRIES;
+    const agreementsSigned = process.env.CROSS_BORDER_TRANSFER_AGREEMENTS_SIGNED === 'true';
+    const safeguardsEnabled = process.env.CROSS_BORDER_TRANSFER_SAFEGUARDS === 'true';
+
+    return {
+      mechanism,
+      residencyRegion,
+      recipientCountries,
+      agreementsSigned,
+      safeguardsEnabled
+    };
+  }
+
+  async baseComplianceArtifactsExist() {
+    const [consentLog, portabilityRequests, retentionPolicies] = await Promise.all([
+      this.tableExists('consent_log'),
+      this.tableExists('portability_requests'),
+      this.tableExists('data_retention_policies')
+    ]);
+
+    return consentLog && portabilityRequests && retentionPolicies;
+  }
+
   /**
    * Collect compliance metrics
    */
@@ -266,9 +371,16 @@ class GDPRComplianceService {
    */
   async calculateDataMinimizationScore() {
     try {
-      // This would calculate actual data minimization score
-      // For now, return a simulated value
-      return Math.random() * 100;
+      const results = await Promise.all([
+        this.validateVisitorDataMinimization(),
+        this.validateGuardDataMinimization(),
+        this.validateAccessLogMinimization(),
+        this.validateAuditLogMinimization(),
+        this.validatePersonalDataRetention()
+      ]);
+
+      const compliantCount = results.filter(result => result.compliant).length;
+      return Math.round((compliantCount / results.length) * 100);
       
     } catch (error) {
       loggingService.logError('Failed to calculate data minimization score', error);
@@ -281,9 +393,15 @@ class GDPRComplianceService {
    */
   async calculateEncryptionComplianceScore() {
     try {
-      // This would calculate actual encryption compliance score
-      // For now, return a simulated value
-      return Math.random() * 100;
+      const results = await Promise.all([
+        this.validateEncryptionAtRest(),
+        this.validateEncryptionInTransit(),
+        this.validateKeyManagement(),
+        this.validateCertificateValidation()
+      ]);
+
+      const compliantCount = results.filter(result => result.compliant).length;
+      return Math.round((compliantCount / results.length) * 100);
       
     } catch (error) {
       loggingService.logError('Failed to calculate encryption compliance score', error);
@@ -296,9 +414,18 @@ class GDPRComplianceService {
    */
   async calculateDataSubjectRequestProcessingTime() {
     try {
-      // This would calculate actual processing time
-      // For now, return a simulated value
-      return Math.random() * 30 * 24 * 60 * 60 * 1000; // 0-30 days in milliseconds
+      const result = await this.queryDb(
+        `SELECT AVG(EXTRACT(EPOCH FROM (processed_at - requested_at))) AS avg_seconds
+         FROM portability_requests
+         WHERE status = 'completed' AND processed_at IS NOT NULL`
+      );
+
+      const avgSeconds = result?.rows[0]?.avg_seconds;
+      if (!avgSeconds) {
+        return 0;
+      }
+
+      return Math.round(avgSeconds * 1000);
       
     } catch (error) {
       loggingService.logError('Failed to calculate data subject request processing time', error);
@@ -311,9 +438,15 @@ class GDPRComplianceService {
    */
   async calculateCrossBorderTransferCompliance() {
     try {
-      // This would calculate actual cross-border transfer compliance
-      // For now, return a simulated value
-      return Math.random() * 100;
+      const results = await Promise.all([
+        this.validateTransferLegality(),
+        this.validateRecipientCountryAdequacy(),
+        this.validateTransferAgreements(),
+        this.validateDataProtectionSafeguards()
+      ]);
+
+      const compliantCount = results.filter(result => result.compliant).length;
+      return Math.round((compliantCount / results.length) * 100);
       
     } catch (error) {
       loggingService.logError('Failed to calculate cross-border transfer compliance', error);
@@ -326,9 +459,15 @@ class GDPRComplianceService {
    */
   async calculateInternationalStandardsCompliance() {
     try {
-      // This would calculate actual international standards compliance
-      // For now, return a simulated value
-      return Math.random() * 100;
+      const results = await Promise.all([
+        this.validateCCPACompliance(),
+        this.validatePIPEDACompliance(),
+        this.validatePDPACompliance(),
+        this.validateLGPDCompliance()
+      ]);
+
+      const compliantCount = results.filter(result => result.compliant).length;
+      return Math.round((compliantCount / results.length) * 100);
       
     } catch (error) {
       loggingService.logError('Failed to calculate international standards compliance', error);
@@ -505,13 +644,26 @@ class GDPRComplianceService {
    */
   async validateVisitorDataMinimization() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for visitor data minimization checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const [policyExists, archiveExists] = await Promise.all([
+        this.retentionPolicyExists('visitors'),
+        this.tableExists('visitors_archive')
+      ]);
+
+      const compliant = policyExists && archiveExists;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Visitor data properly minimized' : 'Visitor data minimization needs improvement',
+        details: compliant
+          ? 'Visitor retention policy and archive table configured'
+          : 'Missing visitor retention policy or archive table',
         timestamp: new Date().toISOString()
       };
       
@@ -530,13 +682,27 @@ class GDPRComplianceService {
    */
   async validateGuardDataMinimization() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for guard data minimization checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const [preferenceColumn, guardPolicy, userPolicy] = await Promise.all([
+        this.columnExists('users', 'data_retention_preference'),
+        this.retentionPolicyExists('guards'),
+        this.retentionPolicyExists('users')
+      ]);
+
+      const compliant = preferenceColumn && (guardPolicy || userPolicy);
       
       return {
         compliant: compliant,
-        details: compliant ? 'Guard data properly minimized' : 'Guard data minimization needs improvement',
+        details: compliant
+          ? 'Guard data minimization controls configured'
+          : 'Missing guard retention policy or retention preference column',
         timestamp: new Date().toISOString()
       };
       
@@ -555,13 +721,36 @@ class GDPRComplianceService {
    */
   async validateAccessLogMinimization() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for access log minimization checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const archiveExists = await this.tableExists('access_logs_archive');
+      const retentionPolicy = await this.retentionPolicyExists('access_logs');
+      let logRetentionPolicy = false;
+
+      if (await this.tableExists('log_retention_policies')) {
+        const result = await this.queryDb(
+          `SELECT EXISTS (
+             SELECT 1
+             FROM log_retention_policies
+             WHERE log_type IN ('access_logs', 'access_log') AND enabled = true
+           ) AS exists`
+        );
+        logRetentionPolicy = result ? result.rows[0]?.exists === true : false;
+      }
+
+      const compliant = archiveExists && (retentionPolicy || logRetentionPolicy);
       
       return {
         compliant: compliant,
-        details: compliant ? 'Access logs properly minimized' : 'Access log minimization needs improvement',
+        details: compliant
+          ? 'Access log retention and archival configured'
+          : 'Missing access log retention policy or archive table',
         timestamp: new Date().toISOString()
       };
       
@@ -580,13 +769,36 @@ class GDPRComplianceService {
    */
   async validateAuditLogMinimization() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for audit log minimization checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const archiveExists = await this.tableExists('audit_logs_archive');
+      const retentionPolicy = await this.retentionPolicyExists('audit_logs');
+      let logRetentionPolicy = false;
+
+      if (await this.tableExists('log_retention_policies')) {
+        const result = await this.queryDb(
+          `SELECT EXISTS (
+             SELECT 1
+             FROM log_retention_policies
+             WHERE log_type IN ('audit_logs', 'audit_log') AND enabled = true
+           ) AS exists`
+        );
+        logRetentionPolicy = result ? result.rows[0]?.exists === true : false;
+      }
+
+      const compliant = archiveExists && (retentionPolicy || logRetentionPolicy);
       
       return {
         compliant: compliant,
-        details: compliant ? 'Audit logs properly minimized' : 'Audit log minimization needs improvement',
+        details: compliant
+          ? 'Audit log retention and archival configured'
+          : 'Missing audit log retention policy or archive table',
         timestamp: new Date().toISOString()
       };
       
@@ -605,13 +817,31 @@ class GDPRComplianceService {
    */
   async validatePersonalDataRetention() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for retention checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const policyTables = ['visitors', 'access_logs', 'audit_logs', 'delivery_logs', 'rideshare_entries'];
+      const policyResults = await Promise.all(policyTables.map((table) => this.retentionPolicyExists(table)));
+      const missingPolicies = policyTables.filter((table, index) => !policyResults[index]);
+
+      const lastRun = await this.getLatestRetentionRun();
+      const daysSinceRun = lastRun
+        ? Math.floor((Date.now() - new Date(lastRun).getTime()) / (24 * 60 * 60 * 1000))
+        : null;
+      const hasRecentRun = daysSinceRun !== null && daysSinceRun <= 30;
+
+      const compliant = missingPolicies.length === 0 && hasRecentRun;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Personal data retention properly managed' : 'Personal data retention needs improvement',
+        details: compliant
+          ? 'Retention policies present and job executed recently'
+          : `Retention policies missing for: ${missingPolicies.join(', ') || 'none'}; last run ${daysSinceRun ?? 'unknown'} days ago`,
         timestamp: new Date().toISOString()
       };
       
@@ -705,13 +935,15 @@ class GDPRComplianceService {
    */
   async validateEncryptionAtRest() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
+      const validation = validateEncryptionConfig();
+      const compliant = validation.isValid;
+      const details = compliant
+        ? `Encryption at rest configured (${validation.method})`
+        : `Encryption config errors: ${validation.errors.join('; ')}`;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Encryption at rest properly implemented (AES-256)' : 'Encryption at rest needs improvement',
+        details,
         timestamp: new Date().toISOString()
       };
       
@@ -730,13 +962,25 @@ class GDPRComplianceService {
    */
   async validateEncryptionInTransit() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
+      const isProduction = process.env.NODE_ENV === 'production';
+      const enforceHttps = process.env.ENFORCE_HTTPS === 'true';
+      const allowHttp = process.env.ALLOW_HTTP_IN_PRODUCTION === 'true';
+      const hstsMaxAge = Number.parseInt(process.env.HSTS_MAX_AGE || '', 10);
+      const hstsConfigured = !Number.isNaN(hstsMaxAge) && hstsMaxAge >= 31536000;
+      const compliant = !isProduction || (enforceHttps && !allowHttp && hstsConfigured);
+
+      let details = 'TLS enforcement not evaluated';
+      if (!isProduction) {
+        details = 'Non-production environment; HTTPS enforcement not required';
+      } else if (compliant) {
+        details = 'HTTPS enforcement and HSTS configured for production';
+      } else {
+        details = 'HTTPS enforcement or HSTS configuration missing for production';
+      }
       
       return {
         compliant: compliant,
-        details: compliant ? 'Encryption in transit properly implemented (TLS 1.3)' : 'Encryption in transit needs improvement',
+        details,
         timestamp: new Date().toISOString()
       };
       
@@ -755,13 +999,27 @@ class GDPRComplianceService {
    */
   async validateKeyManagement() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      const method = process.env.ENCRYPTION_METHOD || 'local';
+      let compliant = true;
+      let details = 'Key management configured';
+
+      if (method === 'aws-kms') {
+        compliant = !!process.env.AWS_KMS_KEY_ID;
+        details = compliant ? 'AWS KMS key configured' : 'AWS_KMS_KEY_ID is missing';
+      } else if (method === 'vault') {
+        compliant = !!process.env.VAULT_ADDR && (!!process.env.VAULT_TOKEN || !!process.env.VAULT_ROOT_TOKEN);
+        details = compliant ? 'Vault credentials configured' : 'Vault address or token missing';
+      } else if (method === 'local') {
+        compliant = !!process.env.ENCRYPTION_KEY && process.env.ENCRYPTION_KEY.length >= 32;
+        details = compliant ? 'Local encryption key configured' : 'ENCRYPTION_KEY missing or too short';
+      } else {
+        compliant = false;
+        details = `Unknown encryption method: ${method}`;
+      }
       
       return {
         compliant: compliant,
-        details: compliant ? 'Key management properly implemented' : 'Key management needs improvement',
+        details,
         timestamp: new Date().toISOString()
       };
       
@@ -780,13 +1038,13 @@ class GDPRComplianceService {
    */
   async validateCertificateValidation() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      const rejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0';
+      const allowInsecure = process.env.ALLOW_INSECURE_TLS === 'true';
+      const compliant = rejectUnauthorized && !allowInsecure;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Certificate validation properly implemented' : 'Certificate validation needs improvement',
+        details: compliant ? 'TLS certificate validation enforced' : 'TLS certificate validation disabled',
         timestamp: new Date().toISOString()
       };
       
@@ -880,13 +1138,26 @@ class GDPRComplianceService {
    */
   async validateAutomatedProcessing() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for automated processing checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const [portabilityRequests, dataExportLog] = await Promise.all([
+        this.tableExists('portability_requests'),
+        this.tableExists('data_export_log')
+      ]);
+
+      const compliant = portabilityRequests && dataExportLog;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Automated data subject request processing properly implemented' : 'Automated processing needs improvement',
+        details: compliant
+          ? 'Portability requests and export logs configured'
+          : 'Missing portability request or export log tables',
         timestamp: new Date().toISOString()
       };
       
@@ -905,13 +1176,44 @@ class GDPRComplianceService {
    */
   async validateResponseTimeCompliance() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for response time checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const result = await this.queryDb(
+        `SELECT
+           COUNT(*) FILTER (WHERE status = 'completed' AND processed_at IS NOT NULL) AS total_completed,
+           COUNT(*) FILTER (
+             WHERE status = 'completed'
+               AND processed_at IS NOT NULL
+               AND processed_at <= requested_at + INTERVAL '30 days'
+           ) AS within_window
+         FROM portability_requests`
+      );
+
+      const totalCompleted = Number(result?.rows[0]?.total_completed || 0);
+      const withinWindow = Number(result?.rows[0]?.within_window || 0);
+
+      if (totalCompleted === 0) {
+        return {
+          compliant: true,
+          details: 'No completed data subject requests available for response time evaluation',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const ratio = withinWindow / totalCompleted;
+      const compliant = ratio >= 0.9;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Data subject request response time compliant' : 'Response time compliance needs improvement',
+        details: compliant
+          ? `Response time compliant (${Math.round(ratio * 100)}% within 30 days)`
+          : `Response time non-compliant (${Math.round(ratio * 100)}% within 30 days)`,
         timestamp: new Date().toISOString()
       };
       
@@ -930,13 +1232,26 @@ class GDPRComplianceService {
    */
   async validateRequestVerification() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for request verification checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const [ipColumn, userAgentColumn] = await Promise.all([
+        this.columnExists('portability_requests', 'ip_address'),
+        this.columnExists('portability_requests', 'user_agent')
+      ]);
+
+      const compliant = ipColumn && userAgentColumn;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Data subject request verification properly implemented' : 'Request verification needs improvement',
+        details: compliant
+          ? 'Portability requests capture IP and user agent metadata'
+          : 'Portability requests missing IP or user agent fields',
         timestamp: new Date().toISOString()
       };
       
@@ -955,13 +1270,27 @@ class GDPRComplianceService {
    */
   async validateDataSubjectIdentification() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (!dbManager?.isInitialized || !dbManager.pool) {
+        return {
+          compliant: false,
+          details: 'Database unavailable for data subject identification checks',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const [userIdColumn, emailColumn, phoneColumn] = await Promise.all([
+        this.columnExists('portability_requests', 'user_id'),
+        this.columnExists('users', 'email'),
+        this.columnExists('users', 'phone')
+      ]);
+
+      const compliant = userIdColumn && (emailColumn || phoneColumn);
       
       return {
         compliant: compliant,
-        details: compliant ? 'Data subject identification properly implemented' : 'Data subject identification needs improvement',
+        details: compliant
+          ? 'Portability requests link to users with identifying fields'
+          : 'Missing user linkage or identifying fields for data subject requests',
         timestamp: new Date().toISOString()
       };
       
@@ -1055,13 +1384,22 @@ class GDPRComplianceService {
    */
   async validateTransferLegality() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
+      const config = this.getCrossBorderConfig();
+      if (!config.mechanism) {
+        return {
+          compliant: true,
+          details: 'Cross-border transfers not configured',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const compliant = this.config.cross_border_transfers.transfer_mechanisms.includes(config.mechanism);
       
       return {
         compliant: compliant,
-        details: compliant ? 'Cross-border data transfers legally compliant' : 'Transfer legality needs attention',
+        details: compliant
+          ? `Transfer mechanism configured: ${config.mechanism}`
+          : 'Transfer mechanism is missing or not approved',
         timestamp: new Date().toISOString()
       };
       
@@ -1080,13 +1418,22 @@ class GDPRComplianceService {
    */
   async validateRecipientCountryAdequacy() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      const config = this.getCrossBorderConfig();
+      if (!config.mechanism) {
+        return {
+          compliant: true,
+          details: 'Cross-border transfers not configured',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const compliant = !!config.recipientCountries;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Recipient country adequacy properly validated' : 'Recipient country adequacy needs improvement',
+        details: compliant
+          ? 'Recipient country adequacy list configured'
+          : 'Recipient country adequacy list not configured',
         timestamp: new Date().toISOString()
       };
       
@@ -1105,13 +1452,22 @@ class GDPRComplianceService {
    */
   async validateTransferAgreements() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      const config = this.getCrossBorderConfig();
+      if (!config.mechanism) {
+        return {
+          compliant: true,
+          details: 'Cross-border transfers not configured',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const compliant = config.agreementsSigned;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Transfer agreements properly implemented' : 'Transfer agreements need improvement',
+        details: compliant
+          ? 'Transfer agreements confirmed'
+          : 'Transfer agreements not confirmed',
         timestamp: new Date().toISOString()
       };
       
@@ -1130,13 +1486,22 @@ class GDPRComplianceService {
    */
   async validateDataProtectionSafeguards() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
+      const config = this.getCrossBorderConfig();
+      if (!config.mechanism) {
+        return {
+          compliant: true,
+          details: 'Cross-border transfers not configured',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const compliant = config.safeguardsEnabled && !!config.residencyRegion;
       
       return {
         compliant: compliant,
-        details: compliant ? 'Data protection safeguards properly implemented' : 'Data protection safeguards need improvement',
+        details: compliant
+          ? 'Safeguards enabled with residency region defined'
+          : 'Safeguards or residency region not configured',
         timestamp: new Date().toISOString()
       };
       
@@ -1230,13 +1595,22 @@ class GDPRComplianceService {
    */
   async validateCCPACompliance() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (process.env.COMPLIANCE_CCPA === 'false') {
+        return {
+          compliant: true,
+          details: 'CCPA compliance checks disabled',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const baseArtifacts = await this.baseComplianceArtifactsExist();
+      const compliant = baseArtifacts;
       
       return {
         compliant: compliant,
-        details: compliant ? 'CCPA compliance properly implemented' : 'CCPA compliance needs improvement',
+        details: compliant
+          ? 'CCPA compliance artifacts present'
+          : 'CCPA compliance artifacts missing (consent, portability, retention)',
         timestamp: new Date().toISOString()
       };
       
@@ -1255,13 +1629,22 @@ class GDPRComplianceService {
    */
   async validatePIPEDACompliance() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (process.env.COMPLIANCE_PIPEDA === 'false') {
+        return {
+          compliant: true,
+          details: 'PIPEDA compliance checks disabled',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const baseArtifacts = await this.baseComplianceArtifactsExist();
+      const compliant = baseArtifacts;
       
       return {
         compliant: compliant,
-        details: compliant ? 'PIPEDA compliance properly implemented' : 'PIPEDA compliance needs improvement',
+        details: compliant
+          ? 'PIPEDA compliance artifacts present'
+          : 'PIPEDA compliance artifacts missing (consent, portability, retention)',
         timestamp: new Date().toISOString()
       };
       
@@ -1280,13 +1663,22 @@ class GDPRComplianceService {
    */
   async validatePDPACompliance() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (process.env.COMPLIANCE_PDPA === 'false') {
+        return {
+          compliant: true,
+          details: 'PDPA compliance checks disabled',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const baseArtifacts = await this.baseComplianceArtifactsExist();
+      const compliant = baseArtifacts;
       
       return {
         compliant: compliant,
-        details: compliant ? 'PDPA compliance properly implemented' : 'PDPA compliance needs improvement',
+        details: compliant
+          ? 'PDPA compliance artifacts present'
+          : 'PDPA compliance artifacts missing (consent, portability, retention)',
         timestamp: new Date().toISOString()
       };
       
@@ -1305,13 +1697,22 @@ class GDPRComplianceService {
    */
   async validateLGPDCompliance() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
+      if (process.env.COMPLIANCE_LGPD === 'false') {
+        return {
+          compliant: true,
+          details: 'LGPD compliance checks disabled',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      const baseArtifacts = await this.baseComplianceArtifactsExist();
+      const compliant = baseArtifacts;
       
       return {
         compliant: compliant,
-        details: compliant ? 'LGPD compliance properly implemented' : 'LGPD compliance needs improvement',
+        details: compliant
+          ? 'LGPD compliance artifacts present'
+          : 'LGPD compliance artifacts missing (consent, portability, retention)',
         timestamp: new Date().toISOString()
       };
       
@@ -1380,21 +1781,21 @@ class GDPRComplianceService {
    * Generate validation ID
    */
   generateValidationId() {
-    return `VALID-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `VALID-${Date.now()}-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
   }
 
   /**
    * Generate violation ID
    */
   generateViolationId() {
-    return `VIOL-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `VIOL-${Date.now()}-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
   }
 
   /**
    * Generate trace ID
    */
   generateTraceId() {
-    return `TRACE-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `TRACE-${Date.now()}-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
   }
 
   /**

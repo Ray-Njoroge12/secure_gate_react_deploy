@@ -3,6 +3,7 @@
 
 import { dbManager } from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
 
 /**
  * Security Audit Middleware
@@ -124,6 +125,7 @@ export const securityAuditMiddleware = (req, res, next) => {
       securityEvents.suspiciousHeaders.length > 0;
 
     if (hasSuspiciousActivity) {
+      const sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
       const securityLog = {
         request_id: requestId,
         requestId, // Keep for backward compatibility
@@ -132,9 +134,9 @@ export const securityAuditMiddleware = (req, res, next) => {
         userAgent: req.headers['user-agent'],
         method: req.method,
         url: req.url,
-        headers: req.headers,
-        query: req.query,
-        body: req.body,
+        headers: sanitizeHeaders(req.headers),
+        query: sanitizeData(req.query, sensitiveFields),
+        body: sanitizeData(req.body, sensitiveFields),
         securityEvents,
         duration,
         statusCode: res.statusCode
@@ -253,5 +255,68 @@ export const handleAuthFailure = (req, res, next) => {
 
   next();
 };
+
+function sanitizeHeaders(headers = {}) {
+  const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
+  const sanitized = { ...headers };
+
+  for (const header of sensitiveHeaders) {
+    if (sanitized[header]) {
+      sanitized[header] = '[REDACTED]';
+    }
+  }
+
+  return sanitized;
+}
+
+function sanitizeData(data, sensitiveFields = []) {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item, sensitiveFields));
+  }
+
+  const sanitized = { ...data };
+  const shouldMaskAsEmail = (key) => key.includes('email');
+  const shouldMaskAsPhone = (key) => (
+    key.includes('phone')
+    || key.includes('msisdn')
+    || key.includes('mobile')
+  );
+  const isRecipientKey = (key) => key === 'to' || key === 'recipient';
+
+  for (const field of sensitiveFields) {
+    if (sanitized[field]) {
+      sanitized[field] = '[REDACTED]';
+    }
+  }
+
+  for (const [key, value] of Object.entries(sanitized)) {
+    const normalizedKey = key.toLowerCase();
+
+    if (value && typeof value === 'object') {
+      sanitized[key] = sanitizeData(value, sensitiveFields);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsEmail(normalizedKey)) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsPhone(normalizedKey)) {
+      sanitized[key] = maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isRecipientKey(normalizedKey)) {
+      sanitized[key] = value.includes('@') ? maskEmail(value) : maskPhone(value);
+    }
+  }
+
+  return sanitized;
+}
 
 export default securityAuditMiddleware;

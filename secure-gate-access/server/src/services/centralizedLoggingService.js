@@ -13,7 +13,7 @@
 import loggingService from './loggingService.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -126,8 +126,10 @@ class CentralizedLoggingService {
           reason: !process.env.LOGGING_ENDPOINT ? 'LOGGING_ENDPOINT not configured' : 'Disabled via LOGGING_CENTRALIZATION_ENABLED',
           traceabilityEnabled: this.config.traceability.enabled
         });
-        console.log('⚠️  Centralized logging disabled (no LOGGING_ENDPOINT configured)');
-        console.log('   Logs will only be written locally. Set LOGGING_ENDPOINT to enable.');
+        if (process.env.NODE_ENV !== 'test') {
+          console.log('⚠️  Centralized logging disabled (no LOGGING_ENDPOINT configured)');
+          console.log('   Logs will only be written locally. Set LOGGING_ENDPOINT to enable.');
+        }
         return;
       }
 

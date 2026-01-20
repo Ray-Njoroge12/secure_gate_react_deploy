@@ -17,7 +17,7 @@ import { navigateTo } from '../../utils/appNavigation';
 
 const defaultActions = {
   resident: [
-    { id: 'add-visitor', icon: '➕', label: 'Add Visitor', href: '/resident/add-visitor' },
+
     { id: 'quick-invite', icon: '✉️', label: 'Quick Invite', href: '/resident/quick-invite' },
     { id: 'generate-pass', icon: '🎫', label: 'Generate Pass', href: '/resident/generate-pass' },
     { id: 'scan', icon: '📷', label: 'Scan QR', href: '/resident/scan' },
@@ -37,14 +37,14 @@ const defaultActions = {
 /**
  * Single action item in the expandable menu
  */
-const ActionItem = ({ 
-  icon, 
-  label, 
-  onClick, 
-  href, 
-  index, 
+const ActionItem = ({
+  icon,
+  label,
+  onClick,
+  href,
+  index,
   isExpanded,
-  delay = 50 
+  delay = 50
 }) => {
   const handleClick = () => {
     if (onClick) {
@@ -63,8 +63,8 @@ const ActionItem = ({
         hover:bg-gray-50 hover:shadow-xl
         active:scale-95
         transition-all duration-200 ease-out
-        ${isExpanded 
-          ? 'opacity-100 translate-y-0' 
+        ${isExpanded
+          ? 'opacity-100 translate-y-0'
           : 'opacity-0 translate-y-4 pointer-events-none'
         }
       `}
@@ -116,7 +116,7 @@ const QuickActionMenu = ({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        menuRef.current && 
+        menuRef.current &&
         !menuRef.current.contains(event.target) &&
         buttonRef.current &&
         !buttonRef.current.contains(event.target)
@@ -156,7 +156,7 @@ const QuickActionMenu = ({
     <div className={`fixed ${positionClasses[position]} z-50 ${visibilityClass} ${className}`}>
       {/* Backdrop */}
       {isExpanded && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm -z-10 animate-fade-in"
           onClick={() => setIsExpanded(false)}
           aria-hidden="true"
@@ -164,7 +164,7 @@ const QuickActionMenu = ({
       )}
 
       {/* Action Items */}
-      <div 
+      <div
         ref={menuRef}
         className={`
           absolute bottom-16 right-0 
@@ -207,7 +207,7 @@ const QuickActionMenu = ({
         aria-haspopup="menu"
         aria-label={isExpanded ? 'Close quick actions menu' : 'Open quick actions menu'}
       >
-        <span 
+        <span
           className={`
             text-2xl text-white
             transition-transform duration-200
@@ -219,7 +219,7 @@ const QuickActionMenu = ({
       </button>
 
       {/* Ripple effect on tap */}
-      <span 
+      <span
         className={`
           absolute inset-0 w-14 h-14 rounded-full
           bg-white/30 
@@ -232,8 +232,8 @@ const QuickActionMenu = ({
   );
 
   // Portal to body for proper z-index
-  return typeof document !== 'undefined' 
-    ? createPortal(menu, document.body) 
+  return typeof document !== 'undefined'
+    ? createPortal(menu, document.body)
     : null;
 };
 
@@ -249,7 +249,7 @@ export const SpeedDial = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div 
+    <div
       className={`relative inline-flex flex-col items-center ${className}`}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
@@ -257,7 +257,7 @@ export const SpeedDial = ({
       onBlur={() => setIsOpen(false)}
     >
       {/* Actions */}
-      <div 
+      <div
         className={`
           absolute bottom-full mb-2
           flex flex-col-reverse items-center gap-2

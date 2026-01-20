@@ -7,12 +7,24 @@
 import { describe, test, expect, beforeAll } from '@jest/globals';
 import request from 'supertest';
 
+import { setupTestDatabase, dbManager } from '../integration/setup.js';
+import { afterAll } from '@jest/globals';
+
 // Import app directly for testing
 let app;
 
 beforeAll(async () => {
+  // Initialize database first
+  await setupTestDatabase();
+
   const appModule = await import('../../src/app.js');
   app = appModule.default;
+});
+
+afterAll(async () => {
+  if (dbManager) {
+    await dbManager.disconnect();
+  }
 });
 
 describe('Smoke Tests: Basic System Health', () => {

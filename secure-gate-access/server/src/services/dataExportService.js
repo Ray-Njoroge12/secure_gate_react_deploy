@@ -177,6 +177,7 @@ const enqueueExportJob = (job) => {
 
 const hydrateQueuedExport = async () => {
   if (exportQueue.length > 0 || isProcessing) return;
+  if (!db.isInitialized || !db.pool) return;
 
   const result = await db.query(
     `SELECT request_id, user_id, format, ip_address, user_agent
@@ -200,6 +201,12 @@ const hydrateQueuedExport = async () => {
 
 const startExportWorker = () => {
   if (workerStarted) return;
+  if (process.env.NODE_ENV === 'test') return;
+  if (!db.isInitialized || !db.pool) {
+    setTimeout(startExportWorker, 5000);
+    return;
+  }
+
   workerStarted = true;
 
   hydrateQueuedExport().catch(() => {});

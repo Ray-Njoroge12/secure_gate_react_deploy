@@ -359,10 +359,10 @@ describe('Visitor Management Integration', () => {
       
       // Check in
       visitor.status = 'on_premise';
-      visitor.check_in = new Date().toISOString();
+      visitor.check_in_time = new Date().toISOString();
       
       expect(visitor.status).toBe('on_premise');
-      expect(visitor.check_in).toBeDefined();
+      expect(visitor.check_in_time).toBeDefined();
     });
     
     it('should prevent double check-in', () => {
@@ -372,7 +372,7 @@ describe('Visitor Management Integration', () => {
         host_id: testUsers.resident.id,
         invite_code: generateInviteCode(),
         status: 'on_premise',
-        check_in: new Date().toISOString()
+        check_in_time: new Date().toISOString()
       };
       
       mockDb.visitors.push(visitor);
@@ -407,17 +407,17 @@ describe('Visitor Management Integration', () => {
         host_id: testUsers.resident.id,
         invite_code: generateInviteCode(),
         status: 'on_premise',
-        check_in: checkInTime.toISOString()
+        check_in_time: checkInTime.toISOString()
       };
       
       mockDb.visitors.push(visitor);
       
       // Check out
       visitor.status = 'checked_out';
-      visitor.check_out = new Date().toISOString();
+      visitor.check_out_time = new Date().toISOString();
       
       expect(visitor.status).toBe('checked_out');
-      expect(visitor.check_out).toBeDefined();
+      expect(visitor.check_out_time).toBeDefined();
     });
     
     it('should calculate visit duration', () => {
@@ -690,14 +690,15 @@ describe('Pass Management Integration', () => {
     it('should create recurring pass with all fields', () => {
       const pass = {
         id: generateId(),
-        name: 'Weekly Cleaner',
-        phone: '+254700111111',
-        email: 'cleaner@test.com',
+        visitor_name: 'Weekly Cleaner',
+        visitor_phone: '+254700111111',
         resident_id: testUsers.resident.id,
-        schedule_type: 'weekly',
-        days_of_week: ['monday', 'wednesday', 'friday'],
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+        pass_type: 'daily_worker',
+        allowed_days: ['mon', 'wed', 'fri'],
+        valid_from: new Date().toISOString().split('T')[0],
+        valid_until: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+        access_pin: '123456',
+        qr_code_token: `RP-${Date.now()}-standalone`,
         status: 'active'
       };
       
@@ -705,21 +706,25 @@ describe('Pass Management Integration', () => {
       
       const found = mockDb.recurring_passes.find(p => p.id === pass.id);
       expect(found).toBeDefined();
-      expect(found.schedule_type).toBe('weekly');
+      expect(found.pass_type).toBe('daily_worker');
     });
     
     it('should create daily pass', () => {
       const pass = {
         id: generateId(),
-        name: 'Daily Worker',
+        visitor_name: 'Daily Worker',
         resident_id: testUsers.resident.id,
-        schedule_type: 'daily',
+        pass_type: 'daily_worker',
+        allowed_days: null,
+        access_pin: '123456',
+        qr_code_token: `RP-${Date.now()}-daily`,
+        valid_until: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
         status: 'active'
       };
       
       mockDb.recurring_passes.push(pass);
       
-      expect(pass.schedule_type).toBe('daily');
+      expect(pass.pass_type).toBe('daily_worker');
     });
   });
   
@@ -728,19 +733,21 @@ describe('Pass Management Integration', () => {
       const today = new Date();
       const pass = {
         id: generateId(),
-        name: 'Valid Pass',
+        visitor_name: 'Valid Pass',
         resident_id: testUsers.resident.id,
-        schedule_type: 'daily',
-        start_date: new Date(today - 86400000).toISOString().split('T')[0],
-        end_date: new Date(today.getTime() + 86400000).toISOString().split('T')[0],
+        pass_type: 'daily_worker',
+        valid_from: new Date(today - 86400000).toISOString().split('T')[0],
+        valid_until: new Date(today.getTime() + 86400000).toISOString().split('T')[0],
+        access_pin: '123456',
+        qr_code_token: `RP-${Date.now()}-valid`,
         status: 'active'
       };
       
       mockDb.recurring_passes.push(pass);
       
       const isValid = pass.status === 'active' &&
-        new Date(pass.start_date) <= today &&
-        new Date(pass.end_date) >= today;
+        new Date(pass.valid_from) <= today &&
+        new Date(pass.valid_until) >= today;
       
       expect(isValid).toBe(true);
     });
@@ -748,25 +755,31 @@ describe('Pass Management Integration', () => {
     it('should reject expired pass', () => {
       const pass = {
         id: generateId(),
-        name: 'Expired Pass',
+        visitor_name: 'Expired Pass',
         resident_id: testUsers.resident.id,
-        schedule_type: 'daily',
-        start_date: new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0],
-        end_date: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
+        pass_type: 'daily_worker',
+        valid_from: new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0],
+        valid_until: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
+        access_pin: '123456',
+        qr_code_token: `RP-${Date.now()}-expired`,
         status: 'active'
       };
       
       mockDb.recurring_passes.push(pass);
       
-      const isValid = new Date(pass.end_date) >= new Date();
+      const isValid = new Date(pass.valid_until) >= new Date();
       expect(isValid).toBe(false);
     });
     
     it('should reject revoked pass', () => {
       const pass = {
         id: generateId(),
-        name: 'Revoked Pass',
+        visitor_name: 'Revoked Pass',
         resident_id: testUsers.resident.id,
+        pass_type: 'daily_worker',
+        access_pin: '123456',
+        qr_code_token: `RP-${Date.now()}-revoked`,
+        valid_until: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
         status: 'revoked'
       };
       
@@ -785,35 +798,35 @@ describe('Delivery Management Integration', () => {
     it('should register new delivery', () => {
       const delivery = {
         id: generateId(),
-        resident_id: testUsers.resident.id,
-        carrier: 'DHL',
+        recipient_id: testUsers.resident.id,
+        carrier_name: 'DHL',
         tracking_number: 'DHL123456789',
-        status: 'pending',
+        status: 'pending_collection',
         notes: 'Large package',
-        received_at: new Date().toISOString()
+        created_at: new Date().toISOString()
       };
       
       mockDb.delivery_logs.push(delivery);
       
       const found = mockDb.delivery_logs.find(d => d.id === delivery.id);
       expect(found).toBeDefined();
-      expect(found.carrier).toBe('DHL');
-      expect(found.status).toBe('pending');
+      expect(found.carrier_name).toBe('DHL');
+      expect(found.status).toBe('pending_collection');
     });
     
     it('should handle multiple deliveries for same resident', () => {
       for (let i = 0; i < 5; i++) {
         mockDb.delivery_logs.push({
           id: generateId(),
-          resident_id: testUsers.resident.id,
-          carrier: 'Amazon',
+          recipient_id: testUsers.resident.id,
+          carrier_name: 'Amazon',
           tracking_number: `AMZ${Date.now()}${i}`,
-          status: 'pending'
+          status: 'pending_collection'
         });
       }
       
       const residentDeliveries = mockDb.delivery_logs.filter(
-        d => d.resident_id === testUsers.resident.id
+        d => d.recipient_id === testUsers.resident.id
       );
       expect(residentDeliveries.length).toBe(5);
     });
@@ -823,11 +836,11 @@ describe('Delivery Management Integration', () => {
     it('should mark delivery as collected', () => {
       const delivery = {
         id: generateId(),
-        resident_id: testUsers.resident.id,
-        carrier: 'Fedex',
+        recipient_id: testUsers.resident.id,
+        carrier_name: 'Fedex',
         tracking_number: 'FX123',
-        status: 'pending',
-        received_at: new Date().toISOString()
+        status: 'pending_collection',
+        created_at: new Date().toISOString()
       };
       
       mockDb.delivery_logs.push(delivery);
@@ -861,7 +874,7 @@ describe('Concurrency Integration', () => {
       const checkIn = (v) => {
         if (v.status === 'approved') {
           v.status = 'on_premise';
-          v.check_in = new Date().toISOString();
+          v.check_in_time = new Date().toISOString();
           return true;
         }
         return false;
@@ -893,7 +906,7 @@ describe('Concurrency Integration', () => {
       visitors.forEach(v => {
         if (v.status === 'approved') {
           v.status = 'on_premise';
-          v.check_in = new Date().toISOString();
+          v.check_in_time = new Date().toISOString();
         }
       });
       

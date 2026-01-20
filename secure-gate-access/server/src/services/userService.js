@@ -1,7 +1,8 @@
 import { passwordService, accountSecurity } from './tokenService.js';
 import { db } from '../database/db.enhanced.js';
 import { AppError } from '../middleware/standardizedErrorHandler.js';
-import crypto from 'crypto';
+import loggingService from './loggingService.js';
+import * as crypto from 'crypto';
 
 /**
  * User Service with SQL Injection Protection
@@ -11,6 +12,18 @@ import crypto from 'crypto';
 class UserService {
   constructor() {
     this.db = db;
+  }
+
+  redactEmail(email) {
+    if (!email || typeof email !== 'string') {
+      return 'redacted';
+    }
+    const [localPart, domain] = email.split('@');
+    if (!domain) {
+      return 'redacted';
+    }
+    const firstChar = localPart ? localPart[0] : '';
+    return `${firstChar || 'redacted'}***@${domain}`;
   }
 
   /**
@@ -24,7 +37,7 @@ class UserService {
    * Create a new user with email verification
    */
   async createUser(userData) {
-    const { username, email, password, role, estate_id: estateId } = userData;
+    const { username, email, password, role, estate_id: estateId, account_status: accountStatus } = userData;
 
     // Input validation
     if (!username || !email || !password || !role) {
@@ -73,18 +86,21 @@ class UserService {
       const verificationToken = this.generateEmailVerificationToken();
       const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // Create user with email verification fields
+      // Default account_status to 'pending' for new registrations
+      const finalAccountStatus = accountStatus || 'pending';
+
+      // Create user with email verification fields and account_status
       // Uses column names matching render_init.sql schema: verification_token, verification_expires
       // Insert into both password and password_hash for backward compatibility
       const result = await this.db.query(
-        `INSERT INTO users (username, email, password, password_hash, role, estate_id, verification_token, verification_expires, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW()) 
-         RETURNING id, username, email, role, estate_id, verification_token, created_at`,
-        [username, email, hashedPassword, hashedPassword, role, estateId, verificationToken, verificationExpires]
+        `INSERT INTO users (username, email, password, password_hash, role, estate_id, account_status, verification_token, verification_expires, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) 
+         RETURNING id, username, email, role, estate_id, account_status, verification_token, created_at`,
+        [username, email, hashedPassword, hashedPassword, role, estateId, finalAccountStatus, verificationToken, verificationExpires]
       );
 
       const user = result.rows[0];
-      
+
       // Remove password hash from response but keep verification token for email sending
       delete user.password_hash;
 
@@ -212,7 +228,7 @@ class UserService {
         `SELECT id, username, email, password_hash, role, estate_id, created_at, verified
          FROM users
          WHERE (username = $1 OR email = $1)
-           AND estate_id = COALESCE($2, estate_id)`,
+           AND estate_id IS NOT DISTINCT FROM COALESCE($2, estate_id)`,
         [username, estateId]
       );
 
@@ -226,7 +242,7 @@ class UserService {
 
       // Verify password
       const isValidPassword = await passwordService.verifyPassword(password, user.password_hash);
-      
+
       if (!isValidPassword) {
         // Record failed attempt
         accountSecurity.recordFailedAttempt(username, 'unknown');
@@ -317,7 +333,7 @@ class UserService {
       throw new Error('User ID required');
     }
 
-    const allowedFields = ['username', 'email', 'role'];
+    const allowedFields = ['username', 'email', 'role', 'mfa_enabled'];
     const updates = [];
     const values = [];
     let paramCount = 1;
@@ -580,7 +596,9 @@ class UserService {
 
       // Always return success to prevent email enumeration attacks
       if (userCheck.rows.length === 0) {
-        console.log(`Password reset requested for non-existent email: ${email}`);
+        loggingService.logInfo('Password reset requested for non-existent email', {
+          email: this.redactEmail(email)
+        });
         return {
           success: true,
           message: 'If this email exists, a password reset link has been sent.'
@@ -593,7 +611,9 @@ class UserService {
       const resetToken = this.generatePasswordResetToken();
       const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      // Store reset token in database
+      // Store hashed reset token in database (AUTH-011)
+      const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
       await this.db.query(
         `UPDATE users 
          SET password_reset_token = $1, 
@@ -601,10 +621,12 @@ class UserService {
              password_reset_used_at = NULL,
              updated_at = NOW() 
          WHERE id = $3`,
-        [resetToken, resetExpires, user.id]
+        [resetTokenHash, resetExpires, user.id]
       );
 
-      console.log(`Password reset token generated for user: ${user.email}`);
+      loggingService.logInfo('Password reset token generated', {
+        userId: user.id
+      });
 
       return {
         success: true,
@@ -630,11 +652,13 @@ class UserService {
     }
 
     try {
+      const resetTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
       const result = await this.db.query(
         `SELECT id, username, email, password_reset_expires, password_reset_used_at 
          FROM users 
          WHERE password_reset_token = $1`,
-        [token]
+        [resetTokenHash]
       );
 
       if (result.rows.length === 0) {
@@ -684,7 +708,7 @@ class UserService {
     try {
       // First verify the token is valid
       const tokenVerification = await this.verifyResetToken(token);
-      
+
       if (!tokenVerification.valid) {
         throw new Error('Invalid or expired reset token');
       }
@@ -710,7 +734,9 @@ class UserService {
       }
 
       const user = result.rows[0];
-      console.log(`Password successfully reset for user: ${user.email}`);
+      loggingService.logInfo('Password successfully reset', {
+        userId: user.id
+      });
 
       return {
         success: true,
@@ -741,7 +767,9 @@ class UserService {
       );
 
       const cleanedCount = result.rows[0]?.cleaned_count || 0;
-      console.log(`Cleaned up ${cleanedCount} expired password reset tokens`);
+      loggingService.logInfo('Expired password reset tokens cleaned', {
+        cleanedCount
+      });
 
       return { cleanedCount };
     } catch (error) {
@@ -772,7 +800,7 @@ class UserService {
       // Get visitors created by user
       const visitorsResult = await this.db.query(
         `SELECT id, name, phone, email, purpose, status, invite_code,
-                visit_date, check_in, check_out, created_at
+                visit_date, check_in_time AS check_in, check_out_time AS check_out, created_at
          FROM visitors WHERE host_id = $1
          ORDER BY created_at DESC`,
         [userId]
@@ -919,7 +947,7 @@ class UserService {
         ]
       );
 
-      console.log(`User data deleted for user ID: ${userId}`);
+      loggingService.logInfo('User data deleted', { userId });
 
       return {
         success: true,
@@ -961,7 +989,7 @@ class UserService {
         ]
       );
 
-      console.log(`Historical records anonymized for user ID: ${userId}`);
+      loggingService.logInfo('User history anonymized', { userId });
 
       return { success: true };
     } catch (error) {

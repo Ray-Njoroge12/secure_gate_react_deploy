@@ -4,7 +4,7 @@
  */
 
 import { pool } from '../database/connection.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import argon2 from 'argon2';
 
 /**
@@ -112,28 +112,30 @@ export async function createRecurringPass(residentId, passData) {
 /**
  * Get all recurring passes for a resident
  */
-export async function getResidentRecurringPasses(residentId, { status, includeExpired = false } = {}) {
+export async function getResidentRecurringPasses(residentId, { status, includeExpired = false, estateId = null } = {}) {
   let query = `
     SELECT 
-      id, visitor_name, visitor_phone, vehicle_plate, pass_type, purpose,
-      access_pin, qr_code_token, valid_from, valid_until,
-      allowed_days, allowed_time_start, allowed_time_end,
-      status, total_entries, last_used_at, created_at
-    FROM recurring_passes
-    WHERE resident_id = $1
+      rp.id, rp.visitor_name, rp.visitor_phone, rp.vehicle_plate, rp.pass_type, rp.purpose,
+      rp.access_pin, rp.qr_code_token, rp.valid_from, rp.valid_until,
+      rp.allowed_days, rp.allowed_time_start, rp.allowed_time_end,
+      rp.status, rp.total_entries, rp.last_used_at, rp.created_at
+    FROM recurring_passes rp
+    ${estateId ? 'JOIN users u ON rp.resident_id = u.id' : ''}
+    WHERE rp.resident_id = $1
+    ${estateId ? 'AND u.estate_id = $2' : ''}
   `;
-  const params = [residentId];
-  let paramIndex = 2;
+  const params = estateId ? [residentId, estateId] : [residentId];
+  let paramIndex = estateId ? 3 : 2;
 
   if (status) {
-    query += ` AND status = $${paramIndex}`;
+    query += ` AND rp.status = $${paramIndex}`;
     params.push(status);
     paramIndex++;
   } else if (!includeExpired) {
-    query += ` AND status IN ('active', 'suspended')`;
+    query += ` AND rp.status IN ('active', 'suspended')`;
   }
 
-  query += ' ORDER BY created_at DESC';
+  query += ' ORDER BY rp.created_at DESC';
 
   const result = await pool.query(query, params);
   return result.rows;
@@ -249,24 +251,31 @@ export async function reactivateRecurringPass(passId, residentId) {
  * Validate a recurring pass (Guard action)
  * SEC-002: Uses Argon2 verification for PIN, direct comparison for QR token
  * SEC-003: Includes rate limiting checks
+ * SECURITY: Filters by estate_id to prevent cross-estate access
  * @param {string} credential - PIN or QR token
  * @param {string} method - 'pin' or 'qr'
  * @param {string} ipAddress - Client IP for rate limiting
+ * @param {number|null} estateId - Estate ID for filtering
  * @returns {Promise<Object>} Validation result
  */
-export async function validateRecurringPass(credential, method = 'pin', ipAddress = null) {
+export async function validateRecurringPass(credential, method = 'pin', ipAddress = null, estateId = null) {
+  // SECURITY: Require estate context for pass validation
+  if (!estateId) {
+    return { valid: false, error: 'Estate context required for pass validation' };
+  }
+
   let pass;
-  
+
   if (method === 'qr') {
-    // QR token is a direct lookup (token is unique and random)
+    // QR token is a direct lookup (token is unique and random) - filtered by estate
     const result = await pool.query(
       `SELECT rp.*, u.username as resident_name, u.house as resident_unit
        FROM recurring_passes rp
        JOIN users u ON rp.resident_id = u.id
-       WHERE rp.qr_code_token = $1`,
-      [credential]
+       WHERE rp.qr_code_token = $1 AND u.estate_id = $2`,
+      [credential, estateId]
     );
-    
+
     if (result.rows.length === 0) {
       return { valid: false, error: 'Invalid QR code' };
     }
@@ -275,6 +284,7 @@ export async function validateRecurringPass(credential, method = 'pin', ipAddres
     // SEC-002: PIN validation requires fetching all active passes and verifying hash
     // This is necessary because we can't query by hash directly
     // We'll get passes that are potentially valid and verify PIN against each
+    // SECURITY: Filter by estate_id
     const result = await pool.query(
       `SELECT rp.*, u.username as resident_name, u.house as resident_unit
        FROM recurring_passes rp
@@ -284,14 +294,16 @@ export async function validateRecurringPass(credential, method = 'pin', ipAddres
          AND rp.valid_until >= CURRENT_DATE
          AND rp.access_pin_hash IS NOT NULL
          AND (rp.pin_locked_until IS NULL OR rp.pin_locked_until < NOW())
+         AND u.estate_id = $1
        ORDER BY rp.last_used_at DESC NULLS LAST
-       LIMIT 100`
+       LIMIT 100`,
+      [estateId]
     );
-    
+
     if (result.rows.length === 0) {
       return { valid: false, error: 'No active passes found' };
     }
-    
+
     // SEC-002: Verify PIN against hashes (Argon2)
     for (const candidate of result.rows) {
       const isMatch = await verifyPin(candidate.access_pin_hash, credential);
@@ -300,21 +312,21 @@ export async function validateRecurringPass(credential, method = 'pin', ipAddres
         break;
       }
     }
-    
+
     if (!pass) {
       // SEC-003: Log failed attempt for rate limiting
       // Note: We can't know which pass was targeted, log IP-based attempt
       await logFailedPinAttempt(null, ipAddress);
       return { valid: false, error: 'Invalid PIN' };
     }
-    
+
     // SEC-003: Check if this specific pass is locked due to failed attempts
     if (pass.pin_locked_until && new Date(pass.pin_locked_until) > new Date()) {
       const lockRemaining = Math.ceil((new Date(pass.pin_locked_until) - new Date()) / 60000);
-      return { 
-        valid: false, 
+      return {
+        valid: false,
         error: `PIN locked. Try again in ${lockRemaining} minutes`,
-        locked: true 
+        locked: true
       };
     }
   }
@@ -328,7 +340,7 @@ export async function validateRecurringPass(credential, method = 'pin', ipAddres
   const today = new Date();
   const validFrom = new Date(pass.valid_from);
   const validUntil = new Date(pass.valid_until);
-  
+
   if (today < validFrom || today > validUntil) {
     return { valid: false, error: 'Pass not valid on this date', pass };
   }
@@ -384,7 +396,7 @@ async function logFailedPinAttempt(passId, ipAddress) {
        VALUES ($1, $2, false, 'pin')`,
       [passId, ipAddress]
     );
-    
+
     // If passId is known, increment failed attempts
     if (passId) {
       const result = await pool.query(
@@ -395,7 +407,7 @@ async function logFailedPinAttempt(passId, ipAddress) {
          RETURNING failed_pin_attempts`,
         [passId]
       );
-      
+
       // Lock after 5 failed attempts (15 minute lockout)
       if (result.rows[0]?.failed_pin_attempts >= 5) {
         await pool.query(
@@ -416,7 +428,7 @@ async function logFailedPinAttempt(passId, ipAddress) {
  */
 export async function recordPassEntry(passId, guardId, method = 'pin', notes = null) {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
 
@@ -450,12 +462,15 @@ export async function recordPassEntry(passId, guardId, method = 'pin', notes = n
 /**
  * Get entry history for a pass (Resident audit)
  */
-export async function getPassEntryHistory(passId, residentId, limit = 50) {
+export async function getPassEntryHistory(passId, residentId, limit = 50, estateId = null) {
   // Verify ownership first
-  const passCheck = await pool.query(
-    'SELECT id FROM recurring_passes WHERE id = $1 AND resident_id = $2',
-    [passId, residentId]
-  );
+  const query = estateId
+    ? 'SELECT rp.id FROM recurring_passes rp JOIN users u ON rp.resident_id = u.id WHERE rp.id = $1 AND rp.resident_id = $2 AND u.estate_id = $3'
+    : 'SELECT id FROM recurring_passes WHERE id = $1 AND resident_id = $2';
+
+  const params = estateId ? [passId, residentId, estateId] : [passId, residentId];
+
+  const passCheck = await pool.query(query, params);
 
   if (passCheck.rows.length === 0) {
     return { success: false, error: 'Pass not found' };

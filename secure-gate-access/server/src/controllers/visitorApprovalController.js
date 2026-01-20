@@ -9,6 +9,7 @@ import { PASS_STATUS } from '../constants/statuses.js';
 import logger from '../config/logger.js';
 import { errorResponse, successResponse } from '../utils/responseFormatter.js';
 import websocketService from '../services/websocketService.js';
+import { maskEmail } from '../utils/redaction.js';
 
 const dbManager = { query: (text, params) => db.query(text, params) };
 
@@ -35,7 +36,7 @@ export const requestApproval = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, email, status, resident_id, vehicle_plate FROM visitors WHERE id = $1 AND estate_id = $2',
+      'SELECT id, name, phone, email, status, resident_id, host_id, vehicle_plate, purpose FROM visitors WHERE id = $1 AND estate_id = $2',
       [id, req.user.estate_id]
     );
     
@@ -45,8 +46,10 @@ export const requestApproval = async (req, res) => {
 
     const visitor = vRes.rows[0];
 
+    const assignedResidentId = visitor.resident_id || visitor.host_id;
+
     // Validation: Must have resident assigned
-    if (!visitor.resident_id) {
+    if (!assignedResidentId) {
       return respondError(req, res, 422, 'Cannot request approval: visitor has no assigned resident', 'VALIDATION_ERROR');
     }
 
@@ -68,7 +71,8 @@ export const requestApproval = async (req, res) => {
       `UPDATE visitors 
        SET status = $1, 
            approval_requested_by = $2, 
-           approval_requested_at = NOW()
+           approval_requested_at = NOW(),
+           resident_id = COALESCE(resident_id, host_id)
        WHERE id = $3 AND estate_id = $4
        RETURNING id, name, phone, status, resident_id, approval_requested_at`,
       [PASS_STATUS.PENDING_APPROVAL, guardId, id, req.user.estate_id]
@@ -86,16 +90,16 @@ export const requestApproval = async (req, res) => {
         message: 'Approval requested for walk-in visitor',
         reason,
         notes,
-        resident_id: visitor.resident_id
+        resident_id: assignedResidentId
       }
     );
 
     // Emit real-time WebSocket event to resident
-    websocketService.emitApprovalRequest(visitor.resident_id, {
+    websocketService.emitApprovalRequest(assignedResidentId, {
       ...updatedVisitor,
       vehicle_plate: visitor.vehicle_plate,
       purpose: visitor.purpose || reason,
-      guard_name: req.user.first_name || req.user.email
+      guard_name: req.user.first_name || (req.user.email ? maskEmail(req.user.email) : 'Guard')
     });
 
     respond(res, {
@@ -127,7 +131,7 @@ export const approveVisitor = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, status, resident_id FROM visitors WHERE id = $1 AND estate_id = $2',
+      'SELECT id, name, phone, status, resident_id, host_id FROM visitors WHERE id = $1 AND estate_id = $2',
       [id, req.user.estate_id]
     );
     
@@ -138,7 +142,8 @@ export const approveVisitor = async (req, res) => {
     const visitor = vRes.rows[0];
 
     // Authorization: Only the assigned resident can approve
-    if (visitor.resident_id !== residentId) {
+    const ownsVisitor = visitor.resident_id === residentId || visitor.host_id === residentId;
+    if (!ownsVisitor) {
       return respondError(req, res, 403, 'You can only approve your own visitors', 'FORBIDDEN');
     }
 
@@ -183,7 +188,7 @@ export const approveVisitor = async (req, res) => {
     websocketService.emitApprovalResponse(guardId, {
       visitor_id: id,
       status: 'approved',
-      responded_by: req.user.first_name || req.user.email,
+      responded_by: req.user.first_name || (req.user.email ? maskEmail(req.user.email) : 'Resident'),
       responded_at: approvedVisitor.approved_at
     });
 
@@ -216,7 +221,7 @@ export const rejectVisitor = async (req, res) => {
 
     // Fetch visitor
     const vRes = await dbManager.query(
-      'SELECT id, name, phone, status, resident_id, approval_requested_by FROM visitors WHERE id = $1 AND estate_id = $2',
+      'SELECT id, name, phone, status, resident_id, host_id, approval_requested_by FROM visitors WHERE id = $1 AND estate_id = $2',
       [id, req.user.estate_id]
     );
     
@@ -227,7 +232,8 @@ export const rejectVisitor = async (req, res) => {
     const visitor = vRes.rows[0];
 
     // Authorization: Only the assigned resident can reject
-    if (visitor.resident_id !== residentId) {
+    const ownsVisitor = visitor.resident_id === residentId || visitor.host_id === residentId;
+    if (!ownsVisitor) {
       return respondError(req, res, 403, 'You can only reject your own visitors', 'FORBIDDEN');
     }
 
@@ -267,7 +273,7 @@ export const rejectVisitor = async (req, res) => {
     websocketService.emitApprovalResponse(visitor.approval_requested_by, {
       visitor_id: id,
       status: 'rejected',
-      responded_by: req.user.first_name || req.user.email,
+      responded_by: req.user.first_name || (req.user.email ? maskEmail(req.user.email) : 'Resident'),
       responded_at: rejectedVisitor.rejected_at,
       rejection_reason: reason
     });
@@ -312,7 +318,7 @@ export const getPendingApprovals = async (req, res) => {
         u.email as guard_email
        FROM visitors v
        LEFT JOIN users u ON v.approval_requested_by = u.id
-       WHERE v.resident_id = $1 
+       WHERE (v.resident_id = $1 OR v.host_id = $1)
          AND v.status = $2
          AND v.estate_id = $3
        ORDER BY v.approval_requested_at DESC`,
@@ -360,7 +366,7 @@ export const getApprovalHistory = async (req, res) => {
           WHEN v.status = 'rejected' THEN v.rejected_at
         END as responded_at
        FROM visitors v
-       WHERE v.resident_id = $1 
+       WHERE (v.resident_id = $1 OR v.host_id = $1)
          AND v.status IN ($2, $3)
          AND v.estate_id = $4
        ORDER BY 

@@ -35,13 +35,21 @@ export async function setupTestDatabase() {
 
   try {
     // Ensure database connection is established using initializeAsync
-    console.log('Initializing database connection for tests...');
+    if (process.env.DEBUG_TEST_SETUP === 'true') {
+      console.log('Initializing database connection for tests...');
+    }
     await dbManager.initializeAsync();
-    
+
     // Double-check pool is ready
     if (!dbManager.pool) {
       throw new Error('Database pool not initialized after initializeAsync');
     }
+
+    await dbManager.query(
+      'ALTER TABLE visitors ALTER COLUMN estate_id SET DEFAULT 1',
+      [],
+      { retries: 0, timeout: 5000 }
+    ).catch(() => {});
 
     // Clean up test data from tables (in correct order due to foreign keys)
     // Order matters: delete child records before parent records
@@ -59,12 +67,13 @@ export async function setupTestDatabase() {
       'DELETE FROM guard_training WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_shifts WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
-      // Delete delivery logs for test users
-      'DELETE FROM delivery_logs WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      // Delete delivery records for test users
+      'DELETE FROM delivery_logs WHERE created_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM deliveries WHERE recipient_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete rideshare entries for test users
       'DELETE FROM rideshare_entries WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete recurring passes for test users
-      'DELETE FROM recurring_passes WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR name LIKE \'Test%\'',
+      'DELETE FROM recurring_passes WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR visitor_name LIKE \'Test%\'',
       // Delete visitors created by test users OR with test names/emails
       'DELETE FROM visitors WHERE host_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR name LIKE \'Test%\' OR email LIKE \'%@test.com\'',
       // Finally: Delete test users
@@ -72,11 +81,13 @@ export async function setupTestDatabase() {
     ];
 
     for (const query of cleanupQueries) {
-      await dbManager.query(query).catch(() => {});
+      await dbManager.query(query, [], { retries: 0, timeout: 5000 }).catch(() => { });
     }
 
     testDbInitialized = true;
-    console.log('✅ Test database initialized');
+    if (process.env.DEBUG_TEST_SETUP === 'true') {
+      console.log('✅ Test database initialized');
+    }
   } catch (error) {
     console.error('❌ Failed to initialize test database:', error);
     throw error;
@@ -93,7 +104,7 @@ export async function cleanupTestDatabase() {
       console.log('🔄 Reconnecting for cleanup...');
       await dbManager.initializeAsync();
     }
-    
+
     // Clean up test data (in correct order due to foreign keys)
     // Order matters: delete child records before parent records
     const cleanupQueries = [
@@ -109,12 +120,13 @@ export async function cleanupTestDatabase() {
       'DELETE FROM guard_training WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_shifts WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
-      // Delete delivery logs for test users
-      'DELETE FROM delivery_logs WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      // Delete delivery records for test users
+      'DELETE FROM delivery_logs WHERE created_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM deliveries WHERE recipient_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete rideshare entries for test users
       'DELETE FROM rideshare_entries WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete recurring passes for test users
-      'DELETE FROM recurring_passes WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR name LIKE \'Test%\'',
+      'DELETE FROM recurring_passes WHERE resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR visitor_name LIKE \'Test%\'',
       // Delete visitors created by test users OR with test names/emails
       'DELETE FROM visitors WHERE host_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR resident_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR name LIKE \'Test%\' OR email LIKE \'%@test.com\'',
       // Finally: Delete test users
@@ -122,7 +134,7 @@ export async function cleanupTestDatabase() {
     ];
 
     for (const query of cleanupQueries) {
-      await dbManager.query(query, [], { timeout: 60000 }).catch(() => {});
+      await dbManager.query(query, [], { retries: 0, timeout: 5000 }).catch(() => { });
     }
   } catch (error) {
     console.error('❌ Failed to cleanup test database:', error.message);
@@ -148,7 +160,7 @@ export async function createTestUsers() {
   // Insert into both 'password' and 'password_hash' columns for compatibility
 
   const adminResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `admin_${uniqueSuffix}`,
@@ -164,7 +176,7 @@ export async function createTestUsers() {
   );
 
   const guardResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `guard_${uniqueSuffix}`,
@@ -180,7 +192,7 @@ export async function createTestUsers() {
   );
 
   const residentResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       `resident_${uniqueSuffix}`,
@@ -210,16 +222,23 @@ export async function createTestVisitor(hostId, overrides = {}) {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 11);
 
+  const hostResult = await dbManager.query('SELECT estate_id FROM users WHERE id = $1', [hostId]);
+  const estateId = hostResult.rows[0]?.estate_id || 1;
+  const residentId = overrides.resident_id || hostId;
+  const hostIdFinal = overrides.host_id || hostId;
+
   const result = await dbManager.query(
-    `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    `INSERT INTO visitors (name, phone, email, purpose, status, host_id, resident_id, estate_id, invite_code)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       overrides.name || 'Test Visitor',
       overrides.phone || '+254700123456',
       overrides.email || 'visitor@test.com',
       overrides.purpose || 'Testing',
       overrides.status || 'pending',
-      hostId,
+      hostIdFinal,
+      residentId,
+      overrides.estate_id || estateId,
       overrides.invite_code || `TEST${timestamp}_${random}`
     ]
   );
@@ -334,7 +353,7 @@ export async function createTestUserInTransaction(client, overrides = {}) {
   );
 
   const result = await client.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       overrides.username || `user_${timestamp}_${random}`,
@@ -343,7 +362,7 @@ export async function createTestUserInTransaction(client, overrides = {}) {
       hashedPassword,
       overrides.role || 'resident',
       overrides.phone || `+2547${timestamp.toString().substr(-8)}`,
-      overrides.unit || 'Test Unit',
+      overrides.house || overrides.unit || 'Test Unit',
       true,
       overrides.estate_id || 1
     ]
@@ -360,23 +379,30 @@ export async function createTestVisitorInTransaction(client, hostId, overrides =
   const timestamp = Date.now();
   const random = Math.random().toString(36).substr(2, 9);
 
+  const hostResult = await client.query('SELECT estate_id FROM users WHERE id = $1', [hostId]);
+  const estateId = hostResult.rows[0]?.estate_id || 1;
+  const residentId = overrides.resident_id || hostId;
+  const hostIdFinal = overrides.host_id || hostId;
+
   const result = await client.query(
     `INSERT INTO visitors (
-      name, phone, email, purpose, status, resident_id,
+      name, phone, email, purpose, status, resident_id, host_id, estate_id,
       invite_code, visitor_token, date_of_visit, created_by
     )
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
     [
       overrides.name || 'Test Visitor',
       overrides.phone || `+2547${timestamp.toString().substr(-8)}`,
       overrides.email || `visitor${timestamp}_${random}@test.com`,
       overrides.purpose || 'Testing',
       overrides.status || 'pending',
-      hostId,
+      residentId,
+      hostIdFinal,
+      overrides.estate_id || estateId,
       overrides.invite_code || `TEST${timestamp}${random}`,
       overrides.visitor_token || `TOKEN${timestamp}${random}`,
       overrides.date_of_visit || new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      overrides.created_by || hostId.toString()
+      overrides.created_by || hostIdFinal.toString()
     ]
   );
 
@@ -436,7 +462,7 @@ export async function getAuthTokenForUser(user) {
       type: 'access',  // Required by tokenService
       jti: jti          // Required for revocation tracking
     },
-    process.env.JWT_SECRET || 'test-secret',
+    process.env.JWT_SECRET || 'test-jwt-secret-key-minimum-32-chars',
     {
       expiresIn: '2h',
       issuer: 'secure-gate-api',      // Required by tokenService

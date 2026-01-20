@@ -7,7 +7,7 @@
  */
 
 import db from '../database/db.enhanced.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 const pool = db;
 
@@ -16,7 +16,7 @@ class SyncService {
    * Generate offline data package for a user
    * Contains minimal data needed for offline functionality
    */
-  async generateOfflinePackage(userId, userRole) {
+  async generateOfflinePackage(userId, userRole, estateId = null) {
     const packageId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -31,7 +31,8 @@ class SyncService {
 
     try {
       if (userRole === 'guard') {
-        offlineData.data = await this.getGuardOfflineData(userId);
+        // SECURITY: Pass estate_id for guard data filtering
+        offlineData.data = await this.getGuardOfflineData(userId, estateId);
       } else if (userRole === 'resident') {
         offlineData.data = await this.getResidentOfflineData(userId);
       }
@@ -51,9 +52,22 @@ class SyncService {
 
   /**
    * Get minimal guard data for offline mode
+   * SECURITY: Filters all data by guard's estate_id
    */
-  async getGuardOfflineData(guardId) {
-    // Get today's expected visitors (minimal info)
+  async getGuardOfflineData(guardId, estateId) {
+    // SECURITY: Require estate context
+    if (!estateId) {
+      console.warn('[SyncService] Guard offline package requested without estate_id');
+      return {
+        expectedVisitors: [],
+        activeEmergencies: [],
+        pendingDeliveries: [],
+        lastSync: new Date().toISOString(),
+        error: 'Estate context required'
+      };
+    }
+
+    // Get today's expected visitors (minimal info) - filtered by estate
     const visitorsQuery = `
       SELECT 
         v.id,
@@ -68,21 +82,23 @@ class SyncService {
       WHERE v.expected_arrival >= CURRENT_DATE
         AND v.expected_arrival < CURRENT_DATE + INTERVAL '2 days'
         AND v.status IN ('pending', 'approved')
+        AND v.estate_id = $1
       ORDER BY v.expected_arrival
       LIMIT 100
     `;
 
-    // Get active emergency status
+    // Get active emergency status - filtered by estate
     const emergencyQuery = `
       SELECT id, type, status, created_at
       FROM emergency_incidents
       WHERE status = 'active'
         AND created_at >= NOW() - INTERVAL '24 hours'
+        AND estate_id = $1
       ORDER BY created_at DESC
       LIMIT 10
     `;
 
-    // Get pending deliveries
+    // Get pending deliveries - filtered by estate
     const deliveriesQuery = `
       SELECT 
         d.id,
@@ -95,14 +111,15 @@ class SyncService {
       FROM deliveries d
       JOIN users u ON d.resident_id = u.id
       WHERE d.status = 'pending'
+        AND d.estate_id = $1
       ORDER BY d.created_at DESC
       LIMIT 50
     `;
 
     const [visitors, emergencies, deliveries] = await Promise.all([
-      pool.query(visitorsQuery),
-      pool.query(emergencyQuery),
-      pool.query(deliveriesQuery)
+      pool.query(visitorsQuery, [estateId]),
+      pool.query(emergencyQuery, [estateId]),
+      pool.query(deliveriesQuery, [estateId])
     ]);
 
     return {
@@ -177,7 +194,7 @@ class SyncService {
   /**
    * Process offline changes uploaded from client
    */
-  async processOfflineChanges(userId, userRole, changes, packageId) {
+  async processOfflineChanges(userId, userRole, changes, packageId, estateId = null) {
     const results = {
       processed: 0,
       conflicts: [],
@@ -204,7 +221,7 @@ class SyncService {
             }
           }
 
-          const result = await this.processSingleChange(userId, userRole, change);
+          const result = await this.processSingleChange(userId, userRole, change, estateId);
           if (result.conflict) {
             results.conflicts.push(result);
           } else {
@@ -264,14 +281,14 @@ class SyncService {
   /**
    * Process a single offline change with conflict detection
    */
-  async processSingleChange(userId, userRole, change) {
+  async processSingleChange(userId, userRole, change, estateId = null) {
     const { entity, action, data, timestamp } = change;
 
     switch (entity) {
       case 'visitor':
-        return await this.processVisitorChange(userId, userRole, action, data, timestamp);
+        return await this.processVisitorChange(userId, userRole, action, data, timestamp, estateId);
       case 'delivery':
-        return await this.processDeliveryChange(userId, userRole, action, data, timestamp);
+        return await this.processDeliveryChange(userId, userRole, action, data, timestamp, estateId);
       default:
         throw new Error(`Unknown entity type: ${entity}`);
     }
@@ -280,14 +297,18 @@ class SyncService {
   /**
    * Process visitor-related offline changes
    */
-  async processVisitorChange(userId, userRole, action, data, timestamp) {
+  async processVisitorChange(userId, userRole, action, data, timestamp, estateId = null) {
     // Check for conflicts by comparing timestamps
     const currentQuery = `
-      SELECT updated_at FROM visitors WHERE id = $1
+      SELECT updated_at, estate_id FROM visitors WHERE id = $1
     `;
     const current = await pool.query(currentQuery, [data.id]);
 
     if (current.rows.length > 0) {
+      // SECURITY: Verify estate context
+      if (estateId && current.rows[0].estate_id !== estateId) {
+        throw new Error('Visitor belongs to different estate');
+      }
       const serverTimestamp = new Date(current.rows[0].updated_at);
       const clientTimestamp = new Date(timestamp);
 
@@ -304,15 +325,13 @@ class SyncService {
 
     // Apply the change based on action and role
     if (action === 'check_in' && userRole === 'guard') {
-      await pool.query(
-        `UPDATE visitors SET status = 'checked_in', check_in_time = $1, updated_at = NOW() WHERE id = $2`,
-        [data.checkInTime, data.id]
-      );
+      const query = `UPDATE visitors SET status = 'checked_in', check_in_time = $1, updated_at = NOW() WHERE id = $2 ${estateId ? 'AND estate_id = $3' : ''}`;
+      const params = estateId ? [data.checkInTime, data.id, estateId] : [data.checkInTime, data.id];
+      await pool.query(query, params);
     } else if (action === 'check_out' && userRole === 'guard') {
-      await pool.query(
-        `UPDATE visitors SET status = 'checked_out', check_out_time = $1, updated_at = NOW() WHERE id = $2`,
-        [data.checkOutTime, data.id]
-      );
+      const query = `UPDATE visitors SET status = 'checked_out', check_out_time = $1, updated_at = NOW() WHERE id = $2 ${estateId ? 'AND estate_id = $3' : ''}`;
+      const params = estateId ? [data.checkOutTime, data.id, estateId] : [data.checkOutTime, data.id];
+      await pool.query(query, params);
     } else if (action === 'approve' && userRole === 'resident') {
       await pool.query(
         `UPDATE visitors SET status = 'approved', updated_at = NOW() WHERE id = $1 AND resident_id = $2`,
@@ -326,12 +345,11 @@ class SyncService {
   /**
    * Process delivery-related offline changes
    */
-  async processDeliveryChange(userId, userRole, action, data, timestamp) {
+  async processDeliveryChange(userId, userRole, action, data, timestamp, estateId = null) {
     if (action === 'receive' && userRole === 'guard') {
-      await pool.query(
-        `UPDATE deliveries SET status = 'received', received_at = $1, received_by = $2, updated_at = NOW() WHERE id = $3`,
-        [data.receivedAt, userId, data.id]
-      );
+      const query = `UPDATE deliveries SET status = 'received', received_at = $1, received_by = $2, updated_at = NOW() WHERE id = $3 ${estateId ? 'AND estate_id = $4' : ''}`;
+      const params = estateId ? [data.receivedAt, userId, data.id, estateId] : [data.receivedAt, userId, data.id];
+      await pool.query(query, params);
     } else if (action === 'pickup' && userRole === 'resident') {
       await pool.query(
         `UPDATE deliveries SET status = 'picked_up', picked_up_at = NOW(), updated_at = NOW() WHERE id = $1 AND resident_id = $2`,

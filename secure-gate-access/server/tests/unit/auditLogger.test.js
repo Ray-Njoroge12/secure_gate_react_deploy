@@ -44,8 +44,8 @@ describe('Audit Logger Middleware', () => {
     jest.clearAllMocks();
     jest.resetModules();
     originalEnv = process.env.NODE_ENV;
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
 
     // Import modules after mocks are set up
     const dbModule = await import('../../src/database/db.enhanced.js');
@@ -91,9 +91,9 @@ describe('Audit Logger Middleware', () => {
 
     mockRes = {
       statusCode: 200,
-      send: jest.fn(function(data) { return this; }),
-      json: jest.fn(function(data) { return this; }),
-      end: jest.fn(function(data) { return this; }),
+      send: jest.fn(function (data) { return this; }),
+      json: jest.fn(function (data) { return this; }),
+      end: jest.fn(function (data) { return this; }),
       on: jest.fn(),
       getHeaders: jest.fn().mockReturnValue({
         'content-type': 'application/json',
@@ -272,8 +272,8 @@ describe('Audit Logger Middleware', () => {
     });
 
     it('should respect custom sensitive fields option', async () => {
-      const middleware = auditLogger({ 
-        sensitiveFields: ['password', 'secret', 'creditCard'] 
+      const middleware = auditLogger({
+        sensitiveFields: ['password', 'secret', 'creditCard']
       });
       mockReq.body = { password: 'secret123', name: 'John' };
       await middleware(mockReq, mockRes, mockNext);
@@ -309,9 +309,9 @@ describe('Audit Logger Middleware', () => {
     it('should insert audit log into database', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       await mockReq.audit('user.create', 'user', 123, { name: 'Test User' });
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO audit_logs'),
         expect.any(Array)
@@ -320,10 +320,10 @@ describe('Audit Logger Middleware', () => {
 
     it('should handle database errors silently', async () => {
       dbManager.query.mockRejectedValueOnce(new Error('DB Error'));
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       // Should not throw
       await expect(mockReq.audit('test.action', 'test', 1)).resolves.toBeUndefined();
     });
@@ -331,9 +331,9 @@ describe('Audit Logger Middleware', () => {
     it('should use request user information if available', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       await mockReq.audit('data.read', 'document', 456);
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.any(String),
         expect.arrayContaining([mockReq.user.id, mockReq.user.role])
@@ -343,10 +343,10 @@ describe('Audit Logger Middleware', () => {
     it('should truncate action to 100 characters', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const longAction = 'a'.repeat(150);
       await mockReq.audit(longAction, 'test', 1);
-      
+
       const callArgs = dbManager.query.mock.calls[0][1];
       expect(callArgs[0].length).toBeLessThanOrEqual(100);
     });
@@ -354,10 +354,10 @@ describe('Audit Logger Middleware', () => {
     it('should truncate resource to 100 characters', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const longResource = 'b'.repeat(150);
       await mockReq.audit('test', longResource, 1);
-      
+
       const callArgs = dbManager.query.mock.calls[0][1];
       expect(callArgs[1].length).toBeLessThanOrEqual(100);
     });
@@ -429,9 +429,9 @@ describe('Audit Logger Middleware', () => {
   describe('getAuditLogs', () => {
     it('should retrieve audit logs with default filters', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [{ id: 1, action: 'test' }] });
-      
+
       const result = await getAuditLogs();
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('SELECT * FROM audit_logs'),
         expect.any(Array)
@@ -441,9 +441,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should filter by userId', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditLogs({ userId: 123 });
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('user_id = $'),
         expect.arrayContaining([123])
@@ -452,9 +452,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should filter by eventType', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditLogs({ eventType: 'auth.login.success' });
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('action = $'),
         expect.arrayContaining(['auth.login.success'])
@@ -463,9 +463,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should filter by level', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditLogs({ level: 'warn' });
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining("details::json->>'level' = $"),
         expect.arrayContaining(['warn'])
@@ -476,9 +476,9 @@ describe('Audit Logger Middleware', () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
       const startDate = '2024-01-01';
       const endDate = '2024-12-31';
-      
+
       await getAuditLogs({ startDate, endDate });
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('created_at >= $'),
         expect.arrayContaining([startDate, endDate])
@@ -487,9 +487,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should apply limit and offset', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditLogs({ limit: 50, offset: 100 });
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('LIMIT $'),
         expect.arrayContaining([50, 100])
@@ -498,9 +498,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should use default limit of 100 and offset of 0', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditLogs({});
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.any(String),
         expect.arrayContaining([100, 0])
@@ -509,19 +509,19 @@ describe('Audit Logger Middleware', () => {
 
     it('should throw error on database failure', async () => {
       dbManager.query.mockRejectedValueOnce(new Error('DB Error'));
-      
+
       await expect(getAuditLogs()).rejects.toThrow('DB Error');
     });
   });
 
   describe('getAuditStatistics', () => {
     it('should retrieve statistics for 24h period by default', async () => {
-      dbManager.query.mockResolvedValueOnce({ 
-        rows: [{ event_type: 'auth.login', count: 100 }] 
+      dbManager.query.mockResolvedValueOnce({
+        rows: [{ event_type: 'auth.login', count: 100 }]
       });
-      
+
       const result = await getAuditStatistics();
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('24 hours')
       );
@@ -530,9 +530,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should retrieve statistics for 1h period', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditStatistics('1h');
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('1 hour')
       );
@@ -540,9 +540,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should retrieve statistics for 7d period', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditStatistics('7d');
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('7 days')
       );
@@ -550,9 +550,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should retrieve statistics for 30d period', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditStatistics('30d');
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('30 days')
       );
@@ -560,9 +560,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should default to 24 hours for unknown period', async () => {
       dbManager.query.mockResolvedValueOnce({ rows: [] });
-      
+
       await getAuditStatistics('unknown');
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('24 hours')
       );
@@ -570,7 +570,7 @@ describe('Audit Logger Middleware', () => {
 
     it('should throw error on database failure', async () => {
       dbManager.query.mockRejectedValueOnce(new Error('DB Error'));
-      
+
       await expect(getAuditStatistics()).rejects.toThrow('DB Error');
     });
   });
@@ -578,9 +578,9 @@ describe('Audit Logger Middleware', () => {
   describe('cleanupAuditLogs', () => {
     it('should delete logs older than 90 days by default', async () => {
       dbManager.query.mockResolvedValueOnce({ rowCount: 50 });
-      
+
       const result = await cleanupAuditLogs();
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('90 days')
       );
@@ -589,9 +589,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should delete logs older than custom retention days', async () => {
       dbManager.query.mockResolvedValueOnce({ rowCount: 25 });
-      
+
       const result = await cleanupAuditLogs(30);
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('30 days')
       );
@@ -600,9 +600,9 @@ describe('Audit Logger Middleware', () => {
 
     it('should log cleanup result', async () => {
       dbManager.query.mockResolvedValueOnce({ rowCount: 10 });
-      
+
       await cleanupAuditLogs();
-      
+
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('Cleaned up 10 old audit logs')
       );
@@ -610,7 +610,7 @@ describe('Audit Logger Middleware', () => {
 
     it('should throw error on database failure', async () => {
       dbManager.query.mockRejectedValueOnce(new Error('DB Error'));
-      
+
       await expect(cleanupAuditLogs()).rejects.toThrow('DB Error');
     });
   });
@@ -619,13 +619,13 @@ describe('Audit Logger Middleware', () => {
     it('should log audit event to database on response finish', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       // Get the finish handler
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
-      
+
       // Simulate response finish
       await finishHandler();
-      
+
       expect(dbManager.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO audit_logs'),
         expect.any(Array)
@@ -635,120 +635,120 @@ describe('Audit Logger Middleware', () => {
     it('should log to centralized service on response finish', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(loggingService.logAudit).toHaveBeenCalled();
     });
 
     it('should handle database logging errors gracefully', async () => {
       dbManager.query.mockRejectedValueOnce(new Error('DB Error'));
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
-      
+
       // Should not throw
       await expect(finishHandler()).resolves.not.toThrow();
     });
 
     it('should handle centralized logging errors gracefully', async () => {
       loggingService.logAudit.mockRejectedValueOnce(new Error('Logging Error'));
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
-      
+
       // Should not throw
       await expect(finishHandler()).resolves.not.toThrow();
     });
 
     it('should upgrade to WARN level for 401 responses', async () => {
       mockRes.statusCode = 401;
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(mockReq.auditData.level).toBe(AUDIT_LEVELS.WARN);
     });
 
     it('should upgrade to WARN level for 403 responses', async () => {
       mockRes.statusCode = 403;
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(mockReq.auditData.level).toBe(AUDIT_LEVELS.WARN);
     });
 
     it('should upgrade to WARN level for 429 responses', async () => {
       mockRes.statusCode = 429;
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(mockReq.auditData.level).toBe(AUDIT_LEVELS.WARN);
     });
 
     it('should detect suspicious admin access', async () => {
       mockReq.path = '/admin/users';
       mockReq.user = { id: 1, role: 'user' }; // Non-admin trying to access admin
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(mockReq.auditData.level).toBe(AUDIT_LEVELS.WARN);
     });
 
     it('should detect privacy event for export paths', async () => {
       mockReq.path = '/api/data/export';
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(mockReq.auditData.event).toBe(AUDIT_EVENTS.DATA_EXPORT);
     });
 
     it('should detect privacy event for user deletion', async () => {
       mockReq.method = 'DELETE';
       mockReq.path = '/api/users/123';
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(mockReq.auditData.event).toBe(AUDIT_EVENTS.DATA_DELETION);
     });
 
     it('should detect consent event', async () => {
       mockReq.path = '/api/consent/update';
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       const finishHandler = mockRes.on.mock.calls.find(call => call[0] === 'finish')[1];
       await finishHandler();
-      
+
       expect(mockReq.auditData.event).toBe(AUDIT_EVENTS.CONSENT_GIVEN);
     });
   });
@@ -761,10 +761,10 @@ describe('Audit Logger Middleware', () => {
         token: 'abc123',
         name: 'Test'
       };
-      
+
       const middleware = auditLogger({ includeRequestBody: true });
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.request.body.password).toBe('[REDACTED]');
       expect(mockReq.auditData.request.body.token).toBe('[REDACTED]');
       expect(mockReq.auditData.request.body.name).toBe('Test');
@@ -776,10 +776,10 @@ describe('Audit Logger Middleware', () => {
         'cookie': 'session=abc',
         'content-type': 'application/json'
       };
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.request.headers.authorization).toBe('[REDACTED]');
       expect(mockReq.auditData.request.headers.cookie).toBe('[REDACTED]');
       expect(mockReq.auditData.request.headers['content-type']).toBe('application/json');
@@ -795,10 +795,10 @@ describe('Audit Logger Middleware', () => {
           }
         }
       };
-      
+
       const middleware = auditLogger({ includeRequestBody: true });
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.request.body.user.credentials.password).toBe('[REDACTED]');
       expect(mockReq.auditData.request.body.user.credentials.key).toBe('[REDACTED]');
       expect(mockReq.auditData.request.body.user.name).toBe('Test');
@@ -806,10 +806,10 @@ describe('Audit Logger Middleware', () => {
 
     it('should handle null or undefined data', async () => {
       mockReq.body = null;
-      
+
       const middleware = auditLogger({ includeRequestBody: true });
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.request.body).toBeNull();
     });
   });
@@ -818,11 +818,12 @@ describe('Audit Logger Middleware', () => {
     it('should capture user information', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.user).toEqual({
         id: 1,
         email: 'test@example.com',
         role: 'admin',
+        estate_id: null,
         ip: '192.168.1.100',
         userAgent: 'Mozilla/5.0'
       });
@@ -830,10 +831,10 @@ describe('Audit Logger Middleware', () => {
 
     it('should handle missing user information', async () => {
       mockReq.user = null;
-      
+
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.user.id).toBeNull();
       expect(mockReq.auditData.user.email).toBeNull();
       expect(mockReq.auditData.user.role).toBeNull();
@@ -842,7 +843,7 @@ describe('Audit Logger Middleware', () => {
     it('should capture request metadata', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.request.method).toBe('GET');
       expect(mockReq.auditData.request.url).toBe('/api/test');
       expect(mockReq.auditData.request.path).toBe('/api/test');
@@ -851,21 +852,21 @@ describe('Audit Logger Middleware', () => {
     it('should capture API version from headers', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.metadata.apiVersion).toBe('1.0');
     });
 
     it('should capture client ID from headers', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.metadata.clientId).toBe('client-123');
     });
 
     it('should capture performance metrics', async () => {
       const middleware = auditLogger({});
       await middleware(mockReq, mockRes, mockNext);
-      
+
       expect(mockReq.auditData.performance).toBeDefined();
       expect(mockReq.auditData.performance.memoryUsage).toBeDefined();
     });

@@ -13,7 +13,7 @@ import {
 } from '../../src/utils/respond.js';
 
 describe('respond utilities', () => {
-  
+
   describe('toCamel', () => {
     it('should convert snake_case to camelCase', () => {
       expect(toCamel('user_name')).toBe('userName');
@@ -66,9 +66,9 @@ describe('respond utilities', () => {
           { user_name: 'john', first_name: 'John' },
           { user_name: 'jane', first_name: 'Jane' }
         ];
-        
+
         const result = camelize(input);
-        
+
         expect(result).toEqual([
           { userName: 'john', firstName: 'John' },
           { userName: 'jane', firstName: 'Jane' }
@@ -87,7 +87,7 @@ describe('respond utilities', () => {
       it('should handle nested arrays', () => {
         const input = [[{ user_id: 1 }], [{ user_id: 2 }]];
         const result = camelize(input);
-        
+
         expect(result).toEqual([[{ userId: 1 }], [{ userId: 2 }]]);
       });
     });
@@ -96,7 +96,7 @@ describe('respond utilities', () => {
       it('should camelize object keys', () => {
         const input = { user_name: 'john', email_address: 'john@test.com' };
         const result = camelize(input);
-        
+
         expect(result).toEqual({
           userName: 'john',
           emailAddress: 'john@test.com'
@@ -117,9 +117,9 @@ describe('respond utilities', () => {
             }
           }
         };
-        
+
         const result = camelize(input);
-        
+
         expect(result).toEqual({
           userData: {
             firstName: 'John',
@@ -139,9 +139,9 @@ describe('respond utilities', () => {
           ],
           total_count: 2
         };
-        
+
         const result = camelize(input);
-        
+
         expect(result).toEqual({
           userList: [
             { userId: 1, userName: 'john' },
@@ -154,7 +154,7 @@ describe('respond utilities', () => {
       it('should preserve null values', () => {
         const input = { user_name: null, email_address: 'test@test.com' };
         const result = camelize(input);
-        
+
         expect(result).toEqual({
           userName: null,
           emailAddress: 'test@test.com'
@@ -165,7 +165,7 @@ describe('respond utilities', () => {
         const date = new Date('2024-01-01');
         const input = { created_at: date };
         const result = camelize(input);
-        
+
         expect(result.createdAt).toBe(date);
       });
     });
@@ -220,19 +220,19 @@ describe('respond utilities', () => {
 
     it('should respond with 200 status by default', () => {
       respond(mockRes, { name: 'test' });
-      
+
       expect(mockRes.status).toHaveBeenCalledWith(200);
     });
 
     it('should respond with custom status code', () => {
       respond(mockRes, { name: 'test' }, 201);
-      
+
       expect(mockRes.status).toHaveBeenCalledWith(201);
     });
 
     it('should wrap data in success response', () => {
       respond(mockRes, { user_name: 'john' });
-      
+
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         data: { userName: 'john' }
@@ -245,7 +245,7 @@ describe('respond utilities', () => {
         last_name: 'Doe',
         created_at: '2024-01-01'
       });
-      
+
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         data: {
@@ -261,7 +261,7 @@ describe('respond utilities', () => {
         { user_id: 1 },
         { user_id: 2 }
       ]);
-      
+
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         data: [
@@ -273,7 +273,7 @@ describe('respond utilities', () => {
 
     it('should handle null data', () => {
       respond(mockRes, null);
-      
+
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         data: null
@@ -282,7 +282,7 @@ describe('respond utilities', () => {
 
     it('should handle empty object', () => {
       respond(mockRes, {});
-      
+
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         data: {}
@@ -291,7 +291,7 @@ describe('respond utilities', () => {
 
     it('should return response object', () => {
       const result = respond(mockRes, { test: 'data' });
-      
+
       expect(result).toBe(mockRes);
     });
   });
@@ -308,110 +308,111 @@ describe('respond utilities', () => {
 
     it('should respond with specified error code', () => {
       respondError(mockRes, 400, 'Bad request');
-      
+
       expect(mockRes.status).toHaveBeenCalledWith(400);
     });
 
     it('should include error code and message in response', () => {
       respondError(mockRes, 404, 'Resource not found');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 404,
-          message: 'Resource not found'
-        }
-      });
+        message: 'Resource not found',
+        error: expect.objectContaining({
+          code: 'NOT_FOUND'
+        }),
+        timestamp: expect.any(String)
+      }));
     });
 
     it('should handle 400 Bad Request', () => {
       respondError(mockRes, 400, 'Validation failed');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 400,
-          message: 'Validation failed'
-        }
-      });
+        message: 'Validation failed',
+        error: expect.objectContaining({
+          code: 'VALIDATION_ERROR'
+        })
+      }));
     });
 
     it('should handle 401 Unauthorized', () => {
       respondError(mockRes, 401, 'Authentication required');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 401,
-          message: 'Authentication required'
-        }
-      });
+        message: 'Authentication required',
+        error: expect.objectContaining({
+          code: 'UNAUTHORIZED'
+        })
+      }));
     });
 
     it('should handle 403 Forbidden', () => {
       respondError(mockRes, 403, 'Access denied');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 403,
-          message: 'Access denied'
-        }
-      });
+        message: 'Access denied',
+        error: expect.objectContaining({
+          code: 'FORBIDDEN'
+        })
+      }));
     });
 
     it('should handle 404 Not Found', () => {
       respondError(mockRes, 404, 'User not found');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 404,
-          message: 'User not found'
-        }
-      });
+        message: 'User not found',
+        error: expect.objectContaining({
+          code: 'NOT_FOUND'
+        })
+      }));
     });
 
     it('should handle 500 Internal Server Error', () => {
       respondError(mockRes, 500, 'Internal server error');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 500,
-          message: 'Internal server error'
-        }
-      });
+        message: 'Internal server error',
+        error: expect.objectContaining({
+          code: 'INTERNAL_ERROR'
+        })
+      }));
     });
 
     it('should handle 429 Too Many Requests', () => {
       respondError(mockRes, 429, 'Rate limit exceeded');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 429,
-          message: 'Rate limit exceeded'
-        }
-      });
+        message: 'Rate limit exceeded',
+        error: expect.objectContaining({
+          code: 'RATE_LIMIT_EXCEEDED'
+        })
+      }));
     });
 
     it('should return response object', () => {
       const result = respondError(mockRes, 400, 'Error');
-      
+
       expect(result).toBe(mockRes);
     });
 
     it('should handle empty message', () => {
       respondError(mockRes, 400, '');
-      
-      expect(mockRes.json).toHaveBeenCalledWith({
+
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        error: {
-          code: 400,
-          message: ''
-        }
-      });
+        message: '',
+        error: expect.objectContaining({
+          code: 'VALIDATION_ERROR'
+        })
+      }));
     });
   });
 });

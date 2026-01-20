@@ -15,7 +15,7 @@ import centralizedLoggingService from './centralizedLoggingService.js';
 import notificationService from './notificationService.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 

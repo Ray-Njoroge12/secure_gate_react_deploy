@@ -4,13 +4,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import logger from 'utils/logger';
 import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
-import AppShell from "../../layouts/AppShell";
+// AppShell removed - handled by Layout Route
 import { Card, Button, Badge, SearchFilter, SearchResults, Pagination } from "../../components/ui";
 import Table from "../../components/Table";
-import ManualCheck from "./ManualCheck";
-import ScanQR from "./ScanQR";
-import Settings from "./Settings";
-import VisitorHistory from "./VisitorHistory";
+// Unused page imports removed
 import notificationService from "../../services/notificationService";
 import { useSearchData } from "../../hooks/useSearch";
 import { useError } from "../../contexts/ErrorContext";
@@ -39,15 +36,15 @@ export default function GuardDashboard() {
   const navigate = useNavigate();
   const { handleError, handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
-  
+
   const onLogout = async () => {
     await logout();
     navigate("/login");
   };
-  
+
   const [active, setActive] = useState([]);
   const [toasts, setToasts] = useState([]);
-  const [toastFilter, setToastFilter] = useState(()=> localStorage.getItem('toastFilter') || 'all'); // all|info|warning|error
+  const [toastFilter, setToastFilter] = useState(() => localStorage.getItem('toastFilter') || 'all'); // all|info|warning|error
   const [showFilters, setShowFilters] = useState(false);
   const [activeQuickFilter, setActiveQuickFilter] = useState('all'); // Phase G3: Quick filter state
   const [isConnected, setIsConnected] = useState(true); // Live connection status
@@ -106,16 +103,16 @@ export default function GuardDashboard() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isLoading, navigate]);
 
-  function statusChip(s){
+  function statusChip(s) {
     // Phase A8: Using consistent status colors
-    return <span className={getStatusChipClass(s, 'sm')}>{getStatusIcon(s)} {s||'-'}</span>;
+    return <span className={getStatusChipClass(s, 'sm')}>{getStatusIcon(s)} {s || '-'}</span>;
   }
 
   async function fetchActive() {
     try {
       setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
       clearAllErrors();
-      const res = await fetch('/api/visitors/active', { 
+      const res = await fetch('/api/visitors/active', {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -124,8 +121,8 @@ export default function GuardDashboard() {
       setActive(json.data || []);
     } catch (e) {
       handleApiError(e, 'Guard Dashboard');
-    } finally { 
-      setLoading('guardDashboard', false); 
+    } finally {
+      setLoading('guardDashboard', false);
     }
   }
 
@@ -136,15 +133,15 @@ export default function GuardDashboard() {
     let es;
     try {
       es = new EventSource('/api/ws/guards', { withCredentials: false });
-      
+
       // Track connection status
       es.onopen = () => setIsConnected(true);
       es.onerror = () => setIsConnected(false);
-      
+
       const onEvt = (evt) => {
         setIsConnected(true); // Receiving events means we're connected
         try {
-          const data = JSON.parse(evt.data||'{}');
+          const data = JSON.parse(evt.data || '{}');
           // Minimal toast based on severity; never show PII
           const map = {
             'visitor.check_in': 'Visitor checked in',
@@ -165,76 +162,76 @@ export default function GuardDashboard() {
     } catch {
       setIsConnected(false);
     }
-    return () => { try { es && es.close(); } catch {} };
+    return () => { try { es && es.close(); } catch { } };
   }, []);
 
   // Persist toast filter and auto-scroll to newest
-  useEffect(() => { try { localStorage.setItem('toastFilter', toastFilter); } catch {} }, [toastFilter]);
+  useEffect(() => { try { localStorage.setItem('toastFilter', toastFilter); } catch { } }, [toastFilter]);
   useEffect(() => {
-    try { toastRef.current?.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch {}
+    try { toastRef.current?.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { }
   }, [toasts]);
 
-  function pushToast(t){
+  function pushToast(t) {
     const id = Math.random().toString(36).slice(2);
     const item = { id, ...t };
-    setToasts((prev)=>[item, ...prev].slice(0,5));
+    setToasts((prev) => [item, ...prev].slice(0, 5));
     // Auto-remove after 4s
-    setTimeout(()=>{
-      setToasts((prev)=>prev.filter(x=>x.id!==id));
+    setTimeout(() => {
+      setToasts((prev) => prev.filter(x => x.id !== id));
     }, 4000);
   }
 
   async function postAction(id, action) {
-  const url = `/api/visitors/${id}/${action}`;
-  const headers = { 'Content-Type': 'application/json' };
-  const res = await fetch(url, { 
-    method: 'POST', 
-    credentials: 'include',
-    headers 
-  });
+    const url = `/api/visitors/${id}/${action}`;
+    const headers = { 'Content-Type': 'application/json' };
+    const res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers
+    });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Action failed');
     await fetchActive();
     return json;
   }
 
-  const onCheckIn = async (id) => { 
-    try { 
-      const r = await postAction(id, 'check-in'); 
-      if(r?.data?.already_checked_in){ 
+  const onCheckIn = async (id) => {
+    try {
+      const r = await postAction(id, 'check-in');
+      if (r?.data?.already_checked_in) {
         notificationService.warning('Already Checked In', 'Visitor is already checked in');
       } else {
         notificationService.success('Check-in Successful', `Visitor ${id} has been checked in`);
         fetchActive(); // Refresh the list
       }
-    } catch(e){ 
+    } catch (e) {
       notificationService.error('Check-in Failed', e.message);
-    } 
+    }
   };
-  
-  const onCheckOut = async (id) => { 
-    try { 
-      const r = await postAction(id, 'check-out'); 
-      if(r?.data?.already_checked_out){ 
+
+  const onCheckOut = async (id) => {
+    try {
+      const r = await postAction(id, 'check-out');
+      if (r?.data?.already_checked_out) {
         notificationService.warning('Already Checked Out', 'Visitor is already checked out');
       } else {
         notificationService.success('Check-out Successful', `Visitor ${id} has been checked out`);
         fetchActive(); // Refresh the list
       }
-    } catch(e){ 
+    } catch (e) {
       notificationService.error('Check-out Failed', e.message);
-    } 
+    }
   };
-  
-  const onRevoke = async (id) => { 
-    if (!window.confirm('Revoke this visitor?')) return; 
-    try { 
+
+  const onRevoke = async (id) => {
+    if (!window.confirm('Revoke this visitor?')) return;
+    try {
       await postAction(id, 'revoke');
       notificationService.warning('Visitor Revoked', `Visitor ${id} has been revoked`);
       fetchActive(); // Refresh the list
-    } catch(e){ 
+    } catch (e) {
       notificationService.error('Revoke Failed', e.message);
-    } 
+    }
   };
 
   // Phase G3: KPI filter click handler
@@ -275,21 +272,21 @@ export default function GuardDashboard() {
           {active.length} active visitor{active.length !== 1 ? 's' : ''}
         </div>
       </div>
-      
+
       {/* Live toasts (severity-based) */}
       <div data-testid="toasts" ref={toastRef} className="fixed top-16 right-4 flex flex-col gap-2 z-50 max-w-sm max-h-80 overflow-y-auto">
         <div className="flex gap-2 justify-end mb-1">
-          {['all','info','warning','error'].map(f => (
-            <button key={f} className="min-h-[44px] min-w-[44px] text-xs px-3 py-2 rounded opacity-70 hover:opacity-100 bg-gray-800 text-white" 
-                    style={{opacity: toastFilter===f?1:0.7}} onClick={()=>setToastFilter(f)}>
+          {['all', 'info', 'warning', 'error'].map(f => (
+            <button key={f} className="min-h-[44px] min-w-[44px] text-xs px-3 py-2 rounded opacity-70 hover:opacity-100 bg-gray-800 text-white"
+              style={{ opacity: toastFilter === f ? 1 : 0.7 }} onClick={() => setToastFilter(f)}>
               {f.toUpperCase()}
             </button>
           ))}
           <span aria-label="visible-toasts" className="ml-2 text-xs bg-gray-800 text-white rounded-full px-2 py-1">
-            {toasts.filter(t => toastFilter==='all' || t.severity===toastFilter).length}
+            {toasts.filter(t => toastFilter === 'all' || t.severity === toastFilter).length}
           </span>
         </div>
-        {toasts.filter(t => toastFilter==='all' || t.severity===toastFilter).map(t => (
+        {toasts.filter(t => toastFilter === 'all' || t.severity === toastFilter).map(t => (
           <Toast key={t.id} severity={t.severity} message={t.message} />
         ))}
       </div>
@@ -312,7 +309,7 @@ export default function GuardDashboard() {
             <p className="text-xs md:text-sm text-blue-100 mt-1">Quick check-in</p>
           </div>
         </div>
-        
+
         {/* Secondary: Manual Check */}
         <div
           data-tour="manual-check"
@@ -348,7 +345,7 @@ export default function GuardDashboard() {
           </div>
         </div>
       </div>
-      
+
       {/* Mobile Tip */}
       <div className="md:hidden bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
         <p className="text-xs text-blue-800">
@@ -360,7 +357,7 @@ export default function GuardDashboard() {
       <DashboardKPIs onFilterClick={handleKPIClick} />
 
       {/* Phase G3: Quick Filters */}
-      <QuickFilters 
+      <QuickFilters
         activeFilter={activeQuickFilter}
         onFilterChange={handleQuickFilterChange}
         onClearFilter={handleClearFilter}
@@ -372,10 +369,10 @@ export default function GuardDashboard() {
       </div>
 
       {/* Phase 1.3: Recent Visitors Quick Lookup */}
-      <RecentVisitors 
+      <RecentVisitors
         onSelectVisitor={(visitor) => {
           // Navigate to check-in with visitor pre-selected
-          navigate('/dashboard/guard/manual-check', { 
+          navigate('/dashboard/guard/manual-check', {
             state: { selectedVisitor: visitor }
           });
         }}
@@ -414,25 +411,25 @@ export default function GuardDashboard() {
         </Card.Header>
         <Card.Content>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatusBadge 
-              label="Confirmed" 
-              value={isSearching || hasFilters ? getFilteredStatusCount('CONFIRMED') : getStatusCount('CONFIRMED')} 
-              color="text-blue-600 bg-blue-50" 
+            <StatusBadge
+              label="Confirmed"
+              value={isSearching || hasFilters ? getFilteredStatusCount('CONFIRMED') : getStatusCount('CONFIRMED')}
+              color="text-blue-600 bg-blue-50"
             />
-            <StatusBadge 
-              label="On Premise" 
-              value={isSearching || hasFilters ? getFilteredStatusCount('ON_PREMISE') : getStatusCount('ON_PREMISE')} 
-              color="text-green-600 bg-green-50" 
+            <StatusBadge
+              label="On Premise"
+              value={isSearching || hasFilters ? getFilteredStatusCount('ON_PREMISE') : getStatusCount('ON_PREMISE')}
+              color="text-green-600 bg-green-50"
             />
-            <StatusBadge 
-              label="Exited" 
-              value={isSearching || hasFilters ? getFilteredStatusCount('EXITED') : getStatusCount('EXITED')} 
-              color="text-gray-600 dark:text-gray-200 bg-gray-50" 
+            <StatusBadge
+              label="Exited"
+              value={isSearching || hasFilters ? getFilteredStatusCount('EXITED') : getStatusCount('EXITED')}
+              color="text-gray-600 dark:text-gray-200 bg-gray-50"
             />
-            <StatusBadge 
-              label="Revoked" 
-              value={isSearching || hasFilters ? getFilteredStatusCount('REVOKED') : getStatusCount('REVOKED')} 
-              color="text-red-600 bg-red-50" 
+            <StatusBadge
+              label="Revoked"
+              value={isSearching || hasFilters ? getFilteredStatusCount('REVOKED') : getStatusCount('REVOKED')}
+              color="text-red-600 bg-red-50"
             />
           </div>
           {(isSearching || hasFilters) && (
@@ -454,7 +451,7 @@ export default function GuardDashboard() {
         </Card.Header>
         <Card.Content>
           {/* Error messages are now handled by ErrorContext */}
-          
+
           <div className="md:hidden">
             {/* Mobile Cards */}
             {filteredActive.length === 0 ? (
@@ -492,12 +489,12 @@ export default function GuardDashboard() {
             ) : (
               <div className="space-y-3">
                 {filteredActive.map(v => (
-                  <VisitorCard 
-                    key={v.id} 
-                    visitor={v} 
-                    onCheckIn={onCheckIn} 
-                    onCheckOut={onCheckOut} 
-                    onRevoke={onRevoke} 
+                  <VisitorCard
+                    key={v.id}
+                    visitor={v}
+                    onCheckIn={onCheckIn}
+                    onCheckOut={onCheckOut}
+                    onRevoke={onRevoke}
                     role={role}
                     onViewDetails={() => setSelectedVisitor(v)}
                   />
@@ -542,25 +539,25 @@ export default function GuardDashboard() {
               </div>
             ) : (
               <>
-                <Table 
-                  headers={["Visitor","Host","In","Out","Status","Actions"]} 
+                <Table
+                  headers={["Visitor", "Host", "In", "Out", "Status", "Actions"]}
                   rows={filteredActive.map(v => [
-                    (v.name||`#${v.id}`),
-                    (v.host?mask(v.host):'-'), 
-                    ''+(v.check_in_time||''), 
-                    ''+(v.check_out_time||''), 
+                    (v.name || `#${v.id}`),
+                    (v.host ? mask(v.host) : '-'),
+                    '' + (v.check_in_time || ''),
+                    '' + (v.check_out_time || ''),
                     statusChip(v.status),
-                    ((['guard','admin'].includes(role)) ? (
+                    ((['guard', 'admin'].includes(role)) ? (
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={()=>onCheckIn(v.id)} disabled={v.status!=='CONFIRMED'}>Check-in</Button>
-                        <Button size="sm" onClick={()=>onCheckOut(v.id)} disabled={!(v.status==='ON_PREMISE' || (v.check_in_time && !v.check_out_time))}>Check-out</Button>
-                        <Button size="sm" variant="destructive" onClick={()=>onRevoke(v.id)} disabled={v.status==='REVOKED'}>Revoke</Button>
+                        <Button size="sm" onClick={() => onCheckIn(v.id)} disabled={v.status !== 'CONFIRMED'}>Check-in</Button>
+                        <Button size="sm" onClick={() => onCheckOut(v.id)} disabled={!(v.status === 'ON_PREMISE' || (v.check_in_time && !v.check_out_time))}>Check-out</Button>
+                        <Button size="sm" variant="destructive" onClick={() => onRevoke(v.id)} disabled={v.status === 'REVOKED'}>Revoke</Button>
                       </div>
                     ) : null)
-                  ])} 
+                  ])}
                   mobileCardView={false}
                 />
-                
+
                 {/* Pagination */}
                 {pagination.totalPages > 1 && (
                   <div className="mt-4">
@@ -589,48 +586,43 @@ export default function GuardDashboard() {
     if (!Array.isArray(filteredActive)) return 0;
     return filteredActive.filter(v => v.status === status).length;
   }
-  if (location.pathname === "/dashboard/guard/ManualCheck" || location.pathname === "/dashboard/guard/manual-check") panel = <ManualCheck />;
-  else if (location.pathname === "/dashboard/guard/ScanQR" || location.pathname === "/dashboard/guard/scanner") panel = <ScanQR />;
-  else if (location.pathname === "/dashboard/guard/Settings" || location.pathname === "/dashboard/guard/settings") panel = <Settings />;
-  else if (location.pathname === "/dashboard/guard/VisitorHistory" || location.pathname === "/dashboard/guard/history") panel = <VisitorHistory />;
-
   return (
-    <AppShell role={role} title="Guard Station" onLogout={onLogout}>
+    <div className="guard-dashboard-container">
       {/* Phase 4: Onboarding Tour for Guards */}
-      <OnboardingTour 
-        role="guard" 
+      <OnboardingTour
+        role="guard"
         onComplete={() => logger.debug('Guard tour completed')}
       />
-      
+
       {/* Phase 3: Offline Indicator */}
 
-      
+
       {/* Phase 3: Community Announcements */}
       <AnnouncementsBanner showDismiss={true} className="mb-4" />
-      
+
       {/* Phase 1.1: Emergency Alert Banner - Shows when there are active emergencies */}
       <EmergencyAlertBanner userRole={role} className="mb-4" />
-      
+
       {/* Main Content */}
       <main id="main-content">
         {panel}
       </main>
-      
+
       {/* Phase 4: Mobile Quick Action Menu */}
-      <QuickActionMenu 
+      <QuickActionMenu
         role="guard"
         showOnlyMobile={true}
       />
-      
+
       {/* Phase 1.1: Floating Panic Button - Always visible for quick access */}
       <div data-tour="panic-button">
-        <PanicButton 
+        <PanicButton
           floating={true}
           size="large"
           onStateChange={(state) => logger.debug('Panic button state:', state)}
         />
       </div>
-      
+
       {/* Enhanced: Visitor Details Modal */}
       {selectedVisitor && (
         <VisitorDetailsModal
@@ -646,21 +638,21 @@ export default function GuardDashboard() {
           onDeny={onRevoke}
         />
       )}
-    </AppShell>
+    </div>
   );
 }
 
-function mask(value){
-  if(!value) return '';
-  if(String(value).includes('@')) return `${value[0]}***${value.slice(-1)}`;
-  const d=String(value).replace(/\D+/g,'');
-  return d.length>=4?`${d.slice(0,2)}***${d.slice(-2)}`:'***';
+function mask(value) {
+  if (!value) return '';
+  if (String(value).includes('@')) return `${value[0]}***${value.slice(-1)}`;
+  const d = String(value).replace(/\D+/g, '');
+  return d.length >= 4 ? `${d.slice(0, 2)}***${d.slice(-2)}` : '***';
 }
 
 // Mobile-First Components
 function QuickActionTile({ href, icon, title, subtitle, color }) {
   return (
-    <div 
+    <div
       onClick={() => navigateTo(href)}
       className="cursor-pointer"
     >
@@ -690,7 +682,7 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
   const canRevoke = visitor.status !== 'REVOKED';
 
   return (
-    <div 
+    <div
       className="border border-gray-200 rounded-lg p-4 space-y-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
       onClick={() => onViewDetails?.()}
     >
@@ -700,24 +692,24 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
           <div className="text-sm text-gray-500 dark:text-gray-300">Host: {visitor.host ? mask(visitor.host) : '-'}</div>
         </div>
         <div className="flex-shrink-0">
-          <span className={getStatusChipClass(visitor.status, 'sm')}>{getStatusIcon(visitor.status)} {visitor.status||'-'}</span>
+          <span className={getStatusChipClass(visitor.status, 'sm')}>{getStatusIcon(visitor.status)} {visitor.status || '-'}</span>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-200">
         <div>In: {visitor.check_in_time || '-'}</div>
         <div>Out: {visitor.check_out_time || '-'}</div>
       </div>
 
-      {(['guard','admin'].includes(role)) && (
+      {(['guard', 'admin'].includes(role)) && (
         <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
-          <Button size="sm" className="flex-1" onClick={()=>onCheckIn(visitor.id)} disabled={!canCheckIn}>
+          <Button size="sm" className="flex-1" onClick={() => onCheckIn(visitor.id)} disabled={!canCheckIn}>
             Check-in
           </Button>
-          <Button size="sm" className="flex-1" onClick={()=>onCheckOut(visitor.id)} disabled={!canCheckOut}>
+          <Button size="sm" className="flex-1" onClick={() => onCheckOut(visitor.id)} disabled={!canCheckOut}>
             Check-out
           </Button>
-          <Button size="sm" variant="destructive" className="flex-1" onClick={()=>onRevoke(visitor.id)} disabled={!canRevoke}>
+          <Button size="sm" variant="destructive" className="flex-1" onClick={() => onRevoke(visitor.id)} disabled={!canRevoke}>
             Revoke
           </Button>
         </div>
@@ -726,13 +718,13 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
   );
 }
 
-function Toast({ severity, message }){
-  const colors = { info:'bg-blue-600', warning:'bg-yellow-600', error:'bg-red-600' };
+function Toast({ severity, message }) {
+  const colors = { info: 'bg-blue-600', warning: 'bg-yellow-600', error: 'bg-red-600' };
   const bg = colors[severity] || 'bg-gray-600';
   return (
     <div data-testid="toast" className={`${bg} text-white p-3 rounded-lg shadow-lg min-w-64`}>
       <div data-testid="toast-title" className="font-bold text-sm opacity-95 mb-1 tracking-wide">
-        {severity?.toUpperCase?.()||'INFO'}
+        {severity?.toUpperCase?.() || 'INFO'}
       </div>
       <div className="text-sm">{message}</div>
     </div>

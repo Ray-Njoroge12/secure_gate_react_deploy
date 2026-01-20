@@ -171,6 +171,8 @@ describe('Guard Management Integration Tests', () => {
       .set('Cookie', `token=${adminToken}`);
 
     expect(trainingListResponse.status).toBe(200);
-    expect(Array.isArray(trainingListResponse.body.data)).toBe(true);
+    expect(trainingListResponse.body.data).toHaveProperty('training_records');
+    expect(Array.isArray(trainingListResponse.body.data.training_records)).toBe(true);
+    expect(trainingListResponse.body.data.training_records.length).toBeGreaterThan(0);
   });
 });

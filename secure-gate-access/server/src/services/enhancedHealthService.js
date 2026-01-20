@@ -15,7 +15,7 @@ const getPool = () => {
   return dbManager.pool;
 };
 // Alias for convenience - calls getPool() on every access
-const pool = { 
+const pool = {
   get query() { return getPool().query.bind(getPool()); },
   get totalCount() { return getPool()?.totalCount; },
   get idleCount() { return getPool()?.idleCount; },
@@ -100,6 +100,10 @@ class EnhancedHealthMonitoring {
     try {
       // Get detailed health checks
       const healthResult = await healthCheck.runChecks();
+
+      // Get database stats with estate context if available
+      const estateId = req.user?.estate_id;
+      const dbStats = includeDetails ? await this.getDatabaseStats(estateId) : null;
 
       // Add enhanced metrics
       const enhancedResult = {
@@ -196,11 +200,41 @@ class EnhancedHealthMonitoring {
   /**
    * Get database performance statistics
    */
-  async getDatabaseStats() {
+  async getDatabaseStats(estateId = null) {
     try {
       const start = Date.now();
 
-      // Run performance test queries
+      if (estateId) {
+        // Estate-scoped metrics
+        const [connectionTest, userCount, visitorCount, activeVisitors] = await Promise.all([
+          pool.query('SELECT NOW() as server_time, version() as db_version'),
+          pool.query('SELECT COUNT(*) as count FROM users WHERE estate_id = $1', [estateId]),
+          pool.query('SELECT COUNT(*) as count FROM visitors WHERE estate_id = $1', [estateId]),
+          pool.query('SELECT COUNT(*) as count FROM visitors WHERE status IN (\'ON_PREMISE\', \'CONFIRMED\') AND estate_id = $1', [estateId])
+        ]);
+
+        const queryTime = Date.now() - start;
+
+        return {
+          responseTime: queryTime,
+          serverTime: connectionTest.rows[0]?.server_time,
+          version: connectionTest.rows[0]?.db_version?.split(' ')[0] || 'Unknown',
+          statistics: {
+            totalUsers: parseInt(userCount.rows[0]?.count || 0),
+            totalVisitors: parseInt(visitorCount.rows[0]?.count || 0),
+            activeVisitors: parseInt(activeVisitors.rows[0]?.count || 0)
+          },
+          performance: {
+            avgQueryTime: queryTime,
+            status: queryTime < 100 ? 'excellent' :
+              queryTime < 500 ? 'good' :
+                queryTime < 1000 ? 'acceptable' : 'slow'
+          },
+          scope: 'estate'
+        };
+      }
+
+      // Global metrics (Admin only)
       const [
         connectionTest,
         userCount,
@@ -229,7 +263,8 @@ class EnhancedHealthMonitoring {
           status: queryTime < 100 ? 'excellent' :
             queryTime < 500 ? 'good' :
               queryTime < 1000 ? 'acceptable' : 'slow'
-        }
+        },
+        scope: 'global'
       };
     } catch (error) {
       return {
@@ -533,7 +568,7 @@ class EnhancedHealthMonitoring {
 
       // Quick database connectivity check
       await pool.query('SELECT 1');
-      
+
       return {
         status: 'healthy',
         timestamp: new Date().toISOString(),
@@ -598,20 +633,20 @@ class EnhancedHealthMonitoring {
   markShuttingDown() {
     this.healthMetrics.currentStatus = 'shutting_down';
     this.isShuttingDown = true;
-    
+
     loggingService.logInfo('Service marked as shutting down', {
       timestamp: new Date().toISOString(),
       uptime: Date.now() - this.startTime,
       totalRequests: this.healthMetrics.totalRequests
     });
-    
+
     // Update all health checks to return 'shutting_down' status
     healthCheck.registerCheck('shutdown', () => ({
       status: 'unhealthy',
       details: 'Service is shutting down gracefully',
       isShuttingDown: true
     }));
-    
+
     return true;
   }
 

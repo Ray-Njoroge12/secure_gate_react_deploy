@@ -19,6 +19,15 @@ router.use(authenticateToken);
  * @access Private (guard, admin)
  * @query fromDate, toDate
  */
-router.get('/', getGuardAnalytics);
+import { customRateLimit } from '../middleware/rateLimitMiddleware.js';
+
+// Rate limit: 100 requests per 15 minutes
+const analyticsLimiter = customRateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { error: 'Too many analytics requests, please try again later.' }
+});
+
+router.get('/', analyticsLimiter, getGuardAnalytics);
 
 export default router;

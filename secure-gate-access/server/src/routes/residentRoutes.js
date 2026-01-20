@@ -21,17 +21,17 @@ const attachRequestAudit = auditLoggerFactory();
  */
 router.get('/profile', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  
+
   const result = await dbManager.query(
     `SELECT id, name, email, phone, unit_number, role, estate_id, created_at, updated_at 
-     FROM users WHERE id = $1`,
-    [userId]
+     FROM users WHERE id = $1 AND estate_id = $2`,
+    [userId, req.user.estate_id]
   );
-  
+
   if (result.rows.length === 0) {
     throw new AppError('Resident not found', 404);
   }
-  
+
   return successResponse(res, result.rows[0], 'Resident profile retrieved');
 }));
 
@@ -42,18 +42,18 @@ router.get('/profile', authenticateToken, requireEstateContext, requireRolePolic
 router.put('/profile', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { name, phone, unit_number } = req.body;
-  
+
   const result = await dbManager.query(
     `UPDATE users 
      SET name = COALESCE($1, name), 
          phone = COALESCE($2, phone), 
          unit_number = COALESCE($3, unit_number),
          updated_at = NOW()
-     WHERE id = $4
+     WHERE id = $4 AND estate_id = $5
      RETURNING id, name, email, phone, unit_number, role, estate_id`,
-    [name, phone, unit_number, userId]
+    [name, phone, unit_number, userId, req.user.estate_id]
   );
-  
+
   return successResponse(res, result.rows[0], 'Profile updated successfully');
 }));
 
@@ -63,16 +63,16 @@ router.put('/profile', authenticateToken, requireEstateContext, requireRolePolic
  */
 router.get('/favorites', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  
+
   const result = await dbManager.query(
     `SELECT fv.*, v.name as visitor_name, v.phone as visitor_phone, v.email as visitor_email
      FROM favorite_visitors fv
      LEFT JOIN visitors v ON fv.visitor_id = v.id
-     WHERE fv.resident_id = $1
+     WHERE fv.resident_id = $1 AND v.estate_id = $2
      ORDER BY fv.created_at DESC`,
-    [userId]
+    [userId, req.user.estate_id]
   );
-  
+
   return successResponse(res, result.rows, 'Favorite visitors retrieved');
 }));
 
@@ -83,11 +83,11 @@ router.get('/favorites', authenticateToken, requireEstateContext, requireRolePol
 router.post('/favorites', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { visitor_id, nickname } = req.body;
-  
+
   if (!visitor_id) {
     throw new AppError('Visitor ID is required', 400);
   }
-  
+
   const result = await dbManager.query(
     `INSERT INTO favorite_visitors (resident_id, visitor_id, nickname, created_at)
      VALUES ($1, $2, $3, NOW())
@@ -95,7 +95,7 @@ router.post('/favorites', authenticateToken, requireEstateContext, requireRolePo
      RETURNING *`,
     [userId, visitor_id, nickname]
   );
-  
+
   return successResponse(res, result.rows[0], 'Visitor added to favorites', 201);
 }));
 
@@ -106,12 +106,12 @@ router.post('/favorites', authenticateToken, requireEstateContext, requireRolePo
 router.delete('/favorites/:visitorId', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { visitorId } = req.params;
-  
+
   await dbManager.query(
     'DELETE FROM favorite_visitors WHERE resident_id = $1 AND visitor_id = $2',
     [userId, visitorId]
   );
-  
+
   return successResponse(res, null, 'Visitor removed from favorites');
 }));
 
@@ -122,23 +122,23 @@ router.delete('/favorites/:visitorId', authenticateToken, requireEstateContext, 
 router.get('/stats', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const userEmail = req.user.email;
-  
+
   const [visitorsCount, pendingCount, checkInsToday] = await Promise.all([
     dbManager.query(
-      'SELECT COUNT(*) as count FROM visitors WHERE created_by = $1',
-      [userEmail]
+      'SELECT COUNT(*) as count FROM visitors WHERE created_by = $1 AND estate_id = $2',
+      [userEmail, req.user.estate_id]
     ),
     dbManager.query(
-      "SELECT COUNT(*) as count FROM visitors WHERE created_by = $1 AND status = 'pending'",
-      [userEmail]
+      "SELECT COUNT(*) as count FROM visitors WHERE created_by = $1 AND status = 'pending' AND estate_id = $2",
+      [userEmail, req.user.estate_id]
     ),
     dbManager.query(
       `SELECT COUNT(*) as count FROM visitors 
-       WHERE created_by = $1 AND DATE(check_in_time) = CURRENT_DATE`,
-      [userEmail]
+       WHERE created_by = $1 AND DATE(check_in_time) = CURRENT_DATE AND estate_id = $2`,
+      [userEmail, req.user.estate_id]
     )
   ]);
-  
+
   return successResponse(res, {
     total_visitors: parseInt(visitorsCount.rows[0].count),
     pending_visitors: parseInt(pendingCount.rows[0].count),

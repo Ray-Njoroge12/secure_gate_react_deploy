@@ -478,7 +478,7 @@ describe('Encryption Service', () => {
       
       const result = validateEncryptionConfig();
       
-      expect(result.warnings).toContain('Local encryption is not recommended for production - use AWS KMS or Vault');
+      expect(result.warnings).toContain('Using local encryption (consider AWS KMS or Vault for enhanced security)');
     });
 
     // Skipped: validateEncryptionConfig reads module-level constants set at import time

@@ -7,11 +7,11 @@ import {
   getBulkInvite,
   completeInvite,
   cancelVisitor
-} from '../controllers/visitorInviteController.js';
+} from '../controllers/visitorInviteController-optimized.js';
 import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
 import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
-import { attachUserFromToken, authenticateToken } from '../middleware/authMiddleware.js';
+import { attachUserFromToken, authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
@@ -202,7 +202,8 @@ router.post('/',
   createVisitor
 );
 router.get('/',
-  attachUserFromToken,
+  authenticateToken,
+  requireEstate,
   minimizeData('visitor'),
   attachRequestAudit,
   // CacheMiddleware.createMiddleware({ ttl: 300 }), // Temporarily disabled for debugging
@@ -365,9 +366,9 @@ router.post('/self-checkin/:inviteCode', selfCheckIn);
 router.delete('/:id', attachUserFromToken, attachRequestAudit, cancelVisitor);
 
 // Admin Operations (admin role required)
-router.get('/active', attachUserFromToken, minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
-router.get('/report', attachUserFromToken, minimizeData('visitor'), attachRequestAudit, getVisitorReport);
-router.delete('/:visitorId/revoke', attachUserFromToken, attachRequestAudit, revokeVisitor);
+router.get('/active', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
+router.get('/report', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, getVisitorReport);
+router.delete('/:visitorId/revoke', authenticateToken, requireRole(['admin']), attachRequestAudit, revokeVisitor);
 
 // Route aliases to match frontend expectations
 router.get('/reports', attachUserFromToken, minimizeData('visitor'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)

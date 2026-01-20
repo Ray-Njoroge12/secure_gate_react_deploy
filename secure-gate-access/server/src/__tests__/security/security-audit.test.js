@@ -12,9 +12,9 @@ describe('Security Audit - Current System Verification', () => {
   describe('1. QR Code Data Content Verification', () => {
     test('Check what data is embedded in QR codes', async () => {
       console.log('\n📋 CLAIM 1: QR codes contain PII');
-      console.log('Checking visitorInviteController.js for QR generation...\n');
+      console.log('Checking visitorInviteController-optimized.js for QR generation...\n');
       
-      const controllerPath = path.join(__dirname, '../../controllers/visitorInviteController.js');
+      const controllerPath = path.join(__dirname, '../../controllers/visitorInviteController-optimized.js');
       
       if (fs.existsSync(controllerPath)) {
         const content = fs.readFileSync(controllerPath, 'utf8');

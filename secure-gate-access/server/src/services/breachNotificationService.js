@@ -15,7 +15,7 @@
 import loggingService from './loggingService.js';
 import notificationQueueService from './notificationQueueService.js';
 import kenyaDPAAuditService from './kenyaDPAAuditService.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 class BreachNotificationService {
   constructor() {

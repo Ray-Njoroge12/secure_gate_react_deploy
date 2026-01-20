@@ -26,8 +26,8 @@ export const visitorFactory = {
       host_id: overrides.host_id || null,
       invite_code: overrides.invite_code || generateInviteCode(),
       qr_code: overrides.qr_code || null,
-      check_in: overrides.check_in || null,
-      check_out: overrides.check_out || null,
+      check_in_time: overrides.check_in_time || null,
+      check_out_time: overrides.check_out_time || null,
       expected_arrival: overrides.expected_arrival || new Date(Date.now() + 86400000).toISOString(),
       ...overrides
     };
@@ -40,7 +40,7 @@ export const visitorFactory = {
     const visitorData = visitorFactory.build(overrides);
 
     const result = await dbManager.query(
-      `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code, qr_code, check_in, check_out)
+      `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code, qr_code, check_in_time, check_out_time)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
@@ -52,8 +52,8 @@ export const visitorFactory = {
         visitorData.host_id,
         visitorData.invite_code,
         visitorData.qr_code,
-        visitorData.check_in,
-        visitorData.check_out
+        visitorData.check_in_time,
+        visitorData.check_out_time
       ]
     );
 
@@ -90,7 +90,7 @@ export const visitorFactory = {
     return visitorFactory.create({ 
       host_id: hostId, 
       status: 'on_premise',
-      check_in: new Date().toISOString(),
+      check_in_time: new Date().toISOString(),
       qr_code: 'data:image/png;base64,mockQRCode',
       ...overrides 
     });
@@ -104,8 +104,8 @@ export const visitorFactory = {
     return visitorFactory.create({ 
       host_id: hostId, 
       status: 'checked_out',
-      check_in: checkIn.toISOString(),
-      check_out: new Date().toISOString(),
+      check_in_time: checkIn.toISOString(),
+      check_out_time: new Date().toISOString(),
       qr_code: 'data:image/png;base64,mockQRCode',
       ...overrides 
     });

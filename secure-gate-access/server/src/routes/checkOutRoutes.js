@@ -1,6 +1,7 @@
 /**
  * Check-Out Routes
  * Routes for visitor check-out operations
+ * SECURITY: All queries filter by estate_id
  */
 
 import express from 'express';
@@ -23,25 +24,30 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
   const { visitorId } = req.params;
   const guardId = req.user.id;
   const { notes } = req.body;
-  
-  // Verify visitor exists
+
+  // SECURITY: Require estate context
+  if (!req.user.estate_id) {
+    throw new AppError('Estate context required', 400);
+  }
+
+  // Verify visitor exists in this estate
   const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE id = $1',
-    [visitorId]
+    'SELECT * FROM visitors WHERE id = $1 AND estate_id = $2',
+    [visitorId, req.user.estate_id]
   );
-  
+
   if (visitor.rows.length === 0) {
     throw new AppError('Visitor not found', 404);
   }
-  
+
   const visitorData = visitor.rows[0];
-  
+
   // Check if visitor is checked in
-  if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
+  if (visitorData.status !== PASS_STATUS.ON_PREMISE) {
     throw new AppError('Visitor is not currently checked in', 400);
   }
-  
-  // Perform check-out
+
+  // Perform check-out with estate_id filter
   const result = await dbManager.query(
     `UPDATE visitors 
      SET status = $1, 
@@ -49,18 +55,18 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
          check_out_guard_id = $2,
          check_out_notes = $3,
          updated_at = NOW()
-     WHERE id = $4
+     WHERE id = $4 AND estate_id = $5
      RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId]
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorId, req.user.estate_id]
   );
-  
+
   // Log access
   await dbManager.query(
     `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
      VALUES ($1, 'check_out', $2, $3, NOW())`,
     [visitorId, guardId, notes]
   );
-  
+
   return successResponse(res, result.rows[0], 'Visitor checked out successfully');
 }));
 
@@ -71,29 +77,34 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
 router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
-  
+
   if (!qrCode) {
     throw new AppError('QR code is required', 400);
   }
-  
-  // Find visitor by QR code
+
+  // SECURITY: Require estate context
+  if (!req.user.estate_id) {
+    throw new AppError('Estate context required', 400);
+  }
+
+  // Find visitor by QR code - filtered by estate
   const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE qr_code = $1 OR token = $1',
-    [qrCode]
+    'SELECT * FROM visitors WHERE (qr_code = $1 OR token = $1) AND estate_id = $2',
+    [qrCode, req.user.estate_id]
   );
-  
+
   if (visitor.rows.length === 0) {
     throw new AppError('Invalid QR code', 404);
   }
-  
+
   const visitorData = visitor.rows[0];
-  
+
   // Validate visitor status
-  if (visitorData.status !== PASS_STATUS.CHECKED_IN) {
+  if (visitorData.status !== PASS_STATUS.ON_PREMISE) {
     throw new AppError('Visitor is not currently checked in', 400);
   }
-  
-  // Perform check-out
+
+  // Perform check-out with estate_id filter
   const result = await dbManager.query(
     `UPDATE visitors 
      SET status = $1, 
@@ -101,18 +112,18 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
          check_out_guard_id = $2,
          check_out_notes = $3,
          updated_at = NOW()
-     WHERE id = $4
+     WHERE id = $4 AND estate_id = $5
      RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id]
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id, req.user.estate_id]
   );
-  
+
   // Log access
   await dbManager.query(
     `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
      VALUES ($1, 'check_out_qr', $2, $3, NOW())`,
     [visitorData.id, guardId, notes]
   );
-  
+
   return successResponse(res, result.rows[0], 'Visitor checked out via QR code');
 }));
 
@@ -121,14 +132,17 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  * GET /api/check-out/today
  */
 router.get('/today', authenticateToken, authorize(['guard', 'admin']), minimizeData('check-out'), asyncHandler(async (req, res) => {
+  // SECURITY: Filter by estate_id
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
      WHERE DATE(v.check_out_time) = CURRENT_DATE
-     ORDER BY v.check_out_time DESC`
+     AND v.estate_id = $1
+     ORDER BY v.check_out_time DESC`,
+    [req.user.estate_id]
   );
-  
+
   return successResponse(res, result.rows, 'Today\'s check-outs retrieved');
 }));
 
@@ -137,16 +151,19 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), minimizeD
  * GET /api/check-out/active
  */
 router.get('/active', authenticateToken, authorize(['guard', 'admin']), minimizeData('check-out'), asyncHandler(async (req, res) => {
+  // SECURITY: Filter by estate_id
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
      LEFT JOIN users u ON v.created_by = u.email
      WHERE v.status = $1
+     AND v.estate_id = $2
      ORDER BY v.check_in_time DESC`,
-    [PASS_STATUS.CHECKED_IN]
+    [PASS_STATUS.ON_PREMISE, req.user.estate_id]
   );
-  
+
   return successResponse(res, result.rows, 'Active visitors retrieved');
 }));
 
 export default router;
+

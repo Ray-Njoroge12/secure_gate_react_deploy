@@ -45,7 +45,6 @@ git --version
 
 # Docker (optional, for containerized deployment)
 docker --version
-docker-compose --version
 ```
 
 ### Required Environment Variables
@@ -110,183 +109,67 @@ ENABLE_OTP_VERIFICATION=true
 
 ### Access Requirements
 
-- [ ] Staging server SSH access
+- [ ] AWS account access (ECS, ECR, RDS, CloudWatch)
+- [ ] IAM credentials configured locally (`aws configure`)
 - [ ] Database admin credentials
-- [ ] DNS configuration access
-- [ ] SSL certificate for staging domain
-- [ ] Cloud provider credentials (if using AWS/Azure/GCP)
+- [ ] DNS configuration access (if using a staging domain)
+- [ ] ACM certificate for staging domain (if using HTTPS)
 
 ---
 
 ## Staging Environment Setup
 
-### Option 1: VPS Deployment (Ubuntu 22.04)
+### AWS ECS/Fargate Staging (Recommended)
 
-#### 1. Provision Server
-
-```bash
-# Recommended specs for staging:
-# - CPU: 2 vCPUs
-# - RAM: 4 GB
-# - Storage: 40 GB SSD
-# - Bandwidth: 100 GB/month
-
-# SSH into server
-ssh -i ~/.ssh/staging-key.pem ubuntu@staging.yourdomain.com
-```
-
-#### 2. Install Dependencies
+#### 1. Verify AWS Access
 
 ```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install Node.js 18 LTS
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# Install PostgreSQL 14
-sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-sudo apt update
-sudo apt install -y postgresql-14 postgresql-contrib-14
-
-# Install Redis (optional)
-sudo apt install -y redis-server
-
-# Install PM2 for process management
-sudo npm install -g pm2
-
-# Install Nginx for reverse proxy
-sudo apt install -y nginx
-
-# Install Certbot for SSL
-sudo apt install -y certbot python3-certbot-nginx
+aws sts get-caller-identity
+aws configure list
 ```
 
-#### 3. Configure Nginx
+If AWS is not set up yet, skip this check and keep the placeholders below. Replace
+them once the account, ECR repo, and ECS service exist.
 
-```nginx
-# /etc/nginx/sites-available/secure-gate-staging
-
-server {
-    listen 80;
-    server_name staging.yourdomain.com;
-
-    # Redirect to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name staging.yourdomain.com;
-
-    ssl_certificate /etc/letsencrypt/live/staging.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/staging.yourdomain.com/privkey.pem;
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Referrer-Policy "no-referrer-when-downgrade" always;
-    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
-
-    location / {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
+#### 2. Build and Push the Staging Image (ECR)
 
 ```bash
-# Enable site
-sudo ln -s /etc/nginx/sites-available/secure-gate-staging /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
+export AWS_REGION=us-west-2
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export ECR_REPO=secure-gate-api
+IMAGE_TAG=staging-$(git rev-parse --short HEAD)
 
-# Get SSL certificate
-sudo certbot --nginx -d staging.yourdomain.com
+aws ecr describe-repositories --repository-names "$ECR_REPO" \
+  || aws ecr create-repository --repository-name "$ECR_REPO"
+
+aws ecr get-login-password --region "$AWS_REGION" \
+  | docker login --username AWS --password-stdin \
+    "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+docker build -t "$ECR_REPO:$IMAGE_TAG" ./secure-gate-access/server
+docker tag "$ECR_REPO:$IMAGE_TAG" \
+  "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
 ```
 
-### Option 2: Docker Deployment
-
-#### 1. Create docker-compose.yml
-
-```yaml
-version: '3.8'
-
-services:
-  app:
-    build: ./secure-gate-access/server
-    ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=staging
-    env_file:
-      - .env.staging
-    depends_on:
-      - db
-      - redis
-    restart: unless-stopped
-    volumes:
-      - ./logs:/app/logs
-
-  db:
-    image: postgres:14-alpine
-    environment:
-      POSTGRES_DB: secure_gate_staging
-      POSTGRES_USER: secure_gate_app
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-
-  redis:
-    image: redis:6-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - app
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  redis_data:
-```
-
-#### 2. Deploy with Docker
+#### 3. Apply Staging Infrastructure and Update ECS
 
 ```bash
-# Build and start services
-docker-compose -f docker-compose.staging.yml up -d
+cd infra
+terraform init
+terraform apply \
+  -var="environment=staging" \
+  -var="container_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
 
-# View logs
-docker-compose -f docker-compose.staging.yml logs -f app
+# Force a new deployment (replace names if your staging cluster/service differ)
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --force-new-deployment
 
-# Check status
-docker-compose -f docker-compose.staging.yml ps
+aws ecs wait services-stable \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
 ```
 
 ---
@@ -296,8 +179,8 @@ docker-compose -f docker-compose.staging.yml ps
 ### 1. Create Database and User
 
 ```bash
-# Connect to PostgreSQL
-sudo -u postgres psql
+# Connect to PostgreSQL (RDS)
+psql $DATABASE_URL
 
 -- Create user
 CREATE USER secure_gate_app WITH PASSWORD 'strong-password-here';
@@ -370,130 +253,10 @@ SELECT COUNT(*) FROM events;
 
 ## Application Deployment
 
-### 1. Clone Repository
-
-```bash
-# Create app directory
-sudo mkdir -p /var/www/secure-gate
-sudo chown $USER:$USER /var/www/secure-gate
-
-# Clone repo
-cd /var/www/secure-gate
-git clone https://github.com/yourusername/secure-gate-react-express.git .
-
-# Or pull latest
-git pull origin main
-```
-
-### 2. Install Dependencies
-
-```bash
-cd /var/www/secure-gate/secure-gate-access/server
-
-# Install production dependencies
-npm ci --production
-
-# Or install all dependencies for testing
-npm install
-```
-
-### 3. Build Application (if needed)
-
-```bash
-# If using TypeScript or build process
-npm run build
-
-# Verify build
-ls -la dist/
-```
-
-### 4. Configure Environment
-
-```bash
-# Copy environment file
-cp .env.example .env.staging
-nano .env.staging
-
-# Set appropriate values
-# (See Prerequisites section for required variables)
-
-# Secure the file
-chmod 600 .env.staging
-```
-
-### 5. Start Application
-
-#### Using PM2 (Recommended)
-
-```bash
-# Start with PM2
-pm2 start npm --name "secure-gate-staging" -- start
-
-# Or with env file
-pm2 start ecosystem.config.js --env staging
-
-# Save PM2 configuration
-pm2 save
-
-# Setup auto-restart on reboot
-pm2 startup
-sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u $USER --hp /home/$USER
-
-# View logs
-pm2 logs secure-gate-staging
-
-# Monitor
-pm2 monit
-
-# Restart
-pm2 restart secure-gate-staging
-```
-
-#### Using systemd
-
-```bash
-# Create systemd service file
-sudo nano /etc/systemd/system/secure-gate-staging.service
-```
-
-```ini
-[Unit]
-Description=Secure Gate Staging Server
-After=network.target postgresql.service
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/var/www/secure-gate/secure-gate-access/server
-Environment=NODE_ENV=staging
-EnvironmentFile=/var/www/secure-gate/secure-gate-access/server/.env.staging
-ExecStart=/usr/bin/node server.js
-Restart=on-failure
-RestartSec=10
-StandardOutput=syslog
-StandardError=syslog
-SyslogIdentifier=secure-gate-staging
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-# Reload systemd
-sudo systemctl daemon-reload
-
-# Start service
-sudo systemctl start secure-gate-staging
-
-# Enable on boot
-sudo systemctl enable secure-gate-staging
-
-# Check status
-sudo systemctl status secure-gate-staging
-
-# View logs
-sudo journalctl -u secure-gate-staging -f
-```
+Application deployment is handled through ECS task definitions and the ECS service.
+Use the AWS ECS/Fargate staging commands in the setup section to build/push the
+image and roll out a new deployment. Update runtime configuration via SSM or
+Secrets Manager before triggering the service update.
 
 ---
 
@@ -972,18 +735,16 @@ Sentry.init({
 });
 ```
 
-#### Set up PM2 Monitoring
+#### Configure CloudWatch Log Retention (Recommended)
 
 ```bash
-# Enable PM2 monitoring
-pm2 install pm2-logrotate
+# Log group is created by Terraform (var.ecs_log_group_name)
+LOG_GROUP="/ecs/secure-gate"
 
-# Configure log rotation
-pm2 set pm2-logrotate:max_size 10M
-pm2 set pm2-logrotate:retain 7
-
-# View metrics
-pm2 web  # Access at http://localhost:9615
+# Set retention on the ECS log group
+aws logs put-retention-policy \
+  --log-group-name "$LOG_GROUP" \
+  --retention-in-days 30
 ```
 
 ### 2. Database Monitoring
@@ -1006,15 +767,12 @@ SELECT * FROM db_health;
 ```bash
 # Install Winston for structured logging (already installed)
 
-# Configure log shipping to ELK/CloudWatch/etc.
-# See logging configuration in server
+# Configure log shipping to CloudWatch
+# Ensure the ECS task definition uses awslogs or FireLens
 
-# View logs
-pm2 logs secure-gate-staging --lines 100
-
-# Or
-tail -f /var/www/secure-gate/logs/app.log
-tail -f /var/www/secure-gate/logs/error.log
+# View logs (CloudWatch)
+LOG_GROUP="/ecs/secure-gate"
+aws logs tail "$LOG_GROUP" --follow
 ```
 
 ### 4. Metrics Dashboard
@@ -1102,8 +860,11 @@ If issues detected:
 # 1. Enable maintenance mode
 curl -X POST $BASE_URL/admin/maintenance/enable
 
-# 2. Stop current application
-pm2 stop secure-gate-production
+# 2. Stop current application (scale down ECS)
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --desired-count 0
 
 # 3. Restore database from backup
 psql $DATABASE_URL < backups/pre-deployment-backup.sql
@@ -1112,7 +873,20 @@ psql $DATABASE_URL < backups/pre-deployment-backup.sql
 git checkout tags/v1.0.0
 
 # 5. Start previous version
-pm2 start secure-gate-production
+PREV_TASK_DEF=$(aws ecs list-task-definitions \
+  --family-prefix secure-gate-task \
+  --sort DESC \
+  --query 'taskDefinitionArns[1]' \
+  --output text)
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --task-definition "$PREV_TASK_DEF" \
+  --desired-count 1
+
+aws ecs wait services-stable \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
 
 # 6. Verify health
 curl $BASE_URL/health
@@ -1130,8 +904,19 @@ curl -X POST $BASE_URL/admin/maintenance/disable
 #### 1. Application Won't Start
 
 ```bash
-# Check logs
-pm2 logs secure-gate-staging --err
+# Check service status
+aws ecs describe-services \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
+
+# Check running tasks
+aws ecs list-tasks \
+  --cluster secure-gate-cluster \
+  --service-name secure-gate-service
+
+# View logs (CloudWatch)
+LOG_GROUP="/ecs/secure-gate"
+aws logs tail "$LOG_GROUP" --follow
 
 # Common causes:
 # - Missing environment variables
@@ -1140,8 +925,10 @@ pm2 logs secure-gate-staging --err
 # - Missing dependencies
 
 # Solutions:
-pm2 restart secure-gate-staging
-pm2 flush  # Clear logs
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --force-new-deployment
 ```
 
 #### 2. Database Connection Issues
@@ -1150,28 +937,33 @@ pm2 flush  # Clear logs
 # Test connection
 psql $DATABASE_URL -c "SELECT 1"
 
-# Check PostgreSQL is running
-sudo systemctl status postgresql
+# Check RDS status (adjust identifier if different)
+aws rds describe-db-instances --db-instance-identifier secure-gate-postgres
 
 # Check connections
-sudo -u postgres psql -c "SELECT * FROM pg_stat_activity;"
+psql $DATABASE_URL -c "SELECT * FROM pg_stat_activity;"
 
-# Restart PostgreSQL
-sudo systemctl restart postgresql
+# Reboot RDS instance (last resort)
+aws rds reboot-db-instance --db-instance-identifier secure-gate-postgres
 ```
 
 #### 3. High Memory Usage
 
 ```bash
 # Check memory
-free -h
-pm2 monit
+aws ecs describe-services \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
+
+# Review CloudWatch metrics for CPU/Memory before scaling
 
 # Restart app
-pm2 restart secure-gate-staging
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --force-new-deployment
 
-# Increase memory limit
-pm2 start app.js --max-memory-restart 1G
+# Increase task memory in Terraform and redeploy if needed
 ```
 
 #### 4. Slow Performance
@@ -1219,13 +1011,18 @@ LIMIT 10;
 ## Appendix: Useful Commands
 
 ```bash
-# Application Management
-pm2 list
-pm2 logs secure-gate-staging
-pm2 restart secure-gate-staging
-pm2 stop secure-gate-staging
-pm2 delete secure-gate-staging
-pm2 monit
+# Application Management (ECS)
+aws ecs describe-services --cluster secure-gate-cluster --services secure-gate-service
+aws ecs list-tasks --cluster secure-gate-cluster --service-name secure-gate-service
+TASK_ARN=$(aws ecs list-tasks \
+  --cluster secure-gate-cluster \
+  --service-name secure-gate-service \
+  --query 'taskArns[0]' \
+  --output text)
+aws ecs describe-tasks --cluster secure-gate-cluster --tasks "$TASK_ARN"
+aws ecs update-service --cluster secure-gate-cluster --service secure-gate-service --force-new-deployment
+LOG_GROUP="/ecs/secure-gate"
+aws logs tail "$LOG_GROUP" --follow
 
 # Database
 psql $DATABASE_URL
@@ -1233,18 +1030,11 @@ psql $DATABASE_URL -c "SELECT version();"
 pg_dump $DATABASE_URL > backup.sql
 psql $DATABASE_URL < backup.sql
 
-# Nginx
-sudo nginx -t
-sudo systemctl reload nginx
-sudo systemctl status nginx
-sudo tail -f /var/log/nginx/error.log
-
 # System
 htop
 df -h
 free -h
 netstat -tunlp
-sudo journalctl -f
 
 # Git
 git status

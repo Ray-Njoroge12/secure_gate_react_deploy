@@ -25,7 +25,7 @@ const createMockLogger = () => {
     debug: jest.fn(),
     verbose: jest.fn(),
     silly: jest.fn(),
-    child: jest.fn(function() { return logger; })
+    child: jest.fn(function () { return logger; })
   };
   return logger;
 };
@@ -35,29 +35,59 @@ const mockCreateLogger = jest.fn((config) => {
   return createMockLogger();
 });
 
-const winstonMock = {
-  createLogger: mockCreateLogger,
-  format: {
-    combine: jest.fn((...args) => args),
-    timestamp: jest.fn(() => ({ timestamp: true })),
-    colorize: jest.fn(() => ({ colorize: true })),
-    errors: jest.fn(() => ({ errors: true })),
-    json: jest.fn(() => ({ json: true })),
-    printf: jest.fn((fn) => ({ printf: fn })),
-    metadata: jest.fn(() => ({ metadata: true }))
-  },
-  transports: {
-    Console: jest.fn(),
-    File: jest.fn()
-  }
-};
+// Ensure winston mock is robust
+// Radically simplified mock
+jest.unstable_mockModule('winston', () => {
+  const mockLogger = {
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+    silly: jest.fn(),
+    child: jest.fn(() => mockLogger)
+  };
 
-jest.unstable_mockModule('winston', () => ({
-  default: winstonMock,
-  createLogger: mockCreateLogger,
-  format: winstonMock.format,
-  transports: winstonMock.transports
-}));
+  const createLogger = jest.fn(() => {
+    console.log('[MOCK] createLogger called returning mockLogger');
+    return mockLogger;
+  });
+
+  return {
+    __esModule: true,
+    default: {
+      createLogger,
+      format: {
+        combine: jest.fn(),
+        timestamp: jest.fn(),
+        colorize: jest.fn(),
+        errors: jest.fn(),
+        json: jest.fn(),
+        printf: jest.fn(),
+        metadata: jest.fn()
+      },
+      transports: {
+        Console: jest.fn(),
+        File: jest.fn()
+      }
+    },
+    createLogger,
+    format: {
+      combine: jest.fn(),
+      timestamp: jest.fn(),
+      colorize: jest.fn(),
+      errors: jest.fn(),
+      json: jest.fn(),
+      printf: jest.fn(),
+      metadata: jest.fn()
+    },
+    transports: {
+      Console: jest.fn(),
+      File: jest.fn()
+    }
+  };
+});
 
 // Mock winston-daily-rotate-file
 jest.unstable_mockModule('winston-daily-rotate-file', () => ({
@@ -94,25 +124,84 @@ jest.unstable_mockModule('fs', () => ({
 }));
 
 // Import after mocks
-const { default: loggingService, LoggingService } = await import('../../src/services/loggingService.js');
+// Import after mocks
+import { LoggingService } from '../../src/services/loggingService.js';
 
 describe('LoggingService', () => {
+  let loggingService;
+  let mockWinston;
+  let mockLogger;
   let consoleLogSpy;
   let consoleErrorSpy;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
-    // DO NOT call jest.resetModules() - it clears our Winston/fs mocks!
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    // jest.clearAllMocks();
 
-    // Reset log stats
-    loggingService.resetStats();
+    // Create robust mock logger
+    mockLogger = {
+      log: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      verbose: jest.fn(),
+      silly: jest.fn(),
+      child: jest.fn(function () { return mockLogger; })
+    };
+    mockLogger.logWithCorrelation = jest.fn(); // Placeholder to be overwritten
+
+    // Mock Winston
+    mockWinston = {
+      createLogger: jest.fn(() => mockLogger),
+      format: {
+        combine: jest.fn(),
+        timestamp: jest.fn(),
+        errors: jest.fn(),
+        json: jest.fn(),
+        metadata: jest.fn(),
+        colorize: jest.fn(),
+        printf: jest.fn()
+      },
+      transports: {
+        Console: jest.fn(),
+        File: jest.fn(),
+        DailyRotateFile: jest.fn()
+      }
+    };
+
+    // Instantiate service locally with injected mock
+    // Instantiate service locally with injected mock
+    loggingService = new LoggingService(mockWinston, {
+      promises: mockFsPromises,
+      mkdirSync: mockFsSync.mkdirSync,
+      readdirSync: mockFsSync.readdirSync,
+      statSync: mockFsSync.statSync,
+      existsSync: mockFsSync.existsSync,
+      openSync: mockFsSync.openSync,
+      writeFileSync: mockFsSync.writeFileSync,
+      readFileSync: mockFsSync.readFileSync,
+      unlinkSync: mockFsSync.unlinkSync
+    });
+    // loggingService.resetStats(); (Already initialized in constructor?)
+    loggingService.logStats = {
+      totalLogs: 0,
+      logsByLevel: {},
+      lastLogTime: null,
+      errorCount: 0,
+      warningCount: 0,
+      infoCount: 0,
+      debugCount: 0,
+      logsByCategory: new Map()
+    };
+
+    // Re-initialize to ensure it uses our mock (constructor calls initialize, but we can call it again/cleanly)
+    // Actually constructor calls initialize().
+    // So loggingService.loggers should be populated.
   });
 
   afterEach(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
+    // consoleLogSpy.mockRestore();
+    // consoleErrorSpy.mockRestore();
   });
 
   describe('initialization', () => {
@@ -141,9 +230,9 @@ describe('LoggingService', () => {
   describe('ensureLogDirectory', () => {
     it('should create log directory if it does not exist', () => {
       mockFsSync.existsSync.mockReturnValueOnce(false);
-      
+
       loggingService.ensureLogDirectory();
-      
+
       expect(mockFsSync.mkdirSync).toHaveBeenCalledWith(
         expect.any(String),
         { recursive: true }
@@ -153,9 +242,9 @@ describe('LoggingService', () => {
     it('should not create directory if it already exists', () => {
       mockFsSync.existsSync.mockReturnValueOnce(true);
       mockFsSync.mkdirSync.mockClear();
-      
+
       loggingService.ensureLogDirectory();
-      
+
       expect(mockFsSync.mkdirSync).not.toHaveBeenCalled();
     });
   });
@@ -192,21 +281,21 @@ describe('LoggingService', () => {
   describe('getLogger', () => {
     it('should return existing logger by name', () => {
       loggingService.createLogger('existing-logger');
-      
+
       const logger = loggingService.getLogger('existing-logger');
-      
+
       expect(logger).toBeDefined();
     });
 
     it('should return app logger as default', () => {
       const logger = loggingService.getLogger('non-existent');
-      
+
       expect(logger).toBeDefined();
     });
 
     it('should return app logger when no name provided', () => {
       const logger = loggingService.getLogger();
-      
+
       expect(logger).toBeDefined();
     });
   });
@@ -214,37 +303,37 @@ describe('LoggingService', () => {
   describe('updateLogStats', () => {
     it('should increment total logs', () => {
       const initialCount = loggingService.logStats.totalLogs;
-      
+
       loggingService.updateLogStats('info', 'app');
-      
+
       expect(loggingService.logStats.totalLogs).toBe(initialCount + 1);
     });
 
     it('should increment error count for error level', () => {
       const initialCount = loggingService.logStats.errorCount;
-      
+
       loggingService.updateLogStats('error', 'app');
-      
+
       expect(loggingService.logStats.errorCount).toBe(initialCount + 1);
     });
 
     it('should increment warning count for warn level', () => {
       const initialCount = loggingService.logStats.warningCount;
-      
+
       loggingService.updateLogStats('warn', 'app');
-      
+
       expect(loggingService.logStats.warningCount).toBe(initialCount + 1);
     });
 
     it('should update last log time', () => {
       loggingService.updateLogStats('info', 'app');
-      
+
       expect(loggingService.logStats.lastLogTime).toBeDefined();
     });
 
     it('should update category counts', () => {
       loggingService.updateLogStats('info', 'security');
-      
+
       expect(loggingService.logStats.logsByCategory.get('security')).toBe(1);
     });
   });
@@ -253,7 +342,7 @@ describe('LoggingService', () => {
     describe('setCorrelationId', () => {
       it('should set correlation ID', () => {
         loggingService.setCorrelationId('test-correlation-123');
-        
+
         expect(loggingService.getCorrelationId()).toBe('test-correlation-123');
       });
     });
@@ -261,13 +350,13 @@ describe('LoggingService', () => {
     describe('getCorrelationId', () => {
       it('should return set correlation ID', () => {
         loggingService.setCorrelationId('my-correlation');
-        
+
         expect(loggingService.getCorrelationId()).toBe('my-correlation');
       });
 
       it('should return default when no ID set', () => {
         loggingService.clearCorrelationId();
-        
+
         expect(loggingService.getCorrelationId()).toBe('no-correlation-id');
       });
     });
@@ -276,7 +365,7 @@ describe('LoggingService', () => {
       it('should clear correlation ID', () => {
         loggingService.setCorrelationId('to-clear');
         loggingService.clearCorrelationId();
-        
+
         expect(loggingService.getCorrelationId()).toBe('no-correlation-id');
       });
     });
@@ -286,15 +375,15 @@ describe('LoggingService', () => {
     describe('logError', () => {
       it('should log error with error object', () => {
         const error = new Error('Test error');
-        
+
         loggingService.logError('Error occurred', error, { userId: 1 });
-        
+
         expect(loggingService.logStats.errorCount).toBeGreaterThan(0);
       });
 
       it('should log error without error object', () => {
         loggingService.logError('Error message', null, { context: 'test' });
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
     });
@@ -302,7 +391,7 @@ describe('LoggingService', () => {
     describe('logWarning', () => {
       it('should log warning message', () => {
         loggingService.logWarning('Warning message', { warningType: 'test' });
-        
+
         expect(loggingService.logStats.warningCount).toBeGreaterThan(0);
       });
     });
@@ -310,7 +399,7 @@ describe('LoggingService', () => {
     describe('logInfo', () => {
       it('should log info message', () => {
         loggingService.logInfo('Info message', { infoType: 'test' });
-        
+
         expect(loggingService.logStats.infoCount).toBeGreaterThan(0);
       });
     });
@@ -318,7 +407,7 @@ describe('LoggingService', () => {
     describe('logDebug', () => {
       it('should log debug message', () => {
         loggingService.logDebug('Debug message', { debugInfo: 'test' });
-        
+
         expect(loggingService.logStats.debugCount).toBeGreaterThan(0);
       });
     });
@@ -328,9 +417,9 @@ describe('LoggingService', () => {
     describe('info', () => {
       it('should call logInfo', () => {
         const spy = jest.spyOn(loggingService, 'logInfo');
-        
+
         loggingService.info('Info via alias');
-        
+
         expect(spy).toHaveBeenCalled();
         spy.mockRestore();
       });
@@ -340,18 +429,18 @@ describe('LoggingService', () => {
       it('should call logError with Error object', () => {
         const spy = jest.spyOn(loggingService, 'logError');
         const error = new Error('Test');
-        
+
         loggingService.error('Error via alias', error);
-        
+
         expect(spy).toHaveBeenCalled();
         spy.mockRestore();
       });
 
       it('should call logError with meta object', () => {
         const spy = jest.spyOn(loggingService, 'logError');
-        
+
         loggingService.error('Error via alias', { key: 'value' });
-        
+
         expect(spy).toHaveBeenCalled();
         spy.mockRestore();
       });
@@ -360,9 +449,9 @@ describe('LoggingService', () => {
     describe('warn', () => {
       it('should call logWarning', () => {
         const spy = jest.spyOn(loggingService, 'logWarning');
-        
+
         loggingService.warn('Warning via alias');
-        
+
         expect(spy).toHaveBeenCalled();
         spy.mockRestore();
       });
@@ -371,9 +460,9 @@ describe('LoggingService', () => {
     describe('debug', () => {
       it('should call logDebug', () => {
         const spy = jest.spyOn(loggingService, 'logDebug');
-        
+
         loggingService.debug('Debug via alias');
-        
+
         expect(spy).toHaveBeenCalled();
         spy.mockRestore();
       });
@@ -384,7 +473,7 @@ describe('LoggingService', () => {
     describe('logSecurity', () => {
       it('should log security event', () => {
         loggingService.logSecurity('warn', 'Security event', { threat: 'low' });
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
     });
@@ -392,7 +481,7 @@ describe('LoggingService', () => {
     describe('logPerformance', () => {
       it('should log performance event', () => {
         loggingService.logPerformance('info', 'Performance metric', { latency: 100 });
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
     });
@@ -400,13 +489,13 @@ describe('LoggingService', () => {
     describe('logAudit', () => {
       it('should log audit event', () => {
         loggingService.logAudit('User login', 'LOGIN', 1, { ip: '127.0.0.1' });
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
 
       it('should log audit event without user ID', () => {
         loggingService.logAudit('System event', 'SYSTEM', null, {});
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
     });
@@ -414,7 +503,7 @@ describe('LoggingService', () => {
     describe('logDatabase', () => {
       it('should log database event', () => {
         loggingService.logDatabase('info', 'Query executed', { query: 'SELECT *', duration: 50 });
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
     });
@@ -428,15 +517,15 @@ describe('LoggingService', () => {
           ip: '127.0.0.1',
           user: { id: 1 }
         };
-        
+
         loggingService.logAPI('info', 'API request', mockRequest, { duration: 100 });
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
 
       it('should log API event without request', () => {
         loggingService.logAPI('info', 'API event', null, { endpoint: '/test' });
-        
+
         expect(loggingService.logStats.totalLogs).toBeGreaterThan(0);
       });
     });
@@ -446,9 +535,9 @@ describe('LoggingService', () => {
     it('should return logging statistics', () => {
       loggingService.logInfo('Test message');
       loggingService.logError('Test error');
-      
+
       const stats = loggingService.getStats();
-      
+
       expect(stats.totalLogs).toBeGreaterThan(0);
       expect(stats.logsByCategory).toBeDefined();
       expect(stats.loggers).toBeDefined();
@@ -461,9 +550,9 @@ describe('LoggingService', () => {
     it('should reset all statistics', () => {
       loggingService.logInfo('Test');
       loggingService.logError('Test');
-      
+
       loggingService.resetStats();
-      
+
       expect(loggingService.logStats.totalLogs).toBe(0);
       expect(loggingService.logStats.errorCount).toBe(0);
       expect(loggingService.logStats.warningCount).toBe(0);
@@ -478,17 +567,17 @@ describe('LoggingService', () => {
         birthtime: new Date(),
         mtime: new Date()
       });
-      
+
       const files = await loggingService.getLogFiles();
-      
+
       expect(Array.isArray(files)).toBe(true);
     });
 
     it('should handle errors gracefully', async () => {
       mockFsPromises.readdir.mockRejectedValueOnce(new Error('Read error'));
-      
+
       const files = await loggingService.getLogFiles();
-      
+
       expect(files).toEqual([]);
     });
   });
@@ -497,9 +586,9 @@ describe('LoggingService', () => {
     it('should read log file content', async () => {
       mockFsPromises.stat.mockResolvedValue({ size: 500 });
       mockFsPromises.readFile.mockResolvedValue('{"level":"info","message":"test"}');
-      
+
       const content = await loggingService.readLogFile('app.log');
-      
+
       expect(content.content).toBeDefined();
       expect(content.truncated).toBe(false);
     });
@@ -510,15 +599,15 @@ describe('LoggingService', () => {
         read: jest.fn().mockResolvedValue({ bytesRead: 1024 * 1024 }),
         close: jest.fn().mockResolvedValue(undefined)
       });
-      
+
       const content = await loggingService.readLogFile('large.log', 1024 * 1024);
-      
+
       expect(content.truncated).toBe(true);
     });
 
     it('should throw error for non-existent file', async () => {
       mockFsPromises.stat.mockRejectedValueOnce(new Error('File not found'));
-      
+
       await expect(loggingService.readLogFile('missing.log'))
         .rejects.toThrow('File not found');
     });
@@ -539,12 +628,12 @@ describe('LoggingService', () => {
         '{"level":"info","message":"test message","timestamp":"2025-01-01T00:00:00Z"}\n' +
         '{"level":"error","message":"error message","timestamp":"2025-01-01T00:00:00Z"}'
       );
-      
+
       const results = await loggingService.searchLogs({
         level: 'info',
         limit: 10
       });
-      
+
       expect(Array.isArray(results)).toBe(true);
     });
 
@@ -553,19 +642,19 @@ describe('LoggingService', () => {
         '{"level":"info","message":"user logged in","timestamp":"2025-01-01T00:00:00Z"}\n' +
         '{"level":"info","message":"data exported","timestamp":"2025-01-01T00:00:00Z"}'
       );
-      
+
       const results = await loggingService.searchLogs({
         message: 'logged in'
       });
-      
+
       expect(Array.isArray(results)).toBe(true);
     });
 
     it('should return empty array on error', async () => {
       mockFsPromises.readdir.mockRejectedValueOnce(new Error('Read error'));
-      
+
       const results = await loggingService.searchLogs({});
-      
+
       expect(results).toEqual([]);
     });
   });
@@ -573,7 +662,7 @@ describe('LoggingService', () => {
   describe('healthCheck', () => {
     it('should return healthy status', () => {
       const health = loggingService.healthCheck();
-      
+
       expect(health.status).toBe('healthy');
       expect(health.logDirectory).toBeDefined();
       expect(health.activeLoggers).toBeDefined();
@@ -582,24 +671,23 @@ describe('LoggingService', () => {
   });
 
   describe('getLogDirectorySize', () => {
-    it('should return log directory size', () => {
-      mockFsSync.readdirSync.mockReturnValue(['app.log', 'error.log']);
-      mockFsSync.statSync.mockReturnValue({ size: 1024 * 1024 }); // 1MB per file
-      
-      const size = loggingService.getLogDirectorySize();
-      
+    it('should return log directory size', async () => {
+      mockFsPromises.readdir.mockResolvedValue(['app.log', 'error.log']);
+      mockFsPromises.stat.mockResolvedValue({ size: 1024 * 1024 }); // 1MB per file
+
+      const size = await loggingService.getLogDirectorySize();
+
       expect(size.bytes).toBeDefined();
       expect(size.mb).toBeDefined();
       expect(size.files).toBeDefined();
+      expect(size.files).toBe(2);
     });
 
-    it('should handle errors', () => {
-      mockFsSync.readdirSync.mockImplementation(() => {
-        throw new Error('Read error');
-      });
-      
-      const size = loggingService.getLogDirectorySize();
-      
+    it('should handle errors', async () => {
+      mockFsPromises.readdir.mockRejectedValue(new Error('Read error'));
+
+      const size = await loggingService.getLogDirectorySize();
+
       expect(size.error).toBeDefined();
     });
   });
@@ -608,23 +696,23 @@ describe('LoggingService', () => {
     it('should cleanup old log files', async () => {
       const oldDate = new Date();
       oldDate.setDate(oldDate.getDate() - 60);
-      
+
       mockFsPromises.readdir.mockResolvedValue(['old.log', 'recent.log']);
       mockFsPromises.stat
         .mockResolvedValueOnce({ mtime: oldDate })
         .mockResolvedValueOnce({ mtime: new Date() });
       mockFsPromises.unlink.mockResolvedValue(undefined);
-      
+
       const deleted = await loggingService.cleanupOldLogs(30);
-      
+
       expect(typeof deleted).toBe('number');
     });
 
     it('should handle cleanup errors', async () => {
       mockFsPromises.readdir.mockRejectedValueOnce(new Error('Cleanup error'));
-      
+
       const deleted = await loggingService.cleanupOldLogs(30);
-      
+
       expect(deleted).toBe(0);
     });
   });

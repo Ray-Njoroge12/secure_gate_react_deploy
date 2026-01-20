@@ -13,6 +13,12 @@ const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
 dotenv.config({ path: join(__dirname, '../..', envFile) });
 
 const { Pool, Client } = pkg;
+const SHOULD_LOG_DB = process.env.NODE_ENV !== 'test';
+const logDb = (...args) => {
+  if (SHOULD_LOG_DB) {
+    console.log(...args);
+  }
+};
 
 /**
  * Database connection health monitoring and management
@@ -23,36 +29,41 @@ class DatabaseManager extends EventEmitter {
 
     // Support DATABASE_URL (Render provides this) or individual PG* variables
     const connectionString = process.env.DATABASE_URL;
-    
+    const pgHost = process.env.PGHOST || process.env.PG_HOST || process.env.POSTGRES_HOST || 'localhost';
+    const pgPort = Number(process.env.PGPORT || process.env.PG_PORT || process.env.POSTGRES_PORT) || 5432;
+    const pgUser = process.env.PGUSER || process.env.PG_USER || process.env.POSTGRES_USER || 'postgres';
+    const pgDatabase = process.env.PGDATABASE || process.env.PG_DATABASE || process.env.POSTGRES_DB || 'secure_gate';
+    const pgPassword = process.env.PGPASSWORD || process.env.PG_PASSWORD || process.env.POSTGRES_PASSWORD || 'postgres';
+
     // Log which connection method is being used (without exposing credentials)
     if (connectionString) {
       // Parse DATABASE_URL to show connection info without password
       try {
         const url = new URL(connectionString);
-        console.log(`📊 Database: Using DATABASE_URL (host: ${url.hostname}, db: ${url.pathname.slice(1)})`);
-        console.log(`📊 Database: SSL required for cloud deployment`);
+        logDb(`📊 Database: Using DATABASE_URL (host: ${url.hostname}, db: ${url.pathname.slice(1)})`);
+        logDb(`📊 Database: SSL required for cloud deployment`);
       } catch {
-        console.log('📊 Database: Using DATABASE_URL connection string');
+        logDb('📊 Database: Using DATABASE_URL connection string');
       }
     } else {
-      console.log(`📊 Database: Using individual PG* variables (host: ${process.env.PGHOST || 'localhost'})`);
+      logDb(`📊 Database: Using individual PG* variables (host: ${pgHost})`);
       console.warn('⚠️ DATABASE_URL not set - this may cause issues on Render');
     }
-    
+
     this.config = {
       // Use DATABASE_URL if provided, otherwise use individual variables
       ...(connectionString ? { connectionString } : {
-        user: process.env.PGUSER || 'postgres',
-        host: process.env.PGHOST || 'localhost',
-        database: process.env.PGDATABASE || 'secure_gate',
-        password: process.env.PGPASSWORD || 'postgres',
-        port: Number(process.env.PGPORT) || 5432,
+        user: pgUser,
+        host: pgHost,
+        database: pgDatabase,
+        password: pgPassword,
+        port: pgPort,
       }),
 
       // SSL configuration for cloud providers
       // Render, Railway, Heroku all require SSL
-      ssl: process.env.DATABASE_URL || process.env.NODE_ENV === 'production' 
-        ? { rejectUnauthorized: false } 
+      ssl: process.env.DATABASE_URL || process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: true } // Secure by default
         : false,
 
       // Pool configuration optimized for cloud environments (especially Render)
@@ -62,7 +73,7 @@ class DatabaseManager extends EventEmitter {
       min: Number(process.env.PGPOOL_MIN) || (process.env.NODE_ENV === 'test' ? 10 : 5),
       idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || (process.env.NODE_ENV === 'test' ? 30000 : 10000),
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 60000, // 60s for cloud cold starts
-      
+
       // Statement timeout to prevent hanging queries
       statement_timeout: Number(process.env.PGPOOL_STATEMENT_TIMEOUT) || 30000,
       query_timeout: Number(process.env.PGPOOL_QUERY_TIMEOUT) || 30000,
@@ -70,7 +81,7 @@ class DatabaseManager extends EventEmitter {
       // Enhanced stability features for cloud
       keepAlive: true,
       keepAliveInitialDelayMillis: Number(process.env.PGPOOL_KEEPALIVE_DELAY) || 10000,
-      
+
       // Allow pooling to handle connection drops gracefully
       allowExitOnIdle: true,
 
@@ -116,7 +127,7 @@ class DatabaseManager extends EventEmitter {
     if (this.isInitialized) {
       return true;
     }
-    
+
     if (this.initializationPromise) {
       return this.initializationPromise;
     }
@@ -131,24 +142,24 @@ class DatabaseManager extends EventEmitter {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`🔄 Database connection attempt ${attempt}/${maxAttempts}...`);
+        logDb(`🔄 Database connection attempt ${attempt}/${maxAttempts}...`);
         await this.connect();
-        
+
         // Only try to ensure indexes if connection succeeded
         try {
           await this.ensureIndexes();
         } catch (indexError) {
           console.warn('⚠️ Index creation failed (non-critical):', indexError.message);
         }
-        
+
         this.startHealthMonitoring();
         this.isInitialized = true;
-        console.log('✅ Database manager initialized successfully');
+        logDb('✅ Database manager initialized successfully');
         return true;
       } catch (error) {
         lastError = error;
         console.error(`❌ Database connection attempt ${attempt} failed:`, error.message);
-        
+
         // Provide specific diagnostics for common issues
         if (error.message.includes('timeout')) {
           console.error('💡 Timeout error - possible causes:');
@@ -163,10 +174,10 @@ class DatabaseManager extends EventEmitter {
         } else if (error.message.includes('authentication')) {
           console.error('💡 Authentication failed - check DATABASE_URL credentials');
         }
-        
+
         if (attempt < maxAttempts) {
           const delay = Math.min(this.retryDelay * Math.pow(1.5, attempt - 1), this.maxRetryDelay);
-          console.log(`⏳ Waiting ${Math.round(delay/1000)}s before retry...`);
+          logDb(`⏳ Waiting ${Math.round(delay / 1000)}s before retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -179,29 +190,27 @@ class DatabaseManager extends EventEmitter {
     console.error('   2. Check if PostgreSQL database is running and accessible');
     console.error('   3. Ensure database is in the same region as your Render service');
     console.error('   4. Try increasing PGPOOL_CONN_TIMEOUT (current: 60000ms)');
-    
+
     this.emit('initializationFailed', { error: lastError, attempts: maxAttempts });
-    
+
     // In production, we might want to continue without DB and let health checks fail
     // This allows the server to start and potentially recover
     if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DB_FAILURE === 'true') {
       console.warn('⚠️ Running without database connection (ALLOW_DB_FAILURE=true)');
       return false;
     }
-    
+
     throw lastError;
   }
 
   async ensureIndexes() {
     // First ensure essential tables exist (for fresh databases)
     await this.ensureEssentialTables();
-    
+
     try {
       const indexes = [
         'CREATE INDEX IF NOT EXISTS idx_visitors_invite_code ON visitors(invite_code)',
         'CREATE INDEX IF NOT EXISTS idx_visitors_status ON visitors(status)',
-        'CREATE INDEX IF NOT EXISTS idx_passes_pass_id ON passes(pass_id)',
-        'CREATE INDEX IF NOT EXISTS idx_passes_visitor_id ON passes(visitor_id)',
         'CREATE INDEX IF NOT EXISTS idx_access_logs_user_created ON access_logs(user_id, log_time)',
         'CREATE INDEX IF NOT EXISTS idx_visitors_host_id ON visitors(host_id)',
         'CREATE INDEX IF NOT EXISTS idx_visitors_qr_code ON visitors(qr_code)'
@@ -215,7 +224,7 @@ class DatabaseManager extends EventEmitter {
           console.warn(`Index creation warning: ${error.message}`);
         }
       }
-      console.log('✓ Database indexes ensured');
+      logDb('✓ Database indexes ensured');
     } catch (error) {
       console.warn('Index creation failed:', error.message);
     }
@@ -225,8 +234,8 @@ class DatabaseManager extends EventEmitter {
    * Ensure essential tables exist for a fresh database
    */
   async ensureEssentialTables() {
-    console.log('🔄 Ensuring essential database tables...');
-    
+    logDb('🔄 Ensuring essential database tables...');
+
     const tables = [
       {
         name: 'estates',
@@ -266,6 +275,7 @@ class DatabaseManager extends EventEmitter {
           id SERIAL PRIMARY KEY,
           name VARCHAR(100) NOT NULL,
           estate_id INT REFERENCES estates(id),
+          resident_id INT,
           phone VARCHAR(20),
           email VARCHAR(100),
           id_number VARCHAR(50),
@@ -281,21 +291,43 @@ class DatabaseManager extends EventEmitter {
           qr_code TEXT,
           check_in_time TIMESTAMP,
           check_out_time TIMESTAMP,
+          check_in_guard_id INT REFERENCES users(id),
+          check_out_guard_id INT REFERENCES users(id),
+          check_in_notes TEXT,
+          check_out_notes TEXT,
           created_by VARCHAR(255),
           host_id INT,
-          created_at TIMESTAMP DEFAULT NOW()
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
         )`
       },
       {
-        name: 'passes',
-        sql: `CREATE TABLE IF NOT EXISTS passes (
+        name: 'incidents',
+        sql: `CREATE TABLE IF NOT EXISTS incidents (
           id SERIAL PRIMARY KEY,
-          pass_id VARCHAR(100) UNIQUE NOT NULL,
-          visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
-          expires_at TIMESTAMP NOT NULL,
-          status VARCHAR(20) DEFAULT 'active',
-          qr_code TEXT,
-          created_at TIMESTAMP DEFAULT NOW()
+          guard_id INT REFERENCES users(id),
+          reported_by INT REFERENCES users(id),
+          visitor_id INT REFERENCES visitors(id),
+          category VARCHAR(50) NOT NULL,
+          severity VARCHAR(20) NOT NULL DEFAULT 'medium',
+          description TEXT NOT NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'open',
+          priority INT DEFAULT 3,
+          resolution TEXT,
+          resolved_at TIMESTAMP,
+          resolved_by INT REFERENCES users(id),
+          closed_at TIMESTAMP,
+          closed_by INT REFERENCES users(id),
+          assigned_to INT REFERENCES users(id),
+          assigned_by INT REFERENCES users(id),
+          assigned_at TIMESTAMP,
+          escalated_to INT REFERENCES users(id),
+          escalated_by INT REFERENCES users(id),
+          escalated_at TIMESTAMP,
+          site_id INT REFERENCES estates(id),
+          estate_id INT REFERENCES estates(id),
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
         )`
       },
       {
@@ -351,6 +383,45 @@ class DatabaseManager extends EventEmitter {
         )`
       },
       {
+        name: 'revoked_tokens',
+        sql: `CREATE TABLE IF NOT EXISTS revoked_tokens (
+          jti TEXT PRIMARY KEY,
+          revoked_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'refresh_tokens',
+        sql: `CREATE TABLE IF NOT EXISTS refresh_tokens (
+          id SERIAL PRIMARY KEY,
+          user_id INT REFERENCES users(id) ON DELETE CASCADE,
+          token TEXT NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          user_agent TEXT,
+          ip_address INET,
+          is_revoked BOOLEAN DEFAULT false,
+          revoked_at TIMESTAMP,
+          last_used_at TIMESTAMP,
+          jti TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'delivery_logs',
+        sql: `CREATE TABLE IF NOT EXISTS delivery_logs (
+          id SERIAL PRIMARY KEY,
+          recipient_id INT REFERENCES users(id),
+          resident_id INT REFERENCES users(id),
+          carrier TEXT,
+          tracking_number TEXT,
+          recipient_name TEXT,
+          status TEXT,
+          received_at TIMESTAMP,
+          picked_up_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
         name: 'idempotency_keys',
         sql: `CREATE TABLE IF NOT EXISTS idempotency_keys (
           id SERIAL PRIMARY KEY,
@@ -363,19 +434,137 @@ class DatabaseManager extends EventEmitter {
           updated_at TIMESTAMP DEFAULT NOW(),
           UNIQUE (key, scope)
         )`
+      },
+      {
+        name: 'visitors_archive',
+        sql: `CREATE TABLE IF NOT EXISTS visitors_archive (
+          id INT,
+          name VARCHAR(100),
+          estate_id INT,
+          phone VARCHAR(20),
+          email VARCHAR(100),
+          id_number VARCHAR(50),
+          vehicle_plate VARCHAR(20),
+          purpose TEXT,
+          date_of_visit DATE,
+          time_of_visit TIME,
+          invite_code VARCHAR(100),
+          status VARCHAR(20),
+          otp_hash TEXT,
+          otp_expires_at TIMESTAMP,
+          otp_attempts INT,
+          qr_code TEXT,
+          check_in_time TIMESTAMP,
+          check_out_time TIMESTAMP,
+          created_by VARCHAR(255),
+          host_id INT,
+          created_at TIMESTAMP,
+          updated_at TIMESTAMP,
+          archived_at TIMESTAMP DEFAULT NOW(),
+          archived_by VARCHAR(100),
+          archive_reason TEXT
+        )`
+      },
+      {
+        name: 'access_logs_archive',
+        sql: `CREATE TABLE IF NOT EXISTS access_logs_archive (
+          id INT,
+          user_id INT,
+          action VARCHAR(100),
+          log_time TIMESTAMP,
+          request_id VARCHAR(100),
+          entity_type VARCHAR(50),
+          entity_id VARCHAR(100),
+          outcome VARCHAR(20),
+          message TEXT,
+          metadata JSONB,
+          archived_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'audit_logs_archive',
+        sql: `CREATE TABLE IF NOT EXISTS audit_logs_archive (
+          id INT,
+          user_id INT,
+          action VARCHAR(100),
+          resource VARCHAR(100),
+          user_role VARCHAR(50),
+          request_id VARCHAR(100),
+          estate_id INTEGER,
+          entity_type VARCHAR(50),
+          entity_id VARCHAR(100),
+          outcome VARCHAR(20),
+          message TEXT,
+          details TEXT,
+          metadata JSONB,
+          ip_address INET,
+          user_agent TEXT,
+          timestamp TIMESTAMP,
+          created_at TIMESTAMP,
+          archived_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
+        name: 'backup_log',
+        sql: `CREATE TABLE IF NOT EXISTS backup_log (
+          id SERIAL PRIMARY KEY,
+          backup_id VARCHAR(100) UNIQUE NOT NULL,
+          backup_type VARCHAR(50) NOT NULL,
+          file_path VARCHAR(500) NOT NULL,
+          file_size BIGINT NOT NULL DEFAULT 0,
+          duration INTEGER NOT NULL DEFAULT 0,
+          status VARCHAR(20) NOT NULL DEFAULT 'pending',
+          error_message TEXT,
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          completed_at TIMESTAMP WITH TIME ZONE
+        )`
+      },
+      {
+        name: 'dr_recovery_log',
+        sql: `CREATE TABLE IF NOT EXISTS dr_recovery_log (
+          id SERIAL PRIMARY KEY,
+          recovery_id VARCHAR(100) UNIQUE NOT NULL,
+          issue_type VARCHAR(50) NOT NULL,
+          severity VARCHAR(20) NOT NULL,
+          description TEXT NOT NULL,
+          strategy VARCHAR(50),
+          status VARCHAR(20) NOT NULL DEFAULT 'in_progress',
+          result JSONB,
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+          completed_at TIMESTAMP WITH TIME ZONE
+        )`
       }
     ];
 
     for (const table of tables) {
       try {
         await this.query(table.sql);
-        console.log(`  ✓ Table ${table.name} ready`);
+        logDb(`  ✓ Table ${table.name} ready`);
       } catch (error) {
         console.warn(`  ⚠ Table ${table.name}: ${error.message}`);
       }
     }
-    
-    console.log('✅ Essential tables check complete');
+
+    const visitorColumnUpdates = [
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS resident_id INT',
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS check_in_time TIMESTAMP',
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS check_out_time TIMESTAMP',
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS check_in_guard_id INT REFERENCES users(id)',
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS check_out_guard_id INT REFERENCES users(id)',
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS check_in_notes TEXT',
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS check_out_notes TEXT',
+      'ALTER TABLE visitors ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()'
+    ];
+
+    for (const columnQuery of visitorColumnUpdates) {
+      try {
+        await this.query(columnQuery);
+      } catch (error) {
+        console.warn(`  ⚠ Visitors column update: ${error.message}`);
+      }
+    }
+
+    logDb('✅ Essential tables check complete');
   }
 
   async connect() {
@@ -426,15 +615,16 @@ class DatabaseManager extends EventEmitter {
 
   async testConnection() {
     const timeout = this.config.connectionTimeoutMillis || 60000;
-    
+    let timeoutId;
+
     try {
       // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           reject(new Error(`Connection test timed out after ${timeout}ms`));
         }, timeout);
       });
-      
+
       // Race the connection against the timeout
       const connectionPromise = (async () => {
         const client = await this.pool.connect();
@@ -442,17 +632,17 @@ class DatabaseManager extends EventEmitter {
         client.release();
         return result;
       })();
-      
+
       const result = await Promise.race([connectionPromise, timeoutPromise]);
 
       this.isConnected = true;
       this.lastHealthCheck = new Date();
 
-      console.log('✅ Database connection test passed');
-      
+      logDb('✅ Database connection test passed');
+
       // Database connection test successful
-      this.emit('connectionTest', { 
-        success: true, 
+      this.emit('connectionTest', {
+        success: true,
         result: {
           time: result.rows[0].connection_time,
           version: result.rows[0].db_version.split(' ')[0] // Just PostgreSQL version
@@ -464,6 +654,10 @@ class DatabaseManager extends EventEmitter {
       console.error('❌ Database connection test failed:', error.message);
       this.emit('connectionTest', { success: false, error });
       throw error;
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 
@@ -501,7 +695,7 @@ class DatabaseManager extends EventEmitter {
       clearInterval(this.healthTimer);
     }
 
-    console.log(`🏥 Starting database health monitoring (interval: ${this.healthCheckInterval}ms)`);
+    logDb(`🏥 Starting database health monitoring (interval: ${this.healthCheckInterval}ms)`);
 
     this.healthTimer = setInterval(() => {
       // Wrap in IIFE to ensure all promise rejections are caught
@@ -550,12 +744,13 @@ class DatabaseManager extends EventEmitter {
     let lastError;
 
     for (let attempt = 1; attempt <= retries + 1; attempt++) {
+      let timeoutId;
       try {
         const startTime = Date.now();
 
         // Create timeout promise
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error(`Query timeout after ${timeout}ms`)), timeout);
+          timeoutId = setTimeout(() => reject(new Error(`Query timeout after ${timeout}ms`)), timeout);
         });
 
         // Execute query with timeout
@@ -601,6 +796,10 @@ class DatabaseManager extends EventEmitter {
 
         if (attempt <= retries) {
           await setTimeoutPromise(retryDelay * attempt); // Increasing delay
+        }
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
         }
       }
     }
@@ -653,7 +852,7 @@ class DatabaseManager extends EventEmitter {
     }
 
     if (this.pool) {
-      console.log('🔄 Closing database connections...');
+      logDb('🔄 Closing database connections...');
       await this.pool.end();
       this.pool = null;
     }
@@ -673,7 +872,7 @@ class DatabaseManager extends EventEmitter {
     }
 
     if (this.pool) {
-      console.log('⚠️ Force closing database connections...');
+      logDb('⚠️ Force closing database connections...');
       // Force close all connections
       await this.pool.end();
       this.pool = null;
@@ -690,13 +889,13 @@ const dbManager = new DatabaseManager();
 
 // Graceful shutdown handlers
 process.on('SIGINT', async () => {
-  console.log('🔄 Received SIGINT, closing database connections...');
+  logDb('🔄 Received SIGINT, closing database connections...');
   await dbManager.disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log('🔄 Received SIGTERM, closing database connections...');
+  logDb('🔄 Received SIGTERM, closing database connections...');
   await dbManager.disconnect();
   process.exit(0);
 });
@@ -721,4 +920,4 @@ export const db = dbManager;
 export { dbManager };
 export default dbManager;
 
-console.log('🚀 Enhanced database connection manager loaded');
+logDb('🚀 Enhanced database connection manager loaded');

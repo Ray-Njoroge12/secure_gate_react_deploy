@@ -138,10 +138,35 @@ psql $DATABASE_URL -c "SELECT version();"  # Test connection
 chmod +x scripts/apply-production-migrations.sh
 ./scripts/apply-production-migrations.sh
 
-# Step 6: Deploy application (choose your method)
-git push production main  # OR
-docker-compose -f docker-compose.prod.yml up -d  # OR
-pm2 start ecosystem.config.cjs --env production
+# Step 6: Deploy application (AWS ECS/Fargate)
+# Requires configured AWS account and CLI credentials.
+# If AWS is not set up yet, skip and fill these values later.
+export AWS_REGION=us-west-2
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export ECR_REPO=secure-gate-api
+IMAGE_TAG=$(git rev-parse --short HEAD)
+
+aws ecr get-login-password --region "$AWS_REGION" \
+  | docker login --username AWS --password-stdin \
+    "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+docker build -t "$ECR_REPO:$IMAGE_TAG" ./secure-gate-access/server
+docker tag "$ECR_REPO:$IMAGE_TAG" \
+  "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+
+cd infra
+terraform init
+terraform apply \
+  -var="environment=production" \
+  -var="container_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --force-new-deployment
+aws ecs wait services-stable \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
 
 # Step 7: Run data migrations
 node scripts/migrate-id-numbers.js

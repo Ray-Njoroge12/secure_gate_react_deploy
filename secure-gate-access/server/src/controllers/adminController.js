@@ -12,45 +12,61 @@ const getMetrics = async (req, res) => {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
 
-    // Get user metrics
-    const totalUsersRes = await dbManager.query('SELECT COUNT(*) FROM users');
-    const residentsRes = await dbManager.query('SELECT COUNT(*) FROM users WHERE role = $1', ['resident']);
-    const guardsRes = await dbManager.query('SELECT COUNT(*) FROM users WHERE role = $1', ['guard']);
-    const adminsRes = await dbManager.query('SELECT COUNT(*) FROM users WHERE role = $1', ['admin']);
+    const estateId = req.user.estate_id;
 
-    const estateId = req.user.estate_id ?? null;
-    const estateClause = estateId !== null ? ' WHERE estate_id = $1' : '';
-    const statusClause = estateId !== null ? ' AND estate_id = $2' : '';
+    // SECURITY: All queries must filter by estate_id to prevent cross-estate data leakage
+    if (!estateId) {
+      return respondError(res, 400, 'Estate context required');
+    }
 
-    // Get visitor metrics
+    // Get user metrics - filtered by estate
+    const totalUsersRes = await dbManager.query(
+      'SELECT COUNT(*) FROM users WHERE estate_id = $1',
+      [estateId]
+    );
+    const residentsRes = await dbManager.query(
+      'SELECT COUNT(*) FROM users WHERE role = $1 AND estate_id = $2',
+      ['resident', estateId]
+    );
+    const guardsRes = await dbManager.query(
+      'SELECT COUNT(*) FROM users WHERE role = $1 AND estate_id = $2',
+      ['guard', estateId]
+    );
+    const adminsRes = await dbManager.query(
+      'SELECT COUNT(*) FROM users WHERE role = $1 AND estate_id = $2',
+      ['admin', estateId]
+    );
+
+    // Get visitor metrics - filtered by estate
     const totalVisitorsRes = await dbManager.query(
-      `SELECT COUNT(*) FROM visitors${estateClause}`,
-      estateId !== null ? [estateId] : []
+      'SELECT COUNT(*) FROM visitors WHERE estate_id = $1',
+      [estateId]
     );
     const pendingVisitorsRes = await dbManager.query(
-      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
-      estateId !== null ? ['PENDING', estateId] : ['PENDING']
+      'SELECT COUNT(*) FROM visitors WHERE status = $1 AND estate_id = $2',
+      ['PENDING', estateId]
     );
     const verifiedVisitorsRes = await dbManager.query(
-      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
-      estateId !== null ? ['VERIFIED', estateId] : ['VERIFIED']
+      'SELECT COUNT(*) FROM visitors WHERE status = $1 AND estate_id = $2',
+      ['VERIFIED', estateId]
     );
     const checkedInVisitorsRes = await dbManager.query(
-      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
-      estateId !== null ? [PASS_STATUS.ON_PREMISE, estateId] : [PASS_STATUS.ON_PREMISE]
+      'SELECT COUNT(*) FROM visitors WHERE status = $1 AND estate_id = $2',
+      [PASS_STATUS.ON_PREMISE, estateId]
     );
     const checkedOutVisitorsRes = await dbManager.query(
-      `SELECT COUNT(*) FROM visitors WHERE status = $1${statusClause}`,
-      estateId !== null ? [PASS_STATUS.CHECKED_OUT, estateId] : [PASS_STATUS.CHECKED_OUT]
+      'SELECT COUNT(*) FROM visitors WHERE status = $1 AND estate_id = $2',
+      [PASS_STATUS.CHECKED_OUT, estateId]
     );
 
-    // Get recent visitors
+    // Get recent visitors - filtered by estate
     const recentVisitorsRes = await dbManager.query(
       `SELECT id, name, phone, email, status, created_at
-       FROM visitors${estateClause}
+       FROM visitors WHERE estate_id = $1
        ORDER BY created_at DESC LIMIT 10`,
-      estateId !== null ? [estateId] : []
+      [estateId]
     );
+
 
     const metrics = {
       users: {
@@ -86,9 +102,17 @@ const getAuditLogs = async (req, res) => {
     const filterUserId = user_id || userId; // Support both snake_case and camelCase
     const offset = (page - 1) * limit;
 
-    let query = 'SELECT * FROM audit_logs WHERE 1=1';
-    const params = [];
-    let paramIndex = 1;
+    const estateId = req.user.estate_id;
+
+    // SECURITY: Filter by estate_id
+    if (!estateId) {
+      return respondError(res, 400, 'Estate context required');
+    }
+
+    // Fix A-005: Explicit Column Selection (Avoid SELECT *)
+    let query = 'SELECT id, outcome AS level, action, resource, details, message, user_id, ip_address, user_agent, timestamp, created_at, metadata FROM audit_logs WHERE estate_id = $1';
+    const params = [estateId];
+    let paramIndex = 2;
 
     if (action) {
       query += ` AND action ILIKE $${paramIndex++}`;
@@ -107,7 +131,10 @@ const getAuditLogs = async (req, res) => {
     params.push(parseInt(limit, 10), parseInt(offset, 10));
 
     const result = await dbManager.query(query, params);
-    const totalRes = await dbManager.query('SELECT COUNT(*) FROM audit_logs');
+    const totalRes = await dbManager.query(
+      'SELECT COUNT(*) FROM audit_logs WHERE estate_id = $1',
+      [estateId]
+    );
     const total = parseInt(totalRes.rows[0].count, 10);
 
     // Return with success flag and data directly at top level (camelized)
@@ -127,4 +154,72 @@ const getAuditLogs = async (req, res) => {
   }
 };
 
-export { getMetrics, getAuditLogs };
+const getPendingUsers = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
+    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+
+    const estateId = req.user.estate_id;
+
+    // SECURITY: Filter by estate_id to prevent cross-estate access
+    if (!estateId) {
+      return respondError(res, 400, 'Estate context required');
+    }
+
+    const result = await dbManager.query(
+      `SELECT id, username, email, phone, role, created_at, account_status
+       FROM users
+       WHERE account_status = 'pending' AND estate_id = $1
+       ORDER BY created_at ASC`,
+      [estateId]
+    );
+
+    respond(res, { data: camelize(result.rows) });
+  } catch (error) {
+    console.error('Error fetching pending users:', error);
+    respondError(res, 500, 'Failed to fetch pending users');
+  }
+};
+
+const updateUserStatus = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
+    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+
+    const { id } = req.params;
+    const { status } = req.body; // 'active', 'rejected', 'suspended'
+    const estateId = req.user.estate_id;
+
+    // SECURITY: Require estate context for defense-in-depth
+    if (!estateId) {
+      return respondError(res, 400, 'Estate context required');
+    }
+
+    if (!['active', 'rejected', 'suspended', 'pending'].includes(status)) {
+      return respondError(res, 400, 'Invalid status');
+    }
+
+    // SECURITY: Filter by estate_id to prevent cross-estate user modification
+    const result = await dbManager.query(
+      `UPDATE users
+       SET account_status = $1, updated_at = NOW()
+       WHERE id = $2 AND estate_id = $3
+       RETURNING id, username, email, account_status`,
+      [status, id, estateId]
+    );
+
+    if (result.rowCount === 0) {
+      return respondError(res, 404, 'User not found or access denied');
+    }
+
+    // TODO: Send email notification to user about status change?
+    // For now, just update.
+
+    respond(res, { data: camelize(result.rows[0]), message: `User status updated to ${status}` });
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    respondError(res, 500, 'Failed to update user status');
+  }
+};
+
+export { getMetrics, getAuditLogs, getPendingUsers, updateUserStatus };

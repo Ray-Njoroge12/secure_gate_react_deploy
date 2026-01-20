@@ -16,7 +16,7 @@ import auditTraceabilityService from './auditTraceabilityService.js';
 import rollbackAlertingService from './rollbackAlertingService.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -122,6 +122,34 @@ class ISO27001CertificationService {
     this.isRunning = false;
     
     this.initializeService();
+  }
+
+  getValidationFlags(section) {
+    const validation = this.config?.[section]?.validation;
+    return validation ? Object.values(validation) : [];
+  }
+
+  calculateValidationRate(flags) {
+    if (!flags.length) {
+      return 0;
+    }
+
+    const enabledCount = flags.filter(Boolean).length;
+    return (enabledCount / flags.length) * 100;
+  }
+
+  buildValidationResult(section, key, enabledDetails, disabledDetails) {
+    const compliant = this.config?.[section]?.validation?.[key] === true;
+
+    return {
+      compliant,
+      details: compliant ? enabledDetails : disabledDetails,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  generateRandomSuffix() {
+    return crypto.randomBytes(6).toString('hex').toUpperCase();
   }
 
   /**
@@ -255,9 +283,14 @@ class ISO27001CertificationService {
    */
   async calculateControlImplementationRate() {
     try {
-      // This would calculate actual control implementation rate
-      // For now, return a simulated value
-      return Math.random() * 100;
+      const flags = [
+        ...this.getValidationFlags('asset_inventory'),
+        ...this.getValidationFlags('risk_assessment'),
+        ...this.getValidationFlags('security_policies'),
+        ...this.getValidationFlags('business_continuity')
+      ];
+
+      return this.calculateValidationRate(flags);
       
     } catch (error) {
       loggingService.logError('Failed to calculate control implementation rate', error);
@@ -270,9 +303,8 @@ class ISO27001CertificationService {
    */
   async calculatePolicyComplianceRate() {
     try {
-      // This would calculate actual policy compliance rate
-      // For now, return a simulated value
-      return Math.random() * 100;
+      const flags = this.getValidationFlags('security_policies');
+      return this.calculateValidationRate(flags);
       
     } catch (error) {
       loggingService.logError('Failed to calculate policy compliance rate', error);
@@ -285,9 +317,8 @@ class ISO27001CertificationService {
    */
   async calculateRiskTreatmentRate() {
     try {
-      // This would calculate actual risk treatment rate
-      // For now, return a simulated value
-      return Math.random() * 100;
+      const flags = this.getValidationFlags('risk_assessment');
+      return this.calculateValidationRate(flags);
       
     } catch (error) {
       loggingService.logError('Failed to calculate risk treatment rate', error);
@@ -447,15 +478,12 @@ class ISO27001CertificationService {
    */
   async validateAssetClassification() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Asset classification properly implemented' : 'Asset classification needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'asset_inventory',
+        'asset_classification',
+        'Asset classification validation enabled',
+        'Asset classification validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate asset classification', error);
@@ -472,15 +500,12 @@ class ISO27001CertificationService {
    */
   async validateAssetOwnership() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Asset ownership properly documented' : 'Asset ownership documentation needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'asset_inventory',
+        'asset_ownership',
+        'Asset ownership validation enabled',
+        'Asset ownership validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate asset ownership', error);
@@ -497,15 +522,12 @@ class ISO27001CertificationService {
    */
   async validateAssetLifecycle() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Asset lifecycle management properly implemented' : 'Asset lifecycle management needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'asset_inventory',
+        'asset_lifecycle',
+        'Asset lifecycle validation enabled',
+        'Asset lifecycle validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate asset lifecycle', error);
@@ -522,15 +544,12 @@ class ISO27001CertificationService {
    */
   async validateAssetSecurity() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Asset security controls properly implemented' : 'Asset security controls need improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'asset_inventory',
+        'asset_security',
+        'Asset security validation enabled',
+        'Asset security validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate asset security', error);
@@ -636,15 +655,12 @@ class ISO27001CertificationService {
    */
   async validateRiskIdentification() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Risk identification properly implemented' : 'Risk identification needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'risk_assessment',
+        'risk_identification',
+        'Risk identification validation enabled',
+        'Risk identification validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate risk identification', error);
@@ -661,15 +677,12 @@ class ISO27001CertificationService {
    */
   async validateRiskAnalysis() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Risk analysis properly implemented' : 'Risk analysis needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'risk_assessment',
+        'risk_analysis',
+        'Risk analysis validation enabled',
+        'Risk analysis validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate risk analysis', error);
@@ -686,15 +699,12 @@ class ISO27001CertificationService {
    */
   async validateRiskEvaluation() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Risk evaluation properly implemented' : 'Risk evaluation needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'risk_assessment',
+        'risk_evaluation',
+        'Risk evaluation validation enabled',
+        'Risk evaluation validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate risk evaluation', error);
@@ -711,15 +721,12 @@ class ISO27001CertificationService {
    */
   async validateRiskTreatment() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Risk treatment properly implemented' : 'Risk treatment needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'risk_assessment',
+        'risk_treatment',
+        'Risk treatment validation enabled',
+        'Risk treatment validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate risk treatment', error);
@@ -736,15 +743,12 @@ class ISO27001CertificationService {
    */
   async validateRiskMonitoring() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Risk monitoring properly implemented' : 'Risk monitoring needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'risk_assessment',
+        'risk_monitoring',
+        'Risk monitoring validation enabled',
+        'Risk monitoring validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate risk monitoring', error);
@@ -836,15 +840,12 @@ class ISO27001CertificationService {
    */
   async validatePolicyApproval() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Security policies properly approved by management' : 'Security policy approval needs attention',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'security_policies',
+        'policy_approval',
+        'Security policy approval validation enabled',
+        'Security policy approval validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate policy approval', error);
@@ -861,15 +862,12 @@ class ISO27001CertificationService {
    */
   async validatePolicyCommunication() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Security policies properly communicated to staff' : 'Security policy communication needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'security_policies',
+        'policy_communication',
+        'Security policy communication validation enabled',
+        'Security policy communication validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate policy communication', error);
@@ -886,15 +884,12 @@ class ISO27001CertificationService {
    */
   async validatePolicyReview() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Security policies regularly reviewed' : 'Security policy review needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'security_policies',
+        'policy_review',
+        'Security policy review validation enabled',
+        'Security policy review validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate policy review', error);
@@ -911,15 +906,12 @@ class ISO27001CertificationService {
    */
   async validatePolicyCompliance() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Security policy compliance properly monitored' : 'Security policy compliance monitoring needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'security_policies',
+        'policy_compliance',
+        'Security policy compliance validation enabled',
+        'Security policy compliance validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate policy compliance', error);
@@ -1011,15 +1003,12 @@ class ISO27001CertificationService {
    */
   async validatePlanCompleteness() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Business continuity plans are complete' : 'Business continuity plans need completion',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'business_continuity',
+        'plan_completeness',
+        'Business continuity plan completeness validation enabled',
+        'Business continuity plan completeness validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate plan completeness', error);
@@ -1036,15 +1025,12 @@ class ISO27001CertificationService {
    */
   async validatePlanTesting() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Business continuity plans properly tested' : 'Business continuity plan testing needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'business_continuity',
+        'plan_testing',
+        'Business continuity plan testing validation enabled',
+        'Business continuity plan testing validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate plan testing', error);
@@ -1061,15 +1047,12 @@ class ISO27001CertificationService {
    */
   async validatePlanMaintenance() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Business continuity plans regularly maintained' : 'Business continuity plan maintenance needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'business_continuity',
+        'plan_maintenance',
+        'Business continuity plan maintenance validation enabled',
+        'Business continuity plan maintenance validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate plan maintenance', error);
@@ -1086,15 +1069,12 @@ class ISO27001CertificationService {
    */
   async validatePlanEffectiveness() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Business continuity plans are effective' : 'Business continuity plan effectiveness needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      return this.buildValidationResult(
+        'business_continuity',
+        'plan_effectiveness',
+        'Business continuity plan effectiveness validation enabled',
+        'Business continuity plan effectiveness validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate plan effectiveness', error);
@@ -1161,21 +1141,21 @@ class ISO27001CertificationService {
    * Generate assessment ID
    */
   generateAssessmentId() {
-    return `ASSESS-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `ASSESS-${Date.now()}-${this.generateRandomSuffix()}`;
   }
 
   /**
    * Generate gap ID
    */
   generateGapId() {
-    return `GAP-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `GAP-${Date.now()}-${this.generateRandomSuffix()}`;
   }
 
   /**
    * Generate trace ID
    */
   generateTraceId() {
-    return `TRACE-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `TRACE-${Date.now()}-${this.generateRandomSuffix()}`;
   }
 
   /**

@@ -16,7 +16,7 @@ import logger from '../config/logger.js';
 const withTimeout = async (queryPromise, timeoutMs = 5000) => {
   return Promise.race([
     queryPromise,
-    new Promise((_, reject) => 
+    new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Database query timeout')), timeoutMs)
     )
   ]);
@@ -60,7 +60,7 @@ class OptimizedQRCodeService {
       // SECURITY FIX: Generate opaque token instead of embedding PII
       const tokenResult = await qrTokenService.createToken(
         visitorData.id,
-        qrId,
+        null,
         {
           expiresIn: expiresInMs,
           maxScans: options.maxScans || 10,
@@ -80,13 +80,13 @@ class OptimizedQRCodeService {
         qrId: qrId,
         type: 'visitor_access',
         v: '2.0' // Version indicator for tokenized QR codes
-      });      
+      });
       const qrCodeOptions = { ...this.defaultOptions, ...options };
-      
+
       // Wrap QR generation with timeout
       const qrCodeDataURL = await Promise.race([
         QRCode.toDataURL(qrData, qrCodeOptions),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('QR code generation timeout')), 3000)
         )
       ]);
@@ -98,13 +98,20 @@ class OptimizedQRCodeService {
 
       const qrRecord = await withTimeout(
         dbManager.query(
-          `INSERT INTO qr_codes (qr_id, visitor_id, token, data_url, expires_at, status, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW())
+          `INSERT INTO qr_codes (qr_id, visitor_id, token, data_url, expires_at, status, created_at, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
            RETURNING qr_id, expires_at, status, created_at`,
-          [qrId, visitorData.id, legacyToken, qrCodeDataURL, expirationTime, 'active']
+          [qrId, visitorData.id, legacyToken, qrCodeDataURL, expirationTime, 'active', visitorData.estate_id]
         ),
         2000
       );
+
+      if (tokenResult?.data?.token_id) {
+        await dbManager.query(
+          `UPDATE qr_tokens SET qr_id = $1 WHERE token_id = $2`,
+          [qrId, tokenResult.data.token_id]
+        );
+      }
 
       logger.info('[QRCodeService] Generated tokenized QR code', {
         qrId,
@@ -129,7 +136,7 @@ class OptimizedQRCodeService {
 
     } catch (error) {
       console.error('[QRCodeService] generateVisitorQR error:', error);
-      
+
       if (error.message === 'Database query timeout' || error.message === 'QR code generation timeout') {
         return {
           success: false,
@@ -137,7 +144,7 @@ class OptimizedQRCodeService {
           code: 408
         };
       }
-      
+
       return {
         success: false,
         error: 'Failed to generate QR code',
@@ -175,7 +182,7 @@ class OptimizedQRCodeService {
       // SECURITY FIX: Use token-based validation (v2.0+)
       if (version === '2.0') {
         const tokenResult = await qrTokenService.validateToken(token);
-        
+
         if (!tokenResult.success) {
           return {
             success: false,
@@ -214,8 +221,10 @@ class OptimizedQRCodeService {
       // Check QR code in database with timeout
       const qrResult = await withTimeout(
         dbManager.query(
-          'SELECT qr_id, visitor_id, status, expires_at, data_url, created_at, scan_count FROM qr_codes WHERE qr_id = $1',
-          [qrId]
+          `SELECT qr_id, visitor_id, status, expires_at, data_url, created_at, scan_count, estate_id 
+           FROM qr_codes 
+           WHERE qr_id = $1 ${options.estateId ? 'AND estate_id = $2' : ''}`,
+          options.estateId ? [qrId, options.estateId] : [qrId]
         ),
         2000
       );
@@ -229,7 +238,7 @@ class OptimizedQRCodeService {
       }
 
       const qrRecord = qrResult.rows[0];
-      
+
       // Check expiration
       if (new Date() > new Date(qrRecord.expires_at)) {
         return {
@@ -251,8 +260,8 @@ class OptimizedQRCodeService {
       // Get visitor data with timeout
       const visitorResult = await withTimeout(
         dbManager.query(
-          'SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1',
-          [qrRecord.visitor_id]
+          `SELECT id, name, phone, email, purpose, date_of_visit, status FROM visitors WHERE id = $1 ${options.estateId ? 'AND estate_id = $2' : ''}`,
+          options.estateId ? [qrRecord.visitor_id, options.estateId] : [qrRecord.visitor_id]
         ),
         2000
       );
@@ -280,7 +289,7 @@ class OptimizedQRCodeService {
 
     } catch (error) {
       console.error('[QRCodeService] validateQR error:', error);
-      
+
       if (error.message === 'Database query timeout') {
         return {
           success: false,
@@ -288,7 +297,7 @@ class OptimizedQRCodeService {
           code: 408
         };
       }
-      
+
       return {
         success: false,
         error: 'Failed to validate QR code',
@@ -300,19 +309,22 @@ class OptimizedQRCodeService {
   /**
    * Get QR code statistics with timeout protection
    */
-  async getQRStats(visitorId) {
+  async getQRStats(visitorId, estateId = null) {
     try {
+      const query = `
+        SELECT 
+          COUNT(*) as total_generated,
+          COUNT(CASE WHEN status = 'active' THEN 1 END) as active_count,
+          COUNT(CASE WHEN status = 'used' THEN 1 END) as used_count,
+          MAX(created_at) as last_generated
+        FROM qr_codes 
+        WHERE visitor_id = $1
+        ${estateId ? 'AND estate_id = $2' : ''}`;
+
+      const params = estateId ? [visitorId, estateId] : [visitorId];
+
       const statsResult = await withTimeout(
-        dbManager.query(
-          `SELECT 
-             COUNT(*) as total_generated,
-             COUNT(CASE WHEN status = 'active' THEN 1 END) as active_count,
-             COUNT(CASE WHEN status = 'used' THEN 1 END) as used_count,
-             MAX(created_at) as last_generated
-           FROM qr_codes 
-           WHERE visitor_id = $1`,
-          [visitorId]
-        ),
+        dbManager.query(query, params),
         2000
       );
 
@@ -340,7 +352,7 @@ class OptimizedQRCodeService {
 
     } catch (error) {
       console.error('[QRCodeService] getQRStats error:', error);
-      
+
       if (error.message === 'Database query timeout') {
         return {
           success: false,
@@ -348,7 +360,7 @@ class OptimizedQRCodeService {
           code: 408
         };
       }
-      
+
       return {
         success: false,
         error: 'Failed to get QR stats',
@@ -360,13 +372,13 @@ class OptimizedQRCodeService {
   /**
    * Deactivate QR code
    */
-  async deactivateQR(qrId) {
+  async deactivateQR(qrId, estateId = null) {
     try {
+      const query = `UPDATE qr_codes SET status = $1, updated_at = NOW() WHERE qr_id = $2 ${estateId ? 'AND estate_id = $3' : ''}`;
+      const params = estateId ? ['inactive', qrId, estateId] : ['inactive', qrId];
+
       await withTimeout(
-        dbManager.query(
-          'UPDATE qr_codes SET status = $1, updated_at = NOW() WHERE qr_id = $2',
-          ['inactive', qrId]
-        ),
+        dbManager.query(query, params),
         2000
       );
 
@@ -403,7 +415,7 @@ class OptimizedQRCodeService {
     };
   }
 
-  async markQRCodeUsed(qrToken) {
+  async markQRCodeUsed(qrToken, options = {}) {
     let parsed;
     try {
       parsed = JSON.parse(qrToken);
@@ -416,64 +428,76 @@ class OptimizedQRCodeService {
       return { success: false, error: 'Missing qrId' };
     }
 
+    const query = `
+      UPDATE qr_codes
+      SET status = 'used',
+          scan_count = scan_count + 1,
+          updated_at = NOW()
+      WHERE qr_id = $1
+      ${options?.estateId ? 'AND estate_id = $2' : ''}`;
+
+    const params = options?.estateId ? [qrId, options.estateId] : [qrId];
+
     await withTimeout(
-      dbManager.query(
-        `UPDATE qr_codes
-         SET status = 'used',
-             scan_count = scan_count + 1,
-             updated_at = NOW()
-         WHERE qr_id = $1`,
-        [qrId]
-      ),
+      dbManager.query(query, params),
       2000
     );
 
     return { success: true };
   }
 
-  async getQRCodeByVisitorId(visitorId) {
+  async getQRCodeByVisitorId(visitorId, estateId = null) {
+    const query = `
+      SELECT qr_id as id, visitor_id, status, expires_at, scan_count, created_at
+      FROM qr_codes
+      WHERE visitor_id = $1
+      ${estateId ? 'AND estate_id = $2' : ''}
+      ORDER BY created_at DESC
+      LIMIT 1`;
+
+    const params = estateId ? [visitorId, estateId] : [visitorId];
+
     const result = await withTimeout(
-      dbManager.query(
-        `SELECT qr_id as id, visitor_id, status, expires_at, scan_count, created_at
-         FROM qr_codes
-         WHERE visitor_id = $1
-         ORDER BY created_at DESC
-         LIMIT 1`,
-        [visitorId]
-      ),
+      dbManager.query(query, params),
       2000
     );
 
     return result.rows[0] || null;
   }
 
-  async getQRCodeAnalytics(dateFrom, dateTo) {
+  async getQRCodeAnalytics(dateFrom, dateTo, estateId = null) {
+    const query = `
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(CASE WHEN status = 'active' THEN 1 END)::int AS active,
+        COUNT(CASE WHEN status = 'used' THEN 1 END)::int AS used,
+        COUNT(CASE WHEN expires_at < NOW() THEN 1 END)::int AS expired
+      FROM qr_codes
+      WHERE created_at >= $1 AND created_at <= $2
+      ${estateId ? 'AND estate_id = $3' : ''}`;
+
+    const params = estateId ? [dateFrom, dateTo, estateId] : [dateFrom, dateTo];
+
     const result = await withTimeout(
-      dbManager.query(
-        `SELECT
-           COUNT(*)::int AS total,
-           COUNT(CASE WHEN status = 'active' THEN 1 END)::int AS active,
-           COUNT(CASE WHEN status = 'used' THEN 1 END)::int AS used,
-           COUNT(CASE WHEN expires_at < NOW() THEN 1 END)::int AS expired
-         FROM qr_codes
-         WHERE created_at >= $1 AND created_at <= $2`,
-        [dateFrom, dateTo]
-      ),
+      dbManager.query(query, params),
       2000
     );
 
     return result.rows[0] || { total: 0, active: 0, used: 0, expired: 0 };
   }
 
-  async cleanupExpiredQRCodes() {
+  async cleanupExpiredQRCodes(estateId = null) {
+    const query = `
+      UPDATE qr_codes
+      SET status = 'expired',
+          updated_at = NOW()
+      WHERE expires_at < NOW() AND status = 'active'
+      ${estateId ? 'AND estate_id = $1' : ''}`;
+
+    const params = estateId ? [estateId] : [];
+
     const result = await withTimeout(
-      dbManager.query(
-        `UPDATE qr_codes
-         SET status = 'expired',
-             updated_at = NOW()
-         WHERE expires_at < NOW() AND status = 'active'`,
-        []
-      ),
+      dbManager.query(query, params),
       5000
     );
 

@@ -15,8 +15,8 @@ import { createVisitor } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
 import logger from "../../utils/logger";
 import { Button, Input, Card } from "../../components/ui";
-import { 
-  User, 
+import {
+  User,
   Phone,
   Calendar,
   Clock,
@@ -45,6 +45,21 @@ const QuickInvite = () => {
     unitPin: "",
   });
 
+  // Check for URL params (e.g. from "Favorites" list)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nameParam = params.get('name');
+    const phoneParam = params.get('phone');
+
+    if (nameParam || phoneParam) {
+      setFormData(prev => ({
+        ...prev,
+        name: nameParam || prev.name,
+        phone: phoneParam || prev.phone
+      }));
+    }
+  }, []);
+
   const handlePickContact = async () => {
     const contact = await pickContact({ properties: ['name', 'tel'] });
     if (contact) {
@@ -55,7 +70,7 @@ const QuickInvite = () => {
       }));
     }
   };
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
@@ -126,17 +141,17 @@ const QuickInvite = () => {
   // Validate form
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.name.trim()) {
       errors.name = "Guest name is required";
     }
-    
+
     if (!formData.phone.trim()) {
       errors.phone = "Phone number is required";
     } else if (!/^(?:\+254|0)\d{9}$/.test(formData.phone.trim().replace(/\s/g, ''))) {
       errors.phone = "Enter a valid Kenyan phone number";
     }
-    
+
     if (!formData.dateOfVisit) {
       errors.dateOfVisit = "Please select when they're visiting";
     } else {
@@ -151,7 +166,7 @@ const QuickInvite = () => {
     if (formData.allowResidenceLocation && !String(formData.unitPin || '').trim()) {
       errors.unitPin = "Unit PIN is required when sharing residence details";
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -159,7 +174,7 @@ const QuickInvite = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       setError("Please fix the errors below");
       return;
@@ -186,9 +201,9 @@ const QuickInvite = () => {
       if (process.env.NODE_ENV === 'development') {
         logger.debug('Creating quick invite:', visitorData);
       }
-      
+
       const response = await createVisitor(visitorData);
-      
+
       setSuccess({
         message: 'Invite sent! 🎉',
         subtitle: `${formData.name} will receive an SMS with their invite link`,
@@ -242,14 +257,14 @@ const QuickInvite = () => {
   const shareViaWhatsApp = () => {
     if (success?.data?.inviteLink) {
       const visitorName = formData.name || 'Guest';
-      const visitDate = formData.dateOfVisit 
-        ? new Date(formData.dateOfVisit).toLocaleDateString('en-KE', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric' 
-          })
+      const visitDate = formData.dateOfVisit
+        ? new Date(formData.dateOfVisit).toLocaleDateString('en-KE', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric'
+        })
         : 'your scheduled date';
-      
+
       const message = encodeURIComponent(
         `🏠 You're invited!\n\n` +
         `Hi ${visitorName}! You've been invited to visit.\n\n` +
@@ -259,7 +274,7 @@ const QuickInvite = () => {
         `${success.data.inviteLink}\n\n` +
         `Show this pass at the gate for entry. ✅`
       );
-      
+
       // Use WhatsApp URL scheme - works on mobile and desktop
       const whatsappUrl = `https://wa.me/?text=${message}`;
       window.open(whatsappUrl, '_blank');
@@ -272,14 +287,14 @@ const QuickInvite = () => {
   const shareViaWhatsAppDirect = () => {
     if (success?.data?.inviteLink && formData.phone) {
       const visitorName = formData.name || 'Guest';
-      const visitDate = formData.dateOfVisit 
-        ? new Date(formData.dateOfVisit).toLocaleDateString('en-KE', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric' 
-          })
+      const visitDate = formData.dateOfVisit
+        ? new Date(formData.dateOfVisit).toLocaleDateString('en-KE', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric'
+        })
         : 'your scheduled date';
-      
+
       // Format phone number for WhatsApp (remove leading 0, add 254)
       let phoneNumber = formData.phone.replace(/\s/g, '');
       if (phoneNumber.startsWith('0')) {
@@ -287,7 +302,7 @@ const QuickInvite = () => {
       } else if (phoneNumber.startsWith('+')) {
         phoneNumber = phoneNumber.substring(1);
       }
-      
+
       const message = encodeURIComponent(
         `🏠 You're invited!\n\n` +
         `Hi ${visitorName}! You've been invited to visit.\n\n` +
@@ -297,7 +312,7 @@ const QuickInvite = () => {
         `${success.data.inviteLink}\n\n` +
         `Show this pass at the gate for entry. ✅`
       );
-      
+
       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
       window.open(whatsappUrl, '_blank');
       setWhatsappSent(true);
@@ -346,7 +361,7 @@ const QuickInvite = () => {
               <h2 className="text-2xl font-bold text-white">{success.message}</h2>
               <p className="text-green-100 mt-2">{success.subtitle}</p>
             </div>
-            
+
             <div className="p-6 space-y-6">
               {/* What happens next */}
               <div className="bg-blue-50 rounded-xl p-4">
@@ -373,7 +388,7 @@ const QuickInvite = () => {
               {/* Share options */}
               <div className="space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-200 font-medium">Share invite via:</p>
-                
+
                 {/* WhatsApp Share Buttons */}
                 <div className="space-y-2">
                   {/* Direct WhatsApp to visitor */}
@@ -384,7 +399,7 @@ const QuickInvite = () => {
                     <MessageCircle className="w-5 h-5" />
                     {whatsappSent ? '✓ Opening WhatsApp...' : `Send via WhatsApp to ${formData.name}`}
                   </button>
-                  
+
                   {/* Generic WhatsApp share */}
                   <button
                     onClick={shareViaWhatsApp}
@@ -497,9 +512,8 @@ const QuickInvite = () => {
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="John Doe"
-                  className={`w-full px-4 py-3 rounded-xl border ${
-                    validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                  } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
+                  className={`w-full px-4 py-3 rounded-xl border ${validationErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                    } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
                   disabled={loading}
                 />
                 {validationErrors.name && (
@@ -519,9 +533,8 @@ const QuickInvite = () => {
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="0712 345 678"
-                    className={`w-full px-4 py-3 rounded-xl border ${
-                      validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                    } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
+                    className={`w-full px-4 py-3 rounded-xl border ${validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                      } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
                     disabled={loading}
                   />
                 </div>
@@ -546,11 +559,10 @@ const QuickInvite = () => {
                       key={chip.id}
                       type="button"
                       onClick={() => handleDateChipClick(chip)}
-                      className={`p-3 rounded-xl border-2 transition-all text-center ${
-                        selectedDateChip === chip.id
+                      className={`p-3 rounded-xl border-2 transition-all text-center ${selectedDateChip === chip.id
                           ? 'border-green-500 bg-green-50 text-green-700'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
+                        }`}
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
                       {chip.sublabel && (
@@ -585,11 +597,10 @@ const QuickInvite = () => {
                       key={chip.id}
                       type="button"
                       onClick={() => handleTimeChipClick(chip)}
-                      className={`p-3 rounded-xl border-2 transition-all text-center ${
-                        selectedTimeChip === chip.id
+                      className={`p-3 rounded-xl border-2 transition-all text-center ${selectedTimeChip === chip.id
                           ? 'border-green-500 bg-green-50 text-green-700'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
+                        }`}
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
@@ -633,9 +644,8 @@ const QuickInvite = () => {
                       value={formData.unitPin}
                       onChange={(e) => handleInputChange('unitPin', e.target.value)}
                       placeholder="Unit PIN (e.g. A12)"
-                      className={`w-full px-4 py-3 rounded-xl border ${
-                        validationErrors.unitPin ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                      } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
+                      className={`w-full px-4 py-3 rounded-xl border ${validationErrors.unitPin ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                        } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
                       disabled={loading}
                     />
                     {validationErrors.unitPin && (

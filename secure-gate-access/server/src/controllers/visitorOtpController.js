@@ -9,19 +9,25 @@ const verifyOtp = async (req, res) => {
   try {
     const { id } = req.params;
     const { otp } = req.body;
-    
+
     if (!otp) return respondError(res, 400, 'OTP is required');
     if (!validateOTPFormat(otp)) return respondError(res, 400, 'Invalid OTP format');
-    
-    const vRes = await dbManager.query(
-      'SELECT id, otp_hash, otp_expires_at, otp_attempts, status, name, phone, email FROM visitors WHERE id = $1',
-      [id]
-    );
+
+    let query = 'SELECT id, otp_hash, otp_expires_at, otp_attempts, status, name, phone, email FROM visitors WHERE id = $1';
+    const params = [id];
+
+    // Fix G-002: Enforce estate scoping if authenticated user (Guard/Admin)
+    if (req.user && req.user.estate_id) {
+      query += ' AND estate_id = $2';
+      params.push(req.user.estate_id);
+    }
+
+    const vRes = await dbManager.query(query, params);
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
 
     const currentStatus = String(visitor.status || '').toLowerCase();
-    
+
     // Allow both PENDING and OTP_SENT status for verification
     if (currentStatus !== PASS_STATUS.PENDING && currentStatus !== PASS_STATUS.OTP_SENT) {
       return respondError(res, 422, 'Visitor already verified or checked in');
@@ -54,7 +60,7 @@ const verifyOtp = async (req, res) => {
       });
       return respondError(res, 400, 'OTP expired. Please request a new OTP.');
     }
-    
+
     const isValid = await argon2.verify(visitor.otp_hash, otp);
     if (!isValid) {
       await dbManager.query(
@@ -64,12 +70,12 @@ const verifyOtp = async (req, res) => {
       await req.audit?.('visitor.otp.verify', 'visitor', String(id), { outcome: 'fail', message: 'Invalid OTP provided' });
       return respondError(res, 400, 'Invalid OTP');
     }
-    
+
     await dbManager.query(
       'UPDATE visitors SET status = $1, otp_hash = NULL, otp_expires_at = NULL, otp_attempts = 0, otp = NULL WHERE id = $2',
       [PASS_STATUS.VERIFIED, id]
     );
-    
+
     await req.audit?.('visitor.otp.verify', 'visitor', String(id), { outcome: 'success', message: 'OTP verified successfully', visitorName: visitor.name });
     respond(res, { message: 'OTP verified successfully', status: PASS_STATUS.VERIFIED });
   } catch (error) {
@@ -81,16 +87,22 @@ const verifyOtp = async (req, res) => {
 const resendOtp = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const vRes = await dbManager.query(
-      'SELECT id, phone, email, status, name, otp_resend_count, otp_last_resend FROM visitors WHERE id = $1',
-      [id]
-    );
+
+    let query = 'SELECT id, phone, email, status, name, otp_resend_count, otp_last_resend FROM visitors WHERE id = $1';
+    const params = [id];
+
+    // Fix G-002: Enforce estate scoping if authenticated user (Guard/Admin)
+    if (req.user && req.user.estate_id) {
+      query += ' AND estate_id = $2';
+      params.push(req.user.estate_id);
+    }
+
+    const vRes = await dbManager.query(query, params);
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
 
     const currentStatus = String(visitor.status || '').toLowerCase();
-    
+
     if (currentStatus !== PASS_STATUS.PENDING && currentStatus !== PASS_STATUS.OTP_SENT) {
       return respondError(res, 422, 'Visitor already verified or checked in');
     }
@@ -105,7 +117,7 @@ const resendOtp = async (req, res) => {
         }
       }
     }
-    
+
     // Generate new OTP
     const otp = generateOTP(6);
     const otpHash = await argon2.hash(otp);
@@ -125,7 +137,7 @@ const resendOtp = async (req, res) => {
        WHERE id = $4`,
       [otpHash, otpExpiresAt, PASS_STATUS.OTP_SENT, id]
     );
-    
+
     const visitorData = {
       id: visitor.id,
       name: visitor.name,
@@ -137,7 +149,7 @@ const resendOtp = async (req, res) => {
     const emailSent = !smsSent && visitor.email
       ? await notificationService.sendOtpVerificationEmail(visitorData, otp, expiryMinutes)
       : false;
-    
+
     await req.audit?.('visitor.otp.resend', 'visitor', String(id), { outcome: 'success', message: 'OTP resent successfully', visitorName: visitor.name });
     respond(res, {
       message: 'OTP resent successfully',

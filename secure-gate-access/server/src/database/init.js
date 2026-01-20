@@ -55,6 +55,8 @@ const run = async () => {
         id SERIAL PRIMARY KEY,
         name TEXT,
         estate_id INT REFERENCES estates(id),
+        resident_id INT,
+        host_id INT,
         phone TEXT,
         email TEXT,
         purpose TEXT,
@@ -64,14 +66,19 @@ const run = async () => {
         status TEXT,
         check_in_time TIMESTAMP,
         check_out_time TIMESTAMP,
+        check_in_guard_id INT REFERENCES users(id),
+        check_out_guard_id INT REFERENCES users(id),
+        check_in_notes TEXT,
+        check_out_notes TEXT,
         created_by TEXT,
         id_number TEXT,
         vehicle_plate TEXT,
-        expected_time TIMESTAMP,
         otp_hash TEXT,
         otp_expires_at TIMESTAMP,
         otp_attempts INT DEFAULT 0,
-        qr_code TEXT
+        qr_code TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
     await client.query(`
@@ -88,13 +95,31 @@ const run = async () => {
       );
     `);
     await client.query(`
-      CREATE TABLE IF NOT EXISTS passes (
+      CREATE TABLE IF NOT EXISTS incidents (
         id SERIAL PRIMARY KEY,
-        pass_id TEXT UNIQUE NOT NULL,
-        visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
-        expires_at TIMESTAMP NOT NULL,
-        status TEXT NOT NULL,
-        qr_code TEXT
+        guard_id INT REFERENCES users(id),
+        reported_by INT REFERENCES users(id),
+        visitor_id INT REFERENCES visitors(id),
+        category TEXT NOT NULL,
+        severity TEXT NOT NULL DEFAULT 'medium',
+        description TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        priority INT DEFAULT 3,
+        resolution TEXT,
+        resolved_at TIMESTAMP,
+        resolved_by INT REFERENCES users(id),
+        closed_at TIMESTAMP,
+        closed_by INT REFERENCES users(id),
+        assigned_to INT REFERENCES users(id),
+        assigned_by INT REFERENCES users(id),
+        assigned_at TIMESTAMP,
+        escalated_to INT REFERENCES users(id),
+        escalated_by INT REFERENCES users(id),
+        escalated_at TIMESTAMP,
+        site_id INT REFERENCES estates(id),
+        estate_id INT REFERENCES estates(id),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
     await client.query(`
@@ -109,6 +134,42 @@ const run = async () => {
         outcome TEXT,
         message TEXT,
         metadata JSONB
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS revoked_tokens (
+        jti TEXT PRIMARY KEY,
+        revoked_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        token TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        user_agent TEXT,
+        ip_address INET,
+        is_revoked BOOLEAN DEFAULT false,
+        revoked_at TIMESTAMP,
+        last_used_at TIMESTAMP,
+        jti TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS delivery_logs (
+        id SERIAL PRIMARY KEY,
+        recipient_id INT REFERENCES users(id),
+        resident_id INT REFERENCES users(id),
+        carrier TEXT,
+        tracking_number TEXT,
+        recipient_name TEXT,
+        status TEXT,
+        received_at TIMESTAMP,
+        picked_up_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
     await client.query(`

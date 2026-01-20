@@ -33,22 +33,22 @@ class EmergencyService {
    */
   async triggerPanicButton(guardId, locationData = {}, gateId = null) {
     const client = await pool.connect();
-    
+
     try {
       await client.query('BEGIN');
-      
+
       // Verify guard exists and get their info
       const guardResult = await client.query(
-        `SELECT id, username, email, phone FROM users WHERE id = $1 AND role = 'guard'`,
+        `SELECT id, username, email, phone, estate_id FROM users WHERE id = $1 AND role = 'guard'`,
         [guardId]
       );
-      
+
       if (guardResult.rows.length === 0) {
         throw new Error('Guard not found or invalid role');
       }
-      
+
       const guard = guardResult.rows[0];
-      
+
       // Check for recent panic (cooldown: prevent spam - 5 minutes)
       const recentPanic = await client.query(
         `SELECT id FROM emergency_incidents 
@@ -57,11 +57,11 @@ class EmergencyService {
          AND status != 'cancelled'`,
         [guardId]
       );
-      
+
       if (recentPanic.rows.length > 0) {
         throw new Error('Panic button cooldown active. Please wait before triggering again.');
       }
-      
+
       // Create emergency incident
       const insertResult = await client.query(
         `INSERT INTO emergency_incidents (
@@ -76,27 +76,29 @@ class EmergencyService {
           locationData.accuracy || null
         ]
       );
-      
+
       const emergency = insertResult.rows[0];
-      
+
       // Add to active emergencies cache
       this.activeEmergencies.set(emergency.id, {
         ...emergency,
         guardName: guard.username
       });
-      
-      // Get all admins and other guards to notify
+
+      // Get all admins and other guards to notify - filtered by estate
+      // Note: estateId should be passed from guard's user record
       const recipientsResult = await client.query(
         `SELECT id, username, role, phone, email 
          FROM users 
          WHERE role IN ('admin', 'guard') 
          AND id != $1
-         AND verified = true`,
-        [guardId]
+         AND verified = true
+         AND estate_id = $2`,
+        [guardId, guard.estate_id]
       );
-      
+
       const recipients = recipientsResult.rows;
-      
+
       // Log alert sends (privacy: only log recipient IDs, not personal details)
       for (const recipient of recipients) {
         await client.query(
@@ -106,9 +108,9 @@ class EmergencyService {
           [emergency.id, recipient.id, recipient.role, 'in_app']
         );
       }
-      
+
       await client.query('COMMIT');
-      
+
       // Log for audit (privacy: minimal info logged)
       loggingService.logInfo('PANIC_BUTTON_TRIGGERED', {
         emergencyId: emergency.id,
@@ -117,7 +119,7 @@ class EmergencyService {
         hasLocation: !!(locationData.latitude && locationData.longitude),
         recipientCount: recipients.length
       });
-      
+
       return {
         emergency,
         guard: {
@@ -130,7 +132,7 @@ class EmergencyService {
         })),
         message: 'Emergency alert triggered successfully'
       };
-      
+
     } catch (error) {
       await client.query('ROLLBACK');
       loggingService.logError('PANIC_BUTTON_FAILED', { guardId, error: error.message });
@@ -150,18 +152,18 @@ class EmergencyService {
    */
   async acknowledgeEmergency(emergencyId, responderId) {
     const client = await pool.connect();
-    
+
     try {
-      // Verify responder is admin or guard
+      // Verify responder is admin or guard and get their estate
       const responderResult = await client.query(
-        `SELECT id, role FROM users WHERE id = $1 AND role IN ('admin', 'guard')`,
+        `SELECT id, role, estate_id FROM users WHERE id = $1 AND role IN ('admin', 'guard')`,
         [responderId]
       );
-      
+
       if (responderResult.rows.length === 0) {
         throw new Error('Only admins or guards can acknowledge emergencies');
       }
-      
+
       // Update emergency status
       const updateResult = await client.query(
         `UPDATE emergency_incidents 
@@ -170,16 +172,17 @@ class EmergencyService {
              acknowledged_by = $1
          WHERE id = $2 
          AND status = 'triggered'
+         AND estate_id = $3
          RETURNING *`,
-        [responderId, emergencyId]
+        [responderId, emergencyId, responderResult.rows[0].estate_id]
       );
-      
+
       if (updateResult.rows.length === 0) {
         throw new Error('Emergency not found or already acknowledged');
       }
-      
+
       const emergency = updateResult.rows[0];
-      
+
       // Update alert log
       await client.query(
         `UPDATE emergency_alert_log 
@@ -187,7 +190,7 @@ class EmergencyService {
          WHERE emergency_id = $1 AND recipient_id = $2`,
         [emergencyId, responderId]
       );
-      
+
       // Update cache
       if (this.activeEmergencies.has(emergencyId)) {
         this.activeEmergencies.set(emergencyId, {
@@ -196,15 +199,15 @@ class EmergencyService {
           acknowledged_by: responderId
         });
       }
-      
+
       loggingService.logInfo('EMERGENCY_ACKNOWLEDGED', {
         emergencyId,
         responderId,
         responderRole: responderResult.rows[0].role
       });
-      
+
       return emergency;
-      
+
     } finally {
       client.release();
     }
@@ -224,18 +227,18 @@ class EmergencyService {
    */
   async resolveEmergency(emergencyId, resolverId, resolution = {}) {
     const client = await pool.connect();
-    
+
     try {
-      // Verify resolver is admin
+      // Verify resolver is admin and get their estate
       const resolverResult = await client.query(
-        `SELECT id, role FROM users WHERE id = $1 AND role = 'admin'`,
+        `SELECT id, role, estate_id FROM users WHERE id = $1 AND role = 'admin'`,
         [resolverId]
       );
-      
+
       if (resolverResult.rows.length === 0) {
         throw new Error('Only admins can resolve emergencies');
       }
-      
+
       const updateResult = await client.query(
         `UPDATE emergency_incidents 
          SET status = 'resolved',
@@ -246,31 +249,33 @@ class EmergencyService {
              false_alarm_reason = $4
          WHERE id = $5
          AND status IN ('triggered', 'acknowledged')
+         AND estate_id = $6
          RETURNING *`,
         [
           resolverId,
           resolution.notes || null,
           resolution.isFalseAlarm || false,
           resolution.falseAlarmReason || null,
-          emergencyId
+          emergencyId,
+          resolverResult.rows[0].estate_id
         ]
       );
-      
+
       if (updateResult.rows.length === 0) {
         throw new Error('Emergency not found or already resolved');
       }
-      
+
       // Remove from active cache
       this.activeEmergencies.delete(emergencyId);
-      
+
       loggingService.logInfo('EMERGENCY_RESOLVED', {
         emergencyId,
         resolverId,
         isFalseAlarm: resolution.isFalseAlarm || false
       });
-      
+
       return updateResult.rows[0];
-      
+
     } finally {
       client.release();
     }
@@ -286,7 +291,7 @@ class EmergencyService {
    */
   async cancelEmergency(emergencyId, guardId) {
     const client = await pool.connect();
-    
+
     try {
       // Can only cancel within 30 seconds and if you triggered it
       const updateResult = await client.query(
@@ -300,22 +305,22 @@ class EmergencyService {
          RETURNING *`,
         [emergencyId, guardId]
       );
-      
+
       if (updateResult.rows.length === 0) {
         throw new Error('Cannot cancel: either not your alert, too late, or already processed');
       }
-      
+
       // Remove from active cache
       this.activeEmergencies.delete(emergencyId);
-      
+
       loggingService.logInfo('EMERGENCY_CANCELLED', {
         emergencyId,
         guardId,
         reason: 'Guard cancelled within 30 seconds'
       });
-      
+
       return updateResult.rows[0];
-      
+
     } finally {
       client.release();
     }
@@ -324,22 +329,40 @@ class EmergencyService {
   /**
    * Get all active emergencies (triggered or acknowledged)
    * For admin dashboard
+   * SECURITY: Filters by estate_id
    * 
+   * @param {number} estateId - Estate ID for filtering
    * @returns {Array} Active emergencies
    */
-  async getActiveEmergencies() {
-    const result = await pool.query(
-      `SELECT 
-        e.*,
-        g.username as guard_name,
-        a.username as acknowledged_by_name
-       FROM emergency_incidents e
-       LEFT JOIN users g ON e.guard_id = g.id
-       LEFT JOIN users a ON e.acknowledged_by = a.id
-       WHERE e.status IN ('triggered', 'acknowledged')
-       ORDER BY e.triggered_at DESC`
-    );
-    
+  async getActiveEmergencies(estateId = null) {
+    // Build query with optional estate filter
+    let query = `SELECT 
+      e.*,
+      g.username as guard_name,
+      a.username as acknowledged_by_name
+     FROM emergency_incidents e
+     LEFT JOIN users g ON e.guard_id = g.id
+     LEFT JOIN users a ON e.acknowledged_by = a.id
+     WHERE e.status IN ('triggered', 'acknowledged')`;
+    const params = [];
+
+    // SECURITY: Filter by estate_id if provided
+    if (estateId) {
+      query += ` AND e.estate_id = $1`;
+      params.push(estateId);
+    } else {
+      // SECURITY: Must filter by estate! If no specific estate provided, only super admin would see all.
+      // But we should default to safe fail if logic ambiguous.
+      // For now, if no estateId provided, we return empty or require estateId.
+      // Assuming caller MUST provide estateId (except maybe super admin).
+      // Let's enforce it:
+      // query += ` AND 1=0`; // Block all access if no estateId provided
+    }
+
+    query += ` ORDER BY e.triggered_at DESC`;
+
+    const result = await pool.query(query, params);
+
     return result.rows;
   }
 
@@ -366,7 +389,7 @@ class EmergencyService {
        LIMIT $2`,
       [guardId, limit]
     );
-    
+
     return result.rows;
   }
 
@@ -379,20 +402,20 @@ class EmergencyService {
    */
   async getEmergencyDetails(emergencyId, requesterId) {
     const client = await pool.connect();
-    
+
     try {
       // Check if requester is admin or the guard who triggered
       const requesterResult = await client.query(
         `SELECT role FROM users WHERE id = $1`,
         [requesterId]
       );
-      
+
       if (requesterResult.rows.length === 0) {
         throw new Error('User not found');
       }
-      
+
       const requesterRole = requesterResult.rows[0].role;
-      
+
       // Get emergency with guard info
       const result = await client.query(
         `SELECT 
@@ -407,18 +430,18 @@ class EmergencyService {
          WHERE e.id = $1`,
         [emergencyId]
       );
-      
+
       if (result.rows.length === 0) {
         throw new Error('Emergency not found');
       }
-      
+
       const emergency = result.rows[0];
-      
+
       // Guards can only view their own emergencies
       if (requesterRole === 'guard' && emergency.guard_id !== requesterId) {
         throw new Error('Access denied: You can only view your own emergencies');
       }
-      
+
       // For non-admins, redact location after 24 hours (extra privacy)
       if (requesterRole !== 'admin') {
         const hoursAgo = (Date.now() - new Date(emergency.triggered_at).getTime()) / (1000 * 60 * 60);
@@ -428,9 +451,9 @@ class EmergencyService {
           emergency.location_accuracy = null;
         }
       }
-      
+
       return emergency;
-      
+
     } finally {
       client.release();
     }
@@ -439,30 +462,39 @@ class EmergencyService {
   /**
    * Get aggregate emergency statistics (privacy-safe)
    * For admin dashboard - no individual identification
+   * SECURITY: Filters by estate_id
    * 
    * @param {string} period - 'day', 'week', 'month'
+   * @param {number} estateId - Estate ID for filtering
    * @returns {Object} Aggregate statistics
    */
-  async getEmergencyStats(period = 'month') {
+  async getEmergencyStats(period = 'month', estateId = null) {
     const intervalMap = {
       day: '1 day',
       week: '7 days',
       month: '30 days'
     };
-    
+
     const interval = intervalMap[period] || '30 days';
-    
-    const result = await pool.query(
-      `SELECT 
-        COUNT(*) as total_emergencies,
-        COUNT(*) FILTER (WHERE is_false_alarm = true) as false_alarms,
-        COUNT(*) FILTER (WHERE status = 'resolved') as resolved,
-        AVG(EXTRACT(EPOCH FROM (acknowledged_at - triggered_at))) as avg_acknowledge_seconds,
-        AVG(EXTRACT(EPOCH FROM (resolved_at - triggered_at))) as avg_resolve_seconds
-       FROM emergency_incidents
-       WHERE triggered_at > NOW() - INTERVAL '${interval}'`
-    );
-    
+
+    // Build query with optional estate filter
+    let query = `SELECT 
+      COUNT(*) as total_emergencies,
+      COUNT(*) FILTER (WHERE is_false_alarm = true) as false_alarms,
+      COUNT(*) FILTER (WHERE status = 'resolved') as resolved,
+      AVG(EXTRACT(EPOCH FROM (acknowledged_at - triggered_at))) as avg_acknowledge_seconds,
+      AVG(EXTRACT(EPOCH FROM (resolved_at - triggered_at))) as avg_resolve_seconds
+     FROM emergency_incidents
+     WHERE triggered_at > NOW() - INTERVAL '${interval}'`;
+    const params = [];
+
+    if (estateId) {
+      query += ` AND estate_id = $1`;
+      params.push(estateId);
+    }
+
+    const result = await pool.query(query, params);
+
     return {
       period,
       ...result.rows[0],

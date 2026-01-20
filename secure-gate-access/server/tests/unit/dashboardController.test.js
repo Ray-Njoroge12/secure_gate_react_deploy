@@ -42,7 +42,7 @@ describe('Dashboard Controller', () => {
       json: jest.fn().mockReturnThis()
     };
 
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
   });
 
   afterEach(() => {
@@ -60,9 +60,9 @@ describe('Dashboard Controller', () => {
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
             success: false,
+            message: 'Unauthorized',
             error: expect.objectContaining({
-              code: 401,
-              message: 'Unauthorized'
+              code: 'UNAUTHORIZED'
             })
           })
         );
@@ -153,8 +153,9 @@ describe('Dashboard Controller', () => {
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
             success: false,
+            message: 'Failed to get dashboard stats',
             error: expect.objectContaining({
-              message: 'Failed to get dashboard stats'
+              code: 'INTERNAL_ERROR'
             })
           })
         );

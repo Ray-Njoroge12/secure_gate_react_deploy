@@ -14,6 +14,49 @@ describe('Pass Management Integration Tests', () => {
   let guardToken;
   let adminToken;
 
+  const toDate = (date) => date.toISOString().split('T')[0];
+  const buildQrToken = () => `RP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const buildPassData = (residentId, overrides = {}) => {
+    const now = new Date();
+    return {
+      resident_id: residentId,
+      visitor_name: `Test Visitor ${Date.now()}`,
+      visitor_phone: '+254700111111',
+      pass_type: 'daily_worker',
+      purpose: 'General access',
+      access_pin: '123456',
+      qr_code_token: buildQrToken(),
+      valid_from: toDate(now),
+      valid_until: toDate(new Date(now.getTime() + 30 * 86400000)),
+      allowed_days: ['mon', 'wed', 'fri'],
+      status: 'active',
+      ...overrides
+    };
+  };
+  const insertPass = async (residentId, overrides = {}) => {
+    const passData = buildPassData(residentId, overrides);
+    return query(
+      `INSERT INTO recurring_passes (
+        resident_id, visitor_name, visitor_phone, pass_type, purpose,
+        access_pin, qr_code_token, valid_from, valid_until, allowed_days, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      RETURNING *`,
+      [
+        passData.resident_id,
+        passData.visitor_name,
+        passData.visitor_phone,
+        passData.pass_type,
+        passData.purpose,
+        passData.access_pin,
+        passData.qr_code_token,
+        passData.valid_from,
+        passData.valid_until,
+        passData.allowed_days,
+        passData.status
+      ]
+    );
+  };
+
   beforeAll(async () => {
     await getTestPool();
     await cleanupTables();
@@ -37,45 +80,26 @@ describe('Pass Management Integration Tests', () => {
   // =========================================
   describe('Pass Creation', () => {
     it('should create recurring pass with all required fields', async () => {
-      const passData = {
-        name: 'Regular Cleaner',
-        phone: '+254700111111',
-        email: 'cleaner@test.com',
-        resident_id: testUsers.resident.id,
-        schedule_type: 'weekly',
-        days_of_week: ['monday', 'wednesday', 'friday'],
-        start_date: new Date().toISOString().split('T')[0],
-        end_date: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
-        status: 'active'
-      };
+      const passData = buildPassData(testUsers.resident.id, {
+        visitor_name: 'Regular Cleaner',
+        visitor_phone: '+254700111111',
+        pass_type: 'daily_worker',
+        allowed_days: ['mon', 'wed', 'fri'],
+        valid_until: toDate(new Date(Date.now() + 90 * 86400000))
+      });
 
-      const result = await query(
-        `INSERT INTO recurring_passes (name, phone, email, resident_id, schedule_type, days_of_week, start_date, end_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING *`,
-        [passData.name, passData.phone, passData.email, passData.resident_id, passData.schedule_type, 
-         passData.days_of_week, passData.start_date, passData.end_date, passData.status]
-      );
+      const result = await insertPass(testUsers.resident.id, passData);
 
       expect(result.rows).toHaveLength(1);
-      expect(result.rows[0].name).toBe(passData.name);
-      expect(result.rows[0].schedule_type).toBe('weekly');
+      expect(result.rows[0].visitor_name).toBe(passData.visitor_name);
+      expect(result.rows[0].pass_type).toBe('daily_worker');
       expect(result.rows[0].status).toBe('active');
     });
 
-    it('should generate unique access code for each pass', async () => {
-      const generateAccessCode = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let code = '';
-        for (let i = 0; i < 6; i++) {
-          code += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return code;
-      };
-
+    it('should generate unique QR tokens for each pass', async () => {
       const codes = new Set();
       for (let i = 0; i < 100; i++) {
-        codes.add(generateAccessCode());
+        codes.add(buildQrToken());
       }
 
       // All codes should be unique
@@ -83,43 +107,51 @@ describe('Pass Management Integration Tests', () => {
     });
 
     it('should create daily pass with no day restrictions', async () => {
-      const result = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Daily Worker', '+254700222222', testUsers.resident.id, 'daily', 'active']
-      );
+      const result = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Daily Worker',
+        visitor_phone: '+254700222222',
+        pass_type: 'daily_worker',
+        allowed_days: null
+      });
 
-      expect(result.rows[0].schedule_type).toBe('daily');
-      expect(result.rows[0].days_of_week).toBeNull();
+      expect(result.rows[0].pass_type).toBe('daily_worker');
+      expect(result.rows[0].allowed_days).toBeNull();
     });
 
     it('should create single-use pass', async () => {
-      const result = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, start_date, end_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
-        [
-          'One-time Contractor',
-          '+254700333333',
-          testUsers.resident.id,
-          'once',
-          new Date().toISOString().split('T')[0],
-          new Date().toISOString().split('T')[0],
-          'active'
-        ]
-      );
+      const todayResult = await query('SELECT CURRENT_DATE::text as today');
+      const today = todayResult.rows[0].today;
+      const result = await insertPass(testUsers.resident.id, {
+        visitor_name: 'One-time Contractor',
+        visitor_phone: '+254700333333',
+        pass_type: 'contractor',
+        valid_from: today,
+        valid_until: today
+      });
 
-      expect(result.rows[0].schedule_type).toBe('once');
+      const validFrom = result.rows[0].valid_from;
+      const validUntil = result.rows[0].valid_until;
+      const formatLocalDate = (value) => {
+        if (!(value instanceof Date)) {
+          return String(value);
+        }
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      const normalizedFrom = formatLocalDate(validFrom);
+      const normalizedUntil = formatLocalDate(validUntil);
+
+      expect(normalizedFrom).toBe(today);
+      expect(normalizedUntil).toBe(today);
     });
 
     it('should link pass to resident correctly', async () => {
-      const result = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Linked Pass', '+254700444444', testUsers.resident.id, 'weekly', 'active']
-      );
+      const result = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Linked Pass',
+        visitor_phone: '+254700444444'
+      });
 
       // Verify foreign key relationship
       const resident = await query(
@@ -137,20 +169,13 @@ describe('Pass Management Integration Tests', () => {
   // =========================================
   describe('Pass Validation', () => {
     it('should validate active pass successfully', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, start_date, end_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
-        [
-          'Valid Pass Holder',
-          '+254700555555',
-          testUsers.resident.id,
-          'daily',
-          new Date(Date.now() - 86400000).toISOString().split('T')[0], // Yesterday
-          new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
-          'active'
-        ]
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Valid Pass Holder',
+        visitor_phone: '+254700555555',
+        valid_from: toDate(new Date(Date.now() - 86400000)),
+        valid_until: toDate(new Date(Date.now() + 86400000)),
+        status: 'active'
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -159,8 +184,8 @@ describe('Pass Management Integration Tests', () => {
         `SELECT * FROM recurring_passes 
          WHERE id = $1 
          AND status = 'active' 
-         AND start_date <= CURRENT_DATE 
-         AND end_date >= CURRENT_DATE`,
+         AND valid_from <= CURRENT_DATE 
+         AND valid_until >= CURRENT_DATE`,
         [passId]
       );
 
@@ -168,20 +193,13 @@ describe('Pass Management Integration Tests', () => {
     });
 
     it('should reject expired pass', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, start_date, end_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
-        [
-          'Expired Pass',
-          '+254700666666',
-          testUsers.resident.id,
-          'daily',
-          new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
-          new Date(Date.now() - 10 * 86400000).toISOString().split('T')[0],
-          'active'
-        ]
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Expired Pass',
+        visitor_phone: '+254700666666',
+        valid_from: toDate(new Date(Date.now() - 30 * 86400000)),
+        valid_until: toDate(new Date(Date.now() - 10 * 86400000)),
+        status: 'active'
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -190,8 +208,8 @@ describe('Pass Management Integration Tests', () => {
         `SELECT * FROM recurring_passes 
          WHERE id = $1 
          AND status = 'active' 
-         AND start_date <= CURRENT_DATE 
-         AND end_date >= CURRENT_DATE`,
+         AND valid_from <= CURRENT_DATE 
+         AND valid_until >= CURRENT_DATE`,
         [passId]
       );
 
@@ -199,12 +217,11 @@ describe('Pass Management Integration Tests', () => {
     });
 
     it('should reject revoked pass', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Revoked Pass', '+254700777777', testUsers.resident.id, 'daily', 'revoked']
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Revoked Pass',
+        visitor_phone: '+254700777777',
+        status: 'revoked'
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -218,14 +235,13 @@ describe('Pass Management Integration Tests', () => {
 
     it('should validate pass for specific day of week', async () => {
       const today = new Date();
-      const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][today.getDay()];
+      const dayOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][today.getDay()];
 
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, days_of_week, status)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
-        ['Day-specific Pass', '+254700888888', testUsers.resident.id, 'weekly', [dayOfWeek], 'active']
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Day-specific Pass',
+        visitor_phone: '+254700888888',
+        allowed_days: [dayOfWeek]
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -234,7 +250,7 @@ describe('Pass Management Integration Tests', () => {
         `SELECT * FROM recurring_passes 
          WHERE id = $1 
          AND status = 'active' 
-         AND $2 = ANY(days_of_week)`,
+         AND $2 = ANY(allowed_days)`,
         [passId, dayOfWeek]
       );
 
@@ -247,12 +263,11 @@ describe('Pass Management Integration Tests', () => {
   // =========================================
   describe('Pass Lifecycle', () => {
     it('should update pass status correctly', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Status Test Pass', '+254700999999', testUsers.resident.id, 'weekly', 'active']
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Status Test Pass',
+        visitor_phone: '+254700999999',
+        status: 'active'
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -276,12 +291,11 @@ describe('Pass Management Integration Tests', () => {
     });
 
     it('should revoke pass permanently', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Revoke Test Pass', '+254711000000', testUsers.resident.id, 'daily', 'active']
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Revoke Test Pass',
+        visitor_phone: '+254711000000',
+        status: 'active'
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -296,20 +310,22 @@ describe('Pass Management Integration Tests', () => {
 
     it('should handle pass expiration correctly', async () => {
       // Create pass that expires today
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const today = toDate(new Date());
+      const yesterday = toDate(new Date(Date.now() - 86400000));
 
-      await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, start_date, end_date, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        ['Expiring Pass', '+254711111111', testUsers.resident.id, 'daily', yesterday, today, 'active']
-      );
+      await insertPass(testUsers.resident.id, {
+        visitor_name: 'Expiring Pass',
+        visitor_phone: '+254711111111',
+        valid_from: yesterday,
+        valid_until: today,
+        status: 'active'
+      });
 
       // Query for passes that need expiration
       const expiringPasses = await query(
         `SELECT * FROM recurring_passes 
          WHERE status = 'active' 
-         AND end_date < CURRENT_DATE`
+         AND valid_until < CURRENT_DATE`
       );
 
       // These would be marked as expired by a scheduled job
@@ -323,11 +339,10 @@ describe('Pass Management Integration Tests', () => {
   describe('Pass Authorization', () => {
     it('should allow resident to view only their passes', async () => {
       // Create passes for different residents
-      await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ['My Pass', '+254711222222', testUsers.resident.id, 'daily', 'active']
-      );
+      await insertPass(testUsers.resident.id, {
+        visitor_name: 'My Pass',
+        visitor_phone: '+254711222222'
+      });
 
       // Query as resident (should only see their own)
       const residentPasses = await query(
@@ -348,12 +363,10 @@ describe('Pass Management Integration Tests', () => {
     });
 
     it('should allow guard to validate any pass', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Guard Validate Pass', '+254711333333', testUsers.resident.id, 'daily', 'active']
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Guard Validate Pass',
+        visitor_phone: '+254711333333'
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -372,12 +385,10 @@ describe('Pass Management Integration Tests', () => {
   // =========================================
   describe('Pass Audit Trail', () => {
     it('should log pass creation in audit log', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Audit Pass', '+254711444444', testUsers.resident.id, 'weekly', 'active']
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Audit Pass',
+        visitor_phone: '+254711444444'
+      });
 
       const passId = insertResult.rows[0].id;
 
@@ -397,12 +408,10 @@ describe('Pass Management Integration Tests', () => {
     });
 
     it('should log pass validation attempts', async () => {
-      const insertResult = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        ['Validation Log Pass', '+254711555555', testUsers.resident.id, 'daily', 'active']
-      );
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Validation Log Pass',
+        visitor_phone: '+254711555555'
+      });
 
       const passId = insertResult.rows[0].id;
 

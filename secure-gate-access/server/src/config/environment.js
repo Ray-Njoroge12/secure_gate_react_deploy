@@ -12,7 +12,7 @@
  * - AWS Secrets Manager integration for production
  */
 
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import secretsManagerService from '../services/secretsManagerService.js';
 
 class EnvironmentConfig {
@@ -26,9 +26,9 @@ class EnvironmentConfig {
 
     // Initialize secrets manager for production when explicitly enabled
     this.secretsManager = this.isProduction && !this.isTest && this.useAwsSecrets
-      ? secretsManagerService 
+      ? secretsManagerService
       : null;
-    
+
     this.secretsLoaded = false;
 
     this.requiredSecrets = [
@@ -72,7 +72,7 @@ class EnvironmentConfig {
     try {
       console.log('🔐 Loading secrets from AWS Secrets Manager...');
       console.log(`   Prefix: ${process.env.SECRETS_PREFIX || 'secure-gate'}`);
-      
+
       // Use short logical names - secretsManagerService will add the prefix
       const secretNames = [
         'jwt-secret',
@@ -86,7 +86,7 @@ class EnvironmentConfig {
       ];
 
       const secrets = await this.secretsManager.getSecrets(secretNames);
-      
+
       // Override environment variables with secrets from AWS
       // Core authentication secrets
       if (secrets['jwt-secret']) {
@@ -101,19 +101,19 @@ class EnvironmentConfig {
         process.env.SESSION_SECRET = secrets['session-secret'];
         console.log('   ✓ SESSION_SECRET loaded from AWS');
       }
-      
+
       // Database secrets
       if (secrets['database-password']) {
         process.env.PGPASSWORD = secrets['database-password'];
         console.log('   ✓ PGPASSWORD loaded from AWS');
       }
-      
+
       // Redis secrets
       if (secrets['redis-password']) {
         process.env.REDIS_PASSWORD = secrets['redis-password'];
         console.log('   ✓ REDIS_PASSWORD loaded from AWS');
       }
-      
+
       // External service API keys
       if (secrets['mailgun-api-key']) {
         process.env.MAILGUN_API_KEY = secrets['mailgun-api-key'];
@@ -123,7 +123,7 @@ class EnvironmentConfig {
         process.env.AT_API_KEY = secrets['africastalking-api-key'];
         console.log('   ✓ AT_API_KEY loaded from AWS');
       }
-      
+
       // Encryption key
       if (secrets['encryption-key']) {
         process.env.ENCRYPTION_KEY = secrets['encryption-key'];
@@ -397,7 +397,7 @@ class EnvironmentConfig {
     if (!process.env.SESSION_SECRET && this.isProduction) {
       throw new Error('SESSION_SECRET environment variable is required in production');
     }
-    
+
     return {
       jwtSecret: process.env.JWT_SECRET,
       jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
@@ -479,15 +479,15 @@ class EnvironmentConfig {
    */
   static async validateAndReport(loadAwsSecrets = true) {
     const config = new EnvironmentConfig();
-    
+
     // Load secrets from AWS in production
     if (loadAwsSecrets && config.secretsManager) {
       await config.loadSecrets();
     }
-    
+
     // Validate environment after secrets are loaded
     config.validateEnvironment();
-    
+
     return {
       isValid: config.validationErrors.length === 0,
       database: config.getDatabaseConfig(),

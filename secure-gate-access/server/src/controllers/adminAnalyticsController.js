@@ -22,16 +22,24 @@ import logger from '../config/logger.js';
  */
 export const getAnalyticsOverview = async (req, res) => {
   try {
-    const { dateFrom, dateTo, siteId } = req.query;
-    
+    const { dateFrom, dateTo } = req.query;
+
+    // Fix: Admin Security Scoping
+    // If authenticated user has an estate_id, force filtering by it.
+    // Super admins (null estate_id) can optionally filter by siteId from query.
+    let siteId = req.query.siteId;
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
     // Default to last 30 days if not specified
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
-    
+
     // Build site filter
     const siteFilter = siteId ? 'AND v.site_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
-    
+
     // Parallel queries for all metrics
     const [
       visitorStats,
@@ -47,13 +55,13 @@ export const getAnalyticsOverview = async (req, res) => {
           COUNT(CASE WHEN status = 'pending_approval' THEN 1 END) as pending,
           COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected,
           COUNT(CASE WHEN status = 'on_premise' THEN 1 END) as on_premise,
-          COUNT(CASE WHEN checked_in_at IS NOT NULL THEN 1 END) as checked_in,
-          COUNT(CASE WHEN checked_out_at IS NOT NULL THEN 1 END) as checked_out
+          COUNT(CASE WHEN check_in_time IS NOT NULL THEN 1 END) as checked_in,
+          COUNT(CASE WHEN check_out_time IS NOT NULL THEN 1 END) as checked_out
         FROM visitors v
         WHERE v.date_of_visit BETWEEN $1 AND $2
           ${siteFilter}
       `, params),
-      
+
       // Incident statistics
       dbManager.query(`
         SELECT 
@@ -68,7 +76,7 @@ export const getAnalyticsOverview = async (req, res) => {
         WHERE i.created_at BETWEEN $1 AND $2
           ${siteFilter.replace('v.', 'i.')}
       `, params),
-      
+
       // Approval time statistics
       dbManager.query(`
         SELECT 
@@ -81,7 +89,7 @@ export const getAnalyticsOverview = async (req, res) => {
           AND v.created_at BETWEEN $1 AND $2
           ${siteFilter}
       `, params),
-      
+
       // Today's statistics
       dbManager.query(`
         SELECT 
@@ -94,7 +102,7 @@ export const getAnalyticsOverview = async (req, res) => {
           ${siteFilter}
       `, params)
     ]);
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -105,10 +113,10 @@ export const getAnalyticsOverview = async (req, res) => {
         today: todayStats.rows[0]
       }
     });
-    
+
   } catch (error) {
     logger.error('Failed to get analytics overview', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch analytics overview'
@@ -124,14 +132,20 @@ export const getAnalyticsOverview = async (req, res) => {
  */
 export const getVisitorMetrics = async (req, res) => {
   try {
-    const { dateFrom, dateTo, groupBy = 'day', siteId } = req.query;
-    
+    const { dateFrom, dateTo, groupBy = 'day' } = req.query;
+    let siteId = req.query.siteId;
+
+    // Fix: Admin Security Scoping
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
-    
+
     const siteFilter = siteId ? 'AND site_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
-    
+
     // Group by clause based on groupBy parameter
     let groupByClause;
     let dateFormat;
@@ -152,7 +166,7 @@ export const getVisitorMetrics = async (req, res) => {
         groupByClause = "date_of_visit";
         dateFormat = 'YYYY-MM-DD';
     }
-    
+
     // Visitor trends over time
     const trendsQuery = `
       SELECT 
@@ -167,7 +181,7 @@ export const getVisitorMetrics = async (req, res) => {
       GROUP BY period
       ORDER BY period
     `;
-    
+
     // Top residents by visitor count
     const topResidentsQuery = `
       SELECT 
@@ -183,7 +197,7 @@ export const getVisitorMetrics = async (req, res) => {
       ORDER BY visitor_count DESC
       LIMIT 10
     `;
-    
+
     // Purpose distribution
     const purposeQuery = `
       SELECT 
@@ -195,7 +209,7 @@ export const getVisitorMetrics = async (req, res) => {
       GROUP BY purpose
       ORDER BY count DESC
     `;
-    
+
     // Peak hours (hour of day distribution)
     const peakHoursQuery = `
       SELECT 
@@ -208,14 +222,14 @@ export const getVisitorMetrics = async (req, res) => {
       GROUP BY hour
       ORDER BY hour
     `;
-    
+
     const [trends, topResidents, purposes, peakHours] = await Promise.all([
       dbManager.query(trendsQuery, params),
       dbManager.query(topResidentsQuery, params),
       dbManager.query(purposeQuery, params),
       dbManager.query(peakHoursQuery, params)
     ]);
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -225,10 +239,10 @@ export const getVisitorMetrics = async (req, res) => {
         peakHours: peakHours.rows
       }
     });
-    
+
   } catch (error) {
     logger.error('Failed to get visitor metrics', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch visitor metrics'
@@ -244,14 +258,20 @@ export const getVisitorMetrics = async (req, res) => {
  */
 export const getIncidentMetrics = async (req, res) => {
   try {
-    const { dateFrom, dateTo, siteId } = req.query;
-    
+    const { dateFrom, dateTo } = req.query;
+    let siteId = req.query.siteId;
+
+    // Fix: Admin Security Scoping
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
-    
+
     const siteFilter = siteId ? 'AND site_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
-    
+
     // Incident trends by day
     const trendsQuery = `
       SELECT 
@@ -265,7 +285,7 @@ export const getIncidentMetrics = async (req, res) => {
       GROUP BY date
       ORDER BY date
     `;
-    
+
     // Category distribution
     const categoryQuery = `
       SELECT 
@@ -278,7 +298,7 @@ export const getIncidentMetrics = async (req, res) => {
       GROUP BY category
       ORDER BY count DESC
     `;
-    
+
     // Resolution time stats
     const resolutionQuery = `
       SELECT 
@@ -291,7 +311,7 @@ export const getIncidentMetrics = async (req, res) => {
         AND created_at BETWEEN $1 AND $2
         ${siteFilter}
     `;
-    
+
     // Guard incident reporting
     const guardStatsQuery = `
       SELECT 
@@ -306,14 +326,14 @@ export const getIncidentMetrics = async (req, res) => {
       ORDER BY incidents_reported DESC
       LIMIT 10
     `;
-    
+
     const [trends, categories, resolution, guardStats] = await Promise.all([
       dbManager.query(trendsQuery, params),
       dbManager.query(categoryQuery, params),
       dbManager.query(resolutionQuery, params),
       dbManager.query(guardStatsQuery, params)
     ]);
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -323,10 +343,10 @@ export const getIncidentMetrics = async (req, res) => {
         guardStats: guardStats.rows
       }
     });
-    
+
   } catch (error) {
     logger.error('Failed to get incident metrics', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch incident metrics'
@@ -342,31 +362,37 @@ export const getIncidentMetrics = async (req, res) => {
  */
 export const getGuardMetrics = async (req, res) => {
   try {
-    const { dateFrom, dateTo, siteId } = req.query;
-    
+    const { dateFrom, dateTo } = req.query;
+    let siteId = req.query.siteId;
+
+    // Fix: Admin Security Scoping
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
-    
+
     const siteFilter = siteId ? 'AND v.site_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
-    
+
     // Check-in/check-out performance
     const performanceQuery = `
       SELECT 
         u.username as guard_name,
         COUNT(DISTINCT v.id) as visitors_processed,
-        COUNT(CASE WHEN v.checked_in_at IS NOT NULL THEN 1 END) as check_ins,
-        COUNT(CASE WHEN v.checked_out_at IS NOT NULL THEN 1 END) as check_outs,
-        AVG(EXTRACT(EPOCH FROM (v.checked_in_at - v.created_at))/60)::INTEGER as avg_processing_time_minutes
+        COUNT(CASE WHEN v.check_in_time IS NOT NULL THEN 1 END) as check_ins,
+        COUNT(CASE WHEN v.check_out_time IS NOT NULL THEN 1 END) as check_outs,
+        AVG(EXTRACT(EPOCH FROM (v.check_in_time - v.created_at))/60)::INTEGER as avg_processing_time_minutes
       FROM visitors v
-      LEFT JOIN users u ON v.checked_in_by = u.id
+      LEFT JOIN users u ON v.check_in_guard_id = u.id
       WHERE v.date_of_visit BETWEEN $1 AND $2
         ${siteFilter}
-        AND v.checked_in_at IS NOT NULL
+        AND v.check_in_time IS NOT NULL
       GROUP BY u.id, u.username
       ORDER BY visitors_processed DESC
     `;
-    
+
     // Incident reporting by guard
     const incidentReportingQuery = `
       SELECT 
@@ -381,12 +407,12 @@ export const getGuardMetrics = async (req, res) => {
       GROUP BY u.id, u.username
       ORDER BY incidents_reported DESC
     `;
-    
+
     const [performance, incidentReporting] = await Promise.all([
       dbManager.query(performanceQuery, params),
       dbManager.query(incidentReportingQuery, params)
     ]);
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -394,10 +420,10 @@ export const getGuardMetrics = async (req, res) => {
         incidentReporting: incidentReporting.rows
       }
     });
-    
+
   } catch (error) {
     logger.error('Failed to get guard metrics', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch guard metrics'
@@ -413,14 +439,20 @@ export const getGuardMetrics = async (req, res) => {
  */
 export const getResidentMetrics = async (req, res) => {
   try {
-    const { dateFrom, dateTo, siteId } = req.query;
-    
+    const { dateFrom, dateTo } = req.query;
+    let siteId = req.query.siteId;
+
+    // Fix: Admin Security Scoping
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
-    
+
     const siteFilter = siteId ? 'AND v.site_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
-    
+
     // Most active residents
     const activityQuery = `
       SELECT 
@@ -438,19 +470,19 @@ export const getResidentMetrics = async (req, res) => {
       ORDER BY total_visitors DESC
       LIMIT 20
     `;
-    
+
     const activity = await dbManager.query(activityQuery, params);
-    
+
     return res.status(200).json({
       success: true,
       data: {
         activity: activity.rows
       }
     });
-    
+
   } catch (error) {
     logger.error('Failed to get resident metrics', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch resident metrics'

@@ -20,9 +20,25 @@ router.get('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly')
   try {
     const guards = await guardManagementService.getGuards(req.user.estate_id);
 
+    // Fix G-004: Data Minimization
+    const sanitizedGuards = guards.map(g => ({
+      id: g.id,
+      username: g.username,
+      // email: g.email, // Only include if strictly necessary
+      // phone_number: g.phone_number, // Only include if strictly necessary
+      role: g.role,
+      is_active: g.is_active,
+      metrics: {
+        total_shifts: parseInt(g.total_shifts),
+        completed_shifts: parseInt(g.completed_shifts),
+        incidents_handled: parseInt(g.incidents_handled),
+        avg_rating: parseFloat(g.avg_rating || 0).toFixed(1)
+      }
+    }));
+
     res.json({
       success: true,
-      data: guards
+      data: sanitizedGuards
     });
   } catch (error) {
     res.status(500).json({

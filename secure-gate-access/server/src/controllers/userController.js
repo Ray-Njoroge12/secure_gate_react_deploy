@@ -7,18 +7,31 @@ import { ResponseUtil, sanitizeUser } from '../utils/responseUtils.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import loggingService from '../services/loggingService.js';
+import { maskEmail } from '../utils/redaction.js';
 
 export async function registerUser(req, res) {
   const body = req?.body || {};
   const email = body.email;
   const username = body.username;
   const password = body.password;
-  const role = (body.role || '').toString().toLowerCase();
+
+  // Security: Only allow role selection if requester is an Admin
+  // Otherwise default to 'resident' for public registration
+  let role = 'resident';
+  if (req.user && req.user.role === 'admin' && body.role) {
+    role = body.role.toString().toLowerCase();
+  } else if (body.role && body.role === 'guard') {
+    // Allow requesting guard role? Probably not for public. 
+    // Let's force resident for now unless we want a specific 'guard' signup flow.
+    // Current requirement is Resident function analysis.
+    role = 'resident';
+  }
 
   if (!email) throw ErrorHelper.requiredField('email');
   if (!password) throw ErrorHelper.requiredField('password');
   if (!username) throw ErrorHelper.requiredField('username');
-  if (!role) throw ErrorHelper.requiredField('role');
+  // role is auto-assigned now, so we don't need to throw error if missing
+
 
   const strengthResult = passwordService.checkPasswordStrength(password);
   if (strengthResult?.strength && strengthResult.strength !== 'strong') {
@@ -37,8 +50,8 @@ export async function registerUser(req, res) {
   const notifySms = body.notify_sms !== undefined ? body.notify_sms : false;
 
   const insert = await dbManager.query(
-    `INSERT INTO users (email, username, role, password_hash, phone, area, house, notify_email, notify_sms)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `INSERT INTO users (email, username, role, password_hash, phone, area, house, notify_email, notify_sms, account_status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, 'pending')
      RETURNING *`,
     [email, username, role, passwordHash, body.phone || null, body.area || null, body.house || null, notifyEmail, notifySms]
   );
@@ -67,7 +80,7 @@ export async function loginUser(req, res) {
 
     if (!user) {
       loggingService.logSecurity('warn', 'Login attempt for non-existent email', {
-        email,
+        email: maskEmail(email),
         reason: 'user_not_found'
       });
       auditLogger.logLoginAttempt(false, null, req.ip, req.get('User-Agent'), req.sessionID, {
@@ -98,6 +111,14 @@ export async function loginUser(req, res) {
       });
     }
 
+    // Check account status (pending/suspended checks)
+    if (user.account_status === 'pending') {
+      return errorResponse(res, 'Your account is pending admin approval.', 'ACCOUNT_PENDING', 403, null, req);
+    }
+    if (user.account_status === 'suspended' || user.account_status === 'rejected') {
+      return errorResponse(res, 'Your account has been suspended or rejected.', 'ACCOUNT_SUSPENDED', 403, null, req);
+    }
+
     let isValidPassword = false;
     try {
       if (typeof user.password_hash === 'string' && user.password_hash.startsWith('$2')) {
@@ -108,7 +129,10 @@ export async function loginUser(req, res) {
         isValidPassword = await passwordService.verifyPassword(password, user.password_hash);
       }
     } catch (err) {
-      loggingService.logError('Password verification error during login', err, { email, userId: user.id });
+      loggingService.logError('Password verification error during login', err, {
+        email: maskEmail(email),
+        userId: user.id
+      });
       return res.status(500).json({ status: 'error', message: 'Authentication system error' });
     }
 
@@ -175,7 +199,9 @@ export async function loginUser(req, res) {
       user: sanitizeUser(user)
     });
   } catch (err) {
-    loggingService.logError('Unexpected login error', err, { email: req?.body?.email });
+    loggingService.logError('Unexpected login error', err, {
+      email: maskEmail(req?.body?.email)
+    });
     return res.status(500).json({ status: 'error', message: 'Server error' });
   }
 }
@@ -284,19 +310,31 @@ export async function updateProfile(req, res) {
   const email = body.email;
   if (!email) throw ErrorHelper.requiredField('email');
 
-  const existing = await dbManager.query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email]);
+  // SECURITY: Use ID from token, not just email from body
+  const userId = req.user.id;
+  const estateId = req.user.estate_id;
+
+  const existing = await dbManager.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [userId]);
   const currentUser = existing?.rows?.[0];
-  if (!currentUser) throw ErrorHelper.notFound('User', email);
+  if (!currentUser) throw ErrorHelper.notFound('User', userId);
+
+  // Allow email update but check uniqueness if changed? 
+  // For now assuming email in body is what we update, or what we use to look up?
+  // The original code used email from body to lookup. 
+  // Correct logic: Update the USER identified by Token.
+  // We can update email if provided.
 
   await dbManager.query(
-    `UPDATE users SET name = $2, phone = $3, profile_pic = $4, notify_email = $5, notify_sms = $6 WHERE email = $1`,
+    `UPDATE users SET name = $2, phone = $3, profile_pic = $4, notify_email = $5, notify_sms = $6 
+     WHERE id = $1 AND estate_id = $7`,
     [
-      email,
+      userId,
       body.name ?? currentUser.name ?? null,
       body.phone ?? currentUser.phone ?? null,
       body.profilePic ?? currentUser.profile_pic ?? null,
       body.notify_email ?? currentUser.notify_email ?? null,
-      body.notify_sms ?? currentUser.notify_sms ?? null
+      body.notify_sms ?? currentUser.notify_sms ?? null,
+      estateId
     ]
   );
 

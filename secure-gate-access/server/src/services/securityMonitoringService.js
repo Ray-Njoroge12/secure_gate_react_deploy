@@ -7,9 +7,73 @@
 import RedisService from './redisService.js';
 import logger from '../config/logger.js';
 import { monitoringConfig } from '../config/securityConfig.js';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
 
 // Initialize Redis service instance
 const redisService = new RedisService();
+
+const isPlainObject = (value) => Object.prototype.toString.call(value) === '[object Object]';
+const shouldMaskAsEmail = (key) => key.includes('email');
+const shouldMaskAsPhone = (key) => (
+  key.includes('phone')
+  || key.includes('msisdn')
+  || key.includes('mobile')
+);
+const isRecipientKey = (key) => key === 'to' || key === 'recipient';
+const isUsernameKey = (key) => key === 'username' || key.endsWith('_username');
+
+const sanitizeSecurityData = (data) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeSecurityData(item));
+  }
+
+  if (!isPlainObject(data)) {
+    return data;
+  }
+
+  const sanitized = {};
+  for (const [key, value] of Object.entries(data)) {
+    const normalizedKey = key.toLowerCase();
+
+    if (Array.isArray(value)) {
+      sanitized[key] = value.map(item => sanitizeSecurityData(item));
+      continue;
+    }
+
+    if (value && typeof value === 'object') {
+      sanitized[key] = isPlainObject(value) ? sanitizeSecurityData(value) : value;
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsEmail(normalizedKey)) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsPhone(normalizedKey)) {
+      sanitized[key] = maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isRecipientKey(normalizedKey)) {
+      sanitized[key] = value.includes('@') ? maskEmail(value) : maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isUsernameKey(normalizedKey) && value.includes('@')) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    sanitized[key] = value;
+  }
+
+  return sanitized;
+};
 
 class SecurityMonitoringService {
   constructor() {
@@ -55,12 +119,12 @@ class SecurityMonitoringService {
           endpoint: event.endpoint,
           method: event.method
         },
-        details: event.details || {},
-        metadata: {
+        details: sanitizeSecurityData(event.details || {}),
+        metadata: sanitizeSecurityData({
           requestId: event.requestId,
           referer: event.referer,
           origin: event.origin
-        }
+        })
       };
 
       // Log to application logs

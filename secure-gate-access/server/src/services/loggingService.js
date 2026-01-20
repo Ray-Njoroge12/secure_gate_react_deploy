@@ -9,15 +9,75 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const isPlainObject = (value) => Object.prototype.toString.call(value) === '[object Object]';
+const shouldMaskAsEmail = (key) => key.includes('email');
+const shouldMaskAsPhone = (key) => (
+  key.includes('phone')
+  || key.includes('msisdn')
+  || key.includes('mobile')
+);
+const isRecipientKey = (key) => key === 'to' || key === 'recipient';
+
+const sanitizeAuditMeta = (meta) => {
+  if (!meta || typeof meta !== 'object') {
+    return meta;
+  }
+
+  if (Array.isArray(meta)) {
+    return meta.map(item => sanitizeAuditMeta(item));
+  }
+
+  if (!isPlainObject(meta)) {
+    return meta;
+  }
+
+  const sanitized = {};
+  for (const [key, value] of Object.entries(meta)) {
+    const normalizedKey = key.toLowerCase();
+
+    if (Array.isArray(value)) {
+      sanitized[key] = value.map(item => sanitizeAuditMeta(item));
+      continue;
+    }
+
+    if (value && typeof value === 'object') {
+      sanitized[key] = isPlainObject(value) ? sanitizeAuditMeta(value) : value;
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsEmail(normalizedKey)) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsPhone(normalizedKey)) {
+      sanitized[key] = maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isRecipientKey(normalizedKey)) {
+      sanitized[key] = value.includes('@') ? maskEmail(value) : maskPhone(value);
+      continue;
+    }
+
+    sanitized[key] = value;
+  }
+
+  return sanitized;
+};
+
 /**
  * Enhanced Logging Service with structured logging and monitoring
  */
-class LoggingService {
-  constructor() {
+export class LoggingService {
+  constructor(winstonLib = winston, fsLib = fs) {
+    this.winston = winstonLib;
+    this.fs = fsLib;
     this.loggers = new Map();
     this.logDir = path.join(__dirname, '../../logs');
     this.correlationIdStore = new Map();
@@ -94,7 +154,9 @@ class LoggingService {
         filename: 'api'
       });
 
-      console.log('✅ Enhanced logging service initialized');
+      if (process.env.NODE_ENV !== 'test') {
+        console.log('✅ Enhanced logging service initialized');
+      }
 
     } catch (error) {
       console.error('❌ Failed to initialize logging service:', error);
@@ -106,9 +168,11 @@ class LoggingService {
    * Ensure log directory exists
    */
   ensureLogDirectory() {
-    if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir, { recursive: true });
-      console.log(`📁 Log directory created: ${this.logDir}`);
+    if (!this.fs.existsSync(this.logDir)) {
+      this.fs.mkdirSync(this.logDir, { recursive: true });
+      if (process.env.NODE_ENV !== 'test') {
+        console.log(`📁 Log directory created: ${this.logDir}`);
+      }
     }
   }
 
@@ -204,17 +268,19 @@ class LoggingService {
       }));
     }
 
-    const logger = winston.createLogger({
+    const logger = this.winston.createLogger({
       level,
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp'] })
+      format: this.winston.format.combine(
+        this.winston.format.timestamp(),
+        this.winston.format.errors({ stack: true }),
+        this.winston.format.metadata({ fillExcept: ['message', 'level', 'timestamp'] })
       ),
       transports,
       defaultMeta: { service: name },
       exitOnError: false
     });
+
+
 
     // Add custom logging methods
     logger.logWithCorrelation = (level, message, meta = {}, correlationId = null) => {
@@ -273,18 +339,18 @@ class LoggingService {
 
     // Update convenience counters
     switch (level) {
-    case 'error':
-      this.logStats.errorCount++;
-      break;
-    case 'warn':
-      this.logStats.warningCount++;
-      break;
-    case 'info':
-      this.logStats.infoCount++;
-      break;
-    case 'debug':
-      this.logStats.debugCount++;
-      break;
+      case 'error':
+        this.logStats.errorCount++;
+        break;
+      case 'warn':
+        this.logStats.warningCount++;
+        break;
+      case 'info':
+        this.logStats.infoCount++;
+        break;
+      case 'debug':
+        this.logStats.debugCount++;
+        break;
     }
   }
 
@@ -386,8 +452,10 @@ class LoggingService {
 
   logAudit(message, action, userId = null, meta = {}, correlationId = null) {
     const logger = this.getLogger('audit');
-    logger.logWithCorrelation('info', message, {
-      ...meta,
+    const safeMessage = typeof message === 'string' ? message : 'Audit event';
+    const sanitizedMeta = sanitizeAuditMeta(meta);
+    logger.logWithCorrelation('info', safeMessage, {
+      ...sanitizedMeta,
       category: 'audit',
       action,
       userId,
@@ -464,13 +532,13 @@ class LoggingService {
    */
   async getLogFiles() {
     try {
-      const files = await fs.promises.readdir(this.logDir);
+      const files = await this.fs.promises.readdir(this.logDir);
       const logFiles = [];
 
       for (const file of files) {
         if (file.endsWith('.log')) {
           const filePath = path.join(this.logDir, file);
-          const stats = await fs.promises.stat(filePath);
+          const stats = await this.fs.promises.stat(filePath);
 
           logFiles.push({
             name: file,
@@ -496,11 +564,11 @@ class LoggingService {
   async readLogFile(filename, maxSize = 1024 * 1024) { // 1MB default limit
     try {
       const filePath = path.join(this.logDir, filename);
-      const stats = await fs.promises.stat(filePath);
+      const stats = await this.fs.promises.stat(filePath);
 
       if (stats.size > maxSize) {
         // Read only the last part of the file if it's too large
-        const fd = await fs.promises.open(filePath, 'r');
+        const fd = await this.fs.promises.open(filePath, 'r');
         const buffer = Buffer.alloc(maxSize);
         const { bytesRead } = await fd.read(buffer, 0, maxSize, Math.max(0, stats.size - maxSize));
         await fd.close();
@@ -512,7 +580,7 @@ class LoggingService {
           readSize: bytesRead
         };
       } else {
-        const content = await fs.promises.readFile(filePath, 'utf8');
+        const content = await this.fs.promises.readFile(filePath, 'utf8');
         return {
           content,
           truncated: false,
@@ -619,14 +687,14 @@ class LoggingService {
   /**
    * Get log directory size
    */
-  getLogDirectorySize() {
+  async getLogDirectorySize() {
     try {
-      const files = fs.readdirSync(this.logDir);
+      const files = await this.fs.promises.readdir(this.logDir);
       let totalSize = 0;
 
       for (const file of files) {
         const filePath = path.join(this.logDir, file);
-        const stats = fs.statSync(filePath);
+        const stats = await this.fs.promises.stat(filePath);
         totalSize += stats.size;
       }
 
@@ -651,7 +719,7 @@ class LoggingService {
    */
   async cleanupOldLogs(daysToKeep = 30) {
     try {
-      const files = await fs.promises.readdir(this.logDir);
+      const files = await this.fs.promises.readdir(this.logDir);
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
@@ -660,10 +728,10 @@ class LoggingService {
       for (const file of files) {
         if (file.endsWith('.log')) {
           const filePath = path.join(this.logDir, file);
-          const stats = await fs.promises.stat(filePath);
+          const stats = await this.fs.promises.stat(filePath);
 
           if (stats.mtime < cutoffDate) {
-            await fs.promises.unlink(filePath);
+            await this.fs.promises.unlink(filePath);
             deletedFiles++;
             this.logInfo('Old log file deleted', { filename: file, age: Math.round((Date.now() - stats.mtime) / (1000 * 60 * 60 * 24)) });
           }
@@ -684,4 +752,4 @@ class LoggingService {
 const loggingService = new LoggingService();
 
 export default loggingService;
-export { LoggingService };
+

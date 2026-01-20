@@ -15,16 +15,22 @@
 
 import * as Sentry from '@sentry/node';
 
+const SHOULD_LOG_SENTRY = process.env.NODE_ENV !== 'test';
+
 // Attempt to load profiling integration, but don't fail if native module unavailable
 // The @sentry/profiling-node package requires platform-specific native binaries
 let ProfilingIntegration = null;
 try {
   const profilingModule = await import('@sentry/profiling-node');
   ProfilingIntegration = profilingModule.ProfilingIntegration;
-  console.log('✅ Sentry profiling module loaded successfully');
+  if (SHOULD_LOG_SENTRY) {
+    console.log('✅ Sentry profiling module loaded successfully');
+  }
 } catch (err) {
-  console.warn('⚠️  Sentry profiling module not available (native bindings not found)');
-  console.warn('   Profiling will be disabled. This is normal on some platforms.');
+  if (SHOULD_LOG_SENTRY) {
+    console.warn('⚠️  Sentry profiling module not available (native bindings not found)');
+    console.warn('   Profiling will be disabled. This is normal on some platforms.');
+  }
 }
 
 /**
@@ -35,8 +41,10 @@ export function initializeSentry() {
 
   // Skip initialization if no DSN is configured
   if (!dsn) {
-    console.warn('⚠️  Sentry DSN not configured - error tracking disabled');
-    console.warn('   Set SENTRY_DSN environment variable to enable Sentry');
+    if (SHOULD_LOG_SENTRY) {
+      console.warn('⚠️  Sentry DSN not configured - error tracking disabled');
+      console.warn('   Set SENTRY_DSN environment variable to enable Sentry');
+    }
     return null;
   }
 
@@ -67,9 +75,13 @@ export function initializeSentry() {
   // Enable profiling only if the native module is available
   if (ProfilingIntegration) {
     integrations.push(new ProfilingIntegration());
-    console.log('   Profiling: Enabled');
+    if (SHOULD_LOG_SENTRY) {
+      console.log('   Profiling: Enabled');
+    }
   } else {
-    console.log('   Profiling: Disabled (native module not available)');
+    if (SHOULD_LOG_SENTRY) {
+      console.log('   Profiling: Disabled (native module not available)');
+    }
   }
 
   Sentry.init({

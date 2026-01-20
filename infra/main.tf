@@ -301,6 +301,11 @@ resource "aws_ecs_cluster" "main" {
   name = "secure-gate-cluster"
 }
 
+resource "aws_cloudwatch_log_group" "ecs" {
+  name              = var.ecs_log_group_name
+  retention_in_days = var.ecs_log_retention_days
+}
+
 resource "aws_iam_role" "task_execution" {
   name = "secure-gate-task-execution"
 
@@ -430,6 +435,14 @@ resource "aws_ecs_task_definition" "app" {
           protocol      = "tcp"
         }
       ],
+      logConfiguration = {
+        logDriver = "awslogs",
+        options = {
+          awslogs-group         = aws_cloudwatch_log_group.ecs.name,
+          awslogs-region        = var.aws_region,
+          awslogs-stream-prefix = var.ecs_log_stream_prefix
+        }
+      },
       environment = [
         {
           name  = "NODE_ENV",

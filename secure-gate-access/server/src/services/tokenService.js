@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import argon2 from 'argon2';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
 import RedisService from './redisService.js';
 import { dbManager } from '../database/db.enhanced.js';
@@ -16,24 +16,24 @@ class TokenService {
     if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
       throw new Error('CRITICAL: JWT secrets not configured. Server cannot start without JWT_SECRET and JWT_REFRESH_SECRET environment variables.');
     }
-    
+
     // Validate secret strength (minimum 32 characters)
     // Validate secret strength (minimum 32 characters) - Production only
     if (process.env.NODE_ENV === 'production') {
       if (process.env.JWT_SECRET.length < 32) {
         throw new Error('CRITICAL: JWT_SECRET must be at least 32 characters long for security.');
       }
-      
+
       if (process.env.JWT_REFRESH_SECRET.length < 32) {
         throw new Error('CRITICAL: JWT_REFRESH_SECRET must be at least 32 characters long for security.');
       }
     }
-    
+
     this.accessTokenSecret = process.env.JWT_SECRET;
     this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
     this.accessTokenExpiry = process.env.JWT_EXPIRY || '15m'; // Short-lived access tokens
     this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRY || '7d'; // Longer refresh token lifetime
-    
+
     // Initialize Redis for persistent token blacklist
     this.redisService = new RedisService();
     this.redisInitialized = false;
@@ -41,10 +41,10 @@ class TokenService {
 
     // Database-backed refresh token store
     this.db = dbManager;
-    
+
     // Fallback in-memory storage if Redis unavailable (not recommended for production)
     this.revokedTokens = new Set(); // Fallback only
-    
+
     // Add support for secret rotation
     this.previousSecret = process.env.JWT_PREVIOUS_SECRET; // For graceful rotation
   }
@@ -312,9 +312,12 @@ class TokenService {
         // Redis check failed - fall through to in-memory check
       }
     }
-    
-    // Fallback to in-memory check
-    return this.revokedTokens.has(jti);
+
+    // Fallback to in-memory check AND database check
+    if (this.revokedTokens.has(jti)) return true;
+
+    // Check database (persistent fallback)
+    return await this.isTokenRevokedInDatabase(jti);
   }
 
   /**
@@ -325,7 +328,7 @@ class TokenService {
       // Decode without verification to get JTI
       const decoded = jwt.decode(token);
       const jti = decoded?.jti || token;
-      
+
       // Calculate TTL based on token expiry
       let ttlSeconds = 900; // Default 15 minutes
       if (decoded?.exp) {
@@ -337,7 +340,7 @@ class TokenService {
       if (this.redisInitialized) {
         await this.redisService.blacklistToken(jti, ttlSeconds);
       }
-      
+
       // Also add to in-memory fallback
       this.revokedTokens.add(jti);
 
@@ -346,8 +349,9 @@ class TokenService {
         this.revokedTokens.clear();
       }
     } catch (error) {
-      // If anything fails, still add to in-memory fallback
-      const jti = token;
+      // If Redis fails, use database for persistence AND in-memory for speed
+      const jti = decoded?.jti || token;
+      await this.revokeTokenInDatabase(jti);
       this.revokedTokens.add(jti);
     }
   }
@@ -548,7 +552,7 @@ class PasswordService {
     // Development: Faster for testing (timeCost: 1)
     // Production: Secure settings (timeCost: 3)
     const isDevelopment = process.env.NODE_ENV !== 'production';
-    
+
     this.argon2Config = {
       type: argon2.argon2id, // Most secure variant
       memoryCost: isDevelopment ? 2 ** 14 : 2 ** 16,  // Dev: 16MB, Prod: 64MB
@@ -556,9 +560,9 @@ class PasswordService {
       parallelism: 1,                                  // 1 thread
       hashLength: 32                                   // 32 byte hash
     };
-    
-    if (isDevelopment) {
-      console.log('⚠️  Using faster password hashing for development (timeCost: 1)'.yellow);
+
+    if (isDevelopment && process.env.NODE_ENV !== 'test') {
+      console.log('⚠️  Using faster password hashing for development (timeCost: 1)');
     }
   }
 

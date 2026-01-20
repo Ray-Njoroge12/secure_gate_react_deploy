@@ -25,6 +25,15 @@ describe('Estate scoping for guard and event APIs', () => {
     guardUser = testUsers.guard;
     adminToken = await getAuthToken(adminUser.email);
 
+    // Ensure estates exist first to satisfy FK constraints
+    await dbManager.query(
+      `INSERT INTO estates (id, name, slug, timezone, created_at)
+       VALUES 
+       (1, 'Test Estate 1', 'test-estate-1', 'UTC', NOW()),
+       (2, 'Test Estate 2', 'test-estate-2', 'UTC', NOW())
+       ON CONFLICT (id) DO NOTHING`
+    );
+
     await dbManager.query(
       `INSERT INTO estate_locations (estate_id, gate_name)
        VALUES (1, 'Main Gate'), (2, 'Secondary Gate')
@@ -32,7 +41,7 @@ describe('Estate scoping for guard and event APIs', () => {
     );
 
     const estateTwoGuardResult = await dbManager.query(
-      `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+      `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
@@ -142,12 +151,12 @@ describe('Estate scoping for guard and event APIs', () => {
   });
 
   afterAll(async () => {
-    await dbManager.query('DELETE FROM event_visitors WHERE visitor_email LIKE $1', ['estate%@test.com']).catch(() => {});
-    await dbManager.query('DELETE FROM events WHERE name IN ($1, $2)', ['Estate One Event', 'Estate Two Event']).catch(() => {});
-    await dbManager.query('DELETE FROM guard_equipment_checkout WHERE notes LIKE $1', ['Estate % Equipment']).catch(() => {});
-    await dbManager.query('DELETE FROM guard_training WHERE training_name LIKE $1', ['Estate % Training']).catch(() => {});
-    await dbManager.query('DELETE FROM guard_shifts WHERE guard_id IN ($1, $2)', [guardUser?.id || 0, estateTwoGuard?.id || 0]).catch(() => {});
-    await dbManager.query('DELETE FROM users WHERE email LIKE $1', ['guard_estate_two_%@test.com']).catch(() => {});
+    await dbManager.query('DELETE FROM event_visitors WHERE visitor_email LIKE $1', ['estate%@test.com']).catch(() => { });
+    await dbManager.query('DELETE FROM events WHERE name IN ($1, $2)', ['Estate One Event', 'Estate Two Event']).catch(() => { });
+    await dbManager.query('DELETE FROM guard_equipment_checkout WHERE notes LIKE $1', ['Estate % Equipment']).catch(() => { });
+    await dbManager.query('DELETE FROM guard_training WHERE training_name LIKE $1', ['Estate % Training']).catch(() => { });
+    await dbManager.query('DELETE FROM guard_shifts WHERE guard_id IN ($1, $2)', [guardUser?.id || 0, estateTwoGuard?.id || 0]).catch(() => { });
+    await dbManager.query('DELETE FROM users WHERE email LIKE $1', ['guard_estate_two_%@test.com']).catch(() => { });
     await cleanupTestDatabase();
   });
 

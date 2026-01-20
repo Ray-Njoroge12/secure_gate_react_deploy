@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS notification_templates (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Ensure required columns exist for legacy notification_templates tables
+ALTER TABLE notification_templates ADD COLUMN IF NOT EXISTS name VARCHAR(120);
+ALTER TABLE notification_templates ADD COLUMN IF NOT EXISTS channel VARCHAR(30);
+
 CREATE INDEX IF NOT EXISTS idx_notification_templates_name ON notification_templates(name);
 CREATE INDEX IF NOT EXISTS idx_notification_templates_channel ON notification_templates(channel);
 

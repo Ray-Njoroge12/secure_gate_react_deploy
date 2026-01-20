@@ -123,12 +123,12 @@ jest.unstable_mockModule('../../src/services/loggingService.js', () => ({
 }));
 
 // Import controller after mocks
-const { 
-  updateProfile, 
-  registerUser, 
-  loginUser, 
-  refreshToken, 
-  logoutUser 
+const {
+  updateProfile,
+  registerUser,
+  loginUser,
+  refreshToken,
+  logoutUser
 } = await import('../../src/controllers/userController.js');
 
 describe('userController', () => {
@@ -623,8 +623,10 @@ describe('userController', () => {
         expect(mockRes.status).toHaveBeenCalledWith(401);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            status: 'error',
-            message: 'Invalid credentials'
+            message: 'Invalid credentials',
+            error: expect.objectContaining({
+              code: 'INVALID_CREDENTIALS'
+            })
           })
         );
       });
@@ -671,8 +673,10 @@ describe('userController', () => {
         expect(mockRes.status).toHaveBeenCalledWith(401);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            status: 'error',
-            message: 'Invalid credentials'
+            message: 'Invalid credentials',
+            error: expect.objectContaining({
+              code: 'INVALID_CREDENTIALS'
+            })
           })
         );
       });
@@ -968,8 +972,10 @@ describe('userController', () => {
         expect(mockRes.status).toHaveBeenCalledWith(401);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            status: 'error',
-            message: 'Refresh token not provided'
+            message: 'Refresh token not provided',
+            error: expect.objectContaining({
+              code: 'REFRESH_TOKEN_MISSING'
+            })
           })
         );
       });

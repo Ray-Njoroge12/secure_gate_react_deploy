@@ -77,9 +77,6 @@ npm test
 # Cloud Platform
 git push origin main
 
-# OR PM2
-pm2 start ecosystem.config.cjs --env production
-
 # OR Docker
 docker-compose -f docker-compose.prod.yml up -d
 ```
@@ -231,7 +228,7 @@ grep OTP_DEBUG_ECHO .env.production
 # Must be: OTP_DEBUG_ECHO=false
 
 # Restart after fixing
-pm2 restart all
+docker-compose restart
 ```
 
 ### More help?

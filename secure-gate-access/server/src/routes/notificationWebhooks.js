@@ -8,7 +8,7 @@
  */
 
 import express from 'express';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import rateLimit from 'express-rate-limit';
 import Joi from 'joi';
 import loggingService from '../services/loggingService.js';
@@ -21,6 +21,10 @@ import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempoten
 import { buildErrorPayload, errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
+const configuredMailgunSkew = Number(process.env.MAILGUN_WEBHOOK_MAX_SKEW_SEC);
+const mailgunMaxSkewSeconds = Number.isFinite(configuredMailgunSkew)
+  ? configuredMailgunSkew
+  : 120;
 
 const webhookLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -112,7 +116,7 @@ function verifyMailgunSignature(timestamp, token, signature) {
   }
 
   const timestampNumber = Number(timestamp);
-  if (!timestampNumber || Math.abs(Date.now() / 1000 - timestampNumber) > 300) {
+  if (!timestampNumber || Math.abs(Date.now() / 1000 - timestampNumber) > mailgunMaxSkewSeconds) {
     return { valid: false, reason: 'stale_timestamp' };
   }
 
@@ -218,15 +222,15 @@ async function updateNotificationStatus(messageId, status, provider, details = {
     const result = await db.query(`
       UPDATE notifications
       SET
-        delivery_status = $1,
-        delivery_provider = $2,
-        delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE delivered_at END,
-        failed_at = CASE WHEN $1 IN ('failed', 'bounced', 'undelivered') THEN NOW() ELSE failed_at END,
-        failure_reason = $3,
+        delivery_status = $1::text,
+        delivery_provider = $2::text,
+        delivered_at = CASE WHEN $1::text = 'delivered' THEN NOW() ELSE delivered_at END,
+        failed_at = CASE WHEN $1::text IN ('failed', 'bounced', 'undelivered') THEN NOW() ELSE failed_at END,
+        failure_reason = $3::text,
         delivery_metadata = delivery_metadata || $4::jsonb,
         updated_at = NOW()
       WHERE message_id = $5
-      OR id = $5
+      OR id::text = $5
       RETURNING *
     `, [status, provider, details.reason || null, JSON.stringify(details), messageId]);
 
@@ -238,7 +242,7 @@ async function updateNotificationStatus(messageId, status, provider, details = {
       });
       return result.rows[0];
     } else {
-      loggingService.logWarn('Notification not found for status update', { messageId });
+      loggingService.logWarning('Notification not found for status update', { messageId });
       return null;
     }
   } catch (error) {

@@ -20,6 +20,13 @@ export function generateTestToken(user, options = {}) {
     username: user.username
   };
 
+  if (Object.prototype.hasOwnProperty.call(user, 'estate_id')) {
+    payload.estate_id = user.estate_id;
+  }
+  if (Object.prototype.hasOwnProperty.call(options, 'estate_id')) {
+    payload.estate_id = options.estate_id;
+  }
+
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: options.expiresIn || '1h',
     ...options
@@ -35,6 +42,10 @@ export function generateExpiredToken(user) {
     email: user.email,
     role: user.role
   };
+
+  if (Object.prototype.hasOwnProperty.call(user, 'estate_id')) {
+    payload.estate_id = user.estate_id;
+  }
 
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '-1h' });
 }

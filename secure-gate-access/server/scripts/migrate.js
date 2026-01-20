@@ -8,7 +8,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load env (db.enhanced loads its own .env too, but db:migrate is run directly)
-dotenv.config({ path: join(__dirname, '..', '.env') });
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+dotenv.config({ path: join(__dirname, '..', envFile) });
 
 function extractMigrationMeta(filename) {
   const match = filename.match(/^(\d+)_/);

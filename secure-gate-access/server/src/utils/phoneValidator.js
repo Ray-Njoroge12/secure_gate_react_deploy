@@ -5,6 +5,7 @@
 
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
 import logger from '../config/logger.js';
+import { maskPhone } from './redaction.js';
 
 class PhoneValidator {
   constructor() {
@@ -59,7 +60,7 @@ class PhoneValidator {
       };
 
     } catch (error) {
-      logger.warn('Phone validation error:', { phoneNumber, error: error.message });
+      logger.warn('Phone validation error:', { phoneNumber: maskPhone(phoneNumber), error: error.message });
       
       return {
         isValid: false,

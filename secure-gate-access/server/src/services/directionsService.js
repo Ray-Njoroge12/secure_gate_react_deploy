@@ -31,11 +31,11 @@ export async function getEstateLocation(estateId = 1) {
      WHERE el.estate_id = $1`,
     [estateId]
   );
-  
+
   if (result.rows.length === 0) {
     return null;
   }
-  
+
   return result.rows[0];
 }
 
@@ -61,7 +61,7 @@ export async function updateEstateLocation(estateId, {
      RETURNING *`,
     [estateId, gateName, gateLatitude, gateLongitude, directionsFromHighway, directionsFromCity]
   );
-  
+
   return result.rows[0];
 }
 
@@ -70,15 +70,20 @@ export async function updateEstateLocation(estateId, {
  */
 export async function addCustomDirections(visitorId, customInstructions, residentId) {
   // Verify the visitor belongs to this resident
+  // SECURITY: Ensure resident and visitor are in the same estate (implicit via created_by checking resident id/email)
+  // But explicit estate_id check is better for audit.
   const check = await pool.query(
-    'SELECT id, created_by FROM visitors WHERE id = $1',
-    [visitorId]
+    `SELECT v.id, v.created_by 
+     FROM visitors v 
+     JOIN users u ON v.created_by = u.email OR v.created_by::text = u.id::text
+     WHERE v.id = $1 AND u.id = $2 AND u.estate_id = (SELECT estate_id FROM users WHERE id = $2)`,
+    [visitorId, residentId]
   );
-  
+
   if (check.rows.length === 0) {
     return { success: false, error: 'Visitor not found' };
   }
-  
+
   // Insert or update directions
   await pool.query(
     `INSERT INTO visitor_directions (visitor_id, custom_instructions)
@@ -86,7 +91,7 @@ export async function addCustomDirections(visitorId, customInstructions, residen
      ON CONFLICT (visitor_id) DO UPDATE SET custom_instructions = $2`,
     [visitorId, customInstructions]
   );
-  
+
   return { success: true, message: 'Custom directions added' };
 }
 
@@ -105,20 +110,21 @@ export async function getVisitorDirections(visitorId, inviteToken) {
      FROM visitors v
      JOIN users u ON v.created_by = u.email OR v.created_by::text = u.id::text
      WHERE v.id = $1
-       AND ($2 = v.invite_code OR $2 = v.visitor_token)`,
+       AND ($2 = v.invite_code OR $2 = v.visitor_token)
+       AND (v.estate_id = u.estate_id)`,
     [visitorId, inviteToken]
   );
-  
+
   if (visitorCheck.rows.length === 0) {
     return { success: false, error: 'Invalid invite or visitor not found' };
   }
-  
+
   const visitor = visitorCheck.rows[0];
-  
+
   // Get estate location
   const estateId = visitor.estate_id || visitor.host_estate_id || 1;
   const estate = await getEstateLocation(estateId);
-  
+
   // Get custom directions if any
   const customResult = await pool.query(
     'SELECT custom_instructions FROM visitor_directions WHERE visitor_id = $1',
@@ -128,7 +134,7 @@ export async function getVisitorDirections(visitorId, inviteToken) {
   const unitPin = visitor.allow_residence_location && visitor.unit_pin_encrypted
     ? await encryptionService.decrypt(visitor.unit_pin_encrypted)
     : null;
-  
+
   return {
     success: true,
     directions: {
@@ -176,14 +182,14 @@ export async function generateShareableLink(visitorId) {
   );
   const estateId = visitorResult.rows[0]?.estate_id || 1;
   const estate = await getEstateLocation(estateId);
-  
+
   if (!estate?.gate_latitude || !estate?.gate_longitude) {
     return { success: false, error: 'Estate location not configured' };
   }
-  
+
   // Google Maps link is universally shareable
   const shareableLink = `https://www.google.com/maps/search/?api=1&query=${estate.gate_latitude},${estate.gate_longitude}`;
-  
+
   return {
     success: true,
     link: shareableLink,
@@ -200,19 +206,20 @@ export async function deleteCustomDirections(visitorId, residentId) {
   const check = await pool.query(
     `SELECT v.id FROM visitors v
      JOIN users u ON v.created_by = u.email OR v.created_by::text = u.id::text
-     WHERE v.id = $1 AND u.id = $2`,
+     WHERE v.id = $1 AND u.id = $2
+     AND u.estate_id = (SELECT estate_id FROM users WHERE id = $2)`,
     [visitorId, residentId]
   );
-  
+
   if (check.rows.length === 0) {
     return { success: false, error: 'Visitor not found or access denied' };
   }
-  
+
   await pool.query(
     'DELETE FROM visitor_directions WHERE visitor_id = $1',
     [visitorId]
   );
-  
+
   return { success: true, message: 'Custom directions deleted' };
 }
 

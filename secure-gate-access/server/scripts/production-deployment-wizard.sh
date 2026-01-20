@@ -543,14 +543,13 @@ build_and_deploy() {
     echo ""
     print_info "Deployment options:"
     echo "  1. Deploy to cloud platform (Render, Heroku, AWS, etc.)"
-    echo "  2. Deploy to VPS/server (PM2, Docker, etc.)"
+    echo "  2. Deploy to VPS/server (Docker, etc.)"
     echo "  3. Deploy via CI/CD pipeline"
     echo ""
     
     print_info "Common deployment commands:"
     echo "  • Render: git push (if auto-deploy enabled)"
     echo "  • Heroku: git push heroku main"
-    echo "  • PM2: pm2 start ecosystem.config.cjs --env production"
     echo "  • Docker: docker-compose -f docker-compose.prod.yml up -d"
     echo ""
     

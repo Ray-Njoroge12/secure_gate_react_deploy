@@ -141,7 +141,7 @@ describe('AuditService', () => {
     });
 
     it('should handle database query errors gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
       const dbError = new Error('Database connection failed');
       mockQuery.mockRejectedValue(dbError);
 
@@ -312,7 +312,7 @@ describe('AuditService', () => {
   describe('Entity Types', () => {
     const entityTypes = [
       'user', 'visitor', 'guard', 'resident', 'admin',
-      'invite', 'delivery', 'emergency', 'report', 
+      'invite', 'delivery', 'emergency', 'report',
       'settings', 'security', 'system'
     ];
 
@@ -460,7 +460,7 @@ describe('AuditService', () => {
 
       expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
-        [userId, action, entityType, entityId, JSON.stringify(details), ip]
+        [userId, action, entityType, entityId, JSON.stringify(details), ip, null]
       );
     });
   });
@@ -497,7 +497,7 @@ describe('AuditService', () => {
 
   describe('Error Resilience', () => {
     it('should not throw on database timeout', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
       mockQuery.mockRejectedValue(new Error('Query timeout'));
 
       await expect(auditLog('user-123', 'ACTION')).resolves.toBeUndefined();
@@ -506,7 +506,7 @@ describe('AuditService', () => {
     });
 
     it('should not throw on connection refused', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
       mockQuery.mockRejectedValue(new Error('Connection refused'));
 
       await expect(auditLog('user-123', 'ACTION')).resolves.toBeUndefined();
@@ -515,7 +515,7 @@ describe('AuditService', () => {
     });
 
     it('should log error details on failure', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
       const specificError = new Error('Specific database error');
       mockQuery.mockRejectedValue(specificError);
 
