@@ -200,6 +200,26 @@ export const getEstateInfo = async (req, res) => {
       estateParams.push(1);
     }
 
+    // Resolve estate by slug or id first
+    const estateResult = await dbManager.query(
+      `SELECT e.id, e.name, e.slug, e.address, e.timezone,
+              e.contact_phone, e.emergency_contact
+       FROM estates e
+       WHERE ${estateFilter}
+       LIMIT 1`,
+      estateParams
+    );
+
+    if (estateResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Estate not found'
+      });
+    }
+
+    const estate = estateResult.rows[0];
+    const estateIdForLookup = estate.id;
+
     // Try to get data from estate_public_info first
     const publicInfoResult = await dbManager.query(
       `SELECT
@@ -218,7 +238,7 @@ export const getEstateInfo = async (req, res) => {
        FROM estate_public_info
        WHERE estate_id = $1
        LIMIT 1`,
-      estateParams
+      [estateIdForLookup]
     );
 
     // Get estate location info
@@ -227,27 +247,9 @@ export const getEstateInfo = async (req, res) => {
        FROM estate_locations
        WHERE estate_id = $1
        LIMIT 1`,
-      estateParams
+      [estateIdForLookup]
     );
 
-    // Get basic estate info as fallback
-    const estateResult = await dbManager.query(
-      `SELECT e.id, e.name, e.slug, e.address, e.timezone,
-              e.contact_phone, e.emergency_contact
-       FROM estates e
-       WHERE ${estateFilter}
-       LIMIT 1`,
-      estateParams
-    );
-
-    if (estateResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Estate not found'
-      });
-    }
-
-    const estate = estateResult.rows[0];
     const publicInfo = publicInfoResult.rows[0];
     const locationInfo = locationResult.rows[0];
     

@@ -41,7 +41,9 @@ if ((process.env.REDIS_URL || process.env.REDIS_HOST) && process.env.NODE_ENV !=
     });
 
     redisClient.on('connect', () => {
-      console.log('✅ Redis connected for session storage');
+      if (process.env.NODE_ENV !== 'test') {
+        console.log('✅ Redis connected for session storage');
+      }
     });
 
     // Connect to Redis
@@ -57,7 +59,9 @@ if ((process.env.REDIS_URL || process.env.REDIS_HOST) && process.env.NODE_ENV !=
 
   } catch (error) {
     console.error('❌ Redis connection failed:', error.message);
-    console.log('⚠️  Using memory store for sessions (not recommended for production)');
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('⚠️  Using memory store for sessions (not recommended for production)');
+    }
   }
 }
 
@@ -69,7 +73,9 @@ if (!sessionStore) {
     max: 1000, // max number of sessions
     ttl: 86400 // 24 hours
   });
-  console.log('⚠️  Using in-memory session store (development only)');
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('⚠️  Using in-memory session store (development only)');
+  }
 }
 
 // Session configuration

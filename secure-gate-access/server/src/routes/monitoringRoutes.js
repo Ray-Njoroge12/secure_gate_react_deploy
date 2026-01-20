@@ -14,20 +14,7 @@ import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 
-// Simple role check middleware
-const requireRole = (roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return errorResponse(res, 'Authentication required', 'UNAUTHORIZED', 401, null, req);
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return errorResponse(res, 'Insufficient permissions', 'FORBIDDEN', 403, null, req);
-    }
-
-    next();
-  };
-};
+// Local role check removed in favor of imported middleware
 
 /**
  * @route GET /api/monitoring/metrics
@@ -455,14 +442,14 @@ router.get('/historical', authenticateToken, requireRole(['admin', 'super_admin'
 
     let data;
     switch (period) {
-    case '1h':
-      data = historical.lastHour;
-      break;
-    case '24h':
-      data = historical.last24Hours;
-      break;
-    default:
-      data = historical.last24Hours;
+      case '1h':
+        data = historical.lastHour;
+        break;
+      case '24h':
+        data = historical.last24Hours;
+        break;
+      default:
+        data = historical.last24Hours;
     }
 
     res.json({

@@ -1,7 +1,8 @@
 // server/src/services/sessionSecurityService.js
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import loggingService from './loggingService.js';
 import RedisService from './redisService.js';
+import { maskEmail } from '../utils/redaction.js';
 
 /**
  * Enhanced Session Security Service
@@ -121,7 +122,7 @@ class SessionSecurityService {
       loggingService.logSecurity('Session initialized', {
         sessionId,
         userId: user.id,
-        userEmail: user.email,
+        userEmail: maskEmail(user.email),
         ipAddress: sessionData.ipAddress,
         userAgent: sessionData.userAgent,
         correlationId: req.correlationId

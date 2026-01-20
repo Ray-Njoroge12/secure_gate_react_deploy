@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { dbManager } from '../database/db.enhanced.js';
 
 const IDEMPOTENCY_HEADER = 'idempotency-key';

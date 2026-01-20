@@ -11,6 +11,7 @@
 
 import jwt from 'jsonwebtoken';
 import logger from '../config/logger.js';
+import { maskEmail } from '../utils/redaction.js';
 
 /**
  * Authenticate WebSocket connection using JWT token
@@ -171,7 +172,7 @@ export const auditSocketConnection = (socket, next) => {
     socketId: socket.id,
     userId: socket.userId,
     userRole: socket.userRole,
-    userEmail: socket.userEmail,
+    userEmail: maskEmail(socket.userEmail),
     ip: socket.handshake.address,
     userAgent: socket.handshake.headers['user-agent'],
     timestamp: new Date().toISOString()

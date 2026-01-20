@@ -22,13 +22,14 @@ export const userFactory = {
    */
   build: (overrides = {}) => {
     const id = generateId();
+    const houseValue = overrides.house || overrides.unit || `Unit-${Math.floor(Math.random() * 100)}`;
     return {
       username: overrides.username || `user_${id}`,
       email: overrides.email || `user_${id}@test.com`,
       password: overrides.password || DEFAULT_PASSWORD,
       role: overrides.role || 'resident',
       phone: overrides.phone || `+2547${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`,
-      unit: overrides.unit || `Unit-${Math.floor(Math.random() * 100)}`,
+      house: houseValue,
       mfa_enabled: overrides.mfa_enabled || false,
       mfa_secret: overrides.mfa_secret || null,
       email_verified: overrides.email_verified !== false,
@@ -46,7 +47,7 @@ export const userFactory = {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
     const result = await dbManager.query(
-      `INSERT INTO users (username, email, password, password_hash, role, phone, unit, mfa_enabled, mfa_secret, verified, estate_id)
+      `INSERT INTO users (username, email, password, password_hash, role, phone, house, mfa_enabled, mfa_secret, verified, estate_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
@@ -56,7 +57,7 @@ export const userFactory = {
         hashedPassword,
         userData.role,
         userData.phone,
-        userData.unit,
+        userData.house,
         userData.mfa_enabled,
         userData.mfa_secret,
         true,
@@ -78,7 +79,7 @@ export const userFactory = {
    * Create guard user
    */
   createGuard: async (overrides = {}) => {
-    return userFactory.create({ role: 'guard', unit: 'Gate 1', ...overrides });
+    return userFactory.create({ role: 'guard', house: 'Gate 1', ...overrides });
   },
 
   /**

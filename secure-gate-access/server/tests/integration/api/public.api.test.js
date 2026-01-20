@@ -30,6 +30,7 @@ describe('Public API Integration Tests', () => {
     const estateResult = await dbManager.query(
       `INSERT INTO estates (name, slug, address, timezone, contact_phone, emergency_contact)
        VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT DO NOTHING
        RETURNING *`,
       [
         'Test Estate',
@@ -41,7 +42,15 @@ describe('Public API Integration Tests', () => {
       ]
     );
 
-    estate = estateResult.rows[0];
+    if (estateResult.rows[0]) {
+      estate = estateResult.rows[0];
+    } else {
+      const existingEstate = await dbManager.query(
+        'SELECT * FROM estates WHERE slug = $1',
+        [estateSlug]
+      );
+      estate = existingEstate.rows[0];
+    }
 
     await dbManager.query(
       `INSERT INTO estate_locations (
@@ -146,6 +155,12 @@ describe('Public API Integration Tests', () => {
   describe('GET /api/directions/visitor/:visitorId', () => {
     it('should return directions for visitor tied to non-default estate', async () => {
       const inviteCode = `INVITE_${Date.now()}`;
+      await dbManager.query(
+        'UPDATE users SET estate_id = $1 WHERE id = $2',
+        [estate.id, testUsers.resident.id]
+      );
+      testUsers.resident.estate_id = estate.id;
+
       const visitorResult = await dbManager.query(
         `INSERT INTO visitors (
           name,

@@ -139,7 +139,7 @@ describe('API Response Snapshots', () => {
         if (responseData.status) {
           expect(responseData.status).toMatch(/success|created/i);
         }
-        
+
         // Verify data object if present
         if (responseData.data) {
           expect(responseData.data).toMatchObject({
@@ -185,15 +185,15 @@ describe('API Response Snapshots', () => {
         };
 
         const { registerUser } = await import('../../src/controllers/userController.js');
-        
+
         try {
           await registerUser(mockReq, mockRes);
         } catch (error) {
           const errorSchema = {
             hasMessage: !!error.message,
             hasStatusCode: !!error.statusCode,
-            messageContains: error.message?.toLowerCase().includes('exist') || 
-                            error.message?.toLowerCase().includes('already')
+            messageContains: error.message?.toLowerCase().includes('exist') ||
+              error.message?.toLowerCase().includes('already')
           };
           expect(errorSchema).toMatchSnapshot('registration-duplicate-error-schema');
         }
@@ -245,9 +245,9 @@ describe('API Response Snapshots', () => {
         await loginUser(mockReq, mockRes);
 
         expect(mockRes.status).toHaveBeenCalledWith(401);
-        
+
         const errorSchema = {
-          status: responseData?.status,
+          status: responseData?.status || (responseData?.success === false ? 'error' : undefined),
           hasMessage: !!responseData?.message,
           statusCode: 401
         };
@@ -343,11 +343,11 @@ describe('API Response Snapshots', () => {
         hasData: !!listResponse.data,
         hasVisitors: Array.isArray(listResponse.data?.visitors),
         hasPagination: !!listResponse.data?.pagination,
-        visitorFields: listResponse.data?.visitors?.[0] 
-          ? Object.keys(listResponse.data.visitors[0]).sort() 
+        visitorFields: listResponse.data?.visitors?.[0]
+          ? Object.keys(listResponse.data.visitors[0]).sort()
           : [],
-        paginationFields: listResponse.data?.pagination 
-          ? Object.keys(listResponse.data.pagination).sort() 
+        paginationFields: listResponse.data?.pagination
+          ? Object.keys(listResponse.data.pagination).sort()
           : []
       };
 
@@ -483,8 +483,8 @@ describe('API Response Snapshots', () => {
         statusValue: validationError.status,
         hasMessage: !!validationError.message,
         hasErrors: Array.isArray(validationError.errors),
-        errorFields: validationError.errors?.[0] 
-          ? Object.keys(validationError.errors[0]).sort() 
+        errorFields: validationError.errors?.[0]
+          ? Object.keys(validationError.errors[0]).sort()
           : []
       };
 
@@ -592,8 +592,8 @@ describe('API Response Snapshots', () => {
         hasData: !!paginatedResponse.data,
         hasItems: Array.isArray(paginatedResponse.data?.items),
         hasPagination: !!paginatedResponse.data?.pagination,
-        paginationFields: paginatedResponse.data?.pagination 
-          ? Object.keys(paginatedResponse.data.pagination).sort() 
+        paginationFields: paginatedResponse.data?.pagination
+          ? Object.keys(paginatedResponse.data.pagination).sort()
           : []
       };
 
@@ -657,8 +657,8 @@ describe('API Response Snapshots', () => {
         hasStatus: !!metricsResponse.status,
         hasData: !!metricsResponse.data,
         categories: Object.keys(metricsResponse.data).sort(),
-        requestFields: metricsResponse.data?.requests 
-          ? Object.keys(metricsResponse.data.requests).sort() 
+        requestFields: metricsResponse.data?.requests
+          ? Object.keys(metricsResponse.data.requests).sort()
           : []
       };
 

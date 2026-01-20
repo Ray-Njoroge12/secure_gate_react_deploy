@@ -10,13 +10,16 @@
  */
 
 import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
 import jwt from 'jsonwebtoken';
 import logger from '../config/logger.js';
-import { 
-  authenticateSocket, 
-  authorizeRoom, 
-  rateLimitSocket, 
-  auditSocketConnection 
+import { maskEmail, maskPhone } from '../utils/redaction.js';
+import {
+  authenticateSocket,
+  authorizeRoom,
+  rateLimitSocket,
+  auditSocketConnection
 } from '../middleware/websocketAuth.js';
 import DashboardEvents from '../events/dashboardEvents.js';
 
@@ -36,8 +39,33 @@ class WebSocketService {
   /**
    * Initialize WebSocket server
    */
-  initialize(server) {
+  /**
+   * Initialize WebSocket server
+   */
+  async initialize(server) {
+    let adapter;
+
+    // Try to setup Redis adapter if configured
+    if (process.env.REDIS_URL) {
+      try {
+        const pubClient = createClient({ url: process.env.REDIS_URL });
+        const subClient = pubClient.duplicate();
+
+        await Promise.all([
+          pubClient.connect(),
+          subClient.connect()
+        ]);
+
+        adapter = createAdapter(pubClient, subClient);
+        console.log('✅ Redis Adapter configured for WebSocket');
+      } catch (err) {
+        console.warn('⚠️ Failed to connect Redis for WebSocket adapter:', err.message);
+        // Fallback to in-memory adapter
+      }
+    }
+
     this.io = new Server(server, {
+      ...(adapter ? { adapter } : {}),
       cors: {
         origin: process.env.FRONTEND_URL || "http://localhost:3000",
         methods: ["GET", "POST"],
@@ -48,10 +76,10 @@ class WebSocketService {
 
     this.setupMiddleware();
     this.setupEventHandlers();
-    
+
     // Initialize dashboard events system
     this.dashboardEvents = new DashboardEvents(this);
-    
+
     logger.info('WebSocket service initialized');
     console.log('🔌 WebSocket service initialized with real-time capabilities');
   }
@@ -62,10 +90,10 @@ class WebSocketService {
   setupMiddleware() {
     // Apply authentication middleware
     this.io.use(authenticateSocket);
-    
+
     // Apply rate limiting middleware
     this.io.use(rateLimitSocket);
-    
+
     // Apply audit logging middleware
     this.io.use(auditSocketConnection);
   }
@@ -84,11 +112,12 @@ class WebSocketService {
    * Handle new WebSocket connection
    */
   handleConnection(socket) {
+    const maskedEmail = maskEmail(socket.userEmail);
     const userInfo = {
       socketId: socket.id,
       userId: socket.userId,
       role: socket.userRole,
-      email: socket.userEmail,
+      email: maskedEmail,
       connectedAt: new Date()
     };
 
@@ -97,7 +126,7 @@ class WebSocketService {
 
     // Join appropriate rooms based on user role
     this.joinRoleBasedRooms(socket);
-    
+
     // Phase 3: Join user-specific room for targeted notifications
     this.joinUserSpecificRoom(socket);
 
@@ -112,13 +141,16 @@ class WebSocketService {
     // Broadcast user connection to admin room
     socket.to(this.rooms.ADMIN).emit('user:connected', {
       userId: socket.userId,
-      email: socket.userEmail,
+      email: maskedEmail,
       role: socket.userRole,
       timestamp: new Date().toISOString()
     });
 
-    logger.info(`User ${socket.userEmail} connected to WebSocket`);
-    console.log(`🟢 WebSocket: ${socket.userEmail} (${socket.userRole}) connected`);
+    logger.info('WebSocket user connected', {
+      userId: socket.userId,
+      role: socket.userRole
+    });
+    console.log(`🟢 WebSocket: user ${socket.userId} (${socket.userRole}) connected`);
 
     // Handle disconnection
     socket.on('disconnect', () => {
@@ -137,7 +169,10 @@ class WebSocketService {
         message: 'Subscribed to dashboard updates',
         timestamp: new Date().toISOString()
       });
-      logger.info(`User ${socket.userEmail} subscribed to dashboard updates`);
+      logger.info('User subscribed to dashboard updates', {
+        userId: socket.userId,
+        role: socket.userRole
+      });
     });
 
     // Request real-time stats
@@ -203,7 +238,7 @@ class WebSocketService {
    */
   getAvailableRooms(role) {
     const baseRooms = [this.rooms.DASHBOARD];
-    
+
     switch (role) {
       case 'admin':
         return [...baseRooms, this.rooms.ADMIN, this.rooms.VISITORS];
@@ -219,17 +254,20 @@ class WebSocketService {
    */
   handleDisconnection(socket) {
     this.connectedUsers.delete(socket.userId);
-    
+
     // Broadcast user disconnection to admin room
     socket.to(this.rooms.ADMIN).emit('user:disconnected', {
       userId: socket.userId,
-      email: socket.userEmail,
+      email: maskEmail(socket.userEmail),
       role: socket.userRole,
       timestamp: new Date().toISOString()
     });
 
-    logger.info(`User ${socket.userEmail} disconnected from WebSocket`);
-    console.log(`🔴 WebSocket: ${socket.userEmail} (${socket.userRole}) disconnected`);
+    logger.info('WebSocket user disconnected', {
+      userId: socket.userId,
+      role: socket.userRole
+    });
+    console.log(`🔴 WebSocket: user ${socket.userId} (${socket.userRole}) disconnected`);
   }
 
   /**
@@ -254,9 +292,10 @@ class WebSocketService {
   broadcastVisitorEvent(eventType, visitorData) {
     if (!this.io) return;
 
+    const sanitizedVisitorData = sanitizeContactFields(visitorData);
     const visitorEvent = {
       type: eventType,
-      data: visitorData,
+      data: sanitizedVisitorData,
       timestamp: new Date().toISOString()
     };
 
@@ -277,11 +316,8 @@ class WebSocketService {
     };
 
     if (target.userId) {
-      // Send to specific user
-      const userInfo = this.connectedUsers.get(target.userId);
-      if (userInfo) {
-        this.io.to(userInfo.socketId).emit('notification', notificationData);
-      }
+      // Send to specific user across all instances
+      this.io.to(`user:${target.userId}`).emit('notification', notificationData);
     } else if (target.role) {
       // Send to all users with specific role
       const roomName = this.rooms[target.role.toUpperCase()];
@@ -394,7 +430,7 @@ class WebSocketService {
       data: {
         visitor_id: visitorData.id,
         name: visitorData.name,
-        phone: visitorData.phone,
+        phone: maskPhone(visitorData.phone),
         vehicle_plate: visitorData.vehicle_plate,
         purpose: visitorData.purpose,
         requested_at: visitorData.approval_requested_at || new Date().toISOString(),
@@ -405,7 +441,7 @@ class WebSocketService {
 
     // Emit to specific resident room
     this.io.to(`resident:${residentId}`).emit('visitor:approval_request', approvalRequest);
-    
+
     logger.info(`Approval request emitted to resident ${residentId} for visitor ${visitorData.id}`);
   }
 
@@ -431,10 +467,10 @@ class WebSocketService {
     if (guardId) {
       this.io.to(`guard:${guardId}`).emit('visitor:approval_response', approvalResponse);
     }
-    
+
     // Also broadcast to all guards room for visibility
     this.io.to(this.rooms.GUARDS).emit('visitor:approval_response', approvalResponse);
-    
+
     logger.info(`Approval response (${responseData.status}) emitted for visitor ${responseData.visitor_id}`);
   }
 
@@ -445,9 +481,33 @@ class WebSocketService {
   joinUserSpecificRoom(socket) {
     const userRoom = `${socket.userRole}:${socket.userId}`;
     socket.join(userRoom);
-    logger.info(`User ${socket.userEmail} joined personal room: ${userRoom}`);
+    socket.join(`user:${socket.userId}`);
+    logger.info('User joined personal room', {
+      userId: socket.userId,
+      room: userRoom
+    });
   }
 }
+
+const sanitizeContactFields = (payload) => {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+
+  if (Array.isArray(payload)) {
+    return payload.map(item => sanitizeContactFields(item));
+  }
+
+  const sanitized = { ...payload };
+  if (typeof sanitized.email === 'string') {
+    sanitized.email = maskEmail(sanitized.email);
+  }
+  if (typeof sanitized.phone === 'string') {
+    sanitized.phone = maskPhone(sanitized.phone);
+  }
+
+  return sanitized;
+};
 
 // Export singleton instance
 export default new WebSocketService();

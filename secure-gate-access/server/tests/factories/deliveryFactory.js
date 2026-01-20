@@ -17,14 +17,19 @@ export const deliveryFactory = {
    */
   build: (overrides = {}) => {
     return {
-      resident_id: overrides.resident_id || null,
-      carrier: overrides.carrier || 'DHL',
+      recipient_id: overrides.recipient_id || null,
+      received_by_guard_id: overrides.received_by_guard_id || null,
+      carrier_name: overrides.carrier_name || 'DHL',
       tracking_number: overrides.tracking_number || generateTrackingNumber(),
-      status: overrides.status || 'pending',
-      photo_url: overrides.photo_url || null,
+      status: overrides.status || 'pending_collection',
+      package_description: overrides.package_description || 'Test delivery package',
+      package_size: overrides.package_size || 'medium',
       notes: overrides.notes || 'Test delivery package',
-      received_at: overrides.received_at || null,
+      photo_reference: overrides.photo_reference || null,
+      photo_uploaded_at: overrides.photo_uploaded_at || null,
+      photo_expires_at: overrides.photo_expires_at || null,
       collected_at: overrides.collected_at || null,
+      notification_sent: overrides.notification_sent || false,
       ...overrides
     };
   },
@@ -36,17 +41,28 @@ export const deliveryFactory = {
     const deliveryData = deliveryFactory.build(overrides);
 
     const result = await dbManager.query(
-      `INSERT INTO delivery_logs (resident_id, carrier, tracking_number, status, photo_url, notes, received_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO deliveries (
+        tracking_number, carrier_name, recipient_id, received_by_guard_id,
+        package_description, package_size, notes, status,
+        photo_reference, photo_uploaded_at, photo_expires_at,
+        notification_sent, collected_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
-        deliveryData.resident_id,
-        deliveryData.carrier,
         deliveryData.tracking_number,
-        deliveryData.status,
-        deliveryData.photo_url,
+        deliveryData.carrier_name,
+        deliveryData.recipient_id,
+        deliveryData.received_by_guard_id,
+        deliveryData.package_description,
+        deliveryData.package_size,
         deliveryData.notes,
-        deliveryData.received_at
+        deliveryData.status,
+        deliveryData.photo_reference,
+        deliveryData.photo_uploaded_at,
+        deliveryData.photo_expires_at,
+        deliveryData.notification_sent,
+        deliveryData.collected_at
       ]
     );
 
@@ -58,9 +74,8 @@ export const deliveryFactory = {
    */
   createPending: async (residentId, overrides = {}) => {
     return deliveryFactory.create({ 
-      resident_id: residentId, 
-      status: 'pending',
-      received_at: new Date().toISOString(),
+      recipient_id: residentId, 
+      status: 'pending_collection',
       ...overrides 
     });
   },
@@ -70,9 +85,8 @@ export const deliveryFactory = {
    */
   createCollected: async (residentId, overrides = {}) => {
     return deliveryFactory.create({ 
-      resident_id: residentId, 
+      recipient_id: residentId, 
       status: 'collected',
-      received_at: new Date(Date.now() - 86400000).toISOString(),
       collected_at: new Date().toISOString(),
       ...overrides 
     });
@@ -83,8 +97,9 @@ export const deliveryFactory = {
    */
   createWithPhoto: async (residentId, overrides = {}) => {
     return deliveryFactory.create({ 
-      resident_id: residentId, 
-      photo_url: 'https://storage.example.com/deliveries/test-photo.jpg',
+      recipient_id: residentId, 
+      photo_reference: 'photo_test_ref',
+      photo_uploaded_at: new Date().toISOString(),
       ...overrides 
     });
   },
@@ -108,14 +123,14 @@ export const deliveryFactory = {
    * Delete delivery by ID
    */
   delete: async (deliveryId) => {
-    await dbManager.query('DELETE FROM delivery_logs WHERE id = $1', [deliveryId]);
+    await dbManager.query('DELETE FROM deliveries WHERE id = $1', [deliveryId]);
   },
 
   /**
    * Clean up all test deliveries
    */
   cleanup: async () => {
-    await dbManager.query("DELETE FROM delivery_logs WHERE notes LIKE '%Test%'");
+    await dbManager.query("DELETE FROM deliveries WHERE package_description LIKE '%Test%' OR notes LIKE '%Test%'");
   }
 };
 

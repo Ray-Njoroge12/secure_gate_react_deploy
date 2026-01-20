@@ -1,5 +1,6 @@
 import express from 'express';
-import { getMetrics, getAuditLogs } from '../controllers/adminController.js';
+import { getMetrics, getAuditLogs, getPendingUsers, updateUserStatus } from '../controllers/adminController.js';
+import { respond, respondError } from '../utils/respond.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import backupService from '../services/backupService.js';
@@ -264,7 +265,7 @@ router.get('/audit-logs', authenticateToken, attachRequestAudit, getAuditLogs);
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Backup trigger endpoint
-router.post('/backup/trigger', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/backup/trigger', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const result = await backupService.triggerBackup();
     res.json({
@@ -288,6 +289,22 @@ router.post('/backup/trigger', authenticateToken, attachRequestAudit, async (req
 // ==================== USER MANAGEMENT ENDPOINTS ====================
 
 /**
+ * @route GET /api/admin/users/pending
+ * @desc Get all pending users requiring approval
+ * @access Private (Admin only)
+ */
+router.get('/users/pending', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, getPendingUsers);
+
+/**
+ * @route PUT /api/admin/users/:id/status
+ * @desc Update user account status (approve/reject/suspend)
+ * @access Private (Admin only)
+ */
+router.put('/users/:id/status', authenticateToken, requireRole(['admin']), attachRequestAudit, updateUserStatus);
+
+// ==================== USER MANAGEMENT ENDPOINTS ====================
+
+/**
  * @route GET /api/admin/users
  * @desc Get all users with optional filtering
  * @access Private (Admin only)
@@ -295,18 +312,27 @@ router.post('/backup/trigger', authenticateToken, attachRequestAudit, async (req
 router.get('/users', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
     const { role, status, search, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-    
-    let query = 'SELECT id, username, email, role, status, created_at, updated_at FROM users WHERE 1=1';
+
+    // Fix A-004: Pagination Input Validation
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20)); // Cap limit at 100
+    const offset = (pageNum - 1) * limitNum;
+
+    // Fix A-003: Input Validation (Search Sanity)
+    if (search && search.length > 100) {
+      return respondError(res, 400, 'Search term too long');
+    }
+
+    let query = 'SELECT id, username, email, role, account_status AS status, created_at, updated_at FROM users WHERE 1=1';
     const params = [];
     let paramIndex = 1;
-    
+
     if (role) {
       query += ` AND role = $${paramIndex++}`;
       params.push(role);
     }
     if (status) {
-      query += ` AND status = $${paramIndex++}`;
+      query += ` AND account_status = $${paramIndex++}`;
       params.push(status);
     }
     if (search) {
@@ -314,18 +340,28 @@ router.get('/users', authenticateToken, requireRole(['admin']), minimizeData('us
       params.push(`%${search}%`);
       paramIndex++;
     }
-    
+
+    // Fix: Admin User Isolation - Add to WHERE clause BEFORE ordering/pagination
+    // Only allow super admins (null estate_id) to see all users
+    // Admin with estate_id can only see users in their estate
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $${paramIndex++}`;
+      params.push(req.user.estate_id);
+    }
+
     // Get total count
-    const countQuery = query.replace('SELECT id, username, email, role, status, created_at, updated_at', 'SELECT COUNT(*)');
+    const countQuery = query.replace('SELECT id, username, email, role, account_status AS status, created_at, updated_at', 'SELECT COUNT(*)');
     const countResult = await dbManager.query(countQuery, params);
     const total = parseInt(countResult.rows[0].count);
-    
+
     // Add pagination
     query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
-    params.push(limit, offset);
-    
+    params.push(limitNum, offset);
+
+
+
     const result = await dbManager.query(query, params);
-    
+
     res.json({
       success: true,
       data: result.rows,
@@ -336,13 +372,10 @@ router.get('/users', authenticateToken, requireRole(['admin']), minimizeData('us
         pages: Math.ceil(total / limit)
       }
     });
+    // Fix A-002: Safe Error Handling
   } catch (error) {
     console.error('Error fetching users:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch users',
-      error: error.message
-    });
+    respondError(res, 500, 'Failed to fetch users', error);
   }
 });
 
@@ -355,11 +388,11 @@ router.put('/users/:id', authenticateToken, requireRole(['admin']), attachReques
   try {
     const { id } = req.params;
     const { username, email, role, status } = req.body;
-    
+
     const updates = [];
     const params = [];
     let paramIndex = 1;
-    
+
     if (username) {
       updates.push(`username = $${paramIndex++}`);
       params.push(username);
@@ -373,30 +406,40 @@ router.put('/users/:id', authenticateToken, requireRole(['admin']), attachReques
       params.push(role);
     }
     if (status) {
-      updates.push(`status = $${paramIndex++}`);
+      updates.push(`account_status = $${paramIndex++}`);
       params.push(status);
     }
-    
+
     if (updates.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'No fields to update'
       });
     }
-    
+
     updates.push(`updated_at = NOW()`);
     params.push(id);
-    
-    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username, email, role, status, updated_at`;
+
+    updates.push(`updated_at = NOW()`);
+    params.push(id);
+
+    // Fix: Admin Update Isolation
+    let whereClause = `WHERE id = $${paramIndex++}`;
+    if (req.user.estate_id) {
+      whereClause += ` AND estate_id = $${paramIndex++}`;
+      params.push(req.user.estate_id);
+    }
+
+    const query = `UPDATE users SET ${updates.join(', ')} ${whereClause} RETURNING id, username, email, role, account_status AS status, updated_at`;
     const result = await dbManager.query(query, params);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
-    
+
     res.json({
       success: true,
       message: 'User updated successfully',
@@ -420,7 +463,7 @@ router.put('/users/:id', authenticateToken, requireRole(['admin']), attachReques
 router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Prevent deleting own account
     if (parseInt(id) === req.user.id) {
       return res.status(400).json({
@@ -428,20 +471,27 @@ router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachReq
         message: 'Cannot delete your own account'
       });
     }
-    
+
     // Soft delete - set status to 'deleted'
-    const result = await dbManager.query(
-      `UPDATE users SET status = 'deleted', updated_at = NOW() WHERE id = $1 AND status != 'deleted' RETURNING id`,
-      [id]
-    );
-    
+    // SECURITY: Filter by estate_id to prevent cross-estate deletion
+    let query = `UPDATE users SET account_status = 'deleted', updated_at = NOW() WHERE id = $1 AND account_status != 'deleted'`;
+    const params = [id];
+
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $2`;
+      params.push(req.user.estate_id);
+    }
+    query += ` RETURNING id`;
+
+    const result = await dbManager.query(query, params);
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found or already deleted'
       });
     }
-    
+
     res.json({
       success: true,
       message: 'User deleted successfully'
@@ -465,12 +515,19 @@ router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachReq
  */
 router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
-    const result = await dbManager.query(
-      `SELECT id, username, email, phone, unit_number, status, created_at 
-       FROM users WHERE role = 'resident' AND status != 'deleted' 
-       ORDER BY created_at DESC`
-    );
-    
+    // SECURITY: Filter by estate_id to prevent cross-estate access
+    let query = `SELECT id, username, email, phone, unit_number, status, created_at 
+       FROM users WHERE role = 'resident' AND status != 'deleted'`;
+    const params = [];
+
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $1`;
+      params.push(req.user.estate_id);
+    }
+    query += ` ORDER BY created_at DESC`;
+
+    const result = await dbManager.query(query, params);
+
     res.json({
       success: true,
       data: result.rows
@@ -494,24 +551,30 @@ router.put('/residents/:id', authenticateToken, requireRole(['admin']), attachRe
   try {
     const { id } = req.params;
     const { username, email, phone, unit_number, status } = req.body;
-    
-    const result = await dbManager.query(
-      `UPDATE users SET 
-        username = COALESCE($1, username),
-        email = COALESCE($2, email),
-        phone = COALESCE($3, phone),
-        unit_number = COALESCE($4, unit_number),
-        status = COALESCE($5, status),
-        updated_at = NOW()
-       WHERE id = $6 AND role = 'resident'
-       RETURNING id, username, email, phone, unit_number, status`,
-      [username, email, phone, unit_number, status, id]
-    );
-    
+
+    // SECURITY: Filter by estate_id to prevent cross-estate modification
+    let query = `UPDATE users SET 
+      username = COALESCE($1, username),
+      email = COALESCE($2, email),
+      phone = COALESCE($3, phone),
+      unit_number = COALESCE($4, unit_number),
+      status = COALESCE($5, status),
+      updated_at = NOW()
+     WHERE id = $6 AND role = 'resident'`;
+    const params = [username, email, phone, unit_number, status, id];
+
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $7`;
+      params.push(req.user.estate_id);
+    }
+    query += ` RETURNING id, username, email, phone, unit_number, status`;
+
+    const result = await dbManager.query(query, params);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Resident not found' });
     }
-    
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update resident', error: error.message });
@@ -526,18 +589,24 @@ router.put('/residents/:id', authenticateToken, requireRole(['admin']), attachRe
 router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const result = await dbManager.query(
-      `UPDATE users SET status = 'deleted', updated_at = NOW() 
-       WHERE id = $1 AND role = 'resident' AND status != 'deleted' 
-       RETURNING id`,
-      [id]
-    );
-    
+
+    // SECURITY: Filter by estate_id to prevent cross-estate deletion
+    let query = `UPDATE users SET status = 'deleted', updated_at = NOW() 
+       WHERE id = $1 AND role = 'resident' AND status != 'deleted'`;
+    const params = [id];
+
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $2`;
+      params.push(req.user.estate_id);
+    }
+    query += ` RETURNING id`;
+
+    const result = await dbManager.query(query, params);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Resident not found' });
     }
-    
+
     res.json({ success: true, message: 'Resident deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete resident', error: error.message });
@@ -553,12 +622,19 @@ router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attac
  */
 router.get('/guards', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
-    const result = await dbManager.query(
-      `SELECT id, username, email, phone, status, created_at 
-       FROM users WHERE role = 'guard' AND status != 'deleted' 
-       ORDER BY created_at DESC`
-    );
-    
+    // SECURITY: Filter by estate_id to prevent cross-estate access
+    let query = `SELECT id, username, email, phone, status, created_at 
+       FROM users WHERE role = 'guard' AND status != 'deleted'`;
+    const params = [];
+
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $1`;
+      params.push(req.user.estate_id);
+    }
+    query += ` ORDER BY created_at DESC`;
+
+    const result = await dbManager.query(query, params);
+
     res.json({
       success: true,
       data: result.rows
@@ -581,14 +657,17 @@ router.get('/guards', authenticateToken, requireRole(['admin']), minimizeData('u
 router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { username, email, phone, password } = req.body;
-    
+
     if (!username || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username, email, and password are required'
-      });
+      return respondError(res, 400, 'Username, email, and password are required');
     }
-    
+
+    // Fix A-003: Input Validation (Email format)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return respondError(res, 400, 'Invalid email format');
+    }
+
     // Use userService to create guard with proper password hashing
     const guard = await userService.createUser({
       username,
@@ -597,7 +676,7 @@ router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestA
       password,
       role: 'guard'
     });
-    
+
     res.status(201).json({
       success: true,
       message: 'Guard created successfully',
@@ -627,23 +706,29 @@ router.put('/guards/:id', authenticateToken, requireRole(['admin']), attachReque
   try {
     const { id } = req.params;
     const { username, email, phone, status } = req.body;
-    
-    const result = await dbManager.query(
-      `UPDATE users SET 
-        username = COALESCE($1, username),
-        email = COALESCE($2, email),
-        phone = COALESCE($3, phone),
-        status = COALESCE($4, status),
-        updated_at = NOW()
-       WHERE id = $5 AND role = 'guard'
-       RETURNING id, username, email, phone, status`,
-      [username, email, phone, status, id]
-    );
-    
+
+    // SECURITY: Filter by estate_id to prevent cross-estate modification
+    let query = `UPDATE users SET 
+      username = COALESCE($1, username),
+      email = COALESCE($2, email),
+      phone = COALESCE($3, phone),
+      status = COALESCE($4, status),
+      updated_at = NOW()
+     WHERE id = $5 AND role = 'guard'`;
+    const params = [username, email, phone, status, id];
+
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $6`;
+      params.push(req.user.estate_id);
+    }
+    query += ` RETURNING id, username, email, phone, status`;
+
+    const result = await dbManager.query(query, params);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Guard not found' });
     }
-    
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to update guard', error: error.message });
@@ -658,18 +743,24 @@ router.put('/guards/:id', authenticateToken, requireRole(['admin']), attachReque
 router.delete('/guards/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const result = await dbManager.query(
-      `UPDATE users SET status = 'deleted', updated_at = NOW() 
-       WHERE id = $1 AND role = 'guard' AND status != 'deleted' 
-       RETURNING id`,
-      [id]
-    );
-    
+
+    // SECURITY: Filter by estate_id to prevent cross-estate deletion
+    let query = `UPDATE users SET status = 'deleted', updated_at = NOW() 
+       WHERE id = $1 AND role = 'guard' AND status != 'deleted'`;
+    const params = [id];
+
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $2`;
+      params.push(req.user.estate_id);
+    }
+    query += ` RETURNING id`;
+
+    const result = await dbManager.query(query, params);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Guard not found' });
     }
-    
+
     res.json({ success: true, message: 'Guard deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete guard', error: error.message });
@@ -686,15 +777,18 @@ router.delete('/guards/:id', authenticateToken, requireRole(['admin']), attachRe
 router.get('/visitors', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, async (req, res) => {
   try {
     const { status, search, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-    
-    let query = `SELECT v.*, u.username as host_name 
+    // Fix A-004: Pagination Input Validation
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20)); // Cap limit at 100
+    const offset = (pageNum - 1) * limitNum;
+
+    let query = `SELECT v.*, v.check_in_time AS check_in, v.check_out_time AS check_out, u.username as host_name 
                  FROM visitors v 
                  LEFT JOIN users u ON v.created_by = u.email 
                  WHERE 1=1`;
     const params = [];
     let paramIndex = 1;
-    
+
     if (status) {
       query += ` AND v.status = $${paramIndex++}`;
       params.push(status);
@@ -704,23 +798,19 @@ router.get('/visitors', authenticateToken, requireRole(['admin']), minimizeData(
       params.push(`%${search}%`);
       paramIndex++;
     }
-    
+
     query += ` ORDER BY v.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limit, offset);
-    
+
     const result = await dbManager.query(query, params);
-    
+
     res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     console.error('Error fetching visitor logs:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch visitor logs',
-      error: error.message
-    });
+    respondError(res, 500, 'Failed to fetch visitor logs', error);
   }
 });
 
@@ -734,13 +824,16 @@ router.get('/visitors', authenticateToken, requireRole(['admin']), minimizeData(
 router.get('/access-logs', authenticateToken, requireRole(['admin']), minimizeData('access'), attachRequestAudit, async (req, res) => {
   try {
     const { type, search, page = 1, limit = 50 } = req.query;
-    const offset = (page - 1) * limit;
-    
+    // Fix A-004: Pagination Input Validation
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50)); // Cap limit at 100
+    const offset = (pageNum - 1) * limitNum;
+
     // Check if access_logs table exists, if not return empty
     const tableCheck = await dbManager.query(
       `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'access_logs')`
     );
-    
+
     if (!tableCheck.rows[0].exists) {
       return res.json({
         success: true,
@@ -748,23 +841,19 @@ router.get('/access-logs', authenticateToken, requireRole(['admin']), minimizeDa
         message: 'Access logs table not configured'
       });
     }
-    
+
     const result = await dbManager.query(
       `SELECT * FROM access_logs ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
-    
+
     res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     console.error('Error fetching access logs:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch access logs',
-      error: error.message
-    });
+    respondError(res, 500, 'Failed to fetch access logs', error);
   }
 });
 
@@ -778,13 +867,16 @@ router.get('/access-logs', authenticateToken, requireRole(['admin']), minimizeDa
 router.get('/incidents-list', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { status, priority, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-    
+    // Fix A-004: Pagination Input Validation
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20)); // Cap limit at 100
+    const offset = (pageNum - 1) * limitNum;
+
     // Check if incidents table exists
     const tableCheck = await dbManager.query(
       `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'incidents')`
     );
-    
+
     if (!tableCheck.rows[0].exists) {
       return res.json({
         success: true,
@@ -792,11 +884,11 @@ router.get('/incidents-list', authenticateToken, requireRole(['admin']), attachR
         message: 'Incidents table not configured'
       });
     }
-    
+
     let query = 'SELECT * FROM incidents WHERE 1=1';
     const params = [];
     let paramIndex = 1;
-    
+
     if (status) {
       query += ` AND status = $${paramIndex++}`;
       params.push(status);
@@ -805,23 +897,19 @@ router.get('/incidents-list', authenticateToken, requireRole(['admin']), attachR
       query += ` AND priority = $${paramIndex++}`;
       params.push(priority);
     }
-    
+
     query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limit, offset);
-    
+
     const result = await dbManager.query(query, params);
-    
+
     res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     console.error('Error fetching incidents:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch incidents',
-      error: error.message
-    });
+    respondError(res, 500, 'Failed to fetch incidents', error);
   }
 });
 
@@ -835,7 +923,7 @@ router.get('/incidents-list', authenticateToken, requireRole(['admin']), attachR
 router.get('/retention-settings', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const settings = await retentionService.getRetentionSettings();
-    
+
     res.json({
       success: true,
       data: settings
@@ -858,9 +946,9 @@ router.get('/retention-settings', authenticateToken, requireRole(['admin']), att
 router.put('/retention-settings', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { id, type, duration } = req.body;
-    
+
     const result = await retentionService.updateRetentionSetting(id, type, duration);
-    
+
     res.json({
       success: true,
       message: 'Retention setting updated successfully',
@@ -885,7 +973,7 @@ router.post('/retention/trigger', authenticateToken, requireRole(['admin']), att
   try {
     // Trigger retention policy immediately
     await retentionService.triggerRetentionPolicy();
-    
+
     res.json({
       success: true,
       message: 'Data retention policy triggered successfully'
@@ -909,12 +997,12 @@ router.get('/retention/logs', authenticateToken, requireRole(['admin']), attachR
   try {
     const { page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
-    
+
     const result = await dbManager.query(
       `SELECT * FROM retention_logs ORDER BY timestamp DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
-    
+
     res.json({
       success: true,
       data: result.rows
@@ -947,7 +1035,7 @@ router.get('/retention/logs', authenticateToken, requireRole(['admin']), attachR
 router.get('/retention/stats', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const stats = await retentionService.getRetentionStats();
-    
+
     res.json({
       success: true,
       data: stats
@@ -978,7 +1066,7 @@ router.get('/retention/stats', authenticateToken, requireRole(['admin']), async 
 router.post('/retention/run', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const results = await retentionService.runRetentionJob();
-    
+
     res.json({
       success: true,
       message: 'Retention job completed',
@@ -1010,7 +1098,7 @@ router.post('/retention/run', authenticateToken, requireRole(['admin']), attachR
 router.get('/retention/scheduler/status', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const status = retentionScheduler.getStatus();
-    
+
     res.json({
       success: true,
       data: status

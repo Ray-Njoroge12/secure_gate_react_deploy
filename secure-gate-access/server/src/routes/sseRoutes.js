@@ -1,6 +1,7 @@
 import express from 'express';
 import { dbManager } from '../database/db.enhanced.js';
 import { authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
 
 const router = express.Router();
 
@@ -85,9 +86,10 @@ export const broadcastVisitorUpdate = (visitorId, status, action) => {
 
 // Function to broadcast new visitor
 export const broadcastNewVisitor = (visitor) => {
+  const maskedVisitor = maskVisitorContact(visitor);
   broadcastToGuards({
     type: 'new_visitor',
-    visitor,
+    visitor: maskedVisitor,
     timestamp: new Date().toISOString()
   });
 };
@@ -100,6 +102,22 @@ export const broadcastVisitorCheckIn = (visitorId, action) => {
     action,
     timestamp: new Date().toISOString()
   });
+};
+
+const maskVisitorContact = (visitor) => {
+  if (!visitor || typeof visitor !== 'object') {
+    return visitor;
+  }
+
+  const masked = { ...visitor };
+  if (typeof masked.email === 'string') {
+    masked.email = maskEmail(masked.email);
+  }
+  if (typeof masked.phone === 'string') {
+    masked.phone = maskPhone(masked.phone);
+  }
+
+  return masked;
 };
 
 export default router;

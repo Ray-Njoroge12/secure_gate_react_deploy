@@ -6,14 +6,8 @@
 import { dbManager } from '../../src/database/db.enhanced.js';
 
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-const generateAccessCode = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-};
+const generateAccessPin = () => (Math.floor(100000 + Math.random() * 900000)).toString();
+const generateQrToken = () => `RP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 /**
  * Pass Factory - Creates recurring passes with various configurations
@@ -25,18 +19,21 @@ export const passFactory = {
   build: (overrides = {}) => {
     const id = generateId();
     return {
-      name: overrides.name || `Pass Holder ${id}`,
-      phone: overrides.phone || `+2547${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`,
-      email: overrides.email || `pass_${id}@test.com`,
+      visitor_name: overrides.visitor_name || `Pass Holder ${id}`,
+      visitor_phone: overrides.visitor_phone || `+2547${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`,
+      visitor_id_number: overrides.visitor_id_number || null,
+      vehicle_plate: overrides.vehicle_plate || null,
       resident_id: overrides.resident_id || null,
-      schedule_type: overrides.schedule_type || 'weekly',
-      days_of_week: overrides.days_of_week || ['monday', 'wednesday', 'friday'],
-      start_date: overrides.start_date || new Date().toISOString().split('T')[0],
-      end_date: overrides.end_date || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      pass_type: overrides.pass_type || 'daily_worker',
+      purpose: overrides.purpose || 'General access',
+      access_pin: overrides.access_pin || generateAccessPin(),
+      qr_code_token: overrides.qr_code_token || generateQrToken(),
+      valid_from: overrides.valid_from || new Date().toISOString().split('T')[0],
+      valid_until: overrides.valid_until || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+      allowed_days: overrides.allowed_days || ['mon', 'wed', 'fri'],
+      allowed_time_start: overrides.allowed_time_start || '06:00',
+      allowed_time_end: overrides.allowed_time_end || '18:00',
       status: overrides.status || 'active',
-      access_code: overrides.access_code || generateAccessCode(),
-      max_uses: overrides.max_uses || null,
-      current_uses: overrides.current_uses || 0,
       ...overrides
     };
   },
@@ -48,18 +45,28 @@ export const passFactory = {
     const passData = passFactory.build(overrides);
 
     const result = await dbManager.query(
-      `INSERT INTO recurring_passes (name, phone, email, resident_id, schedule_type, days_of_week, start_date, end_date, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO recurring_passes (
+        resident_id, visitor_name, visitor_phone, visitor_id_number, vehicle_plate,
+        pass_type, purpose, access_pin, qr_code_token,
+        valid_from, valid_until, allowed_days, allowed_time_start, allowed_time_end, status
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
       [
-        passData.name,
-        passData.phone,
-        passData.email,
         passData.resident_id,
-        passData.schedule_type,
-        passData.days_of_week,
-        passData.start_date,
-        passData.end_date,
+        passData.visitor_name,
+        passData.visitor_phone,
+        passData.visitor_id_number,
+        passData.vehicle_plate,
+        passData.pass_type,
+        passData.purpose,
+        passData.access_pin,
+        passData.qr_code_token,
+        passData.valid_from,
+        passData.valid_until,
+        passData.allowed_days,
+        passData.allowed_time_start,
+        passData.allowed_time_end,
         passData.status
       ]
     );
@@ -85,8 +92,8 @@ export const passFactory = {
     return passFactory.create({ 
       resident_id: residentId, 
       status: 'expired',
-      start_date: new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0],
-      end_date: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
+      valid_from: new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0],
+      valid_until: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
       ...overrides 
     });
   },
@@ -106,11 +113,13 @@ export const passFactory = {
    * Create single-use pass
    */
   createSingleUse: async (residentId, overrides = {}) => {
+    const today = new Date().toISOString().split('T')[0];
     return passFactory.create({ 
       resident_id: residentId, 
-      max_uses: 1,
-      current_uses: 0,
-      schedule_type: 'once',
+      pass_type: 'contractor',
+      valid_from: today,
+      valid_until: today,
+      allowed_days: null,
       ...overrides 
     });
   },
@@ -138,7 +147,7 @@ export const passFactory = {
    * Clean up all test passes
    */
   cleanup: async () => {
-    await dbManager.query("DELETE FROM recurring_passes WHERE email LIKE '%@test.com'");
+    await dbManager.query("DELETE FROM recurring_passes WHERE visitor_name LIKE 'Pass Holder %'");
   }
 };
 

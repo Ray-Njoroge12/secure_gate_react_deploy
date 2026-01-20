@@ -148,7 +148,6 @@ Located in: `secure-gate-access/server/`
 |------|---------|
 | `playwright.config.js` | Root Playwright config |
 | `secure-gate-access/client/playwright.config.js` | Client Playwright config |
-| `secure-gate-access/server/ecosystem.config.cjs` | PM2 configuration |
 | `secure-gate-access/docker-compose.yml` | Docker composition |
 | `secure-gate-access/render.yaml` | Render deployment config |
 | `secure-gate-access/client/netlify.toml` | Netlify deployment config |

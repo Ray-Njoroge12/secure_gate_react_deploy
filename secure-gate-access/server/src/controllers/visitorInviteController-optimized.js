@@ -27,7 +27,7 @@ import { sanitizeString } from '../utils/sanitizeInput.js';
  */
 async function decryptIdNumber(visitor) {
   if (!visitor) return visitor;
-  
+
   // If encrypted version exists, decrypt it
   if (visitor.id_number_encrypted) {
     try {
@@ -37,11 +37,11 @@ async function decryptIdNumber(visitor) {
       // Keep plaintext if decryption fails
     }
   }
-  
+
   // Remove encrypted fields from response (security: don't expose encrypted data)
   delete visitor.id_number_encrypted;
   delete visitor.id_number_encrypted_at;
-  
+
   return visitor;
 }
 
@@ -60,7 +60,8 @@ function getOtpExpiryMinutes() {
 function shouldEchoOtp() {
   // CRITICAL SECURITY: Never echo OTP in production environment
   // This prevents OTP leakage in API responses, logs, and monitoring tools
-  if (process.env.NODE_ENV === 'production') {
+  const env = (process.env.NODE_ENV || '').toLowerCase();
+  if (env !== 'development' && env !== 'test') {
     return false;
   }
   // Only allow OTP echo in development/test environments for debugging
@@ -106,10 +107,10 @@ export const createVisitor = async (req, res) => {
       return respondError(res, 401, 'Unauthorized');
     }
 
-    // Allow residents, admins, and guards to create visitors
-    const allowedRoles = ['resident', 'admin', 'guard'];
+    // Allow residents and admins to create visitors (guards use walk-in flow)
+    const allowedRoles = ['resident', 'admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) {
-      return respondError(res, 403, 'Forbidden - Only residents, admins, and guards can create visitors');
+      return respondError(res, 403, 'Forbidden - Only residents and admins can create visitors');
     }
 
     const CLIENT_ORIGIN = getClientOrigin();
@@ -136,6 +137,10 @@ export const createVisitor = async (req, res) => {
       consent_version,
       status: requestedStatus
     } = req.body;
+
+    if (!req.user.estate_id) {
+      return respondError(res, 400, 'Estate context is required to create visitors');
+    }
 
     // Support both camelCase and snake_case for date field
     // Default to today's date if not provided
@@ -205,18 +210,18 @@ export const createVisitor = async (req, res) => {
       `INSERT INTO visitors (
         name, phone, email, purpose, date_of_visit, time_of_visit,
         vehicle_plate, id_number, id_number_encrypted, id_number_encrypted_at,
-        resident_id, host_id,
+        resident_id, host_id, estate_id,
         invite_code, visitor_token, token_expires_at,
         allow_residence_location, unit_pin_encrypted, unit_pin_encrypted_at,
         consent_given, consent_timestamp, consent_type, consent_version,
         status, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())
        RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit,
                  invite_code, visitor_token, token_expires_at, status, created_at`,
       [
         sanitizeString(name.trim()),
         sanitizeString(phone.trim()),
-        email ? sanitizeString(email.trim()) : null,
+        email ? sanitizeString(email.trim().toLowerCase()) : null,
         sanitizeString(purpose || 'Visit'),
         finalDateOfVisit,
         time || null,
@@ -226,6 +231,7 @@ export const createVisitor = async (req, res) => {
         idNumberEncryptedAt, // NEW: Encryption timestamp
         residentId,
         residentId, // Set host_id to same value as resident_id
+        req.user.estate_id,
         inviteCode,
         visitorToken,
         expiresAt,
@@ -247,10 +253,10 @@ export const createVisitor = async (req, res) => {
     // Send invite notification via WhatsApp/SMS
     try {
       const sent = await sendVisitorInviteSms(
-        { 
-          name: visitor.name, 
-          phone: visitor.phone, 
-          dateOfVisit, 
+        {
+          name: visitor.name,
+          phone: visitor.phone,
+          dateOfVisit,
           time,
           purpose: visitor.purpose,
           inviteCode: inviteCode
@@ -326,14 +332,18 @@ export const getMyVisitors = async (req, res) => {
     const role = req.user.role;
 
     // Get pagination params
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
+    const pageRaw = parseInt(req.query.page, 10);
+    const limitRaw = parseInt(req.query.limit, 10);
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 100) : 20;
     const offset = (page - 1) * limit;
     const status = req.query.status;
+    const searchRaw = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const searchTerm = searchRaw ? `%${searchRaw}%` : null;
 
     let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
                         vehicle_plate, id_number, id_number_encrypted, id_number_encrypted_at,
-                        status, check_in, check_out, visitor_token, token_expires_at, 
+                        status, check_in_time AS check_in, check_out_time AS check_out, visitor_token, token_expires_at, 
                         invite_code, created_at, host_id, resident_id
                  FROM visitors`;
     const params = [];
@@ -349,10 +359,18 @@ export const getMyVisitors = async (req, res) => {
       }
 
       const residentId = residentResult.rows[0].id;
-      query += ` WHERE (host_id = $1 OR resident_id = $1)`;
+      query += ' WHERE (host_id = $1 OR resident_id = $1)';
       params.push(residentId);
+      if (req.user.estate_id) {
+        query += ` AND estate_id = $2`;
+        params.push(req.user.estate_id);
+      }
     } else if (role === 'guard' || role === 'admin') {
-      query += ` WHERE 1=1`;
+      if (!req.user.estate_id) {
+        return respondError(res, 403, 'Estate context required');
+      }
+      query += ` WHERE estate_id = $1`;
+      params.push(req.user.estate_id);
     } else {
       return respondError(res, 403, 'Forbidden');
     }
@@ -360,6 +378,11 @@ export const getMyVisitors = async (req, res) => {
     if (status) {
       query += ` AND status = $${params.length + 1}`;
       params.push(String(status).toLowerCase());
+    }
+    if (searchTerm) {
+      const searchIndex = params.length + 1;
+      query += ` AND (name ILIKE $${searchIndex} OR phone ILIKE $${searchIndex} OR email ILIKE $${searchIndex})`;
+      params.push(searchTerm);
     }
 
     query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -373,16 +396,22 @@ export const getMyVisitors = async (req, res) => {
     if (role === 'resident') {
       countQuery += ' WHERE (host_id = $1 OR resident_id = $1)';
       countParams.push(params[0]);
-      if (status) {
-        countQuery += ' AND status = $2';
-        countParams.push(String(status).toLowerCase());
+      if (req.user.estate_id) {
+        countQuery += ` AND estate_id = $2`;
+        countParams.push(req.user.estate_id);
       }
     } else {
-      countQuery += ' WHERE 1=1';
-      if (status) {
-        countQuery += ` AND status = $1`;
-        countParams.push(String(status).toLowerCase());
-      }
+      countQuery += ' WHERE estate_id = $1';
+      countParams.push(req.user.estate_id);
+    }
+    if (status) {
+      countQuery += ` AND status = $${countParams.length + 1}`;
+      countParams.push(String(status).toLowerCase());
+    }
+    if (searchTerm) {
+      const searchIndex = countParams.length + 1;
+      countQuery += ` AND (name ILIKE $${searchIndex} OR phone ILIKE $${searchIndex} OR email ILIKE $${searchIndex})`;
+      countParams.push(searchTerm);
     }
     const countResult = await dbManager.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count);
@@ -424,14 +453,22 @@ export const createPass = async (req, res) => {
     const OTP_DEBUG_ECHO = shouldEchoOtp();
     const CLIENT_ORIGIN = getClientOrigin();
 
-    // Fetch visitor
-    const vRes = await dbManager.query(
-      `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, resident_id, visitor_token
+    // Fetch visitor with estate scoping
+    let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, resident_id, host_id, visitor_token, estate_id
        FROM visitors
-       WHERE id = $1
-       LIMIT 1`,
-      [Number(visitorId)]
-    );
+       WHERE id = $1`;
+    const params = [Number(visitorId)];
+
+    // SECURITY: Enforce estate isolation for guards and admins
+    // Residents are checked via ownership logic later, but estate check doesn't hurt
+    if (req.user.estate_id) {
+      query += ` AND estate_id = $2`;
+      params.push(req.user.estate_id);
+    }
+
+    query += ` LIMIT 1`;
+
+    const vRes = await dbManager.query(query, params);
 
     if (vRes.rows.length === 0) {
       return respondError(res, 404, 'Visitor not found');
@@ -443,7 +480,8 @@ export const createPass = async (req, res) => {
     if (req.user.role === 'resident') {
       const residentRes = await dbManager.query('SELECT id FROM users WHERE email = $1', [req.user.email]);
       const residentId = residentRes.rows[0]?.id;
-      if (!residentId || visitor.resident_id !== residentId) {
+      const ownsVisitor = visitor.resident_id === residentId || visitor.host_id === residentId;
+      if (!residentId || !ownsVisitor) {
         return respondError(res, 403, 'Forbidden');
       }
     } else if (req.user.role !== 'admin' && req.user.role !== 'guard') {
@@ -465,6 +503,7 @@ export const createPass = async (req, res) => {
     const otpHash = await argon2.hash(otp);
     const otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
+    // Update with estate verification
     await dbManager.query(
       `UPDATE visitors
        SET visitor_token = $1,
@@ -475,8 +514,8 @@ export const createPass = async (req, res) => {
            otp_resend_count = 0,
            status = $5,
            updated_at = NOW()
-       WHERE id = $6`,
-      [visitorToken, tokenExpiresAt, otpHash, otpExpiresAt, PASS_STATUS.OTP_SENT, visitor.id]
+       WHERE id = $6 AND estate_id = $7`,
+      [visitorToken, tokenExpiresAt, otpHash, otpExpiresAt, PASS_STATUS.OTP_SENT, visitor.id, visitor.estate_id]
     );
 
     let qrCodeDataUrl = null;
@@ -525,6 +564,14 @@ export const createPass = async (req, res) => {
       responseData.otp = otp;
     }
 
+    if (qrId) {
+      await dbManager.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
+    } else {
+      // Fix V-008: Notify client if QR generation failed
+      responseData.warning = 'QR code generation failed, please retry later';
+      responseData.qr_status = 'failed';
+    }
+
     return respond(res, responseData);
   } catch (error) {
     console.error('[createPass] Error:', error);
@@ -545,10 +592,10 @@ export const bulkInvite = async (req, res) => {
       return respondError(res, 401, 'Unauthorized');
     }
 
-    // Allow residents, admins, and guards to create bulk invites
-    const allowedRoles = ['resident', 'admin', 'guard'];
+    // Allow residents and admins to create bulk invites
+    const allowedRoles = ['resident', 'admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) {
-      return respondError(res, 403, 'Forbidden - Only residents, admins, and guards can create bulk invites');
+      return respondError(res, 403, 'Forbidden - Only residents and admins can create bulk invites');
     }
 
     const OTP_EXPIRY_MINUTES = getOtpExpiryMinutes();
@@ -586,7 +633,7 @@ export const bulkInvite = async (req, res) => {
 
     // Generate unique invite code
     const inviteCode = generateSecureToken(16);
-    
+
     // Calculate expiry (end of event day)
     const eventDate = new Date(date);
     eventDate.setHours(23, 59, 59, 999);
@@ -595,8 +642,8 @@ export const bulkInvite = async (req, res) => {
     const bulkResult = await dbManager.query(
       `INSERT INTO bulk_invites (
         event_name, date, time, num_guests, invite_code, 
-        expires_at, created_by, remaining_slots, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        expires_at, created_by, remaining_slots, estate_id, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
        RETURNING id, event_name, date, time, num_guests, invite_code, expires_at, remaining_slots`,
       [
         eventName.trim(),
@@ -606,7 +653,8 @@ export const bulkInvite = async (req, res) => {
         inviteCode,
         eventDate,
         resident.email,
-        guestCount
+        guestCount,
+        req.user.estate_id
       ]
     );
 
@@ -616,63 +664,93 @@ export const bulkInvite = async (req, res) => {
     // If guests array provided, pre-register them (legacy mode)
     const createdVisitors = [];
     const errors = [];
+    let remainingSlots = bulkInvite.remaining_slots;
 
     if (guests && Array.isArray(guests) && guests.length > 0) {
-      for (const guest of guests.slice(0, 50)) {
-        try {
-          const { name, phone, email: guestEmail } = guest;
-
-          if (!name?.trim()) {
-            errors.push({ guest, error: 'Name is required' });
-            continue;
-          }
-
-          // Generate visitor token and OTP for pre-registered guests
-          const visitorToken = generateVisitorToken();
-          const tokenExpiresAt = calculateTokenExpiry(date);
-          const otp = generateOTP(6);
-          const otpHash = await argon2.hash(otp);
-          const otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-
-          const result = await dbManager.query(
-            `INSERT INTO visitors (
-              name, phone, email, purpose, date_of_visit, time_of_visit,
-              resident_id, bulk_invite_id,
-              visitor_token, token_expires_at,
-              otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
-              status, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, $13, NOW())
-             RETURNING id, name, phone, email, purpose, status, visitor_token`,
-            [
-              name.trim(),
-              phone?.trim() || null,
-              guestEmail?.trim() || null,
-              eventName,
-              date,
-              time,
-              resident.id,
-              bulkInvite.id,
-              visitorToken,
-              tokenExpiresAt,
-              otpHash,
-              otpExpiresAt,
-              PASS_STATUS.PENDING
-            ]
+      const preRegResult = await dbManager.transaction(async (client) => {
+        let currentRemaining = remainingSlots;
+        if (currentRemaining !== null) {
+          // SECURITY: Ensure estate_ID matches in lock
+          const lockRes = await client.query(
+            'SELECT remaining_slots FROM bulk_invites WHERE id = $1 AND estate_id = $2 FOR UPDATE',
+            [bulkInvite.id, req.user.estate_id]
           );
-
-          const createdVisitor = result.rows[0];
-          createdVisitor.inviteLink = `${CLIENT_ORIGIN}/v/${visitorToken}`;
-          createdVisitors.push(createdVisitor);
-
-          // Decrement remaining slots
-          await dbManager.query(
-            'UPDATE bulk_invites SET remaining_slots = remaining_slots - 1 WHERE id = $1',
-            [bulkInvite.id]
-          );
-
-        } catch (err) {
-          errors.push({ guest, error: err.message });
+          currentRemaining = lockRes.rows[0]?.remaining_slots ?? currentRemaining;
         }
+
+        for (const guest of guests.slice(0, 50)) {
+          try {
+            const { name, phone, email: guestEmail } = guest;
+
+            if (!name?.trim()) {
+              errors.push({ guest, error: 'Name is required' });
+              continue;
+            }
+
+            if (currentRemaining !== null && currentRemaining <= 0) {
+              errors.push({ guest, error: 'No remaining slots available' });
+              continue;
+            }
+
+            // Generate visitor token and OTP for pre-registered guests
+            const visitorToken = generateVisitorToken();
+            const tokenExpiresAt = calculateTokenExpiry(date);
+            const otp = generateOTP(6);
+            const otpHash = await argon2.hash(otp);
+            const otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+            const result = await client.query(
+              `INSERT INTO visitors (
+                name, phone, email, purpose, date_of_visit, time_of_visit,
+                resident_id, bulk_invite_id, estate_id,
+                visitor_token, token_expires_at,
+                otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
+                status, created_at
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, 0, $14, NOW())
+               RETURNING id, name, phone, email, purpose, status, visitor_token`,
+              [
+                name.trim(),
+                phone?.trim() || null,
+                guestEmail?.trim() || null,
+                eventName,
+                date,
+                time,
+                resident.id,
+                bulkInvite.id,
+                req.user.estate_id, // Add estate_id
+                visitorToken,
+                tokenExpiresAt,
+                otpHash,
+                otpExpiresAt,
+                PASS_STATUS.PENDING
+              ]
+            );
+
+            const createdVisitor = result.rows[0];
+            createdVisitor.inviteLink = `${CLIENT_ORIGIN}/v/${visitorToken}`;
+            createdVisitors.push(createdVisitor);
+
+            if (currentRemaining !== null) {
+              const updateRes = await client.query(
+                'UPDATE bulk_invites SET remaining_slots = remaining_slots - 1 WHERE id = $1 AND estate_id = $2 AND remaining_slots > 0 RETURNING remaining_slots',
+                [bulkInvite.id, req.user.estate_id]
+              );
+              if (updateRes.rows.length === 0) {
+                errors.push({ guest, error: 'No remaining slots available' });
+                continue;
+              }
+              currentRemaining = updateRes.rows[0].remaining_slots;
+            }
+          } catch (err) {
+            errors.push({ guest, error: err.message });
+          }
+        }
+
+        return { currentRemaining };
+      });
+
+      if (preRegResult && preRegResult.currentRemaining !== undefined) {
+        remainingSlots = preRegResult.currentRemaining;
       }
     }
 
@@ -692,7 +770,7 @@ export const bulkInvite = async (req, res) => {
       date: bulkInvite.date,
       time: bulkInvite.time,
       numGuests: bulkInvite.num_guests,
-      remainingSlots: bulkInvite.remaining_slots,
+      remainingSlots,
       expiresAt: bulkInvite.expires_at,
       guests: createdVisitors.length > 0 ? createdVisitors : undefined,
       errors: errors.length > 0 ? errors : undefined
@@ -863,10 +941,10 @@ export const completeInvite = async (req, res) => {
             name, phone, email, purpose, date_of_visit, time_of_visit,
             resident_id, bulk_invite_id,
             visitor_token, token_expires_at,
-            otp_hash, otp_expires_at, otp_attempts, otp_resend_count,
+            otp_hash, otp_expires_at, otp_attempts,
             consent_given, consent_timestamp, consent_type, consent_version,
             status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, true, $13, $14, $15, $16, NOW())
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, true, $13, $14, $15, $16, NOW())
            RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
           [
             name.trim(),
@@ -967,7 +1045,8 @@ export const completeInvite = async (req, res) => {
       }
 
       const existing = vRes.rows[0];
-      if (existing.visitor_token) {
+      // Only block if already completed (not pending_confirmation)
+      if (existing.visitor_token && existing.status !== 'pending_confirmation') {
         return { error: { status: 409, message: 'Invitation already completed' } };
       }
 
@@ -999,7 +1078,6 @@ export const completeInvite = async (req, res) => {
            otp_hash = $13,
            otp_expires_at = $14,
            otp_attempts = 0,
-           otp_resend_count = 0,
            status = $15,
            updated_at = NOW()
          WHERE id = $1
@@ -1105,7 +1183,7 @@ export const cancelVisitor = async (req, res) => {
       [id]
     );
     const visitor = vRes.rows[0];
-    
+
     if (!visitor) {
       return respondError(res, 404, 'Visitor not found');
     }
@@ -1117,7 +1195,7 @@ export const cancelVisitor = async (req, res) => {
         'SELECT id FROM users WHERE email = $1',
         [req.user.email]
       );
-      
+
       if (residentResult.rows.length === 0) {
         return respondError(res, 404, 'Resident not found');
       }
@@ -1134,20 +1212,19 @@ export const cancelVisitor = async (req, res) => {
     // Delete the visitor
     await dbManager.query('DELETE FROM visitors WHERE id = $1', [id]);
 
-    await req.audit?.('visitor.cancel', 'visitor', String(id), { 
-      outcome: 'success', 
+    await req.audit?.('visitor.cancel', 'visitor', String(id), {
+      outcome: 'success',
       message: 'Visitor invitation cancelled',
       visitorName: visitor.name
     });
 
     respond(res, { message: 'Visitor cancelled successfully' });
-  } catch
- (error) {
+  } catch (error) {
     console.error('Cancel visitor error:', error);
-    await req.audit?.('visitor.cancel', 'visitor', null, { 
-      outcome: 'fail', 
-      message: 'Failed to cancel visitor', 
-      error: String(error?.message) 
+    await req.audit?.('visitor.cancel', 'visitor', null, {
+      outcome: 'fail',
+      message: 'Failed to cancel visitor',
+      error: String(error?.message)
     });
     respondError(res, 500, 'Failed to cancel visitor');
   }

@@ -6,6 +6,7 @@
  */
 
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import anprService from '../services/anprService.js';
@@ -13,6 +14,17 @@ import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
+const anprLookupLimitMax = Number(process.env.ANPR_LOOKUP_RATE_LIMIT_MAX || 30);
+const anprLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: Number.isFinite(anprLookupLimitMax) ? anprLookupLimitMax : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `anpr:lookup:${req.user?.id || req.ip}`,
+  handler: (req, res) => {
+    return errorResponse(res, 'Too many ANPR lookup requests, please try again later.', 'RATE_LIMITED', 429, null, req);
+  }
+});
 
 /**
  * Check ANPR integration status
@@ -40,7 +52,7 @@ router.get('/status', authenticateToken, async (req, res) => {
  * 
  * Used by ANPR camera systems or guard manual lookup
  */
-router.post('/lookup', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/lookup', authenticateToken, anprLookupLimiter, attachRequestAudit, async (req, res) => {
   try {
     const { role, id: userId } = req.user;
     const { plate } = req.body;

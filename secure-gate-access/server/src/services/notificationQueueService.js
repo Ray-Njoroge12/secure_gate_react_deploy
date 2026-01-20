@@ -31,6 +31,10 @@ class NotificationQueueService {
       sms: { sent: 0, failed: 0, retried: 0, pending: 0 }
     };
 
+    if ((process.env.NODE_ENV || '').toLowerCase() === 'test') {
+      return;
+    }
+
     // Initialize queues
     this.initializeQueues();
   }
@@ -41,7 +45,7 @@ class NotificationQueueService {
   async initializeQueues() {
     try {
       // Redis connection configuration
-      const redisConfig = {
+      const redisConfig = process.env.REDIS_URL || {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT) || 6379,
         password: process.env.REDIS_PASSWORD || undefined,

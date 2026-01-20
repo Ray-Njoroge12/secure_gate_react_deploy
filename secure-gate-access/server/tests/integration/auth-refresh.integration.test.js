@@ -45,6 +45,7 @@ describe('Auth refresh/logout integration', () => {
   it('refreshes access tokens with a valid refresh token', async () => {
     const loginResponse = await request(app)
       .post('/api/auth/login')
+      .set('X-Client-Platform', 'api')
       .send({
         email: testUsers.admin.email,
         password: 'testpass123'
@@ -55,6 +56,7 @@ describe('Auth refresh/logout integration', () => {
 
     const refreshResponse = await request(app)
       .post('/api/auth/refresh')
+      .set('X-Client-Platform', 'api')
       .send({ refreshToken });
 
     expect(refreshResponse.status).toBe(200);
@@ -64,6 +66,7 @@ describe('Auth refresh/logout integration', () => {
   it('logs out and clears auth cookies', async () => {
     const loginResponse = await request(app)
       .post('/api/auth/login')
+      .set('X-Client-Platform', 'api')
       .send({
         email: testUsers.admin.email,
         password: 'testpass123'

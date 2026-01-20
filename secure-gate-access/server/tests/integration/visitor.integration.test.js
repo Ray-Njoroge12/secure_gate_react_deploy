@@ -180,15 +180,46 @@ describe('Visitor Management Integration Tests', () => {
       });
     });
 
-    it('should list active visitors for guard', async () => {
+    it('should not return visitors owned by other residents', async () => {
+      const { dbManager } = await import('../../src/database/db.enhanced.js');
+      const otherEmail = `other_resident_${Date.now()}@test.com`;
+
+      const otherResidentResult = await dbManager.query(
+        `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING *`,
+        [
+          `other_resident_${Date.now()}`,
+          otherEmail,
+          testUsers.resident.password_hash,
+          testUsers.resident.password_hash,
+          'resident',
+          '+254700999999',
+          'B202',
+          true,
+          testUsers.resident.estate_id
+        ]
+      );
+
+      const otherResident = otherResidentResult.rows[0];
+      const otherVisitor = await createTestVisitor(otherResident.id, { name: 'Other Visitor' });
+
+      const response = await request(app)
+        .get('/api/visitors')
+        .set('Cookie', `token=${residentToken}`);
+
+      expect(response.status).toBe(200);
+      const visitorIds = response.body.data.visitors.map(visitor => visitor.id);
+      expect(visitorIds).not.toContain(otherVisitor.id);
+    });
+
+    it('should forbid guard from listing active visitors', async () => {
       const response = await request(app)
         .get('/api/visitors/active')
         .set('Cookie', `token=${guardToken}`);
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      // Active visitors endpoint may return data in different format
-      expect(response.body.data).toBeDefined();
+      expect(response.status).toBe(403);
+      expect(response.body.success).toBe(false);
     });
 
     it('should support pagination', async () => {
@@ -203,12 +234,30 @@ describe('Visitor Management Integration Tests', () => {
       expect(response.body.data.visitors.length).toBeLessThanOrEqual(2);
     });
 
+    it('should support searching by name', async () => {
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const searchableName = `Searchable Visitor ${uniqueSuffix}`;
+      const searchableVisitor = await createTestVisitor(testUsers.resident.id, { name: searchableName });
+
+      const response = await request(app)
+        .get(`/api/visitors?search=${encodeURIComponent(uniqueSuffix)}`)
+        .set('Cookie', `token=${residentToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      const visitors = response.body.data.visitors || [];
+      const visitorIds = visitors.map(visitor => visitor.id);
+      expect(visitorIds).toContain(searchableVisitor.id);
+      visitors.forEach(visitor => {
+        const matchesName = visitor.name?.includes(uniqueSuffix);
+        const matchesPhone = visitor.phone?.includes(uniqueSuffix);
+        const matchesEmail = visitor.email?.includes(uniqueSuffix);
+        expect(matchesName || matchesPhone || matchesEmail).toBe(true);
+      });
+    });
+
     it('should support filtering by status', async () => {
-      const { dbManager } = await import('../../src/database/db.enhanced.js');
-      await dbManager.query(
-        'UPDATE visitors SET status = $1 WHERE id IN (SELECT id FROM visitors LIMIT 1)',
-        ['on_premise']
-      );
+      await createTestVisitor(testUsers.resident.id, { status: 'on_premise' });
 
       const response = await request(app)
         .get('/api/visitors?status=on_premise')
@@ -230,8 +279,24 @@ describe('Visitor Management Integration Tests', () => {
       const timestamp = Date.now();
       const uniqueSuffix = `${timestamp}_${Math.random().toString(36).substring(2, 11)}`;
 
+      await dbManager.query(
+        `INSERT INTO estates (id, name, slug, timezone)
+         VALUES (1, 'Estate One', 'estate-one', 'UTC')
+         ON CONFLICT (id) DO NOTHING`
+      );
+      await dbManager.query(
+        `INSERT INTO estates (id, name, slug, timezone)
+         VALUES (2, 'Estate Two', 'estate-two', 'UTC')
+         ON CONFLICT (id) DO NOTHING`
+      );
+      await dbManager.query(
+        `INSERT INTO estate_locations (estate_id)
+         VALUES (1), (2)
+         ON CONFLICT (estate_id) DO NOTHING`
+      );
+
       const residentAResult = await dbManager.query(
-        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+        `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [
           `residentA_${uniqueSuffix}`,
@@ -240,14 +305,14 @@ describe('Visitor Management Integration Tests', () => {
           hashedPassword,
           'resident',
           `+2547${timestamp.toString().slice(-8)}`,
-          'A101',
+          `A101-${uniqueSuffix}`,
           true,
           1
         ]
       );
 
       const residentBResult = await dbManager.query(
-        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified, estate_id)
+        `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [
           `residentB_${uniqueSuffix}`,
@@ -356,7 +421,7 @@ describe('Visitor Management Integration Tests', () => {
       );
 
       expect(updated.rows[0].status).toBe('on_premise');
-      expect(updated.rows[0].check_in).not.toBeNull();
+      expect(updated.rows[0].check_in_time).not.toBeNull();
     });
 
     it('should deny check-in by non-guard users', async () => {
@@ -419,7 +484,7 @@ describe('Visitor Management Integration Tests', () => {
       
       const { dbManager } = await import('../../src/database/db.enhanced.js');
       await dbManager.query(
-        'UPDATE visitors SET check_in = NOW() - INTERVAL \'2 hours\' WHERE id = $1',
+        'UPDATE visitors SET check_in_time = NOW() - INTERVAL \'2 hours\' WHERE id = $1',
         [testVisitor.id]
       );
     });
@@ -441,7 +506,7 @@ describe('Visitor Management Integration Tests', () => {
       );
 
       expect(updated.rows[0].status).toBe('checked_out');
-      expect(updated.rows[0].check_out).not.toBeNull();
+      expect(updated.rows[0].check_out_time).not.toBeNull();
     });
 
     it('should calculate visit duration correctly', async () => {
@@ -453,15 +518,15 @@ describe('Visitor Management Integration Tests', () => {
       
       const { dbManager } = await import('../../src/database/db.enhanced.js');
       const visitor = await dbManager.query(
-        'SELECT check_in, check_out FROM visitors WHERE id = $1',
+        'SELECT check_in_time, check_out_time FROM visitors WHERE id = $1',
         [testVisitor.id]
       );
 
-      expect(visitor.rows[0].check_in).not.toBeNull();
-      expect(visitor.rows[0].check_out).not.toBeNull();
+      expect(visitor.rows[0].check_in_time).not.toBeNull();
+      expect(visitor.rows[0].check_out_time).not.toBeNull();
       
-      const checkInTime = new Date(visitor.rows[0].check_in);
-      const checkOutTime = new Date(visitor.rows[0].check_out);
+      const checkInTime = new Date(visitor.rows[0].check_in_time);
+      const checkOutTime = new Date(visitor.rows[0].check_out_time);
       expect(checkOutTime.getTime()).toBeGreaterThan(checkInTime.getTime());
     });
 
@@ -551,9 +616,9 @@ describe('Visitor Management Integration Tests', () => {
       const hashedPassword = await argon2.default.hash('testpass123');
       
       const otherResident = await dbManager.query(
-        `INSERT INTO users (username, email, password, password_hash, role, verified)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        ['other_resident', 'other@test.com', hashedPassword, hashedPassword, 'resident', true]
+        `INSERT INTO users (username, email, password, password_hash, role, house, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        ['other_resident', 'other@test.com', hashedPassword, hashedPassword, 'resident', 'B202', true, 1]
       );
       
       const otherResidentToken = await getAuthToken('other@test.com');

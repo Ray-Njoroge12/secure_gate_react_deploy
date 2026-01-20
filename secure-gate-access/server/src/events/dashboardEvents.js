@@ -11,6 +11,70 @@
 
 import logger from '../config/logger.js';
 import { PASS_STATUS } from '../constants/statuses.js';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
+
+const isPlainObject = (value) => Object.prototype.toString.call(value) === '[object Object]';
+const shouldMaskAsEmail = (key) => key.includes('email');
+const shouldMaskAsPhone = (key) => (
+  key.includes('phone')
+  || key.includes('msisdn')
+  || key.includes('mobile')
+);
+const isRecipientKey = (key) => key === 'to' || key === 'recipient';
+const isUsernameKey = (key) => key === 'username' || key === 'user_name' || key.endsWith('_username');
+
+const sanitizeTelemetry = (data) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeTelemetry(item));
+  }
+
+  if (!isPlainObject(data)) {
+    return data;
+  }
+
+  const sanitized = {};
+  for (const [key, value] of Object.entries(data)) {
+    const normalizedKey = key.toLowerCase();
+
+    if (Array.isArray(value)) {
+      sanitized[key] = value.map(item => sanitizeTelemetry(item));
+      continue;
+    }
+
+    if (value && typeof value === 'object') {
+      sanitized[key] = isPlainObject(value) ? sanitizeTelemetry(value) : value;
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsEmail(normalizedKey)) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsPhone(normalizedKey)) {
+      sanitized[key] = maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isRecipientKey(normalizedKey)) {
+      sanitized[key] = value.includes('@') ? maskEmail(value) : maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isUsernameKey(normalizedKey) && value.includes('@')) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    sanitized[key] = value;
+  }
+
+  return sanitized;
+};
 
 class DashboardEvents {
   constructor(webSocketService) {
@@ -37,8 +101,9 @@ class DashboardEvents {
       }
     };
 
-    this.broadcastToDashboard(event);
-    this.logEvent(event);
+    const sanitizedEvent = this.sanitizeEvent(event);
+    this.broadcastToDashboard(sanitizedEvent);
+    this.logEvent(sanitizedEvent);
   }
 
   /**
@@ -57,8 +122,9 @@ class DashboardEvents {
       }
     };
 
-    this.broadcastToDashboard(event);
-    this.logEvent(event);
+    const sanitizedEvent = this.sanitizeEvent(event);
+    this.broadcastToDashboard(sanitizedEvent);
+    this.logEvent(sanitizedEvent);
   }
 
   /**
@@ -80,8 +146,9 @@ class DashboardEvents {
       }
     };
 
-    this.broadcastToDashboard(event);
-    this.logEvent(event);
+    const sanitizedEvent = this.sanitizeEvent(event);
+    this.broadcastToDashboard(sanitizedEvent);
+    this.logEvent(sanitizedEvent);
   }
 
   /**
@@ -94,7 +161,8 @@ class DashboardEvents {
       data: metrics
     };
 
-    this.broadcastToDashboard(event);
+    const sanitizedEvent = this.sanitizeEvent(event);
+    this.broadcastToDashboard(sanitizedEvent);
   }
 
   /**
@@ -118,14 +186,17 @@ class DashboardEvents {
 
     // Broadcast to appropriate rooms based on severity
     if (alertData.severity === 'critical') {
-      this.broadcastToAdmins(event);
-      this.broadcastToGuards(event);
+      const sanitizedEvent = this.sanitizeEvent(event);
+      this.broadcastToAdmins(sanitizedEvent);
+      this.broadcastToGuards(sanitizedEvent);
     } else if (alertData.severity === 'high') {
-      this.broadcastToGuards(event);
+      const sanitizedEvent = this.sanitizeEvent(event);
+      this.broadcastToGuards(sanitizedEvent);
     }
 
-    this.broadcastToDashboard(event);
-    this.logEvent(event);
+    const sanitizedEvent = this.sanitizeEvent(event);
+    this.broadcastToDashboard(sanitizedEvent);
+    this.logEvent(sanitizedEvent);
   }
 
   /**
@@ -148,16 +219,16 @@ class DashboardEvents {
 
     // Broadcast to specified roles
     if (notification.targetRoles.includes('admin')) {
-      this.broadcastToAdmins(event);
+      this.broadcastToAdmins(this.sanitizeEvent(event));
     }
     if (notification.targetRoles.includes('guard')) {
-      this.broadcastToGuards(event);
+      this.broadcastToGuards(this.sanitizeEvent(event));
     }
     if (notification.targetRoles.includes('all')) {
-      this.broadcastToDashboard(event);
+      this.broadcastToDashboard(this.sanitizeEvent(event));
     }
 
-    this.logEvent(event);
+    this.logEvent(this.sanitizeEvent(event));
   }
 
   /**
@@ -178,8 +249,9 @@ class DashboardEvents {
       }
     };
 
-    this.broadcastToDashboard(event);
-    this.logEvent(event);
+    const sanitizedEvent = this.sanitizeEvent(event);
+    this.broadcastToDashboard(sanitizedEvent);
+    this.logEvent(sanitizedEvent);
   }
 
   /**
@@ -199,7 +271,7 @@ class DashboardEvents {
       }
     };
 
-    this.broadcastToDashboard(event);
+    this.broadcastToDashboard(this.sanitizeEvent(event));
   }
 
   /**
@@ -259,6 +331,17 @@ class DashboardEvents {
     if (this.eventQueue.length > this.maxQueueSize) {
       this.eventQueue.shift();
     }
+  }
+
+  sanitizeEvent(event) {
+    if (!event || typeof event !== 'object') {
+      return event;
+    }
+
+    return {
+      ...event,
+      data: sanitizeTelemetry(event.data || {})
+    };
   }
 
   /**

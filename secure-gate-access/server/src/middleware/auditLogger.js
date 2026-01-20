@@ -8,6 +8,7 @@
 import loggingService from '../services/loggingService.js';
 import { dbManager } from '../database/db.enhanced.js';
 import { v4 as uuidv4 } from 'uuid';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
 
 /**
  * Audit event types for different data access activities
@@ -132,11 +133,11 @@ const auditLogger = (...args) => {
             requestId,
             req.ip || '127.0.0.1',
             userAgent,
-            JSON.stringify({
+            JSON.stringify(sanitizeData({
               entity_type: entityType || null,
               entity_id: entityId || null,
               ...details
-            })
+            }, sensitiveFields))
           ]);
         } catch {
           // ignore audit insert failures
@@ -229,19 +230,19 @@ const auditLogger = (...args) => {
       timestamp: new Date().toISOString(),
       level: logLevel,
       event: determineEventType(req),
-      user: {
+      user: sanitizeData({
         id: req.user?.id || null,
         email: req.user?.email || null,
         role: req.user?.role || null,
         estate_id: req.user?.estate_id ?? null,
         ip: req.ip || req.connection.remoteAddress,
         userAgent: req.get('User-Agent') || null
-      },
+      }, sensitiveFields),
       request: {
         method: req.method,
         url: req.originalUrl,
         path: req.path,
-        query: req.query,
+        query: sanitizeData(req.query, sensitiveFields),
         headers: sanitizeHeaders(req.headers),
         body: includeRequestBody ? sanitizeData(req.body, sensitiveFields) : null,
         size: req.get('Content-Length') || 0
@@ -257,12 +258,12 @@ const auditLogger = (...args) => {
         duration: 0, // Will be calculated after response
         memoryUsage: process.memoryUsage()
       },
-      metadata: {
+      metadata: sanitizeData({
         sessionId: req.sessionID || null,
         correlationId: req.correlationId || null,
         apiVersion: req.get('API-Version') || '1.0',
         clientId: req.get('X-Client-ID') || null
-      }
+      }, sensitiveFields)
     };
 
     // Store audit data for later processing
@@ -292,9 +293,15 @@ const auditLogger = (...args) => {
         // Log to centralized logging service
         await logToCentralizedService(auditData);
 
-        // Log critical events immediately
+        // Log critical events immediately (summary only)
         if (auditData.level === AUDIT_LEVELS.CRITICAL) {
-          console.error('🚨 CRITICAL AUDIT EVENT:', auditData);
+          console.error('🚨 CRITICAL AUDIT EVENT:', {
+            auditId: auditData.auditId,
+            requestId: auditData.requestId,
+            event: auditData.event,
+            userId: auditData.user?.id,
+            statusCode: auditData.response?.statusCode
+          });
         }
 
       } catch (error) {
@@ -430,9 +437,21 @@ function sanitizeData(data, sensitiveFields) {
   if (!data || typeof data !== 'object') {
     return data;
   }
-  
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item, sensitiveFields));
+  }
+
   const sanitized = { ...data };
-  
+
+  const shouldMaskAsEmail = (key) => key.includes('email');
+  const shouldMaskAsPhone = (key) => (
+    key.includes('phone')
+    || key.includes('msisdn')
+    || key.includes('mobile')
+  );
+  const isRecipientKey = (key) => key === 'to' || key === 'recipient';
+
   for (const field of sensitiveFields) {
     if (sanitized[field]) {
       sanitized[field] = '[REDACTED]';
@@ -441,8 +460,26 @@ function sanitizeData(data, sensitiveFields) {
   
   // Recursively sanitize nested objects
   for (const key in sanitized) {
-    if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-      sanitized[key] = sanitizeData(sanitized[key], sensitiveFields);
+    const value = sanitized[key];
+    const normalizedKey = key.toLowerCase();
+
+    if (value && typeof value === 'object') {
+      sanitized[key] = sanitizeData(value, sensitiveFields);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsEmail(normalizedKey)) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsPhone(normalizedKey)) {
+      sanitized[key] = maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isRecipientKey(normalizedKey)) {
+      sanitized[key] = value.includes('@') ? maskEmail(value) : maskPhone(value);
     }
   }
   
@@ -527,7 +564,18 @@ async function logAuditEvent(auditData) {
  */
 async function logToCentralizedService(auditData) {
   try {
-    await loggingService.logAudit(auditData);
+    await loggingService.logAudit('Audit event', auditData.event, auditData.user?.id || null, {
+      auditId: auditData.auditId,
+      requestId: auditData.requestId,
+      level: auditData.level,
+      event: auditData.event,
+      method: auditData.request?.method,
+      path: auditData.request?.path,
+      statusCode: auditData.response?.statusCode,
+      durationMs: auditData.performance?.duration,
+      userRole: auditData.user?.role,
+      estateId: auditData.user?.estate_id
+    }, auditData.requestId);
   } catch (error) {
     console.error('❌ Failed to log to centralized service:', error);
   }

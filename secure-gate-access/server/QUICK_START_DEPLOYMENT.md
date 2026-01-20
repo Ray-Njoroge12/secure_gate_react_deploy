@@ -68,8 +68,7 @@ nano .env.production
 npm test
 
 # 5. Deploy (choose your method)
-# - Cloud: git push (Render/Heroku)
-# - PM2: pm2 start ecosystem.config.cjs --env production
+# - Cloud: git push (Render/Heroku/AWS)
 # - Docker: docker-compose -f docker-compose.prod.yml up -d
 ```
 
@@ -216,17 +215,8 @@ git push origin main  # or your deployment branch
 # For Heroku: git push heroku main
 ```
 
-#### **VPS with PM2**
-```bash
-# Start with PM2
-pm2 start ecosystem.config.cjs --env production
-
-# Save configuration
-pm2 save
-
-# Set up auto-start
-pm2 startup
-```
+#### **AWS (ECS/EB/EKS)**
+Trigger a new deployment via your CI/CD pipeline or service update in the AWS console.
 
 #### **Docker**
 ```bash
@@ -265,9 +255,6 @@ curl https://your-domain.com/api/health
 ```bash
 # View logs
 tail -f server/logs/combined.log
-
-# PM2 logs
-pm2 logs
 
 # Docker logs
 docker-compose logs -f

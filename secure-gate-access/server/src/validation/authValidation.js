@@ -30,12 +30,12 @@ const emailSchema = Joi.string()
 
 // Username validation - alphanumeric with underscores
 const usernameSchema = Joi.string()
-  .alphanum()
+  .pattern(/^[a-zA-Z0-9_]+$/)
   .min(3)
   .max(30)
   .required()
   .messages({
-    'string.alphanum': 'Username must contain only letters and numbers',
+    'string.pattern.base': 'Username must contain only letters, numbers, and underscores',
     'string.min': 'Username must be at least 3 characters long',
     'string.max': 'Username must not exceed 30 characters'
   });
@@ -72,13 +72,13 @@ export const registerSchema = Joi.object({
   estate_id: Joi.number()
     .integer()
     .min(1)
-    .required()
+    .optional()
+    .allow(null)
     .messages({
       'number.base': 'Estate ID must be a number',
-      'number.min': 'Estate ID must be a positive number',
-      'any.required': 'Estate ID is required'
+      'number.min': 'Estate ID must be a positive number'
     })
-}).options({ 
+}).options({
   stripUnknown: true,  // Remove unknown fields for security
   abortEarly: false    // Return all validation errors
 });
@@ -123,21 +123,21 @@ export const loginSchema = Joi.object({
       'number.base': 'Estate ID must be a number'
     })
 })
-// Ensure at least one identifier is provided
-.or('username', 'email')
-.messages({
-  'object.missing': 'Either username or email is required'
-})
-.options({ 
-  stripUnknown: true,
-  abortEarly: false 
-});
+  // Ensure at least one identifier is provided
+  .or('username', 'email')
+  .messages({
+    'object.missing': 'Either username or email is required'
+  })
+  .options({
+    stripUnknown: true,
+    abortEarly: false
+  });
 
 // Password reset request schema
 export const passwordResetRequestSchema = Joi.object({
   email: emailSchema
-}).options({ 
-  stripUnknown: true 
+}).options({
+  stripUnknown: true
 });
 
 // Password reset schema
@@ -154,9 +154,9 @@ export const passwordResetSchema = Joi.object({
     .messages({
       'any.only': 'Passwords do not match'
     })
-}).options({ 
+}).options({
   stripUnknown: true,
-  abortEarly: false 
+  abortEarly: false
 });
 
 // Refresh request schema (token optional to allow cookie-based refresh)
@@ -190,9 +190,9 @@ export const changePasswordSchema = Joi.object({
     .messages({
       'any.only': 'Passwords do not match'
     })
-}).options({ 
+}).options({
   stripUnknown: true,
-  abortEarly: false 
+  abortEarly: false
 });
 
 // Profile update schema
@@ -227,9 +227,9 @@ export const profileUpdateSchema = Joi.object({
     .messages({
       'string.max': 'Address must not exceed 500 characters'
     })
-}).options({ 
+}).options({
   stripUnknown: true,
-  abortEarly: false 
+  abortEarly: false
 }).min(1).messages({
   'object.min': 'At least one field must be provided for update'
 });
@@ -238,14 +238,14 @@ export const profileUpdateSchema = Joi.object({
 export const validate = (schema) => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body);
-    
+
     if (error) {
       const errors = error.details.map(detail => ({
         field: detail.path.join('.'),
         message: detail.message,
         type: detail.type
       }));
-      
+
       return res.status(422).json({
         success: false,
         message: 'Validation failed',
@@ -253,7 +253,7 @@ export const validate = (schema) => {
         timestamp: new Date().toISOString()
       });
     }
-    
+
     // Replace request body with sanitized values
     req.body = value;
     next();

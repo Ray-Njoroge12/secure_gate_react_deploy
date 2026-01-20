@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // Set up test environment
 process.env.NODE_ENV = 'test';

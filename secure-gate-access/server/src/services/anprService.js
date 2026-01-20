@@ -6,7 +6,7 @@
  */
 
 import { pool } from '../database/connection.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 const ANPR_ENABLED = process.env.ENABLE_ANPR_INTEGRATION === 'true';
 const ANPR_API_KEY = process.env.ANPR_API_KEY;
@@ -24,12 +24,12 @@ export function isEnabled() {
  */
 export function validateWebhookSignature(payload, signature) {
   if (!ANPR_WEBHOOK_SECRET) return false;
-  
+
   const expectedSignature = crypto
     .createHmac('sha256', ANPR_WEBHOOK_SECRET)
     .update(JSON.stringify(payload))
     .digest('hex');
-  
+
   return signature === expectedSignature;
 }
 
@@ -43,7 +43,7 @@ export async function lookupPlate(plate) {
   }
 
   const normalizedPlate = plate.toUpperCase().replace(/\s/g, '');
-  
+
   try {
     // Check 1: Active visitor invites with matching plate
     const visitorResult = await pool.query(
@@ -91,7 +91,7 @@ export async function lookupPlate(plate) {
 
     if (recurringResult.rows.length > 0) {
       const pass = recurringResult.rows[0];
-      
+
       // Check day and time constraints
       const now = new Date();
       const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -193,22 +193,77 @@ export async function logAnprEvent(eventType, plate, result, metadata = {}) {
   }
 }
 
-/**
- * Handle barrier open request (called after successful plate lookup)
- * This would integrate with the actual barrier hardware API
- */
+// Handle barrier open request (called after successful plate lookup)
 export async function requestBarrierOpen(barrierConfig) {
   if (!ANPR_ENABLED) {
     return { success: false, reason: 'ANPR integration disabled' };
   }
 
-  // Placeholder for actual barrier API integration
-  // In production, this would call the barrier hardware API
-  console.log('[ANPR] Barrier open requested:', barrierConfig);
-  
+  const barrierUrl = process.env.BARRIER_API_URL;
+  const allowSimulation = process.env.ANPR_SIMULATION === 'true'
+    || process.env.NODE_ENV !== 'production';
+  const timeoutMs = Number.parseInt(process.env.BARRIER_API_TIMEOUT_MS || '5000', 10);
+
+  // Real hardware integration
+  if (barrierUrl) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await fetch(barrierUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.BARRIER_API_KEY || ''}`
+        },
+        body: JSON.stringify({
+          action: 'open',
+          barrier_id: barrierConfig.barrier_id || 'main_gate',
+          reason: barrierConfig.authorization ? 'authorized_entry' : 'manual_override',
+          metadata: barrierConfig
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        throw new Error(`Barrier API responded with ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('[ANPR] Barrier open signal sent successfully:', result);
+
+      return {
+        success: true,
+        message: 'Barrier open signal sent',
+        timestamp: new Date().toISOString(),
+        externalId: result.id
+      };
+    } catch (error) {
+      console.error('[ANPR] Failed to communicate with Barrier API:', error);
+      return {
+        success: false,
+        error: 'Hardware communication failed',
+        details: error.message
+      };
+    }
+  }
+
+  if (!allowSimulation) {
+    return {
+      success: false,
+      error: 'Barrier API not configured',
+      details: 'Set BARRIER_API_URL or enable ANPR_SIMULATION for non-production environments.'
+    };
+  }
+
+  // Fallback / Simulation Log
+  console.log('[ANPR] Barrier open requested (Simulation):', barrierConfig);
+
   return {
     success: true,
-    message: 'Barrier open signal sent',
+    message: 'Barrier open signal sent (Simulation)',
     timestamp: new Date().toISOString()
   };
 }

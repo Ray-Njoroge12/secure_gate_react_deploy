@@ -376,8 +376,11 @@ Request to http://localhost:3001/api/events timed out
 # Check if server is running
 lsof -i :3001
 
-# Check server logs
-pm2 logs secure-gate-server
+# Check server logs (AWS)
+# Review CloudWatch Logs for the ECS service/task
+
+# Or (Docker)
+docker-compose -f docker-compose.staging.yml logs --tail=200 backend
 
 # Try starting server
 cd server && npm start

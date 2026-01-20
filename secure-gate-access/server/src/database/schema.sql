@@ -22,12 +22,10 @@ CREATE TABLE visitors (
     id_number VARCHAR(50),
     vehicle_plate VARCHAR(20),
     purpose TEXT,
-    estimated_time TIMESTAMP,
     date_of_visit DATE,
     time_of_visit TIME,
     invite_code VARCHAR(100) UNIQUE,
     status VARCHAR(20) DEFAULT 'PENDING',
-    expected_time TIMESTAMP,
     otp VARCHAR(10),
     otp_hash TEXT,
     otp_expires_at TIMESTAMP,
@@ -35,21 +33,13 @@ CREATE TABLE visitors (
     otp_resend_count INT DEFAULT 0,
     otp_last_resend TIMESTAMP,
     qr_code TEXT,
-    check_in TIMESTAMP,
-    check_out TIMESTAMP,
     check_in_time TIMESTAMP,
     check_out_time TIMESTAMP,
+    check_in_guard_id INT REFERENCES users(id),
+    check_out_guard_id INT REFERENCES users(id),
+    check_in_notes TEXT,
+    check_out_notes TEXT,
     created_by VARCHAR(255),
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE passes (
-    id SERIAL PRIMARY KEY,
-    pass_id VARCHAR(100) UNIQUE NOT NULL,
-    visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
-    expires_at TIMESTAMP NOT NULL,
-    status VARCHAR(20) DEFAULT 'active',
-    qr_code TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -79,15 +69,6 @@ CREATE TABLE access_logs (
     metadata JSONB
 );
 
-CREATE TABLE otp_resend_log (
-    id SERIAL PRIMARY KEY,
-    visitor_id INT REFERENCES visitors(id) ON DELETE CASCADE,
-    channel VARCHAR(20),
-    success BOOLEAN,
-    metadata JSONB,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
 CREATE TABLE audit_logs (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -115,14 +96,9 @@ CREATE INDEX idx_visitors_status ON visitors(status);
 CREATE INDEX idx_visitors_date_of_visit ON visitors(date_of_visit);
 CREATE INDEX idx_visitors_otp_expires_at ON visitors(otp_expires_at);
 CREATE INDEX idx_visitors_created_by ON visitors(created_by);
-CREATE INDEX idx_passes_visitor_id ON passes(visitor_id);
-CREATE INDEX idx_passes_status ON passes(status);
-CREATE INDEX idx_passes_expires_at ON passes(expires_at);
 CREATE INDEX idx_access_logs_user_id ON access_logs(user_id);
 CREATE INDEX idx_access_logs_created_at ON access_logs(created_at);
 CREATE INDEX idx_access_logs_request_id ON access_logs(request_id);
-CREATE INDEX idx_otp_resend_log_visitor_id ON otp_resend_log(visitor_id);
-CREATE INDEX idx_otp_resend_log_created_at ON otp_resend_log(created_at);
 CREATE INDEX idx_security_events_type ON security_events(event_type);
 CREATE INDEX idx_security_events_ip ON security_events(ip_address);
 CREATE INDEX idx_security_events_created_at ON security_events(created_at);

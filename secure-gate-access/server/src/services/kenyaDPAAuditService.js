@@ -16,7 +16,7 @@ import auditTraceabilityService from './auditTraceabilityService.js';
 import rollbackAlertingService from './rollbackAlertingService.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -137,6 +137,18 @@ class KenyaDPAAuditService {
     this.initializeService();
   }
 
+  buildValidationResult(compliant, enabledDetails, disabledDetails) {
+    return {
+      compliant,
+      details: compliant ? enabledDetails : disabledDetails,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  generateRandomSuffix() {
+    return crypto.randomBytes(6).toString('hex').toUpperCase();
+  }
+
   /**
    * Initialize Kenya DPA audit service
    */
@@ -174,7 +186,24 @@ class KenyaDPAAuditService {
     try {
       await fs.mkdir(path.dirname(this.storePath), { recursive: true });
       const raw = await fs.readFile(this.storePath, 'utf-8');
-      const stored = JSON.parse(raw);
+      if (!raw.trim()) {
+        await this.saveComplianceStore();
+        return;
+      }
+
+      let stored;
+      try {
+        stored = JSON.parse(raw);
+      } catch (error) {
+        if (process.env.NODE_ENV !== 'test') {
+          loggingService.logWarning('Kenya DPA compliance store invalid, resetting to defaults', {
+            storePath: this.storePath,
+            error: error.message
+          });
+        }
+        await this.saveComplianceStore();
+        return;
+      }
 
       if (stored?.dpo) {
         this.config.dpo = {
@@ -214,7 +243,9 @@ class KenyaDPAAuditService {
         odpc_registration: this.config.odpc_registration,
         policy_metadata: this.config.policy_metadata
       };
-      await fs.writeFile(this.storePath, JSON.stringify(payload, null, 2));
+      const tempPath = `${this.storePath}.tmp`;
+      await fs.writeFile(tempPath, JSON.stringify(payload, null, 2));
+      await fs.rename(tempPath, this.storePath);
     } catch (error) {
       loggingService.logError('Failed to persist Kenya DPA compliance store', error);
     }
@@ -226,14 +257,28 @@ class KenyaDPAAuditService {
   startComplianceReviewScheduler() {
     const intervalDays = this.config.policy_metadata.review_frequency_days || 90;
     const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
+    const MAX_TIMER_MS = 2147483647; // Max safe interval for setInterval in Node.js
+    const checkIntervalMs = intervalMs > MAX_TIMER_MS ? 24 * 60 * 60 * 1000 : intervalMs;
 
     setInterval(async () => {
       try {
-        await this.runComplianceReview('scheduled');
+        if (intervalMs <= MAX_TIMER_MS) {
+          await this.runComplianceReview('scheduled');
+          return;
+        }
+
+        const lastReviewedAt = this.config.policy_metadata.last_reviewed_at
+          ? Date.parse(this.config.policy_metadata.last_reviewed_at)
+          : null;
+        const lastReviewMs = Number.isFinite(lastReviewedAt) ? lastReviewedAt : 0;
+
+        if (!lastReviewMs || Date.now() - lastReviewMs >= intervalMs) {
+          await this.runComplianceReview('scheduled');
+        }
       } catch (error) {
         loggingService.logError('Scheduled Kenya DPA compliance review failed', error);
       }
-    }, intervalMs);
+    }, checkIntervalMs);
   }
 
   /**
@@ -406,9 +451,12 @@ class KenyaDPAAuditService {
    */
   async calculateBreachResponseTime() {
     try {
-      // This would calculate actual breach response times
-      // For now, return a simulated value
-      return Math.random() * 72 * 60 * 60 * 1000; // 0-72 hours
+      const activeBreaches = this.violations.filter(
+        violation => violation.type === 'breach_notification' && !violation.remediated
+      ).length;
+      const timeLimit = Number(this.config.breach_notification.time_limit || 0);
+
+      return activeBreaches > 0 ? Math.max(0, timeLimit) : 0;
       
     } catch (error) {
       loggingService.logError('Failed to calculate breach response time', error);
@@ -596,13 +644,24 @@ class KenyaDPAAuditService {
    */
   async validateDataSubjectRight(right) {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
+      const enabled = this.config.data_subject_rights.enabled;
+      const isRequired = this.config.data_subject_rights.rights.includes(right);
+      const validationFlags = Object.values(this.config.data_subject_rights.validation || {});
+      const validationsEnabled = validationFlags.every(Boolean);
+      const compliant = enabled && isRequired && validationsEnabled;
+      let details = 'Right properly implemented';
+
+      if (!enabled) {
+        details = 'Data subject rights validation disabled';
+      } else if (!isRequired) {
+        details = `Data subject right ${right} not configured`;
+      } else if (!validationsEnabled) {
+        details = 'Data subject rights validation incomplete';
+      }
+
       return {
-        compliant: compliant,
-        details: compliant ? 'Right properly implemented' : 'Right implementation needs improvement',
+        compliant,
+        details,
         timestamp: new Date().toISOString()
       };
       
@@ -696,15 +755,13 @@ class KenyaDPAAuditService {
    */
   async validateBreachNotificationPolicy() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? '72-hour notification policy properly implemented' : '72-hour notification policy needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      const validationFlags = Object.values(this.config.breach_notification.validation || {});
+      const compliant = this.config.breach_notification.enabled && validationFlags.every(Boolean);
+      return this.buildValidationResult(
+        compliant,
+        '72-hour notification policy validation enabled',
+        '72-hour notification policy validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate breach notification policy', error);
@@ -721,15 +778,15 @@ class KenyaDPAAuditService {
    */
   async validateODPCNotification() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'ODPC notification properly implemented' : 'ODPC notification needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      const validationFlags = Object.values(this.config.breach_notification.validation || {});
+      const compliant = this.config.breach_notification.enabled
+        && this.config.breach_notification.odpc_notification === true
+        && validationFlags.every(Boolean);
+      return this.buildValidationResult(
+        compliant,
+        'ODPC notification validation enabled',
+        'ODPC notification validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate ODPC notification', error);
@@ -746,15 +803,15 @@ class KenyaDPAAuditService {
    */
   async validateDataSubjectNotification() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Data subject notification properly implemented' : 'Data subject notification needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      const validationFlags = Object.values(this.config.breach_notification.validation || {});
+      const compliant = this.config.breach_notification.enabled
+        && this.config.breach_notification.data_subject_notification === true
+        && validationFlags.every(Boolean);
+      return this.buildValidationResult(
+        compliant,
+        'Data subject notification validation enabled',
+        'Data subject notification validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate data subject notification', error);
@@ -771,15 +828,15 @@ class KenyaDPAAuditService {
    */
   async validateInternalEscalation() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.4; // 60% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Internal escalation properly implemented' : 'Internal escalation needs improvement',
-        timestamp: new Date().toISOString()
-      };
+      const validationFlags = Object.values(this.config.breach_notification.validation || {});
+      const compliant = this.config.breach_notification.enabled
+        && this.config.breach_notification.internal_escalation === true
+        && validationFlags.every(Boolean);
+      return this.buildValidationResult(
+        compliant,
+        'Internal escalation validation enabled',
+        'Internal escalation validation disabled'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate internal escalation', error);
@@ -831,15 +888,16 @@ class KenyaDPAAuditService {
    */
   async validateDataProcessingAgreement(party) {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? `Data processing agreement with ${party} is compliant` : `Data processing agreement with ${party} needs improvement`,
-        timestamp: new Date().toISOString()
-      };
+      const validationFlags = Object.values(this.config.data_processing_agreements.validation || {});
+      const isRequired = this.config.data_processing_agreements.required_parties.includes(party);
+      const compliant = this.config.data_processing_agreements.enabled
+        && isRequired
+        && validationFlags.every(Boolean);
+      const enabledDetails = `Data processing agreement with ${party} validation enabled`;
+      const disabledDetails = isRequired
+        ? `Data processing agreement with ${party} validation disabled`
+        : `Data processing agreement with ${party} not configured`;
+      return this.buildValidationResult(compliant, enabledDetails, disabledDetails);
       
     } catch (error) {
       loggingService.logError(`Failed to validate data processing agreement with ${party}`, error);
@@ -917,15 +975,15 @@ class KenyaDPAAuditService {
    */
   async validateControllerRegistration() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Data controller properly registered with ODPC' : 'Data controller registration needs attention',
-        timestamp: new Date().toISOString()
-      };
+      const odpc = this.getODPCRegistration();
+      const compliant = this.config.odpc_registration.enabled
+        && this.config.odpc_registration.validation.controller_registered
+        && odpc.is_registered;
+      return this.buildValidationResult(
+        compliant,
+        'Data controller registration validated with ODPC',
+        'Data controller registration not validated with ODPC'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate controller registration', error);
@@ -942,15 +1000,15 @@ class KenyaDPAAuditService {
    */
   async validateProcessorRegistration() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.2; // 80% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'Data processor properly registered with ODPC' : 'Data processor registration needs attention',
-        timestamp: new Date().toISOString()
-      };
+      const odpc = this.getODPCRegistration();
+      const compliant = this.config.odpc_registration.enabled
+        && this.config.odpc_registration.validation.processor_registered
+        && odpc.is_registered;
+      return this.buildValidationResult(
+        compliant,
+        'Data processor registration validated with ODPC',
+        'Data processor registration not validated with ODPC'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate processor registration', error);
@@ -967,15 +1025,18 @@ class KenyaDPAAuditService {
    */
   async validateRegistrationCurrency() {
     try {
-      // This would implement actual validation logic
-      // For now, simulate validation based on random probability
-      const compliant = Math.random() > 0.3; // 70% compliance rate
-      
-      return {
-        compliant: compliant,
-        details: compliant ? 'ODPC registration is current' : 'ODPC registration needs renewal',
-        timestamp: new Date().toISOString()
-      };
+      const odpc = this.getODPCRegistration();
+      const daysUntilRenewal = this.calculateDaysUntilRenewal();
+      const hasRenewal = Number.isFinite(daysUntilRenewal);
+      const compliant = this.config.odpc_registration.enabled
+        && odpc.is_registered
+        && hasRenewal
+        && daysUntilRenewal >= 0;
+      return this.buildValidationResult(
+        compliant,
+        'ODPC registration is current',
+        hasRenewal ? 'ODPC registration needs renewal' : 'ODPC renewal date not configured'
+      );
       
     } catch (error) {
       loggingService.logError('Failed to validate registration currency', error);
@@ -1042,21 +1103,21 @@ class KenyaDPAAuditService {
    * Generate audit ID
    */
   generateAuditId() {
-    return `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `AUDIT-${Date.now()}-${this.generateRandomSuffix()}`;
   }
 
   /**
    * Generate violation ID
    */
   generateViolationId() {
-    return `VIOL-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `VIOL-${Date.now()}-${this.generateRandomSuffix()}`;
   }
 
   /**
    * Generate trace ID
    */
   generateTraceId() {
-    return `TRACE-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    return `TRACE-${Date.now()}-${this.generateRandomSuffix()}`;
   }
 
   /**

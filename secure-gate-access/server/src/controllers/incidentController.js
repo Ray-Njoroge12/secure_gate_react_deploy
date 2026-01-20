@@ -49,25 +49,32 @@ export const createIncident = async (req, res) => {
 
     // Sanitize inputs
     const sanitizedDescription = description.trim();
+    const estateId = req.user.estate_id || null;
 
     // Insert incident
     const query = `
       INSERT INTO incidents (
         guard_id,
+        reported_by,
         visitor_id,
         category,
         severity,
-        description
-      ) VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, guard_id, visitor_id, category, severity, description, created_at, updated_at
+        description,
+        estate_id,
+        site_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, guard_id, reported_by, visitor_id, category, severity, description, estate_id, site_id, created_at, updated_at
     `;
 
     const result = await dbManager.query(query, [
       req.user.id,
+      req.user.id,
       visitorId || null,
       category,
       incidentSeverity,
-      sanitizedDescription
+      sanitizedDescription,
+      estateId,
+      estateId
     ]);
 
     const incident = result.rows[0];
@@ -82,7 +89,11 @@ export const createIncident = async (req, res) => {
       guardId: req.user.id
     });
 
-    logger.info(`Incident ${incident.id} created by guard ${req.user.id} (${req.user.email})`);
+    logger.info('Incident created', {
+      incidentId: incident.id,
+      guardId: req.user.id,
+      role: req.user.role
+    });
 
     respond(res, {
       message: 'Incident logged successfully',
@@ -120,11 +131,11 @@ export const getIncidents = async (req, res) => {
     let query = `
       SELECT 
         i.*,
-        u.full_name as guard_name,
+        u.username as guard_name,
         u.email as guard_email,
         v.name as visitor_name,
         v.phone as visitor_phone,
-        r.full_name as resolved_by_name
+        r.username as resolved_by_name
       FROM incidents i
       LEFT JOIN users u ON i.guard_id = u.id
       LEFT JOIN visitors v ON i.visitor_id = v.id
@@ -133,41 +144,62 @@ export const getIncidents = async (req, res) => {
     `;
 
     const params = [];
+    const filters = [];
     let paramIndex = 1;
+
+    // Fix: G-003 Incident Retrieval Leak (Strictly Filter by estate)
+    // Guards and Estate Admins MUST be scoped.
+    const estateId = req.user.estate_id;
+    if (estateId) {
+      filters.push(`i.estate_id = $${paramIndex}`);
+      params.push(estateId);
+      paramIndex++;
+    } else {
+      // If no estate_id (e.g. super admin?), current logic allowed all.
+      // Secure default: If not super-admin/special role, fail or return empty?
+      // Assuming req.user.role checked above.
+      // Ideally we force scope if role is 'guard'.
+      if (req.user.role === 'guard') {
+        return respondError(res, 403, 'Guard has no estate context');
+      }
+    }
 
     // Date filters
     if (fromDate) {
-      query += ` AND i.created_at >= $${paramIndex}::date`;
+      filters.push(`i.created_at >= $${paramIndex}::date`);
       params.push(fromDate);
       paramIndex++;
     }
 
     if (toDate) {
-      query += ` AND i.created_at <= $${paramIndex}::date + INTERVAL '1 day'`;
+      filters.push(`i.created_at <= $${paramIndex}::date + INTERVAL '1 day'`);
       params.push(toDate);
       paramIndex++;
     }
 
     // Category filter
     if (category) {
-      query += ` AND i.category = $${paramIndex}`;
+      filters.push(`i.category = $${paramIndex}`);
       params.push(category);
       paramIndex++;
     }
 
     // Severity filter
     if (severity) {
-      query += ` AND i.severity = $${paramIndex}`;
+      filters.push(`i.severity = $${paramIndex}`);
       params.push(severity);
       paramIndex++;
     }
 
     // Resolved filter
     if (resolved === 'true') {
-      query += ` AND i.resolved_at IS NOT NULL`;
+      filters.push('i.resolved_at IS NOT NULL');
     } else if (resolved === 'false') {
-      query += ` AND i.resolved_at IS NULL`;
+      filters.push('i.resolved_at IS NULL');
     }
+
+    const whereClause = filters.length ? ` AND ${filters.join(' AND ')}` : '';
+    query += whereClause;
 
     // Order by most recent first
     query += ` ORDER BY i.created_at DESC`;
@@ -179,32 +211,8 @@ export const getIncidents = async (req, res) => {
     const result = await dbManager.query(query, params);
 
     // Get total count for pagination
-    let countQuery = `SELECT COUNT(*) FROM incidents i WHERE 1=1`;
-    const countParams = params.slice(0, -2); // Exclude limit/offset
-    let countParamIndex = 1;
-
-    if (fromDate) {
-      countQuery += ` AND i.created_at >= $${countParamIndex}::date`;
-      countParamIndex++;
-    }
-    if (toDate) {
-      countQuery += ` AND i.created_at <= $${countParamIndex}::date + INTERVAL '1 day'`;
-      countParamIndex++;
-    }
-    if (category) {
-      countQuery += ` AND i.category = $${countParamIndex}`;
-      countParamIndex++;
-    }
-    if (severity) {
-      countQuery += ` AND i.severity = $${countParamIndex}`;
-      countParamIndex++;
-    }
-    if (resolved === 'true') {
-      countQuery += ` AND i.resolved_at IS NOT NULL`;
-    } else if (resolved === 'false') {
-      countQuery += ` AND i.resolved_at IS NULL`;
-    }
-
+    const countQuery = `SELECT COUNT(*) FROM incidents i WHERE 1=1${whereClause}`;
+    const countParams = params.slice(0, -2);
     const countResult = await dbManager.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].count, 10);
 

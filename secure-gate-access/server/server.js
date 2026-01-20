@@ -59,17 +59,17 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
 // Enhanced error handling for unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled rejection at:', promise, 'reason:', reason);
-  
+
   // Log the error for monitoring
   loggingService.logError('Unhandled Promise Rejection', reason, {
     promise: String(promise),
     stack: reason?.stack || 'No stack trace available'
   });
-  
+
   // Determine if this is a critical error that requires shutdown
   if (reason && reason.message) {
     const message = reason.message.toLowerCase();
-    
+
     // Non-critical errors that should NOT cause shutdown
     const nonCriticalPatterns = [
       'connection timeout',
@@ -80,24 +80,24 @@ process.on('unhandledRejection', (reason, promise) => {
       'redis',
       'cache'
     ];
-    
+
     const isNonCritical = nonCriticalPatterns.some(pattern => message.includes(pattern));
-    
+
     if (isNonCritical) {
       console.warn('⚠️ Non-critical connection error - server continues running');
       console.warn('💡 This may be a temporary network issue or database connectivity problem');
       return; // Don't exit
     }
-    
+
     // Critical errors that require shutdown
-    if (message.includes('critical:') || 
-        message.includes('security breach') || 
-        message.includes('authentication system failed')) {
+    if (message.includes('critical:') ||
+      message.includes('security breach') ||
+      message.includes('authentication system failed')) {
       console.error('🚨 Critical error detected - shutting down for safety');
       process.exit(1);
     }
   }
-  
+
   // For unknown errors, log but continue
   console.warn('⚠️ Unknown error handled - server continues running');
 });
@@ -105,10 +105,10 @@ process.on('unhandledRejection', (reason, promise) => {
 // Enhanced error handling for uncaught exceptions
 process.on('uncaughtException', (error) => {
   console.error('💥 Uncaught Exception:', error);
-  
+
   // Log the error
   loggingService.logError('Uncaught Exception', error);
-  
+
   // Always exit for uncaught exceptions as they indicate serious issues
   console.error('🚨 Uncaught exception - shutting down');
   process.exit(1);
@@ -137,7 +137,7 @@ async function initializeHealthMonitoring() {
       error: error.message,
       fallback: 'Using basic health endpoints'
     });
-    
+
     // Fallback to basic health endpoints if enhanced monitoring fails
     setupBasicHealthEndpoints();
   }
@@ -146,7 +146,7 @@ async function initializeHealthMonitoring() {
 async function initializeErrorMonitoring() {
   try {
     errorMonitoring = await createErrorMonitoring();
-    
+
     loggingService.logAPI('info', 'Enhanced error monitoring initialized successfully', null, {
       thresholds: ['errorRate', 'security', 'system', 'business'],
       monitoring: ['uncaughtExceptions', 'unhandledRejections', 'securityEvents'],
@@ -180,10 +180,10 @@ function setupBasicHealthEndpoints() {
       const timeoutPromise = new Promise((_, reject) => {
         globalThis.setTimeout(() => reject(new Error('Health check timeout')), 5000);
       });
-      
+
       const healthPromise = healthCheck.quickCheck();
       const result = await Promise.race([healthPromise, timeoutPromise]);
-      
+
       const statusCode = result.status === 'ok' ? 200 : 503;
       res.status(statusCode).json(result);
     } catch (error) {
@@ -203,9 +203,9 @@ function setupBasicHealthEndpoints() {
     try {
       const checkNames = req.query.checks ? req.query.checks.split(',') : null;
       const result = await healthCheck.runChecks(checkNames);
-      const statusCode = result.status === 'healthy' ? 200 : 
-                         result.status === 'warning' ? 200 :
-                         result.status === 'critical' ? 503 : 503;
+      const statusCode = result.status === 'healthy' ? 200 :
+        result.status === 'warning' ? 200 :
+          result.status === 'critical' ? 503 : 503;
       res.status(statusCode).json(result);
     } catch (err) {
       loggingService.logAPI('error', 'Detailed health check failed', req, {
@@ -225,12 +225,12 @@ async function checkPortAvailability(port) {
   const { createServer } = await import('net');
   return new Promise((resolve) => {
     const server = createServer();
-    
+
     server.listen(port, '0.0.0.0', () => {
       // Port is available - we can bind to it
       server.close(() => resolve(true));
     });
-    
+
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
         // Port is in use
@@ -279,7 +279,7 @@ async function startServer() {
     try {
       await dbManager.initializeAsync();
       console.log('✅ Database connection established');
-      
+
       // Run migrations automatically after database connection
       // console.log('🔄 Running database migrations...');
       // const migrationResult = await migrationService.runMigrations();
@@ -294,13 +294,13 @@ async function startServer() {
       // }
     } catch (dbError) {
       console.error('❌ Database initialization failed:', dbError.message);
-      
+
       // In production with DATABASE_URL, this is critical
       if (process.env.DATABASE_URL) {
         console.error('🚨 Cannot connect to Render PostgreSQL - check DATABASE_URL');
         console.error('💡 Ensure the database is created and connection details are correct');
       }
-      
+
       // Allow server to start without DB for health checks in some cases
       if (process.env.ALLOW_DB_FAILURE !== 'true') {
         console.error('� Server startup blocked - database connection required');
@@ -326,7 +326,7 @@ async function startServer() {
 
     // Start metrics capture and alerting
     metricsService.start();
-    
+
     // Start server
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Secure Gate server running on http://localhost:${PORT}`);
@@ -334,7 +334,7 @@ async function startServer() {
       console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log('✅ All security validations passed');
       console.log('📊 Enhanced logging and monitoring active');
-      
+
       // Log server startup event
       loggingService.logInfo('Server started successfully', {
         port: PORT,
@@ -345,7 +345,7 @@ async function startServer() {
 
     // Initialize WebSocket service for Phase 2.3 real-time features
     console.log('🔌 Initializing WebSocket service for real-time features...');
-    webSocketService.initialize(server);
+    await webSocketService.initialize(server);
     console.log('✅ WebSocket service initialized successfully');
 
     // Initialize data retention scheduler for GDPR compliance
@@ -360,18 +360,18 @@ async function startServer() {
     // Enhanced graceful shutdown handling
     const gracefulShutdown = async (signal) => {
       console.log(`🔄 ${signal} received - shutting down gracefully`);
-      
+
       // Log shutdown event
       loggingService.logInfo('Server shutdown initiated', {
         signal,
         timestamp: new Date().toISOString()
       });
-      
+
       try {
         // Step 1: Stop accepting new connections
         console.log('🔄 Stopping server from accepting new connections...');
         server.close();
-        
+
         // Step 2: Stop monitoring dashboard
         if (monitoringDashboard.isRunning) {
           console.log('📊 Stopping monitoring dashboard...');
@@ -383,21 +383,21 @@ async function startServer() {
 
         console.log('📈 Stopping metrics service...');
         metricsService.stop();
-        
+
         // Step 3: Wait for existing connections to drain (with timeout)
         await new Promise((resolve) => {
           const timeout = setTimeout(() => {
             console.log('⏰ Shutdown timeout reached - forcing closure');
             resolve();
           }, 10000); // 10 second timeout
-          
+
           server.on('close', () => {
             clearTimeout(timeout);
             console.log('✅ Server closed gracefully');
             resolve();
           });
         });
-        
+
         // Step 4: Close database connections
         console.log('🔄 Closing database connections...');
         try {
@@ -406,22 +406,22 @@ async function startServer() {
         } catch (dbErr) {
           console.error('❌ Error closing database pool:', dbErr.message);
         }
-        
+
         // Step 5: Final cleanup
         loggingService.logInfo('Server shutdown complete', {
           timestamp: new Date().toISOString()
         });
-        
+
         console.log('✅ Graceful shutdown completed');
         process.exit(0);
-        
+
       } catch (error) {
         console.error('❌ Error during graceful shutdown:', error);
         loggingService.logError('Shutdown error', error);
         process.exit(1);
       }
     };
-    
+
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 

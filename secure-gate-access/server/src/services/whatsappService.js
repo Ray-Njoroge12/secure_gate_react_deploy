@@ -19,7 +19,7 @@ import fetch from 'node-fetch';
 import loggingService from './loggingService.js';
 
 // Configuration
-const WHATSAPP_API_VERSION = 'v18.0';
+const WHATSAPP_API_VERSION = process.env.WHATSAPP_API_VERSION || 'v21.0';
 const WHATSAPP_API_BASE = `https://graph.facebook.com/${WHATSAPP_API_VERSION}`;
 
 // Environment variables
@@ -51,10 +51,10 @@ export function isConfigured() {
  */
 function formatPhoneNumber(phone) {
   if (!phone) return null;
-  
+
   // Remove all non-digit characters
   let cleaned = phone.replace(/\D/g, '');
-  
+
   // Handle Kenyan numbers
   if (cleaned.startsWith('0') && cleaned.length === 10) {
     // Local Kenyan format: 0712345678 -> 254712345678
@@ -69,7 +69,7 @@ function formatPhoneNumber(phone) {
     // US format - add country code
     cleaned = '1' + cleaned;
   }
-  
+
   return cleaned;
 }
 
@@ -116,20 +116,20 @@ export async function sendTextMessage(to, message) {
         to: formattedPhone,
         messageId: data.messages[0].id
       });
-      return { 
-        success: true, 
+      return {
+        success: true,
         messageId: data.messages[0].id,
-        status: data.messages[0].message_status 
+        status: data.messages[0].message_status
       };
     } else {
-      loggingService.error('WhatsApp send failed', { 
+      loggingService.error('WhatsApp send failed', {
         error: data.error,
-        to: formattedPhone 
+        to: formattedPhone
       });
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: data.error?.message || 'Failed to send message',
-        code: data.error?.code 
+        code: data.error?.code
       };
     }
   } catch (error) {
@@ -186,19 +186,19 @@ export async function sendTemplateMessage(to, templateName, languageCode = 'en',
         template: templateName,
         messageId: data.messages[0].id
       });
-      return { 
-        success: true, 
-        messageId: data.messages[0].id 
+      return {
+        success: true,
+        messageId: data.messages[0].id
       };
     } else {
-      loggingService.error('WhatsApp template send failed', { 
+      loggingService.error('WhatsApp template send failed', {
         error: data.error,
-        template: templateName 
+        template: templateName
       });
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: data.error?.message || 'Failed to send template message',
-        code: data.error?.code 
+        code: data.error?.code
       };
     }
   } catch (error) {
@@ -355,14 +355,14 @@ export async function sendInteractiveMessage(to, headerText, bodyText, buttons) 
     const data = await response.json();
 
     if (response.ok && data.messages && data.messages[0]) {
-      return { 
-        success: true, 
-        messageId: data.messages[0].id 
+      return {
+        success: true,
+        messageId: data.messages[0].id
       };
     } else {
-      return { 
-        success: false, 
-        error: data.error?.message || 'Failed to send interactive message' 
+      return {
+        success: false,
+        error: data.error?.message || 'Failed to send interactive message'
       };
     }
   } catch (error) {
@@ -411,14 +411,14 @@ export async function sendQRCodeMessage(to, visitorData, qrCodeUrl) {
     const data = await imageResponse.json();
 
     if (imageResponse.ok && data.messages && data.messages[0]) {
-      return { 
-        success: true, 
-        messageId: data.messages[0].id 
+      return {
+        success: true,
+        messageId: data.messages[0].id
       };
     } else {
-      return { 
-        success: false, 
-        error: data.error?.message || 'Failed to send QR code' 
+      return {
+        success: false,
+        error: data.error?.message || 'Failed to send QR code'
       };
     }
   } catch (error) {
@@ -485,7 +485,7 @@ export async function getBusinessProfile() {
  */
 export function verifyWebhook(mode, token, challenge) {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
-  
+
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     return { valid: true, challenge };
   }
@@ -500,7 +500,7 @@ export function processWebhookMessage(body) {
     const entry = body.entry?.[0];
     const changes = entry?.changes?.[0];
     const value = changes?.value;
-    
+
     if (!value) return null;
 
     // Handle incoming messages

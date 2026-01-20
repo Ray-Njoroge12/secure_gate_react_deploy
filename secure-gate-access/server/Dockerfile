@@ -2,7 +2,7 @@
 # Multi-stage build for optimized production image
 
 # Stage 1: Dependencies
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
 
 # Install dependencies needed for native modules
@@ -15,7 +15,7 @@ COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Stage 2: Production
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 WORKDIR /app
 
 # Create non-root user for security
@@ -45,5 +45,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 ENV NODE_ENV=production
 ENV PORT=5001
 
-# Start with PM2 in cluster mode for production
+# Start server (process supervision handled by the platform)
 CMD ["node", "--import", "./load-env.js", "server.js"]

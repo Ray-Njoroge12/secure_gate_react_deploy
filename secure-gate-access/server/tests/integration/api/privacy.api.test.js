@@ -34,9 +34,9 @@ describe('Data Privacy API Integration Tests', () => {
 
   beforeEach(async () => {
     // Clean up test data between tests
-    await dbManager.query('DELETE FROM consent_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')').catch(() => {});
-    await dbManager.query('DELETE FROM data_export_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')').catch(() => {});
-    await dbManager.query('DELETE FROM data_deletion_requests WHERE user_email LIKE \'%@test.com\'').catch(() => {});
+    await dbManager.query("DELETE FROM consent_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@test.com')").catch(() => { });
+    await dbManager.query("DELETE FROM data_export_log WHERE user_id IN (SELECT id FROM users WHERE email LIKE '%@test.com')").catch(() => { });
+    await dbManager.query("DELETE FROM data_deletion_requests WHERE user_email LIKE '%@test.com'").catch(() => { });
   });
 
   // =========================================
@@ -45,17 +45,18 @@ describe('Data Privacy API Integration Tests', () => {
   describe('GET /api/privacy/export', () => {
     it('should export complete user data package', async () => {
       const userId = testUsers.resident.id;
+      const estateId = testUsers.resident.estate_id;
 
       // Create test data to export
       await dbManager.query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ['Export Test Visitor', '+254700111111', userId, 'EXP001', 'pending']
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['Export Test Visitor', '+254700111111', userId, 'EXP001', 'pending', estateId]
       );
 
       // Simulate export - gather all user data
       const userData = await dbManager.query(
-        'SELECT id, username, email, role, phone, unit, created_at FROM users WHERE id = $1',
+        'SELECT id, username, email, role, phone, house, created_at FROM users WHERE id = $1',
         [userId]
       );
 
@@ -118,18 +119,32 @@ describe('Data Privacy API Integration Tests', () => {
 
     it('should include all related records in export', async () => {
       const userId = testUsers.resident.id;
+      const estateId = testUsers.resident.estate_id;
 
       // Create related data
       await dbManager.query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ['Export Pass', '+254700222222', userId, 'weekly', 'active']
+        `INSERT INTO recurring_passes (
+          resident_id, visitor_name, visitor_phone, access_pin, qr_code_token, valid_until, status
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          userId,
+          'Export Pass',
+          '+254700222222',
+          '123456',
+          `RP-${Date.now()}-privacy`,
+          new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          'active'
+        ]
       );
 
+      // Deliveries don't have estate_id usually? Or they do.
+      // Based on schema, deliveries usually linked to recipient (user) who has estate_id
+      // But let's check if delivery table needs estate_id. Assuming no for now based on error log only mentioning visitors/users.
       await dbManager.query(
-        `INSERT INTO delivery_logs (resident_id, carrier, tracking_number, status)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, 'DHL', 'EXPORT123', 'pending']
+        `INSERT INTO deliveries (recipient_id, received_by_guard_id, carrier_name, tracking_number, status)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, testUsers.guard.id, 'DHL', 'EXPORT123', 'pending_collection']
       );
 
       // Query related data
@@ -139,7 +154,7 @@ describe('Data Privacy API Integration Tests', () => {
       );
 
       const deliveries = await dbManager.query(
-        'SELECT * FROM delivery_logs WHERE resident_id = $1',
+        'SELECT * FROM deliveries WHERE recipient_id = $1',
         [userId]
       );
 
@@ -174,12 +189,14 @@ describe('Data Privacy API Integration Tests', () => {
       // Create test user for deletion
       const argon2 = await import('argon2');
       const hashedPassword = await argon2.default.hash('deletetest');
+      const estateId = testUsers.resident.estate_id;
+      const uniqueSuffix = Date.now();
 
       const userResult = await dbManager.query(
-        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
-        ['delete_api_user', 'deleteapi@test.com', hashedPassword, hashedPassword, 'resident', '+254700333333', 'D101', true]
+        [`delete_api_user_${uniqueSuffix}`, `deleteapi_${uniqueSuffix}@test.com`, hashedPassword, hashedPassword, 'resident', `+254700${uniqueSuffix.toString().slice(-6)}`, 'D101', true, estateId]
       );
       const deleteUserId = userResult.rows[0].id;
       const deleteUserEmail = userResult.rows[0].email;
@@ -194,8 +211,8 @@ describe('Data Privacy API Integration Tests', () => {
       // Process deletion
       await dbManager.query('DELETE FROM visitors WHERE host_id = $1', [deleteUserId]);
       await dbManager.query('DELETE FROM recurring_passes WHERE resident_id = $1', [deleteUserId]);
-      await dbManager.query('DELETE FROM delivery_logs WHERE resident_id = $1', [deleteUserId]);
-      
+      await dbManager.query('DELETE FROM deliveries WHERE recipient_id = $1', [deleteUserId]);
+
       // Update deletion request
       await dbManager.query(
         `UPDATE data_deletion_requests 

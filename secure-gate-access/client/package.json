@@ -64,7 +64,6 @@
     "nth-check": "^2.1.1",
     "svgo": "^3.1.0"
   },
-
   "browserslist": {
     "production": [
       "> 1%",
@@ -101,7 +100,10 @@
         "functions": 70,
         "lines": 70
       }
-    }
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(axios)/)"
+    ]
   },
   "devDependencies": {
     "@axe-core/react": "^4.10.2",

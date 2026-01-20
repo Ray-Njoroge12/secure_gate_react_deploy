@@ -33,6 +33,24 @@ async function tableExists(tableName) {
   return res.rows.length > 0;
 }
 
+async function getUniqueConstraints(tableName) {
+  const res = await dbManager.query(
+    `SELECT tc.constraint_name,
+            array_agg(kcu.column_name ORDER BY kcu.ordinal_position) AS columns
+     FROM information_schema.table_constraints tc
+     JOIN information_schema.key_column_usage kcu
+       ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+     WHERE tc.table_schema = 'public'
+       AND tc.table_name = $1
+       AND tc.constraint_type = 'UNIQUE'
+     GROUP BY tc.constraint_name`,
+    [tableName]
+  );
+
+  return res.rows.map(row => row.columns);
+}
+
 async function getDefaultEstateId() {
   const hasEstatesTable = await tableExists('estates');
   if (!hasEstatesTable) return null;
@@ -47,6 +65,32 @@ async function getDefaultEstateId() {
   return result.rows[0]?.id ?? null;
 }
 
+let cachedUserConflictTarget = null;
+
+async function resolveUserConflictTarget(hasEstateId) {
+  if (cachedUserConflictTarget !== null) {
+    return cachedUserConflictTarget;
+  }
+
+  const uniqueConstraints = await getUniqueConstraints('users');
+  const hasEstateEmailUnique = uniqueConstraints.some(columns =>
+    columns?.length === 2 && columns.includes('estate_id') && columns.includes('email')
+  );
+  const hasEmailUnique = uniqueConstraints.some(columns =>
+    columns?.length === 1 && columns[0] === 'email'
+  );
+
+  if (hasEstateId && hasEstateEmailUnique) {
+    cachedUserConflictTarget = '(estate_id, email)';
+  } else if (hasEmailUnique) {
+    cachedUserConflictTarget = '(email)';
+  } else {
+    cachedUserConflictTarget = null;
+  }
+
+  return cachedUserConflictTarget;
+}
+
 async function upsertUser(user) {
   const passwordHash = await argon2.hash(user.password);
 
@@ -54,6 +98,7 @@ async function upsertUser(user) {
   const hasVerificationExpires = await columnExists('users', 'verification_expires');
   const hasEstateId = await columnExists('users', 'estate_id');
   const defaultEstateId = hasEstateId ? await getDefaultEstateId() : null;
+  const conflictTarget = await resolveUserConflictTarget(hasEstateId);
 
   const columns = [
     'username',
@@ -115,15 +160,68 @@ async function upsertUser(user) {
     'updated_at = NOW()'
   ].join(', ');
 
-  const res = await dbManager.query(
+  if (conflictTarget) {
+    const res = await dbManager.query(
+      `INSERT INTO users (${insertColsSql}, created_at, updated_at)
+       VALUES (${insertPlaceholders}, NOW(), NOW())
+       ON CONFLICT ${conflictTarget} DO UPDATE SET ${updateSetSql}
+       RETURNING id, username, email, role, verified`,
+      values
+    );
+
+    return res.rows[0];
+  }
+
+  const lookupParams = hasEstateId
+    ? [user.email, defaultEstateId]
+    : [user.email];
+  const lookupQuery = hasEstateId
+    ? 'SELECT id FROM users WHERE email = $1 AND estate_id = $2 LIMIT 1'
+    : 'SELECT id FROM users WHERE email = $1 LIMIT 1';
+  const lookupRes = await dbManager.query(lookupQuery, lookupParams);
+
+  if (lookupRes.rows.length > 0) {
+    const updateParams = [
+      user.username,
+      passwordHash,
+      user.role,
+      user.verified ?? true,
+      user.phone || null,
+      user.house || null,
+      user.area || null,
+      user.notifyEmail ?? true,
+      user.notifySms ?? false
+    ];
+
+    let updateQuery = `
+      UPDATE users SET
+        username = $1,
+        password_hash = $2,
+        role = $3,
+        verified = $4,
+        phone = $5,
+        house = $6,
+        area = $7,
+        notify_email = $8,
+        notify_sms = $9,
+        updated_at = NOW()
+      WHERE id = $10
+      RETURNING id, username, email, role, verified
+    `;
+
+    updateParams.push(lookupRes.rows[0].id);
+    const updateRes = await dbManager.query(updateQuery, updateParams);
+    return updateRes.rows[0];
+  }
+
+  const insertRes = await dbManager.query(
     `INSERT INTO users (${insertColsSql}, created_at, updated_at)
      VALUES (${insertPlaceholders}, NOW(), NOW())
-     ON CONFLICT (email) DO UPDATE SET ${updateSetSql}
      RETURNING id, username, email, role, verified`,
     values
   );
 
-  return res.rows[0];
+  return insertRes.rows[0];
 }
 
 async function run() {

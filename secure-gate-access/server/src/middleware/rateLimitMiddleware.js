@@ -11,6 +11,54 @@ import { buildErrorPayload } from '../utils/responseFormatter.js';
 // Redis-based store for rate limiting (will be injected)
 let redisService = null;
 
+/**
+ * Environment-specific rate limit configuration
+ * SECURITY FIX: Prevents accidental deployment of relaxed dev limits to production
+ */
+const rateLimitConfig = {
+  registration: {
+    production: 5,      // Strict in production
+    staging: 50,        // Moderate in staging
+    development: 1000,  // Relaxed for testing
+    test: 10000         // Very relaxed for automated tests
+  },
+  authentication: {
+    production: 10,
+    staging: 50,
+    development: 100,
+    test: 10000
+  },
+  passwordReset: {
+    production: 3,
+    staging: 5,
+    development: 10,
+    test: 100
+  },
+  general: {
+    production: 100,
+    staging: 500,
+    development: 1000,
+    test: 10000
+  }
+};
+
+/**
+ * Get rate limit for current environment
+ * Always defaults to production limits if environment is unknown
+ */
+function getEnvLimit(limitType) {
+  const env = process.env.NODE_ENV || 'development';
+  const limits = rateLimitConfig[limitType];
+
+  if (!limits) {
+    console.warn(`Unknown rate limit type: ${limitType}, using default 100`);
+    return 100;
+  }
+
+  // SECURITY: Default to production limits if environment not recognized
+  return limits[env] ?? limits.production;
+}
+
 export function setRateLimitRedisService(redis) {
   redisService = redis;
 }
@@ -20,9 +68,9 @@ const getClientIP = (req) => {
   const forwarded = req.headers['x-forwarded-for'];
   const ip = forwarded ? forwarded.split(',')[0].trim() :
     req.connection?.remoteAddress ||
-               req.socket?.remoteAddress ||
-               req.ip ||
-               'unknown';
+    req.socket?.remoteAddress ||
+    req.ip ||
+    'unknown';
   return ip.replace(/^::ffff:/, ''); // Remove IPv4-mapped IPv6 prefix
 };
 
@@ -91,7 +139,9 @@ const createStore = () => {
   if (redisService && redisService.isConnected()) {
     return new RedisRateLimitStore();
   }
-  console.warn('⚠️ Using memory store for rate limiting (not suitable for production clusters)');
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('⚠️ Using memory store for rate limiting (not suitable for production clusters)');
+  }
   return undefined; // Use default memory store
 };
 
@@ -216,11 +266,11 @@ export const passwordResetLimit = () => rateLimit({
 
 /**
  * Registration rate limiting
- * 1000 registrations per hour per IP (increased for testing)
+ * SECURITY FIX: Now environment-aware (production: 5/hour, dev: 1000/hour)
  */
 export const registrationLimit = () => rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 1000,
+  max: getEnvLimit('registration'),
   standardHeaders: true,
   legacyHeaders: false,
   store: createStore(),
@@ -228,6 +278,7 @@ export const registrationLimit = () => rateLimit({
   handler: (req, res) => {
     const response = buildErrorPayload(req, res, 'Too many registration attempts, please try again later.', 'RATE_LIMITED');
     response.retryAfter = '1 hour';
+    response.limit = getEnvLimit('registration');
     res.status(429).json(response);
   }
 });

@@ -243,7 +243,7 @@ describe('VisitorCheckInController', () => {
       const visitor = createVisitor({ status: 'on_premise' });
       mockQuery.mockResolvedValueOnce({ rows: [visitor] }); // SELECT visitor
       mockQuery.mockResolvedValueOnce({ rows: [] }); // UPDATE
-      mockQuery.mockResolvedValueOnce({ rows: [{ check_in: new Date(Date.now() - 3600000) }] }); // SELECT check_in
+      mockQuery.mockResolvedValueOnce({ rows: [{ check_in_time: new Date(Date.now() - 3600000) }] }); // SELECT check_in_time
       
       await controller.checkOutVisitor(mockReq, mockRes);
       
@@ -301,7 +301,7 @@ describe('VisitorCheckInController', () => {
       const visitor = createVisitor({ status: 'on_premise' });
       mockQuery.mockResolvedValueOnce({ rows: [visitor] });
       mockQuery.mockResolvedValueOnce({ rows: [] });
-      mockQuery.mockResolvedValueOnce({ rows: [{ check_in: new Date() }] });
+      mockQuery.mockResolvedValueOnce({ rows: [{ check_in_time: new Date() }] });
       
       await controller.checkOutVisitor(mockReq, mockRes);
       
@@ -318,7 +318,7 @@ describe('VisitorCheckInController', () => {
       const visitor = createVisitor({ status: 'on_premise' });
       mockQuery.mockResolvedValueOnce({ rows: [visitor] });
       mockQuery.mockResolvedValueOnce({ rows: [] });
-      mockQuery.mockResolvedValueOnce({ rows: [{}] }); // No check_in
+      mockQuery.mockResolvedValueOnce({ rows: [{}] }); // No check_in_time
       
       await controller.checkOutVisitor(mockReq, mockRes);
       
@@ -334,7 +334,7 @@ describe('VisitorCheckInController', () => {
       const visitor = createVisitor({ status: 'on_premise' });
       mockQuery.mockResolvedValueOnce({ rows: [visitor] });
       mockQuery.mockResolvedValueOnce({ rows: [] });
-      mockQuery.mockResolvedValueOnce({ rows: [{ check_in: new Date() }] });
+      mockQuery.mockResolvedValueOnce({ rows: [{ check_in_time: new Date() }] });
       mockEmitVisitorCheckOut.mockImplementationOnce(() => { throw new Error('WS error'); });
       
       await controller.checkOutVisitor(mockReq, mockRes);
@@ -351,7 +351,7 @@ describe('VisitorCheckInController', () => {
       const visitor = createVisitor({ status: 'on_premise' });
       mockQuery.mockResolvedValueOnce({ rows: [visitor] });
       mockQuery.mockResolvedValueOnce({ rows: [] });
-      mockQuery.mockResolvedValueOnce({ rows: [{ check_in: new Date() }] });
+      mockQuery.mockResolvedValueOnce({ rows: [{ check_in_time: new Date() }] });
       
       await controller.checkOutVisitor(mockReq, mockRes);
       

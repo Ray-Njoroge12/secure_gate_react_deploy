@@ -8,7 +8,6 @@ export const NAVIGATION_FLOWS = {
     entry: '/dashboard/resident',
     flows: {
       'invite-creation': [
-        '/resident/add-visitor',
         '/resident/generate-pass',
         '/resident/visitor-history'
       ],
@@ -19,7 +18,6 @@ export const NAVIGATION_FLOWS = {
       'visitor-management': [
         '/dashboard/resident',
         '/resident/visitor-history',
-        '/resident/add-visitor'
       ]
     }
   },
@@ -164,7 +162,7 @@ export function useSessionTimeout() {
 
     const resetTimers = () => {
       lastActivity = Date.now();
-      
+
       if (warningTimer) clearTimeout(warningTimer);
       if (logoutTimer) clearTimeout(logoutTimer);
 
@@ -173,7 +171,7 @@ export function useSessionTimeout() {
         const shouldExtend = window.confirm(
           'Your session will expire in 5 minutes. Do you want to extend it?'
         );
-        
+
         if (shouldExtend) {
           resetTimers(); // Reset on extension
         } else {
@@ -223,7 +221,7 @@ export function usePageTransitions() {
   useEffect(() => {
     // Add page transition class
     document.body.classList.add('page-transitioning');
-    
+
     // Remove after transition
     const timer = setTimeout(() => {
       document.body.classList.remove('page-transitioning');
@@ -250,7 +248,7 @@ export function generateBreadcrumbs(currentPath, userRole) {
   let currentPathBuild = '';
   pathSegments.forEach((segment, index) => {
     currentPathBuild += `/${segment}`;
-    
+
     if (currentPathBuild !== roleEntry) {
       const label = formatBreadcrumbLabel(segment);
       breadcrumbs.push({
@@ -271,7 +269,7 @@ function formatBreadcrumbLabel(segment) {
     'resident': 'Resident',
     'guard': 'Guard',
     'admin': 'Admin',
-    'add-visitor': 'Add Visitor',
+
     'generate-pass': 'Generate Pass',
     'visitor-history': 'History',
     'bulk-invite': 'Bulk Invite',
@@ -284,7 +282,7 @@ function formatBreadcrumbLabel(segment) {
     'pages': 'Pages'
   };
 
-  return labelMap[segment] || segment.split('-').map(word => 
+  return labelMap[segment] || segment.split('-').map(word =>
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
 }
@@ -294,7 +292,7 @@ export function enhanceNavigation(Component) {
   return function NavigationEnhancedComponent(props) {
     useSessionTimeout();
     usePageTransitions();
-    
+
     return <Component {...props} />;
   };
 }

@@ -28,31 +28,44 @@ process.env.NODE_ENV = 'test';
  * Global setup function - runs once before all test suites
  */
 export default async function globalSetup() {
-  console.log('\n🔧 Global Test Setup Starting...\n');
+  const shouldLog = process.env.DEBUG_TEST_SETUP === 'true';
+  if (shouldLog) {
+    console.log('\n🔧 Global Test Setup Starting...\n');
+  }
 
   try {
     // Initialize shared database connection
-    console.log('🔄 Initializing shared database connection...');
+    if (shouldLog) {
+      console.log('🔄 Initializing shared database connection...');
+    }
     await db.initializeAsync();
-    console.log('✅ Shared database connection initialized');
+    if (shouldLog) {
+      console.log('✅ Shared database connection initialized');
+    }
 
     // Test the connection
     const result = await db.query('SELECT NOW() as current_time, current_database() as db_name');
-    console.log(`✅ Database connection verified: ${result.rows[0].db_name}`);
-    console.log(`✅ Database time: ${result.rows[0].current_time}`);
+    if (shouldLog) {
+      console.log(`✅ Database connection verified: ${result.rows[0].db_name}`);
+      console.log(`✅ Database time: ${result.rows[0].current_time}`);
+    }
 
     // Store database instance globally for tests to use
     global.__DB__ = db;
 
     // Start connection monitoring if DEBUG_CONNECTIONS is enabled
     if (process.env.DEBUG_CONNECTIONS === 'true') {
-      console.log('🔍 Starting connection pool monitoring...');
+      if (shouldLog) {
+        console.log('🔍 Starting connection pool monitoring...');
+      }
       const monitor = new ConnectionMonitor(db);
       monitor.start();
       global.__CONN_MONITOR__ = monitor;
     }
 
-    console.log('\n✅ Global Test Setup Complete\n');
+    if (shouldLog) {
+      console.log('\n✅ Global Test Setup Complete\n');
+    }
     return true;
   } catch (error) {
     console.error('\n❌ Global Test Setup Failed:', error.message);

@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.js';
+import { strictRateLimit } from '../middleware/rateLimitMiddleware.js';
 import mfaService from '../services/mfaService.js';
 import { userService } from '../services/userService.js';
 
@@ -73,7 +74,7 @@ router.post('/verify-setup', authenticateToken, asyncHandler(async (req, res) =>
  * @desc    Verify MFA token during login and issue tokens
  * @access  Public (but requires valid userId from login)
  */
-router.post('/verify', asyncHandler(async (req, res) => {
+router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
   const { userId, token, useBackupCode } = req.body;
 
   if (!userId || !token) {
@@ -96,7 +97,7 @@ router.post('/verify', asyncHandler(async (req, res) => {
 
   // MFA verified - now issue tokens
   const user = await userService.getUserById(userId);
-  
+
   if (!user) {
     throw new AppError('User not found', 404, 'USER_NOT_FOUND');
   }
@@ -110,7 +111,7 @@ router.post('/verify', asyncHandler(async (req, res) => {
     userAgent: req.get('User-Agent'),
     ipAddress: req.ip
   });
-  
+
   // Set httpOnly cookies for security (cross-site compatible for Netlify + Render)
   res.cookie('accessToken', accessToken, {
     httpOnly: true,
@@ -118,7 +119,7 @@ router.post('/verify', asyncHandler(async (req, res) => {
     sameSite: 'none', // Required for cross-site cookies
     maxAge: 15 * 60 * 1000 // 15 minutes
   });
-  
+
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     secure: true,
@@ -190,7 +191,8 @@ router.get('/status', authenticateToken, asyncHandler(async (req, res) => {
     success: true,
     data: {
       mfaEnabled: user.mfaEnabled || false,
-      mfaRequired: user.role === 'admin' // MFA required for admins
+      mfaEnabled: user.mfaEnabled || false,
+      mfaRequired: ['admin', 'guard'].includes(user.role) // MFA required for admins and guards
     }
   });
 }));

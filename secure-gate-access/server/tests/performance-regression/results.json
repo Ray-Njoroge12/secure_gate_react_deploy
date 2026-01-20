@@ -1,6 +1,6 @@
 {
-  "runId": "run_1767347485039",
-  "timestamp": "2026-01-02T09:51:25.039Z",
+  "runId": "run_1768910118339",
+  "timestamp": "2026-01-20T11:55:18.339Z",
   "nodeVersion": "v22.17.0",
   "platform": "darwin",
   "results": [
@@ -12,20 +12,20 @@
         "mean": 0.003,
         "median": 0.002,
         "min": 0.002,
-        "max": 0.011,
-        "stdDev": 0.002,
-        "p95": 0.009,
-        "p99": 0.011
+        "max": 0.012,
+        "stdDev": 0.003,
+        "p95": 0.011,
+        "p99": 0.012
       },
       "memoryStats": {
         "heapUsed": {
-          "mean": 1410,
-          "median": 1312,
-          "min": 1312,
-          "max": 3112,
+          "mean": 1346,
+          "median": 1248,
+          "min": 1248,
+          "max": 3048,
           "stdDev": 391.198,
-          "p95": 1392,
-          "p99": 3112
+          "p95": 1328,
+          "p99": 3048
         },
         "heapTotal": {
           "mean": 0,
@@ -38,26 +38,26 @@
         }
       },
       "rawResults": [
-        0.011042,
-        0.008666,
-        0.003041,
-        0.002333,
-        0.002291,
-        0.002542,
-        0.00225,
-        0.002916,
-        0.00225,
-        0.002208,
-        0.002208,
-        0.00225,
-        0.00575,
-        0.00225,
-        0.002125,
-        0.002208,
-        0.00225,
-        0.002166,
-        0.002208,
-        0.002208
+        0.012208,
+        0.011166,
+        0.002459,
+        0.001625,
+        0.001583,
+        0.0025,
+        0.001583,
+        0.002042,
+        0.001792,
+        0.00175,
+        0.00175,
+        0.001584,
+        0.001625,
+        0.002667,
+        0.001708,
+        0.0015,
+        0.001625,
+        0.001667,
+        0.001625,
+        0.001583
       ],
       "baseline": {
         "hasBaseline": true,
@@ -73,44 +73,44 @@
           {
             "metric": "p95",
             "baseline": 0.004,
-            "current": 0.009,
-            "percentChange": 125,
+            "current": 0.011,
+            "percentChange": 175,
             "severity": "critical"
           },
           {
             "metric": "p99",
             "baseline": 0.004,
-            "current": 0.011,
-            "percentChange": 175,
+            "current": 0.012,
+            "percentChange": 200,
             "severity": "critical"
           }
         ],
         "message": "Performance regression detected in 3 metric(s)"
       },
-      "timestamp": "2026-01-02T09:51:25.033Z"
+      "timestamp": "2026-01-20T11:55:18.333Z"
     },
     {
       "name": "Complex JOIN",
       "iterations": 20,
       "failedIterations": 0,
       "stats": {
-        "mean": 0.003,
+        "mean": 0.004,
         "median": 0.002,
         "min": 0.002,
-        "max": 0.01,
-        "stdDev": 0.002,
-        "p95": 0.007,
-        "p99": 0.01
+        "max": 0.013,
+        "stdDev": 0.003,
+        "p95": 0.011,
+        "p99": 0.013
       },
       "memoryStats": {
         "heapUsed": {
-          "mean": 1404.4,
-          "median": 1232,
-          "min": 1232,
-          "max": 4592,
+          "mean": 1348.4,
+          "median": 1176,
+          "min": 1176,
+          "max": 4536,
           "stdDev": 731.536,
-          "p95": 1320,
-          "p99": 4592
+          "p95": 1264,
+          "p99": 4536
         },
         "heapTotal": {
           "mean": 0,
@@ -123,26 +123,26 @@
         }
       },
       "rawResults": [
-        0.010291,
-        0.007,
-        0.002625,
-        0.003458,
-        0.002083,
-        0.001917,
-        0.001917,
+        0.013,
+        0.010792,
+        0.002667,
+        0.003084,
+        0.001834,
+        0.006584,
         0.001916,
+        0.001625,
+        0.001583,
+        0.00175,
+        0.001583,
+        0.001625,
+        0.001542,
+        0.001667,
+        0.007959,
+        0.001917,
+        0.005125,
         0.002,
-        0.002209,
-        0.001917,
-        0.001917,
-        0.001875,
-        0.001917,
-        0.001958,
-        0.001875,
-        0.001875,
-        0.001917,
-        0.002125,
-        0.001917
+        0.00175,
+        0.001583
       ],
       "baseline": {
         "hasBaseline": true,
@@ -151,28 +151,28 @@
           {
             "metric": "mean",
             "baseline": 0.001,
-            "current": 0.003,
-            "percentChange": 200,
+            "current": 0.004,
+            "percentChange": 300,
             "severity": "critical"
           },
           {
             "metric": "p95",
             "baseline": 0.003,
-            "current": 0.007,
-            "percentChange": 133.33,
+            "current": 0.011,
+            "percentChange": 266.67,
             "severity": "critical"
           },
           {
             "metric": "p99",
             "baseline": 0.003,
-            "current": 0.01,
-            "percentChange": 233.33,
+            "current": 0.013,
+            "percentChange": 333.33,
             "severity": "critical"
           }
         ],
         "message": "Performance regression detected in 3 metric(s)"
       },
-      "timestamp": "2026-01-02T09:51:25.035Z"
+      "timestamp": "2026-01-20T11:55:18.334Z"
     },
     {
       "name": "Transaction",
@@ -202,10 +202,220 @@
         "regressions": [],
         "message": "No performance regression detected"
       },
-      "timestamp": "2026-01-02T09:51:25.038Z"
+      "timestamp": "2026-01-20T11:55:18.335Z"
     }
   ],
   "history": [
+    {
+      "runId": "run_1768910118339",
+      "timestamp": "2026-01-20T11:55:18.339Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1768910017854",
+      "timestamp": "2026-01-20T11:53:37.854Z",
+      "summary": {
+        "total": 4,
+        "passed": 3,
+        "regressions": 1,
+        "passRate": 75
+      }
+    },
+    {
+      "runId": "run_1768909893850",
+      "timestamp": "2026-01-20T11:51:33.850Z",
+      "summary": {
+        "total": 5,
+        "passed": 3,
+        "regressions": 2,
+        "passRate": 60
+      }
+    },
+    {
+      "runId": "run_1768909508283",
+      "timestamp": "2026-01-20T11:45:08.283Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1768909500480",
+      "timestamp": "2026-01-20T11:45:00.480Z",
+      "summary": {
+        "total": 5,
+        "passed": 4,
+        "regressions": 1,
+        "passRate": 80
+      }
+    },
+    {
+      "runId": "run_1768909479765",
+      "timestamp": "2026-01-20T11:44:39.765Z",
+      "summary": {
+        "total": 4,
+        "passed": 3,
+        "regressions": 1,
+        "passRate": 75
+      }
+    },
+    {
+      "runId": "run_1768906973004",
+      "timestamp": "2026-01-20T11:02:53.004Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1768906962433",
+      "timestamp": "2026-01-20T11:02:42.433Z",
+      "summary": {
+        "total": 4,
+        "passed": 3,
+        "regressions": 1,
+        "passRate": 75
+      }
+    },
+    {
+      "runId": "run_1768906902773",
+      "timestamp": "2026-01-20T11:01:42.773Z",
+      "summary": {
+        "total": 5,
+        "passed": 4,
+        "regressions": 1,
+        "passRate": 80
+      }
+    },
+    {
+      "runId": "run_1768647056496",
+      "timestamp": "2026-01-17T10:50:56.496Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1768646906000",
+      "timestamp": "2026-01-17T10:48:26.000Z",
+      "summary": {
+        "total": 4,
+        "passed": 4,
+        "regressions": 0,
+        "passRate": 100
+      }
+    },
+    {
+      "runId": "run_1768646846457",
+      "timestamp": "2026-01-17T10:47:26.457Z",
+      "summary": {
+        "total": 5,
+        "passed": 5,
+        "regressions": 0,
+        "passRate": 100
+      }
+    },
+    {
+      "runId": "run_1768644169806",
+      "timestamp": "2026-01-17T10:02:49.806Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1768644013085",
+      "timestamp": "2026-01-17T10:00:13.085Z",
+      "summary": {
+        "total": 4,
+        "passed": 3,
+        "regressions": 1,
+        "passRate": 75
+      }
+    },
+    {
+      "runId": "run_1768643953186",
+      "timestamp": "2026-01-17T09:59:13.186Z",
+      "summary": {
+        "total": 5,
+        "passed": 5,
+        "regressions": 0,
+        "passRate": 100
+      }
+    },
+    {
+      "runId": "run_1768640510500",
+      "timestamp": "2026-01-17T09:01:50.500Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1768640340388",
+      "timestamp": "2026-01-17T08:59:00.388Z",
+      "summary": {
+        "total": 4,
+        "passed": 3,
+        "regressions": 1,
+        "passRate": 75
+      }
+    },
+    {
+      "runId": "run_1768640280601",
+      "timestamp": "2026-01-17T08:58:00.601Z",
+      "summary": {
+        "total": 5,
+        "passed": 3,
+        "regressions": 2,
+        "passRate": 60
+      }
+    },
+    {
+      "runId": "run_1768636111984",
+      "timestamp": "2026-01-17T07:48:31.984Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1768635940490",
+      "timestamp": "2026-01-17T07:45:40.490Z",
+      "summary": {
+        "total": 4,
+        "passed": 3,
+        "regressions": 1,
+        "passRate": 75
+      }
+    },
+    {
+      "runId": "run_1768635880157",
+      "timestamp": "2026-01-17T07:44:40.157Z",
+      "summary": {
+        "total": 5,
+        "passed": 3,
+        "regressions": 2,
+        "passRate": 60
+      }
+    },
     {
       "runId": "run_1767347485039",
       "timestamp": "2026-01-02T09:51:25.039Z",

@@ -7,6 +7,15 @@ DECLARE
     total_count INTEGER;
     processed_count INTEGER := 0;
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'visitors' AND column_name = 'id_number') THEN
+        RAISE NOTICE 'No id_number column found; skipping encryption status check.';
+        RETURN;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'visitors' AND column_name = 'id_number_encrypted') THEN
+        RAISE NOTICE 'No id_number_encrypted column found; skipping encryption status check.';
+        RETURN;
+    END IF;
+
     -- Count records to migrate
     SELECT COUNT(*) INTO total_count
     FROM visitors

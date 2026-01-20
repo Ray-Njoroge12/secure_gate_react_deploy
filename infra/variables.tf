@@ -34,6 +34,24 @@ variable "container_port" {
   default     = 3000
 }
 
+variable "ecs_log_group_name" {
+  type        = string
+  description = "CloudWatch log group name for ECS task logs."
+  default     = "/ecs/secure-gate"
+}
+
+variable "ecs_log_retention_days" {
+  type        = number
+  description = "Retention in days for ECS CloudWatch log group."
+  default     = 30
+}
+
+variable "ecs_log_stream_prefix" {
+  type        = string
+  description = "CloudWatch log stream prefix for ECS tasks."
+  default     = "secure-gate"
+}
+
 variable "health_check_path" {
   type        = string
   description = "Health check path for the ALB target group."

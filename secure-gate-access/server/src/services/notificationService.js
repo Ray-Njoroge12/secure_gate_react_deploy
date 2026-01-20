@@ -1,17 +1,18 @@
 import whatsappService from './whatsappService.js';
 import notificationMetricsService from './notificationMetricsService.js';
 import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
-import { 
-    visitorInviteTemplate, 
-    bulkInviteTemplate, 
-    otpVerificationTemplate 
+import loggingService from './loggingService.js';
+import {
+  visitorInviteTemplate,
+  bulkInviteTemplate,
+  otpVerificationTemplate
 } from '../templates/email-templates.js';
-import { 
-    visitorInviteSmsTemplate, 
-    bulkInviteSmsTemplate, 
-    otpVerificationSmsTemplate,
-    qrCodeReadySmsTemplate,
-    checkinReminderSmsTemplate
+import {
+  visitorInviteSmsTemplate,
+  bulkInviteSmsTemplate,
+  otpVerificationSmsTemplate,
+  qrCodeReadySmsTemplate,
+  checkinReminderSmsTemplate
 } from '../templates/sms-templates.js';
 
 // Simple in-memory metrics counter (no external dependencies)
@@ -20,6 +21,27 @@ const metrics = {};
 // Site configuration
 const SITE_NAME = process.env.SITE_NAME || 'Secure Gate Access';
 const SITE_URL = process.env.SITE_URL || 'http://localhost';
+const REDACTED_VALUE = 'redacted';
+
+const maskEmail = (email) => {
+  if (!email || typeof email !== 'string') {
+    return REDACTED_VALUE;
+  }
+  const [localPart, domain] = email.split('@');
+  if (!domain) {
+    return REDACTED_VALUE;
+  }
+  const firstChar = localPart ? localPart[0] : '';
+  return `${firstChar || REDACTED_VALUE}***@${domain}`;
+};
+
+const maskPhone = (phone) => {
+  if (!phone || typeof phone !== 'string') {
+    return REDACTED_VALUE;
+  }
+  const tail = phone.slice(-4);
+  return `***${tail || ''}`;
+};
 
 // Email provider selection
 /**
@@ -30,7 +52,9 @@ async function sendEmail(to, subject, html, text = null) {
   const providerName = provider?.getName?.() || process.env.EMAIL_PROVIDER || 'smtp';
   // Feature flag checks
   if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
-    console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
+    }
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
       provider: providerName,
@@ -39,9 +63,11 @@ async function sendEmail(to, subject, html, text = null) {
     });
     return false;
   }
-  
+
   if (process.env.ENABLE_EMAIL_NOTIFICATIONS !== 'true') {
-    console.log('Email notifications are disabled via ENABLE_EMAIL_NOTIFICATIONS flag');
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('Email notifications are disabled via ENABLE_EMAIL_NOTIFICATIONS flag');
+    }
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
       provider: providerName,
@@ -65,14 +91,18 @@ async function sendEmail(to, subject, html, text = null) {
   const result = await provider.send({ to, subject, html, text });
 
   if (result.success) {
-    console.log(`Email sent via ${providerName}`);
+    loggingService.logInfo('Email sent via provider', {
+      provider: providerName,
+      recipient: maskEmail(to),
+      messageId: result.messageId
+    });
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
       provider: providerName,
       success: true,
       metadata: { messageId: result.messageId, to }
     });
-    return true;
+    return result;
   }
 
   console.error(`${providerName} email sending failed:`, result.error);
@@ -82,7 +112,7 @@ async function sendEmail(to, subject, html, text = null) {
     success: false,
     error: result.error
   });
-  return false;
+  return result;
 }
 
 /**
@@ -108,14 +138,17 @@ export async function sendVisitorInviteEmail(visitorData, residentData, inviteLi
     const subject = `🏠 Visitor Invitation - ${SITE_NAME}`;
 
     const result = await sendEmail(visitorData.email, subject, html);
-    
+
     if (result) {
       metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
-      console.log(`Visitor invitation email sent to ${visitorData.email}`);
+      loggingService.logInfo('Visitor invitation email sent', {
+        visitorId: visitorData.id || null,
+        residentId: residentData.id || null
+      });
     } else {
       metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
     }
-    
+
     return result;
   } catch (err) {
     metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
@@ -140,14 +173,16 @@ export async function sendOtpVerificationEmail(visitorData, otpCode, expiryMinut
     const subject = `🔐 Verification Code - ${SITE_NAME}`;
 
     const result = await sendEmail(visitorData.email, subject, html);
-    
+
     if (result) {
       metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
-      console.log(`OTP verification email sent to ${visitorData.email}`);
+      loggingService.logInfo('OTP verification email sent', {
+        visitorId: visitorData.id || null
+      });
     } else {
       metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
     }
-    
+
     return result;
   } catch (err) {
     metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
@@ -163,10 +198,12 @@ export async function sendOtpVerificationEmail(visitorData, otpCode, expiryMinut
 export async function sendVisitorInviteSms(visitorData, residentData, inviteLink) {
   const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
   const smsProviderClient = getSmsProvider(smsProvider);
-  
+
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
-    console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
+    if (process.env.NODE_ENV !== 'test') {
+      console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
+    }
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
       provider: smsProvider,
@@ -175,7 +212,7 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
     });
     return false;
   }
-  
+
   // WhatsApp provider (recommended)
   if (smsProvider === 'whatsapp') {
     if (!whatsappService.isConfigured()) {
@@ -188,12 +225,16 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
       });
       return false;
     }
-    
+
     try {
       const result = await whatsappService.sendVisitorInvitation(visitorData, residentData, inviteLink);
       if (result.success) {
         metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
-        console.log(`Visitor invitation sent via WhatsApp to ${visitorData.phone}`);
+        loggingService.logInfo('Visitor invitation sent via WhatsApp', {
+          visitorId: visitorData.id || null,
+          recipient: maskPhone(visitorData.phone),
+          messageId: result.messageId
+        });
         notificationMetricsService.recordNotificationResult({
           channel: 'whatsapp',
           provider: 'whatsapp',
@@ -216,7 +257,7 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
       return false;
     }
   }
-  
+
   if (!smsProviderClient?.isConfigured?.()) {
     console.warn('SMS provider not configured');
     notificationMetricsService.recordNotificationResult({
@@ -254,7 +295,12 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
     }
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
-    console.log(`Visitor invitation SMS sent via ${smsProvider} to ${visitorData.phone}`);
+    loggingService.logInfo('Visitor invitation SMS sent', {
+      provider: smsProvider,
+      visitorId: visitorData.id || null,
+      recipient: maskPhone(visitorData.phone),
+      messageId: result.messageId
+    });
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
       provider: smsProvider,
@@ -282,7 +328,7 @@ export async function sendVisitorInviteSms(visitorData, residentData, inviteLink
 export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes = 15) {
   const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
   const smsProviderClient = getSmsProvider(smsProvider);
-  
+
   // Feature flag check
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
     console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
@@ -294,7 +340,7 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
     });
     return false;
   }
-  
+
   // WhatsApp provider (recommended)
   if (smsProvider === 'whatsapp') {
     if (!whatsappService.isConfigured()) {
@@ -307,12 +353,16 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
       });
       return false;
     }
-    
+
     try {
       const result = await whatsappService.sendOtpVerification(visitorData, otpCode, expiryMinutes);
       if (result.success) {
         metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
-        console.log(`OTP verification sent via WhatsApp to ${visitorData.phone}`);
+        loggingService.logInfo('OTP verification sent via WhatsApp', {
+          visitorId: visitorData.id || null,
+          recipient: maskPhone(visitorData.phone),
+          messageId: result.messageId
+        });
         notificationMetricsService.recordNotificationResult({
           channel: 'whatsapp',
           provider: 'whatsapp',
@@ -335,7 +385,7 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
       return false;
     }
   }
-  
+
   if (!smsProviderClient?.isConfigured?.()) {
     console.warn('SMS provider not configured');
     notificationMetricsService.recordNotificationResult({
@@ -346,7 +396,7 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
     });
     return false;
   }
-  
+
   try {
     const smsData = {
       siteName: SITE_NAME,
@@ -368,7 +418,12 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
     }
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
-    console.log(`OTP verification SMS sent via ${smsProvider} to ${visitorData.phone}`);
+    loggingService.logInfo('OTP verification SMS sent', {
+      provider: smsProvider,
+      visitorId: visitorData.id || null,
+      recipient: maskPhone(visitorData.phone),
+      messageId: result.messageId
+    });
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
       provider: smsProvider,
@@ -419,10 +474,12 @@ export async function sendDeliveryNotification(residentData, deliveryData) {
     `;
 
     const result = await sendEmail(residentData.email, subject, html);
-    
+
     if (result) {
       metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
-      console.log(`Delivery notification email sent to ${residentData.email}`);
+      loggingService.logInfo('Delivery notification email sent', {
+        residentId: residentData.id || null
+      });
     }
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
@@ -431,7 +488,7 @@ export async function sendDeliveryNotification(residentData, deliveryData) {
       error: result ? null : 'delivery_notification_failed',
       metadata: { to: residentData.email }
     });
-    
+
     return result;
   } catch (err) {
     metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
@@ -467,13 +524,13 @@ export async function sendHandoffDecisionNotification(deliveryData, preference) 
 export async function sendInviteEmail(to, subject, html) {
   try {
     const result = await sendEmail(to, subject, html);
-    
+
     if (result) {
       metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
     } else {
       metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
     }
-    
+
     return result;
   } catch (err) {
     metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
@@ -497,7 +554,7 @@ export async function sendSms(to, text) {
     });
     return false;
   }
-  
+
   if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
     console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
     notificationMetricsService.recordNotificationResult({
@@ -508,7 +565,7 @@ export async function sendSms(to, text) {
     });
     return false;
   }
-  
+
   if (!smsProviderClient?.isConfigured?.()) {
     console.warn('SMS provider not configured');
     notificationMetricsService.recordNotificationResult({
@@ -532,14 +589,18 @@ export async function sendSms(to, text) {
     }
 
     metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
-    console.log(`SMS sent via ${smsProvider} to ${to}`);
+    loggingService.logInfo('SMS sent via provider', {
+      provider: smsProvider,
+      recipient: maskPhone(to),
+      messageId: result.messageId
+    });
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
       provider: smsProvider,
       success: true,
       metadata: { to, messageId: result.messageId }
     });
-    return true;
+    return result;
   } catch (err) {
     metrics.notifications_sms_failed = (metrics.notifications_sms_failed || 0) + 1;
     console.error('sendSms failed', err?.message || err);
@@ -549,12 +610,12 @@ export async function sendSms(to, text) {
       success: false,
       error: err?.message || String(err)
     });
-    return false;
+    return { success: false, error: err?.message || String(err) };
   }
 }
 
-export default { 
-  sendInviteEmail, 
+export default {
+  sendInviteEmail,
   sendSms,
   sendVisitorInviteEmail,
   sendOtpVerificationEmail,

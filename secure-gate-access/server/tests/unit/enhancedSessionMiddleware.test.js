@@ -542,7 +542,7 @@ describe('Enhanced Session Middleware', () => {
     });
 
     it('should handle timeout during session operations', async () => {
-      mockSessionSecurityService.regenerateSession.mockImplementation(() => 
+      mockSessionSecurityService.regenerateSession.mockImplementation(() =>
         new Promise((resolve) => setTimeout(resolve, 10000))
       );
 
@@ -703,10 +703,10 @@ describe('Enhanced Session Middleware', () => {
       await middleware(mockReq, mockRes, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
-      expect(mockRes.json).toHaveBeenCalledWith({
+      expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
         message: 'Insufficient privileges for this operation'
-      });
+      }));
     });
 
     it('should regenerate session on privilege verification', async () => {

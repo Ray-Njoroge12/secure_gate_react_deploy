@@ -17,9 +17,69 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import loggingService from './loggingService.js';
+import alertingService from './alertingService.js';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const isPlainObject = (value) => Object.prototype.toString.call(value) === '[object Object]';
+const shouldMaskAsEmail = (key) => key.includes('email');
+const shouldMaskAsPhone = (key) => (
+  key.includes('phone')
+  || key.includes('msisdn')
+  || key.includes('mobile')
+);
+const isRecipientKey = (key) => key === 'to' || key === 'recipient';
+
+const sanitizeAuditData = (data) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeAuditData(item));
+  }
+
+  if (!isPlainObject(data)) {
+    return data;
+  }
+
+  const sanitized = {};
+  for (const [key, value] of Object.entries(data)) {
+    const normalizedKey = key.toLowerCase();
+
+    if (Array.isArray(value)) {
+      sanitized[key] = value.map(item => sanitizeAuditData(item));
+      continue;
+    }
+
+    if (value && typeof value === 'object') {
+      sanitized[key] = isPlainObject(value) ? sanitizeAuditData(value) : value;
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsEmail(normalizedKey)) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsPhone(normalizedKey)) {
+      sanitized[key] = maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isRecipientKey(normalizedKey)) {
+      sanitized[key] = value.includes('@') ? maskEmail(value) : maskPhone(value);
+      continue;
+    }
+
+    sanitized[key] = value;
+  }
+
+  return sanitized;
+};
 
 class SecurityAuditLogger {
   constructor() {
@@ -54,7 +114,7 @@ class SecurityAuditLogger {
       this.scheduleLogCleanup();
 
     } catch (error) {
-      // Failed to initialize audit logging - error logged securely
+      loggingService.logError('Failed to initialize audit logging', error);
     }
   }
 
@@ -134,6 +194,7 @@ class SecurityAuditLogger {
     const category = this.categorizeEvent(eventType);
     const severity = this.calculateSeverity(eventType, data);
     const riskScore = this.calculateRiskScore(eventType, data, context);
+    const sanitizedData = sanitizeAuditData(data);
 
     return {
       id: this.generateEventId(),
@@ -148,7 +209,7 @@ class SecurityAuditLogger {
       requestId: context.requestId || null,
       riskScore,
       data: {
-        ...data,
+        ...sanitizedData,
         metadata: {
           nodeEnv: process.env.NODE_ENV,
           timestamp: now.getTime(),
@@ -293,7 +354,10 @@ class SecurityAuditLogger {
         await this.rotateLogFile(logFile);
       }
     } catch (error) {
-      // Failed to write to audit log file - using fallback mechanism
+      loggingService.logError('Failed to write audit log file', error, {
+        logFile,
+        eventType: auditEvent.eventType
+      });
     }
   }
 
@@ -325,7 +389,10 @@ class SecurityAuditLogger {
 
       await dbManager.pool.query(query, values);
     } catch (error) {
-      // Failed to write to audit database - error logged securely
+      loggingService.logError('Failed to write audit log to database', error, {
+        eventType: auditEvent.eventType,
+        severity: auditEvent.severity
+      });
     }
   }
 
@@ -389,12 +456,12 @@ class SecurityAuditLogger {
       riskScore: auditEvent.riskScore
     };
 
-    // Security alert triggered - sent to monitoring system
-
-    // In production, this would integrate with alerting systems
-    // - Send to security team via email/Slack
-    // - Trigger automated response (IP blocking, account suspension)
-    // - Update SIEM/security dashboards
+    alertingService.createAlert(
+      'security_threshold',
+      'critical',
+      `Security alert threshold exceeded for ${auditEvent.eventType}`,
+      alert
+    );
   }
 
   /**
@@ -408,7 +475,9 @@ class SecurityAuditLogger {
       await fs.promises.rename(currentLogFile, rotatedFile);
       // Log file rotated successfully
     } catch (error) {
-      // Failed to rotate log file - error logged securely
+      loggingService.logError('Failed to rotate audit log file', error, {
+        logFile: currentLogFile
+      });
     }
   }
 
@@ -457,7 +526,7 @@ class SecurityAuditLogger {
       }
 
     } catch (error) {
-      // Failed to cleanup old logs - error logged securely
+      loggingService.logError('Failed to cleanup audit log files', error);
     }
   }
 

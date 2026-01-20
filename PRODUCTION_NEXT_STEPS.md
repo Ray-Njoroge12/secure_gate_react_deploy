@@ -141,19 +141,40 @@ chmod +x scripts/apply-production-migrations.sh
 
 ### Step 2: Deploy Application Code (10-20 minutes)
 ```bash
-# Option A: Git-based deployment (Render, Heroku, etc.)
-git add .
-git commit -m "Deploy security features to production"
-git push production main
+# Requires configured AWS account and CLI credentials.
+# If AWS is not set up yet, skip and fill these values later.
+# AWS ECS/Fargate deployment
+export AWS_REGION=us-west-2
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export ECR_REPO=secure-gate-api
+IMAGE_TAG=$(git rev-parse --short HEAD)
 
-# Option B: Docker deployment
-docker build -t secure-gate-api:v2.0.0 .
-docker push your-registry/secure-gate-api:v2.0.0
-docker-compose -f docker-compose.prod.yml up -d
+# Build and push image
+aws ecr get-login-password --region "$AWS_REGION" \
+  | docker login --username AWS --password-stdin \
+    "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
-# Option C: Manual deployment
-npm install --production
-pm2 restart all
+docker build -t "$ECR_REPO:$IMAGE_TAG" ./secure-gate-access/server
+docker tag "$ECR_REPO:$IMAGE_TAG" \
+  "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+docker push "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+
+# Update ECS task definition via Terraform
+cd infra
+terraform init
+terraform apply \
+  -var="environment=production" \
+  -var="container_image=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG"
+
+# Force a new deployment (replace names if your cluster/service differ)
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --force-new-deployment
+
+aws ecs wait services-stable \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
 ```
 
 ### Step 3: Run Data Migration Scripts (30-120 minutes)
@@ -258,13 +279,20 @@ If critical issues occur during deployment:
 
 ### Quick Rollback (Code Only)
 ```bash
-# Revert to previous deployment
-git revert HEAD
-git push production main
+# Roll back to a previous ECS task definition
+PREV_TASK_DEF=$(aws ecs list-task-definitions \
+  --family-prefix secure-gate-task \
+  --sort DESC \
+  --query 'taskDefinitionArns[1]' \
+  --output text)
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --task-definition "$PREV_TASK_DEF"
 
-# Or restore previous Docker image
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d --force-recreate
+aws ecs wait services-stable \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
 ```
 
 ### Database Rollback (If Needed)
@@ -283,8 +311,15 @@ export FEATURE_QR_TOKENIZATION=false
 export FEATURE_DATA_RETENTION=false
 export FEATURE_DATA_MINIMIZATION=false
 
-# Restart application
-pm2 restart all
+# Restart application (ECS)
+aws ecs update-service \
+  --cluster secure-gate-cluster \
+  --service secure-gate-service \
+  --force-new-deployment
+
+aws ecs wait services-stable \
+  --cluster secure-gate-cluster \
+  --services secure-gate-service
 ```
 
 ---

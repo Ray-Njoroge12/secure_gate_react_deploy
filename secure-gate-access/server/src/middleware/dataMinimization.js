@@ -22,7 +22,8 @@ const dataSchemas = {
     resident: [
       'id', 'name', 'phone', 'vehicle_plate', 'purpose',
       'date_of_visit', 'time_of_visit', 'status',
-      'check_in', 'check_out', 'qr_code', 'created_at'
+      'check_in', 'check_out', 'qr_code', 'created_at',
+      'host_id', 'resident_id'
       // EXCLUDED: id_number (unless own visitor), otp_hash, consent details
     ],
     guard: [
@@ -95,8 +96,18 @@ function filterFields(data, allowedFields, sensitiveFields = []) {
   // Filter to allowed fields only
   const filtered = {};
   allowedFields.forEach(field => {
-    if (data.hasOwnProperty(field) && !sensitiveFields.includes(field)) {
+    if (sensitiveFields.includes(field)) {
+      return;
+    }
+    if (data.hasOwnProperty(field)) {
       filtered[field] = data[field];
+      return;
+    }
+    if (field.includes('_')) {
+      const camelField = field.replace(/_([a-z])/g, (_, p) => p.toUpperCase());
+      if (data.hasOwnProperty(camelField)) {
+        filtered[camelField] = data[camelField];
+      }
     }
   });
 
@@ -190,12 +201,32 @@ export function minimizeData(entityType, options = {}) {
         } else if (parsedData && typeof parsedData === 'object') {
           // Check if it's a standard API response with data property
           if (parsedData.success !== undefined && parsedData.data !== undefined) {
-            filteredData = {
-              ...parsedData,
-              data: Array.isArray(parsedData.data)
-                ? filterArray(parsedData.data, allowedFields, sensitiveFields)
-                : filterFields(parsedData.data, allowedFields, sensitiveFields)
-            };
+            if (Array.isArray(parsedData.data)) {
+              filteredData = {
+                ...parsedData,
+                data: filterArray(parsedData.data, allowedFields, sensitiveFields)
+              };
+            } else if (parsedData.data && typeof parsedData.data === 'object') {
+              const dataCopy = { ...parsedData.data };
+              const collectionKey = `${entityType}s`;
+              if (Array.isArray(dataCopy[collectionKey])) {
+                dataCopy[collectionKey] = filterArray(dataCopy[collectionKey], allowedFields, sensitiveFields);
+                filteredData = { ...parsedData, data: dataCopy };
+              } else if (dataCopy[entityType] && typeof dataCopy[entityType] === 'object') {
+                dataCopy[entityType] = filterFields(dataCopy[entityType], allowedFields, sensitiveFields);
+                filteredData = { ...parsedData, data: dataCopy };
+              } else {
+                filteredData = {
+                  ...parsedData,
+                  data: filterFields(parsedData.data, allowedFields, sensitiveFields)
+                };
+              }
+            } else {
+              filteredData = {
+                ...parsedData,
+                data: filterFields(parsedData.data, allowedFields, sensitiveFields)
+              };
+            }
           } else {
             filteredData = filterFields(parsedData, allowedFields, sensitiveFields);
           }

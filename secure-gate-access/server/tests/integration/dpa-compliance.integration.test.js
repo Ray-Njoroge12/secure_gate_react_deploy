@@ -28,9 +28,9 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
   beforeEach(async () => {
     // Clean up DPA-specific tables before each test
-    await query('DELETE FROM consent_log').catch(() => {});
-    await query('DELETE FROM data_deletion_requests').catch(() => {});
-    await query('DELETE FROM data_export_log').catch(() => {});
+    await query('DELETE FROM consent_log').catch(() => { });
+    await query('DELETE FROM data_deletion_requests').catch(() => { });
+    await query('DELETE FROM data_export_log').catch(() => { });
   });
 
   // =========================================
@@ -42,9 +42,9 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       // Create some test data for the user
       await query(
-        `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        ['Export Test Visitor', '+254700111111', 'export@test.com', 'Testing', 'pending', userId, 'EXP001']
+        `INSERT INTO visitors (name, phone, email, purpose, status, host_id, invite_code, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        ['Export Test Visitor', '+254700111111', 'export@test.com', 'Testing', 'pending', userId, 'EXP001', 1]
       );
 
       await query(
@@ -55,7 +55,7 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       // Simulate data export query (what userService.exportUserData would do)
       const userResult = await query(
-        'SELECT id, username, email, role, phone, unit, created_at FROM users WHERE id = $1',
+        'SELECT id, username, email, role, phone, house, created_at FROM users WHERE id = $1',
         [userId]
       );
 
@@ -126,15 +126,25 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       // Create related records
       await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ['Pass Holder', '+254700222222', userId, 'weekly', 'active']
+        `INSERT INTO recurring_passes (
+          resident_id, visitor_name, visitor_phone, access_pin, qr_code_token, valid_until, status
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          userId,
+          'Pass Holder',
+          '+254700222222',
+          '123456',
+          `RP-${Date.now()}-dpa`,
+          new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          'active'
+        ]
       );
 
       await query(
-        `INSERT INTO delivery_logs (resident_id, carrier, tracking_number, status)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, 'DHL', 'TRK123456', 'pending']
+        `INSERT INTO deliveries (recipient_id, received_by_guard_id, carrier_name, tracking_number, status)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, testUsers.guard.id, 'DHL', 'TRK123456', 'pending_collection']
       );
 
       // Query all related data
@@ -143,7 +153,7 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
         [userId]
       );
       const deliveries = await query(
-        'SELECT * FROM delivery_logs WHERE resident_id = $1',
+        'SELECT * FROM deliveries WHERE recipient_id = $1',
         [userId]
       );
 
@@ -192,17 +202,17 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
       const hashedPassword = await argon2.default.hash('deletetest123');
 
       const userResult = await query(
-        `INSERT INTO users (username, email, password, password_hash, role, phone, unit, verified)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-        ['delete_test_user', 'delete@test.com', hashedPassword, hashedPassword, 'resident', '+254700333333', 'D101', true]
+        `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        ['delete_test_user', 'delete@test.com', hashedPassword, hashedPassword, 'resident', '+254700333333', 'D101', true, 1]
       );
       const deleteUserId = userResult.rows[0].id;
 
       // Create related records
       await query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ['Delete Test Visitor', '+254700444444', deleteUserId, 'DEL001', 'pending']
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['Delete Test Visitor', '+254700444444', deleteUserId, 'DEL001', 'pending', 1]
       );
 
       // Verify records exist
@@ -233,7 +243,7 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
     it('should anonymize historical records instead of deleting', async () => {
       // Create test audit log
       const userId = testUsers.resident.id;
-      
+
       await query(
         `INSERT INTO audit_logs (action, resource, user_id, user_role, ip_address, details)
          VALUES ($1, $2, $3, $4, $5, $6)`,
@@ -391,7 +401,7 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
       );
 
       expect(consents.rows).toHaveLength(consentTypes.length);
-      
+
       const recordedTypes = consents.rows.map(c => c.consent_type);
       for (const type of consentTypes) {
         expect(recordedTypes).toContain(type);
@@ -597,28 +607,38 @@ describe('Kenya DPA 2019 Compliance Integration Tests', () => {
 
       // Create comprehensive test data
       await query(
-        `INSERT INTO visitors (name, phone, host_id, invite_code, status)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ['DSAR Visitor', '+254700555555', userId, 'DSAR01', 'pending']
+        `INSERT INTO visitors (name, phone, host_id, invite_code, status, estate_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        ['DSAR Visitor', '+254700555555', userId, 'DSAR01', 'pending', 1]
       );
 
       await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5)`,
-        ['DSAR Pass', '+254700666666', userId, 'daily', 'active']
+        `INSERT INTO recurring_passes (
+          resident_id, visitor_name, visitor_phone, access_pin, qr_code_token, valid_until, status
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          userId,
+          'DSAR Pass',
+          '+254700666666',
+          '123456',
+          `RP-${Date.now()}-dsar`,
+          new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          'active'
+        ]
       );
 
       await query(
-        `INSERT INTO delivery_logs (resident_id, carrier, tracking_number, status)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, 'Fedex', 'DSAR123', 'pending']
+        `INSERT INTO deliveries (recipient_id, received_by_guard_id, carrier_name, tracking_number, status)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userId, testUsers.guard.id, 'Fedex', 'DSAR123', 'pending_collection']
       );
 
       // Simulate DSAR - collect all user data
       const userData = await query('SELECT * FROM users WHERE id = $1', [userId]);
       const visitors = await query('SELECT * FROM visitors WHERE host_id = $1', [userId]);
       const passes = await query('SELECT * FROM recurring_passes WHERE resident_id = $1', [userId]);
-      const deliveries = await query('SELECT * FROM delivery_logs WHERE resident_id = $1', [userId]);
+      const deliveries = await query('SELECT * FROM deliveries WHERE recipient_id = $1', [userId]);
       const auditLogs = await query('SELECT * FROM audit_logs WHERE user_id = $1', [userId]);
 
       const dsarPackage = {

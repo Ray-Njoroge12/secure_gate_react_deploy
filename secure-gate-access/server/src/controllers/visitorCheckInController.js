@@ -33,7 +33,7 @@ const checkInVisitor = async (req, res) => {
         return res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
       }
     }
-    
+
     const vRes = await dbManager.query(
       'SELECT id, status, name, phone, email FROM visitors WHERE id = $1 AND estate_id = $2',
       [id, req.user.estate_id]
@@ -45,7 +45,7 @@ const checkInVisitor = async (req, res) => {
 
     const now = new Date();
     await dbManager.query(
-      'UPDATE visitors SET status = $1, check_in = $2 WHERE id = $3 AND estate_id = $4',
+      'UPDATE visitors SET status = $1, check_in_time = $2 WHERE id = $3 AND estate_id = $4',
       [PASS_STATUS.ON_PREMISE, now, id, req.user.estate_id]
     );
 
@@ -58,7 +58,8 @@ const checkInVisitor = async (req, res) => {
       WebSocketService.emitVisitorCheckIn({
         id: visitor.id,
         name: visitor.name,
-        phone: visitor.phone,
+        // Fix V-004: PII leakage in WebSocket (Mask phone)
+        phone: visitor.phone ? visitor.phone.replace(/.(?=.{4})/g, '*') : null,
         purpose: visitor.purpose || 'Not specified',
         checkInTime: now.toISOString(),
         location: 'Main Gate'
@@ -110,7 +111,7 @@ const checkOutVisitor = async (req, res) => {
         return res.status(idempotencyResult.response.statusCode).json(idempotencyResult.response.body);
       }
     }
-    
+
     const vRes = await dbManager.query(
       'SELECT id, status, name, phone, email FROM visitors WHERE id = $1 AND estate_id = $2',
       [id, req.user.estate_id]
@@ -122,7 +123,7 @@ const checkOutVisitor = async (req, res) => {
 
     const now = new Date();
     await dbManager.query(
-      'UPDATE visitors SET status = $1, check_out = $2 WHERE id = $3 AND estate_id = $4',
+      'UPDATE visitors SET status = $1, check_out_time = $2 WHERE id = $3 AND estate_id = $4',
       [PASS_STATUS.CHECKED_OUT, now, id, req.user.estate_id]
     );
 
@@ -134,10 +135,10 @@ const checkOutVisitor = async (req, res) => {
     try {
       // Calculate visit duration
       const checkInRes = await dbManager.query(
-        'SELECT check_in FROM visitors WHERE id = $1 AND estate_id = $2',
+        'SELECT check_in_time FROM visitors WHERE id = $1 AND estate_id = $2',
         [id, req.user.estate_id]
       );
-      const checkInTime = checkInRes.rows[0]?.check_in;
+      const checkInTime = checkInRes.rows[0]?.check_in_time;
       let duration = 'Unknown';
       if (checkInTime) {
         const durationMs = now.getTime() - new Date(checkInTime).getTime();
@@ -177,14 +178,21 @@ const checkOutVisitor = async (req, res) => {
 const selfCheckIn = async (req, res) => {
   try {
     const { inviteCode } = req.params;
-    const vRes = await dbManager.query('SELECT id, status, name, phone, email FROM visitors WHERE invite_code = $1', [inviteCode]);
+    const vRes = await dbManager.query(
+      'SELECT id, status, name, phone, email, estate_id FROM visitors WHERE invite_code = $1',
+      [inviteCode]
+    );
     const visitor = vRes.rows[0];
     if (!visitor) return respondError(res, 404, 'Visitor not found');
     const transition = validateVisitorTransition(visitor.status, PASS_STATUS.ON_PREMISE);
     if (!transition.valid) return respondError(res, 422, transition.reason);
 
     const now = new Date();
-    await dbManager.query('UPDATE visitors SET status = $1, check_in = $2 WHERE id = $3', [PASS_STATUS.ON_PREMISE, now, visitor.id]);
+    // Include estate_id in UPDATE for defense-in-depth
+    await dbManager.query(
+      'UPDATE visitors SET status = $1, check_in_time = $2 WHERE id = $3 AND estate_id = $4',
+      [PASS_STATUS.ON_PREMISE, now, visitor.id, visitor.estate_id]
+    );
 
     await req.audit?.('visitor.selfcheckin', 'visitor', String(visitor.id), { outcome: 'success', message: 'Visitor self-checked in', checkInTime: now.toISOString() });
     respond(res, { message: 'Self check-in successful', check_in: now });

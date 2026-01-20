@@ -18,6 +18,12 @@ export const getIncidentQueue = async (req, res) => {
   try {
     const { severity, assignedToMe, unassigned, slaBreached } = req.query;
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     let query = `
       SELECT i.*, 
@@ -34,11 +40,11 @@ export const getIncidentQueue = async (req, res) => {
       LEFT JOIN users u ON i.assigned_to = u.id
       LEFT JOIN users reporter ON i.reported_by = reporter.id
       LEFT JOIN incident_sla_tracking sla ON i.id = sla.incident_id
-      WHERE i.status != 'closed'
+      WHERE i.status != 'closed' AND i.estate_id = $1
     `;
 
-    const params = [];
-    let paramIndex = 1;
+    const params = [estateId];
+    let paramIndex = 2;
 
     if (severity) {
       query += ` AND i.severity = $${paramIndex}`;
@@ -80,17 +86,26 @@ export const getIncidentQueue = async (req, res) => {
  */
 export const getIncidentStats = async (req, res) => {
   try {
+    const estateId = req.user.estate_id;
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+
     const query = `
       SELECT 
         COUNT(*) FILTER (WHERE status = 'open') as open,
         COUNT(*) FILTER (WHERE severity = 'critical') as critical,
         COUNT(*) FILTER (WHERE status = 'under_review') as under_review,
-        (SELECT COUNT(*) FROM incident_sla_tracking WHERE resolution_sla_met = FALSE) as sla_breached
+        (SELECT COUNT(*) FROM incident_sla_tracking sla 
+         JOIN incidents i ON sla.incident_id = i.id 
+         WHERE sla.resolution_sla_met = FALSE AND i.estate_id = $1) as sla_breached
       FROM incidents
-      WHERE status != 'closed'
+      WHERE status != 'closed' AND estate_id = $1
     `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [estateId]);
 
     res.json({
       success: true,
@@ -111,23 +126,30 @@ export const updateIncidentStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const validStatuses = ['open', 'under_review', 'escalated', 'closed', 'cancelled'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
+    // SECURITY: Filter by estate_id to prevent cross-estate modification
     const result = await pool.query(
       `UPDATE incidents
        SET status = $1,
            ${status === 'closed' ? 'closed_at = CURRENT_TIMESTAMP, closed_by = $2' : '1=1'}
-       WHERE id = $${status === 'closed' ? 3 : 2}
+       WHERE id = $${status === 'closed' ? 3 : 2} AND estate_id = $${status === 'closed' ? 4 : 3}
        RETURNING *`,
-      status === 'closed' ? [status, userId, id] : [status, id]
+      status === 'closed' ? [status, userId, id, estateId] : [status, id, estateId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Incident not found' });
+      return res.status(404).json({ error: 'Incident not found or access denied' });
     }
 
     // Calculate SLA
@@ -156,20 +178,27 @@ export const assignIncident = async (req, res) => {
     const { id } = req.params;
     const { assignedTo } = req.body;
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
 
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+
+    // SECURITY: Filter by estate_id
     const result = await pool.query(
       `UPDATE incidents
        SET assigned_to = $1,
            assigned_at = CURRENT_TIMESTAMP,
            assigned_by = $2,
            status = CASE WHEN status = 'open' THEN 'under_review' ELSE status END
-       WHERE id = $3
+       WHERE id = $3 AND estate_id = $4
        RETURNING *`,
-      [assignedTo, userId, id]
+      [assignedTo, userId, id, estateId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Incident not found' });
+      return res.status(404).json({ error: 'Incident not found or access denied' });
     }
 
     // Log assignment
@@ -201,20 +230,27 @@ export const escalateIncident = async (req, res) => {
     const { id } = req.params;
     const { escalateTo } = req.body;
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
 
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+
+    // SECURITY: Filter by estate_id
     const result = await pool.query(
       `UPDATE incidents
        SET status = 'escalated',
            escalated_to = $1,
            escalated_at = CURRENT_TIMESTAMP,
            escalated_by = $2
-       WHERE id = $3
+       WHERE id = $3 AND estate_id = $4
        RETURNING *`,
-      [escalateTo, userId, id]
+      [escalateTo, userId, id, estateId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Incident not found' });
+      return res.status(404).json({ error: 'Incident not found or access denied' });
     }
 
     // Log escalation

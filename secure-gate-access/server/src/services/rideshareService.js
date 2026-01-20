@@ -4,7 +4,86 @@
  */
 
 import { pool } from '../database/connection.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
+import { sendSms } from './notificationService.js';
+import * as whatsappService from './whatsappService.js';
+
+const normalizeSendResult = (result, errorMessage) => {
+  if (!result) {
+    return { success: false, error: errorMessage || 'notification_failed' };
+  }
+  if (result === true) {
+    return { success: true };
+  }
+  if (result === false) {
+    return { success: false, error: errorMessage || 'notification_failed' };
+  }
+  return result;
+};
+
+async function logNotification({
+  recipientType,
+  recipientId,
+  recipientPhone,
+  notificationType,
+  channel,
+  body,
+  status,
+  provider,
+  providerMessageId,
+  metadata = {}
+}) {
+  try {
+    const sentAt = status === 'sent' ? new Date() : null;
+    await pool.query(
+      `INSERT INTO notification_log (
+        recipient_type,
+        recipient_id,
+        recipient_phone,
+        notification_type,
+        channel,
+        language,
+        subject,
+        body,
+        template_name,
+        template_variables,
+        user_id,
+        status,
+        provider,
+        provider_message_id,
+        metadata,
+        sent_at,
+        created_at,
+        updated_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+        $16,
+        NOW(),
+        NOW()
+      )`,
+      [
+        recipientType,
+        recipientId,
+        recipientPhone,
+        notificationType,
+        channel,
+        'en',
+        null,
+        body,
+        notificationType,
+        JSON.stringify(metadata),
+        recipientId,
+        status,
+        provider,
+        providerMessageId || null,
+        JSON.stringify(metadata),
+        sentAt
+      ]
+    );
+  } catch (error) {
+    console.warn('Failed to log rideshare notification:', error.message);
+  }
+}
 
 /**
  * Generate a 6-character alphanumeric access code
@@ -42,10 +121,90 @@ export async function createRideshareEntry(residentId, data) {
       [residentId, driverName.trim(), vehiclePlate.trim().toUpperCase(), vehicleDescription, serviceProvider, accessCode, expiresAt]
     );
 
+    // Get resident phone for notification - with estate check for data integrity
+    const residentRes = await pool.query('SELECT phone, username, estate_id FROM users WHERE id = $1', [residentId]);
+    const resident = residentRes.rows[0];
+
+    // Notification Logic (Fix N-008)
+    if (resident && resident.phone) {
+      const message = `Gate Access Code for ${driverName} (${vehiclePlate}): ${accessCode}. Valid until ${expiresAt.toLocaleTimeString()}.`;
+      const provider = process.env.SMS_PROVIDER || 'africastalking';
+      let sendResult;
+      try {
+        sendResult = await sendSms(resident.phone, message);
+      } catch (err) {
+        console.warn('Failed to send rideshare code to resident:', err.message);
+        sendResult = { success: false, error: err.message };
+      }
+
+      const normalizedResult = normalizeSendResult(sendResult, 'rideshare_sms_failed');
+      await logNotification({
+        recipientType: 'user',
+        recipientId: residentId,
+        recipientPhone: resident.phone,
+        notificationType: 'rideshare_access_code',
+        channel: provider === 'whatsapp' ? 'whatsapp' : 'sms',
+        body: message,
+        status: normalizedResult.success ? 'sent' : 'failed',
+        provider,
+        providerMessageId: normalizedResult.messageId,
+        metadata: {
+          driverName,
+          vehiclePlate,
+          accessCode,
+          expiresAt,
+          residentName: resident.username
+        }
+      });
+    }
+
+    // Attempt to notify driver if phone provided (transient)
+    const driverPhone = data.driverPhone ? String(data.driverPhone).trim() : null;
+    if (driverPhone) {
+      const estateAddress = process.env.ESTATE_ADDRESS || process.env.SITE_ADDRESS || 'the main gate';
+      const driverMsg = `Access Code: ${accessCode}. Address: ${estateAddress}. Contact: ${resident?.username || 'resident'}. Valid for ${expiryMinutes} mins.`;
+      const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
+      const externalEnabled = process.env.ENABLE_EXTERNAL_NOTIFICATIONS === 'true';
+      const smsEnabled = process.env.ENABLE_SMS_NOTIFICATIONS === 'true';
+      let driverResult;
+
+      try {
+        if (smsProvider === 'whatsapp' && whatsappService.isConfigured() && externalEnabled && smsEnabled) {
+          driverResult = await whatsappService.sendTextMessage(driverPhone, driverMsg);
+        } else {
+          driverResult = await sendSms(driverPhone, driverMsg);
+        }
+      } catch (err) {
+        console.warn('Failed to send rideshare code to driver:', err.message);
+        driverResult = { success: false, error: err.message };
+      }
+
+      const normalizedDriverResult = normalizeSendResult(driverResult, 'rideshare_driver_notification_failed');
+      await logNotification({
+        recipientType: 'external',
+        recipientId: null,
+        recipientPhone: driverPhone,
+        notificationType: 'rideshare_driver_access_code',
+        channel: smsProvider === 'whatsapp' ? 'whatsapp' : 'sms',
+        body: driverMsg,
+        status: normalizedDriverResult.success ? 'sent' : 'failed',
+        provider: smsProvider,
+        providerMessageId: normalizedDriverResult.messageId,
+        metadata: {
+          driverName,
+          vehiclePlate,
+          accessCode,
+          expiresAt,
+          serviceProvider,
+          estateAddress
+        }
+      });
+    }
+
     return {
       success: true,
       data: result.rows[0],
-      message: `Access code valid until ${expiresAt.toLocaleTimeString()}`
+      message: `Access code created: ${accessCode}. Notification sent.`
     };
   } catch (error) {
     console.error('Create rideshare entry error:', error);
@@ -97,24 +256,46 @@ export async function cancelRideshareEntry(entryId, residentId) {
  * Validate rideshare entry (Guard action)
  * Can validate by access code or vehicle plate
  */
-export async function validateRideshareEntry(credential, method = 'code') {
-  const column = method === 'plate' ? 'vehicle_plate' : 'access_code';
-  const searchValue = method === 'plate' ? credential.toUpperCase() : credential.toUpperCase();
+export async function validateRideshareEntry(credential, method = 'code', estateId = null) {
+  // SECURITY: Strict whitelist validation to prevent SQL injection
+  const allowedMethods = {
+    'code': 'access_code',
+    'plate': 'vehicle_plate'
+  };
 
-  const result = await pool.query(
-    `SELECT re.*, u.username as resident_name, u.house as resident_unit
+  const column = allowedMethods[method];
+  if (!column) {
+    return { valid: false, error: 'Invalid validation method' };
+  }
+
+  const searchValue = credential.toUpperCase();
+
+  // Use separate queries for each column to avoid template literal injection
+  let query;
+  if (method === 'plate') {
+    query = `SELECT re.*, u.username as resident_name, u.house as resident_unit, u.estate_id
      FROM rideshare_entries re
      JOIN users u ON re.resident_id = u.id
-     WHERE re.${column} = $1 AND re.status = 'pending' AND re.expires_at > NOW()`,
-    [searchValue]
-  );
+     WHERE re.vehicle_plate = $1 AND re.status = 'pending' AND re.expires_at > NOW()`;
+  } else {
+    query = `SELECT re.*, u.username as resident_name, u.house as resident_unit, u.estate_id
+     FROM rideshare_entries re
+     JOIN users u ON re.resident_id = u.id
+     WHERE re.access_code = $1 AND re.status = 'pending' AND re.expires_at > NOW()`;
+  }
+
+  const result = await pool.query(query, [searchValue]);
 
   if (result.rows.length === 0) {
-    // Check if expired
-    const expiredCheck = await pool.query(
-      `SELECT id, status, expires_at FROM rideshare_entries WHERE ${column} = $1`,
-      [searchValue]
-    );
+    // Check if expired - also use separate queries
+    let expiredQuery;
+    if (method === 'plate') {
+      expiredQuery = 'SELECT id, status, expires_at FROM rideshare_entries WHERE vehicle_plate = $1';
+    } else {
+      expiredQuery = 'SELECT id, status, expires_at FROM rideshare_entries WHERE access_code = $1';
+    }
+
+    const expiredCheck = await pool.query(expiredQuery, [searchValue]);
 
     if (expiredCheck.rows.length > 0) {
       const entry = expiredCheck.rows[0];
@@ -125,6 +306,11 @@ export async function validateRideshareEntry(credential, method = 'code') {
     }
 
     return { valid: false, error: 'No matching entry found' };
+  }
+
+  // SECURITY: Verify estate context
+  if (estateId && result.rows[0].estate_id !== estateId) {
+    return { valid: false, error: 'Entry belongs to different estate' };
   }
 
   return {
@@ -183,17 +369,21 @@ export async function markRideshareCompleted(entryId, guardId) {
 /**
  * Get pending rideshare entries for guard view
  */
-export async function getPendingRideshareEntries() {
-  const result = await pool.query(
-    `SELECT re.id, re.driver_name, re.vehicle_plate, re.vehicle_description,
+export async function getPendingRideshareEntries(estateId = null) {
+  const query = `
+    SELECT re.id, re.driver_name, re.vehicle_plate, re.vehicle_description,
             re.service_provider, re.access_code, re.expires_at, re.status,
             re.arrived_at, re.created_at,
             u.username as resident_name, u.house as resident_unit
-     FROM rideshare_entries re
-     JOIN users u ON re.resident_id = u.id
-     WHERE re.status IN ('pending', 'arrived') AND re.expires_at > NOW()
-     ORDER BY re.created_at DESC`
-  );
+      FROM rideshare_entries re
+      JOIN users u ON re.resident_id = u.id
+      WHERE re.status IN ('pending', 'arrived') AND re.expires_at > NOW()
+      ${estateId ? 'AND u.estate_id = $1' : ''}
+      ORDER BY re.created_at DESC`;
+
+  const params = estateId ? [estateId] : [];
+
+  const result = await pool.query(query, params);
 
   return result.rows.map(r => ({
     id: r.id,

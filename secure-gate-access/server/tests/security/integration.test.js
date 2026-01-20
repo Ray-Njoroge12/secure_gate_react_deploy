@@ -6,8 +6,8 @@
 import { describe, test, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import pool from '../src/config/database.js';
-import crypto from 'crypto';
+import { dbManager as pool } from '../../src/database/db.enhanced.js';
+import * as crypto from 'crypto';
 
 // Mock the required services and routes
 const app = express();
@@ -31,7 +31,10 @@ describe('Security Features Integration Tests', () => {
     if (testUser?.id) {
       await pool.query('DELETE FROM users WHERE id = $1', [testUser.id]);
     }
-    await pool.end();
+    // dbManager uses disconnect() instead of end()
+    if (pool.disconnect) {
+      await pool.disconnect();
+    }
   });
 
   describe('Phase 1: OTP Debug Echo Protection', () => {
@@ -42,7 +45,7 @@ describe('Security Features Integration Tests', () => {
       process.env.OTP_DEBUG_ECHO = 'true'; // Try to force echo
 
       // Import the controller function
-      const { shouldEchoOtp } = await import('../src/controllers/visitorInviteController-optimized.js');
+      const { shouldEchoOtp } = await import('../../src/controllers/visitorInviteController-optimized.js');
       
       // Should return false due to production guard
       expect(shouldEchoOtp()).toBe(false);
@@ -186,7 +189,7 @@ describe('Security Features Integration Tests', () => {
     });
 
     test('QR token should be opaque (no PII)', async () => {
-      const { generateToken } = await import('../src/services/qrTokenService.js');
+      const { generateToken } = await import('../../src/services/qrTokenService.js');
       
       const testVisitorId = 123;
       const token = await generateToken(testVisitorId);
@@ -219,7 +222,7 @@ describe('Security Features Integration Tests', () => {
     });
 
     test('token validation should work correctly', async () => {
-      const { generateToken, validateToken } = await import('../src/services/qrTokenService.js');
+      const { generateToken, validateToken } = await import('../../src/services/qrTokenService.js');
       
       const testVisitorId = 456;
       const token = await generateToken(testVisitorId);
@@ -306,7 +309,7 @@ describe('Security Features Integration Tests', () => {
       const visitor = result.rows[0];
       
       // Apply data minimization for guard role
-      const { filterDataByRole } = await import('../src/middleware/dataMinimization.js');
+      const { filterDataByRole } = await import('../../src/middleware/dataMinimization.js');
       const filtered = filterDataByRole(visitor, 'guard', 'visitor');
       
       // Guard shouldn't see encrypted ID column
@@ -318,8 +321,8 @@ describe('Security Features Integration Tests', () => {
     });
 
     test('QR tokens should work with data minimization', async () => {
-      const { generateToken } = await import('../src/services/qrTokenService.js');
-      const { filterDataByRole } = await import('../src/middleware/dataMinimization.js');
+      const { generateToken } = await import('../../src/services/qrTokenService.js');
+      const { filterDataByRole } = await import('../../src/middleware/dataMinimization.js');
       
       const token = await generateToken(789);
       const visitorData = {
@@ -411,7 +414,7 @@ describe('Security Features Integration Tests', () => {
     test('should prevent critical security vulnerabilities', async () => {
       // SEC-001: No OTP leakage
       process.env.NODE_ENV = 'production';
-      const { shouldEchoOtp } = await import('../src/controllers/visitorInviteController-optimized.js');
+      const { shouldEchoOtp } = await import('../../src/controllers/visitorInviteController-optimized.js');
       expect(shouldEchoOtp()).toBe(false);
       
       // SEC-002: ID encryption enabled
@@ -419,7 +422,7 @@ describe('Security Features Integration Tests', () => {
       expect(process.env.ENCRYPTION_KEY.length).toBeGreaterThanOrEqual(64);
       
       // SEC-003: QR tokenization active
-      const { generateToken } = await import('../src/services/qrTokenService.js');
+      const { generateToken } = await import('../../src/services/qrTokenService.js');
       const token = await generateToken(999);
       expect(token).toBeDefined();
       expect(token).not.toContain('999');
@@ -433,7 +436,7 @@ describe('Security Features Integration Tests', () => {
 
   describe('Performance & Scalability', () => {
     test('encryption should be performant', async () => {
-      const { encryptIdNumber, decryptIdNumber } = await import('../src/controllers/visitorInviteController-optimized.js');
+      const { encryptIdNumber, decryptIdNumber } = await import('../../src/controllers/visitorInviteController-optimized.js');
       
       const testId = 'PERF-TEST-ID-123456';
       const iterations = 100;
@@ -474,7 +477,7 @@ describe('Security Features Integration Tests', () => {
     });
 
     test('token generation should be fast', async () => {
-      const { generateToken } = await import('../src/services/qrTokenService.js');
+      const { generateToken } = await import('../../src/services/qrTokenService.js');
       
       const iterations = 50;
       const start = Date.now();

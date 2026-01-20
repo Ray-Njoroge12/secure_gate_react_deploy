@@ -8,6 +8,8 @@ import rateLimit from 'express-rate-limit';
 import { buildErrorPayload } from '../utils/responseFormatter.js';
 import slowDown from 'express-slow-down';
 
+const SHOULD_LOG_RATE_LIMIT_BYPASS = process.env.DEBUG_RATE_LIMIT === 'true';
+
 const rateLimitHandler = (message) => (req, res) => {
   const response = buildErrorPayload(req, res, message, 'RATE_LIMITED');
   res.status(429).json(response);
@@ -253,7 +255,9 @@ export const createRateLimit = (profile, options = {}) => {
       // Check bypass conditions
       for (const [name, condition] of Object.entries(BYPASS_CONDITIONS)) {
         if (condition(req)) {
-          console.log(`Rate limit bypassed: ${name} for ${getClientIP(req)}`);
+          if (SHOULD_LOG_RATE_LIMIT_BYPASS) {
+            console.log(`Rate limit bypassed: ${name} for ${getClientIP(req)}`);
+          }
           return true;
         }
       }
@@ -428,5 +432,4 @@ export default {
   rateLimitAnalytics,
   getClientIP
 };
-
 

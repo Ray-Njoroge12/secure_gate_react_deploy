@@ -10,7 +10,7 @@
  */
 
 import dotenv from 'dotenv';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 

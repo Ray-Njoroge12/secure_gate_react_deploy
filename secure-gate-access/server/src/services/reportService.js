@@ -72,7 +72,7 @@ async function fetchVisitorSummaryData(dateFrom, dateTo, siteId) {
       COUNT(*) FILTER (WHERE status = 'approved') as approved,
       COUNT(*) FILTER (WHERE status = 'pending') as pending,
       COUNT(*) FILTER (WHERE status = 'rejected') as rejected,
-      COUNT(*) FILTER (WHERE checked_in_at IS NOT NULL) as checked_in,
+      COUNT(*) FILTER (WHERE check_in_time IS NOT NULL) as checked_in,
       AVG(EXTRACT(EPOCH FROM (approved_at - created_at))/60) FILTER (WHERE approved_at IS NOT NULL) as avg_approval_time_minutes
     FROM visitors
     WHERE created_at BETWEEN $1 AND $2
@@ -126,9 +126,9 @@ async function fetchGuardPerformanceData(dateFrom, dateTo, siteId) {
     SELECT 
       u.username as guard_name,
       COUNT(DISTINCT v.id) as visitors_processed,
-      COUNT(DISTINCT v.id) FILTER (WHERE v.checked_in_at IS NOT NULL) as check_ins,
-      COUNT(DISTINCT v.id) FILTER (WHERE v.checked_out_at IS NOT NULL) as check_outs,
-      AVG(EXTRACT(EPOCH FROM (v.checked_in_at - v.approved_at))/60) FILTER (WHERE v.checked_in_at IS NOT NULL) as avg_processing_time_minutes
+      COUNT(DISTINCT v.id) FILTER (WHERE v.check_in_time IS NOT NULL) as check_ins,
+      COUNT(DISTINCT v.id) FILTER (WHERE v.check_out_time IS NOT NULL) as check_outs,
+      AVG(EXTRACT(EPOCH FROM (v.check_in_time - v.approved_at))/60) FILTER (WHERE v.check_in_time IS NOT NULL) as avg_processing_time_minutes
     FROM users u
     LEFT JOIN visitors v ON v.approved_by = u.id
     WHERE u.role = 'guard'
@@ -156,7 +156,7 @@ async function fetchResidentActivityData(dateFrom, dateTo, siteId) {
       u.email as resident_email,
       COUNT(v.id) as total_visitors,
       COUNT(v.id) FILTER (WHERE v.status = 'approved') as approved_visitors,
-      COUNT(v.id) FILTER (WHERE v.checked_in_at IS NOT NULL) as visitors_checked_in
+      COUNT(v.id) FILTER (WHERE v.check_in_time IS NOT NULL) as visitors_checked_in
     FROM users u
     LEFT JOIN visitors v ON v.resident_id = u.id
     WHERE u.role = 'resident'

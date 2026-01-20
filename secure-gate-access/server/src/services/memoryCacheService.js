@@ -8,6 +8,7 @@ import { EventEmitter } from 'events';
 class MemoryCacheService extends EventEmitter {
   constructor() {
     super();
+    this.shouldLog = process.env.NODE_ENV !== 'test';
     this.cache = new Map();
     this.timers = new Map();
     this.isConnected = true; // Always "connected" for memory cache
@@ -18,14 +19,18 @@ class MemoryCacheService extends EventEmitter {
       operations: 0
     };
 
-    console.log('⚠️  Using in-memory cache (not recommended for production)');
+    if (this.shouldLog) {
+      console.log('⚠️  Using in-memory cache (not recommended for production)');
+    }
   }
 
   /**
    * Initialize (no-op for memory cache)
    */
   async initialize() {
-    console.log('✅ Memory cache initialized');
+    if (this.shouldLog) {
+      console.log('✅ Memory cache initialized');
+    }
     this.emit('ready');
     return this;
   }
@@ -53,7 +58,9 @@ class MemoryCacheService extends EventEmitter {
 
       this.timers.set(key, timer);
 
-      console.log(`[MEMORY CACHE] Set: ${key} (TTL: ${ttlSeconds}s)`);
+      if (this.shouldLog) {
+        console.log(`[MEMORY CACHE] Set: ${key} (TTL: ${ttlSeconds}s)`);
+      }
       return true;
     } catch (error) {
       console.error('[MEMORY CACHE] Set error:', error.message);
@@ -71,11 +78,15 @@ class MemoryCacheService extends EventEmitter {
 
       if (this.cache.has(key)) {
         this.cacheStats.hits++;
+      if (this.shouldLog) {
         console.log(`[MEMORY CACHE] Hit: ${key}`);
+      }
         return this.cache.get(key);
       } else {
         this.cacheStats.misses++;
-        console.log(`[MEMORY CACHE] Miss: ${key}`);
+        if (this.shouldLog) {
+          console.log(`[MEMORY CACHE] Miss: ${key}`);
+        }
         return null;
       }
     } catch (error) {
@@ -100,7 +111,9 @@ class MemoryCacheService extends EventEmitter {
       }
 
       const existed = this.cache.delete(key);
-      console.log(`[MEMORY CACHE] Delete: ${key} (found: ${existed})`);
+      if (this.shouldLog) {
+        console.log(`[MEMORY CACHE] Delete: ${key} (found: ${existed})`);
+      }
       return existed;
     } catch (error) {
       console.error('[MEMORY CACHE] Delete error:', error.message);
@@ -129,7 +142,9 @@ class MemoryCacheService extends EventEmitter {
         }
       }
 
-      console.log(`[MEMORY CACHE] Pattern delete: ${pattern} (${deletedCount} keys)`);
+      if (this.shouldLog) {
+        console.log(`[MEMORY CACHE] Pattern delete: ${pattern} (${deletedCount} keys)`);
+      }
       return deletedCount;
     } catch (error) {
       console.error('[MEMORY CACHE] Pattern delete error:', error.message);

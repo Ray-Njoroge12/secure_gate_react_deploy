@@ -28,6 +28,13 @@ CREATE TABLE IF NOT EXISTS rideshare_entries (
     notes VARCHAR(255)
 );
 
+-- Ensure required columns exist for legacy rideshare_entries tables
+ALTER TABLE rideshare_entries ADD COLUMN IF NOT EXISTS resident_id INTEGER REFERENCES users(id);
+ALTER TABLE rideshare_entries ADD COLUMN IF NOT EXISTS vehicle_plate VARCHAR(50);
+ALTER TABLE rideshare_entries ADD COLUMN IF NOT EXISTS access_code VARCHAR(10);
+ALTER TABLE rideshare_entries ADD COLUMN IF NOT EXISTS status VARCHAR(20);
+ALTER TABLE rideshare_entries ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP;
+
 -- Indexes for quick lookup
 CREATE INDEX IF NOT EXISTS idx_rideshare_resident ON rideshare_entries(resident_id);
 CREATE INDEX IF NOT EXISTS idx_rideshare_access_code ON rideshare_entries(access_code);

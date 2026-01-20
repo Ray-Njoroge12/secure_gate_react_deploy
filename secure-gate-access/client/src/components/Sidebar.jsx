@@ -24,7 +24,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
         e.preventDefault();
         const navLinks = document.querySelectorAll('.navlink');
         const currentIndex = Array.from(navLinks).indexOf(linkRef.current);
-        
+
         let targetIndex = currentIndex;
         switch (e.key) {
           case 'ArrowUp':
@@ -40,7 +40,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
             targetIndex = navLinks.length - 1;
             break;
         }
-        
+
         if (navLinks[targetIndex]) {
           navLinks[targetIndex].focus();
         }
@@ -55,14 +55,13 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
   }, []);
 
   return (
-    <NavLink 
+    <NavLink
       ref={linkRef}
-      to={to} 
-      className={({isActive}) => 
-        `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
-          isActive 
-            ? "bg-brand-600 text-white shadow-sm" 
-            : "text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
+      to={to}
+      className={({ isActive }) =>
+        `navlink flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${isActive
+          ? "bg-brand-600 text-white shadow-sm"
+          : "text-gray-600 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:text-white dark:hover:text-white"
         }`
       }
       aria-label={`Navigate to ${children}`}
@@ -72,9 +71,9 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
         <div className="flex items-center justify-between">
           <span className="font-medium">{children}</span>
           {badge && (
-            <Badge 
-              variant="outline" 
-              size="sm" 
+            <Badge
+              variant="outline"
+              size="sm"
               className="ml-2 text-xs bg-gray-100 dark:bg-slate-600 border-gray-300 dark:border-slate-500 text-gray-600 dark:text-slate-200"
               aria-label={`${badge} badge`}
             >
@@ -94,8 +93,8 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
 
 const navigationConfig = {
   resident: [
-    { 
-      path: "/dashboard/resident", 
+    {
+      path: "/dashboard/resident",
       label: "Dashboard",
       description: "Overview & quick actions",
       badge: null,
@@ -106,19 +105,9 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/resident/add-visitor", 
-      label: "Add Visitor",
-      description: "Create single guest passes",
-      badge: "Quick",
-      icon: (
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-        </svg>
-      )
-    },
-    { 
-      path: "/resident/generate-pass", 
+
+    {
+      path: "/resident/generate-pass",
       label: "Generate Pass",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,8 +115,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/resident/visitor-history", 
+    {
+      path: "/resident/visitor-history",
       label: "Visitor History",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,8 +124,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/resident/bulk-invite", 
+    {
+      path: "/resident/bulk-invite",
       label: "Bulk Invite",
       description: "Invite multiple guests",
       badge: "Multi",
@@ -146,8 +135,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/resident/favorite-visitors", 
+    {
+      path: "/resident/favorite-visitors",
       label: "Favorites",
       description: "Quick invite frequent guests",
       badge: "New",
@@ -157,8 +146,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/resident/settings", 
+    {
+      path: "/resident/settings",
       label: "Settings",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,8 +158,8 @@ const navigationConfig = {
     }
   ],
   guard: [
-    { 
-      path: "/dashboard/guard", 
+    {
+      path: "/dashboard/guard",
       label: "Dashboard",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,8 +167,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/guard/scan-qr", 
+    {
+      path: "/dashboard/guard/scan-qr",
       label: "Scan QR",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,8 +176,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/guard/manual-check", 
+    {
+      path: "/dashboard/guard/manual-check",
       label: "Manual Check",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,8 +185,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/guard/visitor-history", 
+    {
+      path: "/dashboard/guard/visitor-history",
       label: "Visitor History",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,8 +194,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/guard/walk-in", 
+    {
+      path: "/dashboard/guard/walk-in",
       label: "Walk-in Registration",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -214,8 +203,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/guard/incidents", 
+    {
+      path: "/dashboard/guard/incidents",
       label: "Incidents",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,8 +212,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/guard/analytics", 
+    {
+      path: "/dashboard/guard/analytics",
       label: "Analytics",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,8 +223,8 @@ const navigationConfig = {
     }
   ],
   admin: [
-    { 
-      path: "/dashboard/admin", 
+    {
+      path: "/dashboard/admin",
       label: "Dashboard",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,8 +232,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/admin/users", 
+    {
+      path: "/dashboard/admin/users",
       label: "Residents",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,8 +241,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/admin/visitors", 
+    {
+      path: "/dashboard/admin/visitors",
       label: "Visitors Log",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,8 +250,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/admin/manage-staff", 
+    {
+      path: "/dashboard/admin/manage-staff",
       label: "Staff",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,8 +259,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/admin/reports", 
+    {
+      path: "/dashboard/admin/reports",
       label: "Reports",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,8 +268,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/admin/incidents", 
+    {
+      path: "/dashboard/admin/incidents",
       label: "Incidents",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,8 +277,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/admin/integrations", 
+    {
+      path: "/dashboard/admin/integrations",
       label: "Integrations",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,8 +286,8 @@ const navigationConfig = {
         </svg>
       )
     },
-    { 
-      path: "/dashboard/admin/settings", 
+    {
+      path: "/dashboard/admin/settings",
       label: "Settings",
       icon: (
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,7 +302,7 @@ const navigationConfig = {
 const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
   // Memoize navigation items to prevent unnecessary re-renders
   const navigation = useMemo(() => navigationConfig[role] || [], [role]);
-  
+
   const getRoleDisplayName = useCallback((role) => {
     const roleNames = {
       resident: "Resident",
@@ -322,7 +311,7 @@ const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
     };
     return roleNames[role] || role;
   }, []);
-  
+
   const sidebarRef = useRef(null);
   const navListRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -360,15 +349,15 @@ const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
-      
+
       {/* Sidebar */}
-      <aside 
+      <aside
         ref={sidebarRef}
         className={`
           flex flex-col h-full fixed md:relative z-50 w-64
@@ -379,67 +368,67 @@ const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
         aria-label="Main navigation"
         id="main-navigation"
       >
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-200">SecureGate</h2>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-200">SecureGate</h2>
+
+          {role && (
+            <Badge variant="info" size="sm" className="mb-4">
+              {getRoleDisplayName(role)}
+            </Badge>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-900 border border-red-700 rounded-lg" role="alert" aria-live="polite">
+              <p className="text-red-200 text-sm">
+                {error}
+              </p>
+            </div>
+          )}
         </div>
-        
-        {role && (
-          <Badge variant="info" size="sm" className="mb-4">
-            {getRoleDisplayName(role)}
-          </Badge>
-        )}
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-900 border border-red-700 rounded-lg" role="alert" aria-live="polite">
-            <p className="text-red-200 text-sm">
-              {error}
-            </p>
-          </div>
-        )}
-      </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1" aria-label={`${getRoleDisplayName(role)} navigation`}>
-        <ul ref={navListRef} className="space-y-1">
-          {navigation.map((item) => (
-            <li key={item.path}>
-              <NavigationLink
-                to={item.path}
-                icon={item.icon}
-                description={item.description}
-                badge={item.badge}
-              >
-                {item.label}
-              </NavigationLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+        {/* Navigation Links */}
+        <nav className="flex-1" aria-label={`${getRoleDisplayName(role)} navigation`}>
+          <ul ref={navListRef} className="space-y-1">
+            {navigation.map((item) => (
+              <li key={item.path}>
+                <NavigationLink
+                  to={item.path}
+                  icon={item.icon}
+                  description={item.description}
+                  badge={item.badge}
+                >
+                  {item.label}
+                </NavigationLink>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-      {/* Logout Button */}
-      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-slate-700">
-        <Button 
-          variant="outline" 
-          className="w-full justify-center min-h-[44px]"
-          onClick={onLogout}
-          icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          }
-          aria-label="Logout from application"
-        >
-          Logout
-        </Button>
-      </div>
-    </aside>
+        {/* Logout Button */}
+        <div className="mt-auto pt-4 border-t border-gray-200 dark:border-slate-700">
+          <Button
+            variant="outline"
+            className="w-full justify-center min-h-[44px]"
+            onClick={onLogout}
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            }
+            aria-label="Logout from application"
+          >
+            Logout
+          </Button>
+        </div>
+      </aside>
     </>
   );
 });

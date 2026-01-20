@@ -94,6 +94,7 @@ import checkInRoutes from './routes/checkInRoutes.js'; // Visitor check-in
 import checkOutRoutes from './routes/checkOutRoutes.js'; // Visitor check-out
 import healthRoutes from './routes/healthRoutes.js'; // Health monitoring
 import setupRoutes from './routes/setup.routes.js'; // One-time database setup
+import monitoringRoutes from './routes/monitoringRoutes.js'; // Monitoring Dashboard routes
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -141,16 +142,16 @@ app.use(securityEventLogger); // Log security events for monitoring
 
 // Enhanced logging and monitoring middleware
 app.use(requestLogger); // Request/response logging
-app.use(performanceMonitoring({ 
-  trackResponseTime: true, 
-  trackMemoryUsage: true, 
+app.use(performanceMonitoring({
+  trackResponseTime: true,
+  trackMemoryUsage: true,
   slowRequestThreshold: 1000,
-  logSlowRequests: true 
+  logSlowRequests: true
 })); // Performance monitoring
-app.use(auditLogging({ 
-  logRequests: true, 
-  logResponses: true, 
-  logDataChanges: true 
+app.use(auditLogging({
+  logRequests: true,
+  logResponses: true,
+  logDataChanges: true
 })); // General audit logging
 app.use(authAuditLogging); // Authentication audit logging
 app.use(securityAuditLogging); // Security event audit logging
@@ -215,10 +216,12 @@ const allowedOrigins = [
 ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); // Remove duplicates
 
 // Log CORS configuration (hide in production for security)
-if (!isProduction) {
-  console.log('🌐 CORS Origins:', allowedOrigins);
-} else {
-  console.log('🌐 CORS configured with', allowedOrigins.length, 'allowed origins');
+if (process.env.NODE_ENV !== 'test') {
+  if (!isProduction) {
+    console.log('🌐 CORS Origins:', allowedOrigins);
+  } else {
+    console.log('🌐 CORS configured with', allowedOrigins.length, 'allowed origins');
+  }
 }
 
 const corsBaseOptions = {
@@ -264,7 +267,9 @@ app.use(sessionMiddleware);
 if (process.env.NODE_ENV !== 'development' || process.env.ENABLE_CSRF === 'true') {
   app.use(generateCSRFToken);
   app.use(csrfProtection);
-  console.log('✓ CSRF protection enabled');
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('✓ CSRF protection enabled');
+  }
 } else {
   console.warn('⚠️  CSRF protection disabled (development mode)');
 }
@@ -277,7 +282,9 @@ if (process.env.NODE_ENV !== 'development' || process.env.ENABLE_RATE_LIMIT === 
   app.use('/api/admin', rateLimiters.admin); // Admin operations rate limiting
   app.use('/api/sensitive', rateLimiters.sensitive); // Sensitive operations rate limiting
   app.use('/api', speedLimiters.general); // Speed limiting for gradual slowdown
-  console.log('✓ Rate limiting enabled');
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('✓ Rate limiting enabled');
+  }
 } else {
   console.warn('⚠️  Rate limiting disabled (development mode)');
 }
@@ -341,7 +348,9 @@ try {
     }
   });
 
-  console.log('✅ Redis caching middleware enabled for', routes.length, 'routes');
+  if (process.env.NODE_ENV !== 'test') {
+    console.log('✅ Redis caching middleware enabled for', routes.length, 'routes');
+  }
 } catch (error) {
   console.warn('⚠️ Redis caching not available:', error.message);
   console.warn('   Application will continue without caching');
@@ -372,6 +381,7 @@ try {
 
 // V1: Public visitor routes (NO authentication required - must come before auth middleware)
 // Phase V1: Visitor Invite Landing & Digital Pass
+app.use('/api/public', visitorPublicRoutes);
 app.use('/api/public/visitors', visitorPublicRoutes);
 
 // Phase 3.3: Notification delivery webhooks (NO authentication - verified by signature)
@@ -498,21 +508,24 @@ app.use('/api/check-out', checkOutRoutes);
 // Health routes (explicit mounting for clarity)
 app.use('/api', healthRoutes);
 
+// Monitoring Dashboard routes (requires auth + admin)
+app.use('/api/monitoring', monitoringRoutes);
+
 // Guard SSE endpoint (stub for real-time updates)
 app.get('/api/ws/guards', authenticateToken, requireRole(['guard', 'admin', 'super_admin']), requireEstate, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
-  
+
   // Send initial heartbeat
   res.write('event: heartbeat\ndata: {"status":"connected"}\n\n');
-  
+
   // Keep connection alive with periodic heartbeats
   const heartbeat = setInterval(() => {
     res.write('event: heartbeat\ndata: {"timestamp":"' + new Date().toISOString() + '"}\n\n');
   }, 30000);
-  
+
   // Clean up on disconnect
   req.on('close', () => {
     clearInterval(heartbeat);

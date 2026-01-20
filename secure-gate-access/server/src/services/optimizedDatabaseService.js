@@ -8,7 +8,7 @@ import { dbManager } from '../database/db.enhanced.js';
 import queryOptimizer from '../utils/queryOptimization.js';
 import redisServiceClass from './redisService.js';
 import logger from '../config/logger.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // Temporary fix: Create a mock queryPerformanceMonitor to prevent errors
 const queryPerformanceMonitor = {

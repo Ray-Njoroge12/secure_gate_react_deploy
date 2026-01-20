@@ -7,6 +7,7 @@
 import morgan from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
 import loggingService from '../services/loggingService.js';
+import { maskEmail, maskPhone } from '../utils/redaction.js';
 
 /**
  * Correlation ID middleware for request tracing
@@ -173,16 +174,27 @@ export const accessLoggingMiddleware = morgan((tokens, req, res) => {
  * Error logging middleware (should be used after all routes)
  */
 export const errorLoggingMiddleware = (error, req, res, next) => {
+  const sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
+  const safeHeaders = sanitizeHeaders(req.headers);
+  const safeBody = req.body
+    ? JSON.stringify(sanitizeData(req.body, sensitiveFields)).substring(0, 1000)
+    : null;
+  const safeParams = sanitizeData(req.params, sensitiveFields);
+  const safeQuery = sanitizeData(req.query, sensitiveFields);
+  const safeUser = req.user
+    ? { id: req.user.id, username: maskUserIdentifier(req.user.username) }
+    : null;
+
   // Log the error with full context
   loggingService.logError('Unhandled request error', error, {
     correlationId: req.correlationId,
     method: req.method,
     url: req.originalUrl || req.url,
-    headers: req.headers,
-    body: req.body ? JSON.stringify(req.body).substring(0, 1000) : null, // Limit body size
-    params: req.params,
-    query: req.query,
-    user: req.user ? { id: req.user.id, username: req.user.username } : null,
+    headers: safeHeaders,
+    body: safeBody, // Limit body size
+    params: safeParams,
+    query: safeQuery,
+    user: safeUser,
     statusCode: error.status || error.statusCode || 500,
     stack: error.stack
   });
@@ -196,7 +208,7 @@ export const errorLoggingMiddleware = (error, req, res, next) => {
       url: req.originalUrl,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      user: req.user ? { id: req.user.id, username: req.user.username } : null
+      user: safeUser
     });
   }
 
@@ -218,8 +230,11 @@ export const securityLoggingMiddleware = (req, res, next) => {
   ];
 
   const url = req.originalUrl || req.url;
+  const sensitiveFields = ['password', 'token', 'secret', 'key', 'authorization'];
   const body = JSON.stringify(req.body || {});
   const query = JSON.stringify(req.query || {});
+  const safeBody = JSON.stringify(sanitizeData(req.body || {}, sensitiveFields));
+  const safeQuery = JSON.stringify(sanitizeData(req.query || {}, sensitiveFields));
 
   for (const pattern of suspiciousPatterns) {
     if (pattern.test(url) || pattern.test(body) || pattern.test(query)) {
@@ -230,8 +245,8 @@ export const securityLoggingMiddleware = (req, res, next) => {
         url,
         ip: req.ip,
         userAgent: req.get('User-Agent'),
-        body: body.substring(0, 500), // Limit size
-        query
+        body: safeBody.substring(0, 500), // Limit size
+        query: safeQuery
       });
       break; // Only log once per request
     }
@@ -239,13 +254,14 @@ export const securityLoggingMiddleware = (req, res, next) => {
 
   // Log authentication attempts
   if (req.originalUrl?.includes('/auth') || req.originalUrl?.includes('/login')) {
+    const identifier = req.body?.username || req.body?.email;
     loggingService.logSecurity('info', 'Authentication attempt', {
       correlationId: req.correlationId,
       method: req.method,
       url: req.originalUrl,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      username: req.body?.username || req.body?.email
+      username: maskUserIdentifier(identifier)
     });
   }
 
@@ -371,6 +387,82 @@ export const logUtils = {
   audit: (message, action, userId = null, meta = {}) => loggingService.logAudit(message, action, userId, meta),
   database: (level, message, meta = {}) => loggingService.logDatabase(level, message, meta),
   api: (level, message, request = null, meta = {}) => loggingService.logAPI(level, message, request, meta)
+};
+
+const maskUserIdentifier = (value) => {
+  if (!value || typeof value !== 'string') {
+    return value ?? null;
+  }
+  if (value.includes('@')) {
+    return maskEmail(value);
+  }
+  if (/\d{7,}/.test(value)) {
+    return maskPhone(value);
+  }
+  return value;
+};
+
+const sanitizeHeaders = (headers = {}) => {
+  const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
+  const sanitized = { ...headers };
+
+  for (const header of sensitiveHeaders) {
+    if (sanitized[header]) {
+      sanitized[header] = '[REDACTED]';
+    }
+  }
+
+  return sanitized;
+};
+
+const sanitizeData = (data, sensitiveFields = []) => {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeData(item, sensitiveFields));
+  }
+
+  const sanitized = { ...data };
+  const shouldMaskAsEmail = (key) => key.includes('email');
+  const shouldMaskAsPhone = (key) => (
+    key.includes('phone')
+    || key.includes('msisdn')
+    || key.includes('mobile')
+  );
+  const isRecipientKey = (key) => key === 'to' || key === 'recipient';
+
+  for (const field of sensitiveFields) {
+    if (sanitized[field]) {
+      sanitized[field] = '[REDACTED]';
+    }
+  }
+
+  for (const [key, value] of Object.entries(sanitized)) {
+    const normalizedKey = key.toLowerCase();
+
+    if (value && typeof value === 'object') {
+      sanitized[key] = sanitizeData(value, sensitiveFields);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsEmail(normalizedKey)) {
+      sanitized[key] = maskEmail(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && shouldMaskAsPhone(normalizedKey)) {
+      sanitized[key] = maskPhone(value);
+      continue;
+    }
+
+    if (typeof value === 'string' && isRecipientKey(normalizedKey)) {
+      sanitized[key] = value.includes('@') ? maskEmail(value) : maskPhone(value);
+    }
+  }
+
+  return sanitized;
 };
 
 export default {

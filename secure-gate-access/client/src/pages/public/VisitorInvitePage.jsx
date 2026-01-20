@@ -14,26 +14,30 @@
  * - Mobile-optimized
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import SavePassModal from '../../components/visitor/SavePassModal'; // Phase 1.2: Save Pass
-import VisitorDirections from '../../components/visitor/VisitorDirections'; // Phase 2.3: Directions
+import SavePassModal from '../../components/visitor/SavePassModal';
+import VisitorDirections from '../../components/visitor/VisitorDirections';
 import './VisitorInvitePage.css';
+
+// Custom hook import
+import { useVisitorInvite } from '../../hooks/useVisitorInvite';
 
 const VisitorInvitePage = () => {
   const { token } = useParams();
   const navigate = useNavigate();
-  
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [visitor, setVisitor] = useState(null);
-  const [estateInfo, setEstateInfo] = useState(null);
-  const [statusPolling, setStatusPolling] = useState(false);
-  const [expiryCountdown, setExpiryCountdown] = useState(null);
-  const pollingIntervalRef = useRef(null);
-  const countdownIntervalRef = useRef(null);
-  
+
+  // Use the custom hook for data management
+  const {
+    loading,
+    error,
+    visitor,
+    estateInfo,
+    expiryCountdown,
+    fetchVisitorDetails
+  } = useVisitorInvite(token);
+
   // New states for visitor confirmation flow
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -44,205 +48,9 @@ const VisitorInvitePage = () => {
   });
   const [consentGiven, setConsentGiven] = useState(false);
   const [confirmError, setConfirmError] = useState(null);
-  
+
   // Phase 1.2: Save Pass Modal state
   const [showSavePassModal, setShowSavePassModal] = useState(false);
-
-  // Fetch visitor details
-  const fetchVisitorDetails = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`/api/public/visitors/by-token/${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Invite not found or has expired');
-        } else if (response.status === 429) {
-          throw new Error('Too many requests. Please wait a moment.');
-        } else {
-          throw new Error('Failed to load invite details');
-        }
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setVisitor(data.data);
-        // Fetch estate info after getting visitor details with estate ID
-        await fetchEstateInfo(data.data.estateId);
-      } else {
-        throw new Error(data.error || 'Failed to load invite');
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch estate information
-  const fetchEstateInfo = async (estateId) => {
-    try {
-      if (!estateId) {
-        console.warn('Estate ID not available, skipping estate info fetch');
-        return;
-      }
-
-      const response = await fetch(`/api/public/estate-info?estateId=${estateId}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setEstateInfo(data.data);
-      } else {
-        console.warn('Failed to load estate info:', data.error);
-      }
-    } catch (err) {
-      console.error('Failed to load estate info:', err);
-    }
-  };
-
-  // Poll for status updates (for real-time approval changes)
-  const pollStatus = async () => {
-    if (!token || !visitor) return;
-    
-    try {
-      const response = await fetch(`/api/public/visitors/${token}/status`);
-      const data = await response.json();
-      
-      if (data.success && data.data.status !== visitor.status) {
-        // Status changed - refresh full details
-        await fetchVisitorDetails();
-      }
-    } catch (err) {
-      // Ignore polling errors (don't disrupt user experience)
-      console.error('Status poll failed:', err);
-    }
-  };
-
-  // Initial load
-  useEffect(() => {
-    if (!token) {
-      setError('Invalid invite link');
-      setLoading(false);
-      return;
-    }
-
-    fetchVisitorDetails();
-    // Estate info is now fetched inside fetchVisitorDetails after getting estateId
-  }, [token]);
-
-  // Start status polling when visitor is pending_approval
-  useEffect(() => {
-    if (visitor && visitor.status === 'pending_approval' && !statusPolling) {
-      setStatusPolling(true);
-      
-      // Poll every 10 seconds for status updates
-      pollingIntervalRef.current = setInterval(pollStatus, 10000);
-      
-      return () => {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-        }
-        setStatusPolling(false);
-      };
-    } else if (visitor && visitor.status !== 'pending_approval' && statusPolling) {
-      // Stop polling if status is no longer pending
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-      setStatusPolling(false);
-    }
-  }, [visitor?.status]);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Calculate and update expiry countdown
-  useEffect(() => {
-    if (!visitor) return;
-
-    const calculateCountdown = () => {
-      // Use expiry date or visit date + 24 hours
-      let expiryDate;
-      if (visitor.tokenExpiresAt) {
-        expiryDate = new Date(visitor.tokenExpiresAt);
-      } else if (visitor.expiresAt) {
-        expiryDate = new Date(visitor.expiresAt);
-      } else if (visitor.dateOfVisit) {
-        expiryDate = new Date(visitor.dateOfVisit);
-        expiryDate.setHours(23, 59, 59, 999); // End of visit day
-      } else {
-        return null;
-      }
-
-      if (Number.isNaN(expiryDate.getTime())) {
-        return null;
-      }
-
-      const now = new Date();
-      const diff = expiryDate.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        return { expired: true, text: 'Expired', color: 'red' };
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-      if (days > 0) {
-        return { 
-          expired: false, 
-          text: `${days}d ${hours}h remaining`,
-          color: days > 1 ? 'green' : 'orange'
-        };
-      } else if (hours > 0) {
-        return { 
-          expired: false, 
-          text: `${hours}h ${minutes}m remaining`,
-          color: hours > 6 ? 'green' : 'orange'
-        };
-      } else {
-        return { 
-          expired: false, 
-          text: `${minutes}m remaining`,
-          color: 'red'
-        };
-      }
-    };
-
-    // Initial calculation
-    setExpiryCountdown(calculateCountdown());
-
-    // Update every minute
-    countdownIntervalRef.current = setInterval(() => {
-      setExpiryCountdown(calculateCountdown());
-    }, 60000);
-
-    return () => {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
-      }
-    };
-  }, [visitor]);
 
   // Get status badge color
   const getStatusColor = (status) => {
@@ -328,6 +136,11 @@ const VisitorInvitePage = () => {
       return;
     }
 
+    if (!additionalInfo.idNumber || additionalInfo.idNumber.length < 5) {
+      setConfirmError('Please enter a valid ID Number (min 5 characters)');
+      return;
+    }
+
     setConfirmLoading(true);
     setConfirmError(null);
 
@@ -341,6 +154,7 @@ const VisitorInvitePage = () => {
           purpose: additionalInfo.purpose || 'Personal Visit',
           vehiclePlate: additionalInfo.vehiclePlate,
           company: additionalInfo.company,
+          idNumber: additionalInfo.idNumber,
           consent_given: true,
           consent_timestamp: new Date().toISOString(),
           consent_type: 'data_processing',
@@ -363,7 +177,7 @@ const VisitorInvitePage = () => {
   };
 
   // Determine if we need to show confirmation flow
-  const needsConfirmation = visitor && 
+  const needsConfirmation = visitor &&
     (visitor.status === 'pending_confirmation' || !visitor.consent_given);
 
   if (!visitor) {
@@ -409,7 +223,7 @@ const VisitorInvitePage = () => {
               {/* Additional Info (Optional) */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">Complete Your Details <span className="text-gray-400 dark:text-gray-500 dark:text-gray-300 font-normal text-sm">(optional)</span></h3>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Purpose of Visit</label>
                   <select
@@ -437,6 +251,20 @@ const VisitorInvitePage = () => {
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for vehicle entry</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    ID / Passport Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={additionalInfo.idNumber || ''}
+                    onChange={(e) => setAdditionalInfo(prev => ({ ...prev, idNumber: e.target.value }))}
+                    placeholder="Enter your ID Number"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for security verification</p>
                 </div>
 
                 <div>
@@ -521,15 +349,14 @@ const VisitorInvitePage = () => {
 
               {/* Expiry Countdown */}
               {expiryCountdown && (
-                <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
-                  expiryCountdown.expired 
-                    ? 'bg-red-100 text-red-700 border border-red-200' 
-                    : expiryCountdown.color === 'red'
-                      ? 'bg-red-50 text-red-600 border border-red-200'
-                      : expiryCountdown.color === 'orange'
-                        ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                        : 'bg-green-50 text-green-600 border border-green-200'
-                }`}>
+                <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${expiryCountdown.expired
+                  ? 'bg-red-100 text-red-700 border border-red-200'
+                  : expiryCountdown.color === 'red'
+                    ? 'bg-red-50 text-red-600 border border-red-200'
+                    : expiryCountdown.color === 'orange'
+                      ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                      : 'bg-green-50 text-green-600 border border-green-200'
+                  }`}>
                   {expiryCountdown.expired ? (
                     <>⚠️ This pass has expired</>
                   ) : (
@@ -542,8 +369,8 @@ const VisitorInvitePage = () => {
                 <div className="qr-code-container">
                   {/* Use pre-generated QR code from server if available, otherwise generate client-side */}
                   {visitor.qr_code || visitor.qrCodeDataUrl ? (
-                    <img 
-                      src={visitor.qr_code || visitor.qrCodeDataUrl} 
+                    <img
+                      src={visitor.qr_code || visitor.qrCodeDataUrl}
                       alt="Visitor QR Code"
                       className="qr-code mx-auto"
                       style={{ width: 200, height: 200 }}
@@ -564,7 +391,7 @@ const VisitorInvitePage = () => {
                 <p className="qr-code-text">
                   Visit Code: <strong>{visitor.qrId || visitor.id}</strong>
                 </p>
-                
+
                 {/* Phase 1.2: Save Pass Button */}
                 <button
                   onClick={() => setShowSavePassModal(true)}
@@ -667,9 +494,9 @@ const VisitorInvitePage = () => {
               {/* Phase 2.3: Visitor Directions */}
               {visitor && token && (
                 <div className="mt-4">
-                  <VisitorDirections 
-                    visitorId={visitor.id} 
-                    inviteToken={token} 
+                  <VisitorDirections
+                    visitorId={visitor.id}
+                    inviteToken={token}
                   />
                 </div>
               )}
@@ -686,7 +513,7 @@ const VisitorInvitePage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Phase 1.2: Save Pass Modal */}
       <SavePassModal
         isOpen={showSavePassModal}

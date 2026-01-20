@@ -3,6 +3,7 @@
  */
 
 import loggingService from './loggingService.js';
+import * as crypto from 'crypto';
 
 class ComplianceService {
   constructor() {
@@ -99,7 +100,8 @@ class ComplianceService {
      * Generate request ID
      */
     generateRequestId() {
-        return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const suffix = crypto.randomBytes(6).toString('hex');
+        return `req_${Date.now()}_${suffix}`;
     }
 
     /**

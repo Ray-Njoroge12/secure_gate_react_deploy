@@ -8,6 +8,7 @@ import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 import logger from '../config/logger.js';
+import { isGuard } from '../utils/roleHelper.js';
 
 /**
  * Register a walk-in visitor (guard only)
@@ -19,15 +20,15 @@ export const registerWalkIn = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (req.user.role !== 'guard') {
-      await req.audit?.('walk_in.create', 'visitor', null, { 
-        outcome: 'fail', 
-        message: 'Forbidden: only guards can register walk-ins' 
+    if (!isGuard(req.user)) {
+      await req.audit?.('walk_in.create', 'visitor', null, {
+        outcome: 'fail',
+        message: 'Forbidden: only guards can register walk-ins'
       });
       return respondError(res, 403, 'Forbidden - guards only');
     }
 
-    const { name, phone, purpose, residentName, vehiclePlate, dateOfVisit, timeOfVisit } = req.body;
+    const { name, phone, purpose, houseNumber, vehiclePlate, dateOfVisit, timeOfVisit } = req.body;
 
     // Validation
     if (!name || typeof name !== 'string' || !name.trim()) {
@@ -36,37 +37,39 @@ export const registerWalkIn = async (req, res) => {
     if (!phone || typeof phone !== 'string' || !phone.trim()) {
       return respondError(res, 400, 'Phone number is required');
     }
-    if (!residentName || typeof residentName !== 'string' || !residentName.trim()) {
-      return respondError(res, 400, 'Resident name is required');
+    if (!houseNumber || typeof houseNumber !== 'string' || !houseNumber.trim()) {
+      return respondError(res, 400, 'House number is required');
     }
 
     // Sanitize inputs
     const sanitizedName = name.trim();
     const sanitizedPhone = phone.trim();
     const sanitizedPurpose = purpose ? purpose.trim() : 'Walk-in visit';
-    const sanitizedResidentName = residentName.trim();
+    const sanitizedHouseNumber = houseNumber.trim().toUpperCase();
     const sanitizedVehiclePlate = vehiclePlate ? vehiclePlate.trim() : null;
 
-    // Look up resident by name (fuzzy match)
+    // Look up resident by house number (exact match - more reliable than name)
     const residentQuery = await dbManager.query(
-      `SELECT id, email, username 
+      `SELECT id, email, username, house 
        FROM users 
        WHERE role = 'resident' 
-       AND estate_id = $2
-       AND (username ILIKE $1 OR email ILIKE $1)
+       AND estate_id = $1
+       AND UPPER(house) = $2
        LIMIT 1`,
-      [`%${sanitizedResidentName}%`, req.user.estate_id]
+      [req.user.estate_id, sanitizedHouseNumber]
     );
 
     let residentId = null;
     let residentEmail = null;
+    let residentUsername = null;
 
     if (residentQuery.rows.length > 0) {
       residentId = residentQuery.rows[0].id;
       residentEmail = residentQuery.rows[0].email;
+      residentUsername = residentQuery.rows[0].username;
     } else {
-      // Resident not found - still create visitor but note in audit
-      logger.warn(`Walk-in: Resident '${sanitizedResidentName}' not found in system`);
+      // Resident not found by house number - still create visitor but note in audit
+      logger.warn(`Walk-in: No resident found for house '${sanitizedHouseNumber}' in estate ${req.user.estate_id}`);
     }
 
     // Create visitor record with walk-in flag
@@ -100,7 +103,7 @@ export const registerWalkIn = async (req, res) => {
       sanitizedPurpose,
       visitDate,
       visitTime,
-      'pending', // Initial status (will change to pending_approval when guard requests)
+      PASS_STATUS.PENDING_APPROVAL, // Initial status
       residentId,
       req.user.email, // Guard who created it
       sanitizedVehiclePlate,
@@ -115,7 +118,7 @@ export const registerWalkIn = async (req, res) => {
       outcome: 'success',
       message: 'Walk-in visitor registered by guard',
       guardId: req.user.id,
-      residentName: sanitizedResidentName,
+      houseNumber: sanitizedHouseNumber,
       residentFound: residentId ? 'yes' : 'no'
     });
 
@@ -124,7 +127,8 @@ export const registerWalkIn = async (req, res) => {
       message: 'Walk-in visitor registered successfully',
       data: {
         ...visitor,
-        residentName: sanitizedResidentName,
+        houseNumber: sanitizedHouseNumber,
+        residentName: residentUsername,
         residentId
       }
     });
@@ -148,7 +152,7 @@ export const getTodayWalkIns = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+    if (!isGuard(req.user) && req.user.role !== 'admin') {
       return respondError(res, 403, 'Forbidden');
     }
 

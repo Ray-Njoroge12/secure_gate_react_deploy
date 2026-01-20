@@ -6,7 +6,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // Encryption constants (must be exactly 32 characters)
 const ENCRYPTION_KEY = 'rules-encryption-key-32-chars!!!';

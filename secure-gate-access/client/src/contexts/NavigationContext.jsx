@@ -68,7 +68,7 @@ function navigationReducer(state, action) {
     case NAVIGATION_ACTIONS.UPDATE_BREADCRUMB:
       return {
         ...state,
-        breadcrumbs: state.breadcrumbs.map((crumb, index) => 
+        breadcrumbs: state.breadcrumbs.map((crumb, index) =>
           index === action.payload.index ? { ...crumb, ...action.payload.updates } : crumb
         )
       };
@@ -124,7 +124,7 @@ export function NavigationProvider({ children, userRole = null }) {
     ...initialState,
     userRole
   });
-  
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -261,7 +261,7 @@ export function NavigationProvider({ children, userRole = null }) {
   const getNavigationAnalytics = useCallback(() => {
     const history = state.navigationHistory;
     const uniqueRoutes = [...new Set(history.map(route => route.path))];
-    
+
     return {
       totalNavigations: history.length,
       uniqueRoutes: uniqueRoutes.length,
@@ -269,8 +269,8 @@ export function NavigationProvider({ children, userRole = null }) {
         acc[route.path] = (acc[route.path] || 0) + 1;
         return acc;
       }, {}),
-      averageSessionTime: history.length > 1 
-        ? (history[history.length - 1].timestamp - history[0].timestamp) / history.length 
+      averageSessionTime: history.length > 1
+        ? (history[history.length - 1].timestamp - history[0].timestamp) / history.length
         : 0,
       currentDepth: state.breadcrumbs.length,
       canGoBack: history.length > 1,
@@ -297,12 +297,11 @@ export function NavigationProvider({ children, userRole = null }) {
 
     // This would be based on your navigation flows
     const suggestions = [];
-    
+
     // Add role-based suggestions
     if (userRole === 'resident') {
       if (currentPath.includes('/dashboard/resident')) {
         suggestions.push(
-          { path: '/resident/add-visitor', label: 'Add Visitor', description: 'Invite a new visitor' },
           { path: '/resident/visitor-history', label: 'Visitor History', description: 'View past visitors' }
         );
       }
@@ -321,25 +320,25 @@ export function NavigationProvider({ children, userRole = null }) {
   // Get parent path for back navigation
   const getParentPath = useCallback(() => {
     const currentPath = location.pathname;
-    
+
     // Handle root paths
     if (currentPath === '/' || currentPath === '') {
       return null;
     }
-    
+
     // Remove trailing slash if exists
     const cleanPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
-    
+
     // Split path into segments and remove the last one
     const pathSegments = cleanPath.split('/').filter(segment => segment !== '');
-    
+
     if (pathSegments.length <= 1) {
       return '/'; // Go to root if only one segment
     }
-    
+
     // Rebuild parent path
     const parentPath = '/' + pathSegments.slice(0, -1).join('/');
-    
+
     return parentPath;
   }, [location.pathname]);
 
@@ -393,7 +392,7 @@ export function useNavigation() {
 // Hook for breadcrumb-specific functionality
 export function useBreadcrumbs() {
   const { breadcrumbs, setBreadcrumbs, addBreadcrumb, removeBreadcrumb, updateBreadcrumb, goToBreadcrumb } = useNavigation();
-  
+
   return {
     breadcrumbs,
     setBreadcrumbs,
@@ -407,7 +406,7 @@ export function useBreadcrumbs() {
 // Hook for navigation history
 export function useNavigationHistory() {
   const { navigationHistory, goBack, goForward, getNavigationAnalytics } = useNavigation();
-  
+
   return {
     navigationHistory,
     goBack,
@@ -419,7 +418,7 @@ export function useNavigationHistory() {
 // Hook for route suggestions
 export function useRouteSuggestions() {
   const { getSuggestedRoutes, canAccessRoute } = useNavigation();
-  
+
   return {
     getSuggestedRoutes,
     canAccessRoute

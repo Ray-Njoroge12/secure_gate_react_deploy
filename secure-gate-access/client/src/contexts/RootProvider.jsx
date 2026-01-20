@@ -76,7 +76,12 @@ export const RootProvider = ({ children }) => {
                 <ToastProvider position="top-right" maxVisible={4}>
                   <UndoProvider maxHistory={10}>
                     <SearchProvider>
-                      <Router>
+                      <Router
+                        future={{
+                          v7_startTransition: true,
+                          v7_relativeSplatPath: true
+                        }}
+                      >
                         <AppNavigationBridge />
                         <AuthNavigationBridge />
                         <NavigationProvider>

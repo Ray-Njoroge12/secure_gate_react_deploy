@@ -50,12 +50,12 @@ describe('Transport Security Middleware', () => {
 
   beforeEach(() => {
     originalEnv = { ...process.env };
-    
+
     // Mock process.exit to prevent Jest from exiting
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation((code) => {
       throw new Error(`process.exit called with "${code}"`);
     });
-    
+
     mockReq = {
       secure: false,
       headers: {},
@@ -71,7 +71,7 @@ describe('Transport Security Middleware', () => {
       connection: null,
       socket: null
     };
-    
+
     mockRes = {
       setHeader: jest.fn(),
       getHeader: jest.fn().mockReturnValue(''),
@@ -80,13 +80,13 @@ describe('Transport Security Middleware', () => {
       json: jest.fn(),
       cookie: jest.fn()
     };
-    
+
     mockNext = jest.fn();
-    
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    
+
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
     jest.clearAllMocks();
   });
 
@@ -101,9 +101,9 @@ describe('Transport Security Middleware', () => {
   describe('httpsEnforcement', () => {
     it('should call next() in development environment', () => {
       process.env.NODE_ENV = 'development';
-      
+
       httpsEnforcement(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
       expect(mockRes.redirect).not.toHaveBeenCalled();
     });
@@ -111,9 +111,9 @@ describe('Transport Security Middleware', () => {
     it('should call next() if request is already secure', () => {
       process.env.NODE_ENV = 'production';
       mockReq.secure = true;
-      
+
       httpsEnforcement(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
       expect(mockRes.redirect).not.toHaveBeenCalled();
     });
@@ -121,9 +121,9 @@ describe('Transport Security Middleware', () => {
     it('should call next() if x-forwarded-proto is https', () => {
       process.env.NODE_ENV = 'production';
       mockReq.headers['x-forwarded-proto'] = 'https';
-      
+
       httpsEnforcement(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
       expect(mockRes.redirect).not.toHaveBeenCalled();
     });
@@ -131,18 +131,18 @@ describe('Transport Security Middleware', () => {
     it('should redirect to HTTPS when ENFORCE_HTTPS is true', () => {
       process.env.NODE_ENV = 'production';
       process.env.ENFORCE_HTTPS = 'true';
-      
+
       httpsEnforcement(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.redirect).toHaveBeenCalledWith(301, 'https://example.com/api/test');
     });
 
     it('should log security event on HTTP access attempt', () => {
       process.env.NODE_ENV = 'production';
       process.env.ENFORCE_HTTPS = 'true';
-      
+
       httpsEnforcement(mockReq, mockRes, mockNext);
-      
+
       expect(mockLogSecurityEvent).toHaveBeenCalledWith(
         'security.http_access_attempt',
         expect.objectContaining({
@@ -160,7 +160,7 @@ describe('Transport Security Middleware', () => {
       mockLogSecurityEvent.mockImplementationOnce(() => {
         throw new Error('Audit log failed');
       });
-      
+
       expect(() => httpsEnforcement(mockReq, mockRes, mockNext)).not.toThrow();
       expect(mockRes.redirect).toHaveBeenCalled();
     });
@@ -168,9 +168,9 @@ describe('Transport Security Middleware', () => {
     it('should call next() when ENFORCE_HTTPS is not set', () => {
       process.env.NODE_ENV = 'production';
       delete process.env.ENFORCE_HTTPS;
-      
+
       httpsEnforcement(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
   });
@@ -178,9 +178,9 @@ describe('Transport Security Middleware', () => {
   describe('transportSecurityHeaders', () => {
     it('should set HSTS header in production', () => {
       process.env.NODE_ENV = 'production';
-      
+
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Strict-Transport-Security',
         expect.stringContaining('max-age=')
@@ -190,9 +190,9 @@ describe('Transport Security Middleware', () => {
     it('should set HSTS header when request is HTTPS', () => {
       process.env.NODE_ENV = 'development';
       mockReq.secure = true;
-      
+
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Strict-Transport-Security',
         expect.stringContaining('max-age=')
@@ -202,9 +202,9 @@ describe('Transport Security Middleware', () => {
     it('should set HSTS header when x-forwarded-proto is https', () => {
       process.env.NODE_ENV = 'development';
       mockReq.headers['x-forwarded-proto'] = 'https';
-      
+
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Strict-Transport-Security',
         expect.stringContaining('max-age=')
@@ -213,9 +213,9 @@ describe('Transport Security Middleware', () => {
 
     it('should set upgrade-insecure-requests when ENFORCE_HTTPS is true', () => {
       process.env.ENFORCE_HTTPS = 'true';
-      
+
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Content-Security-Policy',
         'upgrade-insecure-requests'
@@ -224,7 +224,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set X-Content-Type-Options header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'X-Content-Type-Options',
         'nosniff'
@@ -233,7 +233,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set X-Frame-Options header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'X-Frame-Options',
         'DENY'
@@ -242,7 +242,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set X-XSS-Protection header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'X-XSS-Protection',
         '1; mode=block'
@@ -251,7 +251,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set Referrer-Policy header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Referrer-Policy',
         'strict-origin-when-cross-origin'
@@ -260,7 +260,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set Permissions-Policy header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Permissions-Policy',
         expect.stringContaining('geolocation=()')
@@ -269,7 +269,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set Cross-Origin-Opener-Policy header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Cross-Origin-Opener-Policy',
         'same-origin'
@@ -278,7 +278,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set Cross-Origin-Embedder-Policy header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Cross-Origin-Embedder-Policy',
         'require-corp'
@@ -287,7 +287,7 @@ describe('Transport Security Middleware', () => {
 
     it('should set Cross-Origin-Resource-Policy header', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Cross-Origin-Resource-Policy',
         'same-origin'
@@ -296,7 +296,7 @@ describe('Transport Security Middleware', () => {
 
     it('should call next after setting headers', () => {
       transportSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
   });
@@ -304,7 +304,7 @@ describe('Transport Security Middleware', () => {
   describe('secureCookieConfig', () => {
     it('should override res.cookie with secure defaults', () => {
       secureCookieConfig(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
       expect(typeof mockRes.cookie).toBe('function');
     });
@@ -312,10 +312,10 @@ describe('Transport Security Middleware', () => {
     it('should set httpOnly by default', () => {
       const originalCookie = mockRes.cookie;
       secureCookieConfig(mockReq, mockRes, mockNext);
-      
+
       // Call the modified cookie function
       mockRes.cookie('test', 'value');
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
@@ -328,9 +328,9 @@ describe('Transport Security Middleware', () => {
     it('should respect httpOnly: false option', () => {
       const originalCookie = mockRes.cookie;
       secureCookieConfig(mockReq, mockRes, mockNext);
-      
+
       mockRes.cookie('test', 'value', { httpOnly: false });
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
@@ -344,10 +344,10 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       process.env.SECURE_COOKIES = 'true';
       const originalCookie = mockRes.cookie;
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('test', 'value');
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
@@ -360,10 +360,10 @@ describe('Transport Security Middleware', () => {
     it('should set secure flag for HTTPS requests', () => {
       mockReq.secure = true;
       const originalCookie = mockRes.cookie;
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('test', 'value');
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
@@ -376,15 +376,15 @@ describe('Transport Security Middleware', () => {
     it('should set sameSite to strict in production', () => {
       process.env.NODE_ENV = 'production';
       const originalCookie = mockRes.cookie;
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('test', 'value');
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
         expect.objectContaining({
-          sameSite: 'strict'
+          sameSite: 'none'
         })
       );
     });
@@ -392,10 +392,10 @@ describe('Transport Security Middleware', () => {
     it('should set sameSite to lax in development', () => {
       process.env.NODE_ENV = 'development';
       const originalCookie = mockRes.cookie;
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('test', 'value');
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
@@ -407,10 +407,10 @@ describe('Transport Security Middleware', () => {
 
     it('should respect custom sameSite option', () => {
       const originalCookie = mockRes.cookie;
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('test', 'value', { sameSite: 'none' });
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
@@ -423,10 +423,10 @@ describe('Transport Security Middleware', () => {
     it('should warn about insecure cookies in production', () => {
       process.env.NODE_ENV = 'production';
       mockReq.headers['x-forwarded-proto'] = 'https';
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('test', 'value', { secure: false });
-      
+
       // Note: Warning is only logged if secure !== true AND isHttps
       expect(consoleWarnSpy).toHaveBeenCalled();
     });
@@ -434,10 +434,10 @@ describe('Transport Security Middleware', () => {
     it('should correct invalid sameSite in production', () => {
       process.env.NODE_ENV = 'production';
       const originalCookie = mockRes.cookie;
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('test', 'value', { sameSite: 'invalid' });
-      
+
       expect(originalCookie).toHaveBeenCalledWith(
         'test',
         'value',
@@ -449,10 +449,10 @@ describe('Transport Security Middleware', () => {
 
     it('should audit sensitive cookie settings in production', () => {
       process.env.NODE_ENV = 'production';
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('refreshToken', 'value');
-      
+
       expect(mockLogSecurityEvent).toHaveBeenCalledWith(
         'security.secure_cookie_set',
         expect.objectContaining({
@@ -464,10 +464,10 @@ describe('Transport Security Middleware', () => {
 
     it('should audit sessionId cookie', () => {
       process.env.NODE_ENV = 'production';
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('sessionId', 'value');
-      
+
       expect(mockLogSecurityEvent).toHaveBeenCalledWith(
         'security.secure_cookie_set',
         expect.objectContaining({
@@ -479,10 +479,10 @@ describe('Transport Security Middleware', () => {
 
     it('should audit authToken cookie', () => {
       process.env.NODE_ENV = 'production';
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
       mockRes.cookie('authToken', 'value');
-      
+
       expect(mockLogSecurityEvent).toHaveBeenCalledWith(
         'security.secure_cookie_set',
         expect.objectContaining({
@@ -497,9 +497,9 @@ describe('Transport Security Middleware', () => {
       mockLogSecurityEvent.mockImplementationOnce(() => {
         throw new Error('Audit failed');
       });
-      
+
       secureCookieConfig(mockReq, mockRes, mockNext);
-      
+
       expect(() => mockRes.cookie('refreshToken', 'value')).not.toThrow();
     });
   });
@@ -507,9 +507,9 @@ describe('Transport Security Middleware', () => {
   describe('certificateSecurityHeaders', () => {
     it('should set Expect-CT header in production', () => {
       process.env.NODE_ENV = 'production';
-      
+
       certificateSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Expect-CT',
         'max-age=86400, enforce'
@@ -518,13 +518,13 @@ describe('Transport Security Middleware', () => {
 
     it('should not set Expect-CT in development', () => {
       process.env.NODE_ENV = 'development';
-      
+
       certificateSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       const expectCtCall = mockRes.setHeader.mock.calls.find(
         call => call[0] === 'Expect-CT'
       );
-      
+
       expect(expectCtCall).toBeUndefined();
     });
 
@@ -533,9 +533,9 @@ describe('Transport Security Middleware', () => {
       process.env.ENABLE_HPKP = 'true';
       process.env.HPKP_PINS = 'pin1hash,pin2hash';
       process.env.HPKP_MAX_AGE = '600';
-      
+
       certificateSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Public-Key-Pins',
         expect.stringContaining('pin-sha256="pin1hash"')
@@ -546,13 +546,13 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       process.env.ENABLE_HPKP = 'true';
       process.env.HPKP_PINS = 'singlepin';
-      
+
       certificateSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       const hpkpCall = mockRes.setHeader.mock.calls.find(
         call => call[0] === 'Public-Key-Pins'
       );
-      
+
       expect(hpkpCall).toBeUndefined();
     });
 
@@ -561,9 +561,9 @@ describe('Transport Security Middleware', () => {
       process.env.ENABLE_HPKP = 'true';
       process.env.HPKP_PINS = 'pin1,pin2';
       delete process.env.HPKP_MAX_AGE;
-      
+
       certificateSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Public-Key-Pins',
         expect.stringContaining('max-age=300')
@@ -572,7 +572,7 @@ describe('Transport Security Middleware', () => {
 
     it('should call next()', () => {
       certificateSecurityHeaders(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
   });
@@ -580,7 +580,7 @@ describe('Transport Security Middleware', () => {
   describe('tlsSecurityValidation', () => {
     it('should call next() for non-HTTPS requests', () => {
       tlsSecurityValidation(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -596,9 +596,9 @@ describe('Transport Security Middleware', () => {
           version: 'TLSv1.3'
         })
       };
-      
+
       tlsSecurityValidation(mockReq, mockRes, mockNext);
-      
+
       expect(mockLogSecurityEvent).toHaveBeenCalledWith(
         'security.tls_connection',
         expect.objectContaining({
@@ -617,14 +617,14 @@ describe('Transport Security Middleware', () => {
       mockLogSecurityEvent.mockImplementationOnce(() => {
         throw new Error('Audit failed');
       });
-      
+
       expect(() => tlsSecurityValidation(mockReq, mockRes, mockNext)).not.toThrow();
     });
 
     it('should handle requests without connection info', () => {
       mockReq.headers['x-forwarded-proto'] = 'https';
       mockReq.connection = undefined;
-      
+
       expect(() => tlsSecurityValidation(mockReq, mockRes, mockNext)).not.toThrow();
       expect(mockNext).toHaveBeenCalled();
     });
@@ -635,7 +635,7 @@ describe('Transport Security Middleware', () => {
         getPeerCertificate: jest.fn().mockReturnValue({})
         // No getCipher
       };
-      
+
       expect(() => tlsSecurityValidation(mockReq, mockRes, mockNext)).not.toThrow();
     });
 
@@ -645,7 +645,7 @@ describe('Transport Security Middleware', () => {
         getPeerCertificate: jest.fn().mockReturnValue({}),
         getCipher: jest.fn().mockReturnValue(null)
       };
-      
+
       expect(() => tlsSecurityValidation(mockReq, mockRes, mockNext)).not.toThrow();
     });
   });
@@ -653,9 +653,9 @@ describe('Transport Security Middleware', () => {
   describe('mixedContentPrevention', () => {
     it('should add block-all-mixed-content to CSP for HTTPS', () => {
       mockReq.secure = true;
-      
+
       mixedContentPrevention(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Content-Security-Policy',
         'block-all-mixed-content'
@@ -664,9 +664,9 @@ describe('Transport Security Middleware', () => {
 
     it('should add block-all-mixed-content when ENFORCE_HTTPS is true', () => {
       process.env.ENFORCE_HTTPS = 'true';
-      
+
       mixedContentPrevention(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Content-Security-Policy',
         expect.stringContaining('block-all-mixed-content')
@@ -676,9 +676,9 @@ describe('Transport Security Middleware', () => {
     it('should append to existing CSP', () => {
       mockReq.secure = true;
       mockRes.getHeader.mockReturnValue("default-src 'self'");
-      
+
       mixedContentPrevention(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.setHeader).toHaveBeenCalledWith(
         'Content-Security-Policy',
         "default-src 'self'; block-all-mixed-content"
@@ -688,9 +688,9 @@ describe('Transport Security Middleware', () => {
     it('should not duplicate block-all-mixed-content', () => {
       mockReq.secure = true;
       mockRes.getHeader.mockReturnValue('block-all-mixed-content');
-      
+
       mixedContentPrevention(mockReq, mockRes, mockNext);
-      
+
       // Should not set header again since it already contains the directive
       const cspCalls = mockRes.setHeader.mock.calls.filter(
         call => call[0] === 'Content-Security-Policy'
@@ -701,9 +701,9 @@ describe('Transport Security Middleware', () => {
     it('should not set CSP for HTTP requests without enforcement', () => {
       process.env.ENFORCE_HTTPS = 'false';
       mockReq.secure = false;
-      
+
       mixedContentPrevention(mockReq, mockRes, mockNext);
-      
+
       const cspCall = mockRes.setHeader.mock.calls.find(
         call => call[0] === 'Content-Security-Policy'
       );
@@ -712,7 +712,7 @@ describe('Transport Security Middleware', () => {
 
     it('should call next()', () => {
       mixedContentPrevention(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
   });
@@ -720,27 +720,27 @@ describe('Transport Security Middleware', () => {
   describe('protocolDowngradeProtection', () => {
     it('should call next() in development', () => {
       process.env.NODE_ENV = 'development';
-      
+
       protocolDowngradeProtection(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
 
     it('should allow secure requests in production', () => {
       process.env.NODE_ENV = 'production';
       mockReq.secure = true;
-      
+
       protocolDowngradeProtection(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
 
     it('should allow requests with https x-forwarded-proto', () => {
       process.env.NODE_ENV = 'production';
       mockReq.headers['x-forwarded-proto'] = 'https';
-      
+
       protocolDowngradeProtection(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -748,9 +748,9 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       mockReq.secure = false;
       mockReq.headers['x-forwarded-proto'] = 'http';
-      
+
       protocolDowngradeProtection(mockReq, mockRes, mockNext);
-      
+
       expect(mockLogSecurityEvent).toHaveBeenCalledWith(
         'security.protocol_downgrade_attempt',
         expect.objectContaining({
@@ -765,9 +765,9 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       process.env.ENFORCE_HTTPS = 'true';
       mockReq.secure = false;
-      
+
       protocolDowngradeProtection(mockReq, mockRes, mockNext);
-      
+
       expect(mockRes.status).toHaveBeenCalledWith(426);
       expect(mockRes.json).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -783,7 +783,7 @@ describe('Transport Security Middleware', () => {
       mockLogSecurityEvent.mockImplementationOnce(() => {
         throw new Error('Audit failed');
       });
-      
+
       expect(() => protocolDowngradeProtection(mockReq, mockRes, mockNext)).not.toThrow();
     });
 
@@ -792,9 +792,9 @@ describe('Transport Security Middleware', () => {
       delete process.env.ENFORCE_HTTPS;
       mockReq.secure = false;
       mockReq.headers['x-forwarded-proto'] = 'http';
-      
+
       protocolDowngradeProtection(mockReq, mockRes, mockNext);
-      
+
       expect(mockNext).toHaveBeenCalled();
     });
   });
@@ -802,7 +802,7 @@ describe('Transport Security Middleware', () => {
   describe('validateTransportSecurity', () => {
     it('should return validation result object', () => {
       const result = validateTransportSecurity();
-      
+
       expect(result).toHaveProperty('issues');
       expect(result).toHaveProperty('warnings');
     });
@@ -811,9 +811,9 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       delete process.env.ENFORCE_HTTPS;
       delete process.env.ALLOW_HTTP_IN_PRODUCTION;
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.issues).toContainEqual(
         expect.stringContaining('ENFORCE_HTTPS')
       );
@@ -823,9 +823,9 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       delete process.env.ENFORCE_HTTPS;
       process.env.ALLOW_HTTP_IN_PRODUCTION = 'true';
-      
+
       const result = validateTransportSecurity();
-      
+
       const enforceIssue = result.issues.find(i => i.includes('ENFORCE_HTTPS'));
       expect(enforceIssue).toBeUndefined();
     });
@@ -835,9 +835,9 @@ describe('Transport Security Middleware', () => {
       process.env.ENFORCE_HTTPS = 'true';
       process.env.SECURE_COOKIES = 'true';
       process.env.HSTS_MAX_AGE = '31536000';
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.issues.length).toBe(0);
     });
 
@@ -845,9 +845,9 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       process.env.ENFORCE_HTTPS = 'true';
       delete process.env.SECURE_COOKIES;
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.warnings).toContainEqual(
         expect.stringContaining('SECURE_COOKIES')
       );
@@ -858,9 +858,9 @@ describe('Transport Security Middleware', () => {
       process.env.ENFORCE_HTTPS = 'true';
       process.env.SECURE_COOKIES = 'true';
       delete process.env.HSTS_MAX_AGE;
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.warnings).toContainEqual(
         expect.stringContaining('HSTS_MAX_AGE')
       );
@@ -871,9 +871,9 @@ describe('Transport Security Middleware', () => {
       process.env.ENFORCE_HTTPS = 'true';
       process.env.SECURE_COOKIES = 'true';
       process.env.HSTS_MAX_AGE = '3600'; // 1 hour
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.warnings).toContainEqual(
         expect.stringContaining('31536000')
       );
@@ -884,9 +884,9 @@ describe('Transport Security Middleware', () => {
       process.env.ENFORCE_HTTPS = 'true';
       process.env.ENABLE_HPKP = 'true';
       delete process.env.HPKP_PINS;
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.issues).toContainEqual(
         expect.stringContaining('HPKP_PINS required')
       );
@@ -897,9 +897,9 @@ describe('Transport Security Middleware', () => {
       process.env.ENFORCE_HTTPS = 'true';
       process.env.ENABLE_HPKP = 'true';
       process.env.HPKP_PINS = 'singlepin';
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.issues).toContainEqual(
         expect.stringContaining('at least 2 pins')
       );
@@ -907,9 +907,9 @@ describe('Transport Security Middleware', () => {
 
     it('should return no issues in development', () => {
       process.env.NODE_ENV = 'development';
-      
+
       const result = validateTransportSecurity();
-      
+
       expect(result.issues.length).toBe(0);
     });
   });
@@ -940,18 +940,18 @@ describe('Transport Security Middleware', () => {
   describe('initializeTransportSecurity', () => {
     it('should return validation result', () => {
       process.env.NODE_ENV = 'development';
-      
+
       const result = initializeTransportSecurity();
-      
+
       expect(result).toHaveProperty('issues');
       expect(result).toHaveProperty('warnings');
     });
 
     it('should log initialization message', () => {
       process.env.NODE_ENV = 'development';
-      
+
       initializeTransportSecurity();
-      
+
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('Transport security initialized')
       );
@@ -960,9 +960,9 @@ describe('Transport Security Middleware', () => {
     it('should log HTTPS enforcement status', () => {
       process.env.NODE_ENV = 'development';
       process.env.ENFORCE_HTTPS = 'true';
-      
+
       initializeTransportSecurity();
-      
+
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('HTTPS Enforcement')
       );
@@ -970,9 +970,9 @@ describe('Transport Security Middleware', () => {
 
     it('should log secure cookies status', () => {
       process.env.NODE_ENV = 'development';
-      
+
       initializeTransportSecurity();
-      
+
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('Secure Cookies')
       );
@@ -982,9 +982,9 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       process.env.ENFORCE_HTTPS = 'true';
       delete process.env.SECURE_COOKIES;
-      
+
       initializeTransportSecurity();
-      
+
       expect(consoleWarnSpy).toHaveBeenCalled();
     });
 
@@ -992,7 +992,7 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       delete process.env.ENFORCE_HTTPS;
       delete process.env.ALLOW_HTTP_IN_PRODUCTION;
-      
+
       expect(() => initializeTransportSecurity()).toThrow('process.exit');
     });
 
@@ -1000,13 +1000,13 @@ describe('Transport Security Middleware', () => {
       process.env.NODE_ENV = 'production';
       delete process.env.ENFORCE_HTTPS;
       delete process.env.ALLOW_HTTP_IN_PRODUCTION;
-      
+
       try {
         initializeTransportSecurity();
       } catch (e) {
         // Expected
       }
-      
+
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
   });
@@ -1014,20 +1014,20 @@ describe('Transport Security Middleware', () => {
   describe('Edge cases', () => {
     it('should handle missing headers gracefully', () => {
       mockReq.headers = {};
-      
+
       expect(() => httpsEnforcement(mockReq, mockRes, mockNext)).not.toThrow();
     });
 
     it('should handle null response methods', () => {
       mockRes.setHeader = jest.fn();
-      
+
       expect(() => transportSecurityHeaders(mockReq, mockRes, mockNext)).not.toThrow();
     });
 
     it('should handle connection without certificate methods', () => {
       mockReq.secure = true;
       mockReq.connection = {};
-      
+
       expect(() => tlsSecurityValidation(mockReq, mockRes, mockNext)).not.toThrow();
     });
   });

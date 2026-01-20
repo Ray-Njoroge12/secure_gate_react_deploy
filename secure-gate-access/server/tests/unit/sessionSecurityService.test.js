@@ -7,7 +7,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // Mock dependencies before importing the module
 const mockLoggingService = {

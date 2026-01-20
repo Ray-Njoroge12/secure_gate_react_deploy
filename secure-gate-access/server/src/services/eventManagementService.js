@@ -13,7 +13,7 @@
  */
 
 import db from '../database/db.enhanced.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import loggingService from './loggingService.js';
 import notificationQueueService from './notificationQueueService.js';
 import calendarService from './calendarService.js';
@@ -725,8 +725,8 @@ class EventManagementService {
       let query = `
         SELECT
           ev.*,
-          v.photo_url,
-          v.id_type,
+          NULL as photo_url,
+          NULL as id_type,
           v.id_number
         FROM event_visitors ev
         ${estateId ? 'JOIN events e ON ev.event_id = e.id' : ''}

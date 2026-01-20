@@ -217,11 +217,19 @@ describe('E3 Integration: Event Management & Analytics', () => {
       if (testEventId && authToken) {
         // Create visitor
         const visitorResult = await db.query(
-          `INSERT INTO visitors (name, email, phone, purpose, date_of_visit, time_of_visit, created_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+          `INSERT INTO visitors (name, email, phone, purpose, date_of_visit, time_of_visit, created_by, estate_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING id`,
-          ['RSVP Test Visitor', 'rsvp@example.com', '+254700000012', 'RSVP test',
-           new Date(Date.now() + 86400000).toISOString().split('T')[0], '10:00:00', testUserId]
+          [
+            'RSVP Test Visitor',
+            'rsvp@example.com',
+            '+254700000012',
+            'RSVP test',
+            new Date(Date.now() + 86400000).toISOString().split('T')[0],
+            '10:00:00',
+            testUserId,
+            testUsers.admin.estate_id
+          ]
         );
 
         if (visitorResult.rows.length > 0) {

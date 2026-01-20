@@ -8,22 +8,38 @@
  * - Admins see only aggregate usage stats
  * - No cross-resident rule visibility
  * - Rules cannot be inferred from logs
+ * 
+ * SECURITY: Uses centralized key management - no hardcoded keys
  */
 
 import { pool } from '../database/connection.js';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
+import keyManagementService from './keyManagementService.js';
 
-// Encryption key (should be from environment in production)
-const ENCRYPTION_KEY = process.env.RULES_ENCRYPTION_KEY || 'rules-encryption-key-32-chars!!!';
 const IV_LENGTH = 16;
+
+// Cache for encryption key
+let encryptionKey = null;
+
+/**
+ * Get encryption key from key management service
+ * @returns {Promise<Buffer>} Encryption key
+ */
+async function getEncryptionKey() {
+  if (!encryptionKey) {
+    encryptionKey = await keyManagementService.getServiceEncryptionKey('rules');
+  }
+  return encryptionKey;
+}
 
 /**
  * Encrypt rule criteria
  */
-function encryptCriteria(criteria) {
+async function encryptCriteria(criteria) {
   const text = JSON.stringify(criteria);
+  const key = await getEncryptionKey();
   const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');
@@ -32,12 +48,13 @@ function encryptCriteria(criteria) {
 /**
  * Decrypt rule criteria
  */
-function decryptCriteria(encrypted) {
+async function decryptCriteria(encrypted) {
   try {
+    const key = await getEncryptionKey();
     const textParts = encrypted.split(':');
     const iv = Buffer.from(textParts.shift(), 'hex');
     const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return JSON.parse(decrypted.toString());
@@ -77,10 +94,10 @@ export async function createRule(residentId, {
     category: category || RULE_CATEGORIES.CUSTOM,
     notes
   };
-  
+
   // Encrypt the criteria
-  const encryptedCriteria = encryptCriteria(matchCriteria);
-  
+  const encryptedCriteria = await encryptCriteria(matchCriteria);
+
   const result = await pool.query(
     `INSERT INTO auto_approval_rules (
       resident_id, rule_name, match_criteria_encrypted, time_restrictions
@@ -88,7 +105,7 @@ export async function createRule(residentId, {
     RETURNING id, rule_name, time_restrictions, is_active, created_at`,
     [residentId, ruleName, encryptedCriteria, JSON.stringify(timeRestrictions || {})]
   );
-  
+
   return {
     success: true,
     rule: result.rows[0],
@@ -108,18 +125,21 @@ export async function getResidentRules(residentId) {
      ORDER BY created_at DESC`,
     [residentId]
   );
-  
-  // Decrypt criteria for the owner
-  return result.rows.map(rule => ({
-    id: rule.id,
-    ruleName: rule.rule_name,
-    matchCriteria: decryptCriteria(rule.match_criteria_encrypted),
-    timeRestrictions: rule.time_restrictions,
-    isActive: rule.is_active,
-    matchCount: rule.match_count,
-    lastMatchedAt: rule.last_matched_at,
-    createdAt: rule.created_at
-  }));
+
+  // Decrypt criteria for the owner (async)
+  const rules = await Promise.all(
+    result.rows.map(async (rule) => ({
+      id: rule.id,
+      ruleName: rule.rule_name,
+      matchCriteria: await decryptCriteria(rule.match_criteria_encrypted),
+      timeRestrictions: rule.time_restrictions,
+      isActive: rule.is_active,
+      matchCount: rule.match_count,
+      lastMatchedAt: rule.last_matched_at,
+      createdAt: rule.created_at
+    }))
+  );
+  return rules;
 }
 
 /**
@@ -131,47 +151,47 @@ export async function updateRule(ruleId, residentId, updates) {
     'SELECT id FROM auto_approval_rules WHERE id = $1 AND resident_id = $2',
     [ruleId, residentId]
   );
-  
+
   if (check.rows.length === 0) {
     return { success: false, error: 'Rule not found or access denied' };
   }
-  
+
   const updateFields = [];
   const params = [ruleId];
   let paramIndex = 2;
-  
+
   if (updates.ruleName) {
     updateFields.push(`rule_name = $${paramIndex}`);
     params.push(updates.ruleName);
     paramIndex++;
   }
-  
+
   if (updates.matchCriteria) {
     updateFields.push(`match_criteria_encrypted = $${paramIndex}`);
-    params.push(encryptCriteria(updates.matchCriteria));
+    params.push(await encryptCriteria(updates.matchCriteria));
     paramIndex++;
   }
-  
+
   if (updates.timeRestrictions !== undefined) {
     updateFields.push(`time_restrictions = $${paramIndex}`);
     params.push(JSON.stringify(updates.timeRestrictions));
     paramIndex++;
   }
-  
+
   if (updates.isActive !== undefined) {
     updateFields.push(`is_active = $${paramIndex}`);
     params.push(updates.isActive);
     paramIndex++;
   }
-  
+
   updateFields.push('updated_at = NOW()');
-  
+
   const result = await pool.query(
     `UPDATE auto_approval_rules SET ${updateFields.join(', ')} WHERE id = $1
      RETURNING id, rule_name, is_active, updated_at`,
     params
   );
-  
+
   return {
     success: true,
     rule: result.rows[0]
@@ -186,11 +206,11 @@ export async function deleteRule(ruleId, residentId) {
     'DELETE FROM auto_approval_rules WHERE id = $1 AND resident_id = $2 RETURNING id',
     [ruleId, residentId]
   );
-  
+
   if (result.rows.length === 0) {
     return { success: false, error: 'Rule not found or access denied' };
   }
-  
+
   return { success: true, message: 'Rule deleted' };
 }
 
@@ -205,29 +225,29 @@ export async function checkAutoApproval(residentId, visitorName, visitorPhone) {
      WHERE resident_id = $1 AND is_active = true`,
     [residentId]
   );
-  
+
   const normalizedName = visitorName?.toLowerCase().trim();
   const normalizedPhone = visitorPhone?.replace(/\D/g, '');
   const now = new Date();
   const currentDay = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][now.getDay()];
   const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
-  
+
   for (const rule of rules.rows) {
-    const criteria = decryptCriteria(rule.match_criteria_encrypted);
+    const criteria = await decryptCriteria(rule.match_criteria_encrypted);
     if (!criteria) continue;
-    
+
     // Check name match
-    const nameMatches = !criteria.visitorName || 
+    const nameMatches = !criteria.visitorName ||
       normalizedName?.includes(criteria.visitorName) ||
       criteria.visitorName.includes(normalizedName);
-    
+
     // Check phone match
     const phoneMatches = !criteria.visitorPhone ||
       normalizedPhone?.includes(criteria.visitorPhone) ||
       criteria.visitorPhone.includes(normalizedPhone);
-    
+
     if (!nameMatches && !phoneMatches) continue;
-    
+
     // Check time restrictions
     const timeRestrictions = rule.time_restrictions;
     if (timeRestrictions && Object.keys(timeRestrictions).length > 0) {
@@ -235,14 +255,14 @@ export async function checkAutoApproval(residentId, visitorName, visitorPhone) {
       if (timeRestrictions.days && timeRestrictions.days.length > 0) {
         if (!timeRestrictions.days.includes(currentDay)) continue;
       }
-      
+
       // Check time window
       if (timeRestrictions.start_time && timeRestrictions.end_time) {
-        if (currentTime < timeRestrictions.start_time || 
-            currentTime > timeRestrictions.end_time) continue;
+        if (currentTime < timeRestrictions.start_time ||
+          currentTime > timeRestrictions.end_time) continue;
       }
     }
-    
+
     // Match found! Update stats and log
     await pool.query(
       `UPDATE auto_approval_rules 
@@ -250,14 +270,14 @@ export async function checkAutoApproval(residentId, visitorName, visitorPhone) {
        WHERE id = $1`,
       [rule.id]
     );
-    
+
     // Privacy: Log only that auto-approval happened, not which rule
     await pool.query(
       `INSERT INTO auto_approval_logs (rule_id, resident_id, reason)
        VALUES ($1, $2, 'auto_approved')`,
       [rule.id, residentId]
     );
-    
+
     return {
       approved: true,
       reason: 'auto_approved',
@@ -265,7 +285,7 @@ export async function checkAutoApproval(residentId, visitorName, visitorPhone) {
       displayMessage: 'Auto-approved by resident'
     };
   }
-  
+
   return {
     approved: false,
     reason: 'no_matching_rule'
@@ -286,7 +306,7 @@ export async function getAutoApprovalStats() {
       (SELECT COUNT(*) FROM auto_approval_logs WHERE approved_at > NOW() - INTERVAL '7 days') as approvals_this_week
      FROM auto_approval_rules aar`
   );
-  
+
   // Privacy: Only aggregates, no individual resident info
   return result.rows[0];
 }
@@ -310,7 +330,7 @@ export async function getResidentApprovalHistory(residentId, limit = 20) {
      LIMIT $2`,
     [residentId, limit]
   );
-  
+
   return result.rows;
 }
 
@@ -322,7 +342,7 @@ export async function deleteAllResidentRules(residentId) {
     'DELETE FROM auto_approval_rules WHERE resident_id = $1 RETURNING id',
     [residentId]
   );
-  
+
   return {
     success: true,
     deletedCount: result.rowCount,
@@ -335,7 +355,7 @@ export async function deleteAllResidentRules(residentId) {
  */
 export async function exportResidentRules(residentId) {
   const rules = await getResidentRules(residentId);
-  
+
   return {
     exportDate: new Date().toISOString(),
     residentId,

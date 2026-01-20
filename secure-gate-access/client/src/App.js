@@ -8,6 +8,7 @@
 
 import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import AppShell from "./layouts/AppShell"; // Import AppShell for route wrapping
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles.css"; // Additional app styles
@@ -55,8 +56,7 @@ const BulkInvite = lazy(() => import("./pages/resident/BulkInvite.jsx"));
 const BulkInviteWizard = lazy(() => import("./pages/resident/BulkInviteWizard.jsx")); // Added for Task 2.3
 const Settings = lazy(() => import("./pages/resident/Settings.jsx"));
 const ResidentDashboard = lazy(() => import("./pages/resident/ResidentDashboard.jsx"));
-const AddVisitor = lazy(() => import("./pages/resident/AddVisitor.jsx"));
-const AddVisitorWizard = lazy(() => import("./pages/resident/AddVisitorWizard.jsx")); // Added for Task 2.3
+
 const GeneratePass = lazy(() => import("./pages/resident/GeneratePass.jsx"));
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
 const FavoriteVisitors = lazy(() => import("./pages/resident/FavoriteVisitors.jsx")); // Added for Task 2.3
@@ -139,7 +139,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    refreshCSRFToken().catch(() => {});
+    refreshCSRFToken().catch(() => { });
   }, []);
 
   return (
@@ -148,15 +148,15 @@ function App() {
         <RootProvider>
           {/* Global Styles & Animations */}
           <GlobalStyles />
-          
+
           {/* BUG-002 FIX: Global Keyboard Shortcuts (uses AuthContext, no localStorage) */}
           <GlobalKeyboardShortcuts />
-          
+
           {/* Skip to Main Content - Accessibility */}
           <SkipLink mainContentId="main-content" />
-          
+
           {/* Session Timeout Warning - Global */}
-          <SessionTimeoutWarning 
+          <SessionTimeoutWarning
             warningTime={5 * 60 * 1000}  // 5 minutes before expiry
             sessionTimeout={30 * 60 * 1000}  // 30 minutes total session
           />
@@ -165,357 +165,299 @@ function App() {
             <NetworkErrorBoundary>
               <AuthErrorBoundary>
                 <Suspense fallback={<Loading />}>
-            <Routes>
-            {/* Default route - redirect to login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+                  <Routes>
+                    {/* Default route - redirect to login */}
+                    <Route path="/" element={<Navigate to="/login" replace />} />
 
-            {/* Public routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegistrationPage />} />
-            <Route path="/register/:inviteCode" element={<RegistrationPage />} />
-            <Route path="/bulk-register/:inviteCode" element={<RegistrationPage />} />
+                    {/* Public routes */}
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegistrationPage />} />
+                    <Route path="/register/:inviteCode" element={<RegistrationPage />} />
+                    <Route path="/bulk-register/:inviteCode" element={<RegistrationPage />} />
 
-            {/* Privacy and Terms routes */}
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-of-service" element={<TermsOfService />} />
-            <Route path="/estate-required" element={<EstateRequired />} />
-            <Route path="/estate-selection" element={<EstateSelection />} />
+                    {/* Privacy and Terms routes */}
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/estate-required" element={<EstateRequired />} />
+                    <Route path="/estate-selection" element={<EstateSelection />} />
 
-            {/* MFA routes - Multi-Factor Authentication */}
-            <Route
-              path="/mfa/setup"
-              element={
-                <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
-                  <MFASetup />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/mfa/verify" element={<MFAVerify />} />
+                    {/* MFA routes */}
+                    <Route
+                      path="/mfa/setup"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <AppShell role="user">
+                            <MFASetup />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/mfa/verify" element={<MFAVerify />} />
 
-            {/* Privacy Dashboard - Kenya DPA Compliance */}
-            <Route
-              path="/privacy"
-              element={
-                <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
-                  <PrivacyDashboard />
-                </ProtectedRoute>
-              }
-            />
+                    {/* Guest & Visitor Public Routes */}
+                    <Route path="/invite/:inviteCode" element={<GuestInvite />} />
+                    <Route path="/v/:token" element={<VisitorInvitePage />} />
+                    <Route path="/kiosk" element={<SelfCheckInKiosk />} />
+                    <Route path="/visitor/confirm/:token" element={<VisitorConfirmation />} />
+                    <Route path="/visitor/confirm" element={<VisitorConfirmation />} />
 
-            {/* Guest invitation routes */}
-            <Route path="/invite/:inviteCode" element={<GuestInvite />} />
-            
-            {/* Public visitor pages - Token-based access */}
-            <Route path="/v/:token" element={<VisitorInvitePage />} />
-            <Route path="/kiosk" element={<SelfCheckInKiosk />} />
-            <Route path="/visitor/confirm/:token" element={<VisitorConfirmation />} />
-            <Route path="/visitor/confirm" element={<VisitorConfirmation />} />
+                    {/* RESIDENT ROUTES */}
+                    <Route
+                      path="/dashboard/resident"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Resident Dashboard">
+                            <ResidentDashboard />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Resident Sub-routes - Wrapped in AppShell individually for now (Plan: Refactor to Layout Route in future cleanup) */}
+                    <Route
+                      path="/resident/generate-pass"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Generate Pass">
+                            <GeneratePass />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/visitor-history"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Visitor History">
+                            <VisitorHistory />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/bulk-invite"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Bulk Invite">
+                            <BulkInvite />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/settings"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Settings">
+                            <Settings />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/bulk-invite-wizard"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Bulk Invite">
+                            <BulkInviteWizard />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/favorite-visitors"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Favorite Visitors">
+                            <FavoriteVisitors />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/quick-invite"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Quick Invite">
+                            <QuickInvite />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/recurring-passes"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Recurring Passes">
+                            <RecurringPasses />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/resident/rideshare"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident"]}>
+                          <AppShell role="resident" title="Rideshare">
+                            <RideshareEntry />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/privacy"
+                      element={
+                        <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <AppShell role="user" title="Privacy Dashboard">
+                            <PrivacyDashboard />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
 
-            {/* Resident routes */}
-            <Route
-              path="/dashboard/resident"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <ResidentDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/add-visitor"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <AddVisitor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/generate-pass"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <GeneratePass />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/visitor-history"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <VisitorHistory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/bulk-invite"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <BulkInvite />
-                </ProtectedRoute>
-              }
-            />
-            {/* Optional resident settings (using existing dashboard placeholder) */}
-            <Route
-              path="/resident/settings"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/add-visitor-wizard"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <AddVisitorWizard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/bulk-invite-wizard"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <BulkInviteWizard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/favorite-visitors"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <FavoriteVisitors />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/resident/quick-invite"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <QuickInvite />
-                </ProtectedRoute>
-              }
-            />
-            {/* P4: Recurring Passes - Daily workers, caregivers, contractors */}
-            <Route
-              path="/resident/recurring-passes"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <RecurringPasses />
-                </ProtectedRoute>
-              }
-            />
-            {/* P5: Rideshare Quick Entry - Uber/Bolt/Taxi */}
-            <Route
-              path="/resident/rideshare"
-              element={
-                <ProtectedRoute allowedRoles={["resident"]}>
-                  <RideshareEntry />
-                </ProtectedRoute>
-              }
-            />
-            {/* Legacy redirects for backward compatibility */}
-            <Route path="/pages/resident/AddVisitor" element={<Navigate to="/resident/add-visitor" replace />} />
-            <Route path="/pages/resident/GeneratePass" element={<Navigate to="/resident/generate-pass" replace />} />
-            <Route path="/pages/resident/VisitorHistory" element={<Navigate to="/resident/visitor-history" replace />} />
 
-            {/* Guard routes */}
-            <Route
-              path="/dashboard/guard"
-              element={
-                <ProtectedRoute allowedRoles={["guard"]}>
-                  <GuardDashboard />
-                </ProtectedRoute>
-              }
-            />
-            {/* Guard auxiliary routes */}
-            <Route
-              path="/dashboard/guard/manual-check"
-              element={
-                <ProtectedRoute allowedRoles={["guard"]}>
-                  <ManualCheck />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/guard/scan-qr"
-              element={
-                <ProtectedRoute allowedRoles={["guard"]}>
-                  <ScanQR />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/guard/visitor-history"
-              element={
-                <ProtectedRoute allowedRoles={["guard"]}>
-                  <GuardVisitorHistory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/guard/settings"
-              element={
-                <ProtectedRoute allowedRoles={["guard"]}>
-                  <GuardSettings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/guard/walk-in"
-              element={
-                <ProtectedRoute allowedRoles={["guard"]}>
-                  <WalkInRegistration />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/guard/incidents"
-              element={
-                <ProtectedRoute allowedRoles={["guard"]}>
-                  <IncidentList />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/guard/analytics"
-              element={
-                <ProtectedRoute allowedRoles={["guard", "admin"]}>
-                  <GuardAnalytics />
-                </ProtectedRoute>
-              }
-            />
+                    {/* GUARD ROUTES */}
+                    <Route
+                      path="/dashboard/guard"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard"]}>
+                          <AppShell role="guard" title="Guard Station">
+                            <GuardDashboard />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/guard/manual-check"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard"]}>
+                          <AppShell role="guard" title="Manual Check">
+                            <ManualCheck />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/guard/scan-qr"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard"]}>
+                          <AppShell role="guard" title="Scan QR">
+                            <ScanQR />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/guard/visitor-history"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard"]}>
+                          <AppShell role="guard" title="Visitor History">
+                            <GuardVisitorHistory />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/guard/settings"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard"]}>
+                          <AppShell role="guard" title="Settings">
+                            <GuardSettings />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/guard/walk-in"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard"]}>
+                          <AppShell role="guard" title="Walk-In Registration">
+                            <WalkInRegistration />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/guard/incidents"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard"]}>
+                          <AppShell role="guard" title="Incidents">
+                            <IncidentList />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/guard/analytics"
+                      element={
+                        <ProtectedRoute allowedRoles={["guard", "admin"]}>
+                          <AppShell role="guard" title="Analytics">
+                            <GuardAnalytics />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
 
-            {/* Admin routes */}
-            <Route
-              path="/dashboard/admin"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/users"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/visitors"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/manage-staff"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/reports"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/settings"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminSettings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/analytics"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminOperations />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/security"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <WatchlistManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/incidents"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <IncidentManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/audit-logs"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminOperations />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/residents"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <ManageResidents />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/guards"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <ManageGuards />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/access-control"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AccessControl />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/visitor-log"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <VisitorLog />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/integrations"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <IntegrationsHub />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/admin/sites"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <SiteManagement />
-                </ProtectedRoute>
-              }
-            />
 
-            {/* Catch-all route for unmatched paths */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
+                    {/* ADMIN ROUTES */}
+                    {/* Main Dashboard with Nested Route Parameter for Tabs */}
+                    <Route
+                      path="/dashboard/admin/:tab?"
+                      element={
+                        <ProtectedRoute allowedRoles={["admin"]}>
+                          <AppShell role="admin" title="Admin Dashboard">
+                            <AdminDashboard />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Specific admin sub-routes mapped to dashboard with tab selection */}
+                    <Route
+                      path="/dashboard/admin/users"
+                      element={
+                        <ProtectedRoute allowedRoles={["admin"]}>
+                          <AppShell role="admin" title="Admin Dashboard">
+                            <AdminDashboard initialTab="users" />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/admin/visitors"
+                      element={
+                        <ProtectedRoute allowedRoles={["admin"]}>
+                          <AppShell role="admin" title="Admin Dashboard">
+                            <AdminDashboard initialTab="visitors" />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/admin/reports"
+                      element={
+                        <ProtectedRoute allowedRoles={["admin"]}>
+                          <AppShell role="admin" title="Admin Dashboard">
+                            <AdminDashboard initialTab="reports" />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/dashboard/admin/settings"
+                      element={
+                        <ProtectedRoute allowedRoles={["admin"]}>
+                          <AppShell role="admin" title="Admin Dashboard">
+                            <AdminDashboard initialTab="settings" />
+                          </AppShell>
+                        </ProtectedRoute>
+                      }
+                    />
+                    {/* Other admin routes that might be separate pages eventually, mapping to dashboard for now if they exist as tabs */}
+                    {/* If new standalone admin pages exist, list them here */}
+
+                    {/* Catch-all route for unmatched paths */}
+                    <Route path="*" element={<Navigate to="/login" replace />} />
+                  </Routes>
                 </Suspense>
               </AuthErrorBoundary>
             </NetworkErrorBoundary>

@@ -122,7 +122,7 @@ BEGIN
             WHEN 'visitors' THEN
                 DELETE FROM visitors 
                 WHERE status = 'checked_out' 
-                AND check_out < NOW() - (policy.retention_days || ' days')::INTERVAL
+                AND check_out_time < NOW() - (policy.retention_days || ' days')::INTERVAL
                 AND anonymized = false;
                 GET DIAGNOSTICS deleted_count = ROW_COUNT;
                 

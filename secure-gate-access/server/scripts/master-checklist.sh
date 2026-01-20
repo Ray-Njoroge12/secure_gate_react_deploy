@@ -255,7 +255,7 @@ main() {
     
     ask_task "APP_DEPLOYED" \
         "Application deployed to production" \
-        "Deploy via cloud platform, PM2, or Docker"
+        "Deploy via cloud platform or Docker"
     
     echo ""
     ask_task "HEALTH_CHECK_PASSED" \

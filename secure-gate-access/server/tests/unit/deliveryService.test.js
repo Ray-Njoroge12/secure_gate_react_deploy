@@ -11,7 +11,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // Encryption constants for mock data creation (must be exactly 32 characters)
 const ENCRYPTION_KEY = 'delivery-encryption-key-32char!!';
@@ -30,12 +30,19 @@ function createEncryptedTracking(trackingNumber = 'PKG123456789') {
 const mockQuery = jest.fn();
 const mockRelease = jest.fn();
 const mockConnect = jest.fn();
+const mockSendDeliveryNotification = jest.fn();
+const mockSendSms = jest.fn();
 
 jest.unstable_mockModule('../../src/database/connection.js', () => ({
   pool: {
     query: mockQuery,
     connect: mockConnect
   }
+}));
+
+jest.unstable_mockModule('../../src/services/notificationService.js', () => ({
+  sendDeliveryNotification: mockSendDeliveryNotification,
+  sendSms: mockSendSms
 }));
 
 describe('DeliveryService', () => {
@@ -58,6 +65,8 @@ describe('DeliveryService', () => {
     
     // Default mock
     mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
+    mockSendDeliveryNotification.mockResolvedValue({ success: true });
+    mockSendSms.mockResolvedValue({ success: true });
   });
   
   afterEach(() => {

@@ -173,9 +173,8 @@ COMMENT ON VIEW provider_performance IS 'Provider performance comparison (last 3
 
 CREATE OR REPLACE VIEW failed_delivery_notifications AS
 SELECT
-  n.id,
   n.type,
-  n.recipient_email,
+  n.recipient,
   n.delivery_provider,
   n.delivery_status,
   n.failure_reason,

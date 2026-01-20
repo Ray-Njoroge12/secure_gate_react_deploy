@@ -137,8 +137,6 @@ npm test
 # 4. Deploy (choose your platform)
 git push origin main  # Cloud platforms
 # OR
-pm2 start ecosystem.config.cjs --env production  # PM2
-# OR
 docker-compose -f docker-compose.prod.yml up -d  # Docker
 ```
 
@@ -322,8 +320,7 @@ grep OTP_DEBUG_ECHO .env.production
 # Must show: OTP_DEBUG_ECHO=false
 
 # Restart application after changing
-pm2 restart all
-# OR
+# For ECS/EB: trigger a new deployment
 docker-compose restart
 ```
 

@@ -15,9 +15,28 @@ const MFAVerify = () => {
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
 
-  // Get userId from location state (passed from login)
-  const userId = location.state?.userId;
-  const username = location.state?.username || 'your account';
+  // Get userId from location state or session storage (persistence fix)
+  const getStoredAuth = () => {
+    const state = location.state;
+    if (state?.userId) return state;
+
+    // Try session storage
+    const stored = sessionStorage.getItem('mfa_temp_auth');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Optional: Check timestamp expiry (e.g., 10 mins)
+        if (Date.now() - parsed.timestamp < 10 * 60 * 1000) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Failed to parse stored MFA auth');
+      }
+    }
+    return {};
+  };
+
+  const { userId, username = 'your account' } = getStoredAuth();
 
   // Redirect if no userId
   React.useEffect(() => {
@@ -47,12 +66,13 @@ const MFAVerify = () => {
 
       if (response.data.success) {
         // MFA verification successful - redirect to dashboard
+        sessionStorage.removeItem('mfa_temp_auth'); // Clear temp auth
         navigate('/dashboard');
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Verification failed';
       setError(errorMessage);
-      
+
       // Track failed attempts
       if (attemptsLeft > 1) {
         setAttemptsLeft(attemptsLeft - 1);
@@ -62,7 +82,7 @@ const MFAVerify = () => {
           navigate('/login', { state: { message: 'Too many failed attempts. Please try again.' } });
         }, 2000);
       }
-      
+
       setToken('');
     } finally {
       setLoading(false);
@@ -71,6 +91,7 @@ const MFAVerify = () => {
 
   // Handle going back to login
   const handleCancel = () => {
+    sessionStorage.removeItem('mfa_temp_auth'); // Clear temp auth
     navigate('/login');
   };
 

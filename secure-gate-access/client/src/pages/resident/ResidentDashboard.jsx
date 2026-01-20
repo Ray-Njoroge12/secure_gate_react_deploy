@@ -4,7 +4,7 @@ import logger from 'utils/logger';
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
-import AppShell from "../../layouts/AppShell";
+// AppShell removed - handled by Layout Route
 import { Card, Button, LoadingStates, Skeleton, UpcomingVisitsEmpty, RecentVisitorsEmpty } from "../../components/ui";
 import PageHeader from "../../components/PageHeader";
 import { useLoadingState } from "../../hooks/useLoadingState";
@@ -14,13 +14,9 @@ import AutoApprovalRules from "../../components/resident/AutoApprovalRules"; // 
 import FavoriteVisitors from "../../components/resident/FavoriteVisitors"; // Phase 4: Favorites System
 import { LiveVisitorFeed, LiveStatsBar } from "../../components/dashboard/LiveVisitorFeed";
 import { useResidentVisitorEvents } from "../../hooks/useVisitorEvents";
-import AddVisitor from "./AddVisitor";
-import BulkInvite from "./BulkInvite";
-import VisitorHistory from "./VisitorHistory";
-import GeneratePass from "./GeneratePass";
-import Settings from "./Settings";
+
+// Unused page imports removed
 import QuickInvite from "./QuickInvite"; // Quick invite flow
-import ResidentApprovalsPanel from "./ResidentApprovalsPanel"; // Walk-in approvals
 // Phase 3: Privacy-First Features
 import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
@@ -36,19 +32,19 @@ const DashboardHome = () => {
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
   const { loading, startLoading, stopLoading, setLoadingError } = useLoadingState();
-  
+
   // Widget customization state
   const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
   const { isWidgetVisible, refreshConfig, getVisibleWidgets } = useWidgetConfig();
-  
+
   // Real-time visitor events
-  const { 
-    recentEvents, 
-    liveStats, 
-    connectionStatus, 
+  const {
+    recentEvents,
+    liveStats,
+    connectionStatus,
     lastUpdate,
     refreshStats,
-    clearEvents 
+    clearEvents
   } = useResidentVisitorEvents({
     enabled: true,
     showNotifications: true,
@@ -63,10 +59,10 @@ const DashboardHome = () => {
   // Keyboard shortcuts - Using consistent /resident/... paths
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + A to add visitor
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      // Ctrl/Cmd + Q to quick invite
+      if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
         e.preventDefault();
-        navigateTo('/resident/add-visitor');
+        navigateTo('/resident/quick-invite');
       }
       // Ctrl/Cmd + G to generate pass
       if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
@@ -116,7 +112,7 @@ const DashboardHome = () => {
       if (response.ok) {
         const data = await response.json();
         const visitors = data.data || [];
-        
+
         // Process upcoming invites (visitors with future dates)
         const today = new Date();
         const upcoming = visitors
@@ -127,7 +123,7 @@ const DashboardHome = () => {
             time: v.time_of_visit ? `${v.time_of_visit}` : 'TBD',
             status: v.status || 'Pending'
           }));
-        
+
         // Process recent visitors (checked in/out today)
         const recent = visitors
           .filter(v => v.check_in && new Date(v.check_in).toDateString() === today.toDateString())
@@ -204,7 +200,7 @@ const DashboardHome = () => {
       </div>
 
       {/* Hero Section with Gradient Background - Desktop */}
-      <div 
+      <div
         data-tour="dashboard-stats"
         className="hidden md:block bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-8 mb-6"
       >
@@ -214,7 +210,7 @@ const DashboardHome = () => {
               Welcome back! 👋
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-200">
-              {upcomingInvites.length > 0 
+              {upcomingInvites.length > 0
                 ? `You have ${upcomingInvites.length} upcoming visitor${upcomingInvites.length > 1 ? 's' : ''} this week`
                 : 'Manage your visitor invitations and access'}
             </p>
@@ -228,23 +224,23 @@ const DashboardHome = () => {
             Customize
           </button>
         </div>
-        
+
         {/* Quick Stats Grid */}
         {isWidgetVisible('stats') && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {statsData.map((stat, index) => (
-            <div key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="text-3xl font-bold text-green-600">{stat.value}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-200">{stat.label}</div>
-            </div>
-          ))}
-        </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {statsData.map((stat, index) => (
+              <div key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="text-2xl mb-1">{stat.icon}</div>
+                <div className="text-3xl font-bold text-green-600">{stat.value}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-200">{stat.label}</div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
       {/* Primary CTA - Quick Invite (Simplified Flow) */}
-      <div 
+      <div
         data-tour="add-visitor"
         data-test-id="cta-quick-invite"
         className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:shadow-green-500/20 hover:scale-[1.01] transition-all duration-200 shadow-lg"
@@ -267,254 +263,253 @@ const DashboardHome = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Upcoming Invites */}
         {isWidgetVisible('upcoming-invites') && (
-        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-          <Card.Content className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Upcoming Invites</h2>
-              {upcomingInvites.length > 0 && (
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                  🟢 {upcomingInvites.length} active
-                </span>
-              )}
-            </div>
-            
-            {loading ? (
-              <Skeleton.List items={2} showAvatar={false} />
-            ) : upcomingInvites.length === 0 ? (
-              <UpcomingVisitsEmpty 
-                onCreate={() => navigateTo('/resident/quick-invite')}
-              />
-            ) : (
-            <div className="space-y-3">
-              {upcomingInvites.map(invite => (
-                <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 border-l-4 border-green-500 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-white">👤 {invite.name}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-200">📅 {invite.time}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      invite.status === 'Confirmed' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {invite.status}
-                    </span>
-                    <button className="text-gray-500 dark:text-gray-300 hover:text-gray-700 px-2">
-                      <span className="text-sm">View</span>
-                    </button>
-                  </div>
+          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <Card.Content className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Upcoming Invites</h2>
+                {upcomingInvites.length > 0 && (
+                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                    🟢 {upcomingInvites.length} active
+                  </span>
+                )}
+              </div>
+
+              {loading ? (
+                <Skeleton.List items={2} showAvatar={false} />
+              ) : upcomingInvites.length === 0 ? (
+                <UpcomingVisitsEmpty
+                  onCreate={() => navigateTo('/resident/quick-invite')}
+                />
+              ) : (
+                <div className="space-y-3">
+                  {upcomingInvites.map(invite => (
+                    <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 border-l-4 border-green-500 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">👤 {invite.name}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-200">📅 {invite.time}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${invite.status === 'Confirmed'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-amber-100 text-amber-700'
+                          }`}>
+                          {invite.status}
+                        </span>
+                        <button className="text-gray-500 dark:text-gray-300 hover:text-gray-700 px-2">
+                          <span className="text-sm">View</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-          </Card.Content>
-        </Card>
+              )}
+            </Card.Content>
+          </Card>
         )}
 
         {/* Recent Visitors */}
         {isWidgetVisible('recent-visitors') && (
-        <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-          <Card.Content className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
-              <span className="text-gray-500 dark:text-gray-300 hover:text-gray-700 cursor-pointer font-medium text-sm">📊 View All →</span>
-            </div>
-            
-            {loading ? (
-              <Skeleton.List items={2} showAvatar={false} />
-            ) : recentVisitors.length === 0 ? (
-              <RecentVisitorsEmpty />
-            ) : (
-            <div className="space-y-3">
-              {recentVisitors.map(visitor => (
-                <div key={visitor.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border-l-4 border-gray-300 hover:bg-gray-100 transition-colors">
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-white">👤 {visitor.name}</div>
-                    <div className="text-sm text-green-600">✅ Checked in</div>
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-200">🕐 {visitor.checkedInAt}</div>
+          <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+            <Card.Content className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
+                <span className="text-gray-500 dark:text-gray-300 hover:text-gray-700 cursor-pointer font-medium text-sm">📊 View All →</span>
+              </div>
+
+              {loading ? (
+                <Skeleton.List items={2} showAvatar={false} />
+              ) : recentVisitors.length === 0 ? (
+                <RecentVisitorsEmpty />
+              ) : (
+                <div className="space-y-3">
+                  {recentVisitors.map(visitor => (
+                    <div key={visitor.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border-l-4 border-gray-300 hover:bg-gray-100 transition-colors">
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white">👤 {visitor.name}</div>
+                        <div className="text-sm text-green-600">✅ Checked in</div>
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-200">🕐 {visitor.checkedInAt}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-          </Card.Content>
-        </Card>
+              )}
+            </Card.Content>
+          </Card>
         )}
       </div>
 
       {/* Real-time Activity Feed */}
       {isWidgetVisible('live-feed') && (
-      <div className="mt-6">
-        <LiveStatsBar 
-          stats={liveStats}
-          connectionStatus={connectionStatus}
-          lastUpdate={lastUpdate}
-          className="mb-4"
-        />
-        <LiveVisitorFeed 
-          events={recentEvents}
-          maxVisible={5}
-          showControls={true}
-          connectionStatus={connectionStatus}
-          onRefresh={refreshStats}
-          onClear={clearEvents}
-        />
-      </div>
+        <div className="mt-6">
+          <LiveStatsBar
+            stats={liveStats}
+            connectionStatus={connectionStatus}
+            lastUpdate={lastUpdate}
+            className="mb-4"
+          />
+          <LiveVisitorFeed
+            events={recentEvents}
+            maxVisible={5}
+            showControls={true}
+            connectionStatus={connectionStatus}
+            onRefresh={refreshStats}
+            onClear={clearEvents}
+          />
+        </div>
       )}
 
       {/* Phase 4.3: Visitor Insights Analytics */}
       {isWidgetVisible('insights') && (
-      <div className="mt-8">
-        <VisitorInsights />
-      </div>
+        <div className="mt-8">
+          <VisitorInsights />
+        </div>
       )}
 
       {/* PHASE A3: Clarified Quick Actions - Mobile Optimized */}
       {isWidgetVisible('quick-actions') && (
-      <div data-tour="quick-actions" className="mt-6 md:mt-8">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        {/* Visitor Approvals - Highlighted */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-900/20 border-2 border-green-200 dark:border-green-800/50 relative"
-          onClick={() => navigateTo('/resident/approvals')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-green-500 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Approvals</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Walk-in visitors</p>
-            <span className="absolute top-2 right-2 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-medium">
-              NEW
-            </span>
-          </Card.Content>
-        </Card>
-        
-        {/* Bulk Invite */}
-        <Card 
-          data-tour="bulk-invite"
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
-          onClick={() => navigateTo('/resident/bulk-invite')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <svg className="w-6 h-6 md:w-7 md:h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Bulk Invite</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Multiple guests</p>
-          </Card.Content>
-        </Card>
+        <div data-tour="quick-actions" className="mt-6 md:mt-8">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {/* Visitor Approvals - Highlighted */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-900/20 border-2 border-green-200 dark:border-green-800/50 relative"
+              onClick={() => navigateTo('/resident/approvals')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-500 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Approvals</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Walk-in visitors</p>
+                <span className="absolute top-2 right-2 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-medium">
+                  NEW
+                </span>
+              </Card.Content>
+            </Card>
 
-        {/* Visitor History */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
-          onClick={() => navigateTo('/resident/visitor-history')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <svg className="w-6 h-6 md:w-7 md:h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">History</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Past visits</p>
-          </Card.Content>
-        </Card>
+            {/* Bulk Invite */}
+            <Card
+              data-tour="bulk-invite"
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
+              onClick={() => navigateTo('/resident/bulk-invite')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <svg className="w-6 h-6 md:w-7 md:h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Bulk Invite</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Multiple guests</p>
+              </Card.Content>
+            </Card>
 
-        {/* Settings */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
-          onClick={() => navigateTo('/resident/settings')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <svg className="w-6 h-6 md:w-7 md:h-7 text-gray-600 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Settings</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Manage</p>
-          </Card.Content>
-        </Card>
+            {/* Visitor History */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
+              onClick={() => navigateTo('/resident/visitor-history')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <svg className="w-6 h-6 md:w-7 md:h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">History</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Past visits</p>
+              </Card.Content>
+            </Card>
 
-        {/* Phase 2.1: My Deliveries */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
-          onClick={() => navigateTo('/resident/deliveries')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <span className="text-2xl">📦</span>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">My Deliveries</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Track packages</p>
-            <span className="absolute top-2 right-2 px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full font-medium">
-              NEW
-            </span>
-          </Card.Content>
-        </Card>
+            {/* Settings */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
+              onClick={() => navigateTo('/resident/settings')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <svg className="w-6 h-6 md:w-7 md:h-7 text-gray-600 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Settings</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Manage</p>
+              </Card.Content>
+            </Card>
 
-        {/* Phase 2.2: Auto-Approval Rules */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
-          onClick={() => navigateTo('/resident/auto-approval')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <span className="text-2xl">🤖</span>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Auto-Approval</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Trusted visitors</p>
-            <span className="absolute top-2 right-2 px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full font-medium">
-              NEW
-            </span>
-          </Card.Content>
-        </Card>
+            {/* Phase 2.1: My Deliveries */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
+              onClick={() => navigateTo('/resident/deliveries')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <span className="text-2xl">📦</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">My Deliveries</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Track packages</p>
+                <span className="absolute top-2 right-2 px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full font-medium">
+                  NEW
+                </span>
+              </Card.Content>
+            </Card>
 
-        {/* Phase 3: Privacy Dashboard */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
-          onClick={() => navigateTo('/resident/privacy')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <span className="text-2xl">🔒</span>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Privacy</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Your data & rights</p>
-            <span className="absolute top-2 right-2 px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full font-medium">
-              NEW
-            </span>
-          </Card.Content>
-        </Card>
+            {/* Phase 2.2: Auto-Approval Rules */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
+              onClick={() => navigateTo('/resident/auto-approval')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <span className="text-2xl">🤖</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Auto-Approval</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Trusted visitors</p>
+                <span className="absolute top-2 right-2 px-2 py-0.5 bg-indigo-500 text-white text-xs rounded-full font-medium">
+                  NEW
+                </span>
+              </Card.Content>
+            </Card>
 
-        {/* Phase 4: Favorite Visitors */}
-        <Card 
-          data-tour="favorites"
-          className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
-          onClick={() => navigateTo('/resident/favorites')}
-        >
-          <Card.Content className="p-4 md:p-6 text-center">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-pink-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
-              <span className="text-2xl">⭐</span>
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Favorites</h3>
-            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Quick-invite list</p>
-            <span className="absolute top-2 right-2 px-2 py-0.5 bg-pink-500 text-white text-xs rounded-full font-medium">
-              NEW
-            </span>
-          </Card.Content>
-        </Card>
+            {/* Phase 3: Privacy Dashboard */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
+              onClick={() => navigateTo('/resident/privacy')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-teal-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <span className="text-2xl">🔒</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Privacy</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Your data & rights</p>
+                <span className="absolute top-2 right-2 px-2 py-0.5 bg-teal-500 text-white text-xs rounded-full font-medium">
+                  NEW
+                </span>
+              </Card.Content>
+            </Card>
 
-      </div>
-      </div>
+            {/* Phase 4: Favorite Visitors */}
+            <Card
+              data-tour="favorites"
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
+              onClick={() => navigateTo('/resident/favorites')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-pink-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <span className="text-2xl">⭐</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Favorites</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Quick-invite list</p>
+                <span className="absolute top-2 right-2 px-2 py-0.5 bg-pink-500 text-white text-xs rounded-full font-medium">
+                  NEW
+                </span>
+              </Card.Content>
+            </Card>
+
+          </div>
+        </div>
       )}
 
       {/* Dashboard Widget Customizer Modal */}
@@ -531,56 +526,42 @@ export default function ResidentDashboard() {
   const { logout } = useAuth();
   const role = useCurrentRole();
   const navigate = useNavigate();
-  
+
   const onLogout = async () => {
     await logout();
     navigate("/login");
   };
-  
+
 
 
   const location = useLocation();
-  let panel = <DashboardHome />;
-  
-  if (location.pathname === "/resident/add-visitor") panel = <AddVisitor />;
-  else if (location.pathname === "/resident/generate-pass") panel = <GeneratePass />;
-  else if (location.pathname === "/resident/visitor-history") panel = <VisitorHistory />;
-  else if (location.pathname === "/resident/bulk-invite") panel = <BulkInvite />;
-  else if (location.pathname === "/resident/settings") panel = <Settings />;
-  else if (location.pathname === "/resident/quick-invite") panel = <QuickInvite />;
-  else if (location.pathname === "/resident/approvals") panel = <ResidentApprovalsPanel />;
-  // Phase 2 Routes
-  else if (location.pathname === "/resident/deliveries") panel = <DeliveryList />;
-  else if (location.pathname === "/resident/auto-approval") panel = <AutoApprovalRules />;
-  // Phase 3: Privacy Dashboard
-  else if (location.pathname === "/resident/privacy") panel = <PrivacyDashboard />;
-  // Phase 4: Favorites System
-  else if (location.pathname === "/resident/favorites") panel = <FavoriteVisitors onInviteClick={(visitor) => navigateTo(`/resident/add-visitor?favorite=${visitor.id}`)} />;
+
+  // Route handling is now managed by App.js
 
   return (
-    <AppShell role={role} title="Resident Dashboard" onLogout={onLogout}>
+    <div className="resident-dashboard-container">
       {/* Phase 3: Onboarding Tour */}
-      <OnboardingTour 
-        role="resident" 
+      <OnboardingTour
+        role="resident"
         onComplete={() => console.log('Resident tour completed')}
       />
-      
+
       {/* Phase 3: Offline Indicator */}
 
-      
+
       {/* Phase 3: Community Announcements */}
       <AnnouncementsBanner showDismiss={true} className="mb-4" />
-      
+
       {/* Main Content */}
       <main id="main-content">
-        {panel}
+        <DashboardHome />
       </main>
-      
+
       {/* Phase 4: Mobile Quick Action Menu */}
-      <QuickActionMenu 
+      <QuickActionMenu
         role="resident"
         showOnlyMobile={true}
       />
-    </AppShell>
+    </div>
   );
 }

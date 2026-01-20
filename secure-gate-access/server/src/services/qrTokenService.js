@@ -39,7 +39,7 @@ class QRTokenService {
   async createToken(visitorId, qrId = null, options = {}) {
     try {
       const token = this.generateToken();
-      
+
       // Default options
       const {
         expiresIn = 48 * 60 * 60 * 1000, // 48 hours default
@@ -81,12 +81,23 @@ class QRTokenService {
 
   /**
    * Validate and retrieve visitor data from token
+   * SECURITY: Filters by estate_id to prevent cross-estate QR validation
    * @param {string} token - The opaque token from QR code
+   * @param {number|null} estateId - Estate ID for filtering
    * @returns {Promise<Object>} Validation result with visitor data
    */
-  async validateToken(token) {
+  async validateToken(token, estateId = null) {
     try {
-      // Look up token in database
+      // SECURITY: Require estate context for QR validation
+      if (!estateId) {
+        return {
+          success: false,
+          error: 'Estate context required for token validation',
+          code: 'ESTATE_REQUIRED'
+        };
+      }
+
+      // Look up token in database - filtered by estate
       const result = await pool.query(
         `SELECT 
           qt.token_id,
@@ -107,11 +118,12 @@ class QRTokenService {
           v.purpose,
           v.status as visitor_status,
           v.resident_id,
-          v.unit_id
+          v.unit_id,
+          v.estate_id
         FROM qr_tokens qt
         JOIN visitors v ON qt.visitor_id = v.visitor_id
-        WHERE qt.token = $1`,
-        [token]
+        WHERE qt.token = $1 AND v.estate_id = $2`,
+        [token, estateId]
       );
 
       if (result.rows.length === 0) {

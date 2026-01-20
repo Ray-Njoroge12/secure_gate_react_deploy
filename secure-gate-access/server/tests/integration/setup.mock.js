@@ -267,7 +267,8 @@ export async function createMockTestUsers() {
     password: hashedPassword,
     role: 'admin',
     phone: '+254700000001',
-    unit: 'Admin',
+    house: 'Admin',
+    estate_id: 1,
     created_at: new Date().toISOString()
   };
   
@@ -278,7 +279,8 @@ export async function createMockTestUsers() {
     password: hashedPassword,
     role: 'guard',
     phone: '+254700000002',
-    unit: 'Gate 1',
+    house: 'Gate 1',
+    estate_id: 1,
     created_at: new Date().toISOString()
   };
   
@@ -289,7 +291,8 @@ export async function createMockTestUsers() {
     password: hashedPassword,
     role: 'resident',
     phone: '+254700000003',
-    unit: 'A101',
+    house: 'A101',
+    estate_id: 1,
     created_at: new Date().toISOString()
   };
   
@@ -310,7 +313,7 @@ export async function getMockAuthToken(email) {
   }
   
   const token = jwt.default.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, estate_id: user.estate_id ?? 1 },
     process.env.JWT_SECRET || 'test-secret',
     { expiresIn: '1h' }
   );

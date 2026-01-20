@@ -4,7 +4,7 @@
  * Phase A5: Multi-Site, Integrations & Automation
  */
 
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import logger from '../config/logger.js';
 import { testWebhook } from '../services/webhookService.js';

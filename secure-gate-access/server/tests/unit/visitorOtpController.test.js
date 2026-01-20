@@ -76,7 +76,7 @@ describe('Visitor OTP Controller', () => {
       NODE_ENV: 'test'
     };
 
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
   });
 
   afterEach(() => {
@@ -95,9 +95,7 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
             success: false,
-            error: expect.objectContaining({
-              message: 'OTP is required'
-            })
+            message: 'OTP is required'
           })
         );
       });
@@ -111,9 +109,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(400);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: 'Invalid OTP format'
-            })
+            success: false,
+            message: 'Invalid OTP format'
           })
         );
         expect(mockValidateOTPFormat).toHaveBeenCalledWith('INVALID');
@@ -131,9 +128,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(404);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: 'Visitor not found'
-            })
+            success: false,
+            message: 'Visitor not found'
           })
         );
       });
@@ -150,9 +146,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(422);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: 'Visitor already verified or checked in'
-            })
+            success: false,
+            message: 'Visitor already verified or checked in'
           })
         );
       });
@@ -222,9 +217,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(429);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: expect.stringContaining('Too many OTP attempts')
-            })
+            success: false,
+            message: expect.stringContaining('Too many OTP attempts')
           })
         );
         expect(mockReq.audit).toHaveBeenCalled();
@@ -271,9 +265,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(400);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: expect.stringContaining('OTP not issued')
-            })
+            success: false,
+            message: expect.stringContaining('OTP not issued')
           })
         );
       });
@@ -297,9 +290,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(400);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: expect.stringContaining('OTP expired')
-            })
+            success: false,
+            message: expect.stringContaining('OTP expired')
           })
         );
       });
@@ -464,9 +456,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: 'Failed to verify OTP'
-            })
+            success: false,
+            message: 'Failed to verify OTP'
           })
         );
       });
@@ -483,9 +474,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(404);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: 'Visitor not found'
-            })
+            success: false,
+            message: 'Visitor not found'
           })
         );
       });
@@ -521,9 +511,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(429);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: expect.stringMatching(/Please wait \d+s/)
-            })
+            success: false,
+            message: expect.stringMatching(/Please wait \d+s/)
           })
         );
       });
@@ -801,9 +790,8 @@ describe('Visitor OTP Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(500);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            error: expect.objectContaining({
-              message: expect.stringContaining('Failed to resend OTP')
-            })
+            success: false,
+            message: expect.stringContaining('Failed to resend OTP')
           })
         );
       });

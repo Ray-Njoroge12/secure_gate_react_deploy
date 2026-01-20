@@ -71,24 +71,34 @@ describe('Simple Integration Tests', () => {
   describe('Delivery Operations', () => {
     it('should insert delivery log', async () => {
       const result = await query(
-        `INSERT INTO delivery_logs (resident_id, carrier, tracking_number, status, received_at)
-         VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
-        [testUsers.resident.id, 'DHL', 'DHL123456789', 'pending']
+        `INSERT INTO deliveries (recipient_id, received_by_guard_id, carrier_name, tracking_number, status)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [testUsers.resident.id, testUsers.guard.id, 'DHL', 'DHL123456789', 'pending_collection']
       );
       expect(result.rows.length).toBe(1);
-      expect(result.rows[0].carrier).toBe('DHL');
+      expect(result.rows[0].carrier_name).toBe('DHL');
     });
   });
 
   describe('Pass Operations', () => {
     it('should insert recurring pass', async () => {
       const result = await query(
-        `INSERT INTO recurring_passes (name, phone, resident_id, schedule_type, status)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        ['Regular Visitor', '+254700111222', testUsers.resident.id, 'weekly', 'active']
+        `INSERT INTO recurring_passes (
+          resident_id, visitor_name, visitor_phone, access_pin, qr_code_token, valid_until, status
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [
+          testUsers.resident.id,
+          'Regular Visitor',
+          '+254700111222',
+          '123456',
+          `RP-${Date.now()}-simple`,
+          new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          'active'
+        ]
       );
       expect(result.rows.length).toBe(1);
-      expect(result.rows[0].schedule_type).toBe('weekly');
+      expect(result.rows[0].status).toBe('active');
     });
   });
 });

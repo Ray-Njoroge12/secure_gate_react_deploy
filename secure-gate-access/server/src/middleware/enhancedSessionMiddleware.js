@@ -2,7 +2,7 @@
 import session from 'express-session';
 import { RedisStore } from 'connect-redis';
 import createMemoryStore from 'memorystore';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import loggingService from '../services/loggingService.js';
 import { errorResponse } from '../utils/responseFormatter.js';

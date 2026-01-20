@@ -15,7 +15,7 @@ export default function LoginPage() {
   const location = useLocation();
   const { login, isAuthenticated, user } = useAuth();
   const { handleError, handleSuccess, clearAllErrors } = useError();
-  
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -47,13 +47,8 @@ export default function LoginPage() {
       setPasswordError("Password is required");
       return false;
     }
-
-    const errorMessage = passwordValidator.getErrorMessage(value);
-    if (errorMessage) {
-      setPasswordError(errorMessage);
-      return false;
-    }
-
+    // Don't validate password strength on login - any password is acceptable
+    // Strength is only validated during registration and password changes
     setPasswordError("");
     return true;
   };
@@ -89,11 +84,11 @@ export default function LoginPage() {
     e.preventDefault();
     clearAllErrors();
     setMessage("");
-    
+
     // Validate inputs
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
-    
+
     if (!isEmailValid || !isPasswordValid) {
       return;
     }
@@ -103,9 +98,16 @@ export default function LoginPage() {
 
     try {
       const result = await login(email, password, remember);
-      
+
       // Check if MFA is required
       if (result.mfaRequired) {
+        // Store temp auth state for MFA persistence (survives refresh)
+        sessionStorage.setItem('mfa_temp_auth', JSON.stringify({
+          userId: result.userId,
+          username: result.username,
+          timestamp: Date.now()
+        }));
+
         // Redirect to MFA verification page
         navigate('/mfa/verify', {
           state: {
@@ -115,7 +117,7 @@ export default function LoginPage() {
         });
         return;
       }
-      
+
       // Success animation before redirect
       handleSuccess("Login successful! Redirecting...", {
         context: 'Login',
@@ -123,7 +125,7 @@ export default function LoginPage() {
         autoClose: true,
         autoCloseDelay: 1500
       });
-      
+
       // Redirect after short delay for animation
       setTimeout(() => {
         const from = location.state?.from?.pathname;
@@ -138,7 +140,7 @@ export default function LoginPage() {
         }
       }, 100);
     } catch (err) {
-      handleError(err, { 
+      handleError(err, {
         context: 'Login',
         title: 'Login Failed',
         showRecoveryActions: true,
@@ -229,12 +231,12 @@ export default function LoginPage() {
             {showForgot ? "Reset Password" : "Welcome Back"}
           </h1>
           <p className="text-gray-600 dark:text-gray-200">
-            {showForgot 
-              ? "Enter your email and we'll send you a reset link" 
+            {showForgot
+              ? "Enter your email and we'll send you a reset link"
               : "Sign in to your SecureGate account"}
           </p>
         </div>
-        
+
         {/* Main Card */}
         <GradientCard className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           {showForgot ? (
@@ -255,7 +257,7 @@ export default function LoginPage() {
                 required
                 autoFocus
               />
-              
+
               <div className="space-y-3">
                 <GradientButton
                   type="submit"
@@ -267,7 +269,7 @@ export default function LoginPage() {
                 >
                   {loading ? "Sending..." : "Send Reset Link"}
                 </GradientButton>
-                
+
                 <button
                   type="button"
                   className="w-full text-center text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:text-white dark:hover:text-gray-100 text-sm font-medium py-2 transition-colors"
@@ -338,7 +340,7 @@ export default function LoginPage() {
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
                 />
-                
+
                 <button
                   type="button"
                   className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
@@ -380,14 +382,14 @@ export default function LoginPage() {
             </form>
           )}
         </GradientCard>
-        
+
         {/* Sign Up Link */}
         {!showForgot && (
           <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <span className="text-sm text-gray-600 dark:text-gray-200">
               Don't have an account?{" "}
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="text-green-600 hover:text-green-700 font-semibold transition-colors"
               >
                 Sign up

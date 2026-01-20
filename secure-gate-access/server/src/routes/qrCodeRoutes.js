@@ -213,7 +213,7 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
     // Check-in visitor
     const now = new Date();
     await dbManager.query(
-      'UPDATE visitors SET status = $1, check_in = $2, real_time_status = $3 WHERE id = $4 AND estate_id = $5',
+      'UPDATE visitors SET status = $1, check_in_time = $2, real_time_status = $3 WHERE id = $4 AND estate_id = $5',
       [PASS_STATUS.ON_PREMISE, now, PASS_STATUS.ON_PREMISE, visitor.id, req.user.estate_id]
     );
     

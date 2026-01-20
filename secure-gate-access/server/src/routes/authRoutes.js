@@ -11,6 +11,7 @@ import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.j
 import { successResponse, createdResponse, validationErrorResponse, unauthorizedResponse, internalErrorResponse, errorResponse } from '../utils/responseFormatter.js';
 import { validatePasswordResetRequest, validatePasswordReset, validateRegistration, validateLogin, validateRefreshRequest } from '../validation/authValidation.js';
 import emailService from '../services/emailService.js';
+import { maskEmail } from '../utils/redaction.js';
 
 const router = express.Router();
 
@@ -179,32 +180,32 @@ const getBearerToken = (req) => {
  */
 // User registration
 // BUG-001 FIX: Rate limiter re-enabled for production security
+// AUTH-008 UPDATE: Registration now PUBLIC for residents (admin approval required via pending status)
+import { requireRole } from '../middleware/roleMiddleware.js';
+
 router.post('/register', authLimiter, validateRegistration, attachRequestAudit(), asyncHandler(async (req, res) => {
-  const { username, email, password, role, estate_id: estateId } = req.body;
-  
+  const { username, email, password, phone } = req.body;
+
   // BUG-006 FIX: Using proper logging service instead of console.log
-  loggingService.info('Registration request received', {
+  loggingService.info('Public registration request received', {
     event: 'auth.register.requested',
     username,
     email,
-    role,
-    estateId,
+    phone: phone ? 'provided' : 'not_provided',
     request_id: req.requestId
   });
-  
-  // Validate required fields
-  if (!username || !email || !password || !role || estateId == null) {
+
+  // Validate required fields (simplified for public registration)
+  if (!username || !email || !password) {
     loggingService.warn('Registration validation failed - missing fields', {
       event: 'auth.register.validation_failed',
       hasUsername: !!username,
       hasEmail: !!email,
       hasPassword: !!password,
-      hasRole: !!role,
-      hasEstateId: estateId != null,
       request_id: req.requestId
     });
-    throw new AppError('Missing required fields', 400, 'VALIDATION_ERROR', {
-      missing: { username: !username, email: !email, password: !password, role: !role, estate_id: estateId == null }
+    throw new AppError('Username, email, and password are required', 400, 'VALIDATION_ERROR', {
+      missing: { username: !username, email: !email, password: !password }
     });
   }
 
@@ -225,28 +226,30 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
     });
   }
 
-  // Create user
-  loggingService.info('Attempting to create user', {
+  // Create user with default values for public registration
+  loggingService.info('Creating pending user account', {
     event: 'auth.register.creating_user',
     username,
-    email,
-    role,
-    estateId,
+    email: maskEmail(email),
+    role: 'resident',
+    account_status: 'pending',
     request_id: req.requestId
   });
   const user = await userService.createUser({
     username,
     email,
     password,
-    role,
-    estate_id: estateId
+    phone: phone || null,
+    role: 'resident', // Default to resident for public registration
+    account_status: 'pending', // Requires admin approval
+    estate_id: null // Will be assigned during activation
   });
 
-  loggingService.info('User created successfully', {
+  loggingService.info('User created successfully - pending approval', {
     event: 'auth.register.success',
     userId: user.id,
     username: user.username,
-    role: user.role,
+    account_status: 'pending',
     request_id: req.requestId
   });
 
@@ -254,17 +257,17 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
   try {
     loggingService.info('Sending verification email', {
       event: 'auth.register.email_send_requested',
-      email: user.email,
+      email: maskEmail(user.email),
       hasToken: !!user.verification_token,
       request_id: req.requestId
     });
-    
+
     const emailResult = await emailService.sendRegistrationConfirmation(
-      user.email, 
+      user.email,
       user.username,
       user.verification_token
     );
-    
+
     loggingService.info('Verification email sent successfully', {
       event: 'auth.register.email_sent',
       messageId: emailResult?.id || 'unknown',
@@ -274,7 +277,7 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
     loggingService.error('Failed to send verification email', {
       event: 'auth.register.email_failed',
       error: emailError.message,
-      email: user.email,
+      email: maskEmail(user.email),
       request_id: req.requestId
     });
     // Don't fail registration if email fails - user can request resend
@@ -289,6 +292,66 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
       role: user.role
     }
   }, 'User registered successfully');
+}));
+
+/**
+ * @swagger
+ * /api/auth/check-email:
+ *   get:
+ *     summary: Check if email is available
+ *     description: Check if an email address is already registered
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Email address to check
+ *     responses:
+ *       200:
+ *         description: Email availability status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exists:
+ *                   type: boolean
+ *                   description: Whether the email is already registered
+ *             example:
+ *               exists: false
+ *       400:
+ *         description: Invalid request
+ */
+router.get('/check-email', asyncHandler(async (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    throw new AppError('Email parameter is required', 400, 'VALIDATION_ERROR', {
+      field: 'email'
+    });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new AppError('Invalid email format', 400, 'VALIDATION_ERROR', {
+      field: 'email'
+    });
+  }
+
+  // Check if email exists in database
+  const result = await userService.db.query(
+    'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
+    [email.trim()]
+  );
+
+  const exists = result.rows.length > 0;
+
+  // Return simple boolean response
+  res.json({ exists });
 }));
 
 /**
@@ -436,7 +499,7 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
   // Accept either username or email field for login
   const { username, email, password, estate_id: estateId } = req.body;
   const userIdentifier = username || email;
-  
+
   if (!userIdentifier || !password) {
     throw new AppError('Username/email and password required', 400, 'VALIDATION_ERROR', {
       missing: { userIdentifier: !userIdentifier, password: !password }
@@ -449,8 +512,8 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
     user = await userService.authenticateUser(userIdentifier, password, estateId);
   } catch (authError) {
     // Handle authentication errors (invalid credentials, account locked, etc.)
-    if (authError.message.includes('Invalid credentials') || 
-        authError.message.includes('Account is locked')) {
+    if (authError.message.includes('Invalid credentials') ||
+      authError.message.includes('Account is locked')) {
       loggingService.warn('Login failed', {
         event: 'auth.login.failed',
         route: req.originalUrl,
@@ -466,7 +529,7 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
     // Re-throw unexpected errors to be caught by outer catch block
     throw authError;
   }
-  
+
   if (!user) {
     loggingService.warn('Login failed', {
       event: 'auth.login.failed',
@@ -500,7 +563,7 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
 
   // BUG-008 FIX: Set tokens as httpOnly cookies instead of returning in body
   const cookieOptions = getCookieOptions();
-  
+
   // Set access token cookie
   // For cross-site (Netlify frontend + Render backend), use sameSite: 'none' + secure: true
   if (isWebClient) {
@@ -638,7 +701,7 @@ router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAud
   }
   const userId = Number(decoded.sub || decoded.userId);
   const user = await userService.getUserById(userId);
-  
+
   if (!user) {
     loggingService.warn('Refresh token user not found', {
       event: 'auth.refresh.user_not_found',
@@ -827,7 +890,7 @@ router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(asy
   if (refreshToken) {
     await tokenService.revokeRefreshToken(refreshToken);
   }
-  
+
   res.clearCookie('accessToken', cookieOptions);
   res.clearCookie('refreshToken', cookieOptions);
 

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { setupTestDatabase, cleanupTestDatabase } from './setup.js';
 
 describe('Webhook signature validation', () => {

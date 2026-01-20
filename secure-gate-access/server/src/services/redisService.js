@@ -7,6 +7,18 @@ import MemoryCacheService from './memoryCacheService.js';
  * Redis Service for caching and session management
  * Provides high-performance caching with fallback mechanisms
  */
+const SHOULD_LOG_REDIS = process.env.NODE_ENV !== 'test' || process.env.DEBUG_REDIS === 'true';
+const logRedis = (...args) => {
+  if (SHOULD_LOG_REDIS) {
+    console.log(...args);
+  }
+};
+const warnRedis = (...args) => {
+  if (SHOULD_LOG_REDIS) {
+    console.warn(...args);
+  }
+};
+
 class RedisService extends EventEmitter {
   constructor() {
     super();
@@ -30,11 +42,11 @@ class RedisService extends EventEmitter {
    * Initialize Redis connection with fallback
    */
   async initialize() {
-    console.log('[REDIS] Initializing Redis service...');
+    logRedis('[REDIS] Initializing Redis service...');
 
     // Quick check if Redis is available
     if (!process.env.REDIS_URL && process.env.NODE_ENV === 'development') {
-      console.log('[REDIS] No REDIS_URL configured in development, using memory cache');
+      logRedis('[REDIS] No REDIS_URL configured in development, using memory cache');
       return this.initializeFallback();
     }
 
@@ -50,14 +62,14 @@ class RedisService extends EventEmitter {
 
       // Set up event handlers
       this.client.on('connect', () => {
-        console.log('[REDIS] Connected to Redis server');
+        logRedis('[REDIS] Connected to Redis server');
         this.isConnected = true;
         this.reconnectAttempts = 0;
       });
 
       this.client.on('error', (error) => {
         if (!this.usingFallback) {
-          console.warn('[REDIS] Connection error:', error.message);
+          warnRedis('[REDIS] Connection error:', error.message);
           this.isConnected = false;
           // Don't attempt reconnection immediately, fall back
           this.initializeFallback();
@@ -65,7 +77,7 @@ class RedisService extends EventEmitter {
       });
 
       this.client.on('end', () => {
-        console.log('[REDIS] Connection ended');
+        logRedis('[REDIS] Connection ended');
         this.isConnected = false;
       });
 
@@ -77,12 +89,12 @@ class RedisService extends EventEmitter {
 
       await Promise.race([connectPromise, timeoutPromise]);
 
-      console.log('✅ Redis connected successfully');
+      logRedis('✅ Redis connected successfully');
       return true;
 
     } catch (error) {
-      console.warn(`[REDIS] Redis connection failed: ${error.message}`);
-      console.log('[REDIS] Falling back to memory cache...');
+      warnRedis(`[REDIS] Redis connection failed: ${error.message}`);
+      logRedis('[REDIS] Falling back to memory cache...');
       return this.initializeFallback();
     }
   }
@@ -94,7 +106,7 @@ class RedisService extends EventEmitter {
     this.fallbackCache = new MemoryCacheService();
     this.usingFallback = true;
     this.isConnected = false;
-    console.log('✅ Memory cache fallback initialized');
+    logRedis('✅ Memory cache fallback initialized');
     return true;
   }
 

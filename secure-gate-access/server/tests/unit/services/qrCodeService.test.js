@@ -5,11 +5,22 @@
 
 import { jest } from '@jest/globals';
 
-// Mock dependencies
+// Mock dependencies - include all exports from db.enhanced.js
+const mockQuery = jest.fn();
+const mockDbManager = {
+  query: mockQuery,
+  getStatus: jest.fn().mockReturnValue({ isConnected: true }),
+  testConnection: jest.fn().mockResolvedValue(true),
+  initializeAsync: jest.fn().mockResolvedValue(true),
+  disconnect: jest.fn().mockResolvedValue(undefined)
+};
+
 jest.unstable_mockModule('../../../src/database/db.enhanced.js', () => ({
-  dbManager: {
-    query: jest.fn()
-  }
+  dbManager: mockDbManager,
+  db: mockDbManager,
+  default: mockDbManager,
+  getDBStatus: jest.fn().mockReturnValue({ isConnected: true }),
+  testDBConnection: jest.fn().mockResolvedValue(true)
 }));
 
 jest.unstable_mockModule('qrcode', () => ({

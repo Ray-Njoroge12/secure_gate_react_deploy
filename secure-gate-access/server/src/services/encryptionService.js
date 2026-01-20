@@ -7,18 +7,14 @@
  * Compliance: Kenya DPA 2019, GDPR Article 32
  */
 
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { KMSClient, EncryptCommand, DecryptCommand } from '@aws-sdk/client-kms';
 
 // Encryption configuration
 const ENCRYPTION_METHOD = process.env.ENCRYPTION_METHOD || 'local';
 const AWS_KMS_KEY_ID = process.env.AWS_KMS_KEY_ID;
 const AWS_REGION = process.env.AWS_REGION || 'af-south-1';
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || (
-  process.env.NODE_ENV !== 'production'
-    ? (process.env.JWT_SECRET || process.env.SESSION_SECRET)
-    : undefined
-);
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
 // Algorithm for local encryption
 const ALGORITHM = 'aes-256-gcm';
@@ -28,6 +24,7 @@ const SALT_LENGTH = 64;
 
 // AWS KMS Client (lazy initialized)
 let kmsClient = null;
+let vaultServicePromise = null;
 
 /**
  * Initialize AWS KMS Client
@@ -40,6 +37,16 @@ function initializeKMSClient() {
     kmsClient = new KMSClient({ region: AWS_REGION });
   }
   return kmsClient;
+}
+
+/**
+ * Lazily load Vault service to avoid startup failures when Vault is not configured.
+ */
+async function getVaultService() {
+  if (!vaultServicePromise) {
+    vaultServicePromise = import('./vaultService.js').then((module) => module.default || module);
+  }
+  return vaultServicePromise;
 }
 
 /**
@@ -86,6 +93,40 @@ async function decryptWithKMS(ciphertext) {
     return decrypted;
   } catch (error) {
     console.error('KMS decryption failed:', error.message);
+    throw new Error(`Decryption failed: ${error.message}`);
+  }
+}
+
+/**
+ * Encrypt data using HashiCorp Vault Transit
+ * @param {string} plaintext - Data to encrypt
+ * @returns {Promise<string>} Vault ciphertext
+ */
+async function encryptWithVault(plaintext) {
+  try {
+    const vaultService = await getVaultService();
+    const keyName = process.env.VAULT_TRANSIT_KEY || 'secure-gate-key';
+    const encrypted = await vaultService.encryptData(plaintext, keyName);
+    return encrypted.startsWith('vault:') ? encrypted : `vault:${encrypted}`;
+  } catch (error) {
+    console.error('Vault encryption failed:', error.message);
+    throw new Error(`Encryption failed: ${error.message}`);
+  }
+}
+
+/**
+ * Decrypt data using HashiCorp Vault Transit
+ * @param {string} ciphertext - Vault ciphertext
+ * @returns {Promise<string>} Decrypted plaintext
+ */
+async function decryptWithVault(ciphertext) {
+  try {
+    const vaultService = await getVaultService();
+    const keyName = process.env.VAULT_TRANSIT_KEY || 'secure-gate-key';
+    const decrypted = await vaultService.decryptData(ciphertext, keyName);
+    return typeof decrypted === 'string' ? decrypted : JSON.stringify(decrypted);
+  } catch (error) {
+    console.error('Vault decryption failed:', error.message);
     throw new Error(`Decryption failed: ${error.message}`);
   }
 }
@@ -194,8 +235,7 @@ export async function encrypt(data) {
         return await encryptWithKMS(plaintext);
       
       case 'vault':
-        // TODO: Implement Vault encryption
-        throw new Error('Vault encryption not yet implemented');
+        return await encryptWithVault(plaintext);
       
       case 'local':
         return encryptLocal(plaintext);
@@ -227,14 +267,16 @@ export async function decrypt(encryptedData) {
     } else if (encryptedData.startsWith('local:')) {
       return decryptLocal(encryptedData);
     } else if (encryptedData.startsWith('vault:')) {
-      // TODO: Implement Vault decryption
-      throw new Error('Vault decryption not yet implemented');
+      return await decryptWithVault(encryptedData);
     } else {
       // No prefix - assume current method
       switch (ENCRYPTION_METHOD) {
         case 'aws-kms':
           return await decryptWithKMS(encryptedData);
         
+        case 'vault':
+          return await decryptWithVault(encryptedData);
+
         case 'local':
           return decryptLocal(encryptedData);
         
@@ -343,27 +385,29 @@ export function validateEncryptionConfig() {
     
     case 'local':
       if (!process.env.ENCRYPTION_KEY) {
-        if (process.env.NODE_ENV === 'production') {
-          errors.push('ENCRYPTION_KEY is required for local encryption in production');
-        } else {
-          warnings.push('ENCRYPTION_KEY not set; using development fallback key');
-        }
+        errors.push('ENCRYPTION_KEY is required for local encryption');
       }
       if (ENCRYPTION_KEY && ENCRYPTION_KEY.length < 32) {
         errors.push('ENCRYPTION_KEY must be at least 32 characters (256 bits)');
       }
       // Only warn about local encryption if ENCRYPTION_KEY is not explicitly set
       // (i.e., user hasn't intentionally configured local encryption)
-      if (process.env.NODE_ENV === 'production' && !process.env.ENCRYPTION_KEY) {
-        warnings.push('Local encryption is not recommended for production - use AWS KMS or Vault');
-      } else if (process.env.NODE_ENV === 'production' && process.env.ENCRYPTION_KEY) {
+      if (process.env.NODE_ENV === 'production' && process.env.ENCRYPTION_KEY) {
         // User has explicitly configured local encryption - just note it
         warnings.push('Using local encryption (consider AWS KMS or Vault for enhanced security)');
       }
       break;
     
     case 'vault':
-      warnings.push('Vault encryption not yet implemented');
+      if (!process.env.VAULT_ADDR) {
+        errors.push('VAULT_ADDR is required for Vault encryption');
+      }
+      if (!process.env.VAULT_TOKEN && !process.env.VAULT_ROOT_TOKEN) {
+        errors.push('VAULT_TOKEN or VAULT_ROOT_TOKEN is required for Vault encryption');
+      }
+      if (!process.env.VAULT_TRANSIT_KEY) {
+        warnings.push('VAULT_TRANSIT_KEY not set; using default secure-gate-key');
+      }
       break;
     
     default:

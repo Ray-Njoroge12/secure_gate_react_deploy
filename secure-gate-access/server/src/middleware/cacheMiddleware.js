@@ -5,7 +5,7 @@
  */
 
 import redis from 'redis';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 class CacheMiddleware {
   constructor(options = {}) {
@@ -27,7 +27,9 @@ class CacheMiddleware {
   async init() {
     // Skip Redis initialization if disabled via environment variable
     if (process.env.ENABLE_REDIS_CACHE === 'false' || process.env.NODE_ENV === 'test') {
-      console.log('Redis cache disabled (ENABLE_REDIS_CACHE=false or NODE_ENV=test)');
+      if (process.env.NODE_ENV !== 'test') {
+        console.log('Redis cache disabled (ENABLE_REDIS_CACHE=false or NODE_ENV=test)');
+      }
       this.isConnected = false;
       return;
     }

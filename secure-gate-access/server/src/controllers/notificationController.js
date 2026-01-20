@@ -19,11 +19,22 @@ import {
   sendVisitorInviteEmail,
   sendVisitorInviteSms
 } from '../services/notificationService.js';
+import pushNotificationService from '../services/pushNotificationService.js';
+import { renderPushTemplate } from '../templates/push-templates.js';
 
 const dbManager = { query: (text, params) => db.query(text, params) };
 // Alias for compatibility
 const sendEmail = sendInviteEmail;
 const sendSMS = sendSms;
+
+const extractMessageId = (result) => (
+  result?.messageId
+  || result?.message_id
+  || result?.id
+  || result?.response?.messageId
+  || result?.response?.id
+  || null
+);
 
 /**
  * Send notification using template system
@@ -57,7 +68,7 @@ export async function sendTemplatedNotification(options) {
   try {
     // 1. Get recipient contact info
     const recipient = await getRecipientContactInfo(recipientType, recipientId);
-    
+
     if (!recipient) {
       throw new Error(`Recipient not found: ${recipientType} ${recipientId}`);
     }
@@ -72,7 +83,7 @@ export async function sendTemplatedNotification(options) {
 
     // 2. Check notification preferences
     const preferences = await getNotificationPreferences(recipientType, recipientId);
-    
+
     if (!preferences.isEnabled(channel, templateName)) {
       logger.info('Notification skipped due to preferences', {
         recipientType,
@@ -80,7 +91,7 @@ export async function sendTemplatedNotification(options) {
         channel,
         templateName
       });
-      
+
       return {
         success: false,
         reason: 'preferences',
@@ -91,15 +102,22 @@ export async function sendTemplatedNotification(options) {
     // Use recipient's preferred language
     const preferredLanguage = preferences.language || language;
 
-    // 3. Load template from database
-    const template = await loadTemplate(templateName, channel, preferredLanguage);
-    
-    if (!template) {
-      throw new Error(`Template not found: ${templateName} (${channel}, ${preferredLanguage})`);
-    }
+    let template = null;
+    let rendered = null;
 
-    // 4. Render template with variables
-    const rendered = renderTemplate(template, variables);
+    if (channel === 'push') {
+      rendered = renderPushTemplate(templateName, variables);
+    } else {
+      // 3. Load template from database
+      template = await loadTemplate(templateName, channel, preferredLanguage);
+
+      if (!template) {
+        throw new Error(`Template not found: ${templateName} (${channel}, ${preferredLanguage})`);
+      }
+
+      // 4. Render template with variables
+      rendered = renderTemplate(template, variables);
+    }
 
     // 5. Create notification log entry (pending)
     const logEntry = await createNotificationLog({
@@ -110,8 +128,8 @@ export async function sendTemplatedNotification(options) {
       notificationType: templateName,
       channel,
       language: preferredLanguage,
-      subject: rendered.subject,
-      body: rendered.body,
+      subject: rendered.subject || rendered.title || null,
+      body: rendered.body || rendered.message || null,
       templateName,
       templateVariables: variables,
       visitorId,
@@ -138,6 +156,27 @@ export async function sendTemplatedNotification(options) {
           rendered.body
         );
         providerInfo.provider = process.env.SMS_PROVIDER || 'africastalking';
+      } else if (channel === 'push') {
+        if (recipientType === 'visitor') {
+          throw new Error('Push notifications are not supported for visitors');
+        }
+
+        const pushPayload = {
+          title: rendered.title || rendered.subject || 'Secure Gate update',
+          body: rendered.body || rendered.message || 'You have a new notification.'
+        };
+
+        sendResult = await pushNotificationService.sendPushNotification(
+          recipientId,
+          pushPayload.title,
+          pushPayload.body,
+          {
+            ...variables,
+            templateName,
+            channel: 'push'
+          }
+        );
+        providerInfo.provider = 'webpush';
       }
 
       // 7. Update notification log with result
@@ -149,6 +188,20 @@ export async function sendTemplatedNotification(options) {
         provider: providerInfo.provider,
         providerMessageId: sendResult.messageId || null,
         providerResponse: sendResult.response || null
+      });
+
+      await recordOutboundNotificationTracking({
+        channel,
+        recipient: channel === 'email' ? recipient.email : recipient.phone,
+        messageId: sendResult.messageId,
+        status: sendResult.success ? 'sent' : 'failed',
+        provider: providerInfo.provider,
+        metadata: {
+          templateName,
+          recipientType,
+          recipientId,
+          logId: logEntry.id
+        }
       });
 
       logger.info('Notification sent successfully', {
@@ -199,7 +252,7 @@ export async function sendTemplatedNotification(options) {
 async function getRecipientContactInfo(recipientType, recipientId) {
   try {
     let query;
-    
+
     if (recipientType === 'visitor') {
       query = 'SELECT id, name, email, phone FROM visitors WHERE id = $1';
     } else if (['resident', 'guard', 'admin'].includes(recipientType)) {
@@ -209,7 +262,7 @@ async function getRecipientContactInfo(recipientType, recipientId) {
     }
 
     const result = await dbManager.query(query, [recipientId]);
-    
+
     return result.rows[0] || null;
   } catch (error) {
     logger.error('Failed to get recipient contact info', { error: error.message });
@@ -229,25 +282,27 @@ async function getNotificationPreferences(recipientType, recipientId) {
     `;
 
     const result = await dbManager.query(query, [recipientId]);
-    
+
     if (result.rows.length === 0) {
       // Return default preferences
       return {
         emailEnabled: true,
         smsEnabled: true,
+        pushEnabled: true,
         language: 'en',
         isEnabled: (channel, notificationType) => true // All enabled by default
       };
     }
 
     const prefs = result.rows[0];
-    
+
     return {
       ...prefs,
       isEnabled: (channel, notificationType) => {
         // Check channel preference
         if (channel === 'email' && !prefs.email_enabled) return false;
         if (channel === 'sms' && !prefs.sms_enabled) return false;
+        if (channel === 'push' && prefs.push_enabled === false) return false;
 
         // Check notification type preference
         const typeMap = {
@@ -271,6 +326,7 @@ async function getNotificationPreferences(recipientType, recipientId) {
     return {
       emailEnabled: true,
       smsEnabled: true,
+      pushEnabled: true,
       language: 'en',
       isEnabled: () => true
     };
@@ -293,7 +349,7 @@ async function loadTemplate(templateName, templateType, language) {
     `;
 
     const result = await dbManager.query(query, [templateName, templateType, language]);
-    
+
     if (result.rows.length === 0) {
       // Fallback to English if requested language not found
       if (language !== 'en') {
@@ -321,7 +377,7 @@ function renderTemplate(template, variables) {
   for (const [key, value] of Object.entries(variables)) {
     const placeholder = `{{${key}}}`;
     const stringValue = value !== null && value !== undefined ? String(value) : '';
-    
+
     subject = subject.replace(new RegExp(placeholder, 'g'), stringValue);
     body = body.replace(new RegExp(placeholder, 'g'), stringValue);
     if (htmlBody) {
@@ -368,7 +424,7 @@ async function createNotificationLog(data) {
     ];
 
     const result = await dbManager.query(query, values);
-    
+
     return { id: result.rows[0].id };
   } catch (error) {
     logger.error('Failed to create notification log', { error: error.message });
@@ -406,6 +462,40 @@ async function updateNotificationLog(logId, updates) {
   }
 }
 
+async function recordOutboundNotificationTracking({ channel, recipient, messageId, status, provider, metadata = {} }) {
+  if (!messageId) {
+    return;
+  }
+
+  try {
+    await dbManager.query(
+      `INSERT INTO notifications (
+        type,
+        recipient,
+        message_id,
+        status,
+        delivery_status,
+        delivery_provider,
+        delivery_metadata,
+        created_at,
+        updated_at
+      )
+      SELECT $1, $2, $3, $4, $4, $5, $6::jsonb, NOW(), NOW()
+      WHERE NOT EXISTS (SELECT 1 FROM notifications WHERE message_id = $3)`,
+      [
+        channel,
+        recipient,
+        messageId,
+        status,
+        provider,
+        JSON.stringify(metadata)
+      ]
+    );
+  } catch (error) {
+    logger.warn('Failed to record notification tracking data', { error: error.message });
+  }
+}
+
 /**
  * Send email notification
  */
@@ -413,11 +503,20 @@ async function sendEmailNotification(to, subject, html, text) {
   // Reuse existing email service
   try {
     const result = await sendEmail(to, subject, html, text);
-    
+    const messageId = extractMessageId(result);
+
+    // Result is now an object { success, messageId, error }
+    if (result && result.success) {
+      return {
+        success: true,
+        messageId,
+        response: result
+      };
+    }
+
     return {
-      success: result,
-      messageId: null, // TODO: Extract from sendEmail response
-      response: null
+      success: false,
+      error: result?.error || 'Unknown email error'
     };
   } catch (error) {
     return {
@@ -434,11 +533,20 @@ async function sendSMSNotification(to, message) {
   // Reuse existing SMS service
   try {
     const result = await sendSMS(to, message);
-    
+    const messageId = extractMessageId(result);
+
+    // Result is now an object { success, messageId, error }
+    if (result && result.success) {
+      return {
+        success: true,
+        messageId,
+        response: result
+      };
+    }
+
     return {
-      success: result,
-      messageId: null, // TODO: Extract from sendSMS response
-      response: null
+      success: false,
+      error: result?.error || 'Unknown SMS error'
     };
   } catch (error) {
     return {
@@ -472,9 +580,9 @@ export async function queueNotification(notificationData) {
     ];
 
     const result = await dbManager.query(query, values);
-    
+
     logger.info('Notification queued', { queueId: result.rows[0].id });
-    
+
     return { queueId: result.rows[0].id };
   } catch (error) {
     logger.error('Failed to queue notification', { error: error.message });
@@ -515,7 +623,7 @@ export async function getNotificationLogs(req, res) {
     });
   } catch (error) {
     logger.error('Failed to get notification logs', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch notification logs'
@@ -584,7 +692,7 @@ export async function updateNotificationPreferences(req, res) {
     });
   } catch (error) {
     logger.error('Failed to update notification preferences', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to update preferences'
