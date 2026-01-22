@@ -3,8 +3,8 @@ import logger from 'utils/logger';
 import { Button, SearchFilter, SearchResults, Pagination, ResponsiveTable, Card, PageHeader } from "../../components/ui";
 import { RefreshCw, Download, Filter, Clock } from "lucide-react";
 import { useSearchData } from "../../hooks/useSearch";
-import AppShell from "../../layouts/AppShell";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
+// import AppShell from "../../layouts/AppShell";
+// import { useCurrentRole } from "../../hooks/useCurrentRole";
 
 function mask(value) {
   if (!value) return "";
@@ -268,10 +268,10 @@ export default function VisitorHistory() {
     </div>
   );
 
-  const role = useCurrentRole();
+//   const role = useCurrentRole();
 
   return (
-    <AppShell role={role}>
+    // <AppShell role={role}>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         <PageHeader
           title="Visitor History"
@@ -412,7 +412,7 @@ export default function VisitorHistory() {
           )}
         </div>
       </div>
-    </AppShell>
+    // </AppShell>
   );
 }
 

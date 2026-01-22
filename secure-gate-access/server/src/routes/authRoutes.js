@@ -527,6 +527,7 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
       throw new AppError(authError.message, 401, 'INVALID_CREDENTIALS');
     }
     // Re-throw unexpected errors to be caught by outer catch block
+    console.error('❌ Login Unexpected Error:', authError);
     throw authError;
   }
 

@@ -18,8 +18,8 @@ import {
   SearchBar
 } from '../../components/ui';
 import { useTheme } from '../../contexts/ThemeContext';
-import AppShell from '../../layouts/AppShell';
-import { useCurrentRole } from '../../hooks/useCurrentRole';
+// import AppShell from '../../layouts/AppShell';
+// import { useCurrentRole } from '../../hooks/useCurrentRole';
 import { 
   Star, 
   Plus, 
@@ -52,7 +52,7 @@ const RELATIONSHIP_TYPES = [
  */
 const FavoriteVisitors = () => {
   const { isDark } = useTheme();
-  const role = useCurrentRole();
+  // const role = useCurrentRole();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -230,7 +230,7 @@ const FavoriteVisitors = () => {
 
 
   return (
-    <AppShell role={role}>
+    // <AppShell role={role}>
       <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -612,7 +612,7 @@ const FavoriteVisitors = () => {
       </>
       )}
       </div>
-    </AppShell>
+    // </AppShell>
   );
 };
 

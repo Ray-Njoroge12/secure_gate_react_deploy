@@ -750,7 +750,7 @@ Redirecting to login in 10 seconds...`, {
             placeholder="Enter username"
             value={formData.username}
             onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
           {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
@@ -766,7 +766,7 @@ Redirecting to login in 10 seconds...`, {
             placeholder="Enter email address"
             value={formData.email}
             onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
           {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
@@ -784,7 +784,7 @@ Redirecting to login in 10 seconds...`, {
             id="estateId"
             value={formData.estateId}
             onChange={(e) => setFormData(prev => ({ ...prev, estateId: e.target.value }))}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${estateError ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300'
+            className={`w-full px-3 py-2 border rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${estateError ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300'
               }`}
             disabled={estatesLoading}
           >
@@ -827,7 +827,7 @@ Redirecting to login in 10 seconds...`, {
               placeholder="Enter house number"
               value={formData.houseNumber}
               onChange={(e) => setFormData(prev => ({ ...prev, houseNumber: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
             {errors.houseNumber && <p className="text-red-600 text-sm mt-1">{errors.houseNumber}</p>}
@@ -844,7 +844,7 @@ Redirecting to login in 10 seconds...`, {
             placeholder="Enter phone number"
             value={formData.phone}
             onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
           {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
@@ -861,7 +861,7 @@ Redirecting to login in 10 seconds...`, {
               placeholder="Enter password"
               value={formData.password}
               onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
             <button

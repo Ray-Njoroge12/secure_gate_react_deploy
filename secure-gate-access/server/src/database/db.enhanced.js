@@ -142,7 +142,15 @@ class DatabaseManager extends EventEmitter {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
+        // Sanitize config for logging (hide sensitive data)
+        const sanitizedConfig = {
+          ...this.config,
+          password: this.config.password ? '****' : undefined,
+          ssl: this.config.ssl ? 'enabled' : 'disabled'
+        };
         logDb(`🔄 Database connection attempt ${attempt}/${maxAttempts}...`);
+        logDb('📊 Connection Config:', JSON.stringify(sanitizedConfig, null, 2));
+        
         await this.connect();
 
         // Only try to ensure indexes if connection succeeded
@@ -171,8 +179,11 @@ class DatabaseManager extends EventEmitter {
           console.error('💡 Connection refused - database server not accepting connections');
         } else if (error.message.includes('ENOTFOUND')) {
           console.error('💡 Host not found - check DATABASE_URL hostname');
-        } else if (error.message.includes('authentication')) {
-          console.error('💡 Authentication failed - check DATABASE_URL credentials');
+        } else if (error.message.includes('authentication') || error.message.includes('password authentication failed')) {
+          console.error('💡 Authentication failed - check DATABASE_URL credentials.');
+          console.error(`   User: ${this.config.user}`);
+          console.error(`   Database: ${this.config.database}`);
+          console.error(`   Host: ${this.config.host}`);
         }
 
         if (attempt < maxAttempts) {

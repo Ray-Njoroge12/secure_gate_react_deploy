@@ -4,8 +4,8 @@ import { bulkInvite } from "../../services/visitorService";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
 import { Button, Input, Card, PageHeader } from "../../components/ui";
-import AppShell from "../../layouts/AppShell";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
+// import AppShell from "../../layouts/AppShell";
+// import { useCurrentRole } from "../../hooks/useCurrentRole";
 import phoneValidator from "../../utils/phoneValidator";
 import { 
   Users, 
@@ -33,7 +33,7 @@ const BulkInvite = () => {
   const fileInputRef = React.createRef(null);
   const { handleError, handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
-  const role = useCurrentRole();
+  // const role = useCurrentRole();
   
   const [formData, setFormData] = useState({
     eventName: "",
@@ -313,7 +313,7 @@ const BulkInvite = () => {
   };
 
   return (
-    <AppShell role={role}>
+    // <AppShell role={role}>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Bulk Invite"
@@ -546,7 +546,7 @@ const BulkInvite = () => {
       {/* Error and Success messages are now handled by ErrorContext */}
       </div>
       </div>
-    </AppShell>
+    // </AppShell>
   );
 };
 

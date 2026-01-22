@@ -26,7 +26,7 @@ class CacheMiddleware {
 
   async init() {
     // Skip Redis initialization if disabled via environment variable
-    if (process.env.ENABLE_REDIS_CACHE === 'false' || process.env.NODE_ENV === 'test') {
+    if (process.env.CACHE_ENABLED === 'false' || process.env.ENABLE_REDIS_CACHE === 'false' || process.env.NODE_ENV === 'test') {
       if (process.env.NODE_ENV !== 'test') {
         console.log('Redis cache disabled (ENABLE_REDIS_CACHE=false or NODE_ENV=test)');
       }

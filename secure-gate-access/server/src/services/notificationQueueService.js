@@ -31,7 +31,8 @@ class NotificationQueueService {
       sms: { sent: 0, failed: 0, retried: 0, pending: 0 }
     };
 
-    if ((process.env.NODE_ENV || '').toLowerCase() === 'test') {
+    if ((process.env.NODE_ENV || '').toLowerCase() === 'test' || process.env.CACHE_ENABLED !== 'true') {
+      loggingService.logInfo('Notification queues disabled (CACHE_ENABLED != true)');
       return;
     }
 

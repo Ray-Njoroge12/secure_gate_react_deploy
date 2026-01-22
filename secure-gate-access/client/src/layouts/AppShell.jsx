@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { BottomNav, FAB } from '../components/ui';
 import { NavigationProvider } from '../contexts/NavigationContext';
+import { useAuth } from '../contexts/AuthContext';
 import { navigateToLogin } from '../utils/authNavigation';
 
 export default function AppShell({ 
@@ -15,15 +16,17 @@ export default function AppShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const appShellRef = useRef(null);
 
+  // Use AuthContext for consistent logout state management
+  const { logout } = useAuth();
+
   const handleLogout = onLogout || (async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      await logout();
     } catch (error) {
       console.error('Logout error', error);
     } finally {
+      // Navigation is handled by AuthContext or calling component, 
+      // but ensure we go to login if not handled
       navigateToLogin();
     }
   });

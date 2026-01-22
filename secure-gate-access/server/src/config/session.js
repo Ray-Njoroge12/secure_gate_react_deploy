@@ -18,8 +18,8 @@ dotenv.config();
 let redisClient = null;
 let sessionStore = null;
 
-// Try to connect to Redis if configured (skip in test mode)
-if ((process.env.REDIS_URL || process.env.REDIS_HOST) && process.env.NODE_ENV !== 'test') {
+// Try to connect to Redis if configured and enabled (skip in test mode)
+if (process.env.CACHE_ENABLED === 'true' && (process.env.REDIS_URL || process.env.REDIS_HOST) && process.env.NODE_ENV !== 'test') {
   try {
     redisClient = createClient({
       url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT || 6379}`,

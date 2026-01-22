@@ -293,7 +293,7 @@ class MonitoringDashboardService extends EventEmitter {
   }
 
   async collectNotificationMetrics() {
-    this.metrics.notifications = notificationMetricsService.getWindowMetrics(this.monitoringWindow);
+    this.metrics.notifications = await notificationMetricsService.getWindowMetrics(this.monitoringWindow);
   }
 
   /**
