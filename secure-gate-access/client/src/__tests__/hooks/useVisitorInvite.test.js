@@ -1,11 +1,16 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useVisitorInvite } from './useVisitorInvite';
-
-global.fetch = jest.fn();
+import { useVisitorInvite } from '../../hooks/useVisitorInvite';
 
 describe('useVisitorInvite', () => {
+    let mockFetch;
+
     beforeEach(() => {
-        fetch.mockClear();
+        mockFetch = jest.fn();
+        global.fetch = mockFetch;
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
     });
 
     it('should fetch visitor details on mount', async () => {
@@ -16,7 +21,7 @@ describe('useVisitorInvite', () => {
             status: 'pending_approval'
         };
 
-        fetch.mockImplementation((url) => {
+        mockFetch.mockImplementation((url) => {
             if (url.includes('/api/public/visitors/by-token/')) {
                 return Promise.resolve({
                     ok: true,
@@ -47,7 +52,7 @@ describe('useVisitorInvite', () => {
     });
 
     it('should handle invalid token error', async () => {
-        fetch.mockImplementation(() => Promise.resolve({
+        mockFetch.mockImplementation(() => Promise.resolve({
             ok: false,
             status: 404
         }));

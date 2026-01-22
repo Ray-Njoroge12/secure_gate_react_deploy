@@ -3,7 +3,7 @@ import logger from 'utils/logger';
 import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 export const AuthContext = createContext();
 
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
         method: 'GET',
         credentials: 'include' // Include cookies
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         // Response format: { success: true, data: { user: {...} } }
@@ -87,11 +87,11 @@ export const AuthProvider = ({ children }) => {
 
     // Extract user from response (tokens are now in httpOnly cookies)
     const userData = data.data?.user || data.user;
-    
+
     if (!userData) {
       throw new Error("Invalid response format from server");
     }
-    
+
     setUser(userData);
     authStateMachine.transition('AUTHENTICATED');
 

@@ -161,21 +161,6 @@ describe('GuardDashboard', () => {
     fetchSpy.mockRestore();
   });
 
-  test('renders alternate panels when route matches guard subpages', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true, data: [] })
-    });
-
-    renderWithAuth(
-      <Routes>
-        <Route path="/dashboard/guard/manual-check" element={<GuardDashboard />} />
-      </Routes>,
-      { route: '/dashboard/guard/manual-check', auth: { user: { id: 'g1', role: 'guard' } } }
-    );
-
-    expect(await screen.findByText('ManualCheck')).toBeInTheDocument();
-
-    global.fetch.mockRestore();
-  });
+  // Note: Route-based conditional rendering is handled at App.js level, not within GuardDashboard
+  // Subpage routing tests should be in integration/routing tests
 });

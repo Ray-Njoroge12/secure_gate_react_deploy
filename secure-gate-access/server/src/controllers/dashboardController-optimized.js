@@ -136,7 +136,7 @@ async function getGuardStats(estateId) {
   // Expected visitors today - filtered by estate
   const expectedResult = await dbManager.query(
     `SELECT COUNT(*) as total FROM visitors 
-     WHERE DATE(expected_arrival) = CURRENT_DATE 
+     WHERE DATE(date_of_visit) = CURRENT_DATE 
      AND status IN ('PENDING', 'VERIFIED')
      AND estate_id = $1`,
     [estateId]
@@ -213,35 +213,43 @@ async function getResidentStats(userEmail, estateId) {
   );
 
   // Recent visitors - filtered by estate
-  const recentResult = await dbManager.query(
-    `SELECT id, name, phone, purpose, status, expected_arrival, created_at 
-     FROM visitors 
-     WHERE resident_id = $1 AND estate_id = $2
-     ORDER BY created_at DESC 
-     LIMIT 5`,
-    [residentId, estateId]
-  );
+  console.log('DEBUG: Querying recent visitors for resident:', residentId, 'estate:', estateId);
+  try {
+    const recentResult = await dbManager.query(
+      `SELECT id, name, phone, purpose, status, date_of_visit, created_at 
+       FROM visitors 
+       WHERE resident_id = $1 AND estate_id = $2
+       ORDER BY created_at DESC 
+       LIMIT 5`,
+      [residentId, estateId]
+    );
+    console.log('DEBUG: Recent visitors query success, rows:', recentResult.rowCount);
 
-  // This month's visitors - filtered by estate
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+    // This month's visitors - filtered by estate
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
 
-  const monthlyResult = await dbManager.query(
-    `SELECT COUNT(*) as total FROM visitors 
+    const monthlyResult = await dbManager.query(
+      `SELECT COUNT(*) as total FROM visitors 
      WHERE resident_id = $1 AND created_at >= $2 AND estate_id = $3`,
-    [residentId, monthStart, estateId]
-  );
+      [residentId, monthStart, estateId]
+    );
+    console.log('DEBUG: Monthly visitors query success');
 
-  return {
-    visitors: {
-      total: parseInt(totalResult.rows[0]?.total || 0),
-      pending: parseInt(pendingResult.rows[0]?.total || 0),
-      active: parseInt(activeResult.rows[0]?.total || 0),
-      thisMonth: parseInt(monthlyResult.rows[0]?.total || 0)
-    },
-    recent: recentResult.rows
-  };
+    return {
+      visitors: {
+        total: parseInt(totalResult.rows[0]?.total || 0),
+        pending: parseInt(pendingResult.rows[0]?.total || 0),
+        active: parseInt(activeResult.rows[0]?.total || 0),
+        thisMonth: parseInt(monthlyResult.rows[0]?.total || 0)
+      },
+      recent: recentResult.rows
+    };
+  } catch (err) {
+    console.error('>>> DASHBOARD RESIDENT STATS ERROR <<<', err);
+    throw err;
+  }
 }
 
 export default {
