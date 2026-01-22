@@ -150,7 +150,7 @@ jest.mock('../../components/admin/AnalyticsDashboard', () => () => <div />);
 
 jest.mock('../../components/settings/PrivacyDashboard', () => () => <div />);
 
-jest.mock('../../pages/resident/AddVisitor', () => () => <div />);
+// AddVisitor page doesn't exist - removed from mocks
 jest.mock('../../pages/resident/BulkInvite', () => () => <div />);
 jest.mock('../../pages/resident/VisitorHistory', () => () => <div />);
 jest.mock('../../pages/resident/GeneratePass', () => () => <div />);
@@ -254,7 +254,8 @@ describe('Accessibility (jest-axe)', () => {
       { route: '/dashboard/resident', auth: { user: { id: 'u1', role: 'resident' } } }
     );
 
-    await screen.findAllByText(/resident dashboard/i);
+    // Wait for the dashboard to render - check for Quick Invite CTA or Welcome message
+    await screen.findByText(/quick invite/i);
 
     const results = await axe(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(results).toHaveNoViolations();
@@ -275,7 +276,8 @@ describe('Accessibility (jest-axe)', () => {
       { route: '/dashboard/guard', auth: { user: { id: 'g1', role: 'guard' } } }
     );
 
-    await screen.findAllByText(/no active visitors right now/i);
+    // Wait for the dashboard to render - check for Guard Station header or empty state text
+    await screen.findByText(/guard station/i);
 
     const results = await axe(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(results).toHaveNoViolations();
@@ -294,7 +296,8 @@ describe('Accessibility (jest-axe)', () => {
       { route: '/dashboard/admin', auth: { user: { id: 'a1', role: 'admin' } } }
     );
 
-    await screen.findAllByText(/audit logs/i);
+    // Wait for the dashboard to render - check for Overview tab or Health Metrics section
+    await screen.findByText(/health metrics/i);
 
     const results = await axe(container, { rules: { 'color-contrast': { enabled: false } } });
     expect(results).toHaveNoViolations();

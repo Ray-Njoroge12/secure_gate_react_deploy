@@ -111,7 +111,10 @@ const DashboardHome = () => {
 
       if (response.ok) {
         const data = await response.json();
-        const visitors = data.data || [];
+        // Handle response format: { data: { visitors: [] } } or { data: [] }
+        const visitors = Array.isArray(data.data)
+          ? data.data
+          : (data.data?.visitors || []);
 
         // Process upcoming invites (visitors with future dates)
         const today = new Date();
@@ -147,6 +150,8 @@ const DashboardHome = () => {
       // Fallback to empty data
       setUpcomingInvites([]);
       setRecentVisitors([]);
+    } finally {
+      stopLoading();
     }
   };
 

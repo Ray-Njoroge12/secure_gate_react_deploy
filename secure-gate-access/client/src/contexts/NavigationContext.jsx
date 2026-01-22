@@ -88,6 +88,7 @@ function navigationReducer(state, action) {
     case NAVIGATION_ACTIONS.SET_CURRENT_ROUTE:
       return {
         ...state,
+        breadcrumbs: state.breadcrumbs || [], // Defensive preservation
         previousRoute: state.currentRoute,
         currentRoute: action.payload
       };
@@ -122,6 +123,7 @@ const NavigationContext = createContext();
 export function NavigationProvider({ children, userRole = null }) {
   const [state, dispatch] = useReducer(navigationReducer, {
     ...initialState,
+    breadcrumbs: initialState.breadcrumbs || [],
     userRole
   });
 
@@ -259,7 +261,7 @@ export function NavigationProvider({ children, userRole = null }) {
 
   // Get navigation analytics
   const getNavigationAnalytics = useCallback(() => {
-    const history = state.navigationHistory;
+    const history = state.navigationHistory || [];
     const uniqueRoutes = [...new Set(history.map(route => route.path))];
 
     return {
@@ -272,11 +274,11 @@ export function NavigationProvider({ children, userRole = null }) {
       averageSessionTime: history.length > 1
         ? (history[history.length - 1].timestamp - history[0].timestamp) / history.length
         : 0,
-      currentDepth: state.breadcrumbs.length,
+      currentDepth: state.breadcrumbs?.length || 0,
       canGoBack: history.length > 1,
       canGoForward: false // Browser history forward is not easily trackable
     };
-  }, [state.navigationHistory, state.breadcrumbs.length]);
+  }, [state.navigationHistory, state.breadcrumbs]);
 
   // Get breadcrumb path for a specific route
   const getBreadcrumbPath = useCallback((path) => {

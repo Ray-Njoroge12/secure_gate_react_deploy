@@ -35,7 +35,7 @@ const mockUsers = {
   }
 };
 
-// Mock visitors data
+// Mock visitors data  
 const mockVisitors = [
   {
     id: 1,
@@ -131,7 +131,7 @@ export const visitorHandlers = [
     );
   }),
 
-  // Create visitor
+  //Create visitor - Return visitor directly, not wrapped in object
   rest.post(`${API_URL}/visitors`, (req, res, ctx) => {
     const visitorData = req.body;
 
@@ -145,14 +145,14 @@ export const visitorHandlers = [
 
     return res(
       ctx.status(201),
-      ctx.json({ visitor: newVisitor })
+      ctx.json(newVisitor)
     );
   }),
 
   // Get visitor by ID
   rest.get(`${API_URL}/visitors/:id`, (req, res, ctx) => {
     const visitor = mockVisitors.find(v => v.id === parseInt(req.params.id));
-    
+
     if (!visitor) {
       return res(
         ctx.status(404),
@@ -359,14 +359,6 @@ export const adminHandlers = [
         page,
         limit
       })
-    );
-  }),
-
-  // Get current user
-  rest.get(`${API_URL}/auth/me`, (req, res, ctx) => {
-    return res(
-      ctx.status(200),
-      ctx.json({ user: mockUsers.resident })
     );
   })
 ];
