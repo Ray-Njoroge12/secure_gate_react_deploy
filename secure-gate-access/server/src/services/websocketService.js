@@ -45,8 +45,8 @@ class WebSocketService {
   async initialize(server) {
     let adapter;
 
-    // Try to setup Redis adapter if configured
-    if (process.env.REDIS_URL) {
+    // Try to setup Redis adapter if configured and enabled
+    if (process.env.CACHE_ENABLED === 'true' && process.env.REDIS_URL) {
       try {
         const pubClient = createClient({ url: process.env.REDIS_URL });
         const subClient = pubClient.duplicate();

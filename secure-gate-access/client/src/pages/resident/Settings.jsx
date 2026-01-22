@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader, ThemeRadioGroup, ErrorDisplay, SuccessDisplay, Button } from "../../components/ui";
-import AppShell from "../../layouts/AppShell";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
+// import AppShell from "../../layouts/AppShell";
+// import { useCurrentRole } from "../../hooks/useCurrentRole";
 import { useTheme } from "../../contexts/ThemeContext";
 import NotificationSettings from "../../components/settings/NotificationSettings";
 import { Settings as SettingsIcon, Bell, Shield, User, Eye, Users } from 'lucide-react';
@@ -12,7 +12,7 @@ import "../../styles.css";
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, resolvedTheme, isDark } = useTheme();
-  const role = useCurrentRole();
+  // const role = useCurrentRole();
   
   // UI State
   const [error, setError] = useState("");
@@ -123,7 +123,7 @@ export default function Settings() {
   const btnClass = "btn btn-primary w-full md:w-auto"; // Enhanced button class
 
   return (
-    <AppShell role={role}>
+    // <AppShell role={role}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <PageHeader 
         title="Settings"
@@ -308,6 +308,6 @@ export default function Settings() {
         </div>
       </div>
     </div>
-    </AppShell>
+    // </AppShell>
   );
 }

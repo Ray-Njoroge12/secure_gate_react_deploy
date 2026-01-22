@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import { navigateTo } from "../../utils/appNavigation";
 import { PageHeader, Card, Button, EmptyState } from "../../components/ui";
 import { getMyVisitors, createPass } from "../../services/passService";
-import AppShell from "../../layouts/AppShell";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
+// import AppShell from "../../layouts/AppShell"; // Removed to fix duplicate sidebar
+// import { useCurrentRole } from "../../hooks/useCurrentRole"; // Removed - handled by App.js
 import logger from 'utils/logger';
 import { QrCode, RefreshCw, Send, Copy, CheckCircle } from 'lucide-react';
 
@@ -101,10 +101,10 @@ export default function GeneratePass() {
     }
   };
 
-  const role = useCurrentRole();
-
+//   const role = useCurrentRole();
+   
   return (
-    <AppShell role={role}>
+    // <AppShell role={role}> // Hiding AppShell to fix duplicate layout
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
         <PageHeader
           title="Generate Pass"
@@ -287,7 +287,7 @@ export default function GeneratePass() {
           )}
         </div>
       </div>
-    </AppShell>
+    // </AppShell>
   );
 }
 
