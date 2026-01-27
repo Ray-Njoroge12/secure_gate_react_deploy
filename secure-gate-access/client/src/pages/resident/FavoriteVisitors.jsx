@@ -7,19 +7,20 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { navigateTo } from '../../utils/appNavigation';
-import { 
-  Card, 
-  Button, 
-  Input, 
-  Modal, 
-  EmptyState, 
-  Loading, 
+import {
+  Card,
+  Button,
+  Input,
+  Modal,
+  EmptyState,
+  Loading,
   Badge,
   SearchBar
 } from '../../components/ui';
 import { useTheme } from '../../contexts/ThemeContext';
-// import AppShell from '../../layouts/AppShell';
-// import { useCurrentRole } from '../../hooks/useCurrentRole';
+import { useToast } from '../../contexts/ToastContext';
+import AppShell from '../../layouts/AppShell';
+import { useCurrentRole } from '../../hooks/useCurrentRole';
 import { 
   Star, 
   Plus, 
@@ -52,7 +53,8 @@ const RELATIONSHIP_TYPES = [
  */
 const FavoriteVisitors = () => {
   const { isDark } = useTheme();
-  // const role = useCurrentRole();
+  const { toast } = useToast();
+  const role = useCurrentRole();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -171,7 +173,7 @@ const FavoriteVisitors = () => {
       fetchFavorites(); // Refresh list
     } catch (err) {
       console.error('Error saving favorite:', err);
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSubmitting(false);
     }
@@ -194,7 +196,7 @@ const FavoriteVisitors = () => {
       fetchFavorites(); // Refresh list
     } catch (err) {
       console.error('Error deleting favorite:', err);
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -230,7 +232,7 @@ const FavoriteVisitors = () => {
 
 
   return (
-    // <AppShell role={role}>
+    <AppShell role={role}>
       <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -612,7 +614,7 @@ const FavoriteVisitors = () => {
       </>
       )}
       </div>
-    // </AppShell>
+    </AppShell>
   );
 };
 
