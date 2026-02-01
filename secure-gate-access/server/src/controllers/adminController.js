@@ -10,9 +10,13 @@ import { PASS_STATUS } from '../constants/statuses.js';
 const getMetrics = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+    if (!['admin', 'super_admin'].includes(req.user.role)) return respondError(res, 403, 'Forbidden');
 
-    const estateId = req.user.estate_id;
+    // Fix: Allow super_admin to view specific estate metrics
+    let estateId = req.user.estate_id;
+    if (req.user.role === 'super_admin' && req.query.siteId) {
+      estateId = req.query.siteId;
+    }
 
     // SECURITY: All queries must filter by estate_id to prevent cross-estate data leakage
     if (!estateId) {
@@ -96,13 +100,17 @@ const getMetrics = async (req, res) => {
 const getAuditLogs = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+    if (!['admin', 'super_admin'].includes(req.user.role)) return respondError(res, 403, 'Forbidden');
 
     const { page = 1, limit = 25, action, user_id, userId, date } = req.query;
     const filterUserId = user_id || userId; // Support both snake_case and camelCase
     const offset = (page - 1) * limit;
 
-    const estateId = req.user.estate_id;
+    // Fix: Allow super_admin to view specific estate logs
+    let estateId = req.user.estate_id;
+    if (req.user.role === 'super_admin' && req.query.siteId) {
+      estateId = req.query.siteId;
+    }
 
     // SECURITY: Filter by estate_id
     if (!estateId) {
@@ -157,9 +165,13 @@ const getAuditLogs = async (req, res) => {
 const getPendingUsers = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+    if (!['admin', 'super_admin'].includes(req.user.role)) return respondError(res, 403, 'Forbidden');
 
-    const estateId = req.user.estate_id;
+    // Fix: Allow super_admin to view specific estate pending users
+    let estateId = req.user.estate_id;
+    if (req.user.role === 'super_admin' && req.query.siteId) {
+      estateId = req.query.siteId;
+    }
 
     // SECURITY: Filter by estate_id to prevent cross-estate access
     if (!estateId) {
@@ -184,11 +196,16 @@ const getPendingUsers = async (req, res) => {
 const updateUserStatus = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+    if (!['admin', 'super_admin'].includes(req.user.role)) return respondError(res, 403, 'Forbidden');
 
     const { id } = req.params;
     const { status } = req.body; // 'active', 'rejected', 'suspended'
-    const estateId = req.user.estate_id;
+
+    // Fix: Allow super_admin to manage users for specific estate
+    let estateId = req.user.estate_id;
+    if (req.user.role === 'super_admin' && req.query.siteId) {
+      estateId = req.query.siteId;
+    }
 
     // SECURITY: Require estate context for defense-in-depth
     if (!estateId) {
@@ -222,4 +239,24 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
-export { getMetrics, getAuditLogs, getPendingUsers, updateUserStatus };
+const getEstateInfo = async (req, res) => {
+  try {
+    if (!req.user || !req.user.estate_id) return respondError(res, 400, 'Estate context missing');
+
+    const result = await dbManager.query(
+      'SELECT id, name, slug, timezone, status FROM estates WHERE id = $1',
+      [req.user.estate_id]
+    );
+
+    if (result.rowCount === 0) {
+      return respondError(res, 404, 'Estate not found');
+    }
+
+    respond(res, { data: camelize(result.rows[0]) });
+  } catch (error) {
+    console.error('Error fetching estate info:', error);
+    respondError(res, 500, 'Failed to fetch estate info');
+  }
+};
+
+export { getMetrics, getAuditLogs, getPendingUsers, updateUserStatus, getEstateInfo };

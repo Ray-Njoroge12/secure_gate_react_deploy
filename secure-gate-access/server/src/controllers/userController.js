@@ -325,11 +325,12 @@ export async function updateProfile(req, res) {
   // We can update email if provided.
 
   await dbManager.query(
-    `UPDATE users SET name = $2, phone = $3, profile_pic = $4, notify_email = $5, notify_sms = $6 
-     WHERE id = $1 AND estate_id = $7`,
+    `UPDATE users SET first_name = $2, last_name = $3, phone = $4, profile_pic = $5, notify_email = $6, notify_sms = $7 
+     WHERE id = $1 AND estate_id = $8`,
     [
       userId,
-      body.name ?? currentUser.name ?? null,
+      body.first_name ?? currentUser.first_name ?? null,
+      body.last_name ?? currentUser.last_name ?? null,
       body.phone ?? currentUser.phone ?? null,
       body.profilePic ?? currentUser.profile_pic ?? null,
       body.notify_email ?? currentUser.notify_email ?? null,
@@ -342,4 +343,65 @@ export async function updateProfile(req, res) {
   const updatedUser = updated?.rows?.[0];
 
   return ResponseUtil.updated(res, sanitizeUser(updatedUser), 'Profile updated successfully');
+}
+
+export async function changePassword(req, res) {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    throw ErrorHelper.validation('Current and new password are required');
+  }
+
+  const userId = req.user.id;
+
+  // 1. Fetch user to get current password hash
+  const result = await dbManager.query('SELECT * FROM users WHERE id = $1 LIMIT 1', [userId]);
+  const user = result?.rows?.[0];
+
+  if (!user) {
+    throw ErrorHelper.notFound('User', userId);
+  }
+
+  // 2. Verify current password
+  let isValidPassword = false;
+  if (typeof user.password_hash === 'string' && user.password_hash.startsWith('$2')) {
+    const bcrypt = await import('bcryptjs');
+    const compareFn = bcrypt?.default?.compare || bcrypt?.compare;
+    isValidPassword = await compareFn(currentPassword, user.password_hash);
+  } else {
+    isValidPassword = await passwordService.verifyPassword(currentPassword, user.password_hash);
+  }
+
+  if (!isValidPassword) {
+    // Audit log failed attempt?
+    auditLogger.logSecurityEvent('user.password_change.failed', { reason: 'invalid_current_password' }, { userId });
+    return errorResponse(res, 'Invalid current password', 'INVALID_CREDENTIALS', 401, null, req);
+  }
+
+  // 3. Validate new password strength
+  const strengthResult = passwordService.checkPasswordStrength(newPassword);
+  if (strengthResult?.strength && strengthResult.strength !== 'strong') {
+    throw ErrorHelper.invalidFormat('newPassword', strengthResult.message || 'Password is too weak', {
+      strength: strengthResult.strength
+    });
+  }
+
+  // 4. Hash new password
+  const newPasswordHash = await passwordService.hashPassword(newPassword);
+
+  // 5. Update database
+  await dbManager.query(
+    'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+    [newPasswordHash, userId]
+  );
+
+  // 6. Security logging
+  auditLogger.logSecurityEvent('user.password_change.success', {}, { userId });
+  loggingService.info('User changed password successfully', { userId });
+
+  // 7. Revoke all other sessions/tokens? 
+  // Optional but good practice. For now, we'll keep it simple as per request, 
+  // but let's at least mention it or maybe revoke refresh tokens if we want strict security.
+  // For this 'fresh' user context, simple update is likely the goal.
+
+  return successResponse(res, { success: true }, 'Password changed successfully');
 }

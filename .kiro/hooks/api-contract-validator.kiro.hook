@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "API Contract Validator",
+  "description": "Monitors API handler and client modifications to identify endpoint changes, validate contract consistency, check for affected consumers, and ensure proper testing coverage. Flags breaking changes and suggests backward-compatible alternatives.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "secure-gate-access/server/src/routes/*.js",
+      "secure-gate-access/server/src/controllers/*.js",
+      "secure-gate-access/client/src/services/*.js",
+      "secure-gate-access/client/src/hooks/*.js"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "An API-related file has been modified. Please perform the following API contract validation:\n\n1. **Identify Modified Endpoints**: Analyze the changed file to identify:\n   - New, modified, or removed API endpoints (method + path)\n   - Changes to request payload structure, validation rules, or required fields\n   - Changes to response format, status codes, or error messages\n   - Authentication/authorization requirement changes\n\n2. **Find Affected Consumers**: Search for corresponding consumers:\n   - If backend route/controller changed: Find frontend API client calls\n   - If frontend service changed: Find React components using those services\n   - Check for any hardcoded endpoint URLs or payload structures\n   - Identify shared types or interfaces that might be affected\n\n3. **Validate Contract Consistency**: Ensure:\n   - Request validation schemas match frontend expectations\n   - Response formats follow the standardized structure (success/error format)\n   - Status codes align with documented API patterns (200/201/400/401/403/404/500)\n   - Error message formats are consistent with error handling conventions\n\n4. **Check Test Coverage**: Verify:\n   - Backend: Supertest integration tests exist for modified endpoints\n   - Frontend: API client mocking and integration tests cover the changes\n   - Contract tests validate request/response schemas\n   - Error handling tests cover new error scenarios\n\n5. **Breaking Change Analysis**: \n   - Flag any breaking changes (removed fields, changed types, new required fields)\n   - Suggest backward-compatible alternatives (versioning, optional fields, deprecation)\n   - Recommend migration strategies for unavoidable breaking changes\n\n6. **Generate Action Items**: Create specific tasks for:\n   - Updating affected frontend/backend code\n   - Adding missing tests\n   - Updating API documentation\n   - Implementing backward compatibility measures\n\nPlease provide a detailed analysis with specific file references and actionable recommendations."
+  }
+}

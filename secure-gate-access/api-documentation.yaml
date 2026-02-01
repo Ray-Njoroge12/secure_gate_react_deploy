@@ -2,16 +2,33 @@ openapi: 3.0.3
 info:
   title: Secure Gate Access API
   description: |
-    Comprehensive API for visitor management system with role-based access control.
+    Comprehensive API for visitor management system with role-based access control and enhanced user functionality refinements.
     
     ## Authentication
     This API uses JWT Bearer tokens for authentication. Include the token in the Authorization header:
     `Authorization: Bearer <your_jwt_token>`
     
-    ## Roles
-    - **resident**: Can create visitors and manage their invitations
-    - **guard**: Can check visitors in/out and view active visitors  
-    - **admin**: Full system access including metrics and audit logs
+    ## Enhanced Features (v3.0)
+    - **Performance Optimization**: Sub-200ms response times with intelligent caching
+    - **Advanced Notifications**: Smart routing with user preferences and quiet hours
+    - **Bulk Operations**: Efficient multi-item processing with progress tracking
+    - **Advanced Search**: Real-time suggestions with complex filtering
+    - **Data Export**: Multi-format reporting with scheduled delivery
+    - **Webhook Integration**: Real-time event notifications with retry logic
+    - **Enhanced Security**: MFA support and comprehensive audit logging
+    
+    ## User Roles
+    - **super_admin**: Platform-wide access across all estates
+    - **admin**: Complete estate management and configuration
+    - **guard**: Visitor processing and security operations
+    - **resident**: Visitor invitation and management
+    - **visitor**: Self-service access via secure tokens
+    
+    ## Performance Targets
+    - **UI Feedback**: <200ms response time
+    - **Data Operations**: <2s response time
+    - **Throughput**: 1000+ requests per minute
+    - **Availability**: 99.9% uptime target
     
   version: 3.0.0
   contact:
@@ -98,6 +115,544 @@ components:
           format: date-time
         check_in_time:
           type: string
+          format: date-time
+        check_out_time:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [name, status, host_email]
+
+    UserPreferences:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        dashboard_layout:
+          type: object
+          description: Customizable dashboard widget layout
+        theme:
+          type: string
+          enum: [light, dark, auto, high-contrast]
+        density:
+          type: string
+          enum: [compact, comfortable, spacious]
+        notifications:
+          type: object
+          properties:
+            channels:
+              type: object
+              properties:
+                email:
+                  type: boolean
+                sms:
+                  type: boolean
+                push:
+                  type: boolean
+                in_app:
+                  type: boolean
+            quiet_hours:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                start:
+                  type: string
+                  format: time
+                end:
+                  type: string
+                  format: time
+        accessibility:
+          type: object
+          properties:
+            screen_reader:
+              type: boolean
+            high_contrast:
+              type: boolean
+            large_text:
+              type: boolean
+            reduced_motion:
+              type: boolean
+
+    BulkOperation:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [visitor_approval, user_management, data_export, notification_broadcast]
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 100
+        total_items:
+          type: integer
+        processed_items:
+          type: integer
+        results:
+          type: object
+          properties:
+            success:
+              type: array
+            failed:
+              type: array
+            skipped:
+              type: array
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    NotificationPreference:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        notification_type:
+          type: string
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [email, sms, push, in_app]
+        frequency:
+          type: string
+          enum: [immediate, hourly, daily, weekly]
+        enabled:
+          type: boolean
+
+    IntelligentNotificationPreferences:
+      type: object
+      properties:
+        emailEnabled:
+          type: boolean
+          description: Enable email notifications
+        smsEnabled:
+          type: boolean
+          description: Enable SMS notifications
+        pushEnabled:
+          type: boolean
+          description: Enable push notifications
+        notifyOnInvite:
+          type: boolean
+          description: Notify when visitor is invited
+        notifyOnApproval:
+          type: boolean
+          description: Notify when visitor is approved
+        notifyOnRejection:
+          type: boolean
+          description: Notify when visitor is rejected
+        notifyOnCheckin:
+          type: boolean
+          description: Notify when visitor checks in
+        notifyOnCheckout:
+          type: boolean
+          description: Notify when visitor checks out
+        notifyOnReminder:
+          type: boolean
+          description: Enable reminder notifications
+        notifySecurityAlerts:
+          type: boolean
+          description: Enable security alert notifications
+        quietHoursStart:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Quiet hours start time (HH:MM format)
+        quietHoursEnd:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Quiet hours end time (HH:MM format)
+        language:
+          type: string
+          default: 'en'
+          description: Preferred language for notifications
+
+    NotificationBehavior:
+      type: object
+      properties:
+        notificationType:
+          type: string
+          description: Type of notification
+        deliveredCount:
+          type: integer
+          description: Number of notifications delivered
+        dismissedCount:
+          type: integer
+          description: Number of notifications dismissed
+        clickedCount:
+          type: integer
+          description: Number of notifications clicked
+        relevanceScore:
+          type: number
+          format: float
+          description: AI-calculated relevance score
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Last behavior update timestamp
+
+    NotificationStatistics:
+      type: object
+      properties:
+        notificationType:
+          type: string
+          description: Type of notification
+        totalCount:
+          type: integer
+          description: Total notifications sent
+        sentCount:
+          type: integer
+          description: Successfully sent notifications
+        failedCount:
+          type: integer
+          description: Failed notifications
+        readCount:
+          type: integer
+          description: Read notifications
+        deliveryRate:
+          type: string
+          description: Delivery success rate percentage
+        readRate:
+          type: string
+          description: Read rate percentage
+
+    NotificationAnalytics:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            totalNotifications:
+              type: integer
+            successfulNotifications:
+              type: integer
+            failedNotifications:
+              type: integer
+            deliveryRate:
+              type: string
+            period:
+              type: string
+        delivery:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              notificationType:
+                type: string
+              channel:
+                type: string
+              count:
+                type: integer
+              successful:
+                type: integer
+              failed:
+                type: integer
+              successRate:
+                type: string
+        engagement:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationBehavior'
+        hourlyDistribution:
+          type: array
+          items:
+            type: object
+            properties:
+              hour:
+                type: integer
+              notificationsSent:
+                type: integer
+              notificationsRead:
+                type: integer
+              readRate:
+                type: string
+
+    NotificationHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Notification ID
+        type:
+          type: string
+          description: Notification type
+        title:
+          type: string
+          description: Notification title
+        message:
+          type: string
+          description: Notification message
+        status:
+          type: string
+          enum: [pending, sent, failed, delivered, read]
+          description: Notification status
+        channels:
+          type: array
+          items:
+            type: string
+          description: Delivery channels used
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Notification priority
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        readAt:
+          type: string
+          format: date-time
+          description: Read timestamp (if read)
+
+    NotificationInsights:
+      type: object
+      properties:
+        userBehavior:
+          type: array
+          items:
+            type: object
+            properties:
+              notificationType:
+                type: string
+              deliveredCount:
+                type: integer
+              dismissedCount:
+                type: integer
+              clickedCount:
+                type: integer
+              relevanceScore:
+                type: number
+              engagementRate:
+                type: string
+        deliveryPatterns:
+          type: array
+          items:
+            type: object
+            properties:
+              hour:
+                type: integer
+              dayOfWeek:
+                type: integer
+              notificationCount:
+                type: integer
+              readCount:
+                type: integer
+              readRate:
+                type: string
+        channelEffectiveness:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:
+                type: string
+              totalSent:
+                type: integer
+              totalRead:
+                type: integer
+              totalClicked:
+                type: integer
+              readRate:
+                type: string
+              clickRate:
+                type: string
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [engagement, timing, channel, volume]
+              priority:
+                type: string
+                enum: [low, medium, high]
+              title:
+                type: string
+              description:
+                type: string
+              action:
+                type: string
+
+    NotificationSystemHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, warning, critical]
+          description: Overall system health status
+        queue:
+          type: object
+          properties:
+            totalQueued:
+              type: integer
+            processing:
+              type: integer
+            failed:
+              type: integer
+          description: Queue status information
+        performance:
+          type: object
+          properties:
+            totalNotifications:
+              type: integer
+            successfulNotifications:
+              type: integer
+            failedNotifications:
+              type: integer
+            successRate:
+              type: string
+            avgProcessingTime:
+              type: number
+          description: Performance metrics
+        channels:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:
+                type: string
+              total:
+                type: integer
+              successful:
+                type: integer
+              failed:
+                type: integer
+              successRate:
+                type: string
+          description: Channel-specific health metrics
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+
+    PaginationInfo:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+        limit:
+          type: integer
+          description: Items per page
+        offset:
+          type: integer
+          description: Current offset
+        hasMore:
+          type: boolean
+          description: Whether more items are available
+
+    SearchResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+        total:
+          type: integer
+        suggestions:
+          type: array
+          items:
+            type: string
+        filters:
+          type: object
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total_pages:
+              type: integer
+            has_next:
+              type: boolean
+            has_prev:
+              type: boolean
+
+    ExportRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        format:
+          type: string
+          enum: [csv, excel, pdf, json]
+        data_type:
+          type: string
+          enum: [visitors, users, audit_logs, reports]
+        filters:
+          type: object
+        fields:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        download_url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        response_times:
+          type: object
+          properties:
+            p50:
+              type: number
+            p95:
+              type: number
+            p99:
+              type: number
+        error_rates:
+          type: object
+          properties:
+            total:
+              type: number
+            by_endpoint:
+              type: object
+        throughput:
+          type: object
+          properties:
+            requests_per_minute:
+              type: number
+            concurrent_users:
+              type: number
+        system_health:
+          type: object
+          properties:
+            database:
+              type: string
+              enum: [healthy, degraded, unhealthy]
+            cache:
+              type: string
+              enum: [healthy, degraded, unhealthy]
+            external_services:
+              type: object
           format: date-time
         check_out_time:
           type: string
@@ -780,6 +1335,749 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
 
+  # User Preferences Management
+  /preferences:
+    get:
+      tags:
+        - User Preferences
+      summary: Get user preferences
+      description: Get user preferences for current estate with real-time application support
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+                      version:
+                        type: integer
+                      isDefault:
+                        type: boolean
+                      estateId:
+                        type: integer
+
+    put:
+      tags:
+        - User Preferences
+      summary: Update user preferences
+      description: Update user preferences with real-time application (no page refresh required)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                preferences:
+                  $ref: '#/components/schemas/UserPreferences'
+                version:
+                  type: integer
+              required: [preferences]
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+                      version:
+                        type: integer
+                      estateId:
+                        type: integer
+
+  /preferences/all:
+    get:
+      tags:
+        - User Preferences
+      summary: Get all user preferences
+      description: Get preferences for all estates user has access to (multi-estate support)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        type: array
+                        items:
+                          type: object
+                      totalEstates:
+                        type: integer
+
+  /preferences/backup:
+    post:
+      tags:
+        - User Preferences
+      summary: Create preference backup
+      description: Create a backup of current user preferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                backupName:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+              required: [backupName]
+      responses:
+        '200':
+          description: Backup created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    get:
+      tags:
+        - User Preferences
+      summary: List preference backups
+      description: List all available preference backups for current user and estate
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Backups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      backups:
+                        type: array
+                        items:
+                          type: object
+                      totalBackups:
+                        type: integer
+
+  /preferences/backup/{backupName}:
+    post:
+      tags:
+        - User Preferences
+      summary: Restore preference backup
+      description: Restore user preferences from a specific backup
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: backupName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Preferences restored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+                      version:
+                        type: integer
+                      restoredFrom:
+                        type: string
+
+  /preferences/reset:
+    post:
+      tags:
+        - User Preferences
+      summary: Reset to default preferences
+      description: Reset user preferences to role-based defaults
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/UserPreferences'
+                      version:
+                        type: integer
+                      resetToRole:
+                        type: string
+
+  # PWA and Offline Sync Endpoints
+  /sync/download:
+    get:
+      tags:
+        - PWA & Offline Sync
+      summary: Download offline data package
+      description: Download minimal data package for offline functionality with privacy-first approach
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Offline package generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      packageId:
+                        type: string
+                      visitors:
+                        type: array
+                      settings:
+                        type: object
+                      expiresAt:
+                        type: string
+                        format: date-time
+
+  /sync/upload:
+    post:
+      tags:
+        - PWA & Offline Sync
+      summary: Upload offline changes
+      description: Upload changes made while offline for synchronization
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                packageId:
+                  type: string
+                changes:
+                  type: array
+                  items:
+                    type: object
+              required: [packageId, changes]
+      responses:
+        '200':
+          description: Changes synchronized successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      processed:
+                        type: integer
+                      conflicts:
+                        type: array
+                      errors:
+                        type: array
+
+  # Push Notification Endpoints
+  /notifications/push/subscribe:
+    post:
+      tags:
+        - Push Notifications
+      summary: Subscribe to push notifications
+      description: Register push notification subscription for PWA
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subscription:
+                  type: object
+                  properties:
+                    endpoint:
+                      type: string
+                    keys:
+                      type: object
+              required: [subscription]
+      responses:
+        '200':
+          description: Subscription registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /notifications/push/unsubscribe:
+    delete:
+      tags:
+        - Push Notifications
+      summary: Unsubscribe from push notifications
+      description: Remove push notification subscription
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subscription removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # Intelligent Notification Endpoints
+  /intelligent-notifications/queue:
+    post:
+      tags:
+        - Intelligent Notifications
+      summary: Queue intelligent notification
+      description: Queue a new notification through the intelligent notification system
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  description: Notification type
+                title:
+                  type: string
+                  description: Notification title
+                message:
+                  type: string
+                  description: Notification message
+                recipientId:
+                  type: integer
+                  description: Recipient user ID
+                estateId:
+                  type: integer
+                  description: Estate ID (optional, defaults to user's estate)
+                isUrgent:
+                  type: boolean
+                  default: false
+                  description: Whether notification is urgent
+                includeEmail:
+                  type: boolean
+                  default: false
+                  description: Whether to include email delivery
+                metadata:
+                  type: object
+                  description: Additional metadata
+              required: [type, title, message, recipientId]
+      responses:
+        '201':
+          description: Notification queued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      notificationId:
+                        type: string
+                      message:
+                        type: string
+
+  /intelligent-notifications/queue/status:
+    get:
+      tags:
+        - Intelligent Notifications
+      summary: Get queue status
+      description: Get current notification queue status (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Queue status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalQueued:
+                        type: integer
+                      processing:
+                        type: integer
+                      failed:
+                        type: integer
+
+  /intelligent-notifications/preferences:
+    get:
+      tags:
+        - Intelligent Notifications
+      summary: Get notification preferences
+      description: Get user notification preferences with intelligent features
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/IntelligentNotificationPreferences'
+                      behavior:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/NotificationBehavior'
+                      statistics:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/NotificationStatistics'
+
+    put:
+      tags:
+        - Intelligent Notifications
+      summary: Update notification preferences
+      description: Update user notification preferences with intelligent features
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntelligentNotificationPreferences'
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      preferences:
+                        $ref: '#/components/schemas/IntelligentNotificationPreferences'
+
+  /intelligent-notifications/behavior/track:
+    post:
+      tags:
+        - Intelligent Notifications
+      summary: Track notification behavior
+      description: Track user interaction with notifications for intelligent optimization
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notificationId:
+                  type: string
+                  description: Notification ID (optional)
+                notificationType:
+                  type: string
+                  description: Type of notification
+                action:
+                  type: string
+                  enum: [delivered, dismissed, clicked, read]
+                  description: User action performed
+              required: [notificationType, action]
+      responses:
+        '200':
+          description: Behavior tracked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /intelligent-notifications/analytics:
+    get:
+      tags:
+        - Intelligent Notifications
+      summary: Get notification analytics
+      description: Get detailed notification analytics and insights
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 365
+          description: Number of days to analyze
+      responses:
+        '200':
+          description: Analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/NotificationAnalytics'
+
+  /intelligent-notifications/history:
+    post:
+      tags:
+        - Intelligent Notifications
+      summary: Get notification history
+      description: Get filtered notification history with search capabilities
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+                search:
+                  type: string
+                type:
+                  type: string
+                status:
+                  type: string
+                channel:
+                  type: string
+                limit:
+                  type: integer
+                  default: 100
+                offset:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: History retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      notifications:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/NotificationHistoryItem'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationInfo'
+
+  /intelligent-notifications/insights:
+    get:
+      tags:
+        - Intelligent Notifications
+      summary: Get notification insights
+      description: Get advanced notification insights and personalized recommendations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+          description: Analysis period in days
+      responses:
+        '200':
+          description: Insights retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/NotificationInsights'
+
+  /intelligent-notifications/test:
+    post:
+      tags:
+        - Intelligent Notifications
+      summary: Send test notification
+      description: Send a test notification through the intelligent system
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  default: "TEST"
+                title:
+                  type: string
+                  default: "Test Notification"
+                message:
+                  type: string
+                  default: "This is a test notification from the intelligent notification system."
+      responses:
+        '200':
+          description: Test notification sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      notificationId:
+                        type: string
+                      message:
+                        type: string
+
+  /intelligent-notifications/system/health:
+    get:
+      tags:
+        - Intelligent Notifications
+      summary: Get system health
+      description: Get intelligent notification system health status (Admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System health retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/NotificationSystemHealth'
+
+  /intelligent-notifications/export:
+    get:
+      tags:
+        - Intelligent Notifications
+      summary: Export notification history
+      description: Export notification history to CSV or JSON format
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [csv, json]
+            default: csv
+      responses:
+        '200':
+          description: Export generated successfully
+          content:
+            text/csv:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+
   # Admin Operations
   /admin/metrics:
     get:
@@ -800,14 +2098,7 @@ paths:
                   success:
                     type: boolean
                   data:
-                    type: object
-                    properties:
-                      visitors:
-                        type: object
-                      performance:
-                        type: object
-                      system:
-                        type: object
+                    $ref: '#/components/schemas/PerformanceMetrics'
 
   /admin/audit-logs:
     get:
@@ -871,11 +2162,91 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
 
+  /admin/preferences/statistics:
+    get:
+      tags:
+        - Admin Operations
+      summary: Get preference statistics
+      description: Get preference usage statistics for estate (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estateId
+          in: query
+          schema:
+            type: integer
+          description: Estate ID (Super Admin only)
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      statistics:
+                        type: object
+                      estateId:
+                        type: integer
+
+  /admin/preferences/bulk-update:
+    post:
+      tags:
+        - Admin Operations
+      summary: Bulk update preferences
+      description: Update preferences for multiple estates (Super Admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estateIds:
+                  type: array
+                  items:
+                    type: integer
+                preferences:
+                  $ref: '#/components/schemas/UserPreferences'
+              required: [estateIds, preferences]
+      responses:
+        '200':
+          description: Bulk update completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                      errors:
+                        type: array
+                      totalProcessed:
+                        type: integer
+                      successCount:
+                        type: integer
+                      errorCount:
+                        type: integer
+
 tags:
   - name: Authentication
     description: User authentication and authorization
   - name: User Management
     description: User profile management
+  - name: User Preferences
+    description: User preference management with real-time application and multi-estate support
   - name: Visitor Management
     description: Visitor invitation and management
   - name: Pass Generation
@@ -886,6 +2257,12 @@ tags:
     description: Guard check-in/check-out operations
   - name: OTP Operations
     description: OTP verification and management
+  - name: PWA & Offline Sync
+    description: Progressive Web App and offline synchronization capabilities
+  - name: Push Notifications
+    description: Push notification subscription and management
+  - name: Intelligent Notifications
+    description: AI-powered notification management with user behavior analytics and smart delivery optimization
   - name: Reporting
     description: Visitor reports and analytics
   - name: Admin Operations

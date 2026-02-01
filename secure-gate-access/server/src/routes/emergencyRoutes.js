@@ -29,17 +29,17 @@ router.use(authenticateToken);
  * 
  * Privacy: Captures GPS only at this moment, not continuously
  */
-router.post('/panic', requireRole(['guard']), async (req, res) => {
+router.post('/panic', requireRole(['guard', 'resident']), async (req, res) => {
   try {
     const guardId = req.user.id;
     const { latitude, longitude, accuracy, gateId } = req.body;
-    
+
     const result = await emergencyService.triggerPanicButton(
       guardId,
       { latitude, longitude, accuracy },
       gateId
     );
-    
+
     // Emit real-time event to all connected admins/guards
     if (req.app.locals.io) {
       const guardName = result.guard.username || '';
@@ -52,7 +52,7 @@ router.post('/panic', requireRole(['guard']), async (req, res) => {
         // Privacy: Don't broadcast exact coordinates
       });
     }
-    
+
     res.status(201).json({
       success: true,
       message: 'Emergency alert triggered. Help is on the way.',
@@ -65,14 +65,14 @@ router.post('/panic', requireRole(['guard']), async (req, res) => {
         cancelWindow: 30 // seconds
       }
     });
-    
+
   } catch (error) {
     loggingService.logError('PANIC_ROUTE_ERROR', { error: error.message });
-    
+
     if (error.message.includes('cooldown')) {
       return errorResponse(res, error.message, 'RATE_LIMITED', 429, null, req);
     }
-    
+
     res.status(500).json({
       success: false,
       message: 'Failed to trigger emergency alert',
@@ -86,13 +86,13 @@ router.post('/panic', requireRole(['guard']), async (req, res) => {
  * @desc Cancel panic alert within 30 seconds (guard who triggered only)
  * @access Guards only
  */
-router.post('/:id/cancel', requireRole(['guard']), async (req, res) => {
+router.post('/:id/cancel', requireRole(['guard', 'resident']), async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const guardId = req.user.id;
-    
+
     const result = await emergencyService.cancelEmergency(emergencyId, guardId);
-    
+
     // Notify others that alert was cancelled
     if (req.app.locals.io) {
       req.app.locals.io.emit('emergency:cancelled', {
@@ -100,7 +100,7 @@ router.post('/:id/cancel', requireRole(['guard']), async (req, res) => {
         cancelledAt: new Date().toISOString()
       });
     }
-    
+
     res.json({
       success: true,
       message: 'Emergency alert cancelled',
@@ -109,7 +109,7 @@ router.post('/:id/cancel', requireRole(['guard']), async (req, res) => {
         status: result.status
       }
     });
-    
+
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -127,9 +127,9 @@ router.post('/:id/acknowledge', requireRole(['admin', 'guard']), async (req, res
   try {
     const emergencyId = parseInt(req.params.id);
     const responderId = req.user.id;
-    
+
     const result = await emergencyService.acknowledgeEmergency(emergencyId, responderId);
-    
+
     // Notify everyone that help is responding
     if (req.app.locals.io) {
       const acknowledgedBy = req.user.username || '';
@@ -142,7 +142,7 @@ router.post('/:id/acknowledge', requireRole(['admin', 'guard']), async (req, res
         acknowledgedAt: result.acknowledged_at
       });
     }
-    
+
     res.json({
       success: true,
       message: 'Emergency acknowledged. Responding...',
@@ -152,7 +152,7 @@ router.post('/:id/acknowledge', requireRole(['admin', 'guard']), async (req, res
         acknowledgedAt: result.acknowledged_at
       }
     });
-    
+
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -171,13 +171,13 @@ router.post('/:id/resolve', requireRole(['admin']), async (req, res) => {
     const emergencyId = parseInt(req.params.id);
     const resolverId = req.user.id;
     const { notes, isFalseAlarm, falseAlarmReason } = req.body;
-    
+
     const result = await emergencyService.resolveEmergency(
       emergencyId,
       resolverId,
       { notes, isFalseAlarm, falseAlarmReason }
     );
-    
+
     // Notify everyone that emergency is resolved
     if (req.app.locals.io) {
       req.app.locals.io.emit('emergency:resolved', {
@@ -186,7 +186,7 @@ router.post('/:id/resolve', requireRole(['admin']), async (req, res) => {
         isFalseAlarm: result.is_false_alarm
       });
     }
-    
+
     res.json({
       success: true,
       message: 'Emergency resolved',
@@ -196,7 +196,7 @@ router.post('/:id/resolve', requireRole(['admin']), async (req, res) => {
         resolvedAt: result.resolved_at
       }
     });
-    
+
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -212,8 +212,8 @@ router.post('/:id/resolve', requireRole(['admin']), async (req, res) => {
  */
 router.get('/active', requireRole(['admin', 'guard']), async (req, res) => {
   try {
-    const emergencies = await emergencyService.getActiveEmergencies();
-    
+    const emergencies = await emergencyService.getActiveEmergencies(req.user.estate_id);
+
     // For guards, redact exact location coordinates
     const sanitizedEmergencies = emergencies.map(e => {
       if (req.user.role !== 'admin') {
@@ -226,13 +226,13 @@ router.get('/active', requireRole(['admin', 'guard']), async (req, res) => {
       }
       return e;
     });
-    
+
     res.json({
       success: true,
       data: sanitizedEmergencies,
       count: sanitizedEmergencies.length
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -251,16 +251,16 @@ router.get('/my-history', requireRole(['guard']), async (req, res) => {
   try {
     const guardId = req.user.id;
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
-    
+
     const history = await emergencyService.getGuardEmergencyHistory(guardId, limit);
-    
+
     res.json({
       success: true,
       data: history,
       count: history.length,
       privacy_notice: 'This shows only your own emergency history. Location data is not included.'
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -279,19 +279,19 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const requesterId = req.user.id;
-    
+
     const emergency = await emergencyService.getEmergencyDetails(emergencyId, requesterId);
-    
+
     res.json({
       success: true,
       data: emergency
     });
-    
+
   } catch (error) {
     if (error.message.includes('Access denied')) {
       return errorResponse(res, error.message, 'FORBIDDEN', 403, null, req);
     }
-    
+
     res.status(404).json({
       success: false,
       message: error.message
@@ -307,15 +307,15 @@ router.get('/:id', authenticateToken, async (req, res) => {
 router.get('/stats/aggregate', requireRole(['admin']), async (req, res) => {
   try {
     const period = req.query.period || 'month';
-    
-    const stats = await emergencyService.getEmergencyStats(period);
-    
+
+    const stats = await emergencyService.getEmergencyStats(period, req.user.estate_id);
+
     res.json({
       success: true,
       data: stats,
       privacy_notice: 'These are aggregate statistics only. Individual guard patterns are not tracked.'
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,

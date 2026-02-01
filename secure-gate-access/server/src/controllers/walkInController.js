@@ -8,7 +8,7 @@ import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 import logger from '../config/logger.js';
-import { isGuard } from '../utils/roleHelper.js';
+import { canPerformGuardOperations } from '../utils/roleHelper.js';
 
 /**
  * Register a walk-in visitor (guard only)
@@ -20,12 +20,12 @@ export const registerWalkIn = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (!isGuard(req.user)) {
+    if (!canPerformGuardOperations(req.user)) {
       await req.audit?.('walk_in.create', 'visitor', null, {
         outcome: 'fail',
-        message: 'Forbidden: only guards can register walk-ins'
+        message: 'Forbidden: only guards/admins can register walk-ins'
       });
-      return respondError(res, 403, 'Forbidden - guards only');
+      return respondError(res, 403, 'Forbidden - guards/admins only');
     }
 
     const { name, phone, purpose, houseNumber, vehiclePlate, dateOfVisit, timeOfVisit } = req.body;
@@ -152,8 +152,8 @@ export const getTodayWalkIns = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (!isGuard(req.user) && req.user.role !== 'admin') {
-      return respondError(res, 403, 'Forbidden');
+    if (!canPerformGuardOperations(req.user)) {
+      return respondError(res, 403, 'Forbidden - guards/admins only');
     }
 
     const today = new Date().toISOString().split('T')[0];

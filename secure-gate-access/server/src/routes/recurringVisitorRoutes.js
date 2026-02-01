@@ -25,7 +25,7 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
     }
 
     const result = await recurringVisitorService.createRecurringPass(residentId, req.body);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
@@ -216,7 +216,12 @@ router.post('/validate', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Credential required' });
     }
 
-    const result = await recurringVisitorService.validateRecurringPass(credential, method);
+    const result = await recurringVisitorService.validateRecurringPass(
+      credential,
+      method,
+      req.ip,
+      req.user.estate_id
+    );
 
     if (!result.valid) {
       return res.status(400).json({

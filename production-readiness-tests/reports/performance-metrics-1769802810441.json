@@ -1,0 +1,22 @@
+{
+  "execution": {
+    "totalTime": 19544,
+    "averageValidatorTime": 651,
+    "validatorsPerSecond": "1.53"
+  },
+  "efficiency": {
+    "successRate": "0.0",
+    "completionRate": "100.0"
+  },
+  "resource": {
+    "parallelValidators": 3,
+    "timeoutConfiguration": 900000,
+    "memoryUsage": {
+      "rss": 91209728,
+      "heapTotal": 44433408,
+      "heapUsed": 28419856,
+      "external": 3773621,
+      "arrayBuffers": 252598
+    }
+  }
+}

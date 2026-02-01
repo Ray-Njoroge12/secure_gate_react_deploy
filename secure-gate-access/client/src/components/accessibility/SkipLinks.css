@@ -1,0 +1,143 @@
+/**
+ * Skip Links Styles
+ * 
+ * Provides accessible styling for skip navigation links
+ * Meets WCAG 2.1 AA requirements for bypass blocks
+ */
+
+.skip-links {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+  width: 100%;
+}
+
+.skip-links__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.skip-links__item {
+  margin: 0;
+  padding: 0;
+}
+
+.skip-links__link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-primary, #3b82f6);
+  color: var(--color-primary-foreground, #ffffff);
+  padding: 8px 16px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: top 0.3s ease;
+  z-index: 10001;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.skip-links__link:focus {
+  top: 6px;
+  outline: 2px solid var(--color-ring, #ffffff);
+  outline-offset: 2px;
+}
+
+.skip-links__link:hover {
+  background: var(--color-primary-hover, #2563eb);
+}
+
+.skip-links__shortcut {
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: 0.8;
+  font-weight: normal;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .skip-links__link {
+    border: 2px solid #000000;
+    background: #ffffff;
+    color: #000000;
+  }
+  
+  .skip-links__link:focus {
+    outline: 3px solid #000000;
+    background: #ffff00;
+    color: #000000;
+  }
+}
+
+/* High contrast theme class */
+.high-contrast .skip-links__link {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+.high-contrast .skip-links__link:focus {
+  background: #ffff00 !important;
+  color: #000000 !important;
+  outline: 3px solid #000000 !important;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skip-links__link {
+    transition: none;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .skip-links__link {
+    font-size: 16px;
+    padding: 12px 20px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+  
+  .skip-links__shortcut {
+    display: none;
+  }
+}
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Focus visible for keyboard users */
+.skip-links__link:focus-visible {
+  top: 6px;
+  outline: 2px solid var(--color-ring, #ffffff);
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .skip-links {
+    display: none;
+  }
+}

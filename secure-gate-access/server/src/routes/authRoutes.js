@@ -12,6 +12,7 @@ import { successResponse, createdResponse, validationErrorResponse, unauthorized
 import { validatePasswordResetRequest, validatePasswordReset, validateRegistration, validateLogin, validateRefreshRequest } from '../validation/authValidation.js';
 import emailService from '../services/emailService.js';
 import { maskEmail } from '../utils/redaction.js';
+import { changePassword } from '../controllers/userController.js';
 
 const router = express.Router();
 
@@ -184,7 +185,7 @@ const getBearerToken = (req) => {
 import { requireRole } from '../middleware/roleMiddleware.js';
 
 router.post('/register', authLimiter, validateRegistration, attachRequestAudit(), asyncHandler(async (req, res) => {
-  const { username, email, password, phone } = req.body;
+  const { username, first_name, last_name, email, password, phone } = req.body;
 
   // BUG-006 FIX: Using proper logging service instead of console.log
   loggingService.info('Public registration request received', {
@@ -196,16 +197,24 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
   });
 
   // Validate required fields (simplified for public registration)
-  if (!username || !email || !password) {
+  if (!username || !first_name || !last_name || !email || !password) {
     loggingService.warn('Registration validation failed - missing fields', {
       event: 'auth.register.validation_failed',
       hasUsername: !!username,
+      hasFirstName: !!first_name,
+      hasLastName: !!last_name,
       hasEmail: !!email,
       hasPassword: !!password,
       request_id: req.requestId
     });
-    throw new AppError('Username, email, and password are required', 400, 'VALIDATION_ERROR', {
-      missing: { username: !username, email: !email, password: !password }
+    throw new AppError('Username, first name, last name, email, and password are required', 400, 'VALIDATION_ERROR', {
+      missing: {
+        username: !username,
+        first_name: !first_name,
+        last_name: !last_name,
+        email: !email,
+        password: !password
+      }
     });
   }
 
@@ -226,6 +235,17 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
     });
   }
 
+  // Validate estate_id if provided
+  if (req.body.estate_id) {
+    const estateCheck = await userService.db.query(
+      'SELECT id FROM estates WHERE id = $1',
+      [req.body.estate_id]
+    );
+    if (estateCheck.rowCount === 0) {
+      throw new AppError('Invalid estate selected', 400, 'VALIDATION_ERROR', { field: 'estate_id' });
+    }
+  }
+
   // Create user with default values for public registration
   loggingService.info('Creating pending user account', {
     event: 'auth.register.creating_user',
@@ -233,16 +253,19 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
     email: maskEmail(email),
     role: 'resident',
     account_status: 'pending',
+    estate_id: req.body.estate_id || null,
     request_id: req.requestId
   });
   const user = await userService.createUser({
     username,
+    first_name,
+    last_name,
     email,
     password,
     phone: phone || null,
     role: 'resident', // Default to resident for public registration
     account_status: 'pending', // Requires admin approval
-    estate_id: null // Will be assigned during activation
+    estate_id: req.body.estate_id || null // estate_id ensures visibility in specific admin dashboard
   });
 
   loggingService.info('User created successfully - pending approval', {
@@ -288,6 +311,8 @@ router.post('/register', authLimiter, validateRegistration, attachRequestAudit()
     user: {
       id: user.id,
       username: user.username,
+      first_name: user.first_name,
+      last_name: user.last_name,
       email: user.email,
       role: user.role
     }
@@ -664,6 +689,8 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Token refresh
+router.post('/change-password', authenticateToken, attachRequestAudit(), asyncHandler(changePassword));
+
 router.post('/refresh', refreshLimiter, validateRefreshRequest, attachRequestAudit(), asyncHandler(async (req, res) => {
   const platform = getClientPlatform(req);
   const isWebClient = platform === 'web';
@@ -943,10 +970,51 @@ router.get('/profile', authenticateToken, attachRequestAudit(), asyncHandler(asy
       id: user.id,
       username: user.username,
       email: user.email,
+      phone: user.phone || '',
       role: user.role,
-      estate_id: user.estate_id
+      estate_id: user.estate_id,
+      notify_email: user.notify_email,
+      notify_sms: user.notify_sms,
+      created_at: user.created_at
     }
   }, 'Profile retrieved successfully');
+}));
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Update user profile
+ *     description: Update current user's profile info and notification preferences
+ *     tags: [Authentication]
+ */
+router.put('/profile', authenticateToken, attachRequestAudit(), asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const updates = req.body;
+
+  // Whitelist allowed fields to prevent privilege escalation
+  const allowedUpdates = {};
+  const updateableFields = ['username', 'email', 'phone', 'first_name', 'last_name', 'notify_email', 'notify_sms'];
+
+  updateableFields.forEach(field => {
+    if (updates[field] !== undefined) {
+      allowedUpdates[field] = updates[field];
+    }
+  });
+
+  const updatedUser = await userService.updateUser(userId, allowedUpdates);
+
+  successResponse(res, {
+    user: {
+      id: updatedUser.id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      role: updatedUser.role,
+      notify_email: updatedUser.notify_email,
+      notify_sms: updatedUser.notify_sms
+    }
+  }, 'Profile updated successfully');
 }));
 
 /**

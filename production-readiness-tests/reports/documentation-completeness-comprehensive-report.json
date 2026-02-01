@@ -1,0 +1,1329 @@
+{
+  "validationResults": {
+    "apiDocumentationCompleteness": {
+      "score": 4,
+      "issues": [
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for authentication endpoint: /api/auth/login",
+          "recommendation": "Add comprehensive documentation for /api/auth/login",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for authentication endpoint: /api/auth/register",
+          "recommendation": "Add comprehensive documentation for /api/auth/register",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for authentication endpoint: /api/auth/refresh",
+          "recommendation": "Add comprehensive documentation for /api/auth/refresh",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for authentication endpoint: /api/auth/logout",
+          "recommendation": "Add comprehensive documentation for /api/auth/logout",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for visitors endpoint: /api/visitors",
+          "recommendation": "Add comprehensive documentation for /api/visitors",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for visitors endpoint: /api/visitors/{id}",
+          "recommendation": "Add comprehensive documentation for /api/visitors/{id}",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for visitors endpoint: /api/visitors/{id}/check-in",
+          "recommendation": "Add comprehensive documentation for /api/visitors/{id}/check-in",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for visitors endpoint: /api/visitors/{id}/check-out",
+          "recommendation": "Add comprehensive documentation for /api/visitors/{id}/check-out",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for admin endpoint: /api/admin/users",
+          "recommendation": "Add comprehensive documentation for /api/admin/users",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for admin endpoint: /api/admin/metrics",
+          "recommendation": "Add comprehensive documentation for /api/admin/metrics",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for admin endpoint: /api/admin/audit-logs",
+          "recommendation": "Add comprehensive documentation for /api/admin/audit-logs",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for health endpoint: /api/health",
+          "recommendation": "Add comprehensive documentation for /api/health",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for health endpoint: /api/health/detailed",
+          "recommendation": "Add comprehensive documentation for /api/health/detailed",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for realtime endpoint: /ws",
+          "recommendation": "Add comprehensive documentation for /ws",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "endpoint-coverage",
+          "message": "Missing documentation for realtime endpoint: /api/notifications",
+          "recommendation": "Add comprehensive documentation for /api/notifications",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "schema-missing",
+          "message": "Missing required schema: Estate",
+          "recommendation": "Add Estate schema definition",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "schema-missing",
+          "message": "Missing required schema: SuccessResponse",
+          "recommendation": "Add SuccessResponse schema definition",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "schema-missing",
+          "message": "Missing required schema: AuditLog",
+          "recommendation": "Add AuditLog schema definition",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "security-documentation",
+          "message": "Missing JWT security documentation",
+          "recommendation": "Add JWT security scheme documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "security-documentation",
+          "message": "Missing CSRF security documentation",
+          "recommendation": "Add CSRF security scheme documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "security-documentation",
+          "message": "Missing RateLimit security documentation",
+          "recommendation": "Add RateLimit security scheme documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "high",
+          "category": "security-documentation",
+          "message": "Missing CORS security documentation",
+          "recommendation": "Add CORS security scheme documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /users/register missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /users/login missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /users/logout missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "PUT /users/profile missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /visitors missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/{visitorId}/pass missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/bulk-invite missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /visitors/bulk-invite/{inviteCode} missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/complete/{inviteCode} missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/{id}/check-in missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/{id}/check-out missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/{id}/revoke missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /visitors/active missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /visitors/reports missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/{id}/verify-otp missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /visitors/{id}/resend-otp missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /preferences missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "PUT /preferences missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /preferences/all missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /preferences/backup missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /preferences/backup missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /preferences/backup/{backupName} missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /preferences/reset missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /sync/download missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /sync/upload missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /notifications/push/subscribe missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "DELETE /notifications/push/unsubscribe missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /intelligent-notifications/queue missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /intelligent-notifications/queue/status missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /intelligent-notifications/preferences missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "PUT /intelligent-notifications/preferences missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /intelligent-notifications/behavior/track missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /intelligent-notifications/analytics missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /intelligent-notifications/history missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /intelligent-notifications/insights missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /intelligent-notifications/test missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /intelligent-notifications/system/health missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /intelligent-notifications/export missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /admin/metrics missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /admin/audit-logs missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /admin/settings missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "GET /admin/preferences/statistics missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "endpoint-documentation",
+          "message": "POST /admin/preferences/bulk-update missing: examples",
+          "recommendation": "Add examples to endpoint documentation",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /users/logout missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "PUT /users/profile missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /visitors missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/{visitorId}/pass missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/bulk-invite missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /visitors/bulk-invite/{inviteCode} missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/complete/{inviteCode} missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/{id}/check-in missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/{id}/check-out missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/{id}/revoke missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /visitors/active missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /visitors/reports missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/{id}/verify-otp missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /visitors/{id}/resend-otp missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /preferences missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "PUT /preferences missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /preferences/all missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /preferences/backup missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /preferences/backup missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /preferences/backup/{backupName} missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /preferences/reset missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /sync/download missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /sync/upload missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /notifications/push/subscribe missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "DELETE /notifications/push/unsubscribe missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /intelligent-notifications/queue missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /intelligent-notifications/queue/status missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /intelligent-notifications/preferences missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "PUT /intelligent-notifications/preferences missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /intelligent-notifications/behavior/track missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /intelligent-notifications/analytics missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /intelligent-notifications/history missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /intelligent-notifications/insights missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /intelligent-notifications/test missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /intelligent-notifications/system/health missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /intelligent-notifications/export missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /admin/metrics missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /admin/audit-logs missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /admin/settings missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "GET /admin/preferences/statistics missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        },
+        {
+          "severity": "medium",
+          "category": "error-documentation",
+          "message": "POST /admin/preferences/bulk-update missing error response documentation",
+          "recommendation": "Add common error response codes (400, 401, 403, 404, 500)",
+          "requirement": "10.3"
+        }
+      ],
+      "validations": [
+        {
+          "type": "schema-completeness",
+          "schema": "User",
+          "status": "passed",
+          "message": "Schema User is properly defined"
+        },
+        {
+          "type": "schema-completeness",
+          "schema": "Visitor",
+          "status": "passed",
+          "message": "Schema Visitor is properly defined"
+        },
+        {
+          "type": "schema-completeness",
+          "schema": "ErrorResponse",
+          "status": "passed",
+          "message": "Schema ErrorResponse is properly defined"
+        },
+        {
+          "type": "error-documentation",
+          "endpoint": "POST /users/register",
+          "status": "passed",
+          "message": "Endpoint has error response documentation"
+        },
+        {
+          "type": "error-documentation",
+          "endpoint": "POST /users/login",
+          "status": "passed",
+          "message": "Endpoint has error response documentation"
+        }
+      ],
+      "coverage": {
+        "endpoints": {
+          "total": 15,
+          "passed": 0,
+          "missing": [
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/logout",
+            "/api/visitors",
+            "/api/visitors/{id}",
+            "/api/visitors/{id}/check-in",
+            "/api/visitors/{id}/check-out",
+            "/api/admin/users",
+            "/api/admin/metrics",
+            "/api/admin/audit-logs",
+            "/api/health",
+            "/api/health/detailed",
+            "/ws",
+            "/api/notifications"
+          ]
+        },
+        "schemas": {
+          "total": 6,
+          "passed": 3,
+          "missing": [
+            "Estate",
+            "SuccessResponse",
+            "AuditLog"
+          ]
+        },
+        "security": {
+          "total": 4,
+          "passed": 0,
+          "missing": [
+            "JWT",
+            "CSRF",
+            "RateLimit",
+            "CORS"
+          ]
+        },
+        "documentation": {
+          "total": 44,
+          "passed": 0,
+          "issues": []
+        },
+        "errorHandling": {
+          "total": 44,
+          "passed": 2,
+          "missing": []
+        }
+      }
+    },
+    "userGuideAccuracy": {
+      "score": 11,
+      "issues": [
+        {
+          "severity": "high",
+          "category": "role-guides",
+          "message": "Missing user guide for super-admin",
+          "recommendation": "Create comprehensive super-admin user guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "high",
+          "category": "role-guides",
+          "message": "Missing user guide for estate-admin",
+          "recommendation": "Create comprehensive estate-admin user guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "high",
+          "category": "role-guides",
+          "message": "Missing user guide for visitor",
+          "recommendation": "Create comprehensive visitor user guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "workflow-documentation",
+          "message": "Missing workflow documentation for visitor-invitation",
+          "recommendation": "Create step-by-step visitor-invitation workflow guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "workflow-documentation",
+          "message": "Missing workflow documentation for check-in-process",
+          "recommendation": "Create step-by-step check-in-process workflow guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "workflow-documentation",
+          "message": "Missing workflow documentation for user-management",
+          "recommendation": "Create step-by-step user-management workflow guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "workflow-documentation",
+          "message": "Missing workflow documentation for reporting",
+          "recommendation": "Create step-by-step reporting workflow guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "feature-documentation",
+          "message": "Missing feature documentation for dashboard",
+          "recommendation": "Create comprehensive dashboard feature guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "feature-documentation",
+          "message": "Missing feature documentation for notifications",
+          "recommendation": "Create comprehensive notifications feature guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "feature-documentation",
+          "message": "Missing feature documentation for mobile-app",
+          "recommendation": "Create comprehensive mobile-app feature guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "feature-documentation",
+          "message": "Missing feature documentation for offline-mode",
+          "recommendation": "Create comprehensive offline-mode feature guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "troubleshooting-documentation",
+          "message": "Missing troubleshooting documentation for common-issues",
+          "recommendation": "Create common-issues troubleshooting guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "troubleshooting-documentation",
+          "message": "Missing troubleshooting documentation for error-messages",
+          "recommendation": "Create error-messages troubleshooting guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "troubleshooting-documentation",
+          "message": "Missing troubleshooting documentation for support-contact",
+          "recommendation": "Create support-contact troubleshooting guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "accessibility-documentation",
+          "message": "Missing accessibility documentation for keyboard-navigation",
+          "recommendation": "Create keyboard-navigation accessibility guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "accessibility-documentation",
+          "message": "Missing accessibility documentation for screen-reader",
+          "recommendation": "Create screen-reader accessibility guide",
+          "requirement": "10.4"
+        },
+        {
+          "severity": "medium",
+          "category": "accessibility-documentation",
+          "message": "Missing accessibility documentation for high-contrast",
+          "recommendation": "Create high-contrast accessibility guide",
+          "requirement": "10.4"
+        }
+      ],
+      "validations": [
+        {
+          "type": "role-guide",
+          "role": "guard",
+          "status": "passed",
+          "message": "guard guide found"
+        },
+        {
+          "type": "role-guide",
+          "role": "resident",
+          "status": "passed",
+          "message": "resident guide found"
+        }
+      ],
+      "completeness": {
+        "roleGuides": {
+          "total": 5,
+          "passed": 2,
+          "missing": [
+            "super-admin",
+            "estate-admin",
+            "visitor"
+          ]
+        },
+        "workflows": {
+          "total": 4,
+          "passed": 0,
+          "missing": [
+            "visitor-invitation",
+            "check-in-process",
+            "user-management",
+            "reporting"
+          ]
+        },
+        "features": {
+          "total": 4,
+          "passed": 0,
+          "missing": [
+            "dashboard",
+            "notifications",
+            "mobile-app",
+            "offline-mode"
+          ]
+        },
+        "troubleshooting": {
+          "total": 3,
+          "passed": 0,
+          "missing": [
+            "common-issues",
+            "error-messages",
+            "support-contact"
+          ]
+        },
+        "accessibility": {
+          "total": 3,
+          "passed": 0,
+          "missing": [
+            "keyboard-navigation",
+            "screen-reader",
+            "high-contrast"
+          ]
+        }
+      }
+    },
+    "operationalProcedures": {
+      "score": 100,
+      "issues": [],
+      "validations": [
+        {
+          "type": "deployment-procedures",
+          "procedure": "environment-setup",
+          "status": "passed",
+          "message": "environment-setup deployment procedure documented"
+        },
+        {
+          "type": "deployment-procedures",
+          "procedure": "database-migration",
+          "status": "passed",
+          "message": "database-migration deployment procedure documented"
+        },
+        {
+          "type": "deployment-procedures",
+          "procedure": "ssl-certificates",
+          "status": "passed",
+          "message": "ssl-certificates deployment procedure documented"
+        },
+        {
+          "type": "deployment-procedures",
+          "procedure": "monitoring",
+          "status": "passed",
+          "message": "monitoring deployment procedure documented"
+        },
+        {
+          "type": "monitoring-procedures",
+          "procedure": "health-checks",
+          "status": "passed",
+          "message": "health-checks monitoring procedure documented"
+        },
+        {
+          "type": "monitoring-procedures",
+          "procedure": "alerting",
+          "status": "passed",
+          "message": "alerting monitoring procedure documented"
+        },
+        {
+          "type": "monitoring-procedures",
+          "procedure": "log-aggregation",
+          "status": "passed",
+          "message": "log-aggregation monitoring procedure documented"
+        },
+        {
+          "type": "monitoring-procedures",
+          "procedure": "performance-metrics",
+          "status": "passed",
+          "message": "performance-metrics monitoring procedure documented"
+        },
+        {
+          "type": "backup-procedures",
+          "procedure": "database-backup",
+          "status": "passed",
+          "message": "database-backup backup procedure documented"
+        },
+        {
+          "type": "backup-procedures",
+          "procedure": "file-backup",
+          "status": "passed",
+          "message": "file-backup backup procedure documented"
+        },
+        {
+          "type": "backup-procedures",
+          "procedure": "disaster-recovery",
+          "status": "passed",
+          "message": "disaster-recovery backup procedure documented"
+        },
+        {
+          "type": "backup-procedures",
+          "procedure": "testing-procedures",
+          "status": "passed",
+          "message": "testing-procedures backup procedure documented"
+        },
+        {
+          "type": "security-procedures",
+          "procedure": "vulnerability-scanning",
+          "status": "passed",
+          "message": "vulnerability-scanning security procedure documented"
+        },
+        {
+          "type": "security-procedures",
+          "procedure": "penetration-testing",
+          "status": "passed",
+          "message": "penetration-testing security procedure documented"
+        },
+        {
+          "type": "security-procedures",
+          "procedure": "incident-response",
+          "status": "passed",
+          "message": "incident-response security procedure documented"
+        },
+        {
+          "type": "security-procedures",
+          "procedure": "compliance-audits",
+          "status": "passed",
+          "message": "compliance-audits security procedure documented"
+        },
+        {
+          "type": "maintenance-procedures",
+          "procedure": "updates",
+          "status": "passed",
+          "message": "updates maintenance procedure documented"
+        },
+        {
+          "type": "maintenance-procedures",
+          "procedure": "scaling",
+          "status": "passed",
+          "message": "scaling maintenance procedure documented"
+        },
+        {
+          "type": "maintenance-procedures",
+          "procedure": "troubleshooting",
+          "status": "passed",
+          "message": "troubleshooting maintenance procedure documented"
+        },
+        {
+          "type": "maintenance-procedures",
+          "procedure": "performance-tuning",
+          "status": "passed",
+          "message": "performance-tuning maintenance procedure documented"
+        }
+      ],
+      "coverage": {
+        "deployment": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        },
+        "monitoring": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        },
+        "backup": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        },
+        "security": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        },
+        "maintenance": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        }
+      }
+    },
+    "securityCompliance": {
+      "score": 100,
+      "issues": [],
+      "validations": [
+        {
+          "type": "gdpr-documentation",
+          "requirement": "data-processing",
+          "status": "passed",
+          "message": "GDPR data-processing documented"
+        },
+        {
+          "type": "gdpr-documentation",
+          "requirement": "consent-management",
+          "status": "passed",
+          "message": "GDPR consent-management documented"
+        },
+        {
+          "type": "gdpr-documentation",
+          "requirement": "data-subject-rights",
+          "status": "passed",
+          "message": "GDPR data-subject-rights documented"
+        },
+        {
+          "type": "gdpr-documentation",
+          "requirement": "breach-procedures",
+          "status": "passed",
+          "message": "GDPR breach-procedures documented"
+        },
+        {
+          "type": "kdpa-documentation",
+          "requirement": "data-protection",
+          "status": "passed",
+          "message": "KDPA data-protection documented"
+        },
+        {
+          "type": "kdpa-documentation",
+          "requirement": "consent-mechanisms",
+          "status": "passed",
+          "message": "KDPA consent-mechanisms documented"
+        },
+        {
+          "type": "kdpa-documentation",
+          "requirement": "data-transfer",
+          "status": "passed",
+          "message": "KDPA data-transfer documented"
+        },
+        {
+          "type": "kdpa-documentation",
+          "requirement": "compliance-monitoring",
+          "status": "passed",
+          "message": "KDPA compliance-monitoring documented"
+        },
+        {
+          "type": "security-documentation",
+          "requirement": "authentication",
+          "status": "passed",
+          "message": "Security authentication documented"
+        },
+        {
+          "type": "security-documentation",
+          "requirement": "authorization",
+          "status": "passed",
+          "message": "Security authorization documented"
+        },
+        {
+          "type": "security-documentation",
+          "requirement": "encryption",
+          "status": "passed",
+          "message": "Security encryption documented"
+        },
+        {
+          "type": "security-documentation",
+          "requirement": "audit-logging",
+          "status": "passed",
+          "message": "Security audit-logging documented"
+        },
+        {
+          "type": "privacy-documentation",
+          "requirement": "data-minimization",
+          "status": "passed",
+          "message": "Privacy data-minimization documented"
+        },
+        {
+          "type": "privacy-documentation",
+          "requirement": "retention-policies",
+          "status": "passed",
+          "message": "Privacy retention-policies documented"
+        },
+        {
+          "type": "privacy-documentation",
+          "requirement": "anonymization",
+          "status": "passed",
+          "message": "Privacy anonymization documented"
+        },
+        {
+          "type": "privacy-documentation",
+          "requirement": "access-controls",
+          "status": "passed",
+          "message": "Privacy access-controls documented"
+        }
+      ],
+      "coverage": {
+        "gdpr": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        },
+        "kdpa": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        },
+        "security": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        },
+        "privacy": {
+          "total": 4,
+          "passed": 4,
+          "missing": []
+        }
+      }
+    },
+    "overallScore": 49,
+    "totalValidations": 43,
+    "passedValidations": 43,
+    "criticalIssues": 0,
+    "timestamp": "2026-01-30T17:34:07.140Z"
+  },
+  "testResults": {
+    "status": "failed",
+    "error": "Command failed: npx jest production-readiness-tests/system-optimization/documentation-completeness-validator.test.js --json --outputFile=production-readiness-tests/reports/documentation-completeness-unit-test-results.json\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    🔍 Starting comprehensive documentation completeness validation...\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:74:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:75:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    \n    📊 Documentation Completeness Validation Report\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1031:13)\n\n  console.log\n    ================================================\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1032:13)\n\n  console.log\n    Overall Score: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1033:13)\n\n  console.log\n    Passed Validations: 0/0\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1034:13)\n\n  console.log\n    Critical Issues: 16\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1035:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1036:13)\n\n  console.log\n    \n    📚 API Documentation Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1038:13)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/login\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/register\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/refresh\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/logout\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for visitors endpoint: /api/visitors\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 20 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    📖 User Guide Accuracy & Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1041:13)\n\n  console.log\n      🟠 Missing user guide for super-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for estate-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for guard\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for resident\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for visitor\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 14 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    ⚙️ Operational Procedure Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1044:13)\n\n  console.log\n      🟠 Missing deployment procedure documentation for environment-setup\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for database-migration\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for ssl-certificates\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for monitoring\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing monitoring procedure documentation for health-checks\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 15 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    🔒 Security & Compliance Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1047:13)\n\n  console.log\n      🔴 Missing GDPR documentation for data-processing\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for consent-management\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for data-subject-rights\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for breach-procedures\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing KDPA documentation for data-protection\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 11 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    💡 Top Priority Recommendations:\n\n      at DocumentationCompletenessValidator.log [as printRecommendations] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1071:13)\n\n  console.log\n      • Create detailed database-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed file-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed disaster-recovery backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed testing-procedures backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed vulnerability-scanning security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed penetration-testing security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed incident-response security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed compliance-audits security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR data-processing documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR consent-management documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📋 Validation Summary:\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1097:13)\n\n  console.log\n    ❌ Documentation is incomplete and requires major work before production\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1106:15)\n\n  console.log\n    \n    🎯 Task 12.3 Status: NEEDS WORK\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1109:13)\n\n  console.log\n    🔍 Starting comprehensive documentation completeness validation...\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:74:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:75:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    \n    📊 Documentation Completeness Validation Report\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1031:13)\n\n  console.log\n    ================================================\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1032:13)\n\n  console.log\n    Overall Score: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1033:13)\n\n  console.log\n    Passed Validations: 0/0\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1034:13)\n\n  console.log\n    Critical Issues: 16\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1035:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1036:13)\n\n  console.log\n    \n    📚 API Documentation Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1038:13)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/login\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/register\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/refresh\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/logout\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for visitors endpoint: /api/visitors\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 20 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    📖 User Guide Accuracy & Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1041:13)\n\n  console.log\n      🟠 Missing user guide for super-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for estate-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for guard\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for resident\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for visitor\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 14 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    ⚙️ Operational Procedure Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1044:13)\n\n  console.log\n      🟠 Missing deployment procedure documentation for environment-setup\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for database-migration\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for ssl-certificates\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for monitoring\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing monitoring procedure documentation for health-checks\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 15 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    🔒 Security & Compliance Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1047:13)\n\n  console.log\n      🔴 Missing GDPR documentation for data-processing\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for consent-management\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for data-subject-rights\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for breach-procedures\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing KDPA documentation for data-protection\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 11 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    💡 Top Priority Recommendations:\n\n      at DocumentationCompletenessValidator.log [as printRecommendations] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1071:13)\n\n  console.log\n      • Create detailed database-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed file-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed disaster-recovery backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed testing-procedures backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed vulnerability-scanning security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed penetration-testing security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed incident-response security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed compliance-audits security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR data-processing documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR consent-management documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📋 Validation Summary:\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1097:13)\n\n  console.log\n    ❌ Documentation is incomplete and requires major work before production\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1106:15)\n\n  console.log\n    \n    🎯 Task 12.3 Status: NEEDS WORK\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1109:13)\n\n  console.log\n    🔍 Starting comprehensive documentation completeness validation...\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:74:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:75:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    \n    📊 Documentation Completeness Validation Report\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1031:13)\n\n  console.log\n    ================================================\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1032:13)\n\n  console.log\n    Overall Score: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1033:13)\n\n  console.log\n    Passed Validations: 0/0\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1034:13)\n\n  console.log\n    Critical Issues: 17\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1035:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1036:13)\n\n  console.log\n    \n    📚 API Documentation Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1038:13)\n\n  console.log\n      🔴 API documentation file not found or invalid\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📖 User Guide Accuracy & Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1041:13)\n\n  console.log\n      🟠 Missing user guide for super-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for estate-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for guard\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for resident\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for visitor\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 14 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    ⚙️ Operational Procedure Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1044:13)\n\n  console.log\n      🟠 Missing deployment procedure documentation for environment-setup\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for database-migration\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for ssl-certificates\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for monitoring\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing monitoring procedure documentation for health-checks\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 15 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    🔒 Security & Compliance Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1047:13)\n\n  console.log\n      🔴 Missing GDPR documentation for data-processing\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for consent-management\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for data-subject-rights\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for breach-procedures\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing KDPA documentation for data-protection\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 11 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    💡 Top Priority Recommendations:\n\n      at DocumentationCompletenessValidator.log [as printRecommendations] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1071:13)\n\n  console.log\n      • Create comprehensive OpenAPI/Swagger documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed database-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed file-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed disaster-recovery backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed testing-procedures backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed vulnerability-scanning security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed penetration-testing security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed incident-response security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed compliance-audits security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR data-processing documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📋 Validation Summary:\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1097:13)\n\n  console.log\n    ❌ Documentation is incomplete and requires major work before production\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1106:15)\n\n  console.log\n    \n    🎯 Task 12.3 Status: NEEDS WORK\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1109:13)\n\n  console.log\n    🔍 Starting comprehensive documentation completeness validation...\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:74:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:75:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    \n    📊 Documentation Completeness Validation Report\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1031:13)\n\n  console.log\n    ================================================\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1032:13)\n\n  console.log\n    Overall Score: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1033:13)\n\n  console.log\n    Passed Validations: 0/0\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1034:13)\n\n  console.log\n    Critical Issues: 16\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1035:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1036:13)\n\n  console.log\n    \n    📚 API Documentation Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1038:13)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/login\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/register\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/refresh\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/logout\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for visitors endpoint: /api/visitors\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 20 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    📖 User Guide Accuracy & Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1041:13)\n\n  console.log\n      🟠 Missing user guide for super-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for estate-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for guard\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for resident\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for visitor\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 14 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    ⚙️ Operational Procedure Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1044:13)\n\n  console.log\n      🟠 Missing deployment procedure documentation for environment-setup\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for database-migration\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for ssl-certificates\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for monitoring\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing monitoring procedure documentation for health-checks\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 15 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    🔒 Security & Compliance Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1047:13)\n\n  console.log\n      🔴 Missing GDPR documentation for data-processing\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for consent-management\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for data-subject-rights\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for breach-procedures\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing KDPA documentation for data-protection\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 11 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    💡 Top Priority Recommendations:\n\n      at DocumentationCompletenessValidator.log [as printRecommendations] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1071:13)\n\n  console.log\n      • Create detailed database-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed file-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed disaster-recovery backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed testing-procedures backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed vulnerability-scanning security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed penetration-testing security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed incident-response security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed compliance-audits security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR data-processing documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR consent-management documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📋 Validation Summary:\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1097:13)\n\n  console.log\n    ❌ Documentation is incomplete and requires major work before production\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1106:15)\n\n  console.log\n    \n    🎯 Task 12.3 Status: NEEDS WORK\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1109:13)\n\n  console.log\n    📄 Detailed report saved to: /Users/raynj/Desktop/secure-gate-react-express-fresh/production-readiness-tests/reports/documentation-completeness-validation-report.json\n\n      at DocumentationCompletenessValidator.log [as generateDetailedReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1128:15)\n\n  console.log\n    📄 Summary report saved to: /Users/raynj/Desktop/secure-gate-react-express-fresh/production-readiness-tests/reports/documentation-completeness-summary.md\n\n      at DocumentationCompletenessValidator.log [as generateMarkdownSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1196:15)\n\n  console.log\n    🔍 Starting comprehensive documentation completeness validation...\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:74:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:75:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    \n    📊 Documentation Completeness Validation Report\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1031:13)\n\n  console.log\n    ================================================\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1032:13)\n\n  console.log\n    Overall Score: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1033:13)\n\n  console.log\n    Passed Validations: 0/0\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1034:13)\n\n  console.log\n    Critical Issues: 17\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1035:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1036:13)\n\n  console.log\n    \n    📚 API Documentation Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1038:13)\n\n  console.log\n      🔴 API documentation file not found or invalid\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📖 User Guide Accuracy & Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1041:13)\n\n  console.log\n      🟠 Missing user guide for super-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for estate-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for guard\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for resident\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for visitor\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 14 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    ⚙️ Operational Procedure Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1044:13)\n\n  console.log\n      🟠 Missing deployment procedure documentation for environment-setup\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for database-migration\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for ssl-certificates\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for monitoring\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing monitoring procedure documentation for health-checks\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 15 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    🔒 Security & Compliance Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1047:13)\n\n  console.log\n      🔴 Missing GDPR documentation for data-processing\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for consent-management\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for data-subject-rights\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for breach-procedures\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing KDPA documentation for data-protection\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 11 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    💡 Top Priority Recommendations:\n\n      at DocumentationCompletenessValidator.log [as printRecommendations] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1071:13)\n\n  console.log\n      • Create comprehensive OpenAPI/Swagger documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed database-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed file-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed disaster-recovery backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed testing-procedures backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed vulnerability-scanning security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed penetration-testing security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed incident-response security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed compliance-audits security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR data-processing documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📋 Validation Summary:\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1097:13)\n\n  console.log\n    ❌ Documentation is incomplete and requires major work before production\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1106:15)\n\n  console.log\n    \n    🎯 Task 12.3 Status: NEEDS WORK\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1109:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    🔍 Starting comprehensive documentation completeness validation...\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:74:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:75:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    \n    📊 Documentation Completeness Validation Report\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1031:13)\n\n  console.log\n    ================================================\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1032:13)\n\n  console.log\n    Overall Score: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1033:13)\n\n  console.log\n    Passed Validations: 0/0\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1034:13)\n\n  console.log\n    Critical Issues: 16\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1035:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1036:13)\n\n  console.log\n    \n    📚 API Documentation Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1038:13)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/login\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/register\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/refresh\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for authentication endpoint: /api/auth/logout\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing documentation for visitors endpoint: /api/visitors\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 20 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    📖 User Guide Accuracy & Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1041:13)\n\n  console.log\n      🟠 Missing user guide for super-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for estate-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for guard\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for resident\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for visitor\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 14 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    ⚙️ Operational Procedure Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1044:13)\n\n  console.log\n      🟠 Missing deployment procedure documentation for environment-setup\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for database-migration\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for ssl-certificates\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for monitoring\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing monitoring procedure documentation for health-checks\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 15 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    🔒 Security & Compliance Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1047:13)\n\n  console.log\n      🔴 Missing GDPR documentation for data-processing\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for consent-management\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for data-subject-rights\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for breach-procedures\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing KDPA documentation for data-protection\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 11 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    💡 Top Priority Recommendations:\n\n      at DocumentationCompletenessValidator.log [as printRecommendations] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1071:13)\n\n  console.log\n      • Create detailed database-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed file-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed disaster-recovery backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed testing-procedures backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed vulnerability-scanning security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed penetration-testing security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed incident-response security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed compliance-audits security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR data-processing documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR consent-management documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📋 Validation Summary:\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1097:13)\n\n  console.log\n    ❌ Documentation is incomplete and requires major work before production\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1106:15)\n\n  console.log\n    \n    🎯 Task 12.3 Status: NEEDS WORK\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1109:13)\n\n  console.log\n    📄 Detailed report saved to: /Users/raynj/Desktop/secure-gate-react-express-fresh/production-readiness-tests/reports/documentation-completeness-validation-report.json\n\n      at DocumentationCompletenessValidator.log [as generateDetailedReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1128:15)\n\n  console.log\n    📄 Summary report saved to: /Users/raynj/Desktop/secure-gate-react-express-fresh/production-readiness-tests/reports/documentation-completeness-summary.md\n\n      at DocumentationCompletenessValidator.log [as generateMarkdownSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1196:15)\n\n  console.log\n    🔍 Starting comprehensive documentation completeness validation...\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:74:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as validateDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:75:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\n  console.log\n    🔒 Validating security and compliance documentation...\n\n      at DocumentationCompletenessValidator.log [as validateSecurityComplianceDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:809:13)\n\n  console.log\n    \n    📊 Documentation Completeness Validation Report\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1031:13)\n\n  console.log\n    ================================================\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1032:13)\n\n  console.log\n    Overall Score: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1033:13)\n\n  console.log\n    Passed Validations: 0/0\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1034:13)\n\n  console.log\n    Critical Issues: 17\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1035:13)\n\n  console.log\n    Requirements: 10.3, 10.4, 10.6\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1036:13)\n\n  console.log\n    \n    📚 API Documentation Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1038:13)\n\n  console.log\n      🔴 API documentation file not found or invalid\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📖 User Guide Accuracy & Completeness: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1041:13)\n\n  console.log\n      🟠 Missing user guide for super-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for estate-admin\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for guard\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for resident\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing user guide for visitor\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 14 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    ⚙️ Operational Procedure Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1044:13)\n\n  console.log\n      🟠 Missing deployment procedure documentation for environment-setup\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for database-migration\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for ssl-certificates\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing deployment procedure documentation for monitoring\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🟠 Missing monitoring procedure documentation for health-checks\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 15 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    🔒 Security & Compliance Documentation: 0/100\n\n      at DocumentationCompletenessValidator.log [as generateComprehensiveReport] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1047:13)\n\n  console.log\n      🔴 Missing GDPR documentation for data-processing\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for consent-management\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for data-subject-rights\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing GDPR documentation for breach-procedures\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      🔴 Missing KDPA documentation for data-protection\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1057:17)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      ... and 11 more issues\n\n      at DocumentationCompletenessValidator.log [as printCategoryResults] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1060:17)\n\n  console.log\n    \n    💡 Top Priority Recommendations:\n\n      at DocumentationCompletenessValidator.log [as printRecommendations] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1071:13)\n\n  console.log\n      • Create comprehensive OpenAPI/Swagger documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed database-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed file-backup backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed disaster-recovery backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed testing-procedures backup procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed vulnerability-scanning security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed penetration-testing security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed incident-response security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create detailed compliance-audits security procedure (10.6)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n      • Create comprehensive GDPR data-processing documentation (10.3)\n\n      at log (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1092:15)\n          at Array.forEach (<anonymous>)\n\n  console.log\n    \n    📋 Validation Summary:\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1097:13)\n\n  console.log\n    ❌ Documentation is incomplete and requires major work before production\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1106:15)\n\n  console.log\n    \n    🎯 Task 12.3 Status: NEEDS WORK\n\n      at DocumentationCompletenessValidator.log [as printValidationSummary] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:1109:13)\n\n  console.log\n    📚 Validating API documentation completeness...\n\n      at DocumentationCompletenessValidator.log [as validateApiDocumentationCompleteness] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:94:13)\n\n  console.log\n    📖 Validating user guide accuracy and completeness...\n\n      at DocumentationCompletenessValidator.log [as validateUserGuideAccuracy] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:357:13)\n\n  console.log\n    ⚙️ Validating operational procedure documentation...\n\n      at DocumentationCompletenessValidator.log [as validateOperationalProcedureDocumentation] (production-readiness-tests/system-optimization/documentation-completeness-validator.js:597:13)\n\nFAIL production-readiness-tests/system-optimization/documentation-completeness-validator.test.js\n  DocumentationCompletenessValidator\n    API Documentation Completeness Validation\n      ✓ should validate complete API documentation (18 ms)\n      ✓ should detect missing API documentation file (1 ms)\n      ✓ should validate endpoint coverage (1 ms)\n      ✓ should validate schema completeness (2 ms)\n      ✓ should validate security documentation (1 ms)\n    User Guide Accuracy Validation\n      ✕ should validate role-specific guides (1 ms)\n      ✓ should detect missing user guides (1 ms)\n      ✕ should validate workflow documentation (1 ms)\n      ✕ should validate accessibility documentation (1 ms)\n    Operational Procedure Documentation Validation\n      ✕ should validate deployment procedures (1 ms)\n      ✕ should validate monitoring procedures\n      ✕ should validate backup procedures (1 ms)\n      ✓ should detect missing critical operational procedures (1 ms)\n    Security and Compliance Documentation Validation\n      ✕ should validate GDPR documentation (1 ms)\n      ✕ should validate KDPA documentation (1 ms)\n      ✕ should validate security documentation (1 ms)\n      ✓ should detect missing compliance documentation (2 ms)\n    Overall Validation and Scoring\n      ✓ should calculate overall score correctly (14 ms)\n      ✓ should count validations correctly (12 ms)\n      ✓ should identify critical issues (9 ms)\n      ✓ should generate comprehensive report (13 ms)\n    Error Handling\n      ✓ should handle file system errors gracefully (9 ms)\n      ✓ should handle invalid YAML gracefully\n      ✓ should handle missing directories gracefully\n    Report Generation\n      ✓ should generate markdown summary (10 ms)\n      ✓ should include requirement references in report (10 ms)\n    Integration with Requirements\n      ✓ should validate requirement 10.3 (API documentation completeness) (1 ms)\n      ✓ should validate requirement 10.4 (user guide accuracy)\n      ✓ should validate requirement 10.6 (operational procedures) (1 ms)\n\n  ● DocumentationCompletenessValidator › User Guide Accuracy Validation › should validate role-specific guides\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      203 |         .filter(v => v.type === 'role-guide');\n      204 |       \n    > 205 |       expect(roleGuideValidations.length).toBeGreaterThan(0);\n          |                                           ^\n      206 |     });\n      207 |\n      208 |     test('should detect missing user guides', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:205:43)\n\n  ● DocumentationCompletenessValidator › User Guide Accuracy Validation › should validate workflow documentation\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      230 |         .filter(v => v.type === 'workflow-documentation');\n      231 |       \n    > 232 |       expect(workflowValidations.length).toBeGreaterThan(0);\n          |                                          ^\n      233 |     });\n      234 |\n      235 |     test('should validate accessibility documentation', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:232:42)\n\n  ● DocumentationCompletenessValidator › User Guide Accuracy Validation › should validate accessibility documentation\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      246 |         .filter(v => v.type === 'accessibility-documentation');\n      247 |       \n    > 248 |       expect(accessibilityValidations.length).toBeGreaterThan(0);\n          |                                               ^\n      249 |     });\n      250 |   });\n      251 |\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:248:47)\n\n  ● DocumentationCompletenessValidator › Operational Procedure Documentation Validation › should validate deployment procedures\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      264 |         .filter(v => v.type === 'deployment-procedures');\n      265 |       \n    > 266 |       expect(deploymentValidations.length).toBeGreaterThan(0);\n          |                                            ^\n      267 |     });\n      268 |\n      269 |     test('should validate monitoring procedures', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:266:44)\n\n  ● DocumentationCompletenessValidator › Operational Procedure Documentation Validation › should validate monitoring procedures\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      280 |         .filter(v => v.type === 'monitoring-procedures');\n      281 |       \n    > 282 |       expect(monitoringValidations.length).toBeGreaterThan(0);\n          |                                            ^\n      283 |     });\n      284 |\n      285 |     test('should validate backup procedures', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:282:44)\n\n  ● DocumentationCompletenessValidator › Operational Procedure Documentation Validation › should validate backup procedures\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      296 |         .filter(v => v.type === 'backup-procedures');\n      297 |       \n    > 298 |       expect(backupValidations.length).toBeGreaterThan(0);\n          |                                        ^\n      299 |     });\n      300 |\n      301 |     test('should detect missing critical operational procedures', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:298:40)\n\n  ● DocumentationCompletenessValidator › Security and Compliance Documentation Validation › should validate GDPR documentation\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      325 |         .filter(v => v.type === 'gdpr-documentation');\n      326 |       \n    > 327 |       expect(gdprValidations.length).toBeGreaterThan(0);\n          |                                      ^\n      328 |     });\n      329 |\n      330 |     test('should validate KDPA documentation', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:327:38)\n\n  ● DocumentationCompletenessValidator › Security and Compliance Documentation Validation › should validate KDPA documentation\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      341 |         .filter(v => v.type === 'kdpa-documentation');\n      342 |       \n    > 343 |       expect(kdpaValidations.length).toBeGreaterThan(0);\n          |                                      ^\n      344 |     });\n      345 |\n      346 |     test('should validate security documentation', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:343:38)\n\n  ● DocumentationCompletenessValidator › Security and Compliance Documentation Validation › should validate security documentation\n\n    expect(received).toBeGreaterThan(expected)\n\n    Expected: > 0\n    Received:   0\n\n      357 |         .filter(v => v.type === 'security-documentation');\n      358 |       \n    > 359 |       expect(securityValidations.length).toBeGreaterThan(0);\n          |                                          ^\n      360 |     });\n      361 |\n      362 |     test('should detect missing compliance documentation', async () => {\n\n      at Object.toBeGreaterThan (production-readiness-tests/system-optimization/documentation-completeness-validator.test.js:359:42)\n\nTest Suites: 1 failed, 1 total\nTests:       9 failed, 20 passed, 29 total\nSnapshots:   0 total\nTime:        0.403 s\nRan all test suites matching production-readiness-tests/system-optimization/documentation-completeness-validator.test.js.\nTest results written to: production-readiness-tests/reports/documentation-completeness-unit-test-results.json\n"
+  },
+  "propertyTestResults": {
+    "status": "failed",
+    "error": "Command failed: npx jest production-readiness-tests/properties/documentation-completeness-validation.test.js --json --outputFile=production-readiness-tests/reports/documentation-completeness-property-test-results.json\nFAIL production-readiness-tests/properties/documentation-completeness-validation.test.js\n  ● Test suite failed to run\n\n    SyntaxError: /Users/raynj/Desktop/secure-gate-react-express-fresh/production-readiness-tests/properties/documentation-completeness-validation.test.js: Unexpected token, expected \",\" (496:47)\n\n      494 |           \n      495 |           // Property: JSON report should be valid JSON\n    > 496 |           const jsonReportCall = (fs.writeFile as jest.Mock).mock.calls\n          |                                                ^\n      497 |             .find(call => call[0].includes('.json'));\n      498 |           \n      499 |           if (jsonReportCall) {\n\n      at constructor (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parse-error.ts:95:45)\n      at Parser.toParseError [as raise] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)\n      at Parser.raise [as unexpected] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/tokenizer/index.ts:1544:16)\n      at Parser.unexpected [as expect] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/util.ts:157:12)\n      at Parser.expect [as parseParenAndDistinguishExpression] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:1798:14)\n      at Parser.parseParenAndDistinguishExpression [as parseExprAtom] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:1170:21)\n      at Parser.parseExprAtom [as parseExprSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:742:23)\n      at Parser.parseExprSubscripts [as parseUpdate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:721:21)\n      at Parser.parseUpdate [as parseMaybeUnary] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:683:23)\n      at Parser.parseMaybeUnary [as parseMaybeUnaryOrPrivate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:417:14)\n      at Parser.parseMaybeUnaryOrPrivate [as parseExprOps] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:429:23)\n      at Parser.parseExprOps [as parseMaybeConditional] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:384:23)\n      at Parser.parseMaybeConditional [as parseMaybeAssign] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:301:21)\n      at parseMaybeAssign (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:257:12)\n      at Parser.callback [as allowInAnd] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3189:16)\n      at Parser.allowInAnd [as parseMaybeAssignAllowIn] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:256:17)\n      at Parser.parseMaybeAssignAllowIn [as parseVar] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1587:18)\n      at Parser.parseVar [as parseVarStatement] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1251:10)\n      at Parser.parseVarStatement [as parseStatementContent] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:612:21)\n      at Parser.parseStatementContent [as parseStatementLike] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:482:17)\n      at Parser.parseStatementLike [as parseStatementListItem] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:431:17)\n      at Parser.parseStatementListItem [as parseBlockOrModuleBlockBody] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1444:16)\n      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1417:10)\n      at Parser.parseBlockBody [as parseBlock] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1385:10)\n      at Parser.parseBlock [as parseFunctionBody] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2618:24)\n      at Parser.parseFunctionBody [as parseArrowExpression] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2559:10)\n      at Parser.parseArrowExpression [as parseAsyncArrowFromCallExpression] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:1067:10)\n      at Parser.parseAsyncArrowFromCallExpression [as parseCoverCallAndAsyncArrowHead] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:942:27)\n      at Parser.parseCoverCallAndAsyncArrowHead [as parseSubscript] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:804:19)\n      at Parser.parseSubscript [as parseSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:763:19)\n      at Parser.parseSubscripts [as parseExprSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:748:17)\n      at Parser.parseExprSubscripts [as parseUpdate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:721:21)\n      at Parser.parseUpdate [as parseMaybeUnary] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:683:23)\n      at Parser.parseMaybeUnary [as parseMaybeUnaryOrPrivate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:417:14)\n      at Parser.parseMaybeUnaryOrPrivate [as parseExprOps] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:429:23)\n      at Parser.parseExprOps [as parseMaybeConditional] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:384:23)\n      at Parser.parseMaybeConditional [as parseMaybeAssign] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:301:21)\n      at parseMaybeAssign (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:257:12)\n      at Parser.callback [as allowInAnd] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3194:12)\n      at Parser.allowInAnd [as parseMaybeAssignAllowIn] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:256:17)\n      at Parser.parseMaybeAssignAllowIn [as parseMaybeAssignAllowInOrVoidPattern] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3308:17)\n      at Parser.parseMaybeAssignAllowInOrVoidPattern [as parseExprListItem] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2790:18)\n      at Parser.parseExprListItem [as parseCallExpressionArguments] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:1042:14)\n      at Parser.parseCallExpressionArguments [as parseCoverCallAndAsyncArrowHead] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:922:29)\n      at Parser.parseCoverCallAndAsyncArrowHead [as parseSubscript] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:804:19)\n      at Parser.parseSubscript [as parseSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:763:19)\n      at Parser.parseSubscripts [as parseExprSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:748:17)\n      at Parser.parseExprSubscripts [as parseUpdate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:721:21)\n      at Parser.parseUpdate [as parseMaybeUnary] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:683:23)\n      at Parser.parseMaybeUnary [as parseMaybeUnaryOrPrivate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:417:14)\n      at Parser.parseMaybeUnaryOrPrivate [as parseExprOps] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:429:23)\n      at Parser.parseExprOps [as parseMaybeConditional] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:384:23)\n      at Parser.parseMaybeConditional [as parseMaybeAssign] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:301:21)\n      at parseMaybeAssign (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:257:12)\n      at Parser.callback [as allowInAnd] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3194:12)\n      at Parser.allowInAnd [as parseMaybeAssignAllowIn] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:256:17)\n      at Parser.parseMaybeAssignAllowIn [as parseMaybeAssignAllowInOrVoidPattern] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3308:17)\n      at Parser.parseMaybeAssignAllowInOrVoidPattern [as parseExprListItem] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2790:18)\n      at Parser.parseExprListItem [as parseCallExpressionArguments] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:1042:14)\n      at Parser.parseCallExpressionArguments [as parseCoverCallAndAsyncArrowHead] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:922:29)\n      at Parser.parseCoverCallAndAsyncArrowHead [as parseSubscript] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:804:19)\n      at Parser.parseSubscript [as parseSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:763:19)\n      at Parser.parseSubscripts [as parseExprSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:748:17)\n      at Parser.parseExprSubscripts [as parseUpdate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:721:21)\n      at Parser.parseUpdate [as parseMaybeUnary] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:683:23)\n      at Parser.parseMaybeUnary [as parseAwait] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2955:28)\n      at Parser.parseAwait [as parseMaybeUnary] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:645:25)\n      at Parser.parseMaybeUnary [as parseMaybeUnaryOrPrivate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:417:14)\n      at Parser.parseMaybeUnaryOrPrivate [as parseExprOps] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:429:23)\n      at Parser.parseExprOps [as parseMaybeConditional] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:384:23)\n      at Parser.parseMaybeConditional [as parseMaybeAssign] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:301:21)\n      at Parser.parseMaybeAssign [as parseExpressionBase] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:226:23)\n      at parseExpressionBase (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:217:39)\n      at Parser.callback [as allowInAnd] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3189:16)\n      at Parser.allowInAnd [as parseExpression] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:217:17)\n      at Parser.parseExpression [as parseStatementContent] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:688:23)\n      at Parser.parseStatementContent [as parseStatementLike] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:482:17)\n      at Parser.parseStatementLike [as parseStatementListItem] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:431:17)\n      at Parser.parseStatementListItem [as parseBlockOrModuleBlockBody] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1444:16)\n      at Parser.parseBlockOrModuleBlockBody [as parseBlockBody] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1417:10)\n      at Parser.parseBlockBody [as parseBlock] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/statement.ts:1385:10)\n      at Parser.parseBlock [as parseFunctionBody] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2618:24)\n      at Parser.parseFunctionBody [as parseArrowExpression] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2559:10)\n      at Parser.parseArrowExpression [as parseAsyncArrowFromCallExpression] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:1067:10)\n      at Parser.parseAsyncArrowFromCallExpression [as parseCoverCallAndAsyncArrowHead] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:942:27)\n      at Parser.parseCoverCallAndAsyncArrowHead [as parseSubscript] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:804:19)\n      at Parser.parseSubscript [as parseSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:763:19)\n      at Parser.parseSubscripts [as parseExprSubscripts] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:748:17)\n      at Parser.parseExprSubscripts [as parseUpdate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:721:21)\n      at Parser.parseUpdate [as parseMaybeUnary] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:683:23)\n      at Parser.parseMaybeUnary [as parseMaybeUnaryOrPrivate] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:417:14)\n      at Parser.parseMaybeUnaryOrPrivate [as parseExprOps] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:429:23)\n      at Parser.parseExprOps [as parseMaybeConditional] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:384:23)\n      at Parser.parseMaybeConditional [as parseMaybeAssign] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:301:21)\n      at parseMaybeAssign (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:257:12)\n      at Parser.callback [as allowInAnd] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3194:12)\n      at Parser.allowInAnd [as parseMaybeAssignAllowIn] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:256:17)\n      at Parser.parseMaybeAssignAllowIn [as parseMaybeAssignAllowInOrVoidPattern] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:3308:17)\n      at Parser.parseMaybeAssignAllowInOrVoidPattern [as parseExprListItem] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:2790:18)\n      at Parser.parseExprListItem [as parseCallExpressionArguments] (../../.npm/_npx/b8d86e6551a4f492/node_modules/@babel/parser/src/parser/expression.ts:1042:14)\n\nTest Suites: 1 failed, 1 total\nTests:       0 total\nSnapshots:   0 total\nTime:        0.192 s\nRan all test suites matching production-readiness-tests/properties/documentation-completeness-validation.test.js.\nTest results written to: production-readiness-tests/reports/documentation-completeness-property-test-results.json\n"
+  },
+  "overallStatus": "unknown",
+  "timestamp": "2026-01-30T17:34:07.127Z",
+  "executionTime": 0
+}

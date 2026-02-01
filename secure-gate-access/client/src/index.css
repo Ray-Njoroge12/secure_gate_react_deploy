@@ -5,6 +5,9 @@
 /* Import Design System (Typography, Colors, Spacing) */
 @import './styles/design-system.css';
 
+/* Import Enhanced Responsive System */
+@import './styles/responsive.css';
+
 /* Custom utilities for the secure gate system - UNIFIED LIGHT THEME */
 @layer utilities {
   .bg-app {

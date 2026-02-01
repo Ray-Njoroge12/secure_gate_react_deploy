@@ -49,7 +49,7 @@ export async function setupTestDatabase() {
       'ALTER TABLE visitors ALTER COLUMN estate_id SET DEFAULT 1',
       [],
       { retries: 0, timeout: 5000 }
-    ).catch(() => {});
+    ).catch(() => { });
 
     // Clean up test data from tables (in correct order due to foreign keys)
     // Order matters: delete child records before parent records
@@ -160,10 +160,12 @@ export async function createTestUsers() {
   // Insert into both 'password' and 'password_hash' columns for compatibility
 
   const adminResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, phone, house, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
     [
       `admin_${uniqueSuffix}`,
+      'Admin',
+      'User',
       `admin_${uniqueSuffix}@test.com`,
       hashedPassword,  // legacy password column (NOT NULL)
       hashedPassword,  // password_hash column (used by userService)
@@ -176,10 +178,12 @@ export async function createTestUsers() {
   );
 
   const guardResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, phone, house, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
     [
       `guard_${uniqueSuffix}`,
+      'Guard',
+      'User',
       `guard_${uniqueSuffix}@test.com`,
       hashedPassword,
       hashedPassword,
@@ -191,11 +195,31 @@ export async function createTestUsers() {
     ]
   );
 
+  const guard2Result = await dbManager.query(
+    `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, phone, house, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+    [
+      `guard2_${uniqueSuffix}`,
+      'Guard',
+      'Two',
+      `guard2_${uniqueSuffix}@test.com`,
+      hashedPassword,
+      hashedPassword,
+      'guard',
+      `+2547${(timestamp + 3).toString().slice(-8)}`,
+      'Gate 2',
+      true,
+      1
+    ]
+  );
+
   const residentResult = await dbManager.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, phone, house, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
     [
       `resident_${uniqueSuffix}`,
+      'Resident',
+      'User',
       `resident_${uniqueSuffix}@test.com`,
       hashedPassword,
       hashedPassword,
@@ -210,6 +234,7 @@ export async function createTestUsers() {
   return {
     admin: adminResult.rows[0],
     guard: guardResult.rows[0],
+    guard2: guard2Result.rows[0],
     resident: residentResult.rows[0]
   };
 }
@@ -353,10 +378,12 @@ export async function createTestUserInTransaction(client, overrides = {}) {
   );
 
   const result = await client.query(
-    `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, phone, house, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
     [
       overrides.username || `user_${timestamp}_${random}`,
+      overrides.first_name || 'Test',
+      overrides.last_name || 'User',
       overrides.email || `test${timestamp}_${random}@test.com`,
       hashedPassword,
       hashedPassword,

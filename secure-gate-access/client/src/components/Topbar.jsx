@@ -6,6 +6,7 @@ import Modal from "./ui/Modal";
 import { useAuth } from "../contexts/AuthContext";
 import ThemeToggle from "./ui/ThemeToggle.jsx";
 import NotificationBell from "./ui/NotificationBell.jsx";
+import ChangePasswordModal from "./modals/ChangePasswordModal";
 
 export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const { user } = useAuth(); // Get user from AuthContext instead of localStorage
@@ -16,11 +17,12 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const profileMenuRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const getRoleDisplayName = (role) => {
     const roleNames = {
       resident: "Resident",
-      security: "Security Guard", 
+      security: "Security Guard",
       admin: "Administrator",
       guard: "Security Guard"
     };
@@ -59,7 +61,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
     if (isMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -77,9 +79,9 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   };
 
   return (
-    <header 
+    <header
       ref={topbarRef}
-      className="topbar bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between sticky top-0 z-40" 
+      className="topbar bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between sticky top-0 z-40"
       role="banner"
       aria-label="Page header"
     >
@@ -92,10 +94,10 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
           aria-expanded={sidebarOpen}
           aria-controls="main-navigation"
         >
-          <svg 
-            className="w-6 h-6" 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
             aria-hidden="true"
           >
@@ -106,7 +108,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
             )}
           </svg>
         </button>
-        
+
         <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-200 m-0">
           {title}
         </h1>
@@ -114,14 +116,14 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
           {getRoleDisplayName(role)}
         </Badge>
       </div>
-      
+
       <div className="flex items-center gap-3">
         {/* Theme Toggle */}
         <ThemeToggle size="small" />
-        
+
         {/* Notifications */}
         <NotificationBell />
-        
+
         <div className="relative" ref={profileMenuRef}>
           <button
             className="profile-btn focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -134,17 +136,17 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
             <div className="w-10 h-10 relative">
               <div className="w-full h-full rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-green-600 hover:border-green-500 transition-colors">
                 {(profilePic && profilePic !== "") ? (
-                  <img 
-                    src={profilePic} 
-                    alt={`${getRoleDisplayName(role)} profile picture`} 
-                    className="w-full h-full object-cover rounded-full" 
+                  <img
+                    src={profilePic}
+                    alt={`${getRoleDisplayName(role)} profile picture`}
+                    className="w-full h-full object-cover rounded-full"
                   />
                 ) : (
-                  <svg 
-                    width="24" 
-                    height="24" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
                     className="text-green-500"
                     aria-hidden="true"
                   >
@@ -168,6 +170,16 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                 role="menuitem"
               >
                 Profile Settings
+              </button>
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setShowChangePassword(true);
+                }}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                role="menuitem"
+              >
+                Change Password
               </button>
               {onLogout && (
                 <button
@@ -216,6 +228,11 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
           </div>
         </div>
       </Modal>
+
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </header>
   );
 }

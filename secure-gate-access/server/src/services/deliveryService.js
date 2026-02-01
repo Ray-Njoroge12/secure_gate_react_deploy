@@ -74,6 +74,7 @@ export async function registerDelivery({
   carrierName,
   recipientId,
   guardId,
+  estateId,
   packageDescription,
   packageSize,
   notes
@@ -81,6 +82,22 @@ export async function registerDelivery({
   const client = await pool.connect();
 
   try {
+    // Verify recipient exists and belongs to the same estate
+    const recipientResult = await client.query(
+      'SELECT email, username, estate_id FROM users WHERE id = $1',
+      [recipientId]
+    );
+
+    const recipient = recipientResult.rows[0];
+
+    if (!recipient) {
+      throw new Error('Recipient not found');
+    }
+
+    if (recipient.estate_id !== estateId) {
+      throw new Error('Recipient does not belong to this estate');
+    }
+
     await client.query('BEGIN');
 
     // Encrypt tracking number for privacy
@@ -92,19 +109,12 @@ export async function registerDelivery({
 
     const result = await client.query(
       `INSERT INTO deliveries (
-        tracking_number, carrier_name, recipient_id, received_by_guard_id,
+        tracking_number, carrier_name, recipient_id, received_by_guard_id, estate_id,
         package_description, package_size, notes, photo_expires_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id, carrier_name, package_description, package_size, status, created_at`,
-      [encryptedTracking, carrierName, recipientId, guardId, packageDescription, packageSize || 'medium', notes, photoExpiresAt]
+      [encryptedTracking, carrierName, recipientId, guardId, estateId, packageDescription, packageSize || 'medium', notes, photoExpiresAt]
     );
-
-    // Fetch recipient info for notification
-    const recipientResult = await client.query(
-      'SELECT email, username FROM users WHERE id = $1',
-      [recipientId]
-    );
-    const recipient = recipientResult.rows[0] || {};
 
     await client.query('COMMIT');
 

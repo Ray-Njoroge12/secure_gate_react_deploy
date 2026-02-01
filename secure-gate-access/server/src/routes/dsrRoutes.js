@@ -47,8 +47,8 @@ const router = express.Router();
  *       429:
  *         $ref: '#/components/responses/RateLimitError'
  */
-router.get('/data-export', 
-  authenticateToken, 
+router.get('/data-export',
+  authenticateToken,
   rateLimiters.sensitive,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
@@ -148,13 +148,13 @@ router.put('/profile',
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { name, email, phone, area, house } = req.body;
-    
+
     try {
       // Update user profile
       const updateFields = [];
       const updateValues = [];
       let paramCount = 1;
-      
+
       if (name) {
         updateFields.push(`username = $${paramCount++}`);
         updateValues.push(name);
@@ -175,29 +175,29 @@ router.put('/profile',
         updateFields.push(`house = $${paramCount++}`);
         updateValues.push(house);
       }
-      
+
       if (updateFields.length === 0) {
         throw new AppError('No fields provided for update', 400, 'VALIDATION_ERROR');
       }
-      
+
       updateFields.push(`updated_at = NOW()`);
       updateValues.push(userId);
-      
+
       const query = `
         UPDATE users 
         SET ${updateFields.join(', ')} 
         WHERE id = $${paramCount}
         RETURNING *
       `;
-      
+
       const result = await db.query(query, updateValues);
-      
+
       // Log the profile update
       await db.query(
-        'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, outcome, message) VALUES ($1, $2, $3, $4, $5, $6)',
-        [userId, 'profile_update', 'user', userId, 'success', 'User profile updated via DSR']
+        'INSERT INTO audit_logs (user_id, estate_id, action, entity_type, entity_id, outcome, message) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [userId, req.user.estate_id, 'profile_update', 'user', userId, 'success', 'User profile updated via DSR']
       );
-      
+
       successResponse(res, result.rows[0], 'Profile updated successfully');
     } catch (error) {
       throw new AppError('Failed to update profile', 500, 'UPDATE_ERROR');
@@ -234,12 +234,13 @@ router.delete('/account',
   rateLimiters.sensitive,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
     const { reason = 'user_request' } = req.body;
-    
+
     try {
       // Anonymize user data instead of hard delete (for audit trail)
       const anonymizedId = `deleted_${userId}_${Date.now()}`;
-      
+
       await db.query(
         `UPDATE users 
          SET username = $1, 
@@ -249,23 +250,23 @@ router.delete('/account',
              house = NULL,
              deleted_at = NOW(),
              updated_at = NOW()
-         WHERE id = $3`,
-        [anonymizedId, `${anonymizedId}@anonymized.com`, userId]
+         WHERE id = $3 AND estate_id = $4`,
+        [anonymizedId, `${anonymizedId}@anonymized.com`, userId, estateId]
       );
-      
+
       // Log the deletion request
       await db.query(
-        'INSERT INTO deletion_requests (user_id, reason, status, request_id, requested_at, anonymized_id, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [userId, reason, 'completed', uuidv4(), new Date(), anonymizedId, req.ip, req.get('User-Agent')]
+        'INSERT INTO deletion_requests (user_id, estate_id, reason, status, request_id, requested_at, anonymized_id, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [userId, estateId, reason, 'completed', uuidv4(), new Date(), anonymizedId, req.ip, req.get('User-Agent')]
       );
-      
+
       // Log the account deletion
       await db.query(
-        'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, outcome, message) VALUES ($1, $2, $3, $4, $5, $6)',
-        [userId, 'account_deletion', 'user', userId, 'success', 'Account deleted via DSR - Right to Erasure']
+        'INSERT INTO audit_logs (user_id, estate_id, action, entity_type, entity_id, outcome, message) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [userId, estateId, 'account_deletion', 'user', userId, 'success', 'Account deleted via DSR - Right to Erasure']
       );
-      
-      successResponse(res, { 
+
+      successResponse(res, {
         message: 'Account successfully deleted and data anonymized',
         anonymized_id: anonymizedId,
         deleted_at: new Date().toISOString()
@@ -313,30 +314,31 @@ router.post('/restrict-processing',
   rateLimiters.general,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
     const { processing_type, reason = 'user_request' } = req.body;
-    
+
     if (!processing_type) {
       throw new AppError('Processing type is required', 400, 'VALIDATION_ERROR');
     }
-    
+
     try {
       // Store the restriction request
       const restrictionId = uuidv4();
-      
+
       await db.query(
-        `INSERT INTO dsar_requests (user_id, request_type, status, request_id, requested_at, ip_address, user_agent, details) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [userId, 'restrict_processing', 'pending', restrictionId, new Date(), req.ip, req.get('User-Agent'), 
-         JSON.stringify({ processing_type, reason })]
+        `INSERT INTO dsar_requests (user_id, estate_id, request_type, status, request_id, requested_at, ip_address, user_agent, details) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [userId, estateId, 'restrict_processing', 'pending', restrictionId, new Date(), req.ip, req.get('User-Agent'),
+          JSON.stringify({ processing_type, reason })]
       );
-      
+
       // Log the restriction request
       await db.query(
-        'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, outcome, message, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [userId, 'processing_restriction', 'user', userId, 'pending', 'Processing restriction requested', 
-         JSON.stringify({ processing_type, reason })]
+        'INSERT INTO audit_logs (user_id, estate_id, action, entity_type, entity_id, outcome, message, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [userId, estateId, 'processing_restriction', 'user', userId, 'pending', 'Processing restriction requested',
+          JSON.stringify({ processing_type, reason })]
       );
-      
+
       successResponse(res, {
         restriction_id: restrictionId,
         processing_type,
@@ -378,20 +380,21 @@ router.get('/export-portable',
   rateLimiters.sensitive,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
     const format = req.query.format || 'json';
-    
+
     try {
       // Gather user data for portability
       const userData = await db.query(
-        'SELECT username, email, phone, area, house, created_at FROM users WHERE id = $1',
-        [userId]
+        'SELECT username, email, phone, area, house, created_at FROM users WHERE id = $1 AND estate_id = $2',
+        [userId, estateId]
       );
-      
+
       const visitorData = await db.query(
-        'SELECT name, phone, email, purpose, date_of_visit, time_of_visit FROM visitors WHERE created_by = (SELECT email FROM users WHERE id = $1)',
-        [userId]
+        'SELECT name, phone, email, purpose, date_of_visit, time_of_visit FROM visitors WHERE created_by = (SELECT email FROM users WHERE id = $1) AND estate_id = $2',
+        [userId, estateId]
       );
-      
+
       const portableData = {
         user_profile: userData.rows[0],
         visitors_registered: visitorData.rows,
@@ -401,13 +404,13 @@ router.get('/export-portable',
         data_controller: 'Secure Gate Access Control System',
         transfer_purpose: 'Data portability under Kenya DPA 2019'
       };
-      
+
       // Log the portability request
       await db.query(
-        'INSERT INTO portability_requests (user_id, format, status, request_id, requested_at, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [userId, format, 'completed', portableData.export_id, new Date(), req.ip, req.get('User-Agent')]
+        'INSERT INTO portability_requests (user_id, estate_id, format, status, request_id, requested_at, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [userId, estateId, format, 'completed', portableData.export_id, new Date(), req.ip, req.get('User-Agent')]
       );
-      
+
       // Set appropriate content type based on format
       if (format === 'csv') {
         res.setHeader('Content-Type', 'text/csv');
@@ -469,30 +472,31 @@ router.post('/object-processing',
   rateLimiters.general,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
     const { processing_type, reason = 'user_objection' } = req.body;
-    
+
     if (!processing_type) {
       throw new AppError('Processing type is required', 400, 'VALIDATION_ERROR');
     }
-    
+
     try {
       const objectionId = uuidv4();
-      
+
       // Store the objection
       await db.query(
-        `INSERT INTO dsar_requests (user_id, request_type, status, request_id, requested_at, ip_address, user_agent, details) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [userId, 'object_processing', 'pending', objectionId, new Date(), req.ip, req.get('User-Agent'),
-         JSON.stringify({ processing_type, reason })]
+        `INSERT INTO dsar_requests (user_id, estate_id, request_type, status, request_id, requested_at, ip_address, user_agent, details) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [userId, estateId, 'object_processing', 'pending', objectionId, new Date(), req.ip, req.get('User-Agent'),
+          JSON.stringify({ processing_type, reason })]
       );
-      
+
       // Log the objection
       await db.query(
-        'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, outcome, message, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [userId, 'processing_objection', 'user', userId, 'pending', 'Processing objection submitted',
-         JSON.stringify({ processing_type, reason })]
+        'INSERT INTO audit_logs (user_id, estate_id, action, entity_type, entity_id, outcome, message, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [userId, estateId, 'processing_objection', 'user', userId, 'pending', 'Processing objection submitted',
+          JSON.stringify({ processing_type, reason })]
       );
-      
+
       successResponse(res, {
         objection_id: objectionId,
         processing_type,
@@ -543,36 +547,37 @@ router.post('/withdraw-consent',
   rateLimiters.general,
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
+    const estateId = req.user.estate_id;
     const { consent_type, reason = 'user_withdrawal' } = req.body;
-    
+
     if (!consent_type) {
       throw new AppError('Consent type is required', 400, 'VALIDATION_ERROR');
     }
-    
+
     try {
       const withdrawalId = uuidv4();
-      
+
       // Record the consent withdrawal
       await db.query(
-        `INSERT INTO consent_records (user_id, consent_type, granted, timestamp, ip_address, user_agent, version) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [userId, consent_type, false, new Date(), req.ip, req.get('User-Agent'), '1.0']
+        `INSERT INTO consent_records (user_id, estate_id, consent_type, granted, timestamp, ip_address, user_agent, version) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [userId, estateId, consent_type, false, new Date(), req.ip, req.get('User-Agent'), '1.0']
       );
-      
+
       // Log the withdrawal request
       await db.query(
-        'INSERT INTO dsar_requests (user_id, request_type, status, request_id, requested_at, ip_address, user_agent, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [userId, 'withdraw_consent', 'completed', withdrawalId, new Date(), req.ip, req.get('User-Agent'),
-         JSON.stringify({ consent_type, reason })]
+        'INSERT INTO dsar_requests (user_id, estate_id, request_type, status, request_id, requested_at, ip_address, user_agent, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [userId, estateId, 'withdraw_consent', 'completed', withdrawalId, new Date(), req.ip, req.get('User-Agent'),
+          JSON.stringify({ consent_type, reason })]
       );
-      
+
       // Log the consent withdrawal
       await db.query(
-        'INSERT INTO audit_logs (user_id, action, entity_type, entity_id, outcome, message, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [userId, 'consent_withdrawal', 'user', userId, 'completed', 'Consent withdrawn via DSR',
-         JSON.stringify({ consent_type, reason })]
+        'INSERT INTO audit_logs (user_id, estate_id, action, entity_type, entity_id, outcome, message, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [userId, estateId, 'consent_withdrawal', 'user', userId, 'completed', 'Consent withdrawn via DSR',
+          JSON.stringify({ consent_type, reason })]
       );
-      
+
       successResponse(res, {
         withdrawal_id: withdrawalId,
         consent_type,
@@ -618,26 +623,26 @@ router.get('/requests',
   asyncHandler(async (req, res) => {
     const userId = req.user.id;
     const { request_type, status } = req.query;
-    
+
     try {
       let query = 'SELECT * FROM dsar_requests WHERE user_id = $1';
       const queryParams = [userId];
       let paramCount = 1;
-      
+
       if (request_type) {
         query += ` AND request_type = $${++paramCount}`;
         queryParams.push(request_type);
       }
-      
+
       if (status) {
         query += ` AND status = $${++paramCount}`;
         queryParams.push(status);
       }
-      
+
       query += ' ORDER BY requested_at DESC LIMIT 50';
-      
+
       const result = await db.query(query, queryParams);
-      
+
       successResponse(res, {
         requests: result.rows,
         total: result.rows.length,
@@ -653,17 +658,17 @@ router.get('/requests',
 function convertToCSV(data) {
   // Simplified CSV conversion
   const csvRows = [];
-  
+
   // Add headers
   csvRows.push('Data Type,Field,Value');
-  
+
   // Add user profile data
   if (data.user_profile) {
     Object.entries(data.user_profile).forEach(([key, value]) => {
       csvRows.push(`User Profile,${key},"${value}"`);
     });
   }
-  
+
   // Add visitors data
   if (data.visitors_registered) {
     data.visitors_registered.forEach((visitor, index) => {
@@ -672,21 +677,21 @@ function convertToCSV(data) {
       });
     });
   }
-  
+
   return csvRows.join('\n');
 }
 
 function convertToXML(data) {
   // Simplified XML conversion
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<data_export>\n';
-  
+
   // Add metadata
   xml += `  <metadata>\n`;
   xml += `    <exported_at>${data.exported_at}</exported_at>\n`;
   xml += `    <export_id>${data.export_id}</export_id>\n`;
   xml += `    <format>${data.format}</format>\n`;
   xml += `  </metadata>\n`;
-  
+
   // Add user profile
   if (data.user_profile) {
     xml += `  <user_profile>\n`;
@@ -695,7 +700,7 @@ function convertToXML(data) {
     });
     xml += `  </user_profile>\n`;
   }
-  
+
   // Add visitors
   if (data.visitors_registered) {
     xml += `  <visitors>\n`;
@@ -708,7 +713,7 @@ function convertToXML(data) {
     });
     xml += `  </visitors>\n`;
   }
-  
+
   xml += '</data_export>';
   return xml;
 }

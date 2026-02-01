@@ -60,6 +60,15 @@ class OptimizedDatabaseService {
   }
 
   /**
+   * Direct query execution (Compatibility Method)
+   * Required by services expecting a standard database interface (e.g., mfaService)
+   */
+  async query(text, params = []) {
+    // Determine if this is a write operation to skip any potential caching logic if we were to add it later
+    return this.db.query(text, params);
+  }
+
+  /**
    * Execute optimized query with monitoring and caching
    */
   async executeQuery(queryName, queryText, params = [], options = {}) {
@@ -241,9 +250,13 @@ class OptimizedDatabaseService {
   }
 
   /**
-   * Batch operations with optimized performance
+   * @deprecated SECURITY WARNING: This method uses an outdated schema that stores OTP in plaintext.
+   * DO NOT USE. Use visitorInviteController.bulkInvite() instead which properly hashes OTPs.
+   * This method is kept only for backward compatibility reference and should be removed.
    */
   async bulkInsertVisitors(visitors, options = {}) {
+    console.warn('DEPRECATED: bulkInsertVisitors is deprecated and should not be used. Use visitorInviteController.bulkInvite() instead.');
+    throw new Error('bulkInsertVisitors is deprecated due to security concerns (plaintext OTP storage).');
     const batchSize = options.batchSize || 100;
     const results = [];
 

@@ -7,7 +7,14 @@ const API_BASE = '/api/admin';
 const GUARDS_BASE = '/api/guards';
 
 // === Dashboard Metrics ===
-export const getMetrics = () => http.get(`${API_BASE}/metrics`);
+export const getMetrics = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/metrics${queryString ? `?${queryString}` : ''}`);
+};
+
+// === Estate Management ===
+export const getEstateDetails = () => http.get(`${API_BASE}/estate-info`);
+export const getAllEstates = () => http.get(`/api/admin/super-admin/estates`); // Re-using super admin endpoint
 
 // === Audit Logs ===
 export const getAuditLogs = (params = {}) => {
@@ -16,7 +23,10 @@ export const getAuditLogs = (params = {}) => {
 };
 
 // === Notification Queue Monitoring ===
-export const getNotificationQueueStats = () => http.get(`${API_BASE}/notification-queue/stats`);
+export const getNotificationQueueStats = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/notification-queue/stats${queryString ? `?${queryString}` : ''}`);
+};
 export const getNotificationFailures = (params = {}) => {
   const queryString = new URLSearchParams(params).toString();
   return http.get(`${API_BASE}/notification-queue/failed${queryString ? `?${queryString}` : ''}`);
@@ -24,18 +34,25 @@ export const getNotificationFailures = (params = {}) => {
 export const retryNotificationFailure = (jobId) => http.post(`${API_BASE}/notification-queue/retry/${jobId}`);
 
 // === Health Monitoring ===
-export const getHealthDetails = () => http.get('/api/health/detailed');
+export const getHealthDetails = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`/api/health/detailed${queryString ? `?${queryString}` : ''}`);
+};
 
 // === Residents Management ===
 export const getAllResidents = () => http.get(`${API_BASE}/residents`);
+export const createResident = (data) => http.post(`${API_BASE}/residents`, data);
 export const updateResident = (id, data) => http.put(`${API_BASE}/residents/${id}`, data);
 export const deleteResident = (id) => http.delete(`${API_BASE}/residents/${id}`);
 
 // === Guards Management ===
-export const getAllGuards = () => http.get(`${API_BASE}/guards`);
-export const addGuard = (data) => http.post(`${API_BASE}/guards`, data);
-export const updateGuard = (id, data) => http.put(`${API_BASE}/guards/${id}`, data);
-export const deleteGuard = (id) => http.delete(`${API_BASE}/guards/${id}`);
+export const getAllGuards = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${GUARDS_BASE}${queryString ? `?${queryString}` : ''}`);
+};
+export const addGuard = (data) => http.post(`${GUARDS_BASE}`, data);
+export const updateGuard = (id, data) => http.put(`${GUARDS_BASE}/${id}`, data);
+export const deleteGuard = (id) => http.delete(`${GUARDS_BASE}/${id}`);
 
 // === Guard Operations (Scheduling, Performance, Equipment, Training) ===
 export const getGuardShifts = (params = {}) => {

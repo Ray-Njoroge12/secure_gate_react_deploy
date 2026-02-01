@@ -6,7 +6,7 @@
 
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import logger from '../config/logger.js';
-import { triggerWebhooks } from './webhookService.js';
+
 import emailService from './emailService.js';
 
 const pool = db.pool || db;
@@ -300,8 +300,20 @@ async function sendEmailAction(recipients, context, action) {
  * Action: Trigger webhook
  */
 async function triggerWebhook(webhookId, context) {
-  const { deliverWebhook } = await import('./webhookService.js');
-  return await deliverWebhook(webhookId, context);
+  const { default: webhookService } = await import('./webhookService.js');
+  const webhook = webhookService.getWebhook(webhookId);
+  if (!webhook) {
+    throw new Error(`Webhook ${webhookId} not found`);
+  }
+
+  const event = {
+    id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    type: 'automation.action',
+    payload: context,
+    timestamp: new Date().toISOString()
+  };
+
+  return await webhookService.queueDelivery(webhook, event);
 }
 
 /**

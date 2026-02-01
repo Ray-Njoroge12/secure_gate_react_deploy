@@ -1,354 +1,487 @@
-/**
- * @fileoverview Push Notification Service
- * @description Browser push notification service with service worker integration
- * @author Secure Gate Access Team
- * @version 1.0.0
- */
-
-// Check if push notifications are supported
-export const isPushSupported = () => {
-  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-};
-
-// Check current permission status
-export const getNotificationPermission = () => {
-  if (!('Notification' in window)) return 'unsupported';
-  return Notification.permission;
-};
-
-// Request notification permission
-export const requestNotificationPermission = async () => {
-  if (!('Notification' in window)) {
-    console.warn('Notifications not supported');
-    return 'unsupported';
-  }
-
-  try {
-    const permission = await Notification.requestPermission();
-    return permission;
-  } catch (error) {
-    console.error('Error requesting notification permission:', error);
-    return 'denied';
-  }
-};
-
-// Register service worker for push notifications
-export const registerServiceWorker = async () => {
-  if (!('serviceWorker' in navigator)) {
-    console.warn('Service workers not supported');
-    return null;
-  }
-
-  try {
-    const registration = await navigator.serviceWorker.register('/sw.js', {
-      scope: '/'
-    });
-    console.log('Service Worker registered:', registration);
-    return registration;
-  } catch (error) {
-    console.error('Service Worker registration failed:', error);
-    return null;
-  }
-};
-
-// Get push subscription
-export const getPushSubscription = async () => {
-  try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
-    return subscription;
-  } catch (error) {
-    console.error('Error getting push subscription:', error);
-    return null;
-  }
-};
-
-// Subscribe to push notifications
-export const subscribeToPush = async (vapidPublicKey) => {
-  try {
-    const registration = await navigator.serviceWorker.ready;
+// Push Notification Service for PWA
+class PushNotificationService {
+  constructor() {
+    this.registration = null;
+    this.subscription = null;
+    this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
+    this.isPermissionGranted = false;
+    this.listeners = new Set();
     
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-    });
-
-    console.log('Push subscription:', subscription);
-    return subscription;
-  } catch (error) {
-    console.error('Error subscribing to push:', error);
-    return null;
+    this.init();
   }
-};
 
-// Unsubscribe from push notifications
-export const unsubscribeFromPush = async () => {
-  try {
-    const subscription = await getPushSubscription();
-    if (subscription) {
-      await subscription.unsubscribe();
-      console.log('Unsubscribed from push notifications');
-      return true;
+  async init() {
+    if (!this.isSupported) {
+      console.warn('Push notifications not supported');
+      return;
     }
-    return false;
-  } catch (error) {
-    console.error('Error unsubscribing from push:', error);
-    return false;
-  }
-};
 
-// Send subscription to server
-export const sendSubscriptionToServer = async (subscription) => {
-  try {
-    const response = await fetch('/api/notifications/push/subscribe', {
+    try {
+      this.registration = await navigator.serviceWorker.ready;
+      await this.checkExistingSubscription();
+      this.setupMessageListener();
+    } catch (error) {
+      console.error('Failed to initialize push notifications:', error);
+    }
+  }
+
+  // ==================== PERMISSION MANAGEMENT ====================
+
+  async requestPermission() {
+    if (!this.isSupported) {
+      throw new Error('Push notifications not supported');
+    }
+
+    const permission = await Notification.requestPermission();
+    this.isPermissionGranted = permission === 'granted';
+    
+    if (this.isPermissionGranted) {
+      await this.subscribe();
+    }
+    
+    return permission;
+  }
+
+  getPermissionStatus() {
+    if (!this.isSupported) return 'unsupported';
+    return Notification.permission;
+  }
+
+  // ==================== SUBSCRIPTION MANAGEMENT ====================
+
+  async subscribe() {
+    if (!this.isPermissionGranted || !this.registration) {
+      throw new Error('Permission not granted or service worker not ready');
+    }
+
+    try {
+      // Get VAPID public key from server
+      const vapidKey = await this.getVapidKey();
+      
+      this.subscription = await this.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array(vapidKey)
+      });
+
+      // Send subscription to server
+      await this.sendSubscriptionToServer(this.subscription);
+      
+      console.log('Push subscription successful');
+      this.notifyListeners('subscribed', this.subscription);
+      
+      return this.subscription;
+    } catch (error) {
+      console.error('Failed to subscribe to push notifications:', error);
+      throw error;
+    }
+  }
+
+  async unsubscribe() {
+    if (!this.subscription) return;
+
+    try {
+      await this.subscription.unsubscribe();
+      await this.removeSubscriptionFromServer();
+      
+      this.subscription = null;
+      console.log('Push unsubscription successful');
+      this.notifyListeners('unsubscribed');
+    } catch (error) {
+      console.error('Failed to unsubscribe from push notifications:', error);
+      throw error;
+    }
+  }
+
+  async checkExistingSubscription() {
+    if (!this.registration) return;
+
+    try {
+      this.subscription = await this.registration.pushManager.getSubscription();
+      this.isPermissionGranted = Notification.permission === 'granted';
+      
+      if (this.subscription) {
+        // Verify subscription is still valid on server
+        const isValid = await this.verifySubscription(this.subscription);
+        if (!isValid) {
+          await this.subscription.unsubscribe();
+          this.subscription = null;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking existing subscription:', error);
+    }
+  }
+
+  // ==================== SERVER COMMUNICATION ====================
+
+  async getVapidKey() {
+    try {
+      const response = await fetch('/api/notifications/vapid-key', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get VAPID key');
+      }
+      
+      const data = await response.json();
+      return data.publicKey;
+    } catch (error) {
+      console.error('Error getting VAPID key:', error);
+      // Fallback to environment variable or default
+      return process.env.REACT_APP_VAPID_PUBLIC_KEY || '';
+    }
+  }
+
+  async sendSubscriptionToServer(subscription) {
+    const response = await fetch('/api/notifications/subscribe', {
       method: 'POST',
-      credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ subscription })
+      credentials: 'include',
+      body: JSON.stringify({
+        subscription: subscription.toJSON(),
+        userAgent: navigator.userAgent,
+        timestamp: Date.now()
+      })
     });
 
     if (!response.ok) {
       throw new Error('Failed to send subscription to server');
     }
 
-    return await response.json();
-  } catch (error) {
-    console.error('Error sending subscription to server:', error);
-    return null;
-  }
-};
-
-// Register device token metadata for topic-based notifications
-export const registerDeviceToken = async ({ token, platform, deviceInfo }) => {
-  if (!token) {
-    return null;
+    return response.json();
   }
 
-  try {
-    const response = await fetch('/api/notifications/devices/register', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        token,
-        platform,
-        deviceInfo
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to register device token');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error registering device token:', error);
-    return null;
-  }
-};
-
-export const unregisterDeviceToken = async (token) => {
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const response = await fetch('/api/notifications/devices/unregister', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ token })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to unregister device token');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error unregistering device token:', error);
-    return null;
-  }
-};
-
-// Show local notification (fallback when push not available)
-export const showLocalNotification = async (title, options = {}) => {
-  if (!('Notification' in window)) {
-    console.warn('Notifications not supported');
-    return null;
-  }
-
-  if (Notification.permission !== 'granted') {
-    console.warn('Notification permission not granted');
-    return null;
-  }
-
-  try {
-    // Try using service worker first
-    const registration = await navigator.serviceWorker?.ready;
-    if (registration) {
-      await registration.showNotification(title, {
-        icon: '/logo192.png',
-        badge: '/badge.png',
-        vibrate: [200, 100, 200],
-        tag: options.tag || 'securegate-notification',
-        renotify: options.renotify || false,
-        requireInteraction: options.requireInteraction || false,
-        ...options
-      });
-      return true;
-    }
-
-    // Fallback to regular Notification API
-    const notification = new Notification(title, {
-      icon: '/logo192.png',
-      ...options
-    });
-
-    if (options.onClick) {
-      notification.onclick = options.onClick;
-    }
-
-    return notification;
-  } catch (error) {
-    console.error('Error showing notification:', error);
-    return null;
-  }
-};
-
-// Helper function to convert VAPID key
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-/**
- * PushNotificationManager Class
- * Manages the complete push notification lifecycle
- */
-export class PushNotificationManager {
-  constructor(options = {}) {
-    this.vapidPublicKey = options.vapidPublicKey || process.env.REACT_APP_VAPID_PUBLIC_KEY;
-    this.onNotification = options.onNotification || null;
-    this.subscription = null;
-    this.initialized = false;
-  }
-
-  async initialize() {
-    if (this.initialized) return true;
-    if (!isPushSupported()) {
-      console.warn('Push notifications not supported');
-      return false;
-    }
+  async removeSubscriptionFromServer() {
+    if (!this.subscription) return;
 
     try {
-      // Register service worker
-      await registerServiceWorker();
-
-      // Check existing subscription
-      this.subscription = await getPushSubscription();
-
-      // Set up message listener
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data && event.data.type === 'PUSH_NOTIFICATION') {
-            this.onNotification?.(event.data.payload);
-          }
-        });
-      }
-
-      this.initialized = true;
-      return true;
-    } catch (error) {
-      console.error('Error initializing push notifications:', error);
-      return false;
-    }
-  }
-
-  async requestPermission() {
-    return await requestNotificationPermission();
-  }
-
-  async subscribe() {
-    if (!this.vapidPublicKey) {
-      console.error('VAPID public key not configured');
-      return null;
-    }
-
-    const permission = await this.requestPermission();
-    if (permission !== 'granted') {
-      return null;
-    }
-
-    this.subscription = await subscribeToPush(this.vapidPublicKey);
-    
-    if (this.subscription) {
-      await sendSubscriptionToServer(this.subscription);
-      await registerDeviceToken({
-        token: this.subscription.endpoint,
-        platform: 'webpush',
-        deviceInfo: {
-          userAgent: navigator.userAgent
-        }
-      });
-    }
-
-    return this.subscription;
-  }
-
-  async unsubscribe() {
-    const currentSubscription = await getPushSubscription();
-    const result = await unsubscribeFromPush();
-    if (currentSubscription?.endpoint) {
-      await unregisterDeviceToken(currentSubscription.endpoint);
-      await fetch('/api/notifications/push/unsubscribe', {
-        method: 'DELETE',
-        credentials: 'include',
+      await fetch('/api/notifications/unsubscribe', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ endpoint: currentSubscription.endpoint })
+        credentials: 'include',
+        body: JSON.stringify({
+          endpoint: this.subscription.endpoint
+        })
+      });
+    } catch (error) {
+      console.error('Error removing subscription from server:', error);
+    }
+  }
+
+  async verifySubscription(subscription) {
+    try {
+      const response = await fetch('/api/notifications/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          endpoint: subscription.endpoint
+        })
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Error verifying subscription:', error);
+      return false;
+    }
+  }
+
+  // ==================== NOTIFICATION PREFERENCES ====================
+
+  async updateNotificationPreferences(preferences) {
+    try {
+      const response = await fetch('/api/notifications/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(preferences)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update notification preferences');
+      }
+
+      this.notifyListeners('preferences_updated', preferences);
+      return response.json();
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      throw error;
+    }
+  }
+
+  async getNotificationPreferences() {
+    try {
+      const response = await fetch('/api/notifications/preferences', {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get notification preferences');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Error getting notification preferences:', error);
+      return this.getDefaultPreferences();
+    }
+  }
+
+  getDefaultPreferences() {
+    return {
+      visitor_arrival: true,
+      visitor_checkin: true,
+      security_alerts: true,
+      approval_requests: true,
+      system_updates: false,
+      marketing: false,
+      quiet_hours: {
+        enabled: false,
+        start: '22:00',
+        end: '08:00'
+      }
+    };
+  }
+
+  // ==================== LOCAL NOTIFICATIONS ====================
+
+  async showLocalNotification(title, options = {}) {
+    if (!this.isPermissionGranted) {
+      console.warn('Permission not granted for notifications');
+      return;
+    }
+
+    const defaultOptions = {
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      vibrate: [100, 50, 100],
+      requireInteraction: false,
+      tag: 'secure-gate-local',
+      timestamp: Date.now()
+    };
+
+    const notificationOptions = { ...defaultOptions, ...options };
+
+    try {
+      if (this.registration) {
+        // Use service worker to show notification
+        await this.registration.showNotification(title, notificationOptions);
+      } else {
+        // Fallback to direct notification
+        new Notification(title, notificationOptions);
+      }
+    } catch (error) {
+      console.error('Error showing local notification:', error);
+    }
+  }
+
+  // ==================== DEEP LINKING ====================
+
+  setupMessageListener() {
+    if (!('serviceWorker' in navigator)) return;
+
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      const { type, data } = event.data || {};
+      
+      if (type === 'NOTIFICATION_CLICKED') {
+        this.handleNotificationClick(data);
+      }
+      
+      if (type === 'NOTIFICATION_ACTION') {
+        this.handleNotificationAction(data);
+      }
+    });
+  }
+
+  handleNotificationClick(data) {
+    const { url, notificationId, type } = data || {};
+    
+    // Track notification click
+    this.trackNotificationInteraction(notificationId, 'clicked');
+    
+    // Handle deep linking
+    if (url) {
+      this.navigateToUrl(url);
+    }
+    
+    this.notifyListeners('notification_clicked', { type, data });
+  }
+
+  handleNotificationAction(data) {
+    const { action, notificationId, type, payload } = data || {};
+    
+    // Track notification action
+    this.trackNotificationInteraction(notificationId, action);
+    
+    // Handle specific actions
+    switch (action) {
+      case 'approve':
+      case 'deny':
+        this.handleVisitorAction(action, payload);
+        break;
+      case 'acknowledge':
+        this.handleAlertAcknowledgment(payload);
+        break;
+      case 'view':
+        this.navigateToUrl(payload.url);
+        break;
+      default:
+        console.log('Unknown notification action:', action);
+    }
+    
+    this.notifyListeners('notification_action', { action, type, payload });
+  }
+
+  async handleVisitorAction(action, payload) {
+    try {
+      const response = await fetch(`/api/visitors/${payload.visitorId}/quick-action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          action,
+          notificationId: payload.notificationId
+        })
+      });
+
+      if (response.ok) {
+        await this.showLocalNotification(
+          action === 'approve' ? 'Visitor Approved' : 'Visitor Denied',
+          {
+            body: 'Action completed successfully',
+            tag: 'action-confirmation'
+          }
+        );
+      } else {
+        throw new Error('Action failed');
+      }
+    } catch (error) {
+      console.error('Error handling visitor action:', error);
+      await this.showLocalNotification('Action Failed', {
+        body: 'Please try again from the app',
+        tag: 'action-error'
       });
     }
-    if (result) {
-      this.subscription = null;
+  }
+
+  async handleAlertAcknowledgment(payload) {
+    try {
+      await fetch(`/api/incidents/${payload.alertId}/acknowledge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
     }
-    return result;
   }
 
-  isSubscribed() {
-    return !!this.subscription;
+  navigateToUrl(url) {
+    if (url.startsWith('/')) {
+      // Internal navigation
+      window.location.href = url;
+    } else if (url.startsWith('http')) {
+      // External URL
+      window.open(url, '_blank');
+    }
   }
 
-  async showNotification(title, options) {
-    return await showLocalNotification(title, options);
+  // ==================== ANALYTICS ====================
+
+  async trackNotificationInteraction(notificationId, action) {
+    if (!notificationId) return;
+
+    try {
+      await fetch('/api/notifications/track', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          notificationId,
+          action,
+          timestamp: Date.now(),
+          userAgent: navigator.userAgent
+        })
+      });
+    } catch (error) {
+      // Silent fail for analytics
+      console.debug('Failed to track notification interaction');
+    }
+  }
+
+  // ==================== EVENT LISTENERS ====================
+
+  addListener(callback) {
+    this.listeners.add(callback);
+    return () => this.listeners.delete(callback);
+  }
+
+  notifyListeners(event, data) {
+    this.listeners.forEach(callback => {
+      try {
+        callback(event, data);
+      } catch (error) {
+        console.error('Error in push notification listener:', error);
+      }
+    });
+  }
+
+  // ==================== UTILITIES ====================
+
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  // ==================== STATUS METHODS ====================
+
+  getStatus() {
+    return {
+      isSupported: this.isSupported,
+      isPermissionGranted: this.isPermissionGranted,
+      isSubscribed: !!this.subscription,
+      permission: this.getPermissionStatus()
+    };
+  }
+
+  async testNotification() {
+    if (!this.isPermissionGranted) {
+      throw new Error('Permission not granted');
+    }
+
+    await this.showLocalNotification('Test Notification', {
+      body: 'This is a test notification from SecureGate',
+      tag: 'test-notification',
+      requireInteraction: true
+    });
   }
 }
 
-// Singleton instance
-let pushManager = null;
+// Create singleton instance
+const pushNotificationService = new PushNotificationService();
 
-export const getPushManager = (options = {}) => {
-  if (!pushManager) {
-    pushManager = new PushNotificationManager(options);
-  }
-  return pushManager;
-};
-
-export default PushNotificationManager;
+export default pushNotificationService;

@@ -217,13 +217,35 @@ router.post('/bulk-invite',
   bulkInvite
 );
 
-// Guard Operations (guard/admin roles required) - require authentication
-router.post('/:id/check-in', authenticateToken, attachRequestAudit, checkInVisitor);
-router.post('/:id/check-out', authenticateToken, attachRequestAudit, checkOutVisitor);
+// Guard Operations (guard/admin roles required)
+router.post('/:id/check-in',
+  authenticateToken,
+  requireRole(['guard', 'admin']),
+  attachRequestAudit,
+  checkInVisitor
+);
 
-// Walk-in registration (guard only) - Phase G2
-router.post('/walk-in', authenticateToken, attachRequestAudit, registerWalkIn);
-router.get('/walk-ins/today', authenticateToken, attachRequestAudit, getTodayWalkIns);
+router.post('/:id/check-out',
+  authenticateToken,
+  requireRole(['guard', 'admin']),
+  attachRequestAudit,
+  checkOutVisitor
+);
+
+// Walk-in registration (guard/admin only)
+router.post('/walk-in',
+  authenticateToken,
+  requireRole(['guard', 'admin']),
+  attachRequestAudit,
+  registerWalkIn
+);
+
+router.get('/walk-ins/today',
+  authenticateToken,
+  requireRole(['guard', 'admin']),
+  attachRequestAudit,
+  getTodayWalkIns
+);
 
 // Approval flow aliases (client compatibility)
 router.post('/:id/request-approval', authenticateToken, attachRequestAudit, requestApproval);
@@ -366,7 +388,7 @@ router.post('/self-checkin/:inviteCode', selfCheckIn);
 router.delete('/:id', attachUserFromToken, attachRequestAudit, cancelVisitor);
 
 // Admin Operations (admin role required)
-router.get('/active', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
+router.get('/active', authenticateToken, requireRole(['admin', 'guard']), minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
 router.get('/report', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, getVisitorReport);
 router.delete('/:visitorId/revoke', authenticateToken, requireRole(['admin']), attachRequestAudit, revokeVisitor);
 

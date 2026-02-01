@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { PageHeader, ThemeRadioGroup } from "../../components/ui";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useAuth } from "../../contexts/AuthContext";
 import NotificationSettings from "../../components/settings/NotificationSettings";
-import { 
-  Settings as SettingsIcon, 
-  Bell, 
-  Shield, 
-  Building, 
+import {
+  Settings as SettingsIcon,
+  Bell,
+  Shield,
+  Building,
   Eye,
   Users,
   Key,
@@ -18,6 +19,8 @@ import "../../styles.css";
 
 export default function Settings() {
   const { theme, resolvedTheme } = useTheme();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
   const [activeTab, setActiveTab] = useState("system");
   const [systemSettings, setSystemSettings] = useState({
     siteName: "SecureGate Estate",
@@ -76,31 +79,36 @@ export default function Settings() {
     fetch('/api/admin/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ section, data: 
-        section === 'system' ? systemSettings :
-        section === 'security' ? securitySettings :
-        emailSettings
+      body: JSON.stringify({
+        section, data:
+          section === 'system' ? systemSettings :
+            section === 'security' ? securitySettings :
+              emailSettings
       })
     })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        alert(`${section} settings saved successfully!`);
-      } else {
-        alert('Failed to save settings');
-      }
-    })
-    .catch(() => alert('Failed to save settings'));
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert(`${section} settings saved successfully!`);
+        } else {
+          alert('Failed to save settings');
+        }
+      })
+      .catch(() => alert('Failed to save settings'));
   };
 
-  const tabs = [
-    { key: "system", label: "System", icon: <Building size={16} /> },
-    { key: "security", label: "Security", icon: <Shield size={16} /> },
-    { key: "notifications", label: "Notifications", icon: <Bell size={16} /> },
-    { key: "email", label: "Email", icon: <Mail size={16} /> },
-    { key: "appearance", label: "Appearance", icon: <Eye size={16} /> },
-    { key: "compliance", label: "Compliance", icon: <FileCheck size={16} /> },
+  // Define all tabs - some are Super Admin only
+  const allTabs = [
+    { key: "system", label: "System", icon: <Building size={16} />, superAdminOnly: false },
+    { key: "security", label: "Security", icon: <Shield size={16} />, superAdminOnly: true },
+    { key: "notifications", label: "Notifications", icon: <Bell size={16} />, superAdminOnly: false },
+    { key: "email", label: "Email", icon: <Mail size={16} />, superAdminOnly: true },
+    { key: "appearance", label: "Appearance", icon: <Eye size={16} />, superAdminOnly: false },
+    { key: "compliance", label: "Compliance", icon: <FileCheck size={16} />, superAdminOnly: true },
   ];
+
+  // Filter tabs based on role
+  const tabs = isSuperAdmin ? allTabs : allTabs.filter(tab => !tab.superAdminOnly);
 
   const inputClass = "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1";
@@ -232,14 +240,14 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <PageHeader 
+      <PageHeader
         title="Admin Settings"
         subtitle="Configure system-wide settings and preferences"
         icon={<SettingsIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
         showBack={true}
         backTo="/dashboard/admin"
       />
-      
+
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           {/* Tabs */}
@@ -248,11 +256,10 @@ export default function Settings() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
-                  activeTab === tab.key 
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
+                className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${activeTab === tab.key
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
                     : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
+                  }`}
               >
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
@@ -265,23 +272,23 @@ export default function Settings() {
             <form onSubmit={(e) => handleSave("system", e)} className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Configuration</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Site Name</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={systemSettings.siteName}
-                      onChange={(e) => setSystemSettings({...systemSettings, siteName: e.target.value})}
+                      onChange={(e) => setSystemSettings({ ...systemSettings, siteName: e.target.value })}
                       className={inputClass}
                     />
                   </div>
                   <div>
                     <label className={labelClass}>Max Visitors per Resident</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={systemSettings.maxVisitorsPerResident}
-                      onChange={(e) => setSystemSettings({...systemSettings, maxVisitorsPerResident: parseInt(e.target.value)})}
+                      onChange={(e) => setSystemSettings({ ...systemSettings, maxVisitorsPerResident: parseInt(e.target.value) })}
                       className={inputClass}
                       min="1"
                       max="50"
@@ -289,10 +296,10 @@ export default function Settings() {
                   </div>
                   <div>
                     <label className={labelClass}>Visitor Pass Expiry (hours)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={systemSettings.visitorExpiryHours}
-                      onChange={(e) => setSystemSettings({...systemSettings, visitorExpiryHours: parseInt(e.target.value)})}
+                      onChange={(e) => setSystemSettings({ ...systemSettings, visitorExpiryHours: parseInt(e.target.value) })}
                       className={inputClass}
                       min="1"
                       max="168"
@@ -302,10 +309,10 @@ export default function Settings() {
 
                 <div className="mt-6 space-y-4">
                   <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={systemSettings.requireOTP}
-                      onChange={(e) => setSystemSettings({...systemSettings, requireOTP: e.target.checked})}
+                      onChange={(e) => setSystemSettings({ ...systemSettings, requireOTP: e.target.checked })}
                       className="w-5 h-5 text-green-600 rounded"
                     />
                     <div>
@@ -313,12 +320,12 @@ export default function Settings() {
                       <p className="text-sm text-gray-500 dark:text-gray-300">Visitors must verify via OTP before entry</p>
                     </div>
                   </label>
-                  
+
                   <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={systemSettings.autoApproveFrequentVisitors}
-                      onChange={(e) => setSystemSettings({...systemSettings, autoApproveFrequentVisitors: e.target.checked})}
+                      onChange={(e) => setSystemSettings({ ...systemSettings, autoApproveFrequentVisitors: e.target.checked })}
                       className="w-5 h-5 text-green-600 rounded"
                     />
                     <div>
@@ -326,22 +333,25 @@ export default function Settings() {
                       <p className="text-sm text-gray-500 dark:text-gray-300">Skip approval for visitors with 5+ successful visits</p>
                     </div>
                   </label>
-                  
-                  <label className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg cursor-pointer border border-red-200 dark:border-red-800">
-                    <input 
-                      type="checkbox" 
-                      checked={systemSettings.maintenanceMode}
-                      onChange={(e) => setSystemSettings({...systemSettings, maintenanceMode: e.target.checked})}
-                      className="w-5 h-5 text-red-600 rounded"
-                    />
-                    <div>
-                      <span className="font-medium text-red-700 dark:text-red-400">Maintenance Mode</span>
-                      <p className="text-sm text-red-600 dark:text-red-300">Disable visitor check-ins (for system maintenance)</p>
-                    </div>
-                  </label>
+
+                  {/* Maintenance Mode - Super Admin only */}
+                  {isSuperAdmin && (
+                    <label className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg cursor-pointer border border-red-200 dark:border-red-800">
+                      <input
+                        type="checkbox"
+                        checked={systemSettings.maintenanceMode}
+                        onChange={(e) => setSystemSettings({ ...systemSettings, maintenanceMode: e.target.checked })}
+                        className="w-5 h-5 text-red-600 rounded"
+                      />
+                      <div>
+                        <span className="font-medium text-red-700 dark:text-red-400">Maintenance Mode</span>
+                        <p className="text-sm text-red-600 dark:text-red-300">Disable visitor check-ins (for system maintenance)</p>
+                      </div>
+                    </label>
+                  )}
                 </div>
               </div>
-              
+
               <button type="submit" className="btn primary">Save System Settings</button>
             </form>
           )}
@@ -351,14 +361,14 @@ export default function Settings() {
             <form onSubmit={(e) => handleSave("security", e)} className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Security Configuration</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Session Timeout (minutes)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={securitySettings.sessionTimeout}
-                      onChange={(e) => setSecuritySettings({...securitySettings, sessionTimeout: parseInt(e.target.value)})}
+                      onChange={(e) => setSecuritySettings({ ...securitySettings, sessionTimeout: parseInt(e.target.value) })}
                       className={inputClass}
                       min="5"
                       max="480"
@@ -366,10 +376,10 @@ export default function Settings() {
                   </div>
                   <div>
                     <label className={labelClass}>Max Login Attempts</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={securitySettings.maxLoginAttempts}
-                      onChange={(e) => setSecuritySettings({...securitySettings, maxLoginAttempts: parseInt(e.target.value)})}
+                      onChange={(e) => setSecuritySettings({ ...securitySettings, maxLoginAttempts: parseInt(e.target.value) })}
                       className={inputClass}
                       min="3"
                       max="10"
@@ -379,10 +389,10 @@ export default function Settings() {
 
                 <div className="mt-6 space-y-4">
                   <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={securitySettings.enforcePasswordPolicy}
-                      onChange={(e) => setSecuritySettings({...securitySettings, enforcePasswordPolicy: e.target.checked})}
+                      onChange={(e) => setSecuritySettings({ ...securitySettings, enforcePasswordPolicy: e.target.checked })}
                       className="w-5 h-5 text-green-600 rounded"
                     />
                     <div>
@@ -390,12 +400,12 @@ export default function Settings() {
                       <p className="text-sm text-gray-500 dark:text-gray-300">Require 8+ characters with uppercase, lowercase, number, and symbol</p>
                     </div>
                   </label>
-                  
+
                   <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={securitySettings.require2FA}
-                      onChange={(e) => setSecuritySettings({...securitySettings, require2FA: e.target.checked})}
+                      onChange={(e) => setSecuritySettings({ ...securitySettings, require2FA: e.target.checked })}
                       className="w-5 h-5 text-green-600 rounded"
                     />
                     <div>
@@ -403,12 +413,12 @@ export default function Settings() {
                       <p className="text-sm text-gray-500 dark:text-gray-300">Mandatory two-factor authentication for admin accounts</p>
                     </div>
                   </label>
-                  
+
                   <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={securitySettings.ipWhitelisting}
-                      onChange={(e) => setSecuritySettings({...securitySettings, ipWhitelisting: e.target.checked})}
+                      onChange={(e) => setSecuritySettings({ ...securitySettings, ipWhitelisting: e.target.checked })}
                       className="w-5 h-5 text-green-600 rounded"
                     />
                     <div>
@@ -418,7 +428,7 @@ export default function Settings() {
                   </label>
                 </div>
               </div>
-              
+
               <button type="submit" className="btn primary">Save Security Settings</button>
             </form>
           )}
@@ -435,33 +445,33 @@ export default function Settings() {
             <form onSubmit={(e) => handleSave("email", e)} className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Email Configuration</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className={labelClass}>SMTP Host</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={emailSettings.smtpHost}
-                      onChange={(e) => setEmailSettings({...emailSettings, smtpHost: e.target.value})}
+                      onChange={(e) => setEmailSettings({ ...emailSettings, smtpHost: e.target.value })}
                       className={inputClass}
                       placeholder="smtp.example.com"
                     />
                   </div>
                   <div>
                     <label className={labelClass}>SMTP Port</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={emailSettings.smtpPort}
-                      onChange={(e) => setEmailSettings({...emailSettings, smtpPort: parseInt(e.target.value)})}
+                      onChange={(e) => setEmailSettings({ ...emailSettings, smtpPort: parseInt(e.target.value) })}
                       className={inputClass}
                     />
                   </div>
                   <div>
                     <label className={labelClass}>SMTP Username</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={emailSettings.smtpUser}
-                      onChange={(e) => setEmailSettings({...emailSettings, smtpUser: e.target.value})}
+                      onChange={(e) => setEmailSettings({ ...emailSettings, smtpUser: e.target.value })}
                       className={inputClass}
                     />
                   </div>
@@ -469,10 +479,10 @@ export default function Settings() {
 
                 <div className="mt-6">
                   <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={emailSettings.enableSSL}
-                      onChange={(e) => setEmailSettings({...emailSettings, enableSSL: e.target.checked})}
+                      onChange={(e) => setEmailSettings({ ...emailSettings, enableSSL: e.target.checked })}
                       className="w-5 h-5 text-green-600 rounded"
                     />
                     <div>
@@ -481,14 +491,14 @@ export default function Settings() {
                     </div>
                   </label>
                 </div>
-                
+
                 <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
                     <strong>Note:</strong> For security, SMTP password should be configured via environment variables (SMTP_PASSWORD).
                   </p>
                 </div>
               </div>
-              
+
               <button type="submit" className="btn primary">Save Email Settings</button>
             </form>
           )}

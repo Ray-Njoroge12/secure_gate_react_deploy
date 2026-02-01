@@ -65,15 +65,22 @@ router.get('/favorites', authenticateToken, requireEstateContext, requireRolePol
   const userId = req.user.id;
 
   const result = await dbManager.query(
-    `SELECT fv.*, v.name as visitor_name, v.phone as visitor_phone, v.email as visitor_email
+    `SELECT fv.id, fv.resident_id, fv.visitor_id, fv.nickname, fv.relationship, fv.notes, fv.created_at,
+            COALESCE(v.name, fv.name) as visitor_name,
+            COALESCE(v.phone, fv.phone) as visitor_phone,
+            COALESCE(v.email, fv.email) as visitor_email,
+            (SELECT COUNT(*) FROM visitors WHERE resident_id = fv.resident_id
+             AND (phone = COALESCE(v.phone, fv.phone) OR email = COALESCE(v.email, fv.email))) as visit_count,
+            (SELECT MAX(created_at) FROM visitors WHERE resident_id = fv.resident_id
+             AND (phone = COALESCE(v.phone, fv.phone) OR email = COALESCE(v.email, fv.email))) as last_visit
      FROM favorite_visitors fv
-     LEFT JOIN visitors v ON fv.visitor_id = v.id
-     WHERE fv.resident_id = $1 AND v.estate_id = $2
+     LEFT JOIN visitors v ON fv.visitor_id = v.id AND v.estate_id = $2
+     WHERE fv.resident_id = $1
      ORDER BY fv.created_at DESC`,
     [userId, req.user.estate_id]
   );
 
-  return successResponse(res, result.rows, 'Favorite visitors retrieved');
+  return successResponse(res, { favorites: result.rows }, 'Favorite visitors retrieved');
 }));
 
 /**
@@ -82,18 +89,82 @@ router.get('/favorites', authenticateToken, requireEstateContext, requireRolePol
  */
 router.post('/favorites', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { visitor_id, nickname } = req.body;
+  const { visitor_id, visitor_name, visitor_phone, visitor_email, relationship, notes, nickname } = req.body;
 
-  if (!visitor_id) {
-    throw new AppError('Visitor ID is required', 400);
+  let targetVisitorId = visitor_id;
+
+  // If visitor_id is explicitly provided, verify it exists and belongs to the current estate
+  if (targetVisitorId) {
+    const verification = await dbManager.query(
+      `SELECT id FROM visitors WHERE id = $1 AND estate_id = $2`,
+      [targetVisitorId, req.user.estate_id]
+    );
+    if (verification.rows.length === 0) {
+      throw new AppError('Visitor not found or invalid estate context', 404);
+    }
   }
 
+  // Logic to find or create visitor if visitor_id is NOT provided
+  if (!targetVisitorId) {
+    if (!visitor_name || (!visitor_phone && !visitor_email)) {
+      throw new AppError('Visitor Name and either Phone or Email are required', 400);
+    }
+
+    // Check if visitor exists by phone or email in the current estate
+    // Priority: Phone -> Email
+    const existing = await dbManager.query(
+      `SELECT id FROM visitors 
+       WHERE ((phone IS NOT NULL AND phone = $1) OR (email IS NOT NULL AND email = $2)) 
+       AND estate_id = $3 
+       LIMIT 1`,
+      [visitor_phone || null, visitor_email || null, req.user.estate_id]
+    );
+
+    if (existing.rows.length > 0) {
+      targetVisitorId = existing.rows[0].id;
+    } else {
+      // Create new visitor record (Profile only, status PENDING, no visit date yet)
+      const newVisitor = await dbManager.query(
+        `INSERT INTO visitors (
+          name, phone, email, resident_id, host_id, estate_id, 
+          created_by, status, created_at, consent
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', NOW(), false)
+        RETURNING id`,
+        [
+          visitor_name.trim(),
+          visitor_phone ? visitor_phone.trim() : null,
+          visitor_email ? visitor_email.trim().toLowerCase() : null,
+          userId,
+          userId,
+          req.user.estate_id,
+          req.user.email
+        ]
+      );
+      targetVisitorId = newVisitor.rows[0].id;
+    }
+  }
+
+  if (!targetVisitorId) {
+    throw new AppError('Failed to identify visitor', 500);
+  }
+
+  // Upsert into favorite_visitors
   const result = await dbManager.query(
-    `INSERT INTO favorite_visitors (resident_id, visitor_id, nickname, created_at)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT (resident_id, visitor_id) DO UPDATE SET nickname = EXCLUDED.nickname
+    `INSERT INTO favorite_visitors (resident_id, visitor_id, nickname, relationship, notes, created_at)
+     VALUES ($1, $2, $3, $4, $5, NOW())
+     ON CONFLICT (resident_id, visitor_id) 
+     DO UPDATE SET 
+        nickname = EXCLUDED.nickname,
+        relationship = EXCLUDED.relationship,
+        notes = EXCLUDED.notes
      RETURNING *`,
-    [userId, visitor_id, nickname]
+    [
+      userId,
+      targetVisitorId,
+      nickname || visitor_name || 'My Favorite',
+      relationship || 'Guest',
+      notes || ''
+    ]
   );
 
   return successResponse(res, result.rows[0], 'Visitor added to favorites', 201);

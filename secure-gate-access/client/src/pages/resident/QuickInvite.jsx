@@ -148,8 +148,12 @@ const QuickInvite = () => {
 
     if (!formData.phone.trim()) {
       errors.phone = "Phone number is required";
-    } else if (!/^(?:\+254|0)\d{9}$/.test(formData.phone.trim().replace(/\s/g, ''))) {
-      errors.phone = "Enter a valid Kenyan phone number";
+    } else {
+      // Allow spaces, dashes, + prefix
+      const cleaned = formData.phone.replace(/[\s-]/g, '');
+      if (cleaned.length < 9 || cleaned.length > 15) {
+        errors.phone = "Enter a valid phone number";
+      }
     }
 
     if (!formData.dateOfVisit) {
@@ -186,9 +190,25 @@ const QuickInvite = () => {
 
     try {
       // Create visitor with minimal data - they'll complete the rest
+      // Normalize phone number (Auto-fix common formats)
+      let rawPhone = formData.phone.trim().replace(/[\s-]/g, '');
+
+      // Default to KE if starts with 07 or 01
+      if (rawPhone.startsWith('07') || rawPhone.startsWith('01')) {
+        rawPhone = '254' + rawPhone.substring(1);
+      }
+      // If starts with 7 or 1 and length is 9, assume KE
+      else if ((rawPhone.startsWith('7') || rawPhone.startsWith('1')) && rawPhone.length === 9) {
+        rawPhone = '254' + rawPhone;
+      }
+      // Ensure + prefix if missing
+      if (!rawPhone.startsWith('+')) {
+        rawPhone = '+' + rawPhone;
+      }
+
       const visitorData = {
         name: formData.name.trim(),
-        phone: formData.phone.trim().replace(/\s/g, ''),
+        phone: rawPhone,
         dateOfVisit: formData.dateOfVisit,
         time: formData.time || null,
         allowResidenceLocation: !!formData.allowResidenceLocation,
@@ -560,8 +580,8 @@ const QuickInvite = () => {
                       type="button"
                       onClick={() => handleDateChipClick(chip)}
                       className={`p-3 rounded-xl border-2 transition-all text-center ${selectedDateChip === chip.id
-                          ? 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
                         }`}
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
@@ -598,8 +618,8 @@ const QuickInvite = () => {
                       type="button"
                       onClick={() => handleTimeChipClick(chip)}
                       className={`p-3 rounded-xl border-2 transition-all text-center ${selectedTimeChip === chip.id
-                          ? 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
                         }`}
                     >
                       <div className="text-sm font-medium">{chip.label}</div>

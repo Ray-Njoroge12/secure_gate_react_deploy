@@ -1,0 +1,60 @@
+{
+  "stressTest": {
+    "maxUsersReached": 0,
+    "breakingPoint": null,
+    "degradationPoint": null,
+    "recoveryTime": 0,
+    "systemStability": false,
+    "errorRateProgression": []
+  },
+  "spikeTest": {
+    "baselinePerformance": null,
+    "spikePerformance": null,
+    "recoveryPerformance": null,
+    "spikeHandled": false,
+    "performanceImpact": 0,
+    "recoveryTime": 0
+  },
+  "enduranceTest": {
+    "testDuration": 3600000,
+    "totalRequests": 0,
+    "averageResponseTime": 0,
+    "errorRate": 0,
+    "memoryLeakDetected": false,
+    "performanceDegradation": false,
+    "systemStability": false,
+    "hourlyMetrics": []
+  },
+  "memoryLeakTest": {
+    "testDuration": 600000,
+    "memoryGrowth": 0,
+    "leakDetected": true,
+    "gcEffectiveness": 0,
+    "memorySnapshots": [
+      {
+        "timestamp": 1769802791428,
+        "memory": 20322632
+      },
+      {
+        "timestamp": 1769802791428,
+        "memory": 20326032
+      }
+    ]
+  },
+  "recoveryTest": {
+    "overloadRecoveryTime": 0,
+    "errorRecoveryTime": 0,
+    "serviceAvailability": 0,
+    "dataConsistency": true,
+    "recoverySuccess": false
+  },
+  "overallStressScore": 25,
+  "testConfiguration": {
+    "maxStressUsers": 500,
+    "spikeUsers": 1000,
+    "enduranceTestDuration": 3600000,
+    "memoryLeakThreshold": 104857600,
+    "recoveryTimeThreshold": 30000
+  },
+  "timestamp": "2026-01-30T19:53:11.429Z"
+}

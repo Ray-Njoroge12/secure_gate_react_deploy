@@ -37,14 +37,14 @@ class EmergencyService {
     try {
       await client.query('BEGIN');
 
-      // Verify guard exists and get their info
+      // Verify user exists and get their info
       const guardResult = await client.query(
-        `SELECT id, username, email, phone, estate_id FROM users WHERE id = $1 AND role = 'guard'`,
+        `SELECT id, username, email, phone, estate_id, role FROM users WHERE id = $1 AND role IN ('guard', 'resident')`,
         [guardId]
       );
 
       if (guardResult.rows.length === 0) {
-        throw new Error('Guard not found or invalid role');
+        throw new Error('User not found or invalid role');
       }
 
       const guard = guardResult.rows[0];
@@ -65,15 +65,16 @@ class EmergencyService {
       // Create emergency incident
       const insertResult = await client.query(
         `INSERT INTO emergency_incidents (
-          guard_id, gate_id, latitude, longitude, location_accuracy, status
-        ) VALUES ($1, $2, $3, $4, $5, 'triggered')
+          guard_id, gate_id, latitude, longitude, location_accuracy, status, estate_id
+        ) VALUES ($1, $2, $3, $4, $5, 'triggered', $6)
         RETURNING *`,
         [
           guardId,
           gateId,
           locationData.latitude || null,
           locationData.longitude || null,
-          locationData.accuracy || null
+          locationData.accuracy || null,
+          guard.estate_id
         ]
       );
 
@@ -334,7 +335,7 @@ class EmergencyService {
    * @param {number} estateId - Estate ID for filtering
    * @returns {Array} Active emergencies
    */
-  async getActiveEmergencies(estateId = null) {
+  async getActiveEmergencies(estateId) {
     // Build query with optional estate filter
     let query = `SELECT 
       e.*,
@@ -346,18 +347,8 @@ class EmergencyService {
      WHERE e.status IN ('triggered', 'acknowledged')`;
     const params = [];
 
-    // SECURITY: Filter by estate_id if provided
-    if (estateId) {
-      query += ` AND e.estate_id = $1`;
-      params.push(estateId);
-    } else {
-      // SECURITY: Must filter by estate! If no specific estate provided, only super admin would see all.
-      // But we should default to safe fail if logic ambiguous.
-      // For now, if no estateId provided, we return empty or require estateId.
-      // Assuming caller MUST provide estateId (except maybe super admin).
-      // Let's enforce it:
-      // query += ` AND 1=0`; // Block all access if no estateId provided
-    }
+    // SECURITY: Must filter by estate!
+    if (!estateId) throw new Error('Estate context required for active emergencies');
 
     query += ` ORDER BY e.triggered_at DESC`;
 
@@ -468,7 +459,7 @@ class EmergencyService {
    * @param {number} estateId - Estate ID for filtering
    * @returns {Object} Aggregate statistics
    */
-  async getEmergencyStats(period = 'month', estateId = null) {
+  async getEmergencyStats(period = 'month', estateId) {
     const intervalMap = {
       day: '1 day',
       week: '7 days',
@@ -488,10 +479,10 @@ class EmergencyService {
      WHERE triggered_at > NOW() - INTERVAL '${interval}'`;
     const params = [];
 
-    if (estateId) {
-      query += ` AND estate_id = $1`;
-      params.push(estateId);
-    }
+    // SECURITY: Require estate context
+    if (!estateId) throw new Error('Estate context required for stats');
+    query += ` AND estate_id = $1`;
+    params.push(estateId);
 
     const result = await pool.query(query, params);
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { BottomNav, FAB } from '../components/ui';
+import PanicButton from '../components/guard/PanicButton';
 import { NavigationProvider } from '../contexts/NavigationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { navigateToLogin } from '../utils/authNavigation';
@@ -112,6 +113,17 @@ export default function AppShell({
         
         {/* Floating Action Button */}
         <FAB role={role} />
+
+        {/* Resident Panic Button - Bottom Left */}
+        {role === 'resident' && (
+          <div className="fixed bottom-24 md:bottom-6 left-4 md:left-6 z-50">
+            <PanicButton 
+              floating={false} 
+              size="default"
+              className="shadow-lg hover:shadow-xl"
+            />
+          </div>
+        )}
       </div>
     </NavigationProvider>
   );

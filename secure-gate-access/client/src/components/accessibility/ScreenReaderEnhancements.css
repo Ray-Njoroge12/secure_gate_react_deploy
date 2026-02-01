@@ -1,0 +1,491 @@
+/**
+ * Screen Reader Enhancements Styles
+ * 
+ * Styles for screen reader support components and live regions
+ */
+
+/* ===== SCREEN READER ENHANCED CONTAINER ===== */
+.screen-reader-enhanced {
+  position: relative;
+}
+
+/* Ensure enhanced elements maintain proper structure */
+.screen-reader-enhanced [role] {
+  /* Ensure role elements have proper display */
+}
+
+/* ===== LIVE REGIONS ===== */
+
+/* Base live region styles */
+.live-region,
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Status and alert regions */
+#sr-status-region,
+#sr-alert-region,
+#live-region-polite,
+#live-region-assertive {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+
+/* ===== ENHANCED FORM ELEMENTS ===== */
+
+/* Enhanced labels */
+.screen-reader-enhanced label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-foreground, #1f2937);
+}
+
+/* Required field indicators */
+.screen-reader-enhanced .required::after,
+.screen-reader-enhanced [aria-required="true"] + label::after,
+.screen-reader-enhanced label[for] input[required] ~ label::after {
+  content: " (required)";
+  color: var(--color-error, #ef4444);
+  font-weight: normal;
+  font-size: 0.875rem;
+}
+
+/* Invalid field indicators */
+.screen-reader-enhanced [aria-invalid="true"] {
+  border-color: var(--color-error, #ef4444) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.1) !important;
+}
+
+.screen-reader-enhanced [aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Valid field indicators */
+.screen-reader-enhanced [aria-invalid="false"] {
+  border-color: var(--color-success, #10b981) !important;
+}
+
+/* ===== ENHANCED TABLE ELEMENTS ===== */
+
+/* Enhanced table headers */
+.screen-reader-enhanced table th[role="columnheader"] {
+  font-weight: 600;
+  background-color: var(--color-muted, #f8fafc);
+  border-bottom: 2px solid var(--color-border, #e2e8f0);
+}
+
+/* Enhanced table cells */
+.screen-reader-enhanced table td[role="cell"] {
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+/* Screen reader only table captions */
+.screen-reader-enhanced table caption.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ===== ENHANCED INTERACTIVE ELEMENTS ===== */
+
+/* Enhanced buttons with roles */
+.screen-reader-enhanced [role="button"] {
+  cursor: pointer;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-background, #ffffff);
+  color: var(--color-foreground, #374151);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+.screen-reader-enhanced [role="button"]:hover {
+  background-color: var(--color-muted, #f9fafb);
+  border-color: var(--color-border-hover, #9ca3af);
+}
+
+.screen-reader-enhanced [role="button"]:focus {
+  outline: 2px solid var(--focus-outline-color, #3b82f6);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.screen-reader-enhanced [role="button"]:active {
+  background-color: var(--color-muted-active, #f3f4f6);
+  transform: translateY(1px);
+}
+
+/* Enhanced links with roles */
+.screen-reader-enhanced [role="link"] {
+  color: var(--color-primary, #3b82f6);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.screen-reader-enhanced [role="link"]:hover {
+  color: var(--color-primary-hover, #2563eb);
+  text-decoration: none;
+}
+
+.screen-reader-enhanced [role="link"]:focus {
+  outline: 2px solid var(--focus-outline-color, #3b82f6);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* ===== ENHANCED NAVIGATION ELEMENTS ===== */
+
+/* Enhanced navigation */
+.screen-reader-enhanced [role="navigation"] {
+  position: relative;
+}
+
+.screen-reader-enhanced [role="navigation"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-primary, #3b82f6);
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.screen-reader-enhanced [role="navigation"]:focus-within::before {
+  opacity: 1;
+}
+
+/* Enhanced menu items */
+.screen-reader-enhanced [role="menuitem"] {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: var(--color-foreground, #374151);
+  text-decoration: none;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.screen-reader-enhanced [role="menuitem"]:hover {
+  background-color: var(--color-muted, #f9fafb);
+  color: var(--color-primary, #3b82f6);
+}
+
+.screen-reader-enhanced [role="menuitem"]:focus {
+  background-color: var(--color-primary, #3b82f6);
+  color: var(--color-primary-foreground, #ffffff);
+  outline: none;
+}
+
+.screen-reader-enhanced [role="menuitem"][aria-current="page"] {
+  background-color: var(--color-primary-muted, #dbeafe);
+  color: var(--color-primary, #3b82f6);
+  font-weight: 600;
+}
+
+/* ===== ENHANCED CONTENT ELEMENTS ===== */
+
+/* Enhanced headings */
+.screen-reader-enhanced [role="heading"] {
+  font-weight: 600;
+  line-height: 1.25;
+  margin-bottom: 0.5rem;
+}
+
+.screen-reader-enhanced [role="heading"][aria-level="1"] {
+  font-size: 2.25rem;
+  margin-bottom: 1rem;
+}
+
+.screen-reader-enhanced [role="heading"][aria-level="2"] {
+  font-size: 1.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.screen-reader-enhanced [role="heading"][aria-level="3"] {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.screen-reader-enhanced [role="heading"][aria-level="4"] {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.screen-reader-enhanced [role="heading"][aria-level="5"] {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+.screen-reader-enhanced [role="heading"][aria-level="6"] {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Enhanced lists */
+.screen-reader-enhanced [role="list"] {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.screen-reader-enhanced [role="listitem"] {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.screen-reader-enhanced [role="listitem"]::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--color-muted-foreground, #6b7280);
+}
+
+/* ===== ENHANCED FORM STATES ===== */
+
+/* Focus indicators for form elements */
+.screen-reader-enhanced input:focus,
+.screen-reader-enhanced select:focus,
+.screen-reader-enhanced textarea:focus {
+  outline: 2px solid var(--focus-outline-color, #3b82f6);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* Enhanced fieldsets */
+.screen-reader-enhanced fieldset {
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.screen-reader-enhanced fieldset legend {
+  font-weight: 600;
+  padding: 0 0.5rem;
+  color: var(--color-foreground, #374151);
+}
+
+/* ===== ENHANCED ERROR AND SUCCESS STATES ===== */
+
+/* Error descriptions */
+.screen-reader-enhanced [aria-describedby] + .error-description,
+.screen-reader-enhanced .error-description {
+  color: var(--color-error, #ef4444);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.screen-reader-enhanced .error-description::before {
+  content: "⚠";
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* Success descriptions */
+.screen-reader-enhanced .success-description {
+  color: var(--color-success, #10b981);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.screen-reader-enhanced .success-description::before {
+  content: "✓";
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* ===== ENHANCED DIALOG AND MODAL ELEMENTS ===== */
+
+/* Enhanced dialogs */
+.screen-reader-enhanced [role="dialog"] {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 1.5rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.screen-reader-enhanced [role="dialog"]:focus {
+  outline: none;
+}
+
+/* Enhanced alert dialogs */
+.screen-reader-enhanced [role="alertdialog"] {
+  border-color: var(--color-warning, #f59e0b);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+}
+
+/* ===== ENHANCED STATUS INDICATORS ===== */
+
+/* ARIA expanded indicators */
+.screen-reader-enhanced [aria-expanded="true"]::after {
+  content: " (expanded)";
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground, #6b7280);
+  font-weight: normal;
+}
+
+.screen-reader-enhanced [aria-expanded="false"]::after {
+  content: " (collapsed)";
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground, #6b7280);
+  font-weight: normal;
+}
+
+/* ARIA selected indicators */
+.screen-reader-enhanced [aria-selected="true"] {
+  background-color: var(--color-primary, #3b82f6);
+  color: var(--color-primary-foreground, #ffffff);
+}
+
+.screen-reader-enhanced [aria-selected="false"] {
+  background-color: transparent;
+}
+
+/* ARIA current indicators */
+.screen-reader-enhanced [aria-current="page"] {
+  font-weight: 600;
+  color: var(--color-primary, #3b82f6);
+  position: relative;
+}
+
+.screen-reader-enhanced [aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: -0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.25rem;
+  height: 1rem;
+  background-color: var(--color-primary, #3b82f6);
+  border-radius: 0.125rem;
+}
+
+/* ===== RESPONSIVE ENHANCEMENTS ===== */
+
+/* Mobile screen reader enhancements */
+@media (max-width: 768px) {
+  .screen-reader-enhanced [role="button"] {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  .screen-reader-enhanced [role="menuitem"] {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+  }
+  
+  .screen-reader-enhanced input,
+  .screen-reader-enhanced select,
+  .screen-reader-enhanced textarea {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+}
+
+/* ===== HIGH CONTRAST ENHANCEMENTS ===== */
+
+/* High contrast mode enhancements */
+@media (prefers-contrast: high) {
+  .screen-reader-enhanced [role="button"] {
+    border-width: 2px;
+    border-color: #000000;
+  }
+  
+  .screen-reader-enhanced [role="button"]:focus {
+    outline: 3px solid #000000;
+    background-color: #ffff00;
+    color: #000000;
+  }
+  
+  .screen-reader-enhanced [aria-invalid="true"] {
+    border-color: #ff0000 !important;
+    border-width: 2px !important;
+  }
+  
+  .screen-reader-enhanced [aria-selected="true"] {
+    background-color: #0000ff !important;
+    color: #ffffff !important;
+    border: 2px solid #000000 !important;
+  }
+}
+
+/* High contrast class enhancements */
+.high-contrast .screen-reader-enhanced [role="button"] {
+  border-width: 2px !important;
+  border-color: var(--color-border, #000000) !important;
+}
+
+.high-contrast .screen-reader-enhanced [role="button"]:focus {
+  outline: 3px solid var(--color-border, #000000) !important;
+  background-color: #ffff00 !important;
+  color: #000000 !important;
+}
+
+/* ===== PRINT ENHANCEMENTS ===== */
+
+@media print {
+  .screen-reader-enhanced .sr-only,
+  .screen-reader-enhanced .live-region,
+  .screen-reader-enhanced #sr-status-region,
+  .screen-reader-enhanced #sr-alert-region {
+    display: none !important;
+  }
+  
+  .screen-reader-enhanced [aria-expanded="true"]::after,
+  .screen-reader-enhanced [aria-expanded="false"]::after {
+    display: none !important;
+  }
+}
+
+/* ===== ANIMATION PREFERENCES ===== */
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .screen-reader-enhanced * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+.reduced-motion .screen-reader-enhanced * {
+  transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important;
+}

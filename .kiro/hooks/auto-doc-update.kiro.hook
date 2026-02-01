@@ -1,0 +1,42 @@
+{
+  "enabled": true,
+  "name": "Auto Documentation Update",
+  "description": "Monitors all source files (JavaScript, React, Flutter, Terraform, config files) and automatically updates documentation in README files and the docs folder when code changes are detected",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "secure-gate-access/server/src/**/*.js",
+      "secure-gate-access/server/*.js",
+      "secure-gate-access/client/src/**/*.js",
+      "secure-gate-access/client/src/**/*.jsx",
+      "secure-gate-access/mobile/**/*.dart",
+      "secure-gate-access/mobile/**/pubspec.yaml",
+      "infra/**/*.tf",
+      "secure-gate-access/infrastructure/**/*.tf",
+      "secure-gate-access/*.yaml",
+      "secure-gate-access/*.yml",
+      "secure-gate-access/docker-compose*.yml",
+      "secure-gate-access/package.json",
+      "secure-gate-access/server/package.json",
+      "secure-gate-access/client/package.json",
+      "playwright.config.js",
+      "secure-gate-access/client/playwright.config.js",
+      "secure-gate-access/api-documentation.yaml",
+      "e2e/**/*.js",
+      "e2e/**/*.spec.js",
+      "tests/**/*.js",
+      "secure-gate-access/server/tests/**/*.js",
+      "secure-gate-access/client/src/**/*.test.js",
+      "secure-gate-access/client/src/**/*.test.jsx",
+      "scripts/**/*.js",
+      "secure-gate-access/scripts/**/*.js",
+      "*.md",
+      "secure-gate-access/*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source code has been modified. Please review the changes and update the relevant documentation. Focus on:\n\n1. **README Files**: Update main README files if core functionality, setup instructions, or API changes occurred\n2. **Documentation Folder**: Update files in secure-gate-access/docs/ if architecture, deployment, or operational procedures changed  \n3. **API Documentation**: Update secure-gate-access/api-documentation.yaml if API endpoints were modified\n4. **Configuration Docs**: Update setup guides if package.json, docker-compose, or config files changed\n5. **Architecture Docs**: Update technical documentation if database schema, security, or system architecture changed\n\nCheck these specific areas:\n- If server/src files changed: Update API docs, security docs, database schema docs\n- If client/src files changed: Update UI/UX docs, component documentation\n- If mobile files changed: Update mobile app documentation\n- If infrastructure files changed: Update deployment and infrastructure docs\n- If test files changed: Update testing documentation and guides\n- If config files changed: Update setup and configuration guides\n\nPlease analyze the changed files and update the appropriate documentation to reflect the current state of the codebase."
+  }
+}

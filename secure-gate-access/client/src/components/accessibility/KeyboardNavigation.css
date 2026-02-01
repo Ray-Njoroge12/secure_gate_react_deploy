@@ -1,0 +1,407 @@
+/**
+ * Keyboard Navigation Styles
+ * 
+ * Provides styling for keyboard navigation components and shortcuts help
+ * Meets WCAG 2.1 AA requirements for keyboard accessibility
+ */
+
+.keyboard-navigation {
+  position: relative;
+}
+
+.keyboard-navigation--active {
+  /* Enhanced focus indicators when keyboard navigation is active */
+}
+
+.keyboard-navigation--active *:focus-visible {
+  outline: 3px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.2);
+}
+
+/* ===== KEYBOARD SHORTCUTS HELP ===== */
+
+.keyboard-shortcuts-help {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-card, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+  max-width: 600px;
+  width: 90vw;
+  max-height: 80vh;
+  overflow: hidden;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.keyboard-shortcuts-help__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-muted, #f8fafc);
+}
+
+.keyboard-shortcuts-help__header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-foreground, #1f2937);
+}
+
+.keyboard-shortcuts-help__close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  color: var(--color-muted-foreground, #6b7280);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keyboard-shortcuts-help__close:hover {
+  background-color: var(--color-accent, #f1f5f9);
+  color: var(--color-foreground, #1f2937);
+}
+
+.keyboard-shortcuts-help__close:focus-visible {
+  outline: 2px solid var(--color-ring, #3b82f6);
+  outline-offset: 2px;
+}
+
+.keyboard-shortcuts-help__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.keyboard-shortcuts-help__group {
+  margin-bottom: 32px;
+}
+
+.keyboard-shortcuts-help__group:last-child {
+  margin-bottom: 0;
+}
+
+.keyboard-shortcuts-help__group h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-foreground, #1f2937);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  padding-bottom: 8px;
+}
+
+.keyboard-shortcuts-help__list {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.keyboard-shortcuts-help__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.keyboard-shortcuts-help__key {
+  margin: 0;
+  font-weight: normal;
+}
+
+.keyboard-shortcuts-help__key kbd {
+  background: var(--color-muted, #f1f5f9);
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-foreground, #1f2937);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+}
+
+.keyboard-shortcuts-help__description {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-muted-foreground, #6b7280);
+  line-height: 1.4;
+}
+
+.keyboard-shortcuts-help__footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-muted, #f8fafc);
+  text-align: center;
+}
+
+.keyboard-shortcuts-help__footer p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-muted-foreground, #6b7280);
+}
+
+.keyboard-shortcuts-help__footer kbd {
+  background: var(--color-background, #ffffff);
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-foreground, #1f2937);
+}
+
+/* ===== ROVING TABINDEX STYLES ===== */
+
+.keyboard-navigation [role="menubar"],
+.keyboard-navigation [role="tablist"],
+.keyboard-navigation [role="listbox"],
+.keyboard-navigation [role="grid"] {
+  /* Container for roving tabindex */
+}
+
+.keyboard-navigation [role="menuitem"],
+.keyboard-navigation [role="tab"],
+.keyboard-navigation [role="option"],
+.keyboard-navigation [role="gridcell"] {
+  /* Items that participate in roving tabindex */
+  outline: none;
+}
+
+.keyboard-navigation [role="menuitem"]:focus,
+.keyboard-navigation [role="tab"]:focus,
+.keyboard-navigation [role="option"]:focus,
+.keyboard-navigation [role="gridcell"]:focus {
+  background-color: var(--color-accent, #f1f5f9);
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: -2px;
+}
+
+/* ===== SPATIAL NAVIGATION INDICATORS ===== */
+
+.keyboard-navigation--spatial {
+  position: relative;
+}
+
+.keyboard-navigation--spatial::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: 2px dashed var(--color-primary, #3b82f6);
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.keyboard-navigation--spatial:focus-within::before {
+  opacity: 0.5;
+}
+
+/* ===== HIGH CONTRAST MODE ===== */
+
+@media (prefers-contrast: high) {
+  .keyboard-shortcuts-help {
+    border: 2px solid #000000;
+  }
+  
+  .keyboard-shortcuts-help__key kbd {
+    background: #ffffff;
+    border: 2px solid #000000;
+    color: #000000;
+  }
+  
+  .keyboard-shortcuts-help__footer kbd {
+    background: #ffffff;
+    border: 2px solid #000000;
+    color: #000000;
+  }
+}
+
+/* High contrast theme class */
+.high-contrast .keyboard-shortcuts-help {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast .keyboard-shortcuts-help__key kbd {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  color: #000000 !important;
+}
+
+.high-contrast .keyboard-shortcuts-help__footer kbd {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+  color: #000000 !important;
+}
+
+/* ===== REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .keyboard-shortcuts-help {
+    transform: translate(-50%, -50%);
+    transition: none;
+  }
+  
+  .keyboard-navigation--spatial::before {
+    transition: none;
+  }
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .keyboard-shortcuts-help {
+    width: 95vw;
+    max-height: 90vh;
+    margin: 16px;
+  }
+  
+  .keyboard-shortcuts-help__header {
+    padding: 16px 20px;
+  }
+  
+  .keyboard-shortcuts-help__content {
+    padding: 20px;
+  }
+  
+  .keyboard-shortcuts-help__item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    text-align: left;
+  }
+  
+  .keyboard-shortcuts-help__key {
+    justify-self: start;
+  }
+  
+  .keyboard-shortcuts-help__key kbd {
+    font-size: 14px;
+    padding: 6px 10px;
+  }
+  
+  .keyboard-shortcuts-help__description {
+    font-size: 16px;
+  }
+}
+
+/* ===== FOCUS MANAGEMENT ===== */
+
+/* Focus trap for keyboard shortcuts help */
+.keyboard-shortcuts-help:focus {
+  outline: none;
+}
+
+/* Ensure first focusable element gets focus */
+.keyboard-shortcuts-help__close:first-child {
+  /* This will be the first focusable element */
+}
+
+/* ===== ANIMATION STATES ===== */
+
+@media (prefers-reduced-motion: no-preference) {
+  .keyboard-shortcuts-help {
+    animation: slideInFromTop 0.3s ease-out;
+  }
+  
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -60%);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+
+@media print {
+  .keyboard-shortcuts-help {
+    position: static;
+    transform: none;
+    box-shadow: none;
+    border: 1px solid #000000;
+    max-width: none;
+    width: 100%;
+    max-height: none;
+    page-break-inside: avoid;
+  }
+  
+  .keyboard-shortcuts-help__header {
+    background: transparent;
+  }
+  
+  .keyboard-shortcuts-help__close {
+    display: none;
+  }
+  
+  .keyboard-shortcuts-help__key kbd {
+    background: transparent;
+    border: 1px solid #000000;
+  }
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+.keyboard-shortcut {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  background: var(--color-muted, #f1f5f9);
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-foreground, #1f2937);
+  white-space: nowrap;
+}
+
+.keyboard-hint {
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground, #6b7280);
+  font-style: italic;
+}
+
+/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+
+/* Ensure keyboard navigation is announced to screen readers */
+.keyboard-navigation[aria-label] {
+  /* Screen readers will announce the aria-label */
+}
+
+/* Visual indicator for keyboard users */
+.keyboard-user .keyboard-navigation {
+  outline: 1px dashed var(--color-primary, #3b82f6);
+  outline-offset: 4px;
+}
+
+/* Focus management for complex widgets */
+.keyboard-navigation [role="application"] {
+  /* Application role for complex widgets that manage their own keyboard navigation */
+}
+
+.keyboard-navigation [role="application"]:focus {
+  outline: 2px solid var(--color-primary, #3b82f6);
+  outline-offset: 2px;
+}

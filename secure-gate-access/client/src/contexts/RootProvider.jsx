@@ -17,8 +17,10 @@ import { LoadingProvider } from './LoadingContext.jsx';
 import { SearchProvider } from './SearchContext.jsx';
 import { BrowserCompatibilityProvider } from './BrowserCompatibilityContext.jsx';
 import { ThemeProvider } from './ThemeContext.jsx';
+import { PreferenceProvider } from './PreferenceContext.jsx';
 import { ToastProvider } from './ToastContext.jsx';
 import { UndoProvider } from './UndoContext.jsx';
+import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider.jsx';
 
 /**
  * React Query client configuration
@@ -53,12 +55,14 @@ const queryClient = new QueryClient({
  * 2. ThemeProvider - Theme must be early to prevent flash of wrong theme
  * 3. BrowserCompatibilityProvider - Detect browser features early
  * 4. AuthProvider - Core authentication state
- * 5. LoadingProvider - Global loading states
- * 6. ToastProvider - Global toast notifications
- * 7. UndoProvider - Global undo/redo functionality
- * 8. SearchProvider - Search functionality
- * 9. Router - React Router for navigation
- * 10. NavigationProvider - Navigation state (needs Router context)
+ * 5. PreferenceProvider - User preferences (needs AuthProvider context)
+ * 6. AccessibilityProvider - Accessibility features and WCAG compliance
+ * 7. LoadingProvider - Global loading states
+ * 8. ToastProvider - Global toast notifications
+ * 9. UndoProvider - Global undo/redo functionality
+ * 10. SearchProvider - Search functionality
+ * 11. Router - React Router for navigation
+ * 12. NavigationProvider - Navigation state (needs Router context)
  * 
  * @component
  * @param {Object} props - Component props
@@ -69,32 +73,36 @@ export const RootProvider = ({ children }) => {
   return (
     <ErrorProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <BrowserCompatibilityProvider>
-            <AuthProvider>
-              <LoadingProvider>
-                <ToastProvider position="top-right" maxVisible={4}>
-                  <UndoProvider maxHistory={10}>
-                    <SearchProvider>
-                      <Router
-                        future={{
-                          v7_startTransition: true,
-                          v7_relativeSplatPath: true
-                        }}
-                      >
-                        <AppNavigationBridge />
-                        <AuthNavigationBridge />
-                        <NavigationProvider>
-                          {children}
-                        </NavigationProvider>
-                      </Router>
-                    </SearchProvider>
-                  </UndoProvider>
-                </ToastProvider>
-              </LoadingProvider>
-            </AuthProvider>
-          </BrowserCompatibilityProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <PreferenceProvider>
+              <AccessibilityProvider>
+                <BrowserCompatibilityProvider>
+                  <LoadingProvider>
+                    <ToastProvider position="top-right" maxVisible={4}>
+                      <UndoProvider maxHistory={10}>
+                        <SearchProvider>
+                          <Router
+                            future={{
+                              v7_startTransition: true,
+                              v7_relativeSplatPath: true
+                            }}
+                          >
+                            <AppNavigationBridge />
+                            <AuthNavigationBridge />
+                            <NavigationProvider>
+                              {children}
+                            </NavigationProvider>
+                          </Router>
+                        </SearchProvider>
+                      </UndoProvider>
+                    </ToastProvider>
+                  </LoadingProvider>
+                </BrowserCompatibilityProvider>
+              </AccessibilityProvider>
+            </PreferenceProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorProvider>
   );

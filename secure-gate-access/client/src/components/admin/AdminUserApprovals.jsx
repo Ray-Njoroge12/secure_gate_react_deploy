@@ -3,7 +3,7 @@ import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../contexts/AuthContext';
 import logger from '../../utils/logger';
 
-const AdminUserApprovals = () => {
+const AdminUserApprovals = ({ siteId }) => {
     const [pendingUsers, setPendingUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const { handleError, handleSuccess } = useError();
@@ -12,14 +12,26 @@ const AdminUserApprovals = () => {
     const fetchPendingUsers = async () => {
         try {
             setLoading(true);
-            const response = await authFetch('/api/admin/users/pending');
+            const query = siteId ? `?siteId=${siteId}` : '';
+            const response = await authFetch(`/api/admin/users/pending${query}`);
             const data = await response.json();
             if (response.ok) {
-                setPendingUsers(data.data || []);
+                // Robust array extraction
+                let usersArray = [];
+                if (Array.isArray(data)) {
+                    usersArray = data;
+                } else if (data && Array.isArray(data.data)) {
+                    usersArray = data.data;
+                } else if (data && Array.isArray(data.users)) {
+                    usersArray = data.users;
+                }
+                setPendingUsers(usersArray);
             } else {
+                setPendingUsers([]); // Reset on error
                 throw new Error(data.message || 'Failed to fetch pending users');
             }
         } catch (err) {
+            setPendingUsers([]); // Reset on error
             handleError(err, { context: 'Fetching Pending Users' });
         } finally {
             setLoading(false);
@@ -28,7 +40,7 @@ const AdminUserApprovals = () => {
 
     useEffect(() => {
         fetchPendingUsers();
-    }, []);
+    }, [siteId]);
 
     const handleStatusUpdate = async (userId, newStatus) => {
         try {

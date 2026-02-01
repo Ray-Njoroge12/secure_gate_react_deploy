@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Dependency Risk Reviewer",
+  "description": "Monitors package.json and lockfile changes to identify new/updated packages, flag risky patterns like unmaintained libraries or postinstall scripts, check Node/React compatibility, and recommend safer alternatives when risks are detected",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/package.json",
+      "**/package-lock.json",
+      "**/yarn.lock",
+      "**/pnpm-lock.yaml"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A dependency file has been modified. Please perform a comprehensive dependency risk assessment:\n\n1. **Identify Changes**: Analyze what packages were added, updated, or removed and explain why these changes were likely made\n\n2. **Risk Assessment**: Flag any concerning patterns:\n   - Unmaintained packages (last updated >2 years ago, few maintainers)\n   - Packages with postinstall scripts or suspicious permissions\n   - Duplicate dependencies or version conflicts\n   - Packages from untrusted sources or with security advisories\n   - Large dependency trees that increase attack surface\n\n3. **Compatibility Check**: Verify compatibility with our current environment:\n   - Node.js version compatibility (we use Node 20+)\n   - React version compatibility (we use React 18.3.1)\n   - Browser support requirements\n   - Deployment platform compatibility (Render, Netlify)\n\n4. **Recommendations**: For high-risk packages, suggest:\n   - Version pinning strategies\n   - Alternative packages with better security/maintenance\n   - Configuration changes to mitigate risks\n   - Whether the dependency is actually necessary\n\n5. **Update Documentation**: Create or update a \"dependency-changes.md\" file with:\n   - What was changed and why\n   - Risk level assessment (Low/Medium/High)\n   - Any action items or monitoring needed\n   - Date of review\n\nFocus on actionable security and maintenance insights that help keep our Secure Gate Access Control System dependencies safe and up-to-date."
+  }
+}

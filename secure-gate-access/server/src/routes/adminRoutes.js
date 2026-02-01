@@ -1,5 +1,21 @@
 import express from 'express';
-import { getMetrics, getAuditLogs, getPendingUsers, updateUserStatus } from '../controllers/adminController.js';
+import {
+  getSettings,
+  updateSettings,
+  updateCompliance,
+  runComplianceReview
+} from '../controllers/adminSettingsController.js';
+import { getMetrics, getAuditLogs, getPendingUsers, updateUserStatus, getEstateInfo } from '../controllers/adminController.js';
+import {
+  getPlatformOverview,
+  listEstates,
+  createEstate,
+  updateEstateStatus,
+  deleteEstate,
+  searchGlobalUsers,
+  getGlobalLogs,
+  getSystemMetrics
+} from '../controllers/superAdminController.js';
 import { respond, respondError } from '../utils/respond.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
@@ -11,6 +27,66 @@ import retentionScheduler from '../jobs/retentionScheduler.js';
 import { minimizeData } from '../middleware/dataMinimization.js';
 
 const router = express.Router();
+
+// ==================== SUPER ADMIN ENDPOINTS ====================
+
+/**
+ * @route GET /api/admin/super-admin/overview
+ * @desc Get platform-wide overview metrics
+ * @access Private (Super Admin only)
+ */
+router.get('/super-admin/overview', authenticateToken, requireRole(['super_admin']), attachRequestAudit, getPlatformOverview);
+
+/**
+ * @route GET /api/admin/super-admin/estates
+ * @desc List all estates with stats
+ * @access Private (Super Admin only)
+ */
+router.get('/super-admin/estates', authenticateToken, requireRole(['super_admin']), attachRequestAudit, listEstates);
+
+/**
+ * @route POST /api/admin/super-admin/estates
+ * @desc Create a new estate
+ * @access Private (Super Admin only)
+ */
+router.post('/super-admin/estates', authenticateToken, requireRole(['super_admin']), attachRequestAudit, createEstate);
+
+/**
+ * @route PATCH /api/admin/super-admin/estates/:id/status
+ * @desc Update estate status (suspend/activate)
+ * @access Private (Super Admin only)
+ */
+router.patch('/super-admin/estates/:id/status', authenticateToken, requireRole(['super_admin']), attachRequestAudit, updateEstateStatus);
+
+/**
+ * @route DELETE /api/admin/super-admin/estates/:id
+ * @desc Decommission estate (soft delete via status)
+ * @access Private (Super Admin only)
+ */
+router.delete('/super-admin/estates/:id', authenticateToken, requireRole(['super_admin']), attachRequestAudit, deleteEstate);
+
+/**
+ * @route GET /api/admin/super-admin/users/search
+ * @desc Search users globally (Privacy preserved)
+ * @access Private (Super Admin only)
+ */
+router.get('/super-admin/users/search', authenticateToken, requireRole(['super_admin']), attachRequestAudit, searchGlobalUsers);
+
+/**
+ * @route GET /api/admin/super-admin/audit-logs
+ * @desc View system-wide audit logs
+ * @access Private (Super Admin only)
+ */
+router.get('/super-admin/audit-logs', authenticateToken, requireRole(['super_admin']), attachRequestAudit, getGlobalLogs);
+
+/**
+ * @route GET /api/admin/super-admin/system/metrics
+ * @desc Get real-time system health metrics
+ * @access Private (Super Admin only)
+ */
+router.get('/super-admin/system/metrics', authenticateToken, requireRole(['super_admin']), attachRequestAudit, getSystemMetrics);
+
+// ==================== SUPER ADMIN ENDPOINTS ====================
 
 /**
  * @swagger
@@ -90,6 +166,52 @@ const router = express.Router();
  */
 // Admin metrics endpoint
 router.get('/metrics', authenticateToken, attachRequestAudit, getMetrics);
+
+/**
+ * @swagger
+ * /api/admin/estate-info:
+ *   get:
+ *     summary: Get current estate info
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estate info retrieved
+ */
+router.get('/estate-info', authenticateToken, attachRequestAudit, getEstateInfo);
+
+// ==================== SETTINGS & COMPLIANCE ====================
+
+/**
+ * @route GET /api/admin/settings
+ * @desc Get estate settings
+ * @access Private (Admin only)
+ */
+router.get('/settings', authenticateToken, requireRole(['admin']), attachRequestAudit, getSettings);
+
+/**
+ * @route PUT /api/admin/settings
+ * @desc Update estate settings
+ * @access Private (Admin only)
+ */
+router.put('/settings', authenticateToken, requireRole(['admin']), attachRequestAudit, updateSettings);
+
+/**
+ * @route PUT /api/admin/compliance/:section
+ * @desc Update compliance settings (dpo/odpc)
+ * @access Private (Admin only)
+ */
+router.put('/compliance/:section', authenticateToken, requireRole(['admin']), attachRequestAudit, updateCompliance);
+
+/**
+ * @route POST /api/admin/compliance/review
+ * @desc Trigger compliance review
+ * @access Private (Admin only)
+ */
+router.post('/compliance/review', authenticateToken, requireRole(['admin']), attachRequestAudit, runComplianceReview);
+
+// ==================== SETTINGS & COMPLIANCE ====================
 
 /**
  * @swagger
@@ -516,7 +638,7 @@ router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachReq
 router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
     // SECURITY: Filter by estate_id to prevent cross-estate access
-    let query = `SELECT id, username, email, phone, unit_number, status, created_at 
+    let query = `SELECT id, username, first_name, last_name, email, phone, unit_number, status, created_at 
        FROM users WHERE role = 'resident' AND status != 'deleted'`;
     const params = [];
 
@@ -543,6 +665,43 @@ router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData
 });
 
 /**
+ * @route POST /api/admin/residents
+ * @desc Create a new resident
+ * @access Private (Admin only)
+ */
+router.post('/residents', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+  try {
+    const { username, first_name, last_name, email, password, phone, unit_number } = req.body;
+
+    if (!username || !email || !password || !first_name || !last_name) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    const newUser = await userService.createUser({
+      username,
+      first_name,
+      last_name,
+      email,
+      password,
+      phone,
+      role: 'resident',
+      unit_number,
+      status: 'active',
+      estate_id: req.user.estate_id,
+      account_status: 'active' // Admin created residents are immediately active
+    });
+
+    res.status(201).json({ success: true, data: newUser });
+  } catch (error) {
+    // Check for duplicate
+    if (error.code === 'DUPLICATE_ENTRY') {
+      return res.status(409).json({ success: false, message: 'User already exists' });
+    }
+    res.status(500).json({ success: false, message: 'Failed to create resident', error: error.message });
+  }
+});
+
+/**
  * @route PUT /api/admin/residents/:id
  * @desc Update a resident
  * @access Private (Admin only)
@@ -550,24 +709,26 @@ router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData
 router.put('/residents/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, email, phone, unit_number, status } = req.body;
+    const { username, first_name, last_name, email, phone, unit_number, status } = req.body;
 
     // SECURITY: Filter by estate_id to prevent cross-estate modification
     let query = `UPDATE users SET 
       username = COALESCE($1, username),
-      email = COALESCE($2, email),
-      phone = COALESCE($3, phone),
-      unit_number = COALESCE($4, unit_number),
-      status = COALESCE($5, status),
+      first_name = COALESCE($2, first_name),
+      last_name = COALESCE($3, last_name),
+      email = COALESCE($4, email),
+      phone = COALESCE($5, phone),
+      unit_number = COALESCE($6, unit_number),
+      status = COALESCE($7, status),
       updated_at = NOW()
-     WHERE id = $6 AND role = 'resident'`;
-    const params = [username, email, phone, unit_number, status, id];
+     WHERE id = $8 AND role = 'resident'`;
+    const params = [username, first_name, last_name, email, phone, unit_number, status, id];
 
     if (req.user.estate_id) {
-      query += ` AND estate_id = $7`;
+      query += ` AND estate_id = $9`;
       params.push(req.user.estate_id);
     }
-    query += ` RETURNING id, username, email, phone, unit_number, status`;
+    query += ` RETURNING id, username, first_name, last_name, email, phone, unit_number, status`;
 
     const result = await dbManager.query(query, params);
 
@@ -613,89 +774,11 @@ router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attac
   }
 });
 
-// ==================== GUARDS MANAGEMENT ====================
 
-/**
- * @route GET /api/admin/guards
- * @desc Get all guards
- * @access Private (Admin only)
- */
-router.get('/guards', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
-  try {
-    // SECURITY: Filter by estate_id to prevent cross-estate access
-    let query = `SELECT id, username, email, phone, status, created_at 
-       FROM users WHERE role = 'guard' AND status != 'deleted'`;
-    const params = [];
 
-    if (req.user.estate_id) {
-      query += ` AND estate_id = $1`;
-      params.push(req.user.estate_id);
-    }
-    query += ` ORDER BY created_at DESC`;
 
-    const result = await dbManager.query(query, params);
 
-    res.json({
-      success: true,
-      data: result.rows
-    });
-  } catch (error) {
-    console.error('Error fetching guards:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch guards',
-      error: error.message
-    });
-  }
-});
 
-/**
- * @route POST /api/admin/guards
- * @desc Add a new guard
- * @access Private (Admin only)
- */
-router.post('/guards', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
-  try {
-    const { username, email, phone, password } = req.body;
-
-    if (!username || !email || !password) {
-      return respondError(res, 400, 'Username, email, and password are required');
-    }
-
-    // Fix A-003: Input Validation (Email format)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return respondError(res, 400, 'Invalid email format');
-    }
-
-    // Use userService to create guard with proper password hashing
-    const guard = await userService.createUser({
-      username,
-      email,
-      phone,
-      password,
-      role: 'guard'
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Guard created successfully',
-      data: {
-        id: guard.id,
-        username: guard.username,
-        email: guard.email,
-        role: 'guard'
-      }
-    });
-  } catch (error) {
-    console.error('Error creating guard:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create guard',
-      error: error.message
-    });
-  }
-});
 
 /**
  * @route PUT /api/admin/guards/:id
@@ -842,10 +925,37 @@ router.get('/access-logs', authenticateToken, requireRole(['admin']), minimizeDa
       });
     }
 
-    const result = await dbManager.query(
-      `SELECT * FROM access_logs ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
+    // Securely query access logs with estate scoping via User table
+    // Since access_logs table doesn't have estate_id directly, we infer it from user_id
+    let query = `
+      SELECT a.*, u.username as user_name, u.role as user_role
+      FROM access_logs a
+      LEFT JOIN users u ON a.user_id = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (req.user.estate_id) {
+      query += ` AND u.estate_id = $${paramIndex++}`;
+      params.push(req.user.estate_id);
+    }
+
+    if (type) {
+      query += ` AND a.action = $${paramIndex++}`;
+      params.push(type);
+    }
+
+    if (search) {
+      query += ` AND (u.username ILIKE $${paramIndex} OR a.action ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY a.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    params.push(limitNum, offset);
+
+    const result = await dbManager.query(query, params);
 
     res.json({
       success: true,

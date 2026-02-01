@@ -93,10 +93,10 @@ class UserService {
       // Uses column names matching render_init.sql schema: verification_token, verification_expires
       // Insert into both password and password_hash for backward compatibility
       const result = await this.db.query(
-        `INSERT INTO users (username, email, password, password_hash, role, estate_id, account_status, verification_token, verification_expires, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) 
-         RETURNING id, username, email, role, estate_id, account_status, verification_token, created_at`,
-        [username, email, hashedPassword, hashedPassword, role, estateId, finalAccountStatus, verificationToken, verificationExpires]
+        `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, estate_id, account_status, verification_token, verification_expires, created_at, updated_at) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()) 
+         RETURNING id, username, first_name, last_name, email, role, estate_id, account_status, verification_token, created_at`,
+        [username, userData.first_name || '', userData.last_name || '', email, hashedPassword, hashedPassword, role, estateId, finalAccountStatus, verificationToken, verificationExpires]
       );
 
       const user = result.rows[0];
@@ -225,7 +225,7 @@ class UserService {
       // Get user by username OR email using parameterized query, including email verification status
       // Uses column names matching render_init.sql schema: verified instead of email_verified_at
       const result = await this.db.query(
-        `SELECT id, username, email, password_hash, role, estate_id, created_at, verified
+        `SELECT id, username, first_name, last_name, email, password_hash, role, estate_id, created_at, verified
          FROM users
          WHERE (username = $1 OR email = $1)
            AND estate_id IS NOT DISTINCT FROM COALESCE($2, estate_id)`,
@@ -287,7 +287,7 @@ class UserService {
 
     try {
       const result = await this.db.query(
-        'SELECT id, username, email, role, estate_id, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, username, first_name, last_name, email, role, estate_id, created_at, updated_at FROM users WHERE id = $1',
         [userId]
       );
 
@@ -333,7 +333,7 @@ class UserService {
       throw new Error('User ID required');
     }
 
-    const allowedFields = ['username', 'email', 'role', 'mfa_enabled'];
+    const allowedFields = ['username', 'first_name', 'last_name', 'email', 'role', 'mfa_enabled'];
     const updates = [];
     const values = [];
     let paramCount = 1;

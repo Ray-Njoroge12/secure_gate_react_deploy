@@ -4,6 +4,7 @@
 
 import { performance } from 'perf_hooks';
 import loggingService from '../services/loggingService.js';
+import metricsService from '../services/metricsService.js';
 
 class PerformanceMiddleware {
     constructor() {
@@ -14,7 +15,7 @@ class PerformanceMiddleware {
             slowRequests: 0,
             errors: 0
         };
-        
+
         this.slowRequestThreshold = parseInt(process.env.SLOW_REQUEST_THRESHOLD || '1000');
         this.endpointMetrics = new Map();
         this.startPeriodicReporting();
@@ -24,15 +25,15 @@ class PerformanceMiddleware {
         return (req, res, next) => {
             const startTime = performance.now();
             const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
+
             req.performance = {
                 requestId,
                 startTime,
                 endpoint: `${req.method} ${req.route?.path || req.path}`
             };
-            
+
             this.metrics.requests++;
-            
+
             // Use on('finish') instead of overriding res.end to avoid header issues
             res.on('finish', () => {
                 const endTime = performance.now();
@@ -46,10 +47,22 @@ class PerformanceMiddleware {
 
     trackRequestEnd(req, res, duration) {
         const responseTime = Math.round(duration);
-        
+
         this.metrics.totalResponseTime += responseTime;
         this.metrics.averageResponseTime = this.metrics.totalResponseTime / this.metrics.requests;
-        
+
+        // Feed data to centralized metrics service
+        metricsService.recordRequest({
+            requestId: req.performance?.requestId,
+            userId: req.user?.id,
+            estateId: req.user?.estate_id,
+            role: req.user?.role,
+            route: req.performance?.endpoint,
+            method: req.method,
+            statusCode: res.statusCode,
+            latencyMs: responseTime
+        });
+
         if (responseTime > this.slowRequestThreshold) {
             this.metrics.slowRequests++;
             loggingService.logWarn('Slow request detected', {
@@ -59,11 +72,11 @@ class PerformanceMiddleware {
                 url: req.originalUrl
             });
         }
-        
+
         if (res.statusCode >= 400) {
             this.metrics.errors++;
         }
-        
+
         if (req.performance) {
             this.trackEndpointMetrics(req.performance.endpoint, responseTime, res.statusCode);
         }
@@ -77,19 +90,19 @@ class PerformanceMiddleware {
             slowCount: 0,
             errorCount: 0
         };
-        
+
         metrics.count++;
         metrics.totalTime += responseTime;
         metrics.averageTime = metrics.totalTime / metrics.count;
-        
+
         if (responseTime > this.slowRequestThreshold) {
             metrics.slowCount++;
         }
-        
+
         if (statusCode >= 400) {
             metrics.errorCount++;
         }
-        
+
         this.endpointMetrics.set(endpoint, metrics);
     }
 
@@ -111,7 +124,7 @@ class PerformanceMiddleware {
             },
             topEndpoints: this.getTopEndpoints(5)
         };
-        
+
         loggingService.logInfo('Performance metrics report', report);
     }
 

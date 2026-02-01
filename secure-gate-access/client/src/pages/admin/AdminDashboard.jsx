@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 // AppShell removed - handled by Layout Route
@@ -12,20 +12,26 @@ import {
   getNotificationQueueStats,
   getNotificationFailures,
   retryNotificationFailure,
-  getHealthDetails
+  getHealthDetails,
+  getEstateDetails,
+  getAllEstates
 } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
 import { useSearchData } from "../../hooks/useSearch";
 import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
 import AnnouncementsAdmin from "../../components/admin/AnnouncementsAdmin";
-import PrivacyDashboard from "../../components/settings/PrivacyDashboard";
+// PrivacyDashboard moved to Settings tab
 // Phase 4: Onboarding Tour
 import OnboardingTour from "../../components/common/OnboardingTour";
-// Phase 4: Analytics Dashboard
-import AnalyticsDashboard from "../../components/admin/AnalyticsDashboard";
+// Analytics moved to Reports tab
 import logger from 'utils/logger';
-import PendingApprovals from './PendingApprovals';
+// PendingApprovals consolidated into AdminUserApprovals
+import ManageGuards from './ManageGuards';
+import ManageResidents from './ManageResidents';
+import VisitorLog from './VisitorLog';
+import Reports from './Reports';
+import Settings from './Settings';
 import Table from '../../components/Table';
 
 export default function AdminDashboard({ initialTab = 'overview' }) {
@@ -49,6 +55,11 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   const [healthDetails, setHealthDetails] = useState(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthError, setHealthError] = useState(null);
+
+  // Estate Context State
+  const [currentEstate, setCurrentEstate] = useState(null);
+  const [availableEstates, setAvailableEstates] = useState([]);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -99,9 +110,8 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'approvals', label: 'User Approvals' },
-    { id: 'users', label: 'User Management' },
-    { id: 'guards', label: 'Guard Management' },
-    { id: 'residents', label: 'Resident Management' },
+    { id: 'guards', label: 'Guards' },
+    { id: 'residents', label: 'Residents' },
     { id: 'visitors', label: 'Visitor Logs' },
     { id: 'reports', label: 'Reports' },
     { id: 'settings', label: 'Settings' }
@@ -133,18 +143,33 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     pageSize: limit
   });
 
+  const [searchParams] = useSearchParams();
+  // const siteId = searchParams.get('siteId'); // No longer directly using siteId from URL for most fetches
+
+  // Load Metrics (Modified to support estate context)
   useEffect(() => {
     let cancelled = false;
     async function loadMetrics() {
       setLoadingMetrics(true); setMetricsError(null);
       try {
-        const data = await getMetrics();
+        const params = {};
+        // If super admin and selected estate, pass siteId? 
+        // Actually, authMiddleware now handles context via header if set, 
+        // but our http client needs to know to set it.
+        // For now, simpler: pass as query param if needed. 
+        if (role === 'super_admin' && currentEstate) {
+          params.siteId = currentEstate.id;
+        } else if (!isSuperAdmin && currentEstate) {
+          params.siteId = currentEstate.id; // For regular admin, ensure current estate is used
+        }
+
+        const data = await getMetrics(params);
         if (!cancelled) setMetrics(data || {});
-      } catch (e) {
+      } catch (err) {
         if (!cancelled) {
-          const errorMsg = handleApiError(e);
+          const errorMsg = handleApiError(err);
           setMetricsError(errorMsg);
-          logger.error('Failed to load metrics:', e);
+          logger.error('Failed to load metrics:', err);
         }
       } finally {
         if (!cancelled) setLoadingMetrics(false);
@@ -153,7 +178,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadMetrics();
     const id = setInterval(loadMetrics, 30000);
     return () => { cancelled = true; clearInterval(id); };
-  }, []);
+  }, [currentEstate, role, isSuperAdmin]); // Reload metrics when estate changes
 
   useEffect(() => {
     let cancelled = false;
@@ -162,9 +187,10 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       setQueueLoading(true);
       setQueueError(null);
       try {
+        const params = currentEstate?.id ? { siteId: currentEstate.id } : {};
         const [stats, failures] = await Promise.all([
-          getNotificationQueueStats(),
-          getNotificationFailures({ limit: 25 })
+          getNotificationQueueStats(params),
+          getNotificationFailures({ limit: 25, ...params })
         ]);
         if (!cancelled) {
           setQueueStats(stats?.data || stats);
@@ -172,18 +198,18 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
         }
       } catch (e) {
         if (!cancelled) {
-          setQueueError(handleApiError(e));
+          const errorMsg = handleApiError(e);
+          setQueueError(errorMsg);
           logger.error('Failed to load queue data:', e);
         }
       } finally {
         if (!cancelled) setQueueLoading(false);
       }
     }
-
     loadQueueData();
     const id = setInterval(loadQueueData, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, []);
+  }, [currentEstate?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,22 +218,23 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       setHealthLoading(true);
       setHealthError(null);
       try {
-        const details = await getHealthDetails();
+        const params = currentEstate?.id ? { siteId: currentEstate.id } : {};
+        const details = await getHealthDetails(params);
         if (!cancelled) setHealthDetails(details);
       } catch (e) {
         if (!cancelled) {
-          setHealthError(handleApiError(e));
+          const errorMsg = handleApiError(e);
+          setHealthError(errorMsg);
           logger.error('Failed to load health details:', e);
         }
       } finally {
         if (!cancelled) setHealthLoading(false);
       }
     }
-
     loadHealthDetails();
     const id = setInterval(loadHealthDetails, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, []);
+  }, [currentEstate?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,6 +242,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       setLogsLoading(true); setLogsError(null);
       try {
         const params = { page: String(page), limit: String(limit) };
+        if (currentEstate?.id) params.siteId = currentEstate.id;
         const data = await getAuditLogs(params);
         if (!cancelled) setLogs(data || []);
       } catch (e) {
@@ -228,7 +256,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       }
     }
     loadLogs();
-  }, [page, limit]);
+  }, [page, limit, currentEstate?.id]);
 
   const onLogout = async () => {
     await logout();
@@ -291,7 +319,46 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       />
 
       {/* Phase 3: Offline Indicator */}
+      <OfflineIndicator />
 
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            Admin Dashboard
+            {currentEstate && !isSuperAdmin && (
+              <span className="text-sm font-normal px-3 py-1 bg-green-100 text-green-800 rounded-full border border-green-200">
+                {currentEstate.name}
+              </span>
+            )}
+            {isSuperAdmin && (
+              <select
+                className="text-sm font-normal px-3 py-1 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                value={currentEstate?.id || ''}
+                onChange={(e) => {
+                  const selectedId = Number(e.target.value);
+                  const selected = availableEstates.find(est => est.id === selectedId);
+                  if (selected) {
+                    setCurrentEstate(selected);
+                    // TODO: Persist or set header
+                    // For quick implementation, we rely on sending siteId param or reloading page with context?
+                    // Ideally: http client interceptor checks localStorage.
+                    // For now: Just passing params where possible.
+                  }
+                }}
+              >
+                <option value="">Select Estate</option>
+                {availableEstates.map(est => (
+                  <option key={est.id} value={est.id}>{est.name}</option>
+                ))}
+              </select>
+            )}
+            <span className={`text-xs px-2 py-1 rounded-full ${role === 'super_admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+              }`}>
+              {role === 'super_admin' ? 'Super Admin' : 'Administrator'}
+            </span>
+          </h1>
+        </div>
+      </div>
 
       {/* Phase 3: Community Announcements */}
       <AnnouncementsBanner showDismiss={true} className="mb-4" />
@@ -320,105 +387,46 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
 
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          <AdminMetrics />
-
-          {/* Pending User Approvals Widget */}
-          <PendingApprovals />
-
-          <AdminUserApprovals />
-
-          {/* Health Metrics Section */}
-          <div id="health-metrics" data-tour="health-metrics" className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Health Metrics</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Live component status and environment checks</p>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${healthStatusColor(healthDetails?.status)}`}>
-                {healthDetails?.status || (healthLoading ? 'loading' : 'unknown')}
-              </span>
-            </div>
-            <div className="p-6">
-              {healthError && (
-                <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
-                  {healthError}
-                </div>
-              )}
-              {healthLoading ? (
-                <div className="text-sm text-gray-500 dark:text-gray-300">Loading health details...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {healthComponents.length === 0 && (
-                    <div className="text-sm text-gray-500 dark:text-gray-300">No component health data available.</div>
-                  )}
-                  {healthComponents.map(([component, detail]) => (
-                    <div key={component} className="border border-gray-200 rounded-md p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{component.replace(/_/g, ' ')}</h3>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${healthStatusColor(detail?.status)}`}>
-                          {detail?.status || 'unknown'}
-                        </span>
-                      </div>
-                      {detail?.message && <p className="text-xs text-gray-600 dark:text-gray-200">{detail.message}</p>}
-                      {detail?.metrics && (
-                        <pre className="mt-2 text-xs text-gray-500 dark:text-gray-300 whitespace-pre-wrap">
-                          {JSON.stringify(detail.metrics, null, 2)}
-                        </pre>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* Quick Actions Panel */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm p-6 text-white">
+            <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => navigate('/dashboard/admin/approvals')}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+              >
+                ✓ Approve Users
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/admin/visitors')}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+              >
+                📋 View Today's Visitors
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/admin/residents')}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+              >
+                🏠 Manage Residents
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/admin/reports')}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+              >
+                📊 Generate Reports
+              </button>
             </div>
           </div>
 
-          {/* Notification Queue Failures */}
-          <div id="queue-failures" data-tour="queue-failures" className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notification Queue Failures</h2>
-                <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Retry failed SMS/email deliveries from the dead-letter queue</p>
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-200">
-                DLQ: {queueStats?.deadLetter?.total ?? 0} total / {queueStats?.deadLetter?.waiting ?? 0} waiting
-              </div>
-            </div>
-            <div className="p-6">
-              {queueError && (
-                <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
-                  {queueError}
-                </div>
-              )}
-              {queueLoading ? (
-                <div className="text-sm text-gray-500 dark:text-gray-300">Loading queue failures...</div>
-              ) : (
-                <Table headers={queueHeaders} rows={queueRows} loading={queueLoading} />
-              )}
-              {!queueLoading && queueFailures.length === 0 && (
-                <div className="text-sm text-gray-500 dark:text-gray-300 mt-4">No failed notifications in the dead-letter queue.</div>
-              )}
-            </div>
-          </div>
+          {/* Admin Metrics - Essential */}
+          <AdminMetrics metrics={metrics} loading={loadingMetrics} error={metricsError} />
 
-          {/* Phase 3: Community Announcements Admin */}
+          {/* User Approvals - Single widget only */}
+          <AdminUserApprovals siteId={currentEstate?.id} />
+
+          {/* Community Announcements - Essential for estates */}
           <div data-tour="announcements">
             <AnnouncementsAdmin />
-          </div>
-
-          {/* Phase 4: Analytics Dashboard */}
-          <div data-tour="analytics">
-            <AnalyticsDashboard />
-          </div>
-
-          {/* Phase 3: Privacy Dashboard (Admin View) */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Privacy & Data Management</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">System-wide privacy controls and data subject request management</p>
-            </div>
-            <div className="p-6">
-              <PrivacyDashboard isAdmin={true} />
-            </div>
           </div>
         </div>
       )}
@@ -426,8 +434,26 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       {activeTab === 'approvals' && (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">User Account Approvals</h3>
-          <AdminUserApprovals />
+          <AdminUserApprovals siteId={currentEstate?.id} />
         </div>
+      )}
+
+      {activeTab === 'guards' && <ManageGuards estateId={currentEstate?.id} />}
+
+      {activeTab === 'residents' && (
+        <ManageResidents />
+      )}
+
+      {activeTab === 'visitors' && (
+        <VisitorLog />
+      )}
+
+      {activeTab === 'reports' && (
+        <Reports />
+      )}
+
+      {activeTab === 'settings' && (
+        <Settings />
       )}
     </div>
   );

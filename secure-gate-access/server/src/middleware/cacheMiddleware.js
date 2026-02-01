@@ -20,16 +20,21 @@ class CacheMiddleware {
       deletes: 0,
       errors: 0
     };
-    
+
     this.init();
   }
 
   async init() {
-    // Skip Redis initialization if disabled via environment variable
-    if (process.env.CACHE_ENABLED === 'false' || process.env.ENABLE_REDIS_CACHE === 'false' || process.env.NODE_ENV === 'test') {
+    // Skip Redis initialization if not explicitly enabled
+    if (process.env.CACHE_ENABLED !== 'true' && process.env.ENABLE_REDIS_CACHE !== 'true') {
       if (process.env.NODE_ENV !== 'test') {
-        console.log('Redis cache disabled (ENABLE_REDIS_CACHE=false or NODE_ENV=test)');
+        // console.log('Redis cache disabled (CACHE_ENABLED not set to true)');
       }
+      this.isConnected = false;
+      return;
+    }
+
+    if (process.env.NODE_ENV === 'test') {
       this.isConnected = false;
       return;
     }
@@ -118,7 +123,7 @@ class CacheMiddleware {
         .filter(header => req.headers[header])
         .map(header => `${header}:${req.headers[header]}`)
         .join('|');
-      
+
       if (headerValues) {
         const headerHash = crypto.createHash('md5').update(headerValues).digest('hex');
         key += `:headers:${headerHash}`;
@@ -141,14 +146,14 @@ class CacheMiddleware {
       if (cached) {
         this.cacheStats.hits++;
         const parsed = JSON.parse(cached);
-        
+
         // Check if cache has expired
         if (parsed.expires && Date.now() > parsed.expires) {
           await this.redisClient.del(key);
           this.cacheStats.misses++;
           return null;
         }
-        
+
         return parsed.data;
       } else {
         this.cacheStats.misses++;
@@ -261,10 +266,10 @@ class CacheMiddleware {
       try {
         // Generate cache key
         const cacheKey = this.generateCacheKey(req, keyOptions);
-        
+
         // Try to get from cache
         const cachedData = await this.get(cacheKey);
-        
+
         if (cachedData) {
           // Add cache headers
           res.set({
@@ -272,26 +277,26 @@ class CacheMiddleware {
             'X-Cache-TTL': ttl.toString(),
             'Cache-Control': `public, max-age=${ttl}`
           });
-          
+
           return res.json(cachedData);
         }
 
         // Cache miss - continue to route handler
         // Store original json method
         const originalJson = res.json.bind(res);
-        
+
         // Override json method to cache response
         res.json = async (data) => {
           // Cache the response
           await this.set(cacheKey, data, ttl);
-          
+
           // Add cache headers
           res.set({
             'X-Cache': 'MISS',
             'X-Cache-TTL': ttl.toString(),
             'Cache-Control': `public, max-age=${ttl}`
           });
-          
+
           // Send response
           return originalJson(data);
         };
@@ -328,10 +333,10 @@ class CacheMiddleware {
 
           // Pattern-based invalidation
           for (const pattern of patterns) {
-            const cachePattern = typeof pattern === 'function' 
-              ? pattern(req, res, data) 
+            const cachePattern = typeof pattern === 'function'
+              ? pattern(req, res, data)
               : pattern;
-            
+
             if (cachePattern) {
               await this.delPattern(cachePattern);
             }
@@ -353,10 +358,10 @@ class CacheMiddleware {
 
           // Pattern-based invalidation
           for (const pattern of patterns) {
-            const cachePattern = typeof pattern === 'function' 
-              ? pattern(req, res, data) 
+            const cachePattern = typeof pattern === 'function'
+              ? pattern(req, res, data)
               : pattern;
-            
+
             if (cachePattern) {
               await this.delPattern(cachePattern);
             }
@@ -379,7 +384,7 @@ class CacheMiddleware {
   getStats() {
     const total = this.cacheStats.hits + this.cacheStats.misses;
     const hitRate = total > 0 ? (this.cacheStats.hits / total * 100).toFixed(2) : 0;
-    
+
     return {
       ...this.cacheStats,
       hitRate: `${hitRate}%`,

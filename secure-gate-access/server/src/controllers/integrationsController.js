@@ -7,7 +7,7 @@
 import * as crypto from 'crypto';
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import logger from '../config/logger.js';
-import { testWebhook } from '../services/webhookService.js';
+import webhookService from '../services/webhookService.js';
 
 const pool = db.pool || db;
 
@@ -78,9 +78,9 @@ export const updateWebhook = async (req, res) => {
       `UPDATE webhooks
        SET name = $1, url = $2, event_type = $3, secret = $4,
            headers = $5, enabled = $6, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7
+       WHERE id = $7 AND site_id = $8
        RETURNING *`,
-      [name, url, event_type, secret, headers, enabled, id]
+      [name, url, event_type, secret, headers, enabled, id, req.user.site_id]
     );
 
     if (result.rows.length === 0) {
@@ -105,7 +105,7 @@ export const deleteWebhook = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query('DELETE FROM webhooks WHERE id = $1 RETURNING id', [id]);
+    const result = await pool.query('DELETE FROM webhooks WHERE id = $1 AND site_id = $2 RETURNING id', [id, req.user.site_id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Webhook not found' });
@@ -129,7 +129,14 @@ export const testWebhookEndpoint = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const success = await testWebhook(parseInt(id));
+    // Verify ownership before testing
+    const siteId = req.user.site_id;
+    const verify = await pool.query('SELECT id FROM webhooks WHERE id = $1 AND site_id = $2', [id, siteId]);
+    if (verify.rows.length === 0) {
+      return res.status(404).json({ error: 'Webhook not found' });
+    }
+
+    const result = await webhookService.testWebhook(id);
 
     res.json({
       success,
@@ -210,9 +217,9 @@ export const updateAutomationRule = async (req, res) => {
       `UPDATE automation_rules
        SET name = $1, description = $2, trigger_event = $3, conditions = $4,
            actions = $5, enabled = $6, priority = $7, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8
+       WHERE id = $8 AND site_id = $9
        RETURNING *`,
-      [name, description, trigger_event, conditions, actions, enabled, priority, id]
+      [name, description, trigger_event, conditions, actions, enabled, priority, id, req.user.site_id]
     );
 
     if (result.rows.length === 0) {
@@ -237,7 +244,7 @@ export const deleteAutomationRule = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query('DELETE FROM automation_rules WHERE id = $1 RETURNING id', [id]);
+    const result = await pool.query('DELETE FROM automation_rules WHERE id = $1 AND site_id = $2 RETURNING id', [id, req.user.site_id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Automation rule not found' });
@@ -304,8 +311,8 @@ export const generateAPIKey = async (req, res) => {
         scopes, rate_limit_per_hour, rate_limit_per_day, expires_at, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id, name, key_prefix, permissions, rate_limit_per_hour`,
-      [siteId, keyHash, keyPrefix, name, description, permissions, scopes, 
-       rate_limit_per_hour || 100, rate_limit_per_day || 1000, expires_at, userId]
+      [siteId, keyHash, keyPrefix, name, description, permissions, scopes,
+        rate_limit_per_hour || 100, rate_limit_per_day || 1000, expires_at, userId]
     );
 
     res.json({
@@ -334,9 +341,9 @@ export const revokeAPIKey = async (req, res) => {
     const result = await pool.query(
       `UPDATE api_keys
        SET active = FALSE, revoked_at = CURRENT_TIMESTAMP, revoked_by = $1
-       WHERE id = $2
+       WHERE id = $2 AND site_id = $3
        RETURNING id`,
-      [userId, id]
+      [userId, id, req.user.site_id]
     );
 
     if (result.rows.length === 0) {

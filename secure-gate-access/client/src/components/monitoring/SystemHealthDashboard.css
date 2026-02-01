@@ -1,0 +1,320 @@
+/**
+ * System Health Dashboard Styles
+ */
+
+.system-health-dashboard {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+}
+
+.dashboard-content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Component Status Cards */
+.component-status-card {
+  transition: all 0.2s ease-in-out;
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+
+.component-status-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.component-status-card .card-header {
+  padding-bottom: 0.5rem;
+}
+
+.component-status-card .card-content {
+  padding-top: 0.5rem;
+}
+
+/* System Metrics Card */
+.system-metrics-card {
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+
+.metric-item {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+}
+
+.metric-item:hover {
+  background: #f3f4f6;
+}
+
+/* Progress bars */
+.metric-item .bg-gray-200 {
+  background-color: #e5e7eb;
+}
+
+.metric-item .bg-green-500 {
+  background-color: #10b981;
+}
+
+.metric-item .bg-yellow-500 {
+  background-color: #f59e0b;
+}
+
+.metric-item .bg-red-500 {
+  background-color: #ef4444;
+}
+
+/* Alerts Panel */
+.alerts-panel {
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+
+.alerts-panel .alert {
+  margin-bottom: 0.5rem;
+}
+
+.alerts-panel .alert:last-child {
+  margin-bottom: 0;
+}
+
+/* Performance Chart */
+.performance-chart {
+  border: 1px solid #e5e7eb;
+  background: white;
+}
+
+.performance-chart .recharts-wrapper {
+  font-size: 0.875rem;
+}
+
+.performance-chart .recharts-cartesian-axis-tick-value {
+  font-size: 0.75rem;
+  fill: #6b7280;
+}
+
+.performance-chart .recharts-tooltip-wrapper {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Status Colors */
+.text-green-500 {
+  color: #10b981;
+}
+
+.text-yellow-500 {
+  color: #f59e0b;
+}
+
+.text-red-500 {
+  color: #ef4444;
+}
+
+.text-gray-500 {
+  color: #6b7280;
+}
+
+/* Badge Variants */
+.badge-success {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-destructive {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.badge-secondary {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .system-health-dashboard {
+    padding: 1rem;
+  }
+  
+  .dashboard-header .flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .dashboard-header .flex > div:last-child {
+    align-self: stretch;
+  }
+  
+  .dashboard-header .flex > div:last-child .flex {
+    justify-content: space-between;
+  }
+  
+  .component-status-card {
+    min-height: 120px;
+  }
+  
+  .metric-item {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-content .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .performance-chart .recharts-wrapper {
+    height: 150px !important;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .system-health-dashboard {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+  
+  .component-status-card,
+  .system-metrics-card,
+  .alerts-panel,
+  .performance-chart {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+  
+  .metric-item {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+  
+  .metric-item:hover {
+    background-color: #4b5563;
+  }
+  
+  .metric-item .bg-gray-200 {
+    background-color: #4b5563;
+  }
+  
+  .text-gray-500 {
+    color: #9ca3af;
+  }
+  
+  .text-gray-600 {
+    color: #6b7280;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .component-status-card,
+  .system-metrics-card,
+  .alerts-panel,
+  .performance-chart {
+    border-width: 2px;
+  }
+  
+  .metric-item {
+    border-width: 2px;
+  }
+  
+  .badge-success {
+    background-color: #22c55e;
+    color: white;
+  }
+  
+  .badge-warning {
+    background-color: #f59e0b;
+    color: white;
+  }
+  
+  .badge-destructive {
+    background-color: #ef4444;
+    color: white;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .component-status-card,
+  .dashboard-content {
+    animation: none;
+    transition: none;
+  }
+  
+  .component-status-card:hover {
+    transform: none;
+  }
+}
+
+/* Loading States */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Focus Styles for Accessibility */
+.system-health-dashboard button:focus,
+.system-health-dashboard .card:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .system-health-dashboard {
+    padding: 0;
+  }
+  
+  .dashboard-header .flex > div:last-child {
+    display: none;
+  }
+  
+  .performance-chart {
+    break-inside: avoid;
+  }
+  
+  .component-status-card {
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+}

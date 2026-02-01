@@ -20,6 +20,7 @@ import { sendVisitorInviteSms, sendVisitorInviteEmail, sendOtpVerificationSms, s
 import encryptionService from '../services/encryptionService.js';
 import { generateOTP, generateSecureToken } from '../utils/tokenHelper.js';
 import { sanitizeString } from '../utils/sanitizeInput.js';
+import phoneValidator from '../utils/phoneValidator.js';
 
 /**
  * Decrypt visitor ID number if encrypted version exists
@@ -154,11 +155,13 @@ export const createVisitor = async (req, res) => {
       return respondError(res, 400, 'Phone number is required');
     }
 
-    // Validate phone number format (must start with + and contain only digits)
-    const phoneRegex = /^\+?[0-9]{10,15}$/;
-    if (!phoneRegex.test(phone.trim().replace(/[\s-]/g, ''))) {
-      return respondError(res, 400, 'Invalid phone number format. Please use international format (e.g., +254700123456)');
+    // Validate and normalize phone number using libphonenumber-js
+    const phoneValidation = phoneValidator.validateAndFormat(phone.trim());
+    if (!phoneValidation.isValid) {
+      return respondError(res, 400, `Invalid phone number: ${phoneValidation.error}. Please use format like +254712345678 or 0712345678`);
     }
+    // Use E.164 format for storage (e.g., +254712345678)
+    const normalizedPhone = phoneValidation.e164;
 
     // Get resident info
     const residentResult = await dbManager.query(
@@ -220,13 +223,13 @@ export const createVisitor = async (req, res) => {
                  invite_code, visitor_token, token_expires_at, status, created_at`,
       [
         sanitizeString(name.trim()),
-        sanitizeString(phone.trim()),
+        normalizedPhone,
         email ? sanitizeString(email.trim().toLowerCase()) : null,
         sanitizeString(purpose || 'Visit'),
-        finalDateOfVisit,
-        time || null,
-        vehiclePlateFinal ? sanitizeString(vehiclePlateFinal) : null,
-        idNumberPlain, // Store plaintext during transition period
+        sanitizeString(finalDateOfVisit.trim()),
+        time ? sanitizeString(time.trim()) : null,
+        vehiclePlateFinal ? sanitizeString(vehiclePlateFinal.trim()) : null,
+        idNumberPlain ? sanitizeString(idNumberPlain.trim()) : null, // Store plaintext (sanitized) during transition period
         idNumberEncrypted, // NEW: Encrypted version
         idNumberEncryptedAt, // NEW: Encryption timestamp
         residentId,
@@ -890,7 +893,7 @@ export const completeInvite = async (req, res) => {
     if (bulkLookup.rows.length > 0) {
       const resultData = await dbManager.transaction(async (client) => {
         const bulkRes = await client.query(
-          `SELECT id, event_name, date, time, remaining_slots, expires_at, created_by
+          `SELECT id, event_name, date, time, remaining_slots, expires_at, created_by, estate_id
            FROM bulk_invites WHERE invite_code = $1
            FOR UPDATE`,
           [inviteCode]
@@ -939,12 +942,12 @@ export const completeInvite = async (req, res) => {
         const visitorInsert = await client.query(
           `INSERT INTO visitors (
             name, phone, email, purpose, date_of_visit, time_of_visit,
-            resident_id, bulk_invite_id,
+            resident_id, bulk_invite_id, estate_id,
             visitor_token, token_expires_at,
             otp_hash, otp_expires_at, otp_attempts,
             consent_given, consent_timestamp, consent_type, consent_version,
             status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, true, $13, $14, $15, $16, NOW())
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, true, $14, $15, $16, $17, NOW())
            RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
           [
             name.trim(),
@@ -955,6 +958,7 @@ export const completeInvite = async (req, res) => {
             bulkInvite.time,
             residentId,
             bulkInvite.id,
+            bulkInvite.estate_id, // Fix: Propagate estate_id
             visitorToken,
             tokenExpiresAt,
             otpHash,
@@ -1177,11 +1181,16 @@ export const cancelVisitor = async (req, res) => {
     const { id } = req.params;
     const role = req.user.role;
 
-    // Get the visitor
-    const vRes = await dbManager.query(
-      'SELECT id, resident_id, host_id, name, status FROM visitors WHERE id = $1',
-      [id]
-    );
+    // Get the visitor with estate scoping
+    const queryParams = [id];
+    let queryArgs = 'SELECT id, resident_id, host_id, name, status FROM visitors WHERE id = $1';
+
+    if (req.user.estate_id) {
+      queryArgs += ' AND estate_id = $2';
+      queryParams.push(req.user.estate_id);
+    }
+
+    const vRes = await dbManager.query(queryArgs, queryParams);
     const visitor = vRes.rows[0];
 
     if (!visitor) {
@@ -1210,7 +1219,11 @@ export const cancelVisitor = async (req, res) => {
     }
 
     // Delete the visitor
-    await dbManager.query('DELETE FROM visitors WHERE id = $1', [id]);
+    if (req.user.estate_id) {
+      await dbManager.query('DELETE FROM visitors WHERE id = $1 AND estate_id = $2', [id, req.user.estate_id]);
+    } else {
+      await dbManager.query('DELETE FROM visitors WHERE id = $1', [id]);
+    }
 
     await req.audit?.('visitor.cancel', 'visitor', String(id), {
       outcome: 'success',

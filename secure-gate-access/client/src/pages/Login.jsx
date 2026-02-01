@@ -133,7 +133,9 @@ export default function LoginPage() {
           navigate(from, { replace: true });
         } else {
           // Default redirects based on role
-          if (result.user.role === "admin") navigate("/dashboard/admin");
+          // Default redirects based on role
+          if (result.user.role === "super_admin") navigate("/dashboard/super-admin");
+          else if (result.user.role === "admin") navigate("/dashboard/admin");
           else if (result.user.role === "guard") navigate("/dashboard/guard");
           else if (result.user.role === "resident") navigate("/dashboard/resident");
           else navigate("/");
@@ -211,7 +213,9 @@ export default function LoginPage() {
         navigate(from, { replace: true });
       } else {
         // Default redirects based on role
-        if (user.role === "admin") navigate("/dashboard/admin");
+        // Default redirects based on role
+        if (user.role === "super_admin") navigate("/dashboard/super-admin");
+        else if (user.role === "admin") navigate("/dashboard/admin");
         else if (user.role === "guard") navigate("/dashboard/guard");
         else if (user.role === "resident") navigate("/dashboard/resident");
         else navigate("/");
