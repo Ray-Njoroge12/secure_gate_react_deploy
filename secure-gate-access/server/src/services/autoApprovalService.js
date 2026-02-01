@@ -218,7 +218,29 @@ export async function deleteRule(ruleId, residentId) {
  * Check if visitor matches any active rules for resident
  * Privacy: Returns only match status, not which rule matched
  */
-export async function checkAutoApproval(residentId, visitorName, visitorPhone) {
+/**
+ * Check if visitor matches any active rules for resident
+ * Privacy: Returns only match status, not which rule matched
+ * SECURITY: Requires estateId to prevent cross-estate probing
+ */
+export async function checkAutoApproval(residentId, visitorName, visitorPhone, estateId) {
+  // SECURITY: Verify resident belongs to the calling estate
+  if (estateId) {
+    const residentCheck = await pool.query(
+      'SELECT id FROM users WHERE id = $1 AND estate_id = $2',
+      [residentId, estateId]
+    );
+
+    if (residentCheck.rows.length === 0) {
+      // Resident not found in this estate
+      return {
+        approved: false,
+        reason: 'resident_not_found_in_estate',
+        displayMessage: 'Resident not found'
+      };
+    }
+  }
+
   const rules = await pool.query(
     `SELECT id, match_criteria_encrypted, time_restrictions
      FROM auto_approval_rules

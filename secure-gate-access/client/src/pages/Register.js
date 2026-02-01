@@ -25,6 +25,8 @@ export default function RegistrationPage() {
   // Enhanced form state management
   const [formData, setFormData] = useState({
     username: '',
+    first_name: '',
+    last_name: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -187,6 +189,14 @@ export default function RegistrationPage() {
       newErrors.username = 'Username must be at least 3 characters';
     }
 
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = 'First name is required';
+    }
+
+    if (!formData.last_name.trim()) {
+      newErrors.last_name = 'Last name is required';
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -250,6 +260,8 @@ export default function RegistrationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: formData.username,
+          first_name: formData.first_name,
+          last_name: formData.last_name,
           email: formData.email,
           role: formData.role,
           phone: internationalPhone,
@@ -754,6 +766,40 @@ Redirecting to login in 10 seconds...`, {
             required
           />
           {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-2">
+              First Name *
+            </label>
+            <input
+              id="first_name"
+              type="text"
+              placeholder="First Name"
+              value={formData.first_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              required
+            />
+            {errors.first_name && <p className="text-red-600 text-sm mt-1">{errors.first_name}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-2">
+              Last Name *
+            </label>
+            <input
+              id="last_name"
+              type="text"
+              placeholder="Last Name"
+              value={formData.last_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              required
+            />
+            {errors.last_name && <p className="text-red-600 text-sm mt-1">{errors.last_name}</p>}
+          </div>
         </div>
 
         <div>

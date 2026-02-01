@@ -6,11 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  isPushSupported, 
-  getNotificationPermission,
-  getPushManager
-} from '../services/pushNotificationService';
+import pushNotificationService from '../services/pushNotificationService';
 
 /**
  * usePushNotifications Hook
@@ -41,7 +37,7 @@ export function usePushNotifications(options = {}) {
 
       try {
         // Check support
-        const supported = isPushSupported();
+        const supported = pushNotificationService.isSupported;
         setIsSupported(supported);
 
         if (!supported) {
@@ -50,20 +46,18 @@ export function usePushNotifications(options = {}) {
         }
 
         // Get current permission
-        const currentPermission = getNotificationPermission();
+        const currentPermission = pushNotificationService.getPermissionStatus();
         setPermission(currentPermission);
 
-        // Initialize manager
-        managerRef.current = getPushManager({ onNotification });
-        await managerRef.current.initialize();
-
         // Check subscription status
-        setIsSubscribed(managerRef.current.isSubscribed());
+        const status = pushNotificationService.getStatus();
+        setIsSubscribed(status.isSubscribed);
 
         // Auto-subscribe if enabled and permission granted
-        if (autoSubscribe && currentPermission === 'granted' && !managerRef.current.isSubscribed()) {
-          await managerRef.current.subscribe();
-          setIsSubscribed(managerRef.current.isSubscribed());
+        if (autoSubscribe && currentPermission === 'granted' && !status.isSubscribed) {
+          await pushNotificationService.subscribe();
+          const newStatus = pushNotificationService.getStatus();
+          setIsSubscribed(newStatus.isSubscribed);
         }
       } catch (err) {
         console.error('Error initializing push notifications:', err);
@@ -86,7 +80,7 @@ export function usePushNotifications(options = {}) {
     setError(null);
 
     try {
-      const result = await managerRef.current?.requestPermission();
+      const result = await pushNotificationService.requestPermission();
       setPermission(result);
       return result;
     } catch (err) {
@@ -101,15 +95,16 @@ export function usePushNotifications(options = {}) {
    * Subscribe to push notifications
    */
   const subscribe = useCallback(async () => {
-    if (!isSupported || !managerRef.current) return null;
+    if (!isSupported) return null;
     
     setIsLoading(true);
     setError(null);
 
     try {
-      const subscription = await managerRef.current.subscribe();
-      setIsSubscribed(!!subscription);
-      setPermission(getNotificationPermission());
+      const subscription = await pushNotificationService.subscribe();
+      const status = pushNotificationService.getStatus();
+      setIsSubscribed(status.isSubscribed);
+      setPermission(pushNotificationService.getPermissionStatus());
       return subscription;
     } catch (err) {
       setError(err.message);
@@ -123,14 +118,15 @@ export function usePushNotifications(options = {}) {
    * Unsubscribe from push notifications
    */
   const unsubscribe = useCallback(async () => {
-    if (!isSupported || !managerRef.current) return false;
+    if (!isSupported) return false;
     
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await managerRef.current.unsubscribe();
-      setIsSubscribed(!result);
+      const result = await pushNotificationService.unsubscribe();
+      const status = pushNotificationService.getStatus();
+      setIsSubscribed(status.isSubscribed);
       return result;
     } catch (err) {
       setError(err.message);
@@ -144,10 +140,10 @@ export function usePushNotifications(options = {}) {
    * Show a local notification
    */
   const showNotification = useCallback(async (title, options = {}) => {
-    if (!isSupported || !managerRef.current) return null;
+    if (!isSupported) return null;
     
     try {
-      return await managerRef.current.showNotification(title, options);
+      return await pushNotificationService.showLocalNotification(title, options);
     } catch (err) {
       setError(err.message);
       return null;

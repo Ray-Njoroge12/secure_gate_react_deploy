@@ -5,6 +5,7 @@
 
 import express from 'express';
 import guardManagementService from '../services/guardManagementService.js';
+import { userService } from '../services/userService.js';
 import { authenticateToken, requireEstate } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { errorResponse } from '../utils/responseFormatter.js';
@@ -45,6 +46,115 @@ router.get('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly')
       success: false,
       message: 'Failed to retrieve guards',
       error: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/guards
+ * @desc Create a new guard
+ * @access Admin only
+ */
+router.post('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
+  try {
+    const { username, first_name, last_name, email, password, phone } = req.body;
+
+    if (!username || !email || !password || !first_name || !last_name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: username, first_name, last_name, email, password'
+      });
+    }
+
+    const newGuard = await userService.createUser({
+      username,
+      first_name,
+      last_name,
+      email,
+      password,
+      phone,
+      role: 'guard',
+      estate_id: req.user.estate_id,
+      account_status: 'active' // Guards created by admin are active by default
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Guard created successfully',
+      data: newGuard
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to create guard',
+      error: error.code
+    });
+  }
+});
+
+/**
+ * @route PUT /api/guards/:id
+ * @desc Update a guard
+ * @access Admin only
+ */
+router.put('/:id', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    // Verify guard exists and belongs to estate
+    const existingGuard = await userService.getUserById(id);
+    if (!existingGuard || existingGuard.estate_id !== req.user.estate_id || existingGuard.role !== 'guard') {
+      return res.status(404).json({
+        success: false,
+        message: 'Guard not found'
+      });
+    }
+
+    // Prevent updating critical fields via this endpoint if needed, but userService.updateUser limits fields
+    const updatedGuard = await userService.updateUser(id, updates);
+
+    res.json({
+      success: true,
+      message: 'Guard updated successfully',
+      data: updatedGuard
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to update guard'
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/guards/:id
+ * @desc Delete a guard
+ * @access Admin only
+ */
+router.delete('/:id', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify guard exists and belongs to estate
+    const existingGuard = await userService.getUserById(id);
+    if (!existingGuard || existingGuard.estate_id !== req.user.estate_id || existingGuard.role !== 'guard') {
+      return res.status(404).json({
+        success: false,
+        message: 'Guard not found'
+      });
+    }
+
+    await userService.deleteUser(id);
+
+    res.json({
+      success: true,
+      message: 'Guard deleted successfully'
+    });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to delete guard'
     });
   }
 });

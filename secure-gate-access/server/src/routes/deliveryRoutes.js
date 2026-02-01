@@ -40,31 +40,32 @@ const upload = multer({
  */
 router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
-    const { role, id: guardId } = req.user;
-    
+    const { role, id: guardId, estate_id: estateId } = req.user;
+
     if (!['guard', 'admin'].includes(role)) {
       return errorResponse(res, 'Only guards can register deliveries', 'FORBIDDEN', 403, null, req);
     }
-    
+
     const { trackingNumber, carrierName, recipientId, packageDescription, packageSize, notes } = req.body;
-    
+
     if (!carrierName || !recipientId) {
       return res.status(400).json({
         success: false,
         error: 'Carrier name and recipient are required'
       });
     }
-    
+
     const result = await deliveryService.registerDelivery({
       trackingNumber,
       carrierName,
       recipientId,
       guardId,
+      estateId,
       packageDescription,
       packageSize,
       notes
     });
-    
+
     // Send notification to resident (best-effort, don't fail if notification fails)
     if (result.success && result.data?.recipientEmail) {
       sendDeliveryNotification(
@@ -72,7 +73,7 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
         { carrierName, packageSize, packageDescription }
       ).catch(err => console.error('Delivery notification failed:', err));
     }
-    
+
     res.status(201).json(result);
   } catch (error) {
     console.error('Register delivery error:', error);
@@ -91,25 +92,25 @@ router.post('/:id/photo', authenticateToken, upload.single('photo'), async (req,
   try {
     const { role, id: guardId } = req.user;
     const deliveryId = parseInt(req.params.id);
-    
+
     if (!['guard', 'admin'].includes(role)) {
       return errorResponse(res, 'Only guards can add delivery photos', 'FORBIDDEN', 403, null, req);
     }
-    
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
         error: 'Photo file is required'
       });
     }
-    
+
     const result = await deliveryService.addDeliveryPhoto(
       deliveryId,
       req.file.buffer,
       req.file.mimetype,
       guardId
     );
-    
+
     res.json(result);
   } catch (error) {
     console.error('Add delivery photo error:', error);
@@ -128,13 +129,13 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
     const { status, limit, offset } = req.query;
-    
+
     const deliveries = await deliveryService.getResidentDeliveries(residentId, {
       status,
       limit: parseInt(limit) || 20,
       offset: parseInt(offset) || 0
     });
-    
+
     res.json({
       success: true,
       data: deliveries,
@@ -156,14 +157,14 @@ router.get('/', authenticateToken, async (req, res) => {
  */
 router.get('/pending', authenticateToken, async (req, res) => {
   try {
-    const { role } = req.user;
-    
+    const { role, estate_id } = req.user;
+
     if (!['guard', 'admin'].includes(role)) {
       return errorResponse(res, 'Only guards can view pending deliveries', 'FORBIDDEN', 403, null, req);
     }
-    
-    const deliveries = await deliveryService.getPendingDeliveries();
-    
+
+    const deliveries = await deliveryService.getPendingDeliveries(estate_id);
+
     res.json({
       success: true,
       data: deliveries,
@@ -185,18 +186,22 @@ router.get('/pending', authenticateToken, async (req, res) => {
  */
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const { id: requesterId, role } = req.user;
+    const { id: requesterId, role, estate_id } = req.user;
     const deliveryId = parseInt(req.params.id);
-    
-    const delivery = await deliveryService.getDeliveryDetail(deliveryId, requesterId, role);
-    
+
+    const delivery = await deliveryService.getDeliveryDetail(deliveryId, requesterId, role, estate_id);
+
     if (!delivery) {
       return res.status(404).json({
         success: false,
         error: 'Delivery not found'
       });
     }
-    
+
+    if (delivery.accessDenied) {
+      return errorResponse(res, 'Access denied', 'FORBIDDEN', 403, null, req);
+    }
+
     res.json({
       success: true,
       data: delivery
@@ -218,16 +223,16 @@ router.get('/:id/photo', authenticateToken, async (req, res) => {
   try {
     const { id: requesterId } = req.user;
     const deliveryId = parseInt(req.params.id);
-    
+
     const result = await deliveryService.getDeliveryPhoto(deliveryId, requesterId);
-    
+
     if (!result.success) {
       if (result.error === 'Access denied') {
         return errorResponse(res, 'Access denied', 'FORBIDDEN', 403, null, req);
       }
       return res.status(404).json(result);
     }
-    
+
     res.set('Content-Type', result.mimeType);
     res.send(result.photo);
   } catch (error) {
@@ -245,16 +250,17 @@ router.get('/:id/photo', authenticateToken, async (req, res) => {
  */
 router.post('/:id/collect', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
-    const { id: userId, role } = req.user;
+    const { id: userId, role, estate_id } = req.user;
     const deliveryId = parseInt(req.params.id);
     const { collectedBy } = req.body;
-    
+
     const result = await deliveryService.collectDelivery(
       deliveryId,
       collectedBy || 'Self',
-      ['guard', 'admin'].includes(role) ? userId : null
+      ['guard', 'admin'].includes(role) ? userId : null,
+      estate_id
     );
-    
+
     res.json(result);
   } catch (error) {
     console.error('Collect delivery error:', error);
@@ -273,11 +279,11 @@ router.post('/:id/notify', authenticateToken, async (req, res) => {
   try {
     const { role } = req.user;
     const deliveryId = parseInt(req.params.id);
-    
+
     if (!['guard', 'admin'].includes(role)) {
       return errorResponse(res, 'Only guards can send delivery notifications', 'FORBIDDEN', 403, null, req);
     }
-    
+
     const result = await deliveryService.notifyResidentOfDelivery(deliveryId);
     res.json(result);
   } catch (error) {
@@ -326,14 +332,14 @@ router.post('/:id/handoff', authenticateToken, attachRequestAudit, async (req, r
  */
 router.get('/stats/overview', authenticateToken, async (req, res) => {
   try {
-    const { role } = req.user;
-    
+    const { role, estate_id } = req.user;
+
     if (role !== 'admin') {
       return errorResponse(res, 'Only admins can view delivery statistics', 'FORBIDDEN', 403, null, req);
     }
-    
-    const stats = await deliveryService.getDeliveryStats();
-    
+
+    const stats = await deliveryService.getDeliveryStats(30, estate_id);
+
     res.json({
       success: true,
       data: stats,
@@ -355,9 +361,9 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
 router.delete('/history', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
-    
+
     const result = await deliveryService.deleteDeliveryHistory(residentId);
-    
+
     res.json(result);
   } catch (error) {
     console.error('Delete delivery history error:', error);

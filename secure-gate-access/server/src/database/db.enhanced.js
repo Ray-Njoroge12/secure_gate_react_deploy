@@ -150,7 +150,7 @@ class DatabaseManager extends EventEmitter {
         };
         logDb(`🔄 Database connection attempt ${attempt}/${maxAttempts}...`);
         logDb('📊 Connection Config:', JSON.stringify(sanitizedConfig, null, 2));
-        
+
         await this.connect();
 
         // Only try to ensure indexes if connection succeeded
@@ -254,6 +254,7 @@ class DatabaseManager extends EventEmitter {
           id SERIAL PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           plan_id VARCHAR(50),
+          status VARCHAR(20) NOT NULL DEFAULT 'active',
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
         )`

@@ -24,27 +24,27 @@ const attachRequestAudit = auditLoggerFactory();
 router.post('/rules', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
-    
+
     if (!['resident', 'admin'].includes(role)) {
       return errorResponse(res, 'Only residents can create auto-approval rules', 'FORBIDDEN', 403, null, req);
     }
-    
+
     const { ruleName, visitorName, visitorPhone, category, timeRestrictions, notes } = req.body;
-    
+
     if (!ruleName) {
       return res.status(400).json({
         success: false,
         error: 'Rule name is required'
       });
     }
-    
+
     if (!visitorName && !visitorPhone) {
       return res.status(400).json({
         success: false,
         error: 'At least visitor name or phone is required'
       });
     }
-    
+
     const result = await autoApprovalService.createRule(residentId, {
       ruleName,
       visitorName,
@@ -53,7 +53,7 @@ router.post('/rules', authenticateToken, attachRequestAudit, async (req, res) =>
       timeRestrictions,
       notes
     });
-    
+
     res.status(201).json({
       ...result,
       privacy_notice: 'Rule details are encrypted and visible only to you.'
@@ -74,9 +74,9 @@ router.post('/rules', authenticateToken, attachRequestAudit, async (req, res) =>
 router.get('/rules', authenticateToken, async (req, res) => {
   try {
     const { id: residentId } = req.user;
-    
+
     const rules = await autoApprovalService.getResidentRules(residentId);
-    
+
     res.json({
       success: true,
       data: rules,
@@ -101,18 +101,18 @@ router.put('/rules/:id', authenticateToken, attachRequestAudit, async (req, res)
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
     const { ruleName, matchCriteria, timeRestrictions, isActive } = req.body;
-    
+
     const result = await autoApprovalService.updateRule(ruleId, residentId, {
       ruleName,
       matchCriteria,
       timeRestrictions,
       isActive
     });
-    
+
     if (!result.success) {
       return res.status(404).json(result);
     }
-    
+
     res.json(result);
   } catch (error) {
     console.error('Update rule error:', error);
@@ -131,13 +131,13 @@ router.delete('/rules/:id', authenticateToken, attachRequestAudit, async (req, r
   try {
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
-    
+
     const result = await autoApprovalService.deleteRule(ruleId, residentId);
-    
+
     if (!result.success) {
       return res.status(404).json(result);
     }
-    
+
     res.json(result);
   } catch (error) {
     console.error('Delete rule error:', error);
@@ -156,22 +156,22 @@ router.post('/rules/:id/toggle', authenticateToken, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
-    
+
     // Get current status
     const rules = await autoApprovalService.getResidentRules(residentId);
     const rule = rules.find(r => r.id === ruleId);
-    
+
     if (!rule) {
       return res.status(404).json({
         success: false,
         error: 'Rule not found'
       });
     }
-    
+
     const result = await autoApprovalService.updateRule(ruleId, residentId, {
       isActive: !rule.isActive
     });
-    
+
     res.json(result);
   } catch (error) {
     console.error('Toggle rule error:', error);
@@ -189,26 +189,27 @@ router.post('/rules/:id/toggle', authenticateToken, async (req, res) => {
 router.post('/check', authenticateToken, async (req, res) => {
   try {
     const { role } = req.user;
-    
+
     if (!['guard', 'admin', 'system'].includes(role)) {
       return errorResponse(res, 'Unauthorized', 'FORBIDDEN', 403, null, req);
     }
-    
+
     const { residentId, visitorName, visitorPhone } = req.body;
-    
+
     if (!residentId) {
       return res.status(400).json({
         success: false,
         error: 'Resident ID is required'
       });
     }
-    
+
     const result = await autoApprovalService.checkAutoApproval(
       residentId,
       visitorName,
-      visitorPhone
+      visitorPhone,
+      req.user.estate_id
     );
-    
+
     // Privacy: Return minimal info to guards
     res.json({
       success: true,
@@ -233,9 +234,9 @@ router.get('/history', authenticateToken, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const limit = parseInt(req.query.limit) || 20;
-    
+
     const history = await autoApprovalService.getResidentApprovalHistory(residentId, limit);
-    
+
     res.json({
       success: true,
       data: history,
@@ -257,13 +258,13 @@ router.get('/history', authenticateToken, async (req, res) => {
 router.get('/stats', authenticateToken, async (req, res) => {
   try {
     const { role } = req.user;
-    
+
     if (role !== 'admin') {
       return errorResponse(res, 'Only admins can view auto-approval statistics', 'FORBIDDEN', 403, null, req);
     }
-    
+
     const stats = await autoApprovalService.getAutoApprovalStats();
-    
+
     res.json({
       success: true,
       data: stats,
@@ -285,9 +286,9 @@ router.get('/stats', authenticateToken, async (req, res) => {
 router.delete('/rules/all', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
-    
+
     const result = await autoApprovalService.deleteAllRules(residentId);
-    
+
     res.json(result);
   } catch (error) {
     console.error('Delete all rules error:', error);
@@ -305,9 +306,9 @@ router.delete('/rules/all', authenticateToken, attachRequestAudit, async (req, r
 router.get('/export', authenticateToken, async (req, res) => {
   try {
     const { id: residentId } = req.user;
-    
+
     const exportData = await autoApprovalService.exportResidentRules(residentId);
-    
+
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Content-Disposition', 'attachment; filename=auto-approval-rules-export.json');
     res.json(exportData);

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Layout from "../../components/Layout";
 import Table from "../../components/Table";
 import { getVisitorLogs } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
@@ -27,17 +26,18 @@ export default function Visitors() {
   }, []);
 
   return (
-    <Layout title="Visitors" role="admin" showBreadcrumbs={true}>
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Visitor Logs</h3>
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
           {error}
         </div>
       )}
-      <Table 
-        headers={["ID","Name","Host","Status","Actions"]} 
-        rows={visitors.map(v=>[v.id,v.name,v.host,v.status,"Approve | Reject"])}
+      <Table
+        headers={["ID", "Name", "Host", "Status", "Actions"]}
+        rows={visitors.map(v => [v.id, v.name, v.host, v.status, "Approve | Reject"])}
         loading={loading}
       />
-    </Layout>
+    </div>
   );
 }

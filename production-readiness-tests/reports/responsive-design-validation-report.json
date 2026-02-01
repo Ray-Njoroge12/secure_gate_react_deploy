@@ -1,0 +1,716 @@
+{
+  "layoutTests": [
+    {
+      "device": "iPhone SE",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:18.310Z"
+    },
+    {
+      "device": "iPhone 12",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:18.476Z"
+    },
+    {
+      "device": "iPhone 12 Pro Max",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:18.663Z"
+    },
+    {
+      "device": "Samsung Galaxy S21",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:18.915Z"
+    },
+    {
+      "device": "Google Pixel 5",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:19.086Z"
+    },
+    {
+      "device": "iPad",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:19.255Z"
+    },
+    {
+      "device": "iPad Pro 11",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:19.538Z"
+    },
+    {
+      "device": "iPad Pro 12.9",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:19.802Z"
+    },
+    {
+      "device": "Samsung Galaxy Tab",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:19.988Z"
+    },
+    {
+      "device": "Small Desktop",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:20.110Z"
+    },
+    {
+      "device": "Medium Desktop",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:20.274Z"
+    },
+    {
+      "device": "Large Desktop",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:20.457Z"
+    },
+    {
+      "device": "Ultra Wide",
+      "route": "/login",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/login",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:20.584Z"
+    },
+    {
+      "device": "iPhone SE",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:20.755Z"
+    },
+    {
+      "device": "iPhone 12",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:20.970Z"
+    },
+    {
+      "device": "iPhone 12 Pro Max",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:21.156Z"
+    },
+    {
+      "device": "Samsung Galaxy S21",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:21.318Z"
+    },
+    {
+      "device": "Google Pixel 5",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:21.548Z"
+    },
+    {
+      "device": "iPad",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:21.721Z"
+    },
+    {
+      "device": "iPad Pro 11",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:21.890Z"
+    },
+    {
+      "device": "iPad Pro 12.9",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:22.129Z"
+    },
+    {
+      "device": "Samsung Galaxy Tab",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:22.312Z"
+    },
+    {
+      "device": "Small Desktop",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:22.428Z"
+    },
+    {
+      "device": "Medium Desktop",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:22.575Z"
+    },
+    {
+      "device": "Large Desktop",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:22.694Z"
+    },
+    {
+      "device": "Ultra Wide",
+      "route": "/dashboard",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/dashboard",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:22.864Z"
+    },
+    {
+      "device": "iPhone SE",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:23.027Z"
+    },
+    {
+      "device": "iPhone 12",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:23.213Z"
+    },
+    {
+      "device": "iPhone 12 Pro Max",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:23.426Z"
+    },
+    {
+      "device": "Samsung Galaxy S21",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:23.594Z"
+    },
+    {
+      "device": "Google Pixel 5",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:23.767Z"
+    },
+    {
+      "device": "iPad",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:23.998Z"
+    },
+    {
+      "device": "iPad Pro 11",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:24.176Z"
+    },
+    {
+      "device": "iPad Pro 12.9",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:24.331Z"
+    },
+    {
+      "device": "Samsung Galaxy Tab",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:24.537Z"
+    },
+    {
+      "device": "Small Desktop",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:24.718Z"
+    },
+    {
+      "device": "Medium Desktop",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:24.837Z"
+    },
+    {
+      "device": "Large Desktop",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:24.957Z"
+    },
+    {
+      "device": "Ultra Wide",
+      "route": "/visitors",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:25.065Z"
+    },
+    {
+      "device": "iPhone SE",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:25.210Z"
+    },
+    {
+      "device": "iPhone 12",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:25.359Z"
+    },
+    {
+      "device": "iPhone 12 Pro Max",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:25.504Z"
+    },
+    {
+      "device": "Samsung Galaxy S21",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:25.646Z"
+    },
+    {
+      "device": "Google Pixel 5",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:25.791Z"
+    },
+    {
+      "device": "iPad",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:25.943Z"
+    },
+    {
+      "device": "iPad Pro 11",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:26.098Z"
+    },
+    {
+      "device": "iPad Pro 12.9",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:26.249Z"
+    },
+    {
+      "device": "Samsung Galaxy Tab",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:26.396Z"
+    },
+    {
+      "device": "Small Desktop",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:26.499Z"
+    },
+    {
+      "device": "Medium Desktop",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:26.605Z"
+    },
+    {
+      "device": "Large Desktop",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:26.706Z"
+    },
+    {
+      "device": "Ultra Wide",
+      "route": "/visitors/invite",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/visitors/invite",
+      "critical": true,
+      "timestamp": "2026-01-30T19:53:26.812Z"
+    },
+    {
+      "device": "iPhone SE",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:26.960Z"
+    },
+    {
+      "device": "iPhone 12",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:27.102Z"
+    },
+    {
+      "device": "iPhone 12 Pro Max",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:27.246Z"
+    },
+    {
+      "device": "Samsung Galaxy S21",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:27.390Z"
+    },
+    {
+      "device": "Google Pixel 5",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:27.537Z"
+    },
+    {
+      "device": "iPad",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:27.720Z"
+    },
+    {
+      "device": "iPad Pro 11",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:27.870Z"
+    },
+    {
+      "device": "iPad Pro 12.9",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.011Z"
+    },
+    {
+      "device": "Samsung Galaxy Tab",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.155Z"
+    },
+    {
+      "device": "Small Desktop",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.258Z"
+    },
+    {
+      "device": "Medium Desktop",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.369Z"
+    },
+    {
+      "device": "Large Desktop",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.475Z"
+    },
+    {
+      "device": "Ultra Wide",
+      "route": "/admin",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/admin",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.580Z"
+    },
+    {
+      "device": "iPhone SE",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.740Z"
+    },
+    {
+      "device": "iPhone 12",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:28.886Z"
+    },
+    {
+      "device": "iPhone 12 Pro Max",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:29.033Z"
+    },
+    {
+      "device": "Samsung Galaxy S21",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:29.179Z"
+    },
+    {
+      "device": "Google Pixel 5",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:29.325Z"
+    },
+    {
+      "device": "iPad",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:29.473Z"
+    },
+    {
+      "device": "iPad Pro 11",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:29.619Z"
+    },
+    {
+      "device": "iPad Pro 12.9",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:29.762Z"
+    },
+    {
+      "device": "Samsung Galaxy Tab",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:29.905Z"
+    },
+    {
+      "device": "Small Desktop",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:30.005Z"
+    },
+    {
+      "device": "Medium Desktop",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:30.108Z"
+    },
+    {
+      "device": "Large Desktop",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:30.213Z"
+    },
+    {
+      "device": "Ultra Wide",
+      "route": "/settings",
+      "test": "Page Load",
+      "passed": false,
+      "error": "net::ERR_CONNECTION_REFUSED at http://localhost:3000/settings",
+      "critical": false,
+      "timestamp": "2026-01-30T19:53:30.320Z"
+    }
+  ],
+  "touchTargetTests": [],
+  "orientationTests": [],
+  "performanceTests": [],
+  "accessibilityTests": [],
+  "summary": {
+    "totalTests": 78,
+    "passedTests": 0,
+    "failedTests": 78,
+    "warnings": 0
+  }
+}

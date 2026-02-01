@@ -7,7 +7,7 @@
 import { dbManager as db } from '../database/db.enhanced.js'; // Migrated from database-wrapper
 import logger from '../config/logger.js';
 import { evaluateAutomationRules } from '../services/automationService.js';
-import { triggerWebhooks } from '../services/webhookService.js';
+import webhookService from '../services/webhookService.js';
 
 const pool = db.pool || db;
 
@@ -157,7 +157,7 @@ export const updateIncidentStatus = async (req, res) => {
 
     // Trigger automation
     await evaluateAutomationRules(`incident.${status}`, result.rows[0]);
-    await triggerWebhooks(`incident.${status}`, result.rows[0]);
+    await webhookService.sendWebhook(`incident.${status}`, result.rows[0]);
 
     res.json({
       success: true,

@@ -1,0 +1,42 @@
+{
+  "summary": {
+    "totalIssues": 0,
+    "criticalCount": 0,
+    "highCount": 0,
+    "mediumCount": 0,
+    "lowCount": 0
+  },
+  "issuesByCategory": {
+    "security": [],
+    "performance": [],
+    "functionality": [],
+    "compliance": [],
+    "other": []
+  },
+  "prioritizedActions": [],
+  "riskMatrix": {
+    "deployment": {
+      "risk": "LOW",
+      "factors": [
+        "Critical issues: 0",
+        "High severity issues: 0",
+        "Failed validators: 30"
+      ]
+    },
+    "operational": {
+      "risk": "HIGH",
+      "factors": [
+        "Failed validators: 30",
+        "Skipped validators: 0"
+      ]
+    },
+    "security": {
+      "risk": "LOW",
+      "factors": [
+        "Security-related critical issues",
+        "Authentication and authorization validation",
+        "Data protection compliance"
+      ]
+    }
+  }
+}

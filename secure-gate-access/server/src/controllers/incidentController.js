@@ -238,12 +238,12 @@ export const getIncidents = async (req, res) => {
  */
 export const resolveIncident = async (req, res) => {
   try {
-    // Auth check: admin only
+    // Auth check: guard/admin only
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (req.user.role !== 'admin') {
-      return respondError(res, 403, 'Forbidden - admins only');
+    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+      return respondError(res, 403, 'Forbidden - guards/admins only');
     }
 
     const { id } = req.params;
@@ -253,6 +253,45 @@ export const resolveIncident = async (req, res) => {
       return respondError(res, 400, 'Resolution description is required');
     }
 
+    // Fetch incident to check ownership and estate
+    const incidentQuery = await dbManager.query(
+      'SELECT id, guard_id, estate_id, category, severity FROM incidents WHERE id = $1',
+      [id]
+    );
+
+    if (incidentQuery.rows.length === 0) {
+      return respondError(res, 404, 'Incident not found');
+    }
+
+    const incident = incidentQuery.rows[0];
+
+    // Estate isolation check
+    if (req.user.estate_id && incident.estate_id !== req.user.estate_id) {
+      await req.audit?.('incident.resolve', 'incident', id, {
+        outcome: 'fail',
+        message: 'Cross-estate incident access denied',
+        attemptedEstateId: req.user.estate_id,
+        incidentEstateId: incident.estate_id
+      });
+      return respondError(res, 403, 'Forbidden - incident belongs to different estate');
+    }
+
+    // Ownership check for guards: they can only resolve THEIR OWN incidents
+    if (req.user.role === 'guard') {
+      if (incident.guard_id !== req.user.id) {
+        await req.audit?.('incident.resolve', 'incident', id, {
+          outcome: 'fail',
+          message: 'Guard attempted to resolve another guard\'s incident',
+          guardId: req.user.id,
+          incidentGuardId: incident.guard_id
+        });
+        return respondError(res, 403, 'Forbidden - guards can only resolve their own incidents');
+      }
+    }
+
+    // Admin can resolve any incident (no additional check needed)
+
+    // Update incident with resolution
     const query = `
       UPDATE incidents
       SET 
@@ -275,8 +314,15 @@ export const resolveIncident = async (req, res) => {
 
     await req.audit?.('incident.resolve', 'incident', id, {
       outcome: 'success',
-      message: 'Incident resolved by admin',
-      adminId: req.user.id
+      message: `Incident resolved by ${req.user.role}`,
+      resolvedBy: req.user.id,
+      role: req.user.role
+    });
+
+    logger.info('Incident resolved', {
+      incidentId: id,
+      resolvedBy: req.user.id,
+      role: req.user.role
     });
 
     respond(res, {
@@ -285,7 +331,22 @@ export const resolveIncident = async (req, res) => {
     });
 
   } catch (error) {
-    logger.error('Error resolving incident:', error);
+    logger.error('Error resolving incident:', {
+      error: error.message,
+      stack: error.stack,
+      incidentId: req.params.id,
+      userId: req.user?.id,
+      userRole: req.user?.role,
+      estateId: req.user?.estate_id,
+      sqlState: error.code,
+      sqlMessage: error.message
+    });
+    await req.audit?.('incident.resolve', 'incident', req.params.id, {
+      outcome: 'fail',
+      message: 'Failed to resolve incident',
+      error: error.message,
+      errorCode: error.code
+    });
     respondError(res, 500, 'Failed to resolve incident');
   }
 };

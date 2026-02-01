@@ -1,0 +1,267 @@
+/**
+ * Enhanced Responsive Design System
+ * Mobile-first approach with progressive enhancement
+ */
+
+/* Base mobile styles (xs: 0px+) */
+.responsive-container {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Touch targets - minimum 44px for accessibility */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile-first grid system */
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+/* Small devices (sm: 640px+) */
+@media (min-width: 640px) {
+  .responsive-container {
+    max-width: 640px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .grid-sm-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .grid-sm-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Medium devices (md: 768px+) */
+@media (min-width: 768px) {
+  .responsive-container {
+    max-width: 768px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  
+  .grid-md-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .grid-md-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .grid-md-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  /* Tablet-specific layouts */
+  .tablet-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 2rem;
+  }
+}
+
+/* Large devices (lg: 1024px+) */
+@media (min-width: 1024px) {
+  .responsive-container {
+    max-width: 1024px;
+  }
+  
+  .grid-lg-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .grid-lg-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .grid-lg-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .grid-lg-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  /* Desktop sidebar layout */
+  .desktop-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+  }
+}
+
+/* Extra large devices (xl: 1280px+) */
+@media (min-width: 1280px) {
+  .responsive-container {
+    max-width: 1280px;
+  }
+  
+  .grid-xl-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  
+  .grid-xl-6 {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* 2X Large devices (2xl: 1536px+) */
+@media (min-width: 1536px) {
+  .responsive-container {
+    max-width: 1536px;
+  }
+}
+
+/* Theme density variations */
+.compact {
+  --spacing-unit: 0.25rem;
+  --component-padding: 0.5rem;
+  --component-margin: 0.25rem;
+  --text-size-multiplier: 0.9;
+}
+
+.comfortable {
+  --spacing-unit: 0.5rem;
+  --component-padding: 1rem;
+  --component-margin: 0.5rem;
+  --text-size-multiplier: 1;
+}
+
+.spacious {
+  --spacing-unit: 0.75rem;
+  --component-padding: 1.5rem;
+  --component-margin: 0.75rem;
+  --text-size-multiplier: 1.1;
+}
+
+/* High contrast theme support */
+.high-contrast {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-border: #000000;
+  --color-primary: #0000ff;
+  --color-secondary: #666666;
+  --color-success: #008000;
+  --color-warning: #ff8c00;
+  --color-error: #ff0000;
+  --color-info: #0000ff;
+}
+
+.high-contrast-dark {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-border: #ffffff;
+  --color-primary: #00ffff;
+  --color-secondary: #cccccc;
+  --color-success: #00ff00;
+  --color-warning: #ffff00;
+  --color-error: #ff0000;
+  --color-info: #00ffff;
+}
+
+/* Layout manager specific styles */
+.layout-manager {
+  position: relative;
+  width: 100%;
+}
+
+.layout-item {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.layout-item.dragging {
+  opacity: 0.8;
+  transform: rotate(2deg);
+  z-index: 1000;
+}
+
+.layout-item-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.drop-zone {
+  pointer-events: none;
+  border-radius: 0.5rem;
+}
+
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: se-resize;
+  background: linear-gradient(-45deg, transparent 30%, currentColor 30%, currentColor 40%, transparent 40%);
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .layout-item {
+    transition: none !important;
+  }
+  
+  .layout-item.dragging {
+    transform: none;
+  }
+}
+
+/* Focus management for keyboard navigation */
+.layout-item:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Mobile-specific touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  .layout-item {
+    cursor: default;
+  }
+  
+  .touch-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+  
+  /* Larger touch targets on mobile */
+  .resize-handle {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  .layout-manager {
+    position: static;
+  }
+  
+  .layout-item {
+    position: static;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+  
+  .resize-handle,
+  .drop-zone {
+    display: none;
+  }
+}

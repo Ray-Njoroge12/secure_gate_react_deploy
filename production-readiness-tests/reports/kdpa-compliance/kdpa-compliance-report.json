@@ -1,0 +1,118 @@
+{
+  "metadata": {
+    "generatedAt": "2026-01-30T17:11:19.904Z",
+    "executionTimeMs": 1344,
+    "validatorVersion": "1.0.0",
+    "reportType": "KDPA_COMPLIANCE"
+  },
+  "summary": {
+    "overallCompliant": true,
+    "overallScore": 87.5,
+    "totalViolations": 0,
+    "totalRecommendations": 2
+  },
+  "componentScores": {
+    "dataProtectionRequirements": 66.66666666666666,
+    "localDataHandling": 100,
+    "breachNotification": 100,
+    "crossBorderTransfer": 83.33333333333334
+  },
+  "detailedResults": {
+    "dataProtectionRequirements": {
+      "lawfulBasisImplemented": false,
+      "dataMinimizationCompliant": false,
+      "purposeLimitationEnforced": true,
+      "accuracyMaintained": true,
+      "storageLimitationApplied": true,
+      "integrityConfidentialityEnsured": true,
+      "violations": [],
+      "score": 66.66666666666666
+    },
+    "localDataHandling": {
+      "dataControllerRegistered": true,
+      "privacyNoticeProvided": true,
+      "consentManagementImplemented": true,
+      "dataSubjectRightsSupported": true,
+      "dataProtectionOfficerAppointed": true,
+      "localDataResidency": true,
+      "violations": [],
+      "score": 100
+    },
+    "breachNotification": {
+      "authorityNotificationProcess": true,
+      "dataSubjectNotificationProcess": true,
+      "breachRegisterMaintained": true,
+      "riskAssessmentProcedure": true,
+      "notificationTimingCompliant": true,
+      "incidentResponsePlan": true,
+      "violations": [],
+      "score": 100
+    },
+    "crossBorderTransfer": {
+      "transferSafeguardsImplemented": true,
+      "adequacyDecisionChecked": true,
+      "derogationsDocumented": true,
+      "transferImpactAssessmentConducted": false,
+      "dataLocalizationCompliant": true,
+      "transferAgreementsInPlace": true,
+      "violations": [],
+      "score": 83.33333333333334
+    },
+    "overallCompliance": true,
+    "violations": [],
+    "recommendations": [
+      {
+        "category": "Data Protection",
+        "priority": "High",
+        "recommendation": "Implement comprehensive lawful basis documentation for all data processing activities",
+        "action": "Create detailed privacy policy and consent management system"
+      },
+      {
+        "category": "Cross-Border Transfer",
+        "priority": "Medium",
+        "recommendation": "Implement transfer safeguards and impact assessments",
+        "action": "Document transfer mechanisms and ensure adequate protection"
+      }
+    ]
+  },
+  "complianceSummary": {
+    "dataProtection": {
+      "score": 66.66666666666666,
+      "status": "Non-Compliant",
+      "criticalIssues": 0
+    },
+    "localHandling": {
+      "score": 100,
+      "status": "Compliant",
+      "criticalIssues": 0
+    },
+    "breachNotification": {
+      "score": 100,
+      "status": "Compliant",
+      "criticalIssues": 0
+    },
+    "crossBorderTransfer": {
+      "score": 83.33333333333334,
+      "status": "Compliant",
+      "criticalIssues": 0
+    },
+    "totalViolations": 0,
+    "recommendationsCount": 2,
+    "overallCompliance": true
+  },
+  "recommendations": [
+    {
+      "category": "Data Protection",
+      "priority": "High",
+      "recommendation": "Implement comprehensive lawful basis documentation for all data processing activities",
+      "action": "Create detailed privacy policy and consent management system"
+    },
+    {
+      "category": "Cross-Border Transfer",
+      "priority": "Medium",
+      "recommendation": "Implement transfer safeguards and impact assessments",
+      "action": "Document transfer mechanisms and ensure adequate protection"
+    }
+  ],
+  "violations": []
+}

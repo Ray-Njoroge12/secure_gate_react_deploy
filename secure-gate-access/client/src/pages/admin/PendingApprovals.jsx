@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle, XCircle, Mail, User, Calendar } from 'lucide-
 import axios from 'axios';
 import './PendingApprovals.css';
 
-const PendingApprovals = () => {
+const PendingApprovals = ({ siteId }) => {
     const [pendingUsers, setPendingUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -14,19 +14,31 @@ const PendingApprovals = () => {
     useEffect(() => {
         fetchPendingUsers();
         fetchEstates();
-    }, []);
+    }, [siteId]);
 
     const fetchPendingUsers = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const params = siteId ? { siteId } : {};
             const response = await axios.get('/api/admin/users/pending', {
-                headers: { Authorization: `Bearer ${token}` }
+                params,
+                withCredentials: true
             });
-            setPendingUsers(response.data.data || response.data || []);
+            // Robust array extraction - handle various response formats
+            const responseData = response.data;
+            let usersArray = [];
+            if (Array.isArray(responseData)) {
+                usersArray = responseData;
+            } else if (responseData && Array.isArray(responseData.data)) {
+                usersArray = responseData.data;
+            } else if (responseData && Array.isArray(responseData.users)) {
+                usersArray = responseData.users;
+            }
+            setPendingUsers(usersArray);
             setError(null);
         } catch (err) {
             console.error('Error fetching pending users:', err);
+            setPendingUsers([]); // Reset to empty array on error
             setError(err.response?.data?.message || 'Failed to load pending users');
         } finally {
             setLoading(false);
@@ -35,13 +47,23 @@ const PendingApprovals = () => {
 
     const fetchEstates = async () => {
         try {
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const response = await axios.get('/api/estates', {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
-            setEstates(response.data.data || response.data || []);
+            // Robust array extraction
+            const responseData = response.data;
+            let estatesArray = [];
+            if (Array.isArray(responseData)) {
+                estatesArray = responseData;
+            } else if (responseData && Array.isArray(responseData.data)) {
+                estatesArray = responseData.data;
+            } else if (responseData && Array.isArray(responseData.estates)) {
+                estatesArray = responseData.estates;
+            }
+            setEstates(estatesArray);
         } catch (err) {
             console.error('Error fetching estates:', err);
+            setEstates([]); // Reset to empty array on error
         }
     };
 
@@ -66,7 +88,7 @@ const PendingApprovals = () => {
                     estate_id: parseInt(estateId)
                 },
                 {
-                    headers: { Authorization: `Bearer ${token}` }
+                    withCredentials: true
                 }
             );
 
@@ -94,7 +116,7 @@ const PendingApprovals = () => {
                 `/api/admin/users/${userId}/status`,
                 { status: 'rejected' },
                 {
-                    headers: { Authorization: `Bearer ${token}` }
+                    withCredentials: true
                 }
             );
 
@@ -202,32 +224,37 @@ const PendingApprovals = () => {
                                 </div>
 
                                 <div className="user-actions">
-                                    <div className="estate-selector">
-                                        <label htmlFor={`estate-${user.id}`} className="estate-label">
-                                            Assign Estate:
-                                        </label>
-                                        <select
-                                            id={`estate-${user.id}`}
-                                            className="estate-select"
-                                            disabled={processingUserId === user.id}
-                                            onChange={(e) => {
-                                                user.selectedEstateId = e.target.value;
-                                            }}
-                                        >
-                                            <option value="">Select Estate...</option>
-                                            {estates.map((estate) => (
-                                                <option key={estate.id} value={estate.id}>
-                                                    {estate.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                    {/* Only show estate selector if user doesn't have one or we are super admin (siteId param) */}
+                                    {!user.estate_id && (
+                                        <div className="estate-selector">
+                                            <label htmlFor={`estate-${user.id}`} className="estate-label">
+                                                Assign Estate:
+                                            </label>
+                                            <select
+                                                id={`estate-${user.id}`}
+                                                className="estate-select"
+                                                disabled={processingUserId === user.id}
+                                                onChange={(e) => {
+                                                    user.selectedEstateId = e.target.value;
+                                                }}
+                                            >
+                                                <option value="">Select Estate...</option>
+                                                {estates.map((estate) => (
+                                                    <option key={estate.id} value={estate.id}>
+                                                        {estate.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
 
                                     <div className="action-buttons">
                                         <button
                                             onClick={() => {
                                                 const select = document.getElementById(`estate-${user.id}`);
-                                                handleApprove(user.id, select?.value);
+                                                // specific priority: pre-assigned > manual selection
+                                                const finalEstateId = user.estate_id || select?.value;
+                                                handleApprove(user.id, finalEstateId);
                                             }}
                                             disabled={processingUserId === user.id}
                                             className="btn btn-approve"

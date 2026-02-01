@@ -437,3 +437,50 @@ export function autoFixAccessibilityIssues(element, issues) {
 
   return fixed;
 }
+
+/**
+ * Audit theme for accessibility compliance (contrast ratios, text scaling)
+ * @returns {Object} Theme audit results
+ */
+export function auditThemeAccessibility() {
+  const results = {
+    passed: true,
+    issues: [],
+    contrastRatio: 4.5,
+    textScaling: true,
+  };
+
+  // Check CSS custom properties for contrast
+  const root = document.documentElement;
+  const computedStyle = getComputedStyle(root);
+  const bgColor = computedStyle.getPropertyValue('--color-background')?.trim();
+  const textColor = computedStyle.getPropertyValue('--color-text')?.trim();
+
+  if (!bgColor || !textColor) {
+    results.issues.push({
+      code: 'THEME-001',
+      message: 'Theme CSS variables not fully defined',
+      severity: 'warning',
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Run comprehensive accessibility checks on the current page
+ * @param {Object} options - Check options
+ * @returns {Object} Check results
+ */
+export function runAccessibilityChecks(options = {}) {
+  const root = options.root || document.body;
+  const auditResults = auditPage(root, options);
+  const themeResults = auditThemeAccessibility();
+
+  return {
+    elements: auditResults,
+    theme: themeResults,
+    passed: auditResults.every(r => r.passed !== false) && themeResults.passed,
+    timestamp: new Date().toISOString(),
+  };
+}

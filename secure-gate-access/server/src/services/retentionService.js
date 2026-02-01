@@ -19,48 +19,55 @@ import logger from '../config/logger.js';
 
 class RetentionService {
   constructor() {
-    // Configurable retention periods (in days converted from years in env)
-    const visitorsYears = parseInt(process.env.DATA_RETENTION_VISITORS_YEARS || '2', 10);
-    const accessLogsYears = parseInt(process.env.DATA_RETENTION_ACCESS_LOGS_YEARS || '1', 10);
-    const auditLogsYears = parseInt(process.env.DATA_RETENTION_AUDIT_LOGS_YEARS || '3', 10);
-    
-    const visitorsDeletionYears = parseInt(process.env.DATA_DELETION_VISITORS_YEARS || '3', 10);
-    const accessLogsDeletionYears = parseInt(process.env.DATA_DELETION_ACCESS_LOGS_YEARS || '2', 10);
-    const auditLogsDeletionYears = parseInt(process.env.DATA_DELETION_AUDIT_LOGS_YEARS || '5', 10);
-    
-    const auditLogsAnonymizeYears = parseInt(process.env.DATA_ANONYMIZE_AUDIT_LOGS_YEARS || '3', 10);
-    
+    // Configurable retention periods (in days)
+    // Defaults based on approved Data Retention Policy (Cost-Effective)
+
+    // Visitors: 90 days (approx 3 months)
+    const visitorArchiveDays = parseInt(process.env.DATA_RETENTION_VISITOR_DAYS || '90', 10);
+    // Access Logs (Check-in/out): 180 days (approx 6 months)
+    const accessLogArchiveDays = parseInt(process.env.DATA_RETENTION_ACCESS_LOG_DAYS || '180', 10);
+    // Audit Logs: 365 days (1 year)
+    const auditLogArchiveDays = parseInt(process.env.DATA_RETENTION_AUDIT_LOG_DAYS || '365', 10);
+
+    // Deletion (Purge) Periods - Time after archiving to permanently delete
+    const visitorDeletionDays = parseInt(process.env.DATA_DELETION_VISITOR_DAYS || '1095', 10); // 3 years
+    const accessLogDeletionDays = parseInt(process.env.DATA_DELETION_ACCESS_LOG_DAYS || '730', 10); // 2 years
+    const auditLogDeletionDays = parseInt(process.env.DATA_DELETION_AUDIT_LOG_DAYS || '1825', 10); // 5 years
+
+    // Anonymization
+    const auditLogAnonymizeDays = parseInt(process.env.DATA_ANONYMIZE_AUDIT_LOG_DAYS || '1095', 10); // 3 years
+
     this.config = {
-      // Archive periods (convert years to days)
-      visitorArchiveDays: visitorsYears * 365,
-      accessLogArchiveDays: accessLogsYears * 365,
-      auditLogArchiveDays: auditLogsYears * 365,
-      
+      // Archive periods
+      visitorArchiveDays,
+      accessLogArchiveDays,
+      auditLogArchiveDays,
+
       // Deletion periods
-      visitorDeletionDays: visitorsDeletionYears * 365,
-      accessLogDeletionDays: accessLogsDeletionYears * 365,
-      auditLogDeletionDays: auditLogsDeletionYears * 365,
-      
+      visitorDeletionDays,
+      accessLogDeletionDays,
+      auditLogDeletionDays,
+
       // Anonymization period
-      auditLogAnonymizeDays: auditLogsAnonymizeYears * 365,
-      
+      auditLogAnonymizeDays,
+
       // Legacy compatibility
       visitorGracePeriod: parseInt(process.env.VISITOR_GRACE_PERIOD_DAYS || '30', 10),
-      archivedVisitorRetention: visitorsDeletionYears * 365,
-      accessLogRetention: accessLogsYears * 365,
-      auditLogRetention: auditLogsYears * 365,
-      
+      archivedVisitorRetention: visitorDeletionDays, // Alias for consistency with existing methods
+      accessLogRetention: accessLogArchiveDays,      // Alias
+      auditLogRetention: auditLogArchiveDays,        // Alias
+
       batchSize: parseInt(process.env.RETENTION_BATCH_SIZE || '100', 10),
       dryRun: process.env.DATA_RETENTION_DRY_RUN === 'true'
     };
-    
+
     logger.info('[RetentionService] Initialized with config:', {
-      visitorArchive: `${visitorsYears} years`,
-      visitorDeletion: `${visitorsDeletionYears} years`,
-      accessLogArchive: `${accessLogsYears} years`,
-      accessLogDeletion: `${accessLogsDeletionYears} years`,
-      auditLogArchive: `${auditLogsYears} years`,
-      auditLogAnonymize: `${auditLogsAnonymizeYears} years`,
+      visitorArchive: `${visitorArchiveDays} days`,
+      visitorDeletion: `${visitorDeletionDays} days`,
+      accessLogArchive: `${accessLogArchiveDays} days`,
+      accessLogDeletion: `${accessLogDeletionDays} days`,
+      auditLogArchive: `${auditLogArchiveDays} days`,
+      auditLogAnonymize: `${auditLogAnonymizeDays} days`,
       dryRun: this.config.dryRun
     });
 
@@ -198,9 +205,9 @@ class RetentionService {
   async runRetentionJob() {
     const jobId = `retention_job_${Date.now()}`;
     const startTime = Date.now();
-    
+
     logger.info(`[RetentionService] Starting retention job ${jobId}`);
-    
+
     const results = {
       jobId,
       startTime: new Date(startTime),
@@ -216,33 +223,33 @@ class RetentionService {
     try {
       // Step 1: Archive expired visitors
       results.visitorsArchived = await this.archiveExpiredVisitors();
-      
+
       // Step 2: Delete old archived visitors
       results.visitorsDeleted = await this.deleteOldArchivedVisitors();
-      
+
       // Step 3: Archive old access logs
       results.accessLogsArchived = await this.archiveOldAccessLogs();
-      
+
       // Step 4: Archive old audit logs (if needed)
       results.auditLogsArchived = await this.archiveOldAuditLogs();
-      
+
       results.duration = Date.now() - startTime;
-      
+
       // Log job completion
       await this.logRetentionJob(results);
-      
+
       logger.info(`[RetentionService] Completed retention job ${jobId}`, results);
-      
+
       return results;
     } catch (error) {
       results.errors.push(error.message);
       results.duration = Date.now() - startTime;
-      
+
       logger.error(`[RetentionService] Retention job ${jobId} failed`, error);
-      
+
       // Still log the failed job
       await this.logRetentionJob(results);
-      
+
       throw error;
     }
   }
@@ -273,14 +280,14 @@ class RetentionService {
 
     const client = await this.getDbClient();
     let archived = 0;
-    
+
     try {
       await client.query('BEGIN');
-      
+
       // Calculate cutoff date
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.config.visitorGracePeriod);
-      
+
       // Find expired visitors (batch processing)
       const findQuery = `
         SELECT id FROM visitors
@@ -289,17 +296,17 @@ class RetentionService {
         ORDER BY ${this.getVisitorExpirySql()} ASC
         LIMIT $2
       `;
-      
+
       const expiredVisitors = await client.query(findQuery, [cutoffDate, this.config.batchSize]);
-      
+
       if (expiredVisitors.rows.length === 0) {
         await client.query('COMMIT');
         logger.info('[RetentionService] No expired visitors to archive');
         return 0;
       }
-      
+
       const visitorIds = expiredVisitors.rows.map(v => v.id);
-      
+
       // Archive visitors (insert into archive table)
       const archiveQuery = `
         INSERT INTO visitors_archive 
@@ -308,9 +315,9 @@ class RetentionService {
         FROM visitors
         WHERE id = ANY($1)
       `;
-      
+
       await client.query(archiveQuery, [visitorIds]);
-      
+
       // Update status in main table
       const updateQuery = `
         UPDATE visitors
@@ -318,14 +325,14 @@ class RetentionService {
             updated_at = NOW()
         WHERE id = ANY($1)
       `;
-      
+
       const result = await client.query(updateQuery, [visitorIds]);
       archived = result.rowCount;
-      
+
       await client.query('COMMIT');
-      
+
       logger.info(`[RetentionService] Archived ${archived} expired visitors`);
-      
+
       return archived;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -360,10 +367,10 @@ class RetentionService {
 
     const client = await this.getDbClient();
     let deleted = 0;
-    
+
     try {
       await client.query('BEGIN');
-      
+
       // Calculate deletion cutoff
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.config.archivedVisitorRetention);
@@ -416,23 +423,23 @@ class RetentionService {
         AND name != 'REDACTED'
         RETURNING id
       `;
-      
+
       const result = await client.query(anonymizeQuery, values);
       deleted = result.rowCount;
-      
+
       // Also delete from main table if still there
       const deleteMainQuery = `
         DELETE FROM visitors
         WHERE status = 'archived'
         AND updated_at < $1
       `;
-      
+
       await client.query(deleteMainQuery, [cutoffDate]);
-      
+
       await client.query('COMMIT');
-      
+
       logger.info(`[RetentionService] Anonymized ${deleted} old archived visitors`);
-      
+
       return deleted;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -470,13 +477,13 @@ class RetentionService {
 
     const client = await this.getDbClient();
     let archived = 0;
-    
+
     try {
       await client.query('BEGIN');
-      
+
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.config.accessLogRetention);
-      
+
       const sharedColumns = await this.getSharedColumns('access_logs', 'access_logs_archive');
       if (sharedColumns.length === 0) {
         await client.query('COMMIT');
@@ -500,25 +507,25 @@ class RetentionService {
         FROM old_logs
         RETURNING id
       `;
-      
+
       const result = await client.query(archiveQuery, [cutoffDate, this.config.batchSize]);
       archived = result.rowCount;
-      
+
       if (archived > 0) {
         // Delete from main table
         const deleteQuery = `
           DELETE FROM access_logs
           WHERE id = ANY($1)
         `;
-        
+
         const archivedIds = result.rows.map(r => r.id);
         await client.query(deleteQuery, [archivedIds]);
       }
-      
+
       await client.query('COMMIT');
-      
+
       logger.info(`[RetentionService] Archived ${archived} access logs`);
-      
+
       return archived;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -556,13 +563,13 @@ class RetentionService {
 
     const client = await this.getDbClient();
     let archived = 0;
-    
+
     try {
       await client.query('BEGIN');
-      
+
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - this.config.auditLogRetention);
-      
+
       const sharedColumns = await this.getSharedColumns('audit_logs', 'audit_logs_archive');
       if (sharedColumns.length === 0) {
         await client.query('COMMIT');
@@ -586,24 +593,24 @@ class RetentionService {
         FROM old_logs
         RETURNING id
       `;
-      
+
       const result = await client.query(archiveQuery, [cutoffDate, this.config.batchSize]);
       archived = result.rowCount;
-      
+
       if (archived > 0) {
         const deleteQuery = `
           DELETE FROM audit_logs
           WHERE id = ANY($1)
         `;
-        
+
         const archivedIds = result.rows.map(r => r.id);
         await client.query(deleteQuery, [archivedIds]);
       }
-      
+
       await client.query('COMMIT');
-      
+
       logger.info(`[RetentionService] Archived ${archived} audit logs`);
-      
+
       return archived;
     } catch (error) {
       await client.query('ROLLBACK');
@@ -630,7 +637,7 @@ class RetentionService {
           metadata
         ) VALUES ($1, $2, $3, $4, $5, NOW(), $6)
       `;
-      
+
       await dbManager.query(query, [
         'data_retention_job',
         'system',
@@ -651,7 +658,7 @@ class RetentionService {
   async getRetentionStats() {
     try {
       const stats = {};
-      
+
       // Count visitors by status
       const visitorsQuery = `
         SELECT 
@@ -660,10 +667,10 @@ class RetentionService {
           COUNT(*) FILTER (WHERE ${this.getVisitorExpirySql()} < NOW()) as expired_count
         FROM visitors
       `;
-      
+
       const visitorsResult = await dbManager.query(visitorsQuery);
       stats.visitors = visitorsResult.rows[0];
-      
+
       // Count archived records
       const archiveQuery = `
         SELECT 
@@ -671,10 +678,10 @@ class RetentionService {
           (SELECT COUNT(*) FROM access_logs_archive) as access_logs_archived,
           (SELECT COUNT(*) FROM audit_logs_archive) as audit_logs_archived
       `;
-      
+
       const archiveResult = await dbManager.query(archiveQuery);
       stats.archived = archiveResult.rows[0];
-      
+
       // Get last retention job
       const lastJobQuery = `
         SELECT changes, created_at
@@ -683,15 +690,61 @@ class RetentionService {
         ORDER BY created_at DESC
         LIMIT 1
       `;
-      
+
       const lastJobResult = await dbManager.query(lastJobQuery);
       stats.lastJob = lastJobResult.rows[0] || null;
-      
+
       return stats;
     } catch (error) {
       logger.error('[RetentionService] Error getting retention stats', error);
       throw error;
     }
+  }
+  /**
+   * Get retention settings (current config)
+   */
+  async getRetentionSettings() {
+    // In a real implementation, these might be stored in a 'system_settings' table
+    // For now, we return the in-memory config initialized from env vars
+    return {
+      visitorArchiveDays: this.config.visitorArchiveDays,
+      accessLogArchiveDays: this.config.accessLogArchiveDays,
+      auditLogArchiveDays: this.config.auditLogArchiveDays,
+      visitorDeletionDays: this.config.visitorDeletionDays,
+      accessLogDeletionDays: this.config.accessLogDeletionDays,
+      auditLogDeletionDays: this.config.auditLogDeletionDays,
+      auditLogAnonymizeDays: this.config.auditLogAnonymizeDays,
+      dryRun: this.config.dryRun
+    };
+  }
+
+  /**
+   * Update retention setting
+   * Note: Since config is currently env-var based, this persists to a DB table overriding envs
+   * or simply updates in-memory for the runtime duration (simulated for now).
+   */
+  async updateRetentionSetting(id, type, duration) {
+    const validTypes = [
+      'visitorArchiveDays', 'accessLogArchiveDays', 'auditLogArchiveDays',
+      'visitorDeletionDays', 'accessLogDeletionDays', 'auditLogDeletionDays'
+    ];
+
+    if (!validTypes.includes(type)) {
+      throw new Error(`Invalid retention setting type: ${type}`);
+    }
+
+    const value = parseInt(duration, 10);
+    if (isNaN(value) || value < 1) {
+      throw new Error('Duration must be a positive integer');
+    }
+
+    // Update in-memory
+    this.config[type] = value;
+    logger.info(`[RetentionService] Updated setting ${type} to ${value} days`);
+
+    // TODO: Persist to 'system_settings' table if persistent overrides are needed
+
+    return { [type]: value };
   }
 }
 

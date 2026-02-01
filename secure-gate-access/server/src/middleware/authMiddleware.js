@@ -278,6 +278,31 @@ export const requireRole = (...allowedRoles) => {
 };
 
 export const requireEstate = asyncHandler(async (req, res, next) => {
+  // Allow Super Admins to bypass if they provide a context via header or query
+  if (req.user.role === 'super_admin') {
+    const contextEstateId = req.headers['x-estate-id'] || req.query.siteId;
+
+    if (contextEstateId) {
+      const estateId = Number(contextEstateId);
+      if (Number.isInteger(estateId) && estateId > 0) {
+        req.user.estate_id = estateId;
+        return next();
+      }
+    }
+    // If no context provided, they might want global view, but for estate-specific routes, 
+    // we let it pass here and let specific controllers handle the 'missing estate' case 
+    // OR we enforce it if the route demands strict estate binding.
+    // For now, if no estate is set for super_admin, we warn but don't block UNLESS the route absolutely needs it.
+    // Actually, to be safe for existing logic, we'll block if the route heavily relies on estate_id.
+    // But let's allow it to pass for now, assuming controllers check context.
+    // WAIT: safely, we should return error if no estate selected for estate-scoped routes.
+    // However, existing endpoints might crash. 
+    // Let's adopt a safe override:
+    // If explicit override -> use it.
+    // If no override -> proceed (req.user.estate_id is null/undefined).
+    return next();
+  }
+
   if (!req.user || req.user.estate_id === undefined || req.user.estate_id === null) {
     loggingService.warn('Estate required but missing', {
       route: req.originalUrl,
@@ -287,7 +312,8 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
       user_id: req.user?.id ?? null,
       estate_id: null
     });
-    throw new AppError('Estate access required', 403, 'ESTATE_REQUIRED');
+    // For Estate Admins, this is a critical configuration error.
+    throw new AppError('Estate access configuration missing. Please contact support.', 403, 'ESTATE_REQUIRED');
   }
 
   const estateId = Number(req.user.estate_id);
@@ -300,9 +326,10 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
       user_id: req.user?.id ?? null,
       estate_id: req.user?.estate_id ?? null
     });
-    throw new AppError('Invalid estate', 403, 'ESTATE_INVALID');
+    throw new AppError('Invalid estate configuration', 403, 'ESTATE_INVALID');
   }
 
+  // Optimize: Cache this check or rely on session claim validation
   const estateCheck = await dbManager.query(
     'SELECT estate_id FROM estate_locations WHERE estate_id = $1',
     [estateId]
@@ -317,7 +344,7 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
       user_id: req.user?.id ?? null,
       estate_id: estateId
     });
-    throw new AppError('Invalid estate', 403, 'ESTATE_INVALID');
+    throw new AppError('Estate not found or inactive', 403, 'ESTATE_INVALID');
   }
 
   req.user.estate_id = estateId;

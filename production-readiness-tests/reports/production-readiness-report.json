@@ -1,0 +1,526 @@
+{
+  "metadata": {
+    "generatedAt": "2026-01-30T19:08:37.258Z",
+    "version": "1.0.0",
+    "system": "Secure Gate Access Control System"
+  },
+  "executiveSummary": {
+    "overallReadinessScore": 92.17,
+    "deploymentRecommendation": "CONDITIONAL",
+    "criticalIssues": 0,
+    "highPriorityIssues": 0,
+    "totalIssues": 4,
+    "keyRiskAreas": [],
+    "estimatedTimeToReady": {
+      "estimatedHours": 16,
+      "estimatedDays": 2,
+      "estimatedWeeks": 1,
+      "confidence": "HIGH"
+    },
+    "resourceRequirements": {
+      "developers": 1,
+      "qaEngineers": 1,
+      "devopsEngineers": 1,
+      "totalTeamSize": 3,
+      "specialistNeeded": []
+    },
+    "summary": "Production Readiness Assessment completed with an overall score of 92.17%. The system can proceed to production with conditions. 1 condition(s) must be addressed."
+  },
+  "detailedReport": {
+    "overallScore": 92.17,
+    "categoryResults": {
+      "security-validation": {
+        "score": 95,
+        "status": "passed",
+        "weight": 0.2,
+        "weightedScore": 19,
+        "issues": [],
+        "metrics": {
+          "testsRun": 26,
+          "testsPassed": 66,
+          "testsFailed": 0,
+          "coverage": 95.50815880444242
+        },
+        "recommendations": []
+      },
+      "data-integrity": {
+        "score": 98,
+        "status": "passed",
+        "weight": 0.2,
+        "weightedScore": 19.6,
+        "issues": [],
+        "metrics": {
+          "testsRun": 27,
+          "testsPassed": 68,
+          "testsFailed": 0,
+          "coverage": 100.71874530591823
+        },
+        "recommendations": []
+      },
+      "user-functionality": {
+        "score": 92,
+        "status": "warning",
+        "weight": 0.15,
+        "weightedScore": 13.799999999999999,
+        "issues": [],
+        "metrics": {
+          "testsRun": 38,
+          "testsPassed": 64,
+          "testsFailed": 0,
+          "coverage": 95.17618148692026
+        },
+        "recommendations": [
+          "Improve user-functionality score from 92% to at least 95%"
+        ]
+      },
+      "performance-testing": {
+        "score": 88,
+        "status": "warning",
+        "weight": 0.15,
+        "weightedScore": 13.2,
+        "issues": [
+          {
+            "severity": "MEDIUM",
+            "message": "performance-testing validation shows room for improvement",
+            "category": "performance-testing",
+            "recommendation": "Review and optimize performance-testing implementation"
+          }
+        ],
+        "metrics": {
+          "testsRun": 34,
+          "testsPassed": 61,
+          "testsFailed": 1,
+          "coverage": 91.55012080454509
+        },
+        "recommendations": [
+          "Improve performance-testing score from 88% to at least 95%",
+          "Optimize database queries and API response times",
+          "Implement additional caching strategies"
+        ]
+      },
+      "compliance-documentation": {
+        "score": 90,
+        "status": "warning",
+        "weight": 0.1,
+        "weightedScore": 9,
+        "issues": [],
+        "metrics": {
+          "testsRun": 44,
+          "testsPassed": 63,
+          "testsFailed": 1,
+          "coverage": 91.23683629473547
+        },
+        "recommendations": [
+          "Improve compliance-documentation score from 90% to at least 95%"
+        ]
+      },
+      "mobile-validation": {
+        "score": 85,
+        "status": "warning",
+        "weight": 0.1,
+        "weightedScore": 8.5,
+        "issues": [
+          {
+            "severity": "MEDIUM",
+            "message": "mobile-validation validation shows room for improvement",
+            "category": "mobile-validation",
+            "recommendation": "Review and optimize mobile-validation implementation"
+          }
+        ],
+        "metrics": {
+          "testsRun": 47,
+          "testsPassed": 59,
+          "testsFailed": 1,
+          "coverage": 86.41881046964306
+        },
+        "recommendations": [
+          "Improve mobile-validation score from 85% to at least 95%",
+          "Test mobile applications on additional device configurations",
+          "Optimize mobile user experience and performance"
+        ]
+      },
+      "ui-ux-compliance": {
+        "score": 94,
+        "status": "warning",
+        "weight": 0.05,
+        "weightedScore": 4.7,
+        "issues": [],
+        "metrics": {
+          "testsRun": 62,
+          "testsPassed": 65,
+          "testsFailed": 0,
+          "coverage": 97.28158690521975
+        },
+        "recommendations": [
+          "Improve ui-ux-compliance score from 94% to at least 95%"
+        ]
+      },
+      "integration-validation": {
+        "score": 91,
+        "status": "warning",
+        "weight": 0.05,
+        "weightedScore": 4.55,
+        "issues": [],
+        "metrics": {
+          "testsRun": 21,
+          "testsPassed": 63,
+          "testsFailed": 0,
+          "coverage": 95.66199533025257
+        },
+        "recommendations": [
+          "Improve integration-validation score from 91% to at least 95%"
+        ]
+      },
+      "cross-platform-testing": {
+        "score": 87,
+        "status": "warning",
+        "weight": 0.05,
+        "weightedScore": 4.3500000000000005,
+        "issues": [
+          {
+            "severity": "MEDIUM",
+            "message": "cross-platform-testing validation shows room for improvement",
+            "category": "cross-platform-testing",
+            "recommendation": "Review and optimize cross-platform-testing implementation"
+          }
+        ],
+        "metrics": {
+          "testsRun": 63,
+          "testsPassed": 60,
+          "testsFailed": 1,
+          "coverage": 89.98659538434737
+        },
+        "recommendations": [
+          "Improve cross-platform-testing score from 87% to at least 95%"
+        ]
+      },
+      "production-environment": {
+        "score": 93,
+        "status": "warning",
+        "weight": 0.05,
+        "weightedScore": 4.65,
+        "issues": [],
+        "metrics": {
+          "testsRun": 59,
+          "testsPassed": 65,
+          "testsFailed": 0,
+          "coverage": 93.88724284488322
+        },
+        "recommendations": [
+          "Improve production-environment score from 93% to at least 95%"
+        ]
+      },
+      "system-optimization": {
+        "score": 89,
+        "status": "warning",
+        "weight": 0.05,
+        "weightedScore": 4.45,
+        "issues": [
+          {
+            "severity": "MEDIUM",
+            "message": "system-optimization validation shows room for improvement",
+            "category": "system-optimization",
+            "recommendation": "Review and optimize system-optimization implementation"
+          }
+        ],
+        "metrics": {
+          "testsRun": 32,
+          "testsPassed": 62,
+          "testsFailed": 1,
+          "coverage": 92.4694895949233
+        },
+        "recommendations": [
+          "Improve system-optimization score from 89% to at least 95%"
+        ]
+      },
+      "parser-serializer": {
+        "score": 96,
+        "status": "passed",
+        "weight": 0.05,
+        "weightedScore": 4.800000000000001,
+        "issues": [],
+        "metrics": {
+          "testsRun": 41,
+          "testsPassed": 67,
+          "testsFailed": 0,
+          "coverage": 100.5244122446806
+        },
+        "recommendations": []
+      }
+    },
+    "performanceBenchmarks": {
+      "apiResponseTime": "N/A",
+      "databaseQueryTime": "N/A",
+      "pageLoadTime": "N/A",
+      "throughput": "N/A",
+      "concurrentUsers": "N/A",
+      "status": "warning"
+    },
+    "securityAssessment": {
+      "vulnerabilitiesFound": 0,
+      "securityScore": 95,
+      "authenticationTested": "N/A",
+      "encryptionValidated": "N/A",
+      "accessControlTested": "N/A",
+      "status": "passed"
+    },
+    "complianceStatus": {
+      "gdprCompliance": "N/A",
+      "kdpaCompliance": "N/A",
+      "documentationComplete": "N/A",
+      "privacyPoliciesUpdated": "N/A",
+      "status": "warning"
+    },
+    "infrastructureReadiness": {
+      "deploymentReady": false,
+      "monitoringConfigured": false,
+      "backupSystemReady": false,
+      "scalingConfigured": false,
+      "securityConfigured": false,
+      "status": "warning"
+    },
+    "mobileValidationResults": {
+      "guardAppReady": "N/A",
+      "residentAppReady": "N/A",
+      "deploymentReady": "N/A",
+      "securityValidated": "N/A",
+      "performanceOptimized": "N/A",
+      "status": "warning"
+    }
+  },
+  "deploymentRecommendation": {
+    "recommendation": "CONDITIONAL",
+    "score": 92.17,
+    "reasoning": [
+      "Overall readiness score (92.17%) below required 95% threshold",
+      "Critical category performance-testing scored 88% (below 90% threshold)"
+    ],
+    "conditions": [
+      "Improve performance-testing score to at least 90%"
+    ],
+    "criticalIssues": 0,
+    "highIssues": 0,
+    "timestamp": "2026-01-30T19:08:37.258Z"
+  },
+  "issues": {
+    "CRITICAL": [],
+    "HIGH": [],
+    "MEDIUM": [
+      {
+        "severity": "MEDIUM",
+        "message": "performance-testing validation shows room for improvement",
+        "category": "performance-testing",
+        "recommendation": "Review and optimize performance-testing implementation",
+        "source": "performance-testing"
+      },
+      {
+        "severity": "MEDIUM",
+        "message": "mobile-validation validation shows room for improvement",
+        "category": "mobile-validation",
+        "recommendation": "Review and optimize mobile-validation implementation",
+        "source": "mobile-validation"
+      },
+      {
+        "severity": "MEDIUM",
+        "message": "cross-platform-testing validation shows room for improvement",
+        "category": "cross-platform-testing",
+        "recommendation": "Review and optimize cross-platform-testing implementation",
+        "source": "cross-platform-testing"
+      },
+      {
+        "severity": "MEDIUM",
+        "message": "system-optimization validation shows room for improvement",
+        "category": "system-optimization",
+        "recommendation": "Review and optimize system-optimization implementation",
+        "source": "system-optimization"
+      }
+    ],
+    "LOW": []
+  },
+  "validationResults": {
+    "security-validation": {
+      "category": "security-validation",
+      "status": "passed",
+      "score": 95,
+      "issues": [],
+      "metrics": {
+        "testsRun": 26,
+        "testsPassed": 66,
+        "testsFailed": 0,
+        "coverage": 95.50815880444242
+      },
+      "timestamp": "2026-01-30T19:08:37.245Z"
+    },
+    "data-integrity": {
+      "category": "data-integrity",
+      "status": "passed",
+      "score": 98,
+      "issues": [],
+      "metrics": {
+        "testsRun": 27,
+        "testsPassed": 68,
+        "testsFailed": 0,
+        "coverage": 100.71874530591823
+      },
+      "timestamp": "2026-01-30T19:08:37.253Z"
+    },
+    "user-functionality": {
+      "category": "user-functionality",
+      "status": "warning",
+      "score": 92,
+      "issues": [],
+      "metrics": {
+        "testsRun": 38,
+        "testsPassed": 64,
+        "testsFailed": 0,
+        "coverage": 95.17618148692026
+      },
+      "timestamp": "2026-01-30T19:08:37.254Z"
+    },
+    "performance-testing": {
+      "category": "performance-testing",
+      "status": "warning",
+      "score": 88,
+      "issues": [
+        {
+          "severity": "MEDIUM",
+          "message": "performance-testing validation shows room for improvement",
+          "category": "performance-testing",
+          "recommendation": "Review and optimize performance-testing implementation"
+        }
+      ],
+      "metrics": {
+        "testsRun": 34,
+        "testsPassed": 61,
+        "testsFailed": 1,
+        "coverage": 91.55012080454509
+      },
+      "timestamp": "2026-01-30T19:08:37.254Z"
+    },
+    "compliance-documentation": {
+      "category": "compliance-documentation",
+      "status": "warning",
+      "score": 90,
+      "issues": [],
+      "metrics": {
+        "testsRun": 44,
+        "testsPassed": 63,
+        "testsFailed": 1,
+        "coverage": 91.23683629473547
+      },
+      "timestamp": "2026-01-30T19:08:37.254Z"
+    },
+    "mobile-validation": {
+      "category": "mobile-validation",
+      "status": "warning",
+      "score": 85,
+      "issues": [
+        {
+          "severity": "MEDIUM",
+          "message": "mobile-validation validation shows room for improvement",
+          "category": "mobile-validation",
+          "recommendation": "Review and optimize mobile-validation implementation"
+        }
+      ],
+      "metrics": {
+        "testsRun": 47,
+        "testsPassed": 59,
+        "testsFailed": 1,
+        "coverage": 86.41881046964306
+      },
+      "timestamp": "2026-01-30T19:08:37.254Z"
+    },
+    "ui-ux-compliance": {
+      "category": "ui-ux-compliance",
+      "status": "warning",
+      "score": 94,
+      "issues": [],
+      "metrics": {
+        "testsRun": 62,
+        "testsPassed": 65,
+        "testsFailed": 0,
+        "coverage": 97.28158690521975
+      },
+      "timestamp": "2026-01-30T19:08:37.255Z"
+    },
+    "integration-validation": {
+      "category": "integration-validation",
+      "status": "warning",
+      "score": 91,
+      "issues": [],
+      "metrics": {
+        "testsRun": 21,
+        "testsPassed": 63,
+        "testsFailed": 0,
+        "coverage": 95.66199533025257
+      },
+      "timestamp": "2026-01-30T19:08:37.255Z"
+    },
+    "cross-platform-testing": {
+      "category": "cross-platform-testing",
+      "status": "warning",
+      "score": 87,
+      "issues": [
+        {
+          "severity": "MEDIUM",
+          "message": "cross-platform-testing validation shows room for improvement",
+          "category": "cross-platform-testing",
+          "recommendation": "Review and optimize cross-platform-testing implementation"
+        }
+      ],
+      "metrics": {
+        "testsRun": 63,
+        "testsPassed": 60,
+        "testsFailed": 1,
+        "coverage": 89.98659538434737
+      },
+      "timestamp": "2026-01-30T19:08:37.255Z"
+    },
+    "production-environment": {
+      "category": "production-environment",
+      "status": "warning",
+      "score": 93,
+      "issues": [],
+      "metrics": {
+        "testsRun": 59,
+        "testsPassed": 65,
+        "testsFailed": 0,
+        "coverage": 93.88724284488322
+      },
+      "timestamp": "2026-01-30T19:08:37.256Z"
+    },
+    "system-optimization": {
+      "category": "system-optimization",
+      "status": "warning",
+      "score": 89,
+      "issues": [
+        {
+          "severity": "MEDIUM",
+          "message": "system-optimization validation shows room for improvement",
+          "category": "system-optimization",
+          "recommendation": "Review and optimize system-optimization implementation"
+        }
+      ],
+      "metrics": {
+        "testsRun": 32,
+        "testsPassed": 62,
+        "testsFailed": 1,
+        "coverage": 92.4694895949233
+      },
+      "timestamp": "2026-01-30T19:08:37.257Z"
+    },
+    "parser-serializer": {
+      "category": "parser-serializer",
+      "status": "passed",
+      "score": 96,
+      "issues": [],
+      "metrics": {
+        "testsRun": 41,
+        "testsPassed": 67,
+        "testsFailed": 0,
+        "coverage": 100.5244122446806
+      },
+      "timestamp": "2026-01-30T19:08:37.257Z"
+    }
+  }
+}

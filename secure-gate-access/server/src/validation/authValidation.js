@@ -43,6 +43,26 @@ const usernameSchema = Joi.string()
 // Registration validation schema
 export const registerSchema = Joi.object({
   username: usernameSchema,
+  first_name: Joi.string()
+    .min(1)
+    .max(100)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .required()
+    .messages({
+      'string.empty': 'First name is required',
+      'string.pattern.base': 'First name can only contain letters, spaces, hyphens, and apostrophes',
+      'string.max': 'First name must not exceed 100 characters'
+    }),
+  last_name: Joi.string()
+    .min(1)
+    .max(100)
+    .pattern(/^[a-zA-Z\s'-]+$/)
+    .required()
+    .messages({
+      'string.empty': 'Last name is required',
+      'string.pattern.base': 'Last name can only contain letters, spaces, hyphens, and apostrophes',
+      'string.max': 'Last name must not exceed 100 characters'
+    }),
   email: emailSchema,
   password: passwordSchema,
   confirmPassword: Joi.string()

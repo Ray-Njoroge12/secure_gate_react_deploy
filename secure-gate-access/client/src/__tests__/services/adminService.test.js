@@ -71,10 +71,10 @@ describe('adminService', () => {
     await adminService.updateGuard('g1', { name: 'G2' });
     await adminService.deleteGuard('g1');
 
-    expect(http.get).toHaveBeenCalledWith('/api/admin/guards');
-    expect(http.post).toHaveBeenCalledWith('/api/admin/guards', { name: 'G' });
-    expect(http.put).toHaveBeenCalledWith('/api/admin/guards/g1', { name: 'G2' });
-    expect(http.delete).toHaveBeenCalledWith('/api/admin/guards/g1');
+    expect(http.get).toHaveBeenCalledWith('/api/guards');
+    expect(http.post).toHaveBeenCalledWith('/api/guards', { name: 'G' });
+    expect(http.put).toHaveBeenCalledWith('/api/guards/g1', { name: 'G2' });
+    expect(http.delete).toHaveBeenCalledWith('/api/guards/g1');
   });
 
   test('visitor logs endpoints (with and without params)', async () => {
