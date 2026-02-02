@@ -330,8 +330,10 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
   }
 
   // Optimize: Cache this check or rely on session claim validation
+  // Fix: Check 'estates' table instead of 'estate_locations'. 
+  // 'estate_locations' might not be populated during initial creation or might be a legacy/future table.
   const estateCheck = await dbManager.query(
-    'SELECT estate_id FROM estate_locations WHERE estate_id = $1',
+    'SELECT id FROM estates WHERE id = $1',
     [estateId]
   );
 

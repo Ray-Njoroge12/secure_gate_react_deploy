@@ -36,8 +36,9 @@ class UserService {
   /**
    * Create a new user with email verification
    */
-  async createUser(userData) {
+  async createUser(userData, client = null) {
     const { username, email, password, role, estate_id: estateId, account_status: accountStatus } = userData;
+    const db = client || this.db;
 
     // Input validation
     if (!username || !email || !password || !role) {
@@ -70,7 +71,7 @@ class UserService {
 
     try {
       // Check if user already exists using parameterized queries
-      const existingUser = await this.db.query(
+      const existingUser = await db.query(
         'SELECT id FROM users WHERE estate_id = COALESCE($3, estate_id) AND (username = $1 OR email = $2)',
         [username, email, estateId]
       );
@@ -92,7 +93,7 @@ class UserService {
       // Create user with email verification fields and account_status
       // Uses column names matching render_init.sql schema: verification_token, verification_expires
       // Insert into both password and password_hash for backward compatibility
-      const result = await this.db.query(
+      const result = await db.query(
         `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, estate_id, account_status, verification_token, verification_expires, created_at, updated_at) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()) 
          RETURNING id, username, first_name, last_name, email, role, estate_id, account_status, verification_token, created_at`,

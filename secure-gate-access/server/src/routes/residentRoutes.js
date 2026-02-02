@@ -23,7 +23,7 @@ router.get('/profile', authenticateToken, requireEstateContext, requireRolePolic
   const userId = req.user.id;
 
   const result = await dbManager.query(
-    `SELECT id, name, email, phone, unit_number, role, estate_id, created_at, updated_at 
+    `SELECT id, first_name, last_name, username, email, phone, house as unit_number, role, estate_id, created_at, updated_at 
      FROM users WHERE id = $1 AND estate_id = $2`,
     [userId, req.user.estate_id]
   );
@@ -41,17 +41,18 @@ router.get('/profile', authenticateToken, requireEstateContext, requireRolePolic
  */
 router.put('/profile', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { name, phone, unit_number } = req.body;
+  const { first_name, last_name, phone, unit_number } = req.body;
 
   const result = await dbManager.query(
     `UPDATE users 
-     SET name = COALESCE($1, name), 
-         phone = COALESCE($2, phone), 
-         unit_number = COALESCE($3, unit_number),
+     SET first_name = COALESCE($1, first_name), 
+         last_name = COALESCE($2, last_name),
+         phone = COALESCE($3, phone), 
+         house = COALESCE($4, house),
          updated_at = NOW()
-     WHERE id = $4 AND estate_id = $5
-     RETURNING id, name, email, phone, unit_number, role, estate_id`,
-    [name, phone, unit_number, userId, req.user.estate_id]
+     WHERE id = $5 AND estate_id = $6
+     RETURNING id, first_name, last_name, username, email, phone, house as unit_number, role, estate_id`,
+    [first_name, last_name, phone, unit_number, userId, req.user.estate_id]
   );
 
   return successResponse(res, result.rows[0], 'Profile updated successfully');
@@ -66,13 +67,13 @@ router.get('/favorites', authenticateToken, requireEstateContext, requireRolePol
 
   const result = await dbManager.query(
     `SELECT fv.id, fv.resident_id, fv.visitor_id, fv.nickname, fv.relationship, fv.notes, fv.created_at,
-            COALESCE(v.name, fv.name) as visitor_name,
-            COALESCE(v.phone, fv.phone) as visitor_phone,
-            COALESCE(v.email, fv.email) as visitor_email,
+            v.name as visitor_name,
+            v.phone as visitor_phone,
+            v.email as visitor_email,
             (SELECT COUNT(*) FROM visitors WHERE resident_id = fv.resident_id
-             AND (phone = COALESCE(v.phone, fv.phone) OR email = COALESCE(v.email, fv.email))) as visit_count,
+             AND (phone = v.phone OR email = v.email)) as visit_count,
             (SELECT MAX(created_at) FROM visitors WHERE resident_id = fv.resident_id
-             AND (phone = COALESCE(v.phone, fv.phone) OR email = COALESCE(v.email, fv.email))) as last_visit
+             AND (phone = v.phone OR email = v.email)) as last_visit
      FROM favorite_visitors fv
      LEFT JOIN visitors v ON fv.visitor_id = v.id AND v.estate_id = $2
      WHERE fv.resident_id = $1
@@ -127,8 +128,8 @@ router.post('/favorites', authenticateToken, requireEstateContext, requireRolePo
       const newVisitor = await dbManager.query(
         `INSERT INTO visitors (
           name, phone, email, resident_id, host_id, estate_id, 
-          created_by, status, created_at, consent
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', NOW(), false)
+          created_by, status, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', NOW())
         RETURNING id`,
         [
           visitor_name.trim(),
@@ -191,7 +192,6 @@ router.delete('/favorites/:visitorId', authenticateToken, requireEstateContext, 
  * GET /api/resident/stats
  */
 router.get('/stats', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), asyncHandler(async (req, res) => {
-  const userId = req.user.id;
   const userEmail = req.user.email;
 
   const [visitorsCount, pendingCount, checkInsToday] = await Promise.all([

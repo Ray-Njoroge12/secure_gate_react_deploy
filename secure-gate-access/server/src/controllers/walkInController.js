@@ -9,6 +9,7 @@ import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 import logger from '../config/logger.js';
 import { canPerformGuardOperations } from '../utils/roleHelper.js';
+import websocketService from '../services/websocketService.js';
 
 /**
  * Register a walk-in visitor (guard only)
@@ -121,6 +122,23 @@ export const registerWalkIn = async (req, res) => {
       houseNumber: sanitizedHouseNumber,
       residentFound: residentId ? 'yes' : 'no'
     });
+
+    // Emit real-time approval request if resident was found
+    if (residentId && websocketService) {
+      try {
+        websocketService.emitApprovalRequest(residentId, {
+          ...visitor,
+          name: visitor.name,
+          phone: visitor.phone,
+          vehicle_plate: visitor.vehicle_plate,
+          purpose: visitor.purpose,
+          approval_requested_at: visitor.created_at,
+          guard_name: req.user.username || 'Guard'
+        });
+      } catch (wsError) {
+        logger.warn('Failed to emit walk-in approval request:', wsError);
+      }
+    }
 
     // Return visitor data
     respond(res, {

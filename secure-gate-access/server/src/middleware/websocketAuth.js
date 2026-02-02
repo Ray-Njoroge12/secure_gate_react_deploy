@@ -19,7 +19,7 @@ import { maskEmail } from '../utils/redaction.js';
 export const authenticateSocket = (socket, next) => {
   try {
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       logger.warn('WebSocket connection attempt without token', {
         socketId: socket.id,
@@ -30,19 +30,19 @@ export const authenticateSocket = (socket, next) => {
 
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     // Attach user info to socket
-    socket.userId = decoded.userId;
+    socket.userId = decoded.id || decoded.userId || decoded.sub;
     socket.userRole = decoded.role;
     socket.userEmail = decoded.email;
-    
+
     logger.info('WebSocket connection authenticated', {
       socketId: socket.id,
       userId: decoded.userId,
       role: decoded.role,
       ip: socket.handshake.address
     });
-    
+
     next();
   } catch (error) {
     logger.warn('WebSocket authentication failed', {
@@ -50,13 +50,13 @@ export const authenticateSocket = (socket, next) => {
       error: error.message,
       ip: socket.handshake.address
     });
-    
+
     if (error.name === 'TokenExpiredError') {
       return next(new Error('Token expired'));
     } else if (error.name === 'JsonWebTokenError') {
       return next(new Error('Invalid token'));
     }
-    
+
     return next(new Error('Authentication failed'));
   }
 };
@@ -66,7 +66,7 @@ export const authenticateSocket = (socket, next) => {
  */
 export const authorizeRoom = (socket, roomName) => {
   const userRole = socket.userRole;
-  
+
   // Define room access permissions
   const roomPermissions = {
     'dashboard': ['admin', 'guard', 'user'],
@@ -75,9 +75,9 @@ export const authorizeRoom = (socket, roomName) => {
     'visitors': ['admin', 'guard', 'visitor'],
     'system': ['admin']
   };
-  
+
   const allowedRoles = roomPermissions[roomName] || [];
-  
+
   if (!allowedRoles.includes(userRole)) {
     logger.warn('Unauthorized room access attempt', {
       socketId: socket.id,
@@ -87,14 +87,14 @@ export const authorizeRoom = (socket, roomName) => {
     });
     return false;
   }
-  
+
   logger.info('Room access authorized', {
     socketId: socket.id,
     userId: socket.userId,
     userRole: userRole,
     room: roomName
   });
-  
+
   return true;
 };
 
@@ -107,17 +107,17 @@ export class SocketRateLimiter {
     this.maxConnections = 5; // Max simultaneous connections per user
     this.resetInterval = 60000; // 1 minute
   }
-  
+
   checkLimit(userId) {
     const now = Date.now();
     const userConnections = this.connections.get(userId) || { count: 0, lastReset: now };
-    
+
     // Reset counter if interval has passed
     if (now - userConnections.lastReset > this.resetInterval) {
       userConnections.count = 0;
       userConnections.lastReset = now;
     }
-    
+
     if (userConnections.count >= this.maxConnections) {
       logger.warn('WebSocket connection rate limit exceeded', {
         userId,
@@ -126,12 +126,12 @@ export class SocketRateLimiter {
       });
       return false;
     }
-    
+
     userConnections.count++;
     this.connections.set(userId, userConnections);
     return true;
   }
-  
+
   releaseConnection(userId) {
     const userConnections = this.connections.get(userId);
     if (userConnections && userConnections.count > 0) {
@@ -151,16 +151,16 @@ export const rateLimitSocket = (socket, next) => {
   if (!socket.userId) {
     return next(new Error('User ID required for rate limiting'));
   }
-  
+
   if (!socketRateLimiter.checkLimit(socket.userId)) {
     return next(new Error('Connection rate limit exceeded'));
   }
-  
+
   // Clean up on disconnect
   socket.on('disconnect', () => {
     socketRateLimiter.releaseConnection(socket.userId);
   });
-  
+
   next();
 };
 
@@ -177,7 +177,7 @@ export const auditSocketConnection = (socket, next) => {
     userAgent: socket.handshake.headers['user-agent'],
     timestamp: new Date().toISOString()
   });
-  
+
   // Log disconnect events
   socket.on('disconnect', (reason) => {
     logger.info('WebSocket connection closed', {
@@ -187,6 +187,6 @@ export const auditSocketConnection = (socket, next) => {
       timestamp: new Date().toISOString()
     });
   });
-  
+
   next();
 };
