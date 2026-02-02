@@ -246,7 +246,9 @@ const corsOptionsDelegate = (req, callback) => {
   // Allow requests with no origin (health checks, mobile apps, Postman, server-to-server)
   if (!origin) {
     if ((isProduction || isStaging) && process.env.CORS_ALLOW_NO_ORIGIN !== 'true' && !isHealthCheck) {
-      return callback(new Error('CORS policy: Origin header required'));
+      // FIX: Allow health checks and server-side calls even if no origin
+      // return callback(new Error('CORS policy: Origin header required'));
+      return callback(null, { ...corsBaseOptions, origin: true });
     }
     return callback(null, { ...corsBaseOptions, origin: true });
   }

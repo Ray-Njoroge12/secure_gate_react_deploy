@@ -545,6 +545,16 @@ class DatabaseManager extends EventEmitter {
           created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
           completed_at TIMESTAMP WITH TIME ZONE
         )`
+      },
+      {
+        name: 'notification_metrics_events',
+        sql: `CREATE TABLE IF NOT EXISTS notification_metrics_events (
+          id SERIAL PRIMARY KEY,
+          event_type VARCHAR(50) NOT NULL,
+          event_timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          payload JSONB,
+          created_at TIMESTAMP DEFAULT NOW()
+        )`
       }
     ];
 
