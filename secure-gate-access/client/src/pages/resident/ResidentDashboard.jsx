@@ -444,6 +444,8 @@ const DashboardHome = () => {
               </Card.Content>
             </Card>
 
+
+
             {/* Phase 2.1: My Deliveries */}
             <Card
               className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
@@ -456,6 +458,23 @@ const DashboardHome = () => {
                 <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">My Deliveries</h3>
                 <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Track packages</p>
                 <span className="absolute top-2 right-2 px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full font-medium">
+                  NEW
+                </span>
+              </Card.Content>
+            </Card>
+
+            {/* Service Entry: Rideshare */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
+              onClick={() => navigateTo('/resident/rideshare')}
+            >
+              <Card.Content className="p-4 md:p-6 text-center">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                  <span className="text-2xl">🚕</span>
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Rideshare</h3>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Book entry</p>
+                <span className="absolute top-2 right-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full font-medium">
                   NEW
                 </span>
               </Card.Content>
@@ -515,7 +534,8 @@ const DashboardHome = () => {
 
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Dashboard Widget Customizer Modal */}
       <DashboardWidgetCustomizer
@@ -523,7 +543,7 @@ const DashboardHome = () => {
         onClose={() => setShowWidgetCustomizer(false)}
         onSave={refreshConfig}
       />
-    </div>
+    </div >
   );
 };
 

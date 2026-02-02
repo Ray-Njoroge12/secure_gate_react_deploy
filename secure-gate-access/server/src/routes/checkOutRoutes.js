@@ -17,6 +17,70 @@ const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
 
 /**
+ * Check out visitor by QR code
+ * POST /api/check-out/qr
+ */
+router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+  const { qrCode, notes } = req.body;
+  const guardId = req.user.id;
+
+  if (!qrCode) {
+    throw new AppError('QR code is required', 400);
+  }
+
+  // SECURITY: Require estate context
+  if (!req.user.estate_id) {
+    throw new AppError('Estate context required', 400);
+  }
+
+  let parsedQrData = null;
+  try {
+    parsedQrData = JSON.parse(qrCode);
+  } catch {
+    parsedQrData = { token: qrCode };
+  }
+
+  // Find visitor by QR code - filtered by estate
+  const visitorQuery = await dbManager.query(
+    'SELECT * FROM visitors WHERE (qr_code::text = $1 OR visitor_token = $1) AND estate_id = $2',
+    [parsedQrData.token || qrCode, req.user.estate_id]
+  );
+
+  if (visitorQuery.rows.length === 0) {
+    throw new AppError('Invalid QR code', 404);
+  }
+
+  const visitorData = visitorQuery.rows[0];
+
+  // Validate visitor status
+  if (visitorData.status !== PASS_STATUS.ON_PREMISE) {
+    throw new AppError('Visitor is not currently checked in', 400);
+  }
+
+  // Perform check-out with estate_id filter
+  const result = await dbManager.query(
+    `UPDATE visitors 
+     SET status = $1, 
+         check_out_time = NOW(), 
+         check_out_guard_id = $2,
+         check_out_notes = $3,
+         updated_at = NOW()
+     WHERE id = $4 AND estate_id = $5
+     RETURNING *`,
+    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id, req.user.estate_id]
+  );
+
+  // Log access
+  await dbManager.query(
+    `INSERT INTO access_logs (entity_type, entity_id, action, user_id, message, log_time)
+     VALUES ('visitor', $1, 'check_out_qr', $2, $3, NOW())`,
+    [String(visitorData.id), guardId, notes]
+  );
+
+  return successResponse(res, result.rows[0], 'Visitor checked out via QR code');
+}));
+
+/**
  * Check out a visitor by ID
  * POST /api/check-out/:visitorId
  */
@@ -62,69 +126,12 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
 
   // Log access
   await dbManager.query(
-    `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
-     VALUES ($1, 'check_out', $2, $3, NOW())`,
-    [visitorId, guardId, notes]
+    `INSERT INTO access_logs (entity_type, entity_id, action, user_id, message, log_time)
+     VALUES ('visitor', $1, 'check_out', $2, $3, NOW())`,
+    [String(visitorId), guardId, notes]
   );
 
   return successResponse(res, result.rows[0], 'Visitor checked out successfully');
-}));
-
-/**
- * Check out visitor by QR code
- * POST /api/check-out/qr
- */
-router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
-  const { qrCode, notes } = req.body;
-  const guardId = req.user.id;
-
-  if (!qrCode) {
-    throw new AppError('QR code is required', 400);
-  }
-
-  // SECURITY: Require estate context
-  if (!req.user.estate_id) {
-    throw new AppError('Estate context required', 400);
-  }
-
-  // Find visitor by QR code - filtered by estate
-  const visitor = await dbManager.query(
-    'SELECT * FROM visitors WHERE (qr_code = $1 OR token = $1) AND estate_id = $2',
-    [qrCode, req.user.estate_id]
-  );
-
-  if (visitor.rows.length === 0) {
-    throw new AppError('Invalid QR code', 404);
-  }
-
-  const visitorData = visitor.rows[0];
-
-  // Validate visitor status
-  if (visitorData.status !== PASS_STATUS.ON_PREMISE) {
-    throw new AppError('Visitor is not currently checked in', 400);
-  }
-
-  // Perform check-out with estate_id filter
-  const result = await dbManager.query(
-    `UPDATE visitors 
-     SET status = $1, 
-         check_out_time = NOW(), 
-         check_out_guard_id = $2,
-         check_out_notes = $3,
-         updated_at = NOW()
-     WHERE id = $4 AND estate_id = $5
-     RETURNING *`,
-    [PASS_STATUS.CHECKED_OUT, guardId, notes, visitorData.id, req.user.estate_id]
-  );
-
-  // Log access
-  await dbManager.query(
-    `INSERT INTO access_logs (visitor_id, action, performed_by, notes, log_time)
-     VALUES ($1, 'check_out_qr', $2, $3, NOW())`,
-    [visitorData.id, guardId, notes]
-  );
-
-  return successResponse(res, result.rows[0], 'Visitor checked out via QR code');
 }));
 
 /**
@@ -166,4 +173,3 @@ router.get('/active', authenticateToken, authorize(['guard', 'admin']), minimize
 }));
 
 export default router;
-

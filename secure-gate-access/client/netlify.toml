@@ -1,21 +1,16 @@
 [build]
-  base = "secure-gate-access/client"
+  command = "npm run build"
   publish = "build"
-  command = "npm run build:production"
 
+# Proxy /api requests to the backend (Replace URL after deploying backend)
 [[redirects]]
   from = "/api/*"
-  to = "https://secure-gate-api.onrender.com/api/:splat"
+  to = "https://secure-gate-server.onrender.com/api/:splat"
   status = 200
   force = true
 
+# SPA Catch-all for React Router
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-[build.environment]
-  NODE_VERSION = "18"
-  CI = "false"
-  REACT_APP_API_URL = "https://secure-gate-api.onrender.com"
-  REACT_APP_WS_URL = "wss://secure-gate-api.onrender.com"

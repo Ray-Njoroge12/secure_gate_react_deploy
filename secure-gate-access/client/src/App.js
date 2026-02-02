@@ -92,8 +92,8 @@ const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
 
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
-const SelfCheckInKiosk = lazy(() => import("./pages/public/SelfCheckInKiosk.jsx"));
-const VisitorConfirmation = lazy(() => import("./pages/VisitorConfirmation.jsx"));
+// const SelfCheckInKiosk = lazy(() => import("./pages/public/SelfCheckInKiosk.jsx"));
+const VisitorConfirmation = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
 
 // Resident additional pages
 const QuickInvite = lazy(() => import("./pages/resident/QuickInvite.jsx"));

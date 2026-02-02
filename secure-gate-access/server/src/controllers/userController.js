@@ -325,7 +325,7 @@ export async function updateProfile(req, res) {
   // We can update email if provided.
 
   await dbManager.query(
-    `UPDATE users SET first_name = $2, last_name = $3, phone = $4, profile_pic = $5, notify_email = $6, notify_sms = $7 
+    `UPDATE users SET first_name = $2, last_name = $3, phone = $4, profile_pic = $5, notify_email = $6, notify_sms = $7, house = $9
      WHERE id = $1 AND estate_id = $8`,
     [
       userId,
@@ -335,7 +335,8 @@ export async function updateProfile(req, res) {
       body.profilePic ?? currentUser.profile_pic ?? null,
       body.notify_email ?? currentUser.notify_email ?? null,
       body.notify_sms ?? currentUser.notify_sms ?? null,
-      estateId
+      estateId,
+      body.house ?? currentUser.house ?? null
     ]
   );
 

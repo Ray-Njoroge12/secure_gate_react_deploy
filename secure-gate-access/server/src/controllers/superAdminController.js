@@ -92,7 +92,9 @@ const createEstate = async (req, res) => {
             return respondError(res, 400, 'Estate name, admin email, and password are required');
         }
 
-        // Transaction to create estate and admin user
+        let newUserForEmail = null;
+
+        // Transaction to create estate and admin user atomically
         const result = await dbManager.transaction(async (client) => {
             // 1. Create Estate
             const estateRes = await client.query(
@@ -107,63 +109,44 @@ const createEstate = async (req, res) => {
             );
             const estate = estateRes.rows[0];
 
-            // 2. Create Admin User
-            // We need to hash the password here. Since we can't easily import the class instance method from here cleanly 
-            // if it wasn't exported as such, we'll use the userService helper if possible or duplicate hash logic.
-            // Better: use userService.createUser which handles hashing, but we need to run it within THIS transaction context.
-            // Limitations: userService might not support passing a client.
-            // Workaround: We will use the 'passwordService' from tokenService.js if available or just raw argon2?
-            // Checking imports... we don't have passwordService imported.
-            // Let's import userService and hope it's transactional or just use it after estate creation (small risk of orphan estate).
-            // Actually, best practice is to require passwordService.
+            // 2. Create Admin User using the same transaction client
+            // Import userService dynamically to avoid potential circular dependency issues at top level,
+            // or we could move it to top if verified safe. For now keeping dynamic but inside transaction.
+            const module = await import('../services/userService.js');
+            const userService = module.default || module;
 
-            // For now, let's use userService.createUser sequentially. If it fails, we should rollback estate... 
-            // but dbManager.transaction doesn't easily span services unless designed to.
-            // Simplified approach: Create estate. Then create user. If user fail, delete estate (manual rollback).
+            const newUser = await userService.createUser({
+                username: adminName || 'Admin',
+                email: adminEmail,
+                password: adminPassword,
+                role: 'admin',
+                estate_id: estate.id,
+                employee_id: 'ADM-' + Date.now(),
+                status: 'active',
+                account_status: 'active' // Ensure admin is active immediately
+            }, client); // Pass the transaction client!
 
+            newUserForEmail = newUser;
             return estate;
         });
 
-        console.error('CONTROLLER TRANSACTION RESULT:', result);
-
-        // Creating user outside transaction block to use existing service
-        try {
-            await import('../services/userService.js').then(async (module) => {
-                const userService = module.default || module;
-                console.error('CONTROLLER IMPORTED USER_SERVICE KEYS:', Object.keys(userService)); // Debug
-                const newUser = await userService.createUser({
-                    username: adminName || 'Admin',
-                    email: adminEmail,
-                    password: adminPassword,
-                    role: 'admin',
-                    estate_id: result.id,
-                    employee_id: 'ADM-' + Date.now(),
-                    status: 'active'
-                });
-                console.error('CONTROLLER newUser RESULT:', newUser);
-
-                // Send Welcome Email
-                try {
-                    const { default: emailService } = await import('../services/emailService.js');
-                    await emailService.sendWelcomeEmail(newUser.email, newUser.username, adminPassword);
-                    console.log(`Welcome email sent to ${newUser.email}`);
-                } catch (emailErr) {
-                    console.error('Failed to send welcome email:', emailErr);
-                    // Non-blocking error
-                }
-            });
-        } catch (userError) {
-            console.error('Failed to create admin user, rolling back estate:', userError);
-            if (result && result.id) {
-                await dbManager.query('DELETE FROM estates WHERE id = $1', [result.id]);
+        // Send Welcome Email (Outside transaction - if email fails, we don't rollback DB)
+        if (newUserForEmail) {
+            try {
+                const { default: emailService } = await import('../services/emailService.js');
+                await emailService.sendWelcomeEmail(newUserForEmail.email, newUserForEmail.username, adminPassword);
+                console.log(`Welcome email sent to ${newUserForEmail.email}`);
+            } catch (emailErr) {
+                console.error('Failed to send welcome email:', emailErr);
+                // Non-blocking error
             }
-            throw new Error('Failed to create admin user: ' + userError.message);
         }
 
         respond(res, { message: 'Estate created successfully', estate: result }, 201);
 
     } catch (error) {
         console.error('Error creating estate:', error);
+        // Transaction automatically rolled back by dbManager on error
         respondError(res, 500, 'Failed to create estate: ' + error.message);
     }
 };
@@ -242,16 +225,19 @@ const searchGlobalUsers = async (req, res) => {
         }
 
         // Using parameterized query for partial search
+        // Fix: Use correct columns (username, first_name, last_name, account_status)
+        // Removed phone as it likely doesn't exist in schema
         const result = await dbManager.query(
             `SELECT 
-                u.id, u.name, u.email, u.phone, u.role, u.status, u.estate_id, u.created_at,
+                u.id, u.username, u.first_name, u.last_name, u.email, u.role, u.account_status as status, u.estate_id, u.created_at,
                 e.name as estate_name
              FROM users u
              LEFT JOIN estates e ON u.estate_id = e.id
              WHERE 
-                u.name ILIKE $1 OR 
-                u.email ILIKE $1 OR 
-                u.phone ILIKE $1
+                u.username ILIKE $1 OR 
+                u.first_name ILIKE $1 OR
+                u.last_name ILIKE $1 OR
+                u.email ILIKE $1
              LIMIT 20`,
             [`%${q}%`]
         );
@@ -259,9 +245,9 @@ const searchGlobalUsers = async (req, res) => {
         // Apply privacy masking to the results for the list view
         const safeUsers = result.rows.map(user => ({
             id: user.id,
-            name: user.name,
+            name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+            username: user.username,
             email: maskEmail(user.email),
-            phone: maskPhone(user.phone),
             role: user.role,
             status: user.status,
             estate_id: user.estate_id,

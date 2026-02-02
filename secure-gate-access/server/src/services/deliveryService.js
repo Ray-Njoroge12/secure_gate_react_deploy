@@ -79,9 +79,7 @@ export async function registerDelivery({
   packageSize,
   notes
 }) {
-  const client = await pool.connect();
-
-  try {
+  return pool.transaction(async (client) => {
     // Verify recipient exists and belongs to the same estate
     const recipientResult = await client.query(
       'SELECT email, username, estate_id FROM users WHERE id = $1',
@@ -97,8 +95,6 @@ export async function registerDelivery({
     if (recipient.estate_id !== estateId) {
       throw new Error('Recipient does not belong to this estate');
     }
-
-    await client.query('BEGIN');
 
     // Encrypt tracking number for privacy
     const encryptedTracking = await encrypt(trackingNumber);
@@ -116,8 +112,6 @@ export async function registerDelivery({
       [encryptedTracking, carrierName, recipientId, guardId, estateId, packageDescription, packageSize || 'medium', notes, photoExpiresAt]
     );
 
-    await client.query('COMMIT');
-
     return {
       success: true,
       data: {
@@ -127,21 +121,14 @@ export async function registerDelivery({
       },
       message: 'Delivery registered successfully'
     };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /**
  * Add photo to delivery (Guard action)
  */
 export async function addDeliveryPhoto(deliveryId, photoBuffer, mimeType, guardId) {
-  const client = await pool.connect();
-
-  try {
+  return pool.transaction(async (client) => {
     // Verify guard has access to this delivery
     const deliveryCheck = await client.query(
       'SELECT id, received_by_guard_id FROM deliveries WHERE id = $1',
@@ -173,9 +160,7 @@ export async function addDeliveryPhoto(deliveryId, photoBuffer, mimeType, guardI
       success: true,
       message: 'Photo added to delivery'
     };
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /**
@@ -530,11 +515,7 @@ export async function getDeliveryStats(dateRange = 30, estateId = null) {
  * Delete resident's delivery history (Privacy control)
  */
 export async function deleteResidentDeliveryHistory(residentId) {
-  const client = await pool.connect();
-
-  try {
-    await client.query('BEGIN');
-
+  return pool.transaction(async (client) => {
     // Delete photos first
     await client.query(
       `DELETE FROM delivery_photos 
@@ -548,28 +529,19 @@ export async function deleteResidentDeliveryHistory(residentId) {
       [residentId]
     );
 
-    await client.query('COMMIT');
-
     return {
       success: true,
       deletedCount: result.rowCount,
       message: 'Delivery history deleted'
     };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }
 
 /**
  * Cleanup expired data (run by scheduled job)
  */
 export async function cleanupExpiredDeliveryData() {
-  const client = await pool.connect();
-
-  try {
+  return pool.transaction(async (client) => {
     // Delete expired photos
     const photoResult = await client.query(
       'SELECT cleanup_expired_delivery_photos()'
@@ -584,9 +556,7 @@ export async function cleanupExpiredDeliveryData() {
       photosDeleted: photoResult.rows[0].cleanup_expired_delivery_photos,
       deliveriesDeleted: deliveryResult.rows[0].cleanup_old_deliveries
     };
-  } finally {
-    client.release();
-  }
+  });
 }
 
 export default {

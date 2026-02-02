@@ -780,75 +780,7 @@ router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attac
 
 
 
-/**
- * @route PUT /api/admin/guards/:id
- * @desc Update a guard
- * @access Private (Admin only)
- */
-router.put('/guards/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { username, email, phone, status } = req.body;
 
-    // SECURITY: Filter by estate_id to prevent cross-estate modification
-    let query = `UPDATE users SET 
-      username = COALESCE($1, username),
-      email = COALESCE($2, email),
-      phone = COALESCE($3, phone),
-      status = COALESCE($4, status),
-      updated_at = NOW()
-     WHERE id = $5 AND role = 'guard'`;
-    const params = [username, email, phone, status, id];
-
-    if (req.user.estate_id) {
-      query += ` AND estate_id = $6`;
-      params.push(req.user.estate_id);
-    }
-    query += ` RETURNING id, username, email, phone, status`;
-
-    const result = await dbManager.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Guard not found' });
-    }
-
-    res.json({ success: true, data: result.rows[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update guard', error: error.message });
-  }
-});
-
-/**
- * @route DELETE /api/admin/guards/:id
- * @desc Delete a guard
- * @access Private (Admin only)
- */
-router.delete('/guards/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // SECURITY: Filter by estate_id to prevent cross-estate deletion
-    let query = `UPDATE users SET status = 'deleted', updated_at = NOW() 
-       WHERE id = $1 AND role = 'guard' AND status != 'deleted'`;
-    const params = [id];
-
-    if (req.user.estate_id) {
-      query += ` AND estate_id = $2`;
-      params.push(req.user.estate_id);
-    }
-    query += ` RETURNING id`;
-
-    const result = await dbManager.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Guard not found' });
-    }
-
-    res.json({ success: true, message: 'Guard deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete guard', error: error.message });
-  }
-});
 
 // ==================== VISITOR LOGS ====================
 
