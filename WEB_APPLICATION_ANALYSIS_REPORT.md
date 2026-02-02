@@ -1,8 +1,9 @@
 # Secure Gate Access - Web Application & Deployability Analysis Report
 
-**Analysis Date:** February 1, 2026  
+**Analysis Date:** February 2, 2026  
 **Repository:** `secure_gate_react_deploy`  
-**Repository Status:** ✅ Synced with remote (commit `c493d11`)
+**Repository Status:** ✅ Synced with remote (commit `c493d11`)  
+**AWS Deployment:** See [AWS_DEPLOYMENT_GUIDE.md](./AWS_DEPLOYMENT_GUIDE.md) for detailed AWS instructions
 
 ---
 
@@ -383,7 +384,7 @@ The backend exposes **57+ route modules** covering:
 
 ### 8.2 Deployment Options
 
-#### Option 1: Netlify + Render (Recommended - Current Setup)
+#### Option 1: Netlify + Render (Current Setup)
 ```
 Frontend: Netlify (free tier available)
 Backend: Render (free/paid tiers)
@@ -391,13 +392,25 @@ Database: Render PostgreSQL
 Redis: Upstash or Render Redis
 ```
 
-#### Option 2: AWS Deployment
-```
-Frontend: S3 + CloudFront
-Backend: ECS or Elastic Beanstalk
-Database: RDS PostgreSQL
-Redis: ElastiCache
-```
+#### Option 2: AWS Deployment (Recommended for Production)
+
+**Target Region:** `af-south-1` (Africa - Cape Town)
+
+| Service | Configuration | Est. Monthly Cost |
+|---------|---------------|-------------------|
+| EC2 | t3.micro (backend) | ~$8 |
+| RDS | db.t3.micro (PostgreSQL) | ~$15-20 |
+| S3 | Static frontend hosting | ~$1-2 |
+| CloudFront | CDN with SSL | ~$2-5 |
+| **Total** | | **~$26-35/month** |
+
+**AWS Credits Available:** US$100 through learning activities
+
+See **[AWS_DEPLOYMENT_GUIDE.md](./AWS_DEPLOYMENT_GUIDE.md)** for:
+- Complete CloudFormation template
+- Automated deployment scripts
+- Step-by-step instructions
+- Cost optimization strategies
 
 #### Option 3: Docker Self-Hosted
 ```
@@ -510,5 +523,5 @@ The system is ready for deployment pending:
 
 ---
 
-*Report generated: February 1, 2026*  
+*Report generated: February 2, 2026*  
 *Analysis by: GitHub Copilot*
