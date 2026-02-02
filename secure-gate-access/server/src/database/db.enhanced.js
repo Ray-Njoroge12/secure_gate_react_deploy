@@ -63,7 +63,7 @@ class DatabaseManager extends EventEmitter {
       // SSL configuration for cloud providers
       // Render, Railway, Heroku all require SSL
       ssl: process.env.DATABASE_URL || process.env.NODE_ENV === 'production'
-        ? { rejectUnauthorized: true } // Secure by default
+        ? { rejectUnauthorized: false } // Render requires this for managed Postgres (self-signed certs)
         : false,
 
       // Pool configuration optimized for cloud environments (especially Render)
