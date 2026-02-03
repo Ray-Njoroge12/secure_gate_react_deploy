@@ -22,10 +22,31 @@ class AfricasTalkingSmsProvider extends SmsProvider {
   }
 
   isConfigured() {
+    if (process.env.NODE_ENV === 'development' && (!process.env.AT_USERNAME || !process.env.AT_API_KEY)) {
+      return true; // Auto-configure for simulation in dev
+    }
     return Boolean(this.client);
   }
 
   async send({ to, message, from }) {
+    // Simulation Mode for Development
+    if (!this.client && process.env.NODE_ENV === 'development') {
+      console.log('----------------------------------------');
+      console.log('📞 [SMS SIMULATION] To:', to);
+      console.log('💬 Message:', message);
+      console.log('----------------------------------------');
+
+      // Simulate successful delivery
+      return {
+        success: true,
+        messageId: `sim_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        metadata: {
+          status: 'Success',
+          simulation: true
+        }
+      };
+    }
+
     if (!this.client) {
       return { success: false, error: 'africas_talking_not_configured' };
     }

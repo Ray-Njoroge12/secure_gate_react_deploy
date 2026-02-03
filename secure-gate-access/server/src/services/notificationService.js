@@ -330,7 +330,7 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
   const smsProviderClient = getSmsProvider(smsProvider);
 
   // Feature flag check
-  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
+  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true' && process.env.NODE_ENV !== 'development') {
     console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
     notificationMetricsService.recordNotificationResult({
       channel: 'sms',
@@ -339,6 +339,8 @@ export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes
       error: 'sms_notifications_disabled'
     });
     return false;
+  } else if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true' && process.env.NODE_ENV === 'development') {
+    console.log('Development mode: Allowing SMS simulation despite disabled flag');
   }
 
   // WhatsApp provider (recommended)

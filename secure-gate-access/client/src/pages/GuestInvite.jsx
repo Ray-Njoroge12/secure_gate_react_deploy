@@ -11,20 +11,20 @@ import { handleApiError, mapSuccessMessage } from '../utils/errorMapper';
 // Calendar generation utilities
 const generateICSFile = (eventData) => {
   const { title, description, location, startDate, startTime, endTime } = eventData;
-  
+
   // Parse date and time
   const [year, month, day] = startDate.split('-').map(Number);
   const [startHour, startMinute] = startTime.split(':').map(Number);
   const [endHour, endMinute] = (endTime || `${startHour + 1}:${startMinute}`).split(':').map(Number);
-  
+
   // Format dates for ICS (YYYYMMDDTHHMMSS)
-  const formatDate = (y, m, d, h, min) => 
+  const formatDate = (y, m, d, h, min) =>
     `${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}${String(min).padStart(2, '0')}00`;
-  
+
   const dtStart = formatDate(year, month, day, startHour, startMinute);
   const dtEnd = formatDate(year, month, day, endHour, endMinute);
   const dtStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-  
+
   const icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -43,22 +43,22 @@ const generateICSFile = (eventData) => {
     'END:VEVENT',
     'END:VCALENDAR'
   ].filter(Boolean).join('\r\n');
-  
+
   return icsContent;
 };
 
 const generateGoogleCalendarUrl = (eventData) => {
   const { title, description, location, startDate, startTime, endTime } = eventData;
-  
+
   const [year, month, day] = startDate.split('-').map(Number);
   const [startHour, startMinute] = startTime.split(':').map(Number);
   const [endHour, endMinute] = (endTime || `${startHour + 1}:${startMinute}`).split(':').map(Number);
-  
-  const formatDate = (y, m, d, h, min) => 
+
+  const formatDate = (y, m, d, h, min) =>
     `${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}${String(min).padStart(2, '0')}00`;
-  
+
   const dates = `${formatDate(year, month, day, startHour, startMinute)}/${formatDate(year, month, day, endHour, endMinute)}`;
-  
+
   const params = new URLSearchParams({
     action: 'TEMPLATE',
     text: title,
@@ -66,16 +66,16 @@ const generateGoogleCalendarUrl = (eventData) => {
     details: description,
     location: location || '',
   });
-  
+
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
 
 // Add to Calendar component
 const AddToCalendarButton = ({ inviteData, visitorName }) => {
   const [showOptions, setShowOptions] = useState(false);
-  
+
   if (!inviteData?.date || !inviteData?.time) return null;
-  
+
   const eventData = {
     title: `Visit: ${inviteData.eventName || inviteData.event_name || 'Scheduled Visit'}`,
     description: `Visitor: ${visitorName}\n\nRemember to bring your QR code or OTP for entry.\n\nPowered by SecureGate Access System`,
@@ -84,7 +84,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
     startTime: inviteData.time,
     endTime: null, // Will default to 1 hour
   };
-  
+
   const handleDownloadICS = () => {
     const icsContent = generateICSFile(eventData);
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
@@ -98,13 +98,13 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
     URL.revokeObjectURL(url);
     setShowOptions(false);
   };
-  
+
   const handleGoogleCalendar = () => {
     const url = generateGoogleCalendarUrl(eventData);
     window.open(url, '_blank');
     setShowOptions(false);
   };
-  
+
   const handleShareViaWhatsApp = () => {
     const message = encodeURIComponent(
       `📅 Visit Scheduled!\n\n` +
@@ -116,7 +116,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
     window.open(`https://wa.me/?text=${message}`, '_blank');
     setShowOptions(false);
   };
-  
+
   return (
     <div className="relative">
       <Button
@@ -128,15 +128,15 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
         <Calendar className="w-4 h-4" />
         Add to Calendar
       </Button>
-      
+
       {showOptions && (
         <>
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-10" 
+          <div
+            className="fixed inset-0 z-10"
             onClick={() => setShowOptions(false)}
           />
-          
+
           {/* Dropdown Menu */}
           <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden z-20">
             <button
@@ -144,14 +144,14 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
               className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               Google Calendar
             </button>
-            
+
             <button
               onClick={handleDownloadICS}
               className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 border-t border-gray-100 dark:border-slate-700"
@@ -159,13 +159,13 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
               <Download className="w-5 h-5 text-gray-500 dark:text-gray-300" />
               Download .ics (Apple/Outlook)
             </button>
-            
+
             <button
               onClick={handleShareViaWhatsApp}
               className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 border-t border-gray-100 dark:border-slate-700"
             >
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
               </svg>
               Share via WhatsApp
             </button>
@@ -178,14 +178,16 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
 
 export default function GuestInvite() {
   const { inviteCode } = useParams();
-  
+
   const [loading, setLoading] = useState(true);
   const [inviteData, setInviteData] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    email: ''
+    email: '',
+    idNumber: '',
+    vehiclePlate: ''
   });
   const [consentGiven, setConsentGiven] = useState(false);
   const [visitor, setVisitor] = useState(null);
@@ -237,7 +239,7 @@ export default function GuestInvite() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       setError('Please enter your name.');
       return;
@@ -245,6 +247,11 @@ export default function GuestInvite() {
 
     if (!formData.phone.trim() && !formData.email.trim()) {
       setError('Please provide either phone number or email address.');
+      return;
+    }
+
+    if (!formData.idNumber.trim()) {
+      setError('ID Number is required for security verification.');
       return;
     }
 
@@ -261,6 +268,8 @@ export default function GuestInvite() {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
         email: formData.email.trim(),
+        idNumber: formData.idNumber.trim(),
+        vehiclePlate: formData.vehiclePlate.trim().toUpperCase(),
         consent_given: true,
         consent_timestamp: new Date().toISOString(),
         consent_type: 'visitor_registration',
@@ -269,7 +278,7 @@ export default function GuestInvite() {
 
       setVisitor(result);
       setSuccess(mapSuccessMessage('invite_completed'));
-      
+
       // Clear form
       setFormData({ name: '', phone: '', email: '' });
     } catch (err) {
@@ -333,7 +342,7 @@ export default function GuestInvite() {
                 {/* Display QR Code */}
                 {(visitor.qrCode || visitor.qr_code) && (
                   <div className="flex justify-center w-full">
-                    <QRCodeDisplay 
+                    <QRCodeDisplay
                       value={visitor.qrCode || visitor.qr_code}
                       otp={visitor.debugOtp || visitor.debug_otp || visitor.otp}
                       showCopyButton={true}
@@ -375,9 +384,9 @@ export default function GuestInvite() {
 
                 {/* Add to Calendar Button */}
                 {inviteData && (
-                  <AddToCalendarButton 
+                  <AddToCalendarButton
                     inviteData={{ ...inviteData, date: inviteDate, time: inviteTime, eventName: inviteTitle }}
-                    visitorName={visitor.name} 
+                    visitorName={visitor.name}
                   />
                 )}
 
@@ -448,6 +457,36 @@ export default function GuestInvite() {
                     helperText="Provide either phone number or email for notifications"
                   />
 
+                  <Input
+                    label="ID / Passport Number"
+                    name="idNumber"
+                    value={formData.idNumber}
+                    onChange={handleInputChange}
+                    placeholder="National ID or Passport Number"
+                    required
+                    disabled={submitting}
+                    icon={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                      </svg>
+                    }
+                  />
+
+                  <Input
+                    label="Vehicle Registration (Optional)"
+                    name="vehiclePlate"
+                    value={formData.vehiclePlate}
+                    onChange={handleInputChange}
+                    placeholder="KBZ 123A"
+                    disabled={submitting}
+                    icon={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 012-2h5a2 2 0 012 2m0 0h2a2 2 0 012 2v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-3a2 2 0 012-2z" />
+                      </svg>
+                    }
+                  />
+
                   <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-md">
                     <input
                       type="checkbox"
@@ -474,10 +513,10 @@ export default function GuestInvite() {
                   </Button>
                 </form>
 
-                {!inviteData && !loading && (
+                {!inviteData && !loading && (error === 'Invite not found or has expired' || error.includes('expired')) && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                     <div className="text-sm text-yellow-700">
-                      This invitation may have expired or is invalid. You can still complete your information above.
+                      This invitation may have expired or is invalid. If you believe this is an error, please contact the host.
                     </div>
                   </div>
                 )}
@@ -496,8 +535,8 @@ export default function GuestInvite() {
       <StatusAnnouncement
         message={
           submitting ? "Completing invitation..." :
-          visitor ? "Invitation completed successfully" :
-          ""
+            visitor ? "Invitation completed successfully" :
+              ""
         }
       />
     </div>

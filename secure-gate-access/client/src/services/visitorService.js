@@ -26,7 +26,7 @@ export const getInviteByCode = (inviteCode) => http.get(`/api/public/invites/${i
 export const getPublicInvite = (inviteCode) => http.get(`/api/public/invites/${inviteCode}`);
 
 // === Optional OTP Support ===
-export const verifyOtp = (email, otp) => http.post('/api/verify-otp', { email, otp });
+export const verifyOtp = (id, otp) => http.post(`${API_BASE}/${id}/verify-otp`, { otp });
 
 // === Utility ===
 export function normalizeVisitor(v) {

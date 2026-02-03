@@ -1083,9 +1083,11 @@ export const completeInvite = async (req, res) => {
         qr_code: qrCodeDataUrl
       };
 
+      // Always return OTP for immediate display to visitor
+      responseData.otp = otp;
+
       if (OTP_DEBUG_ECHO) {
         responseData.debug_otp = otp;
-        responseData.otp = otp;
       }
 
       return respond(res, responseData, 201);
@@ -1230,9 +1232,11 @@ export const completeInvite = async (req, res) => {
       qr_code: qrCodeDataUrl
     };
 
+    // Always return OTP for immediate display to visitor
+    responseData.otp = otp;
+
     if (OTP_DEBUG_ECHO) {
       responseData.debug_otp = otp;
-      responseData.otp = otp;
     }
 
     return respond(res, responseData, 201);
