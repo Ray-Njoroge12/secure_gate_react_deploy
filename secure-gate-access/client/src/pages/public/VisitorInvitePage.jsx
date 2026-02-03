@@ -44,7 +44,7 @@ const VisitorInvitePage = () => {
   const [additionalInfo, setAdditionalInfo] = useState({
     purpose: '',
     vehiclePlate: '',
-    company: '',
+    // company removed as per requirements
   });
   const [consentGiven, setConsentGiven] = useState(false);
   const [confirmError, setConfirmError] = useState(null);
@@ -153,7 +153,7 @@ const VisitorInvitePage = () => {
         body: JSON.stringify({
           purpose: additionalInfo.purpose || 'Personal Visit',
           vehiclePlate: additionalInfo.vehiclePlate,
-          company: additionalInfo.company,
+          // company removed
           idNumber: additionalInfo.idNumber,
           consent_given: true,
           consent_timestamp: new Date().toISOString(),
@@ -178,13 +178,229 @@ const VisitorInvitePage = () => {
 
   // Determine if we need to show confirmation flow
   const needsConfirmation = visitor &&
-    (visitor.status === 'pending_confirmation' || !visitor.consent_given);
+    (visitor.status === 'pending_confirmation' || !visitor.consent_given || !visitor.idNumber);
+
+  // Determine if this is a bulk invite self-registration
+  const isBulkInvite = visitor?.isBulkInvite;
+
+  // Handle event registration (Bulk Invite)
+  const handleEventRegistration = async (e) => {
+    e.preventDefault();
+    if (!consentGiven) {
+      setConfirmError('Please accept the privacy policy to continue');
+      return;
+    }
+
+    if (!additionalInfo.name || !additionalInfo.name.trim()) {
+      setConfirmError('Name is required');
+      return;
+    }
+
+    if (!additionalInfo.phone && !additionalInfo.email) {
+      setConfirmError('Phone or email is required');
+      return;
+    }
+
+    if (!additionalInfo.idNumber || additionalInfo.idNumber.length < 5) {
+      setConfirmError('Please enter a valid ID Number (min 5 characters)');
+      return;
+    }
+
+    setConfirmLoading(true);
+    setConfirmError(null);
+
+    try {
+      const response = await fetch(`/api/visitors/complete/${token}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: additionalInfo.name,
+          phone: additionalInfo.phone,
+          email: additionalInfo.email,
+          purpose: additionalInfo.purpose || visitor.eventName || 'Event',
+          vehiclePlate: additionalInfo.vehiclePlate,
+          // company removed
+          idNumber: additionalInfo.idNumber,
+          consent_given: true,
+          consent_timestamp: new Date().toISOString(),
+          consent_type: 'data_processing',
+          consent_version: '1.0'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Failed to register');
+      }
+
+      // On success, redirect to the new visitor pass URL
+      if (data.visitor_token) {
+        navigate(`/v/${data.visitor_token}`, { replace: true });
+        // Force reload to get fresh state? navigate usually triggers re-render 
+        // but we might want to ensure clean state
+        window.location.href = `/v/${data.visitor_token}`;
+      }
+
+    } catch (err) {
+      setConfirmError(err.message);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
 
   if (!visitor) {
     return null;
   }
 
-  // Render confirmation flow for new invites
+  // Render Bulk Invite Registration Form
+  if (isBulkInvite) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+        <div className="max-w-lg mx-auto p-4 md:py-12 py-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-center">
+              <h1 className="text-2xl font-bold text-white mb-1">Event Invitation 🎟️</h1>
+              <p className="text-blue-100 text-sm">
+                You're invited to <strong>{visitor.eventName}</strong>
+              </p>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Event Details */}
+              <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Event Details</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-200">Date:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{formatDate(visitor.dateOfVisit)}</span>
+                  </div>
+                  {visitor.timeOfVisit && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-200">Time:</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{formatTime(visitor.timeOfVisit)}</span>
+                    </div>
+                  )}
+                  {visitor.remainingSlots !== null && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-200">Remaining Slots:</span>
+                      <span className="font-medium text-indigo-700">{visitor.remainingSlots}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Registration Form */}
+              <form onSubmit={handleEventRegistration} className="space-y-4">
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Register for Access</h3>
+
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={additionalInfo.name || ''}
+                    onChange={(e) => setAdditionalInfo(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="John Doe"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={additionalInfo.phone || ''}
+                    onChange={(e) => setAdditionalInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="0712 345 678"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* ID Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    ID / Passport Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={additionalInfo.idNumber || ''}
+                    onChange={(e) => setAdditionalInfo(prev => ({ ...prev, idNumber: e.target.value }))}
+                    placeholder="Enter your ID Number"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for security verification</p>
+                </div>
+
+                {/* Vehicle Plate */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Vehicle License Plate</label>
+                  <input
+                    type="text"
+                    value={additionalInfo.vehiclePlate}
+                    onChange={(e) => setAdditionalInfo(prev => ({ ...prev, vehiclePlate: e.target.value.toUpperCase() }))}
+                    placeholder="KAA 123A"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required if driving in</p>
+                </div>
+
+                {/* Privacy Consent */}
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="consent-bulk"
+                      checked={consentGiven}
+                      onChange={(e) => {
+                        setConsentGiven(e.target.checked);
+                        if (e.target.checked) setConfirmError(null);
+                      }}
+                      className="w-5 h-5 mt-0.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="consent-bulk" className="text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                      <span className="font-medium">I consent to SecureGate processing my personal data</span>
+                      <span className="text-gray-600 dark:text-gray-200"> for visitor management and security purposes in accordance with the </span>
+                      <Link to="/privacy-policy" className="text-blue-600 underline" target="_blank">Privacy Policy</Link>.
+                    </label>
+                  </div>
+                  {confirmError && (
+                    <p className="text-red-600 text-sm mt-2">{confirmError}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={confirmLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
+                >
+                  {confirmLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+                      Registering...
+                    </span>
+                  ) : 'Register & Get Pass ➔'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render confirmation flow for new invites (Standard)
   if (needsConfirmation || showConfirmation) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
@@ -259,23 +475,13 @@ const VisitorInvitePage = () => {
                   </label>
                   <input
                     type="text"
+                    required
                     value={additionalInfo.idNumber || ''}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, idNumber: e.target.value }))}
                     placeholder="Enter your ID Number"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for security verification</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Company Name</label>
-                  <input
-                    type="text"
-                    value={additionalInfo.company}
-                    onChange={(e) => setAdditionalInfo(prev => ({ ...prev, company: e.target.value }))}
-                    placeholder="Your company (if applicable)"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
                 </div>
               </div>
 
@@ -423,12 +629,6 @@ const VisitorInvitePage = () => {
                   <span className="detail-label">Purpose:</span>
                   <span className="detail-value">{visitor.purpose}</span>
                 </div>
-                {visitor.company && (
-                  <div className="detail-item">
-                    <span className="detail-label">Company:</span>
-                    <span className="detail-value">{visitor.company}</span>
-                  </div>
-                )}
                 {visitor.vehiclePlate && (
                   <div className="detail-item">
                     <span className="detail-label">Vehicle:</span>

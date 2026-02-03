@@ -432,6 +432,44 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             {/* Admin Metrics - Essential */}
             <AdminMetrics metrics={metrics} loading={loadingMetrics} error={metricsError} />
 
+            {/* Notification Queue Status - NEW/Restored */}
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${queueError ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                Notification System Status
+              </h3>
+
+              {queueError ? (
+                <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm border border-red-200">
+                  Error loading notification status: {queueError}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">Active Jobs</span>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.active || 0}</div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">Completed</span>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.completed || 0}</div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">Failed</span>
+                    <div className="text-2xl font-bold text-red-600">{queueStats?.failed || 0}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Failures Table if any */}
+              {queueFailures.length > 0 && (
+                <Table
+                  headers={queueHeaders}
+                  rows={queueRows}
+                  loading={queueLoading}
+                />
+              )}
+            </div>
+
             {/* User Approvals - Single widget only */}
             <AdminUserApprovals siteId={currentEstate?.id} />
 

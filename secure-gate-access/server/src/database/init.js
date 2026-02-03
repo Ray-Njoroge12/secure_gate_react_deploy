@@ -21,20 +21,6 @@ const run = async () => {
         name TEXT NOT NULL,
         plan_id TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-
-    // Seed default estate
-    await client.query(`
-      INSERT INTO estates (name, plan_id) 
-      VALUES ('Default Estate', 'enterprise') 
-      ON CONFLICT DO NOTHING;
-    `);
-
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
         username TEXT NOT NULL,
         role TEXT NOT NULL,

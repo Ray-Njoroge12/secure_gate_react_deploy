@@ -136,7 +136,8 @@ export const createVisitor = async (req, res) => {
       consent_timestamp,
       consent_type,
       consent_version,
-      status: requestedStatus
+      status: requestedStatus,
+      duration // NEW: Duration in minutes
     } = req.body;
 
     if (!req.user.estate_id) {
@@ -146,6 +147,34 @@ export const createVisitor = async (req, res) => {
     // Support both camelCase and snake_case for date field
     // Default to today's date if not provided
     const finalDateOfVisit = dateOfVisit || date_of_visit || new Date().toISOString().split('T')[0];
+
+    // Helper to calculate expiry with duration
+    const calculateExpiryWithDuration = (visitDateStr, visitTimeStr, durationMins) => {
+      const visitDate = new Date(visitDateStr);
+      if (Number.isNaN(visitDate.getTime())) {
+        // Fallback
+        return new Date(Date.now() + 24 * 60 * 60 * 1000);
+      }
+
+      if (visitTimeStr) {
+        // Combine date and time
+        const [hours, minutes] = visitTimeStr.split(':').map(Number);
+        visitDate.setHours(hours, minutes, 0, 0);
+      } else {
+        // If no time, assume start of day? Or maybe defaults to now if today?
+        // Let's assume start of day for base calculation
+        visitDate.setHours(0, 0, 0, 0);
+      }
+
+      if (durationMins) {
+        // Add duration
+        return new Date(visitDate.getTime() + durationMins * 60 * 1000);
+      } else {
+        // Default: End of day (Legacy behavior)
+        visitDate.setHours(23, 59, 59, 999);
+        return visitDate;
+      }
+    };
 
     // Validation - name and phone required
     if (typeof name !== 'string' || !name.trim()) {
@@ -184,7 +213,9 @@ export const createVisitor = async (req, res) => {
     // Generate both invite_code and visitor_token for E2 workflow
     const inviteCode = generateInviteCode();
     const visitorToken = generateVisitorToken();
-    const expiresAt = calculateTokenExpiry(finalDateOfVisit);
+    const expiresAt = duration
+      ? calculateExpiryWithDuration(finalDateOfVisit, time, parseInt(duration, 10))
+      : calculateTokenExpiry(finalDateOfVisit);
 
     const allowResidence =
       allowResidenceLocation === true ||
@@ -882,6 +913,10 @@ export const completeInvite = async (req, res) => {
       return respondError(res, 400, 'Phone or email is required');
     }
 
+    if (!idNumber || !idNumber.trim()) {
+      return respondError(res, 400, 'ID Number is required for security verification');
+    }
+
     const consent = consent_given ?? consentGiven;
     if (!consent) {
       return respondError(res, 400, 'Consent is required');
@@ -950,8 +985,8 @@ export const completeInvite = async (req, res) => {
             visitor_token, token_expires_at,
             otp_hash, otp_expires_at, otp_attempts,
             consent_given, consent_timestamp, consent_type, consent_version,
-            status, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, true, $14, $15, $16, $17, NOW())
+            status, id_number, vehicle_plate, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, true, $14, $15, $16, $17, $18, $19, NOW())
            RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
           [
             name.trim(),
@@ -970,7 +1005,9 @@ export const completeInvite = async (req, res) => {
             consent_timestamp ? new Date(consent_timestamp) : new Date(),
             consent_type || 'data_processing',
             consent_version || '1.0',
-            PASS_STATUS.OTP_SENT
+            PASS_STATUS.OTP_SENT,
+            idNumber?.trim() || null,
+            vehiclePlate?.trim()?.toUpperCase() || null
           ]
         );
 
@@ -983,28 +1020,44 @@ export const completeInvite = async (req, res) => {
           );
         }
 
-        const qrResult = await QRCodeService.generateVisitorQR({
-          id: visitor.id,
-          name: visitor.name,
-          phone: visitor.phone,
-          purpose: visitor.purpose,
-          date_of_visit: bulkInvite.date
-        });
-        const qrCodeDataUrl = qrResult?.success ? qrResult.data.qrCodeDataUrl : null;
-        const qrId = qrResult?.success ? qrResult.data.qrId : null;
-
-        if (qrId) {
-          await client.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
-        }
-
-        return { visitor, otp, qrCodeDataUrl };
+        return { visitor, otp, bulkInvite };
       });
 
       if (resultData?.error) {
         return respondError(res, resultData.error.status, resultData.error.message);
       }
 
-      const { visitor, otp, qrCodeDataUrl } = resultData;
+      const { visitor, otp, bulkInvite } = resultData;
+
+      // OPTIMIZATION: Generate QR Code OUTSIDE the transaction
+      let qrCodeDataUrl = null;
+      try {
+        const qrResult = await QRCodeService.generateVisitorQR({
+          id: visitor.id,
+          name: visitor.name,
+          phone: visitor.phone,
+          purpose: visitor.purpose,
+          date_of_visit: bulkInvite.date,
+          estate_id: bulkInvite.estate_id
+        }, { generateOtp: false });
+
+        qrCodeDataUrl = qrResult?.success ? qrResult.data.qrCodeDataUrl : null;
+        const qrId = qrResult?.success ? qrResult.data.qrId : null;
+
+        if (qrId) {
+          // Update visitor with QR code - this is a separate quick update
+          await dbManager.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
+        }
+      } catch (qrError) {
+        console.error('[completeInvite] QR generation failed (non-fatal):', qrError);
+        // Continue even if QR fails - they can regenerate it later or use the token
+      }
+
+      if (resultData?.error) {
+        return respondError(res, resultData.error.status, resultData.error.message);
+      }
+
+      // const { visitor, otp, qrCodeDataUrl } = resultData; // moved up
       const passLink = `${CLIENT_ORIGIN}/v/${visitor.visitor_token}`;
 
       try {
@@ -1089,7 +1142,7 @@ export const completeInvite = async (req, res) => {
            status = $15,
            updated_at = NOW()
          WHERE id = $1
-         RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
+         RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status, estate_id`,
         [
           existing.id,
           name.trim(),
@@ -1111,36 +1164,55 @@ export const completeInvite = async (req, res) => {
 
       const visitor = updated.rows[0];
 
-      const qrResult = await QRCodeService.generateVisitorQR({
-        id: visitor.id,
-        name: visitor.name,
-        phone: visitor.phone,
-        purpose: visitor.purpose,
-        date_of_visit: visitor.date_of_visit
-      });
-      const qrCodeDataUrl = qrResult?.success ? qrResult.data.qrCodeDataUrl : null;
-      const qrId = qrResult?.success ? qrResult.data.qrId : null;
-
-      if (qrId) {
-        await client.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
-      }
-
-      return { visitor, otp, qrCodeDataUrl };
+      return { visitor, otp };
     });
 
     if (resultData?.error) {
       return respondError(res, resultData.error.status, resultData.error.message);
     }
 
-    const { visitor, otp, qrCodeDataUrl } = resultData;
+    const { visitor, otp } = resultData;
+    console.log('DEBUG: Transaction complete');
+
+    // OPTIMIZATION: Generate QR Code OUTSIDE the transaction
+    let qrCodeDataUrl = null;
+    try {
+      const qrResult = await QRCodeService.generateVisitorQR({
+        id: visitor.id,
+        name: visitor.name,
+        phone: visitor.phone,
+        purpose: visitor.purpose,
+        date_of_visit: visitor.date_of_visit,
+        estate_id: visitor.estate_id || 1 // Fallback if missing
+      }, { generateOtp: false });
+
+      qrCodeDataUrl = qrResult?.success ? qrResult.data.qrCodeDataUrl : null;
+      const qrId = qrResult?.success ? qrResult.data.qrId : null;
+
+      if (qrId) {
+        // Update visitor with QR code - this is a separate quick update
+        await dbManager.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
+      }
+    } catch (qrError) {
+      console.error('[completeInvite] QR generation failed (non-fatal):', qrError);
+    }
+    console.log('DEBUG: QR Gen complete');
+
+    if (resultData?.error) {
+      return respondError(res, resultData.error.status, resultData.error.message);
+    }
+
+    // const { visitor, otp, qrCodeDataUrl } = resultData; // moved up
     const passLink = `${CLIENT_ORIGIN}/v/${visitor.visitor_token}`;
 
     try {
+      console.log('DEBUG: Sending OTP...');
       if (visitor.phone) {
         await sendOtpVerificationSms({ name: visitor.name, phone: visitor.phone }, otp, OTP_EXPIRY_MINUTES);
       } else if (visitor.email) {
         await sendOtpVerificationEmail({ name: visitor.name, email: visitor.email }, otp, OTP_EXPIRY_MINUTES);
       }
+      console.log('DEBUG: OTP Sent (or attempted)');
     } catch (notifyError) {
       console.warn('[completeInvite] OTP notification failed:', notifyError.message);
     }

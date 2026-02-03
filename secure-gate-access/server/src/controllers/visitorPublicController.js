@@ -23,23 +23,23 @@ import notificationQueueService from '../services/notificationQueueService.js';
  */
 export const getVisitorByToken = async (req, res) => {
   const startTime = Date.now();
-  
+
   try {
     const { token } = req.params;
-    
+
     // Validate token format - expects vst_ prefix + 24 alphanumeric chars = 28 total
     if (!token || !token.startsWith('vst_') || token.length !== 28) {
-      logger.warn('Invalid visitor token format', { 
+      logger.warn('Invalid visitor token format', {
         token: token?.substring(0, 10) + '...',
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(400).json({
         success: false,
         error: 'Invalid token format'
       });
     }
-    
+
     // Fetch visitor by token
     const query = `
       SELECT 
@@ -67,21 +67,21 @@ export const getVisitorByToken = async (req, res) => {
         AND v.token_expires_at > NOW()
       LIMIT 1
     `;
-    
+
     const result = await dbManager.query(query, [token]);
-    
+
     if (result.rows.length === 0) {
-      logger.warn('Visitor token not found or expired', { 
+      logger.warn('Visitor token not found or expired', {
         token: token.substring(0, 10) + '...',
-        ip: req.ip 
+        ip: req.ip
       });
-      
+
       return res.status(404).json({
         success: false,
         error: 'Invite not found or has expired'
       });
     }
-    
+
     const visitor = result.rows[0];
 
     // Check if visitor has confirmed and get QR code
@@ -141,7 +141,7 @@ export const getVisitorByToken = async (req, res) => {
           null
       }
     };
-    
+
     // Log access (security audit)
     logger.info('Visitor token accessed', {
       visitorId: visitor.id,
@@ -150,12 +150,12 @@ export const getVisitorByToken = async (req, res) => {
       userAgent: req.get('user-agent'),
       responseTime: Date.now() - startTime
     });
-    
+
     return res.status(200).json({
       success: true,
       data: sanitizedVisitor
     });
-    
+
   } catch (error) {
     logger.error('Error fetching visitor by token', {
       error: error.message,
@@ -163,7 +163,7 @@ export const getVisitorByToken = async (req, res) => {
       token: req.params.token?.substring(0, 10) + '...',
       responseTime: Date.now() - startTime
     });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch invite details'
@@ -184,10 +184,10 @@ export const getEstateInfo = async (req, res) => {
     const estateSlug = req.query.estate;
     const estateId = req.query.estate_id ? parseInt(req.query.estate_id, 10) : null;
     const estateIdFromQuery = req.query.estateId ? parseInt(req.query.estateId, 10) : null;
-    
+
     // Support both estate_id and estateId query params
     const finalEstateId = estateId || estateIdFromQuery;
-    
+
     const estateParams = [];
     let estateFilter = 'e.id = $1';
 
@@ -252,7 +252,7 @@ export const getEstateInfo = async (req, res) => {
 
     const publicInfo = publicInfoResult.rows[0];
     const locationInfo = locationResult.rows[0];
-    
+
     // Helper function to build gate information
     const buildGateInfo = () => {
       // Only include gates array if we have location or public info data
@@ -285,10 +285,10 @@ export const getEstateInfo = async (req, res) => {
       checkInInstructions: Array.isArray(publicInfo?.check_in_instructions)
         ? publicInfo.check_in_instructions
         : [
-            'Present your QR code or visit code to the guard',
-            'Valid ID required for entry',
-            'Wait for resident approval if status is pending'
-          ],
+          'Present your QR code or visit code to the guard',
+          'Valid ID required for entry',
+          'Wait for resident approval if status is pending'
+        ],
       emergencyContact: publicInfo?.emergency_contact || estate.emergency_contact || estate.contact_phone,
       directions: {
         fromHighway: locationInfo?.directions_from_highway,
@@ -300,15 +300,15 @@ export const getEstateInfo = async (req, res) => {
         ? publicInfo.languages
         : ['en', 'sw']
     };
-    
+
     return res.status(200).json({
       success: true,
       data: estateInfo
     });
-    
+
   } catch (error) {
     logger.error('Error fetching estate info', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch estate information'
@@ -326,7 +326,7 @@ export const getEstateInfo = async (req, res) => {
 export const getVisitorStatus = async (req, res) => {
   try {
     const { token } = req.params;
-    
+
     // Validate token format
     if (!token || !token.startsWith('vst_')) {
       return res.status(400).json({
@@ -334,7 +334,7 @@ export const getVisitorStatus = async (req, res) => {
         error: 'Invalid token'
       });
     }
-    
+
     // Fetch only status (lightweight query)
     const query = `
       SELECT status, updated_at
@@ -343,16 +343,16 @@ export const getVisitorStatus = async (req, res) => {
         AND token_expires_at > NOW()
       LIMIT 1
     `;
-    
+
     const result = await dbManager.query(query, [token]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         error: 'Invite not found or expired'
       });
     }
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -360,10 +360,10 @@ export const getVisitorStatus = async (req, res) => {
         updatedAt: result.rows[0].updated_at
       }
     });
-    
+
   } catch (error) {
     logger.error('Error fetching visitor status', { error: error.message });
-    
+
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch status'
@@ -474,10 +474,13 @@ export const confirmVisitorByToken = async (req, res) => {
         status = 'confirmed',
         consent_data = $1,
         consent_given_at = NOW(),
+        consent_timestamp = NOW(),
         additional_info = $2,
+        id_number = COALESCE($3, id_number),
+        vehicle_plate = COALESCE($4, vehicle_plate),
         updated_at = NOW()
-      WHERE id = $3
-      RETURNING id, name, email, phone, purpose, date_of_visit, time_of_visit, status
+      WHERE id = $5
+      RETURNING id, name, email, phone, purpose, date_of_visit, time_of_visit, status, id_number, vehicle_plate
     `;
 
     const consentData = {
@@ -492,6 +495,8 @@ export const confirmVisitorByToken = async (req, res) => {
     const updateResult = await dbManager.query(updateQuery, [
       JSON.stringify(consentData),
       additionalInfo ? JSON.stringify(additionalInfo) : null,
+      additionalInfo?.idNumber?.trim() || null,
+      additionalInfo?.vehiclePlate?.trim()?.toUpperCase() || null,
       visitor.id
     ]);
 
@@ -580,29 +585,55 @@ export const getInviteByCode = async (req, res) => {
       });
     }
 
-    // Try to find visitor by invite code or event visitor by event QR code
+    // Try to find visitor by invite code (single), bulk invite (event), or event visitor (QR)
     const query = `
-      SELECT
-        v.id,
-        v.name,
-        v.phone,
-        v.email,
-        v.purpose,
-        v.date_of_visit,
-        v.time_of_visit,
-        v.status,
-        v.visitor_token,
+      -- 1. Single Visitor Invite (Quick Invite)
+      SELECT 
+        v.id, 
+        v.name, 
+        v.phone, 
+        v.email, 
+        v.purpose, 
+        v.date_of_visit, 
+        v.time_of_visit, 
+        v.status, 
+        v.visitor_token, 
         v.token_expires_at,
         'visitor' as invite_type,
         NULL as event_id,
-        NULL as event_name
-      FROM visitors v
-      WHERE v.visitor_token = $1
-        AND v.token_expires_at > NOW()
+        NULL as event_name,
+        v.invite_code,
+        v.estate_id
+      FROM visitors v 
+      WHERE (v.invite_code = $1 OR v.visitor_token = $1)
+        -- AND v.token_expires_at > NOW() -- Allow expired lookups to show specific error
 
       UNION ALL
 
+      -- 2. Bulk Event Invite
       SELECT
+        b.id,
+        NULL as name,
+        NULL as phone,
+        NULL as email,
+        'Event Invitation' as purpose,
+        b.date as date_of_visit,
+        b.time as time_of_visit,
+        CASE WHEN b.remaining_slots > 0 THEN 'active' ELSE 'full' END as status,
+        b.invite_code as visitor_token, -- Use invite code as token for public lookup
+        b.expires_at as token_expires_at,
+        'bulk_event' as invite_type,
+        b.id as event_id,
+        b.event_name,
+        b.invite_code,
+        b.estate_id
+      FROM bulk_invites b
+      WHERE b.invite_code = $1
+      
+      UNION ALL
+
+      -- 3. Event Visitor (Pre-registered QR)
+      SELECT 
         ev.visitor_id as id,
         ev.visitor_name as name,
         ev.visitor_phone as phone,
@@ -615,12 +646,13 @@ export const getInviteByCode = async (req, res) => {
         e.end_date as token_expires_at,
         'event' as invite_type,
         e.id as event_id,
-        e.name as event_name
+        e.name as event_name,
+        ev.event_qr_code as invite_code,
+        e.estate_id
       FROM event_visitors ev
       INNER JOIN events e ON ev.event_id = e.id
       WHERE ev.event_qr_code = $1
-        AND e.end_date > NOW()
-
+      
       LIMIT 1
     `;
 
@@ -635,6 +667,14 @@ export const getInviteByCode = async (req, res) => {
 
     const invite = result.rows[0];
 
+    // Check expiration specifically to give better error message
+    if (new Date(invite.token_expires_at) < new Date()) {
+      return res.status(410).json({
+        success: false,
+        error: 'This invitation has expired'
+      });
+    }
+
     // Sanitize response
     const sanitizedInvite = {
       name: invite.name,
@@ -643,15 +683,23 @@ export const getInviteByCode = async (req, res) => {
       timeOfVisit: invite.time_of_visit,
       status: invite.status,
       type: invite.invite_type,
-      expiresAt: invite.token_expires_at
+      expiresAt: invite.token_expires_at,
+      inviteCode: invite.invite_code,
+      estateId: invite.estate_id
     };
 
     // Add event details if it's an event invitation
-    if (invite.invite_type === 'event') {
+    if (invite.invite_type === 'event' || invite.invite_type === 'bulk_event') {
       sanitizedInvite.event = {
         id: invite.event_id,
         name: invite.event_name
       };
+
+      // For bulk invites, create a "virtual" visitor object to support the frontend form
+      if (invite.invite_type === 'bulk_event') {
+        sanitizedInvite.isBulkInvite = true;
+        sanitizedInvite.eventName = invite.event_name;
+      }
     }
 
     return res.status(200).json({
