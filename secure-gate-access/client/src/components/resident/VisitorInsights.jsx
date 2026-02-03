@@ -2,10 +2,15 @@
  * @file VisitorInsights.jsx
  * @description Phase 4.3 - Basic analytics/insights widget for residents
  * Shows visitor statistics at a glance
+ * 
+ * Enhanced with:
+ * - Robust error handling with retry
+ * - Offline-aware behavior
+ * - Rate limiting awareness
  */
 
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Users, Clock, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { TrendingUp, Users, Clock, CheckCircle, RefreshCw, WifiOff, AlertCircle } from 'lucide-react';
 import { Card } from '../ui';
 
 const VisitorInsights = () => {
@@ -16,14 +21,79 @@ const VisitorInsights = () => {
     frequentVisitors: []
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
+  // Monitor online/offline status
   useEffect(() => {
-    fetchInsights();
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
-  const fetchInsights = async () => {
+  // Fetch with retry and exponential backoff
+  const fetchWithRetry = useCallback(async (url, options, maxRetries = 3) => {
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(url, options);
+        
+        // Handle rate limiting
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After') || 5;
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+            continue;
+          }
+        }
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        return await response.json();
+      } catch (err) {
+        lastError = err;
+        
+        // Don't retry if offline
+        if (!navigator.onLine) {
+          throw new Error('You are offline');
+        }
+        
+        // Exponential backoff
+        if (attempt < maxRetries) {
+          await new Promise(resolve => 
+            setTimeout(resolve, Math.pow(2, attempt) * 1000)
+          );
+        }
+      }
+    }
+    
+    throw lastError;
+  }, []);
+
+  const fetchInsights = useCallback(async () => {
+    // Don't fetch if offline
+    if (!navigator.onLine) {
+      setIsOffline(true);
+      setError('You are offline. Insights will refresh when connected.');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      setError(null);
       
       // Get date ranges
       const now = new Date();
@@ -31,33 +101,34 @@ const VisitorInsights = () => {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       
       const formatDate = (date) => date.toISOString().split('T')[0];
+      const fetchOptions = { 
+        method: 'GET', 
+        credentials: 'include', 
+        headers: { 'Content-Type': 'application/json' } 
+      };
 
-      // Fetch this week's visitors
-      const weekResponse = await fetch(
-        `/api/visitors?fromDate=${formatDate(weekAgo)}&toDate=${formatDate(now)}&limit=100`,
-        { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } }
-      );
-      const weekData = await weekResponse.json();
-      const thisWeekCount = weekData.success ? weekData.data.pagination.total : 0;
+      // Fetch all data in parallel with retry logic
+      const [weekData, monthData, onPremiseData] = await Promise.all([
+        fetchWithRetry(
+          `/api/visitors?fromDate=${formatDate(weekAgo)}&toDate=${formatDate(now)}&limit=100`,
+          fetchOptions
+        ),
+        fetchWithRetry(
+          `/api/visitors?fromDate=${formatDate(monthAgo)}&toDate=${formatDate(now)}&limit=100`,
+          fetchOptions
+        ),
+        fetchWithRetry(
+          `/api/visitors?status=on_premise&limit=100`,
+          fetchOptions
+        )
+      ]);
 
-      // Fetch this month's visitors
-      const monthResponse = await fetch(
-        `/api/visitors?fromDate=${formatDate(monthAgo)}&toDate=${formatDate(now)}&limit=100`,
-        { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } }
-      );
-      const monthData = await monthResponse.json();
-      const thisMonthCount = monthData.success ? monthData.data.pagination.total : 0;
-
-      // Fetch current on-premise visitors
-      const onPremiseResponse = await fetch(
-        `/api/visitors?status=on_premise&limit=100`,
-        { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } }
-      );
-      const onPremiseData = await onPremiseResponse.json();
-      const onPremiseCount = onPremiseData.success ? onPremiseData.data.pagination.total : 0;
+      const thisWeekCount = weekData.success ? weekData.data?.pagination?.total || 0 : 0;
+      const thisMonthCount = monthData.success ? monthData.data?.pagination?.total || 0 : 0;
+      const onPremiseCount = onPremiseData.success ? onPremiseData.data?.pagination?.total || 0 : 0;
 
       // Calculate frequent visitors from month data
-      const visitors = monthData.success ? monthData.data.data : [];
+      const visitors = monthData.success ? (monthData.data?.data || []) : [];
       const visitorCounts = {};
       visitors.forEach(v => {
         if (v.name) {
@@ -75,11 +146,41 @@ const VisitorInsights = () => {
         onPremise: onPremiseCount,
         frequentVisitors
       });
-    } catch (error) {
-      console.error('Failed to fetch insights:', error);
+      
+      setLastUpdated(new Date());
+      setRetryCount(0);
+    } catch (err) {
+      console.error('Failed to fetch insights:', err);
+      setError(err.message || 'Failed to load insights');
+      setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
     }
+  }, [fetchWithRetry]);
+
+  useEffect(() => {
+    fetchInsights();
+    
+    // Refresh insights every 5 minutes when online
+    const interval = setInterval(() => {
+      if (navigator.onLine) {
+        fetchInsights();
+      }
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [fetchInsights]);
+
+  // Auto-retry when coming back online
+  useEffect(() => {
+    if (!isOffline && error) {
+      fetchInsights();
+    }
+  }, [isOffline, error, fetchInsights]);
+
+  const handleRetry = () => {
+    setRetryCount(0);
+    fetchInsights();
   };
 
   if (loading) {
@@ -97,13 +198,49 @@ const VisitorInsights = () => {
     );
   }
 
+  // Error state with retry option
+  if (error && !insights.thisMonth) {
+    return (
+      <Card>
+        <Card.Header>
+          <Card.Title className="text-slate-200 flex items-center gap-2">
+            {isOffline ? <WifiOff className="w-5 h-5 text-yellow-500" /> : <AlertCircle className="w-5 h-5 text-red-500" />}
+            Visitor Insights
+          </Card.Title>
+        </Card.Header>
+        <Card.Content>
+          <div className="text-center py-6">
+            <p className="text-slate-400 mb-4">{error}</p>
+            {!isOffline && retryCount < 3 && (
+              <button
+                onClick={handleRetry}
+                className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 flex items-center gap-2 mx-auto"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </button>
+            )}
+          </div>
+        </Card.Content>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <Card.Header>
-        <Card.Title className="text-slate-200 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5" />
-          Visitor Insights
-        </Card.Title>
+        <div className="flex items-center justify-between">
+          <Card.Title className="text-slate-200 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            Visitor Insights
+            {isOffline && <WifiOff className="w-4 h-4 text-yellow-500 ml-2" title="Offline - showing cached data" />}
+          </Card.Title>
+          {lastUpdated && (
+            <span className="text-xs text-slate-500">
+              Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </Card.Header>
       <Card.Content>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

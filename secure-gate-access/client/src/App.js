@@ -24,6 +24,7 @@ import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundar
 import ErrorQueue from "./components/ErrorQueue.jsx";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
 import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
+import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
 import Loading from "./components/ui/Loading.jsx";
@@ -65,6 +66,8 @@ const GeneratePass = lazy(() => import("./pages/resident/GeneratePass.jsx"));
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
 const FavoriteVisitors = lazy(() => import("./pages/resident/FavoriteVisitors.jsx")); // Added for Task 2.3
 const DeliveryList = lazy(() => import("./components/resident/DeliveryList.jsx"));
+const ResidentApprovalsPanel = lazy(() => import("./pages/resident/ResidentApprovalsPanel.jsx")); // Phase 3: Walk-in approvals
+const AutoApprovalRules = lazy(() => import("./components/resident/AutoApprovalRules.jsx")); // Phase 2.2: Auto-approval rules
 
 // Guard pages - Security and access control for guards
 const GuardDashboard = lazy(() => import("./pages/guard/GuardDashboard.jsx"));
@@ -74,6 +77,9 @@ const GuardSettings = lazy(() => import("./pages/guard/Settings.jsx"));
 const GuardVisitorHistory = lazy(() => import("./pages/guard/VisitorHistory.jsx"));
 const WalkInRegistration = lazy(() => import("./pages/guard/WalkInRegistration.jsx"));
 const IncidentList = lazy(() => import("./pages/guard/IncidentList.jsx"));
+const ShiftHandover = lazy(() => import("./pages/guard/ShiftHandover.jsx")); // Phase 3: Shift handover management
+const ActivityLog = lazy(() => import("./pages/guard/ActivityLog.jsx")); // Phase 3: Guard activity log
+const BulkCheckout = lazy(() => import("./pages/guard/BulkCheckout.jsx")); // Phase 3: Bulk checkout & EOD operations
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
@@ -90,6 +96,8 @@ const AccessControl = lazy(() => import("./pages/admin/AccessControl.jsx"));
 const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
 const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
 const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
+const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
+const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
 
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
@@ -189,12 +197,10 @@ function App() {
             {/* Skip to Main Content - Accessibility */}
             <SkipLinks />
 
-            {/* Session Timeout Warning - Global */}
-            <SessionTimeoutWarning
-              warningTime={5 * 60 * 1000}  // 5 minutes before expiry
-              sessionTimeout={30 * 60 * 1000}  // 30 minutes total session
-            />
+            {/* Session Timeout Warning - Global (uses role-based configuration) */}
+            <SessionTimeoutWarning />
             <OfflineRetryBanner />
+            <RateLimitIndicator threshold={15} position="bottom-right" />
             <ErrorBoundary level="page">
               <NetworkErrorBoundary>
                 <AuthErrorBoundary>
@@ -345,6 +351,50 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+                      {/* Phase 3: Resident Approvals for Walk-in Visitors */}
+                      <Route
+                        path="/resident/approvals"
+                        element={
+                          <ProtectedRoute allowedRoles={["resident"]}>
+                            <AppShell role="resident" title="Visitor Approvals">
+                              <ResidentApprovalsPanel />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Phase 2.2: Auto-Approval Rules Management */}
+                      <Route
+                        path="/resident/auto-approval"
+                        element={
+                          <ProtectedRoute allowedRoles={["resident"]}>
+                            <AppShell role="resident" title="Auto-Approval Rules">
+                              <AutoApprovalRules />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Phase 3: Resident Privacy Dashboard */}
+                      <Route
+                        path="/resident/privacy"
+                        element={
+                          <ProtectedRoute allowedRoles={["resident"]}>
+                            <AppShell role="resident" title="Privacy Dashboard">
+                              <PrivacyDashboard />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Phase 4: Favorites shortcut (alias for /resident/favorite-visitors) */}
+                      <Route
+                        path="/resident/favorites"
+                        element={
+                          <ProtectedRoute allowedRoles={["resident"]}>
+                            <AppShell role="resident" title="Favorite Visitors">
+                              <FavoriteVisitors />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
                       <Route
                         path="/privacy"
                         element={
@@ -444,6 +494,36 @@ function App() {
                           <ProtectedRoute allowedRoles={["guard", "admin"]}>
                             <AppShell role="guard" title="Analytics">
                               <GuardAnalytics />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/guard/shift-handover"
+                        element={
+                          <ProtectedRoute allowedRoles={["guard"]}>
+                            <AppShell role="guard" title="Shift Handover">
+                              <ShiftHandover />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/guard/activity-log"
+                        element={
+                          <ProtectedRoute allowedRoles={["guard"]}>
+                            <AppShell role="guard" title="Activity Log">
+                              <ActivityLog />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/guard/bulk-checkout"
+                        element={
+                          <ProtectedRoute allowedRoles={["guard"]}>
+                            <AppShell role="guard" title="Bulk Checkout">
+                              <BulkCheckout />
                             </AppShell>
                           </ProtectedRoute>
                         }
@@ -555,8 +635,27 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+                      <Route
+                        path="/dashboard/admin/notifications"
+                        element={
+                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                            <AppShell role="admin" title="Notification Preferences">
+                              <NotificationPreferences />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/admin/activity"
+                        element={
+                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                            <AppShell role="admin" title="Activity Dashboard">
+                              <ActivityDashboard />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
                       {/* Other admin routes that might be separate pages eventually, mapping to dashboard for now if they exist as tabs */}
-                      {/* If new standalone admin pages exist, list them here */}
 
                       {/* PWA Routes - Added for Task 4.4 */}
                       <Route

@@ -277,6 +277,43 @@ export const requireRole = (...allowedRoles) => {
   };
 };
 
+/**
+ * MFA Enforcement Middleware
+ * Requires MFA to be enabled for privileged roles
+ * @access Private - Use after authenticateToken
+ */
+export const requireMFA = asyncHandler(async (req, res, next) => {
+  const mfaRequiredRoles = ['super_admin', 'admin', 'guard'];
+  
+  if (mfaRequiredRoles.includes(req.user.role)) {
+    // Check if user has MFA enabled
+    const user = await dbManager.query(
+      'SELECT mfa_enabled FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    
+    if (!user.rows[0]?.mfa_enabled) {
+      loggingService.warn('MFA required but not enabled', {
+        route: req.originalUrl,
+        method: req.method,
+        status: 403,
+        requestId: req.requestId,
+        user_id: req.user.id,
+        role: req.user.role,
+        estate_id: req.user.estate_id || null
+      });
+      
+      throw new AppError(
+        'Multi-Factor Authentication is required for your role. Please set up MFA to continue.',
+        403,
+        'MFA_REQUIRED'
+      );
+    }
+  }
+  
+  next();
+});
+
 export const requireEstate = asyncHandler(async (req, res, next) => {
   // Allow Super Admins to bypass if they provide a context via header or query
   if (req.user.role === 'super_admin') {

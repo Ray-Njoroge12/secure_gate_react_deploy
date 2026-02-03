@@ -114,8 +114,8 @@ export default function AppShell({
         {/* Floating Action Button */}
         <FAB role={role} />
 
-        {/* Resident Panic Button - Bottom Left */}
-        {role === 'resident' && (
+        {/* Panic Button - Bottom Left for Residents and Guards */}
+        {(role === 'resident' || role === 'guard') && (
           <div className="fixed bottom-24 md:bottom-6 left-4 md:left-6 z-50">
             <PanicButton 
               floating={false} 

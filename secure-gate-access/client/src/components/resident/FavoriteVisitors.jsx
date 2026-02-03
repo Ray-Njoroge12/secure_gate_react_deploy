@@ -1,15 +1,16 @@
 /**
- * @file FavoriteVisitors.jsx
- * @description Manage and quick-invite favorite visitors
+ * @file FavoriteVisitors.jsx (WIDGET VERSION)
+ * @description Compact favorites widget for embedding in ResidentDashboard
+ * @note For the full-page version with modals, history tab, and CRUD operations,
+ *       see: /pages/resident/FavoriteVisitors.jsx
+ * 
  * Phase 4: UI/UX Improvement - Gap 8
  * 
  * Features:
  * - Star/unstar visitors
  * - Quick one-tap invite from favorites
- * - Reorder favorites by drag or priority
+ * - Compact card display for dashboard embedding
  * - Search within favorites
- * - Recent visitor suggestions
- * - Sync across devices
  */
 
 import React, { useState, useEffect, useCallback } from 'react';

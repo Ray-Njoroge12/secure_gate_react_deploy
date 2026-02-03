@@ -1,5 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
+/**
+ * useVisitorInvite Hook
+ * Manages visitor invite data fetching, status polling, and expiry countdown
+ * 
+ * Enhanced with:
+ * - Offline detection and handling
+ * - Retry logic with exponential backoff
+ * - Better error messages
+ * - Cached data support
+ */
 export const useVisitorInvite = (token) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -7,30 +17,111 @@ export const useVisitorInvite = (token) => {
     const [estateInfo, setEstateInfo] = useState(null);
     const [statusPolling, setStatusPolling] = useState(false);
     const [expiryCountdown, setExpiryCountdown] = useState(null);
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [retryCount, setRetryCount] = useState(0);
 
     const pollingIntervalRef = useRef(null);
     const countdownIntervalRef = useRef(null);
+    const retryTimeoutRef = useRef(null);
+
+    // Monitor online/offline status
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOffline(false);
+            // Retry fetching when coming back online
+            if (error && token) {
+                fetchVisitorDetails();
+            }
+        };
+        const handleOffline = () => setIsOffline(true);
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [error, token]);
+
+    // Fetch with retry logic
+    const fetchWithRetry = useCallback(async (url, options = {}, maxRetries = 3) => {
+        let lastError;
+        
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                if (!navigator.onLine) {
+                    throw new Error('You are offline. Please check your internet connection.');
+                }
+                
+                const response = await fetch(url, options);
+                
+                // Handle rate limiting
+                if (response.status === 429) {
+                    const retryAfter = response.headers.get('Retry-After') || 5;
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                        continue;
+                    }
+                    throw new Error('Too many requests. Please wait a moment and try again.');
+                }
+                
+                return response;
+            } catch (err) {
+                lastError = err;
+                
+                // Don't retry on certain errors
+                if (err.message.includes('offline')) {
+                    throw err;
+                }
+                
+                // Exponential backoff
+                if (attempt < maxRetries) {
+                    await new Promise(resolve => 
+                        setTimeout(resolve, Math.pow(2, attempt) * 1000)
+                    );
+                }
+            }
+        }
+        
+        throw lastError;
+    }, []);
 
     // Fetch estate information
-    const fetchEstateInfo = async (estateId) => {
+    const fetchEstateInfo = useCallback(async (estateId) => {
         try {
             if (!estateId) return;
 
-            const response = await fetch(`/api/public/estate-info?estateId=${estateId}`);
+            const response = await fetchWithRetry(`/api/public/estate-info?estateId=${estateId}`);
             const data = await response.json();
 
             if (data.success) {
                 setEstateInfo(data.data);
+                // Cache estate info in sessionStorage
+                try {
+                    sessionStorage.setItem(`estate_${estateId}`, JSON.stringify(data.data));
+                } catch (e) {
+                    // Ignore storage errors
+                }
             } else {
                 console.warn('Failed to load estate info:', data.error);
             }
         } catch (err) {
             console.error('Failed to load estate info:', err);
+            // Try to load from cache
+            try {
+                const cached = sessionStorage.getItem(`estate_${estateId}`);
+                if (cached) {
+                    setEstateInfo(JSON.parse(cached));
+                }
+            } catch (e) {
+                // Ignore
+            }
         }
-    };
+    }, [fetchWithRetry]);
 
     // Fetch visitor or invite details
-    const fetchVisitorDetails = async () => {
+    const fetchVisitorDetails = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -41,7 +132,7 @@ export const useVisitorInvite = (token) => {
                 ? `/api/public/invites/${token}`
                 : `/api/public/visitors/by-token/${token}`;
 
-            const response = await fetch(endpoint, {
+            const response = await fetchWithRetry(endpoint, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -50,23 +141,22 @@ export const useVisitorInvite = (token) => {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    throw new Error('Invite not found or has expired');
+                    throw new Error('This invitation could not be found. It may have been cancelled or the link is incorrect.');
                 } else if (response.status === 410) {
-                    throw new Error('This invitation has expired');
+                    throw new Error('This invitation has expired. Please contact your host for a new invitation.');
                 } else if (response.status === 429) {
-                    throw new Error('Too many requests. Please wait a moment.');
+                    throw new Error('Too many requests. Please wait a moment and try again.');
                 } else {
-                    throw new Error('Failed to load invite details');
+                    throw new Error('Unable to load your invitation. Please try again.');
                 }
             }
 
             const data = await response.json();
 
-            if (data.success || isBulkInvite) { // Bulk invite endpoint might return data directly or wrapped
+            if (data.success || isBulkInvite) {
                 const payload = data.data || data;
 
                 if (isBulkInvite) {
-                    // Normalize bulk invite data to look somewhat like a visitor for basic display
                     setVisitor({
                         isBulkInvite: true,
                         eventName: payload.eventName || payload.event_name,
@@ -78,24 +168,45 @@ export const useVisitorInvite = (token) => {
                     });
                 } else {
                     setVisitor(payload);
-                    // Fetch estate info after getting visitor details
+                    // Cache visitor data for offline viewing
+                    try {
+                        sessionStorage.setItem(`visitor_${token}`, JSON.stringify(payload));
+                    } catch (e) {
+                        // Ignore storage errors
+                    }
+                    
                     if (payload.estateId) {
                         await fetchEstateInfo(payload.estateId);
                     }
                 }
+                setRetryCount(0);
             } else {
-                throw new Error(data.error || 'Failed to load invite');
+                throw new Error(data.error || 'Failed to load invitation');
             }
         } catch (err) {
+            // Try to load from cache if offline
+            if (!navigator.onLine) {
+                try {
+                    const cached = sessionStorage.getItem(`visitor_${token}`);
+                    if (cached) {
+                        setVisitor(JSON.parse(cached));
+                        setError('You are offline. Showing cached data.');
+                        return;
+                    }
+                } catch (e) {
+                    // Ignore
+                }
+            }
             setError(err.message);
+            setRetryCount(prev => prev + 1);
         } finally {
             setLoading(false);
         }
-    };
+    }, [token, fetchWithRetry, fetchEstateInfo]);
 
     // Poll for status updates
-    const pollStatus = async () => {
-        if (!token || !visitor) return;
+    const pollStatus = useCallback(async () => {
+        if (!token || !visitor || !navigator.onLine) return;
 
         try {
             const response = await fetch(`/api/public/visitors/${token}/status`);
@@ -107,10 +218,10 @@ export const useVisitorInvite = (token) => {
         } catch (err) {
             console.error('Status poll failed:', err);
         }
-    };
+    }, [token, visitor, fetchVisitorDetails]);
 
     // Calculate expiry countdown
-    const calculateCountdown = () => {
+    const calculateCountdown = useCallback(() => {
         if (!visitor) return null;
 
         let expiryDate;
@@ -157,7 +268,7 @@ export const useVisitorInvite = (token) => {
                 color: 'red'
             };
         }
-    };
+    }, [visitor]);
 
     // Initial load
     useEffect(() => {
@@ -167,11 +278,11 @@ export const useVisitorInvite = (token) => {
             return;
         }
         fetchVisitorDetails();
-    }, [token]);
+    }, [token, fetchVisitorDetails]);
 
     // Polling effect
     useEffect(() => {
-        if (visitor && visitor.status === 'pending_approval' && !statusPolling) {
+        if (visitor && visitor.status === 'pending_approval' && !statusPolling && navigator.onLine) {
             setStatusPolling(true);
             pollingIntervalRef.current = setInterval(pollStatus, 10000);
 
@@ -189,7 +300,7 @@ export const useVisitorInvite = (token) => {
             }
             setStatusPolling(false);
         }
-    }, [visitor?.status]);
+    }, [visitor?.status, statusPolling, pollStatus]);
 
     // Countdown effect
     useEffect(() => {
@@ -205,13 +316,14 @@ export const useVisitorInvite = (token) => {
                 clearInterval(countdownIntervalRef.current);
             }
         };
-    }, [visitor]);
+    }, [visitor, calculateCountdown]);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
             if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
         };
     }, []);
 
@@ -221,6 +333,8 @@ export const useVisitorInvite = (token) => {
         visitor,
         estateInfo,
         expiryCountdown,
+        isOffline,
+        retryCount,
         fetchVisitorDetails
     };
 };

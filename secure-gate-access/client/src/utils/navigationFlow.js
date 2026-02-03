@@ -55,10 +55,55 @@ export const NAVIGATION_FLOWS = {
 
 // Session timeout configuration
 export const SESSION_CONFIG = {
-  warningTime: 5 * 60 * 1000, // 5 minutes before expiry
-  maxIdleTime: 30 * 60 * 1000, // 30 minutes idle timeout
+  warningTime: 5 * 60 * 1000, // 5 minutes before expiry (default)
+  maxIdleTime: 30 * 60 * 1000, // 30 minutes idle timeout (default)
   extendTime: 15 * 60 * 1000,  // 15 minutes extension
 };
+
+// Role-based session timeout configuration (matches backend sessionSecurityService)
+export const ROLE_SESSION_CONFIG = {
+  super_admin: {
+    sessionTimeoutMs: 30 * 60 * 1000, // 30 minutes
+    sessionWarningMs: 5 * 60 * 1000,  // 5 minutes before expiry
+    description: 'Super Admin session (high security)'
+  },
+  admin: {
+    sessionTimeoutMs: 60 * 60 * 1000, // 1 hour
+    sessionWarningMs: 10 * 60 * 1000, // 10 minutes before expiry
+    description: 'Admin session'
+  },
+  guard: {
+    sessionTimeoutMs: 90 * 60 * 1000, // 1.5 hours
+    sessionWarningMs: 10 * 60 * 1000, // 10 minutes before expiry
+    description: 'Guard session'
+  },
+  resident: {
+    sessionTimeoutMs: 120 * 60 * 1000, // 2 hours
+    sessionWarningMs: 15 * 60 * 1000,  // 15 minutes before expiry
+    description: 'Resident session'
+  },
+  default: {
+    sessionTimeoutMs: 120 * 60 * 1000, // 2 hours
+    sessionWarningMs: 15 * 60 * 1000,  // 15 minutes before expiry
+    description: 'Standard session'
+  }
+};
+
+/**
+ * Get session configuration for a specific role
+ * @param {string} role - User role
+ * @returns {object} Session configuration for the role
+ */
+export function getSessionConfigForRole(role) {
+  const config = ROLE_SESSION_CONFIG[role] || ROLE_SESSION_CONFIG.default;
+  return {
+    ...config,
+    role,
+    sessionTimeoutMinutes: Math.floor(config.sessionTimeoutMs / 60000),
+    sessionWarningMinutes: Math.floor(config.sessionWarningMs / 60000),
+    isPrivilegedRole: ['super_admin', 'admin', 'guard'].includes(role)
+  };
+}
 
 // Role-based redirect rules
 export const ROLE_REDIRECTS = {

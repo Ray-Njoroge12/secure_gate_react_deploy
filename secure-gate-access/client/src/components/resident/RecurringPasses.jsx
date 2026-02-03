@@ -1,10 +1,16 @@
 /**
  * RecurringPasses Component
  * P4: Resident management of daily workers, caregivers, contractors
+ * 
+ * Enhanced with:
+ * - Offline awareness and indicator
+ * - Automatic retry on reconnection
+ * - Cached data fallback
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import recurringPassService from '../../services/recurringPassService';
+import offlineService from '../../services/offlineService';
 
 const PASS_TYPES = [
   { value: 'daily_worker', label: 'Daily Worker', icon: '👷' },
@@ -31,27 +37,88 @@ const RecurringPasses = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedPass, setSelectedPass] = useState(null);
   const [filter, setFilter] = useState('active');
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [usingCachedData, setUsingCachedData] = useState(false);
 
+  // Monitor online/offline status
   useEffect(() => {
-    loadPasses();
-  }, [filter]);
+    const handleOnline = () => {
+      setIsOffline(false);
+      // Refresh data when coming back online
+      loadPasses();
+    };
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
-  const loadPasses = async () => {
+  const loadPasses = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      if (!navigator.onLine) {
+        // Try to load from cache
+        try {
+          const cachedPasses = await offlineService.getCachedRecurringPasses();
+          if (cachedPasses && cachedPasses.length > 0) {
+            setPasses(cachedPasses);
+            setUsingCachedData(true);
+            setError(null);
+          } else {
+            setError('No cached data available. Connect to the internet to load passes.');
+          }
+        } catch (cacheErr) {
+          setError('You are offline. Connect to load recurring passes.');
+        }
+        return;
+      }
+      
       const response = await recurringPassService.getMyPasses({
         status: filter === 'all' ? undefined : filter,
         includeExpired: filter === 'all'
       });
-      setPasses(response.data || []);
-      setError(null);
+      
+      const passData = response.data || [];
+      setPasses(passData);
+      setUsingCachedData(false);
+      
+      // Cache the data for offline use
+      try {
+        await offlineService.cacheRecurringPasses(passData);
+      } catch (cacheErr) {
+        console.warn('Failed to cache passes:', cacheErr);
+      }
     } catch (err) {
-      setError('Failed to load recurring passes');
-      console.error(err);
+      console.error('Failed to load recurring passes:', err);
+      
+      // Try cache fallback on error
+      try {
+        const cachedPasses = await offlineService.getCachedRecurringPasses();
+        if (cachedPasses && cachedPasses.length > 0) {
+          setPasses(cachedPasses);
+          setUsingCachedData(true);
+          setError('Using cached data. Some information may be outdated.');
+        } else {
+          setError('Failed to load recurring passes. Please try again.');
+        }
+      } catch (cacheErr) {
+        setError('Failed to load recurring passes');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    loadPasses();
+  }, [loadPasses]);
 
   const handleRevoke = async (passId) => {
     if (!window.confirm('Are you sure you want to revoke this pass? This cannot be undone.')) return;
@@ -114,12 +181,49 @@ const RecurringPasses = () => {
     );
   }
 
+  // Offline indicator component
+  const OfflineIndicator = () => {
+    if (!isOffline && !usingCachedData) return null;
+    
+    return (
+      <div className={`p-3 rounded-lg mb-4 flex items-center gap-2 ${
+        isOffline ? 'bg-yellow-50 border border-yellow-200' : 'bg-blue-50 border border-blue-200'
+      }`}>
+        <span className="text-lg">{isOffline ? '📡' : '💾'}</span>
+        <div className="flex-1">
+          <p className={`text-sm font-medium ${isOffline ? 'text-yellow-800' : 'text-blue-800'}`}>
+            {isOffline ? 'You are offline' : 'Showing cached data'}
+          </p>
+          <p className={`text-xs ${isOffline ? 'text-yellow-600' : 'text-blue-600'}`}>
+            {isOffline 
+              ? 'Actions will be synced when you reconnect' 
+              : 'Connect to see the latest updates'}
+          </p>
+        </div>
+        {!isOffline && (
+          <button
+            onClick={loadPasses}
+            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Refresh
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
+      {/* Offline/Cached Data Indicator */}
+      <OfflineIndicator />
+      
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🔄 Recurring Passes</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              🔄 Recurring Passes
+              {isOffline && <span className="ml-2 text-yellow-500 text-sm">📡</span>}
+            </h2>
             <p className="text-sm text-gray-500 dark:text-gray-300">Manage access for daily workers & regular visitors</p>
           </div>
           <div className="flex gap-2">
@@ -127,6 +231,7 @@ const RecurringPasses = () => {
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="text-sm border-gray-300 rounded-md"
+              disabled={isOffline}
             >
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
@@ -240,6 +345,12 @@ const RecurringPasses = () => {
           pass={selectedPass}
           onClose={() => setSelectedPass(null)}
         />
+      )}
+
+      {isOffline && (
+        <div className="fixed bottom-0 inset-x-0 p-4 bg-yellow-50 text-yellow-800 text-center text-sm">
+          You are currently offline. Some features may be unavailable.
+        </div>
       )}
     </div>
   );

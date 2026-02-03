@@ -1,8 +1,17 @@
 /**
- * @fileoverview Favorite Visitors Component
- * @description Manage frequently visiting guests for quick invites
+ * @fileoverview Favorite Visitors Component (FULL PAGE VERSION)
+ * @description Full-featured page for managing frequently visiting guests
+ * @note For the compact widget version embedded in dashboard,
+ *       see: /components/resident/FavoriteVisitors.jsx
  * @author Secure Gate Access Team
  * @version 1.0.0
+ * 
+ * Features:
+ * - Full CRUD operations for favorites
+ * - Modal forms for add/edit
+ * - History tab with visitor suggestions
+ * - Search and filter capabilities
+ * - Relationship type categorization
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
