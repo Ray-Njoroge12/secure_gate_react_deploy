@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { AlertCircle, CheckCircle, XCircle, Mail, User, Calendar } from 'lucide-react';
 import axios from 'axios';
+import ConfirmationDialog from '../../components/common/ConfirmationDialog';
 import './PendingApprovals.css';
 
 const PendingApprovals = ({ siteId }) => {
@@ -10,6 +11,11 @@ const PendingApprovals = ({ siteId }) => {
     const [error, setError] = useState(null);
     const [estates, setEstates] = useState([]);
     const [processingUserId, setProcessingUserId] = useState(null);
+    const [rejectDialog, setRejectDialog] = useState({ isOpen: false, userId: null });
+    const [approveDialog, setApproveDialog] = useState({ isOpen: false, userId: null, estateId: null });
+    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [bulkApproveDialog, setBulkApproveDialog] = useState({ isOpen: false, estateId: null });
+    const [bulkRejectDialog, setBulkRejectDialog] = useState({ isOpen: false });
 
     useEffect(() => {
         fetchPendingUsers();
@@ -73,9 +79,12 @@ const PendingApprovals = ({ siteId }) => {
             return;
         }
 
-        if (!window.confirm('Are you sure you want to activate this user?')) {
-            return;
-        }
+        // Show confirmation dialog
+        setApproveDialog({ isOpen: true, userId, estateId });
+    };
+
+    const confirmApprove = async () => {
+        const { userId, estateId } = approveDialog;
 
         try {
             setProcessingUserId(userId);
@@ -95,6 +104,7 @@ const PendingApprovals = ({ siteId }) => {
             // Refresh the list
             await fetchPendingUsers();
             alert('User activated successfully! Activation email sent.');
+            setApproveDialog({ isOpen: false, userId: null, estateId: null });
         } catch (err) {
             console.error('Error activating user:', err);
             alert(err.response?.data?.message || 'Failed to activate user');
@@ -104,9 +114,12 @@ const PendingApprovals = ({ siteId }) => {
     };
 
     const handleReject = async (userId) => {
-        if (!window.confirm('Are you sure you want to reject this user? This action cannot be undone.')) {
-            return;
-        }
+        // Show confirmation dialog
+        setRejectDialog({ isOpen: true, userId });
+    };
+
+    const confirmReject = async () => {
+        const { userId } = rejectDialog;
 
         try {
             setProcessingUserId(userId);
@@ -123,6 +136,7 @@ const PendingApprovals = ({ siteId }) => {
             // Refresh the list
             await fetchPendingUsers();
             alert('User rejected');
+            setRejectDialog({ isOpen: false, userId: null });
         } catch (err) {
             console.error('Error rejecting user:', err);
             alert(err.response?.data?.message || 'Failed to reject user');
@@ -139,6 +153,91 @@ const PendingApprovals = ({ siteId }) => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const toggleUserSelection = (userId) => {
+        setSelectedUsers(prev => 
+            prev.includes(userId)
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedUsers.length === pendingUsers.length) {
+            setSelectedUsers([]);
+        } else {
+            setSelectedUsers(pendingUsers.map(user => user.id));
+        }
+    };
+
+    const handleBulkApprove = () => {
+        if (selectedUsers.length === 0) {
+            alert('Please select at least one user to approve');
+            return;
+        }
+        
+        // For bulk approval, we need an estate - use the first user's estate or prompt
+        setBulkApproveDialog({ isOpen: true, estateId: null });
+    };
+
+    const confirmBulkApprove = async () => {
+        try {
+            setProcessingUserId('bulk');
+            
+            const response = await axios.post(
+                '/api/admin/users/bulk-approve',
+                {
+                    userIds: selectedUsers,
+                    estateId: bulkApproveDialog.estateId || siteId
+                },
+                { withCredentials: true }
+            );
+
+            await fetchPendingUsers();
+            setSelectedUsers([]);
+            setBulkApproveDialog({ isOpen: false, estateId: null });
+            alert(`${response.data.data.count} user(s) approved successfully`);
+        } catch (err) {
+            console.error('Error in bulk approve:', err);
+            alert(err.response?.data?.message || 'Failed to approve users');
+        } finally {
+            setProcessingUserId(null);
+        }
+    };
+
+    const handleBulkReject = () => {
+        if (selectedUsers.length === 0) {
+            alert('Please select at least one user to reject');
+            return;
+        }
+        
+        setBulkRejectDialog({ isOpen: true });
+    };
+
+    const confirmBulkReject = async () => {
+        try {
+            setProcessingUserId('bulk');
+            
+            const response = await axios.post(
+                '/api/admin/users/bulk-reject',
+                {
+                    userIds: selectedUsers,
+                    reason: 'Bulk rejection by admin'
+                },
+                { withCredentials: true }
+            );
+
+            await fetchPendingUsers();
+            setSelectedUsers([]);
+            setBulkRejectDialog({ isOpen: false });
+            alert(`${response.data.data.count} user(s) rejected`);
+        } catch (err) {
+            console.error('Error in bulk reject:', err);
+            alert(err.response?.data?.message || 'Failed to reject users');
+        } finally {
+            setProcessingUserId(null);
+        }
     };
 
     if (loading) {
@@ -185,6 +284,37 @@ const PendingApprovals = ({ siteId }) => {
                         </span>
                     )}
                 </CardTitle>
+                {pendingUsers.length > 0 && (
+                    <div className="flex gap-2 mt-4">
+                        <button
+                            onClick={toggleSelectAll}
+                            className="btn btn-secondary"
+                            disabled={processingUserId === 'bulk'}
+                        >
+                            {selectedUsers.length === pendingUsers.length ? 'Deselect All' : 'Select All'}
+                        </button>
+                        {selectedUsers.length > 0 && (
+                            <>
+                                <button
+                                    onClick={handleBulkApprove}
+                                    className="btn btn-approve"
+                                    disabled={processingUserId === 'bulk'}
+                                >
+                                    <CheckCircle className="h-4 w-4" />
+                                    Approve Selected ({selectedUsers.length})
+                                </button>
+                                <button
+                                    onClick={handleBulkReject}
+                                    className="btn btn-reject"
+                                    disabled={processingUserId === 'bulk'}
+                                >
+                                    <XCircle className="h-4 w-4" />
+                                    Reject Selected ({selectedUsers.length})
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
             </CardHeader>
             <CardContent>
                 {pendingUsers.length === 0 ? (
@@ -199,6 +329,13 @@ const PendingApprovals = ({ siteId }) => {
                             <div key={user.id} className="pending-user-card">
                                 <div className="user-info">
                                     <div className="user-header">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedUsers.includes(user.id)}
+                                            onChange={() => toggleUserSelection(user.id)}
+                                            className="mr-3"
+                                            disabled={processingUserId === 'bulk'}
+                                        />
                                         <User className="h-5 w-5 text-gray-400" />
                                         <h3 className="user-name">{user.username}</h3>
                                     </div>
@@ -278,6 +415,61 @@ const PendingApprovals = ({ siteId }) => {
                     </div>
                 )}
             </CardContent>
+
+            {/* Confirmation Dialogs */}
+            <ConfirmationDialog
+                isOpen={approveDialog.isOpen}
+                onClose={() => setApproveDialog({ isOpen: false, userId: null, estateId: null })}
+                onConfirm={confirmApprove}
+                variant="success"
+                title="Activate User"
+                message="Are you sure you want to activate this user? They will receive an activation email and gain access to the system."
+                confirmText="Activate User"
+                cancelText="Cancel"
+                isLoading={processingUserId === approveDialog.userId}
+            />
+
+            <ConfirmationDialog
+                isOpen={rejectDialog.isOpen}
+                onClose={() => setRejectDialog({ isOpen: false, userId: null })}
+                onConfirm={confirmReject}
+                variant="danger"
+                title="Reject User Registration"
+                message="Are you sure you want to reject this user's registration? This action cannot be undone."
+                confirmText="Reject User"
+                cancelText="Cancel"
+                requireDoubleConfirm={true}
+                doubleConfirmText="Type REJECT to confirm"
+                doubleConfirmValue="REJECT"
+                isLoading={processingUserId === rejectDialog.userId}
+            />
+
+            <ConfirmationDialog
+                isOpen={bulkApproveDialog.isOpen}
+                onClose={() => setBulkApproveDialog({ isOpen: false, estateId: null })}
+                onConfirm={confirmBulkApprove}
+                variant="success"
+                title="Bulk Approve Users"
+                message={`Are you sure you want to approve ${selectedUsers.length} user(s)? They will all receive activation emails.`}
+                confirmText={`Approve ${selectedUsers.length} Users`}
+                cancelText="Cancel"
+                isLoading={processingUserId === 'bulk'}
+            />
+
+            <ConfirmationDialog
+                isOpen={bulkRejectDialog.isOpen}
+                onClose={() => setBulkRejectDialog({ isOpen: false })}
+                onConfirm={confirmBulkReject}
+                variant="danger"
+                title="Bulk Reject Users"
+                message={`Are you sure you want to reject ${selectedUsers.length} user(s)? This action cannot be undone.`}
+                confirmText={`Reject ${selectedUsers.length} Users`}
+                cancelText="Cancel"
+                requireDoubleConfirm={true}
+                doubleConfirmText="Type REJECT to confirm"
+                doubleConfirmValue="REJECT"
+                isLoading={processingUserId === 'bulk'}
+            />
         </Card>
     );
 };

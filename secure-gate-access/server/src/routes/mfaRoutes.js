@@ -191,8 +191,7 @@ router.get('/status', authenticateToken, asyncHandler(async (req, res) => {
     success: true,
     data: {
       mfaEnabled: user.mfaEnabled || false,
-      mfaEnabled: user.mfaEnabled || false,
-      mfaRequired: ['admin', 'guard'].includes(user.role) // MFA required for admins and guards
+      mfaRequired: ['super_admin', 'admin', 'guard'].includes(user.role) // MFA required for super_admin, admins and guards
     }
   });
 }));
@@ -227,6 +226,94 @@ router.post('/regenerate-backup-codes', authenticateToken, asyncHandler(async (r
       backupCodes,
       warning: 'Save these new backup codes. Previous backup codes are now invalid.'
     }
+  });
+}));
+
+/**
+ * @route   POST /api/mfa/verify-operation
+ * @desc    Verify MFA token for sensitive operations (guard/admin actions)
+ * @access  Private
+ */
+router.post('/verify-operation', authenticateToken, strictRateLimit(), asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { code, operation, operationDetails, reason } = req.body;
+
+  if (!code) {
+    throw new AppError('MFA code is required', 400, 'VALIDATION_ERROR');
+  }
+
+  if (!operation) {
+    throw new AppError('Operation identifier is required', 400, 'VALIDATION_ERROR');
+  }
+
+  // Check if user has MFA enabled
+  const user = await userService.getUserById(userId);
+  if (!user.mfaEnabled) {
+    throw new AppError('MFA is not enabled for this account', 400, 'MFA_NOT_ENABLED');
+  }
+
+  // Verify TOTP token
+  const verified = await mfaService.verifyTOTPToken(userId, code);
+
+  if (!verified) {
+    // Log failed attempt
+    const { auditLogService } = await import('../services/auditLogService.js');
+    await auditLogService.log({
+      userId,
+      action: 'MFA_OPERATION_VERIFY_FAILED',
+      resource: 'mfa',
+      resourceId: operation,
+      details: { operation, operationDetails },
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+
+    throw new AppError('Invalid MFA code', 401, 'INVALID_MFA_TOKEN');
+  }
+
+  // Generate a short-lived operation token (5 minutes)
+  const { tokenService } = await import('../services/tokenService.js');
+  const crypto = await import('crypto');
+  const operationToken = crypto.randomBytes(32).toString('hex');
+  
+  // Store operation token (in memory/cache - expires in 5 minutes)
+  // In production, use Redis or similar
+  if (!global.operationTokens) {
+    global.operationTokens = new Map();
+  }
+  
+  global.operationTokens.set(operationToken, {
+    userId,
+    operation,
+    operationDetails,
+    reason,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
+  });
+
+  // Clean up expired tokens
+  for (const [token, data] of global.operationTokens) {
+    if (data.expiresAt < Date.now()) {
+      global.operationTokens.delete(token);
+    }
+  }
+
+  // Log successful verification
+  const { auditLogService } = await import('../services/auditLogService.js');
+  await auditLogService.log({
+    userId,
+    action: 'MFA_OPERATION_VERIFIED',
+    resource: 'mfa',
+    resourceId: operation,
+    details: { operation, operationDetails, reason },
+    ipAddress: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+
+  res.json({
+    success: true,
+    message: 'MFA verification successful',
+    operationToken
   });
 }));
 

@@ -8,19 +8,32 @@
  * - Allows user to extend session
  * - Shows countdown timer
  * - Automatic logout after timeout
+ * - Role-based session timeout configuration (super_admin, admin, guard have shorter timeouts)
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { navigateToLogin } from '../../utils/authNavigation';
+import { getSessionConfigForRole } from '../../utils/navigationFlow';
 
 const SessionTimeoutWarning = ({ 
-  warningTime = 5 * 60 * 1000, // 5 minutes before expiry
-  sessionTimeout = 30 * 60 * 1000, // 30 minutes total session
+  warningTime: propWarningTime,  // Optional override
+  sessionTimeout: propSessionTimeout, // Optional override
   onExtendSession,
   className = '' 
 }) => {
-  const { isAuthenticated, logout, refreshToken } = useAuth();
+  const { isAuthenticated, logout, refreshToken, user } = useAuth();
+  
+  // Get role-based session configuration
+  const sessionConfig = useMemo(() => {
+    const role = user?.role || 'default';
+    return getSessionConfigForRole(role);
+  }, [user?.role]);
+  
+  // Use role-based config with prop overrides
+  const warningTime = propWarningTime || sessionConfig.sessionWarningMs;
+  const sessionTimeout = propSessionTimeout || sessionConfig.sessionTimeoutMs;
+  
   const [showWarning, setShowWarning] = useState(false);
   const [countdown, setCountdown] = useState(warningTime / 1000);
   const [lastActivity, setLastActivity] = useState(Date.now());
@@ -215,7 +228,10 @@ const SessionTimeoutWarning = ({
             id="session-timeout-description"
             className="text-center text-gray-600 dark:text-gray-200 mb-4"
           >
-            Your session will expire due to inactivity. Would you like to continue?
+            {sessionConfig.isPrivilegedRole 
+              ? `Your ${sessionConfig.description} will expire due to inactivity for enhanced security.`
+              : 'Your session will expire due to inactivity. Would you like to continue?'
+            }
           </p>
 
           {/* Countdown */}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Shield, Building2, Users, AlertTriangle, Activity, LayoutDashboard, LogOut, ArrowRight, Server, Plus, Search, FileText, Cpu, Database, Wifi } from 'lucide-react';
+import { Shield, Building2, Users, AlertTriangle, Activity, LayoutDashboard, LogOut, ArrowRight, Server, Plus, Search, FileText, Cpu, Database, Wifi, Trash2 } from 'lucide-react';
 import { GradientCard } from '../../components/ui';
 import GradientButton from '../../components/ui/GradientButton';
 import AddEstateModal from '../../components/modals/AddEstateModal';
+import DecommissionEstateModal from '../../components/modals/DecommissionEstateModal';
 import Table from '../../components/Table';
 import { handleApiError } from '../../utils/errorMapper';
 import logger from '../../utils/logger';
@@ -18,6 +19,10 @@ export default function SuperAdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isAddEstateOpen, setIsAddEstateOpen] = useState(false);
+    
+    // Decommission Modal State
+    const [isDecommissionOpen, setIsDecommissionOpen] = useState(false);
+    const [estateToDecommission, setEstateToDecommission] = useState(null);
 
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -162,6 +167,16 @@ export default function SuperAdminDashboard() {
     };
 
     const handleEstateAdded = (newEstate) => {
+        fetchDashboardData();
+    };
+
+    const handleDecommissionClick = (estate) => {
+        setEstateToDecommission(estate);
+        setIsDecommissionOpen(true);
+    };
+
+    const handleDecommissionSuccess = () => {
+        setEstateToDecommission(null);
         fetchDashboardData();
     };
 
@@ -468,6 +483,17 @@ export default function SuperAdminDashboard() {
                                                                 Suspend
                                                             </button>
                                                         )}
+                                                        
+                                                        {/* Decommission Button */}
+                                                        {estate.status !== 'decommissioned' && (
+                                                            <button
+                                                                onClick={() => handleDecommissionClick(estate)}
+                                                                className="inline-flex items-center px-2 py-1.5 border border-transparent text-xs font-medium rounded-md text-gray-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none transition-colors"
+                                                                title="Decommission Estate"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))
@@ -648,6 +674,16 @@ export default function SuperAdminDashboard() {
                     isOpen={isAddEstateOpen}
                     onClose={() => setIsAddEstateOpen(false)}
                     onSuccess={handleEstateAdded}
+                />
+                
+                <DecommissionEstateModal
+                    isOpen={isDecommissionOpen}
+                    onClose={() => {
+                        setIsDecommissionOpen(false);
+                        setEstateToDecommission(null);
+                    }}
+                    estate={estateToDecommission}
+                    onSuccess={handleDecommissionSuccess}
                 />
             </div>
         </div>

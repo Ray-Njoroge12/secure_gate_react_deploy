@@ -22,6 +22,26 @@ class SessionSecurityService {
     this.sessionWarningMs = parseInt(process.env.SESSION_WARNING_MS) || 15 * 60 * 1000; // 15 minutes before expiry
     this.privilegeEscalationTimeoutMs = parseInt(process.env.PRIVILEGE_TIMEOUT_MS) || 30 * 60 * 1000; // 30 minutes
 
+    // Role-based session timeout configuration (stricter for privileged roles)
+    // Super Admins and Admins have shorter session timeouts for security
+    // Guards have reduced timeout for shared device security
+    this.roleSessionTimeouts = {
+      super_admin: parseInt(process.env.SUPER_ADMIN_SESSION_TIMEOUT_MS) || 30 * 60 * 1000, // 30 minutes
+      admin: parseInt(process.env.ADMIN_SESSION_TIMEOUT_MS) || 60 * 60 * 1000, // 1 hour
+      guard: parseInt(process.env.GUARD_SESSION_TIMEOUT_MS) || 45 * 60 * 1000, // 45 minutes (reduced from 90 for shared device security)
+      resident: parseInt(process.env.RESIDENT_SESSION_TIMEOUT_MS) || 2 * 60 * 60 * 1000, // 2 hours
+      default: parseInt(process.env.SESSION_TIMEOUT_MS) || 2 * 60 * 60 * 1000 // 2 hours
+    };
+
+    // Role-based session warning times (show warning before expiry)
+    this.roleSessionWarnings = {
+      super_admin: parseInt(process.env.SUPER_ADMIN_SESSION_WARNING_MS) || 5 * 60 * 1000, // 5 minutes before
+      admin: parseInt(process.env.ADMIN_SESSION_WARNING_MS) || 10 * 60 * 1000, // 10 minutes before
+      guard: parseInt(process.env.GUARD_SESSION_WARNING_MS) || 10 * 60 * 1000, // 10 minutes before
+      resident: parseInt(process.env.RESIDENT_SESSION_WARNING_MS) || 15 * 60 * 1000, // 15 minutes before
+      default: parseInt(process.env.SESSION_WARNING_MS) || 15 * 60 * 1000
+    };
+
     // Session fingerprint configuration
     this.fingerprintSalt = process.env.SESSION_FINGERPRINT_SALT || 'secure-gate-fingerprint-salt';
 
@@ -34,6 +54,42 @@ class SessionSecurityService {
       privilegeEscalations: 0,
       timeouts: 0,
       fixationPrevented: 0
+    };
+  }
+
+  /**
+   * Get session timeout for a specific role
+   * @param {string} role - User role
+   * @returns {number} Session timeout in milliseconds
+   */
+  getSessionTimeoutForRole(role) {
+    return this.roleSessionTimeouts[role] || this.roleSessionTimeouts.default;
+  }
+
+  /**
+   * Get session warning time for a specific role
+   * @param {string} role - User role
+   * @returns {number} Warning time in milliseconds before expiry
+   */
+  getSessionWarningForRole(role) {
+    return this.roleSessionWarnings[role] || this.roleSessionWarnings.default;
+  }
+
+  /**
+   * Get session configuration for a specific role (for frontend use)
+   * @param {string} role - User role
+   * @returns {object} Session configuration object
+   */
+  getSessionConfigForRole(role) {
+    const timeout = this.getSessionTimeoutForRole(role);
+    const warning = this.getSessionWarningForRole(role);
+    return {
+      role,
+      sessionTimeoutMs: timeout,
+      sessionWarningMs: warning,
+      sessionTimeoutMinutes: Math.floor(timeout / 60000),
+      sessionWarningMinutes: Math.floor(warning / 60000),
+      isPrivilegedRole: ['super_admin', 'admin', 'guard'].includes(role)
     };
   }
 
@@ -170,15 +226,20 @@ class SessionSecurityService {
         return { valid: false, reason: 'fingerprint_mismatch' };
       }
 
-      // Check session timeout
+      // Check session timeout using role-based timeout
       const now = Date.now();
-      if (now - sessionData.lastActivity > this.sessionTimeoutMs) {
+      const roleTimeoutMs = this.getSessionTimeoutForRole(sessionData.userRole);
+      const roleWarningMs = this.getSessionWarningForRole(sessionData.userRole);
+      
+      if (now - sessionData.lastActivity > roleTimeoutMs) {
         this.sessionMetrics.timeouts++;
 
         loggingService.logSecurity('Session timeout detected', {
           sessionId,
           userId: sessionData.userId,
+          userRole: sessionData.userRole,
           lastActivity: new Date(sessionData.lastActivity),
+          timeoutMs: roleTimeoutMs,
           correlationId: req.correlationId
         });
 
@@ -204,9 +265,9 @@ class SessionSecurityService {
       // Update last activity
       sessionData.lastActivity = now;
 
-      // Check if session warning should be sent
-      const timeUntilExpiry = this.sessionTimeoutMs - (now - sessionData.lastActivity);
-      const shouldWarn = timeUntilExpiry <= this.sessionWarningMs && !sessionData.warningShown;
+      // Check if session warning should be sent (using role-based warning time)
+      const timeUntilExpiry = roleTimeoutMs - (now - sessionData.lastActivity);
+      const shouldWarn = timeUntilExpiry <= roleWarningMs && !sessionData.warningShown;
 
       if (shouldWarn) {
         sessionData.warningShown = true;

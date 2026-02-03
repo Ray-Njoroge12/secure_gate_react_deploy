@@ -233,13 +233,26 @@ const DashboardHome = () => {
         {/* Quick Stats Grid */}
         {isWidgetVisible('stats') && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {statsData.map((stat, index) => (
-              <div key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="text-2xl mb-1">{stat.icon}</div>
-                <div className="text-3xl font-bold text-green-600">{stat.value}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-200">{stat.label}</div>
-              </div>
-            ))}
+            {loading ? (
+              // Skeleton loading state for stats
+              <>
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 animate-pulse">
+                    <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
+                    <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              statsData.map((stat, index) => (
+                <div key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="text-2xl mb-1">{stat.icon}</div>
+                  <div className="text-3xl font-bold text-green-600">{stat.value}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-200">{stat.label}</div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

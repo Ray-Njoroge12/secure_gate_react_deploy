@@ -691,4 +691,244 @@ router.get('/:guardId/training', authenticateToken, requireEstate, requireRolePo
   }
 });
 
+/**
+ * @route GET /api/guards/offline-policy
+ * @desc Get offline cache policy configuration for guard devices
+ * @access Guard, Admin
+ */
+router.get('/offline-policy', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
+  try {
+    // Get estate-specific offline policy or use defaults
+    // In the future, this could be configurable per estate
+    const defaultPolicy = {
+      visitorRetentionHours: 8,       // Keep visitor data for 8 hours
+      cacheRetentionHours: 24,        // Keep API cache for 24 hours
+      inactivityMinutes: 30,          // Purge on 30 min inactivity
+      walkInRetentionHours: 24,       // Keep walk-in data for 24 hours
+      qrCacheRetentionHours: 12,      // Keep QR cache for 12 hours
+      maxCachedVisitors: 200,         // Max visitors to cache
+      syncIntervalMinutes: 15,        // Auto-sync every 15 minutes when online
+      offlineCheckInEnabled: true,    // Allow offline check-ins
+      offlineWalkInEnabled: true      // Allow offline walk-in registration
+    };
+    
+    // TODO: Fetch from estate_settings table when implemented
+    // const estateSettings = await getEstateSettings(req.user.estate_id);
+    // const policy = { ...defaultPolicy, ...estateSettings.offlinePolicy };
+    
+    res.json({
+      success: true,
+      data: defaultPolicy
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve offline policy',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/guards/qr-cache
+ * @desc Get today's expected visitors for QR code offline validation
+ * @access Guard only
+ */
+router.get('/qr-cache', authenticateToken, requireEstate, requireRolePolicy('guardOnly'), async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get today's expected visitors with minimal data for offline QR validation
+    const query = `
+      SELECT 
+        v.id as visitor_id,
+        v.qr_code,
+        v.name,
+        v.phone,
+        v.status,
+        v.date_of_visit as valid_date,
+        v.time_of_visit as valid_time,
+        u.username as host_name,
+        u.unit_number as host_unit
+      FROM visitors v
+      LEFT JOIN users u ON v.user_id = u.id
+      WHERE v.estate_id = $1
+        AND v.date_of_visit = $2
+        AND v.status IN ('APPROVED', 'VERIFIED', 'OTP_SENT', 'PENDING')
+      ORDER BY v.time_of_visit ASC
+      LIMIT 500
+    `;
+    
+    const { dbManager } = await import('../database/db.enhanced.js');
+    const result = await dbManager.query(query, [req.user.estate_id, today]);
+    
+    // Transform for offline cache with valid_until timestamp
+    const qrCacheData = result.rows.map(row => {
+      // Calculate valid_until as end of visit date + 2 hours buffer
+      const visitDate = new Date(row.valid_date);
+      visitDate.setHours(23, 59, 59, 999);
+      visitDate.setHours(visitDate.getHours() + 2); // 2 hour buffer after midnight
+      
+      return {
+        qr_code: row.qr_code,
+        visitor_id: row.visitor_id,
+        name: row.name,
+        phone: row.phone ? row.phone.slice(-4) : null, // Only last 4 digits for privacy
+        status: row.status,
+        host_name: row.host_name,
+        host_unit: row.host_unit,
+        valid_until: visitDate.toISOString()
+      };
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        visitors: qrCacheData,
+        count: qrCacheData.length,
+        cacheDate: today,
+        expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString() // 12 hours
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve QR cache data',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route POST /api/guards/sync-offline-actions
+ * @desc Sync offline check-ins and walk-ins
+ * @access Guard only
+ */
+router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRolePolicy('guardOnly'), async (req, res) => {
+  try {
+    const { checkIns = [], walkIns = [] } = req.body;
+    const results = {
+      checkIns: { synced: 0, failed: 0, errors: [] },
+      walkIns: { synced: 0, failed: 0, errors: [] }
+    };
+    
+    const { dbManager } = await import('../database/db.enhanced.js');
+    
+    // Process offline check-ins
+    for (const checkIn of checkIns) {
+      try {
+        // Validate the check-in
+        const visitorCheck = await dbManager.query(
+          'SELECT id, status FROM visitors WHERE id = $1 AND estate_id = $2',
+          [checkIn.visitor_id, req.user.estate_id]
+        );
+        
+        if (visitorCheck.rows.length === 0) {
+          results.checkIns.errors.push({
+            localId: checkIn.localId,
+            error: 'Visitor not found'
+          });
+          results.checkIns.failed++;
+          continue;
+        }
+        
+        const action = checkIn.action || 'check-in';
+        const newStatus = action === 'check-in' ? 'ON_PREMISE' : 'CHECKED_OUT';
+        const timeField = action === 'check-in' ? 'check_in' : 'check_out';
+        
+        // Use the offline timestamp if provided
+        const actionTime = checkIn.timestamp 
+          ? new Date(checkIn.timestamp).toISOString()
+          : new Date().toISOString();
+        
+        await dbManager.query(
+          `UPDATE visitors SET status = $1, ${timeField} = $2, updated_at = NOW() WHERE id = $3`,
+          [newStatus, actionTime, checkIn.visitor_id]
+        );
+        
+        results.checkIns.synced++;
+      } catch (error) {
+        results.checkIns.errors.push({
+          localId: checkIn.localId,
+          error: error.message
+        });
+        results.checkIns.failed++;
+      }
+    }
+    
+    // Process offline walk-ins
+    for (const walkIn of walkIns) {
+      try {
+        // Check for duplicate by phone + date
+        const duplicateCheck = await dbManager.query(
+          `SELECT id FROM visitors 
+           WHERE phone = $1 AND date_of_visit = $2 AND estate_id = $3`,
+          [walkIn.phone, walkIn.dateOfVisit, req.user.estate_id]
+        );
+        
+        if (duplicateCheck.rows.length > 0) {
+          results.walkIns.errors.push({
+            localId: walkIn.localId,
+            error: 'Duplicate registration',
+            existingId: duplicateCheck.rows[0].id
+          });
+          results.walkIns.failed++;
+          continue;
+        }
+        
+        // Find the resident by house number
+        const residentQuery = await dbManager.query(
+          `SELECT id FROM users 
+           WHERE unit_number = $1 AND estate_id = $2 AND role = 'resident'`,
+          [walkIn.houseNumber, req.user.estate_id]
+        );
+        
+        const residentId = residentQuery.rows[0]?.id || null;
+        
+        // Insert the walk-in visitor
+        const insertResult = await dbManager.query(
+          `INSERT INTO visitors (
+            name, phone, purpose, user_id, estate_id, 
+            date_of_visit, time_of_visit, status, is_walk_in,
+            vehicle_plate, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+          RETURNING id`,
+          [
+            walkIn.name,
+            walkIn.phone,
+            walkIn.purpose || 'Walk-in visit',
+            residentId,
+            req.user.estate_id,
+            walkIn.dateOfVisit,
+            walkIn.timeOfVisit,
+            'PENDING',
+            true,
+            walkIn.vehiclePlate || null
+          ]
+        );
+        
+        results.walkIns.synced++;
+      } catch (error) {
+        results.walkIns.errors.push({
+          localId: walkIn.localId,
+          error: error.message
+        });
+        results.walkIns.failed++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: 'Offline actions synced',
+      data: results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync offline actions',
+      error: error.message
+    });
+  }
+});
+
 export default router;

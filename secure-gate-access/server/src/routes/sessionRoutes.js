@@ -58,6 +58,42 @@ router.get('/metrics', authenticateToken, async (req, res) => {
 });
 
 /**
+ * @route GET /api/sessions/config
+ * @desc Get session timeout configuration for the current user based on their role
+ * @access Authenticated users
+ */
+router.get('/config', authenticateToken, async (req, res) => {
+  try {
+    const userRole = req.user.role;
+    const sessionConfig = sessionSecurityService.getSessionConfigForRole(userRole);
+
+    loggingService.logSecurity('Session config retrieved', {
+      userId: req.user.id,
+      userRole,
+      sessionTimeoutMinutes: sessionConfig.sessionTimeoutMinutes,
+      correlationId: req.correlationId
+    });
+
+    res.json({
+      success: true,
+      data: sessionConfig
+    });
+
+  } catch (error) {
+    loggingService.logSecurity('Session config retrieval failed', {
+      error: error.message,
+      userId: req.user.id,
+      correlationId: req.correlationId
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve session configuration'
+    });
+  }
+});
+
+/**
  * @route GET /api/sessions/user/:userId
  * @desc Get active sessions for a specific user
  * @access Admin

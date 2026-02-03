@@ -229,6 +229,58 @@ export const adminRateLimit = () => rateLimit({
 });
 
 /**
+ * Admin query rate limiting
+ * 100 requests per 15 minutes for read operations (metrics, logs, users list)
+ * PHASE 1 SECURITY HARDENING: Prevent admin DoS attacks on read endpoints
+ */
+export const adminQueryLimit = () => rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createStore(),
+  keyGenerator: (req) => `admin:query:${req.user?.id || getClientIP(req)}`,
+  handler: (req, res) => {
+    const response = buildErrorPayload(
+      req, 
+      res, 
+      'Too many admin queries. Please wait 15 minutes before retrying.', 
+      'ADMIN_QUERY_RATE_LIMIT'
+    );
+    response.retryAfter = '15 minutes';
+    res.status(429).json(response);
+  }
+});
+
+/**
+ * Admin modification rate limiting
+ * 20 requests per 15 minutes for write operations (approve, delete, update, backup)
+ * PHASE 1 SECURITY HARDENING: Prevent rapid-fire destructive operations
+ */
+export const adminModificationLimit = () => rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createStore(),
+  keyGenerator: (req) => `admin:modify:${req.user?.id || getClientIP(req)}`,
+  handler: (req, res) => {
+    const response = buildErrorPayload(
+      req, 
+      res, 
+      'Too many admin modifications. Please wait 15 minutes before retrying.', 
+      'ADMIN_MODIFICATION_RATE_LIMIT'
+    );
+    response.retryAfter = '15 minutes';
+    response.details = {
+      userId: req.user?.id,
+      action: req.method + ' ' + req.originalUrl
+    };
+    res.status(429).json(response);
+  }
+});
+
+/**
  * Bulk operations rate limiting
  * 3 bulk operations per hour per user/IP
  */
@@ -242,6 +294,45 @@ export const bulkOperationLimit = () => rateLimit({
   handler: (req, res) => {
     const response = buildErrorPayload(req, res, 'Too many bulk operations, please try again later.', 'RATE_LIMITED');
     response.retryAfter = '1 hour';
+    res.status(429).json(response);
+  }
+});
+
+/**
+ * Super Admin sensitive operations rate limiting
+ * Stricter limits for high-risk operations (estate creation, deletion, etc.)
+ * 10 sensitive operations per hour per user
+ */
+export const superAdminSensitiveLimit = () => rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createStore(),
+  keyGenerator: (req) => `super_admin_sensitive:${req.user?.id || getClientIP(req)}`,
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many sensitive operations. Please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '1 hour';
+    response.note = 'Super Admin operations are rate-limited for security';
+    res.status(429).json(response);
+  }
+});
+
+/**
+ * Super Admin estate modification rate limit
+ * Very strict: 5 estate modifications per hour
+ */
+export const estateModificationLimit = () => rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createStore(),
+  keyGenerator: (req) => `estate_mod:${req.user?.id || getClientIP(req)}`,
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many estate modifications. Please try again later.', 'RATE_LIMITED');
+    response.retryAfter = '1 hour';
+    response.note = 'Estate creation/deletion is rate-limited for security';
     res.status(429).json(response);
   }
 });
@@ -479,6 +570,8 @@ const rateLimitMiddleware = {
   generalRateLimit,
   authRateLimit,
   adminRateLimit,
+  adminQueryLimit, // NEW
+  adminModificationLimit, // NEW
   bulkOperationLimit,
   passwordResetLimit,
   registrationLimit,

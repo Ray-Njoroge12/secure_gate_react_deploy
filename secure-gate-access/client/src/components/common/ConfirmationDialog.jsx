@@ -71,6 +71,9 @@ const ConfirmationDialog = ({
   isLoading = false,
   icon,
   children,
+  requiresMFA = false,
+  mfaWarning = 'This operation requires Multi-Factor Authentication to be enabled.',
+  consequences = [],
 }) => {
   const [doubleConfirmInput, setDoubleConfirmInput] = useState('');
   const [isConfirmEnabled, setIsConfirmEnabled] = useState(!requireDoubleConfirm);
@@ -231,6 +234,22 @@ const ConfirmationDialog = ({
               <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg mb-4">
                 <span className="text-blue-600">↩️</span>
                 <span className="text-sm text-blue-700">{undoText}</span>
+              </div>
+            )}
+
+            {/* MFA Warning */}
+            {requiresMFA && (
+              <div className="p-4 mb-4 bg-yellow-50 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  {mfaWarning}
+                </p>
+                {consequences.length > 0 && (
+                  <ul className="mt-2 pl-5 list-disc text-sm text-yellow-800">
+                    {consequences.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 
