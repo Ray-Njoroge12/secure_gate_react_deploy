@@ -358,6 +358,16 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             </span>
           </h1>
         </div>
+
+        {/* Super Admin Navigation */}
+        {role === 'super_admin' && (
+          <button
+            onClick={() => navigate('/dashboard/super-admin')}
+            className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            ← Back to Global Dashboard
+          </button>
+        )}
       </div>
 
       {/* Phase 3: Community Announcements */}
@@ -385,76 +395,88 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
         </nav>
       </div>
 
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Quick Actions Panel */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm p-6 text-white">
-            <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => navigate('/dashboard/admin/approvals')}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
-              >
-                ✓ Approve Users
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/admin/visitors')}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
-              >
-                📋 View Today's Visitors
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/admin/residents')}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
-              >
-                🏠 Manage Residents
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/admin/reports')}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
-              >
-                📊 Generate Reports
-              </button>
+      {
+        activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Quick Actions Panel */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm p-6 text-white">
+              <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => navigate('/dashboard/admin/approvals')}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                >
+                  ✓ Approve Users
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/admin/visitors')}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                >
+                  📋 View Today's Visitors
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/admin/residents')}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                >
+                  🏠 Manage Residents
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/admin/reports')}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                >
+                  📊 Generate Reports
+                </button>
+              </div>
+            </div>
+
+            {/* Admin Metrics - Essential */}
+            <AdminMetrics metrics={metrics} loading={loadingMetrics} error={metricsError} />
+
+            {/* User Approvals - Single widget only */}
+            <AdminUserApprovals siteId={currentEstate?.id} />
+
+            {/* Community Announcements - Essential for estates */}
+            <div data-tour="announcements">
+              <AnnouncementsAdmin />
             </div>
           </div>
+        )
+      }
 
-          {/* Admin Metrics - Essential */}
-          <AdminMetrics metrics={metrics} loading={loadingMetrics} error={metricsError} />
-
-          {/* User Approvals - Single widget only */}
-          <AdminUserApprovals siteId={currentEstate?.id} />
-
-          {/* Community Announcements - Essential for estates */}
-          <div data-tour="announcements">
-            <AnnouncementsAdmin />
+      {
+        activeTab === 'approvals' && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">User Account Approvals</h3>
+            <AdminUserApprovals siteId={currentEstate?.id} />
           </div>
-        </div>
-      )}
-
-      {activeTab === 'approvals' && (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">User Account Approvals</h3>
-          <AdminUserApprovals siteId={currentEstate?.id} />
-        </div>
-      )}
+        )
+      }
 
       {activeTab === 'guards' && <ManageGuards estateId={currentEstate?.id} />}
 
-      {activeTab === 'residents' && (
-        <ManageResidents />
-      )}
+      {
+        activeTab === 'residents' && (
+          <ManageResidents />
+        )
+      }
 
-      {activeTab === 'visitors' && (
-        <VisitorLog />
-      )}
+      {
+        activeTab === 'visitors' && (
+          <VisitorLog />
+        )
+      }
 
-      {activeTab === 'reports' && (
-        <Reports />
-      )}
+      {
+        activeTab === 'reports' && (
+          <Reports />
+        )
+      }
 
-      {activeTab === 'settings' && (
-        <Settings />
-      )}
-    </div>
+      {
+        activeTab === 'settings' && (
+          <Settings />
+        )
+      }
+    </div >
   );
 }

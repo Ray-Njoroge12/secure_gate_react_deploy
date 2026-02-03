@@ -1,5 +1,5 @@
 // client/src/hooks/useAccessibility.js
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { auditThemeAccessibility, runAccessibilityChecks } from '../utils/accessibilityAudit';
 
 /**
@@ -42,7 +42,7 @@ export const useAccessibility = (options = {}) => {
       const isReducedMotion = reducedMotionQuery ? reducedMotionQuery.matches : false;
 
       // Screen reader detection (basic)
-      const isScreenReader = 
+      const isScreenReader =
         window.navigator.userAgent.includes('NVDA') ||
         window.navigator.userAgent.includes('JAWS') ||
         window.navigator.userAgent.includes('VoiceOver') ||
@@ -299,16 +299,16 @@ export const useAccessibility = (options = {}) => {
   }, []);
 
   // ARIA live region for announcements
-  const LiveRegion = () => (
+  const LiveRegion = useCallback(() => (
     <div
       id="accessibility-live-region"
       aria-live="polite"
       aria-atomic="true"
       className="sr-only"
     />
-  );
+  ), []);
 
-  return {
+  return useMemo(() => ({
     accessibilityState,
     auditResults,
     runAudit,
@@ -320,7 +320,18 @@ export const useAccessibility = (options = {}) => {
     createFocusTrap,
     LiveRegion,
     focusHistory: focusHistory.current
-  };
+  }), [
+    accessibilityState,
+    auditResults,
+    runAudit,
+    announce,
+    skipToMain,
+    skipToNavigation,
+    getAccessibleClasses,
+    getAccessibleStyles,
+    createFocusTrap,
+    LiveRegion
+  ]);
 };
 
 /**

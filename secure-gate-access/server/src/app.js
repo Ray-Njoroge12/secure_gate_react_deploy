@@ -102,6 +102,7 @@ import bulkOperationsRoutes from './routes/bulkOperationsRoutes.js'; // Bulk ope
 import collaborationRoutes from './routes/collaborationRoutes.js'; // Cross-role collaboration routes
 import privacyComplianceRoutes from './routes/privacyComplianceRoutes.js'; // Privacy compliance and GDPR/KDPA features
 import enhancedSecurityRoutes from './routes/enhancedSecurityRoutes.js'; // Enhanced security features
+import devRoutes from './routes/devRoutes.js'; // Development tools routes
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -515,8 +516,8 @@ app.use('/api/check-in', checkInRoutes);
 app.use('/api/check-out', checkOutRoutes);
 
 // Health routes (explicit mounting for clarity)
-app.use('/', healthRoutes); // Enable root-level health checks for load balancers
-app.use('/api', healthRoutes);
+app.use('/health', healthRoutes); // Enable root-level health checks for load balancers
+app.use('/api/health', healthRoutes);
 
 // Monitoring Dashboard routes (requires auth + admin)
 app.use('/api/monitoring', monitoringRoutes);
@@ -541,6 +542,12 @@ app.use('/api/privacy', privacyComplianceRoutes);
 
 // Enhanced security features (requires auth)
 app.use('/api/security', enhancedSecurityRoutes);
+
+// Dev Tools Routes (Message Viewer) - Development Only
+if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEV_ROUTES === 'true') {
+  app.use('/api/dev', devRoutes);
+  console.log('🛠️  Dev routes enabled at /api/dev');
+}
 
 // Guard SSE endpoint (stub for real-time updates)
 app.get('/api/ws/guards', authenticateToken, requireRole(['guard', 'admin', 'super_admin']), requireEstate, (req, res) => {

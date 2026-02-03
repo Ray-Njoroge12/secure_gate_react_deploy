@@ -638,8 +638,12 @@ export const bulkInvite = async (req, res) => {
     const inviteCode = generateSecureToken(16);
 
     // Calculate expiry (end of event day)
+    // Fix: Handle timezone differences. "YYYY-MM-DD" defaults to UTC midnight.
+    // Timezones behind UTC (e.g. US) would expire early (e.g. 5PM previous day).
+    // Solution: Add 24 hours to ensure it covers the full day in all timezones.
     const eventDate = new Date(date);
-    eventDate.setHours(23, 59, 59, 999);
+    eventDate.setDate(eventDate.getDate() + 1); // Move to next day
+    eventDate.setHours(23, 59, 59, 999); // End of next day (effectively ~36h+ validity which is safe)
 
     // Create bulk invite record with invite_code
     const bulkResult = await dbManager.query(

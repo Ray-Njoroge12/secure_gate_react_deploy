@@ -638,8 +638,9 @@ router.delete('/users/:id', authenticateToken, requireRole(['admin']), attachReq
 router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
     // SECURITY: Filter by estate_id to prevent cross-estate access
-    let query = `SELECT id, username, first_name, last_name, email, phone, unit_number, status, created_at 
-       FROM users WHERE role = 'resident' AND status != 'deleted'`;
+    // Fix: Use account_status as the column name
+    let query = `SELECT id, username, first_name, last_name, email, phone, unit_number, account_status as status, created_at 
+       FROM users WHERE role = 'resident' AND account_status != 'deleted'`;
     const params = [];
 
     if (req.user.estate_id) {
@@ -690,6 +691,14 @@ router.post('/residents', authenticateToken, requireRole(['admin']), attachReque
       estate_id: req.user.estate_id,
       account_status: 'active' // Admin created residents are immediately active
     });
+
+    // Send Welcome Email
+    try {
+      const { default: emailService } = await import('../services/emailService.js');
+      await emailService.sendWelcomeEmail(email, username, password);
+    } catch (emailErr) {
+      console.error('Failed to send welcome email to resident:', emailErr);
+    }
 
     res.status(201).json({ success: true, data: newUser });
   } catch (error) {

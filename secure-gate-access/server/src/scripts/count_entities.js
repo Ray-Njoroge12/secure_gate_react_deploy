@@ -2,32 +2,46 @@
 import 'dotenv/config';
 import { dbManager } from '../database/db.enhanced.js';
 
-async function countEntities() {
+async function fixSchema() {
     try {
         await dbManager.initializeAsync();
+        console.log('Creating announcements tables...');
 
-        const [estates, users, visitors, incidents] = await Promise.all([
-            dbManager.query('SELECT COUNT(*) FROM estates'),
-            dbManager.query('SELECT COUNT(*) FROM users'),
-            dbManager.query('SELECT COUNT(*) FROM visitors'),
-            dbManager.query('SELECT COUNT(*) FROM incidents')
-        ]);
+        await dbManager.query(`
+            CREATE TABLE IF NOT EXISTS announcements (
+              id UUID PRIMARY KEY,
+              title VARCHAR(255) NOT NULL,
+              content TEXT NOT NULL,
+              priority VARCHAR(20) DEFAULT 'normal',
+              target_audience VARCHAR(20) DEFAULT 'all',
+              is_pinned BOOLEAN DEFAULT false,
+              is_active BOOLEAN DEFAULT true,
+              created_by UUID REFERENCES users(id),
+              estate_id UUID REFERENCES estates(id),
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              expires_at TIMESTAMP WITH TIME ZONE
+            );
+        `);
 
-        console.log('--- DB COUNTS ---');
-        console.log('Estates:', estates.rows[0].count);
-        console.log('Users:', users.rows[0].count);
-        console.log('Visitors:', visitors.rows[0].count);
-        console.log('Incidents:', incidents.rows[0].count);
+        await dbManager.query(`
+            CREATE TABLE IF NOT EXISTS announcement_reads (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              announcement_id UUID REFERENCES announcements(id) ON DELETE CASCADE,
+              user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+              read_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+              UNIQUE(announcement_id, user_id)
+            );
+        `);
 
-        // Check Super Admin
-        const sa = await dbManager.query("SELECT id, email, role FROM users WHERE role = 'super_admin'");
-        console.log('Super Admin:', sa.rows);
+        console.log('Schema fix applied successfully.');
 
     } catch (err) {
-        console.error('Error counting:', err);
+        console.error('Error fixing schema:', err);
     } finally {
-        process.exit(0);
+        // Keep process open for a bit to ensure logs flush if needed, then exit
+        setTimeout(() => process.exit(0), 500);
     }
 }
 
-countEntities();
+fixSchema();

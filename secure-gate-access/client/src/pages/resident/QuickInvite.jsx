@@ -383,27 +383,30 @@ const QuickInvite = () => {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* What happens next */}
-              <div className="bg-blue-50 rounded-xl p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                  <Info className="w-5 h-5 text-blue-500" />
-                  What happens next?
-                </h3>
-                <ol className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="bg-blue-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-                    <span>Your guest receives an SMS with an invite link</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-blue-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                    <span>They tap the link to confirm and add any extra details</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-blue-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-                    <span>They get their QR code or PIN for entry</span>
-                  </li>
-                </ol>
-              </div>
+
+              {/* Access Code Display - NEW */}
+              {success.data.inviteCode && (
+                <div className="bg-gray-50 rounded-xl p-6 text-center border-2 border-dashed border-gray-300">
+                  <p className="text-sm text-gray-500 uppercase tracking-widest font-semibold mb-2">Access Code</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <span className="text-4xl font-mono font-bold text-gray-900 tracking-wider">
+                      {success.data.inviteCode}
+                    </span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(success.data.inviteCode);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                      title="Copy Code"
+                    >
+                      {copied ? <CheckCircle className="w-5 h-5 text-green-500" /> : <Copy className="w-5 h-5 text-gray-400" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Share this code with your guest for entry</p>
+                </div>
+              )}
 
               {/* Share options */}
               <div className="space-y-4">
@@ -411,7 +414,6 @@ const QuickInvite = () => {
 
                 {/* WhatsApp Share Buttons */}
                 <div className="space-y-2">
-                  {/* Direct WhatsApp to visitor */}
                   <button
                     onClick={shareViaWhatsAppDirect}
                     className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg"
@@ -420,7 +422,6 @@ const QuickInvite = () => {
                     {whatsappSent ? '✓ Opening WhatsApp...' : `Send via WhatsApp to ${formData.name}`}
                   </button>
 
-                  {/* Generic WhatsApp share */}
                   <button
                     onClick={shareViaWhatsApp}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 border-2 border-green-200 rounded-xl transition-colors"
@@ -430,42 +431,44 @@ const QuickInvite = () => {
                   </button>
                 </div>
 
-                {/* Other share options */}
+                {/* Link Copy */}
                 <div className="flex gap-2">
                   <button
                     onClick={copyInviteLink}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors"
                   >
                     <Copy className="w-4 h-4" />
-                    {copied ? 'Copied!' : 'Copy Link'}
+                    {copied ? 'Copied Link!' : 'Copy Link'}
                   </button>
-                  {navigator.share && (
-                    <button
-                      onClick={shareInvite}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors"
-                    >
-                      <Share2 className="w-4 h-4" />
-                      More Options
-                    </button>
-                  )}
                 </div>
               </div>
 
+              {/* What happens next (Simplified) */}
+              <div className="bg-blue-50 rounded-xl p-4 text-xs text-blue-800">
+                <p className="flex items-center gap-2 mb-1 font-semibold">
+                  <Info className="w-4 h-4" />
+                  Next Steps:
+                </p>
+                <ul className="list-disc list-inside space-y-1 ml-1">
+                  <li>Guest receives SMS with link</li>
+                  <li>They confirm details & get QR code</li>
+                </ul>
+              </div>
+
               {/* Action buttons */}
-              <div className="flex flex-col gap-3 pt-4">
-                <Button
-                  onClick={createAnother}
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Invite Another Guest
-                </Button>
+              <div className="flex flex-col gap-3 pt-2">
                 <Button
                   onClick={() => navigate('/dashboard/resident')}
-                  variant="outline"
-                  className="w-full py-3 rounded-xl"
+                  className="w-full bg-gray-900 text-white py-3 rounded-xl"
                 >
-                  Back to Dashboard
+                  Done
+                </Button>
+                <Button
+                  onClick={createAnother}
+                  variant="ghost"
+                  className="w-full py-3 rounded-xl text-gray-600"
+                >
+                  Invite Another Guest
                 </Button>
               </div>
             </div>

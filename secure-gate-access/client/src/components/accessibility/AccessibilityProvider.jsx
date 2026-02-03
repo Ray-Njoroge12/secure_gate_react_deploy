@@ -23,22 +23,22 @@ const DEFAULT_ACCESSIBILITY_SETTINGS = {
   highContrast: false,
   reducedMotion: false,
   textScaling: 100, // percentage (100% = normal, 200% = maximum)
-  
+
   // Navigation preferences
   keyboardNavigation: true,
   skipLinks: true,
   focusIndicators: true,
-  
+
   // Screen reader preferences
   screenReaderSupport: true,
   announcements: true,
   liveRegions: true,
-  
+
   // Interaction preferences
   extendedTimeouts: false,
   alternativeInputs: false,
   voiceCommands: false,
-  
+
   // Motor impairment support
   dwellClickingEnabled: false,
   dwellClickingTime: 1000, // milliseconds
@@ -46,7 +46,7 @@ const DEFAULT_ACCESSIBILITY_SETTINGS = {
   switchScanningSpeed: 1500, // milliseconds
   headTrackingEnabled: false,
   timeoutExtensionLevel: 'moderate', // none, moderate, extended, unlimited
-  
+
   // Content preferences
   simplifiedUI: false,
   descriptiveText: true,
@@ -70,10 +70,10 @@ class WCAGComplianceManager {
   checkColorContrast(foreground, background) {
     const luminance1 = this.getLuminance(foreground);
     const luminance2 = this.getLuminance(background);
-    
+
     const brightest = Math.max(luminance1, luminance2);
     const darkest = Math.min(luminance1, luminance2);
-    
+
     return (brightest + 0.05) / (darkest + 0.05);
   }
 
@@ -139,7 +139,7 @@ class KeyboardNavigationManager {
       '[role="menuitem"]',
       '[role="tab"]'
     ].join(', ');
-    
+
     this.shortcuts = new Map();
     this.focusHistory = [];
   }
@@ -157,18 +157,18 @@ class KeyboardNavigationManager {
    */
   isVisible(element) {
     const style = window.getComputedStyle(element);
-    return style.display !== 'none' && 
-           style.visibility !== 'hidden' && 
-           style.opacity !== '0';
+    return style.display !== 'none' &&
+      style.visibility !== 'hidden' &&
+      style.opacity !== '0';
   }
 
   /**
    * Check if element is disabled
    */
   isDisabled(element) {
-    return element.disabled || 
-           element.getAttribute('aria-disabled') === 'true' ||
-           element.getAttribute('disabled') !== null;
+    return element.disabled ||
+      element.getAttribute('aria-disabled') === 'true' ||
+      element.getAttribute('disabled') !== null;
   }
 
   /**
@@ -222,11 +222,13 @@ class KeyboardNavigationManager {
     if (event.altKey) keys.push('alt');
     if (event.shiftKey) keys.push('shift');
     if (event.metaKey) keys.push('meta');
-    keys.push(event.key.toLowerCase());
+    if (event.key) {
+      keys.push(event.key.toLowerCase());
+    }
 
     const keyString = keys.join('+');
     const shortcut = this.shortcuts.get(keyString);
-    
+
     if (shortcut) {
       event.preventDefault();
       shortcut.callback(event);
@@ -252,12 +254,12 @@ class AlternativeInputMethodsManager {
     if (!settings.alternativeInputs) return;
 
     this.isInitialized = true;
-    
+
     // Set up based on enabled methods
     if (settings.dwellClickingEnabled) {
       this.enableDwellClicking(settings.dwellClickingTime);
     }
-    
+
     if (settings.switchInputEnabled) {
       this.enableSwitchInput(settings.switchScanningSpeed);
     }
@@ -268,7 +270,7 @@ class AlternativeInputMethodsManager {
    */
   enableDwellClicking(dwellTime = 1000) {
     this.activeMethod = 'dwell';
-    
+
     // Implementation would be handled by the AlternativeInputMethods component
     document.body.classList.add('dwell-clicking-enabled');
     document.body.style.setProperty('--dwell-time', `${dwellTime}ms`);
@@ -279,7 +281,7 @@ class AlternativeInputMethodsManager {
    */
   enableSwitchInput(scanningSpeed = 1500) {
     this.activeMethod = 'switch';
-    
+
     // Implementation would be handled by the AlternativeInputMethods component
     document.body.classList.add('switch-input-enabled');
     document.body.style.setProperty('--switch-scanning-speed', `${scanningSpeed}ms`);
@@ -291,12 +293,12 @@ class AlternativeInputMethodsManager {
   disable() {
     this.activeMethod = 'standard';
     document.body.classList.remove('dwell-clicking-enabled', 'switch-input-enabled');
-    
+
     if (this.dwellTimer) {
       clearTimeout(this.dwellTimer);
       this.dwellTimer = null;
     }
-    
+
     if (this.switchScanner) {
       clearInterval(this.switchScanner);
       this.switchScanner = null;
@@ -344,7 +346,7 @@ class EnhancedTimeoutManager {
 
     // No timeout if unlimited
     if (extendedDuration === null) {
-      return { id, cancel: () => {}, extend: () => {} };
+      return { id, cancel: () => { }, extend: () => { } };
     }
 
     const timeoutData = {
@@ -377,9 +379,9 @@ class EnhancedTimeoutManager {
    */
   executeTimeout(timeoutData) {
     const { id, callback } = timeoutData;
-    
+
     this.timeouts.delete(id);
-    
+
     if (callback) {
       callback();
     }
@@ -412,7 +414,7 @@ class EnhancedTimeoutManager {
 
     // Calculate new duration
     const extensionTime = additionalTime || timeout.originalDuration;
-    
+
     // Set new timeout
     const newTimeoutId = setTimeout(() => {
       this.executeTimeout(timeout);
@@ -457,7 +459,7 @@ class ScreenReaderManager {
    */
   createLiveRegion(id, priority = 'polite') {
     let region = document.getElementById(id);
-    
+
     if (!region) {
       region = document.createElement('div');
       region.id = id;
@@ -477,7 +479,7 @@ class ScreenReaderManager {
   announce(message, priority = 'polite') {
     const regionId = `live-region-${priority}`;
     let region = this.liveRegions.get(regionId);
-    
+
     if (!region) {
       region = this.createLiveRegion(regionId, priority);
     }
@@ -573,7 +575,7 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
 
   const [isInitialized, setIsInitialized] = useState(false);
   const accessibility = useAccessibility();
-  
+
   // Managers
   const wcagManager = useRef(new WCAGComplianceManager());
   const keyboardManager = useRef(new KeyboardNavigationManager());
@@ -724,7 +726,7 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
   const toggleSetting = useCallback((key) => {
     setAccessibilitySettings(prev => {
       const newValue = !prev[key];
-      
+
       // Announce change to screen readers
       screenReaderManager.current.announce(
         `${key} ${newValue ? 'enabled' : 'disabled'}`,
@@ -784,14 +786,14 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
     settings: accessibilitySettings,
     updateSetting,
     toggleSetting,
-    
+
     // Managers
     wcagManager: wcagManager.current,
     keyboardManager: keyboardManager.current,
     screenReaderManager: screenReaderManager.current,
     alternativeInputManager: alternativeInputManager.current,
     timeoutManager: timeoutManager.current,
-    
+
     // Functions
     createFocusTrap,
     announce,
@@ -800,7 +802,7 @@ export const AccessibilityProvider = ({ children, settings = {} }) => {
     validateTouchTarget,
     createAccessibleTimeout,
     isAlternativeInputActive,
-    
+
     // State
     isInitialized
   };

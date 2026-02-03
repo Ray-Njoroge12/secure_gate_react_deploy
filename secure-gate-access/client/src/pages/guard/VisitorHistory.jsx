@@ -32,7 +32,7 @@ export default function VisitorHistory() {
     }
   };
 
-  const filteredVisitors = visitors.filter(v => 
+  const filteredVisitors = visitors.filter(v =>
     v.visitor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     v.resident_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -43,7 +43,7 @@ export default function VisitorHistory() {
   );
 
   return (
-    <Layout title="Visitor History" role="guard" showBreadcrumbs={true}>
+    <div className="p-6">
       <Card className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Visitor History</h2>
@@ -60,11 +60,11 @@ export default function VisitorHistory() {
           </div>
         )}
 
-        <Table 
+        <Table
           headers={["Visitor", "Resident", "Check In", "Check Out", "Status", "Actions"]}
           rows={paginatedVisitors.map(v => [
             v.visitor_name || "Unknown",
-            v.resident_name || "Unknown", 
+            v.resident_name || "Unknown",
             v.check_in_time || "-",
             v.check_out_time || "-",
             v.status || "Pending",
@@ -83,6 +83,6 @@ export default function VisitorHistory() {
           </div>
         )}
       </Card>
-    </Layout>
+    </div>
   );
 }

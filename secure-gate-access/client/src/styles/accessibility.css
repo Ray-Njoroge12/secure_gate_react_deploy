@@ -534,13 +534,13 @@ label {
 
 /* Visual indicators for ARIA states */
 [aria-expanded="true"]::after {
-  content: " (expanded)";
+  /* content: " (expanded)"; Removed debug text */
   font-size: 0.75rem;
   color: var(--color-muted-foreground);
 }
 
 [aria-expanded="false"]::after {
-  content: " (collapsed)";
+  /* content: " (collapsed)"; Removed debug text */
   font-size: 0.75rem;
   color: var(--color-muted-foreground);
 }
