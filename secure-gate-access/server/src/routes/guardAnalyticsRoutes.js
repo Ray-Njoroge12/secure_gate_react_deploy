@@ -6,20 +6,11 @@
 
 import express from 'express';
 import { getGuardAnalytics } from '../controllers/guardAnalyticsController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
+import { customRateLimit } from '../middleware/rateLimitMiddleware.js';
 
 const router = express.Router();
-
-// All routes require authentication
-router.use(authenticateToken);
-
-/**
- * @route GET /api/guard/analytics
- * @desc Get guard operational analytics
- * @access Private (guard, admin)
- * @query fromDate, toDate
- */
-import { customRateLimit } from '../middleware/rateLimitMiddleware.js';
 
 // Rate limit: 100 requests per 15 minutes
 const analyticsLimiter = customRateLimit({
@@ -28,6 +19,16 @@ const analyticsLimiter = customRateLimit({
     message: { error: 'Too many analytics requests, please try again later.' }
 });
 
-router.get('/', analyticsLimiter, getGuardAnalytics);
+// All routes require authentication, estate context, and guard/admin role
+router.use(authenticateToken);
+router.use(requireEstateContext);
+
+/**
+ * @route GET /api/guard/analytics
+ * @desc Get guard operational analytics
+ * @access Private (guard, admin)
+ * @query fromDate, toDate
+ */
+router.get('/', requireRole(['guard', 'admin']), analyticsLimiter, getGuardAnalytics);
 
 export default router;

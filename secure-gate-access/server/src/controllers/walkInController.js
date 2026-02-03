@@ -133,7 +133,8 @@ export const registerWalkIn = async (req, res) => {
           vehicle_plate: visitor.vehicle_plate,
           purpose: visitor.purpose,
           approval_requested_at: visitor.created_at,
-          guard_name: req.user.username || 'Guard'
+          guard_name: req.user.username || 'Guard',
+          estate_id: estateId  // Estate context for room scoping
         });
       } catch (wsError) {
         logger.warn('Failed to emit walk-in approval request:', wsError);

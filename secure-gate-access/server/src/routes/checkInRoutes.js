@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
@@ -16,12 +17,16 @@ import { strictRateLimit } from '../middleware/rateLimitMiddleware.js';
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
 
+// All check-in routes require authentication and estate context
+router.use(authenticateToken);
+router.use(requireEstateContext);
+
 /**
  * Check in visitor by QR code
  * SEC-004: Enforces one-time QR code use
  * POST /api/check-in/qr
  */
-router.post('/qr', authenticateToken, authorize(['guard', 'admin']), strictRateLimit(), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/qr', authorize(['guard', 'admin']), strictRateLimit(), attachRequestAudit, asyncHandler(async (req, res) => {
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
 
@@ -140,7 +145,7 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), strictRateL
  * Check in a visitor by ID
  * POST /api/check-in/:visitorId
  */
-router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { visitorId } = req.params;
   const guardId = req.user.id;
   const { notes, vehicle_plate } = req.body;
@@ -195,7 +200,7 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
  * Get today's check-ins
  * GET /api/check-in/today
  */
-router.get('/today', authenticateToken, authorize(['guard', 'admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
+router.get('/today', authorize(['guard', 'admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
@@ -214,7 +219,7 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), minimizeD
  * Get check-in history
  * GET /api/check-in/history
  */
-router.get('/history', authenticateToken, authorize(['guard', 'admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
+router.get('/history', authorize(['guard', 'admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
   const { limit = 50, offset = 0, date } = req.query;
 
   let query = `

@@ -4,7 +4,9 @@
  */
 
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import rideshareService from '../services/rideshareService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
@@ -12,11 +14,43 @@ import { errorResponse } from '../utils/responseFormatter.js';
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
 
+// Rate limiting for rideshare creation (prevents abuse)
+const rideshareCreationLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // 10 rideshare entries per hour per resident
+  message: {
+    error: 'Too many rideshare entries created. Please try again later.',
+    retryAfter: '1 hour',
+    code: 'RIDESHARE_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `rideshare_create_${req.user?.id || req.ip}`,
+});
+
+// Rate limiting for rideshare validation (guards at gate)
+const rideshareValidationLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 validations per minute per guard
+  message: {
+    error: 'Too many validation attempts. Please try again shortly.',
+    retryAfter: '1 minute',
+    code: 'VALIDATION_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `rideshare_validate_${req.user?.id || req.ip}`,
+});
+
+// All rideshare routes require authentication and estate context
+router.use(authenticateToken);
+router.use(requireEstateContext);
+
 /**
  * Create a rideshare entry (Resident)
  * POST /api/rideshare
  */
-router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/', rideshareCreationLimit, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
 
@@ -41,7 +75,7 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
  * Get resident's rideshare entries
  * GET /api/rideshare
  */
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
     const { includeExpired } = req.query;
@@ -66,7 +100,7 @@ router.get('/', authenticateToken, async (req, res) => {
  * Cancel a rideshare entry (Resident)
  * POST /api/rideshare/:id/cancel
  */
-router.post('/:id/cancel', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/:id/cancel', attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const entryId = parseInt(req.params.id);
@@ -88,15 +122,16 @@ router.post('/:id/cancel', authenticateToken, attachRequestAudit, async (req, re
  * Get pending rideshare entries (Guard view)
  * GET /api/rideshare/pending
  */
-router.get('/pending', authenticateToken, async (req, res) => {
+router.get('/pending', async (req, res) => {
   try {
-    const { role } = req.user;
+    const { role, estate_id } = req.user;
 
     if (!['guard', 'admin'].includes(role)) {
       return errorResponse(res, 'Only guards can view pending rideshare entries', 'FORBIDDEN', 403, null, req);
     }
 
-    const entries = await rideshareService.getPendingRideshareEntries();
+    // Pass estate_id for proper isolation
+    const entries = await rideshareService.getPendingRideshareEntries(estate_id);
 
     res.json({ success: true, data: entries, count: entries.length });
   } catch (error) {
@@ -109,9 +144,9 @@ router.get('/pending', authenticateToken, async (req, res) => {
  * Validate rideshare entry (Guard)
  * POST /api/rideshare/validate
  */
-router.post('/validate', authenticateToken, async (req, res) => {
+router.post('/validate', rideshareValidationLimit, async (req, res) => {
   try {
-    const { role, id: guardId } = req.user;
+    const { role, id: guardId, estate_id } = req.user;
     const { credential, method = 'code' } = req.body;
 
     if (!['guard', 'admin'].includes(role)) {
@@ -122,7 +157,8 @@ router.post('/validate', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Credential required' });
     }
 
-    const result = await rideshareService.validateRideshareEntry(credential, method);
+    // Pass estate_id for proper isolation
+    const result = await rideshareService.validateRideshareEntry(credential, method, estate_id);
 
     if (!result.valid) {
       return res.status(400).json({
@@ -150,7 +186,7 @@ router.post('/validate', authenticateToken, async (req, res) => {
  * Mark rideshare as completed (Guard - driver left)
  * POST /api/rideshare/:id/complete
  */
-router.post('/:id/complete', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/:id/complete', attachRequestAudit, async (req, res) => {
   try {
     const { role, id: guardId } = req.user;
     const entryId = parseInt(req.params.id);

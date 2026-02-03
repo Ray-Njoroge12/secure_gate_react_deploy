@@ -99,7 +99,8 @@ export const requestApproval = async (req, res) => {
       ...updatedVisitor,
       vehicle_plate: visitor.vehicle_plate,
       purpose: visitor.purpose || reason,
-      guard_name: req.user.first_name || (req.user.email ? maskEmail(req.user.email) : 'Guard')
+      guard_name: req.user.first_name || (req.user.email ? maskEmail(req.user.email) : 'Guard'),
+      estate_id: req.user.estate_id  // Estate context for room scoping
     });
 
     respond(res, {
@@ -189,7 +190,8 @@ export const approveVisitor = async (req, res) => {
       visitor_id: id,
       status: 'approved',
       responded_by: req.user.first_name || (req.user.email ? maskEmail(req.user.email) : 'Resident'),
-      responded_at: approvedVisitor.approved_at
+      responded_at: approvedVisitor.approved_at,
+      estate_id: req.user.estate_id  // Estate context for room scoping
     });
 
     respond(res, {
@@ -275,7 +277,8 @@ export const rejectVisitor = async (req, res) => {
       status: 'rejected',
       responded_by: req.user.first_name || (req.user.email ? maskEmail(req.user.email) : 'Resident'),
       responded_at: rejectedVisitor.rejected_at,
-      rejection_reason: reason
+      rejection_reason: reason,
+      estate_id: req.user.estate_id  // Estate context for room scoping
     });
 
     respond(res, {

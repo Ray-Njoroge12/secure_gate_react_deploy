@@ -17,6 +17,7 @@ import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
 import { minimizeData } from '../middleware/dataMinimization.js';
+import { buildErrorPayload } from '../utils/responseFormatter.js';
 
 import { registerWalkIn, getTodayWalkIns } from '../controllers/walkInController.js';
 import {
@@ -28,6 +29,27 @@ import {
 } from '../controllers/visitorApprovalController.js';
 
 const router = express.Router();
+
+// Rate limiter for completeInvite endpoint (stricter to prevent abuse)
+const completeInviteLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 requests per minute per IP
+  message: 'Too many invite completion attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit by IP + invite code combination
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+               req.headers['x-real-ip'] || 
+               req.ip || 
+               'unknown';
+    return `complete-invite:${ip}:${req.params.inviteCode || 'unknown'}`;
+  },
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many invite completion attempts. Please wait a moment and try again.', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
+});
 
 /**
  * @swagger
@@ -126,6 +148,42 @@ const visitorCreationLimit = rateLimit({
   legacyHeaders: false,
 });
 
+// Stricter rate limiting for bulk invite operations
+// Bulk invites can create many visitors at once, so limit more aggressively
+const bulkInviteLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 5, // Maximum 5 bulk invites per hour per user
+  message: {
+    error: 'Too many bulk invite operations. Please try again later.',
+    retryAfter: '1 hour',
+    code: 'BULK_INVITE_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit by authenticated user ID for bulk operations
+    return `bulk_invite_${req.user?.id || req.ip}`;
+  },
+  skip: (req) => {
+    // Skip rate limiting for admins in emergency situations
+    return req.user?.role === 'admin' && req.headers['x-emergency-bypass'] === 'true';
+  }
+});
+
+// Daily limit for total visitors created via bulk invite
+const dailyBulkInviteLimit = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours
+  max: 20, // Maximum 20 bulk invite operations per day
+  message: {
+    error: 'Daily bulk invite limit reached. Please try again tomorrow.',
+    retryAfter: '24 hours',
+    code: 'DAILY_BULK_LIMIT_REACHED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `daily_bulk_${req.user?.id || req.ip}`,
+});
+
 /**
  * @swagger
  * /api/visitors:
@@ -211,8 +269,9 @@ router.get('/',
 );
 router.post('/:visitorId/pass', attachUserFromToken, attachRequestAudit, createPass);
 router.post('/bulk-invite',
-  visitorCreationLimit,
-  authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
+  authenticateToken,  // Must authenticate first to get user ID for rate limiting
+  bulkInviteLimit,    // Hourly limit: 5 bulk invites per hour
+  dailyBulkInviteLimit, // Daily limit: 20 bulk invites per day
   attachRequestAudit,
   bulkInvite
 );
@@ -381,11 +440,11 @@ router.get('/bulk-invite/:inviteCode',
   CacheMiddleware.createMiddleware({ ttl: 300 }),
   getBulkInvite
 );
-router.post('/complete/:inviteCode', completeInvite);
+router.post('/complete/:inviteCode', completeInviteLimiter, completeInvite);
 router.post('/self-checkin/:inviteCode', selfCheckIn);
 
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
-router.delete('/:id', attachUserFromToken, attachRequestAudit, cancelVisitor);
+router.delete('/:id', authenticateToken, attachRequestAudit, cancelVisitor);
 
 // Admin Operations (admin role required)
 router.get('/active', authenticateToken, requireRole(['admin', 'guard']), minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
@@ -393,7 +452,7 @@ router.get('/report', authenticateToken, requireRole(['admin']), minimizeData('v
 router.delete('/:visitorId/revoke', authenticateToken, requireRole(['admin']), attachRequestAudit, revokeVisitor);
 
 // Route aliases to match frontend expectations
-router.get('/reports', attachUserFromToken, minimizeData('visitor'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
+router.get('/reports', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
 
 // Public invite route alias
 router.get('/invite/:inviteCode',
