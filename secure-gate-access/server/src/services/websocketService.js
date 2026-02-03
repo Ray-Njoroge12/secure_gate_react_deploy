@@ -27,6 +27,7 @@ class WebSocketService {
   constructor() {
     this.io = null;
     this.connectedUsers = new Map(); // userId -> socket info
+    // Global rooms (super_admin only)
     this.rooms = {
       DASHBOARD: 'dashboard',
       ADMIN: 'admin',
@@ -34,6 +35,20 @@ class WebSocketService {
       VISITORS: 'visitors'
     };
     this.dashboardEvents = null; // Will be initialized after io is created
+  }
+
+  /**
+   * Get estate-scoped room name
+   * @param {string} roomType - Base room type (e.g., 'dashboard', 'visitors')
+   * @param {number} estateId - Estate ID for scoping
+   * @returns {string} Estate-scoped room name
+   */
+  getEstateRoom(roomType, estateId) {
+    if (!estateId) {
+      // Fallback to global room for super_admin
+      return roomType;
+    }
+    return `estate:${estateId}:${roomType}`;
   }
 
   /**
@@ -117,6 +132,7 @@ class WebSocketService {
       socketId: socket.id,
       userId: socket.userId,
       role: socket.userRole,
+      estateId: socket.estateId,
       email: maskedEmail,
       connectedAt: new Date()
     };
@@ -124,7 +140,7 @@ class WebSocketService {
     // Store connected user
     this.connectedUsers.set(socket.userId, userInfo);
 
-    // Join appropriate rooms based on user role
+    // Join appropriate rooms based on user role AND estate
     this.joinRoleBasedRooms(socket);
 
     // Phase 3: Join user-specific room for targeted notifications
@@ -134,23 +150,27 @@ class WebSocketService {
     socket.emit('connection:established', {
       message: 'Connected to real-time dashboard',
       userId: socket.userId,
-      availableRooms: this.getAvailableRooms(socket.userRole),
+      estateId: socket.estateId,
+      availableRooms: this.getAvailableRooms(socket.userRole, socket.estateId),
       serverTime: new Date().toISOString()
     });
 
-    // Broadcast user connection to admin room
-    socket.to(this.rooms.ADMIN).emit('user:connected', {
+    // Broadcast user connection to estate-scoped admin room
+    const adminRoom = this.getEstateRoom('admin', socket.estateId);
+    socket.to(adminRoom).emit('user:connected', {
       userId: socket.userId,
       email: maskedEmail,
       role: socket.userRole,
+      estateId: socket.estateId,
       timestamp: new Date().toISOString()
     });
 
     logger.info('WebSocket user connected', {
       userId: socket.userId,
-      role: socket.userRole
+      role: socket.userRole,
+      estateId: socket.estateId
     });
-    console.log(`🟢 WebSocket: user ${socket.userId} (${socket.userRole}) connected`);
+    console.log(`🟢 WebSocket: user ${socket.userId} (${socket.userRole}, estate:${socket.estateId || 'none'}) connected`);
 
     // Handle disconnection
     socket.on('disconnect', () => {
@@ -162,23 +182,28 @@ class WebSocketService {
    * Setup client event handlers
    */
   setupClientEventHandlers(socket) {
-    // Dashboard subscription
+    // Dashboard subscription - estate-scoped
     socket.on('dashboard:subscribe', (data) => {
-      socket.join(this.rooms.DASHBOARD);
+      const dashboardRoom = this.getEstateRoom('dashboard', socket.estateId);
+      socket.join(dashboardRoom);
       socket.emit('dashboard:subscribed', {
         message: 'Subscribed to dashboard updates',
+        room: dashboardRoom,
+        estateId: socket.estateId,
         timestamp: new Date().toISOString()
       });
       logger.info('User subscribed to dashboard updates', {
         userId: socket.userId,
-        role: socket.userRole
+        role: socket.userRole,
+        estateId: socket.estateId,
+        room: dashboardRoom
       });
     });
 
-    // Request real-time stats
+    // Request real-time stats - estate-scoped
     socket.on('dashboard:requestStats', async () => {
       try {
-        const stats = await this.getCurrentDashboardStats();
+        const stats = await this.getCurrentDashboardStats(socket.estateId);
         socket.emit('dashboard:stats', stats);
       } catch (error) {
         socket.emit('error', { message: 'Failed to fetch dashboard stats' });
@@ -186,12 +211,15 @@ class WebSocketService {
       }
     });
 
-    // Visitor events subscription
+    // Visitor events subscription - estate-scoped
     socket.on('visitors:subscribe', () => {
-      if (['admin', 'guard'].includes(socket.userRole)) {
-        socket.join(this.rooms.VISITORS);
+      if (['admin', 'guard', 'super_admin'].includes(socket.userRole)) {
+        const visitorRoom = this.getEstateRoom('visitors', socket.estateId);
+        socket.join(visitorRoom);
         socket.emit('visitors:subscribed', {
           message: 'Subscribed to visitor updates',
+          room: visitorRoom,
+          estateId: socket.estateId,
           timestamp: new Date().toISOString()
         });
       } else {
@@ -199,12 +227,15 @@ class WebSocketService {
       }
     });
 
-    // Admin events subscription
+    // Admin events subscription - estate-scoped
     socket.on('admin:subscribe', () => {
-      if (socket.userRole === 'admin') {
-        socket.join(this.rooms.ADMIN);
+      if (['admin', 'super_admin'].includes(socket.userRole)) {
+        const adminRoom = this.getEstateRoom('admin', socket.estateId);
+        socket.join(adminRoom);
         socket.emit('admin:subscribed', {
           message: 'Subscribed to admin updates',
+          room: adminRoom,
+          estateId: socket.estateId,
           timestamp: new Date().toISOString()
         });
       } else {
@@ -214,36 +245,66 @@ class WebSocketService {
   }
 
   /**
-   * Join role-based rooms automatically
+   * Join role-based rooms automatically - estate-scoped
    */
   joinRoleBasedRooms(socket) {
-    // Everyone joins dashboard room
-    socket.join(this.rooms.DASHBOARD);
+    const estateId = socket.estateId;
+    
+    // Everyone joins their estate's dashboard room
+    const dashboardRoom = this.getEstateRoom('dashboard', estateId);
+    socket.join(dashboardRoom);
 
-    // Role-specific rooms
+    // Role-specific rooms (estate-scoped)
     switch (socket.userRole) {
-      case 'admin':
+      case 'super_admin':
+        // Super admin joins global admin room for cross-estate visibility
         socket.join(this.rooms.ADMIN);
         socket.join(this.rooms.VISITORS);
         break;
+      case 'admin':
+        socket.join(this.getEstateRoom('admin', estateId));
+        socket.join(this.getEstateRoom('visitors', estateId));
+        break;
       case 'guard':
-        socket.join(this.rooms.GUARDS);
-        socket.join(this.rooms.VISITORS);
+      case 'security':
+        socket.join(this.getEstateRoom('guards', estateId));
+        socket.join(this.getEstateRoom('visitors', estateId));
+        break;
+      case 'resident':
+        // Residents only join dashboard room (already joined above)
         break;
     }
+    
+    logger.info('User joined estate-scoped rooms', {
+      userId: socket.userId,
+      role: socket.userRole,
+      estateId: estateId,
+      rooms: Array.from(socket.rooms)
+    });
   }
 
   /**
-   * Get available rooms for user role
+   * Get available rooms for user role - estate-scoped
    */
-  getAvailableRooms(role) {
-    const baseRooms = [this.rooms.DASHBOARD];
+  getAvailableRooms(role, estateId) {
+    const baseRooms = [this.getEstateRoom('dashboard', estateId)];
 
     switch (role) {
-      case 'admin':
+      case 'super_admin':
         return [...baseRooms, this.rooms.ADMIN, this.rooms.VISITORS];
+      case 'admin':
+        return [
+          ...baseRooms,
+          this.getEstateRoom('admin', estateId),
+          this.getEstateRoom('visitors', estateId)
+        ];
       case 'guard':
-        return [...baseRooms, this.rooms.GUARDS, this.rooms.VISITORS];
+      case 'security':
+        return [
+          ...baseRooms,
+          this.getEstateRoom('guards', estateId),
+          this.getEstateRoom('visitors', estateId)
+        ];
       default:
         return baseRooms;
     }
@@ -255,56 +316,70 @@ class WebSocketService {
   handleDisconnection(socket) {
     this.connectedUsers.delete(socket.userId);
 
-    // Broadcast user disconnection to admin room
-    socket.to(this.rooms.ADMIN).emit('user:disconnected', {
+    // Broadcast user disconnection to estate-scoped admin room
+    const adminRoom = this.getEstateRoom('admin', socket.estateId);
+    socket.to(adminRoom).emit('user:disconnected', {
       userId: socket.userId,
       email: maskEmail(socket.userEmail),
       role: socket.userRole,
+      estateId: socket.estateId,
       timestamp: new Date().toISOString()
     });
 
     logger.info('WebSocket user disconnected', {
       userId: socket.userId,
-      role: socket.userRole
+      role: socket.userRole,
+      estateId: socket.estateId
     });
-    console.log(`🔴 WebSocket: user ${socket.userId} (${socket.userRole}) disconnected`);
+    console.log(`🔴 WebSocket: user ${socket.userId} (${socket.userRole}, estate:${socket.estateId || 'none'}) disconnected`);
   }
 
   /**
-   * Broadcast dashboard stats update to all connected clients
+   * Broadcast dashboard stats update to estate-scoped clients
+   * @param {Object} stats - Dashboard statistics
+   * @param {number} estateId - Estate ID to broadcast to (null for global)
    */
-  async broadcastDashboardUpdate(stats) {
+  async broadcastDashboardUpdate(stats, estateId = null) {
     if (!this.io) return;
 
     const dashboardUpdate = {
       type: 'stats_update',
       data: stats,
+      estateId: estateId,
       timestamp: new Date().toISOString()
     };
 
-    this.io.to(this.rooms.DASHBOARD).emit('dashboard:update', dashboardUpdate);
-    logger.info('Dashboard stats broadcasted to all clients');
+    const dashboardRoom = this.getEstateRoom('dashboard', estateId);
+    this.io.to(dashboardRoom).emit('dashboard:update', dashboardUpdate);
+    logger.info('Dashboard stats broadcasted to estate clients', { estateId, room: dashboardRoom });
   }
 
   /**
-   * Broadcast visitor event (check-in, check-out, new visitor)
+   * Broadcast visitor event (check-in, check-out, new visitor) - estate-scoped
+   * @param {string} eventType - Type of visitor event
+   * @param {Object} visitorData - Visitor data (must include estate_id)
    */
   broadcastVisitorEvent(eventType, visitorData) {
     if (!this.io) return;
 
+    const estateId = visitorData.estate_id || visitorData.estateId;
     const sanitizedVisitorData = sanitizeContactFields(visitorData);
     const visitorEvent = {
       type: eventType,
       data: sanitizedVisitorData,
+      estateId: estateId,
       timestamp: new Date().toISOString()
     };
 
-    this.io.to(this.rooms.VISITORS).emit('visitor:event', visitorEvent);
-    logger.info(`Visitor event ${eventType} broadcasted`);
+    const visitorRoom = this.getEstateRoom('visitors', estateId);
+    this.io.to(visitorRoom).emit('visitor:event', visitorEvent);
+    logger.info(`Visitor event ${eventType} broadcasted to estate ${estateId}`);
   }
 
   /**
-   * Send system notification to specific user or role
+   * Send system notification to specific user, role, or estate
+   * @param {Object} target - Target specification { userId, role, estateId }
+   * @param {Object} notification - Notification data
    */
   sendNotification(target, notification) {
     if (!this.io) return;
@@ -318,25 +393,36 @@ class WebSocketService {
     if (target.userId) {
       // Send to specific user across all instances
       this.io.to(`user:${target.userId}`).emit('notification', notificationData);
+    } else if (target.role && target.estateId) {
+      // Send to all users with specific role in a specific estate
+      const roomName = this.getEstateRoom(target.role.toLowerCase(), target.estateId);
+      this.io.to(roomName).emit('notification', notificationData);
     } else if (target.role) {
-      // Send to all users with specific role
+      // Send to all users with specific role (global - super_admin use)
       const roomName = this.rooms[target.role.toUpperCase()];
       if (roomName) {
         this.io.to(roomName).emit('notification', notificationData);
       }
+    } else if (target.estateId) {
+      // Send to all users in an estate
+      const dashboardRoom = this.getEstateRoom('dashboard', target.estateId);
+      this.io.to(dashboardRoom).emit('notification', notificationData);
     }
   }
 
   /**
-   * Get current dashboard stats (placeholder - will integrate with dashboard controller)
+   * Get current dashboard stats - estate-scoped
+   * @param {number} estateId - Estate ID (optional, for estate-specific stats)
    */
-  async getCurrentDashboardStats() {
+  async getCurrentDashboardStats(estateId = null) {
     // This will be integrated with the actual dashboard controller
+    // TODO: Filter stats by estateId when provided
     return {
       totalVisitors: 150,
       activeVisitors: 12,
       pendingApprovals: 5,
       systemHealth: 'healthy',
+      estateId: estateId,
       lastUpdated: new Date().toISOString()
     };
   }
@@ -420,11 +506,14 @@ class WebSocketService {
 
   /**
    * Phase 3: Visitor Approval Events
-   * Emit approval request to specific resident
+   * Emit approval request to specific resident - estate-aware
+   * @param {number} residentId - Resident user ID
+   * @param {Object} visitorData - Visitor data including estate_id
    */
   emitApprovalRequest(residentId, visitorData) {
     if (!this.io) return;
 
+    const estateId = visitorData.estate_id || visitorData.estateId;
     const approvalRequest = {
       event: 'visitor.pending_approval',
       data: {
@@ -434,23 +523,37 @@ class WebSocketService {
         vehicle_plate: visitorData.vehicle_plate,
         purpose: visitorData.purpose,
         requested_at: visitorData.approval_requested_at || new Date().toISOString(),
-        guard_name: visitorData.guard_name
+        guard_name: visitorData.guard_name,
+        estate_id: estateId
       },
+      estateId: estateId,
       timestamp: new Date().toISOString()
     };
 
     // Emit to specific resident room
     this.io.to(`resident:${residentId}`).emit('visitor:approval_request', approvalRequest);
 
-    logger.info(`Approval request emitted to resident ${residentId} for visitor ${visitorData.id}`);
+    logger.info(`Approval request emitted to resident ${residentId} for visitor ${visitorData.id}`, {
+      estateId,
+      residentId,
+      visitorId: visitorData.id
+    });
   }
 
   /**
-   * Phase 3: Emit approval response to guard
+   * Phase 3: Emit approval response to guard - estate-aware
+   * @param {number} guardId - Guard user ID
+   * @param {Object} responseData - Response data including estate_id
+   */
+  /**
+   * Phase 3: Emit approval response to guard - estate-aware
+   * @param {number} guardId - Guard user ID
+   * @param {Object} responseData - Response data including estate_id
    */
   emitApprovalResponse(guardId, responseData) {
     if (!this.io) return;
 
+    const estateId = responseData.estate_id || responseData.estateId;
     const approvalResponse = {
       event: 'visitor.approval_response',
       data: {
@@ -458,8 +561,10 @@ class WebSocketService {
         status: responseData.status, // 'approved' or 'rejected'
         responded_by: responseData.responded_by,
         responded_at: responseData.responded_at || new Date().toISOString(),
-        rejection_reason: responseData.rejection_reason || null
+        rejection_reason: responseData.rejection_reason || null,
+        estate_id: estateId
       },
+      estateId: estateId,
       timestamp: new Date().toISOString()
     };
 
@@ -468,10 +573,15 @@ class WebSocketService {
       this.io.to(`guard:${guardId}`).emit('visitor:approval_response', approvalResponse);
     }
 
-    // Also broadcast to all guards room for visibility
-    this.io.to(this.rooms.GUARDS).emit('visitor:approval_response', approvalResponse);
+    // Also broadcast to estate-scoped guards room for visibility
+    const guardsRoom = this.getEstateRoom('guards', estateId);
+    this.io.to(guardsRoom).emit('visitor:approval_response', approvalResponse);
 
-    logger.info(`Approval response (${responseData.status}) emitted for visitor ${responseData.visitor_id}`);
+    logger.info(`Approval response (${responseData.status}) emitted for visitor ${responseData.visitor_id}`, {
+      estateId,
+      guardId,
+      visitorId: responseData.visitor_id
+    });
   }
 
   /**

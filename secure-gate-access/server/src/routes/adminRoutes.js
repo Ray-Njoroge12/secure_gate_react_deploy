@@ -19,6 +19,7 @@ import {
 } from '../controllers/superAdminController.js';
 import { respond, respondError } from '../utils/respond.js';
 import { authenticateToken, requireRole, requireMFA } from '../middleware/authMiddleware.js';
+import { requireEstateContextForAdmin } from '../middleware/estateContextMiddleware.js';
 import { requireMFAForSensitiveOps, requireRecentMFAVerification } from '../middleware/mfaSensitiveOperations.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import { 
@@ -194,7 +195,7 @@ router.get('/super-admin/system/metrics', authenticateToken, requireRole(['super
  *         $ref: '#/components/responses/ForbiddenError'
  */
 // Admin metrics endpoint
-router.get('/metrics', authenticateToken, adminQueryLimit(), attachRequestAudit, getMetrics);
+router.get('/metrics', authenticateToken, requireEstateContextForAdmin, adminQueryLimit(), attachRequestAudit, getMetrics);
 
 /**
  * @route GET /api/admin/estate-info
@@ -206,7 +207,7 @@ router.get('/metrics', authenticateToken, adminQueryLimit(), attachRequestAudit,
  *       200:
  *         description: Estate info retrieved
  */
-router.get('/estate-info', authenticateToken, adminQueryLimit(), attachRequestAudit, getEstateInfo);
+router.get('/estate-info', authenticateToken, requireEstateContextForAdmin, adminQueryLimit(), attachRequestAudit, getEstateInfo);
 
 // ==================== SETTINGS & COMPLIANCE ====================
 
@@ -215,14 +216,14 @@ router.get('/estate-info', authenticateToken, adminQueryLimit(), attachRequestAu
  * @desc Get estate settings
  * @access Private (Admin only)
  */
-router.get('/settings', authenticateToken, requireRole(['admin']), adminQueryLimit(), attachRequestAudit, getSettings);
+router.get('/settings', authenticateToken, requireRole(['admin']), requireEstateContextForAdmin, adminQueryLimit(), attachRequestAudit, getSettings);
 
 /**
  * @route PUT /api/admin/settings
  * @desc Update estate settings
  * @access Private (Admin only)
  */
-router.put('/settings', authenticateToken, requireRole(['admin']), adminModificationLimit(), attachRequestAudit, updateSettings);
+router.put('/settings', authenticateToken, requireRole(['admin']), requireEstateContextForAdmin, adminModificationLimit(), attachRequestAudit, updateSettings);
 
 /**
  * @route PUT /api/admin/compliance/:section
@@ -442,7 +443,7 @@ router.post('/backup/trigger', authenticateToken, requireRole(['admin']), requir
  * @desc Get all pending users requiring approval
  * @access Private (Admin only)
  */
-router.get('/users/pending', authenticateToken, requireRole(['admin']), adminQueryLimit(), minimizeData('user'), attachRequestAudit, getPendingUsers);
+router.get('/users/pending', authenticateToken, requireRole(['admin']), requireEstateContextForAdmin, adminQueryLimit(), minimizeData('user'), attachRequestAudit, getPendingUsers);
 
 /**
  * @route PUT /api/admin/users/:id/status
@@ -451,7 +452,8 @@ router.get('/users/pending', authenticateToken, requireRole(['admin']), adminQue
  */
 router.put('/users/:id/status', 
   authenticateToken, 
-  requireRole(['admin']), 
+  requireRole(['admin']),
+  requireEstateContextForAdmin, 
   adminModificationLimit(), 
   validateUserStatusUpdate(), 
   validate, 

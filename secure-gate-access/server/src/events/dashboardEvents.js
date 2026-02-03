@@ -84,12 +84,15 @@ class DashboardEvents {
   }
 
   /**
-   * Emit visitor check-in event
+   * Emit visitor check-in event - estate-scoped
+   * @param {Object} visitorData - Visitor data including estate_id
    */
   emitVisitorCheckIn(visitorData) {
+    const estateId = visitorData.estate_id || visitorData.estateId;
     const event = {
       type: 'VISITOR_CHECK_IN',
       timestamp: new Date().toISOString(),
+      estateId: estateId,
       data: {
         visitorId: visitorData.id,
         name: visitorData.name,
@@ -97,43 +100,51 @@ class DashboardEvents {
         purpose: visitorData.purpose,
         checkInTime: visitorData.checkInTime,
         location: visitorData.location || 'Main Gate',
-        status: PASS_STATUS.ON_PREMISE
+        status: PASS_STATUS.ON_PREMISE,
+        estate_id: estateId
       }
     };
 
     const sanitizedEvent = this.sanitizeEvent(event);
-    this.broadcastToDashboard(sanitizedEvent);
+    this.broadcastToDashboard(sanitizedEvent, estateId);
     this.logEvent(sanitizedEvent);
   }
 
   /**
-   * Emit visitor check-out event
+   * Emit visitor check-out event - estate-scoped
+   * @param {Object} visitorData - Visitor data including estate_id
    */
   emitVisitorCheckOut(visitorData) {
+    const estateId = visitorData.estate_id || visitorData.estateId;
     const event = {
       type: 'VISITOR_CHECK_OUT',
       timestamp: new Date().toISOString(),
+      estateId: estateId,
       data: {
         visitorId: visitorData.id,
         name: visitorData.name,
         checkOutTime: visitorData.checkOutTime,
         duration: visitorData.duration,
-        status: PASS_STATUS.CHECKED_OUT
+        status: PASS_STATUS.CHECKED_OUT,
+        estate_id: estateId
       }
     };
 
     const sanitizedEvent = this.sanitizeEvent(event);
-    this.broadcastToDashboard(sanitizedEvent);
+    this.broadcastToDashboard(sanitizedEvent, estateId);
     this.logEvent(sanitizedEvent);
   }
 
   /**
-   * Emit new visitor invitation event
+   * Emit new visitor invitation event - estate-scoped
+   * @param {Object} inviteData - Invite data including estate_id
    */
   emitVisitorInviteCreated(inviteData) {
+    const estateId = inviteData.estate_id || inviteData.estateId;
     const event = {
       type: 'VISITOR_INVITE_CREATED',
       timestamp: new Date().toISOString(),
+      estateId: estateId,
       data: {
         inviteId: inviteData.id,
         visitorName: inviteData.visitorName,
@@ -142,37 +153,47 @@ class DashboardEvents {
         validFrom: inviteData.validFrom,
         validUntil: inviteData.validUntil,
         invitedBy: inviteData.invitedBy,
-        status: PASS_STATUS.PENDING
+        status: PASS_STATUS.PENDING,
+        estate_id: estateId
       }
     };
 
     const sanitizedEvent = this.sanitizeEvent(event);
-    this.broadcastToDashboard(sanitizedEvent);
+    this.broadcastToDashboard(sanitizedEvent, estateId);
     this.logEvent(sanitizedEvent);
   }
 
   /**
-   * Emit system metrics update
+   * Emit system metrics update - estate-scoped
+   * @param {Object} metrics - Metrics data including estate_id
    */
   emitMetricsUpdate(metrics) {
+    const estateId = metrics.estate_id || metrics.estateId;
     const event = {
       type: 'METRICS_UPDATE',
       timestamp: new Date().toISOString(),
-      data: metrics
+      estateId: estateId,
+      data: {
+        ...metrics,
+        estate_id: estateId
+      }
     };
 
     const sanitizedEvent = this.sanitizeEvent(event);
-    this.broadcastToDashboard(sanitizedEvent);
+    this.broadcastToDashboard(sanitizedEvent, estateId);
   }
 
   /**
-   * Emit security alert
+   * Emit security alert - estate-scoped
+   * @param {Object} alertData - Alert data including estate_id
    */
   emitSecurityAlert(alertData) {
+    const estateId = alertData.estate_id || alertData.estateId;
     const event = {
       type: 'SECURITY_ALERT',
       timestamp: new Date().toISOString(),
       priority: alertData.priority || 'medium',
+      estateId: estateId,
       data: {
         alertId: alertData.id,
         type: alertData.type,
@@ -180,32 +201,36 @@ class DashboardEvents {
         location: alertData.location,
         severity: alertData.severity,
         userId: alertData.userId,
-        details: alertData.details
+        details: alertData.details,
+        estate_id: estateId
       }
     };
 
-    // Broadcast to appropriate rooms based on severity
+    // Broadcast to appropriate rooms based on severity - estate-scoped
     if (alertData.severity === 'critical') {
       const sanitizedEvent = this.sanitizeEvent(event);
-      this.broadcastToAdmins(sanitizedEvent);
-      this.broadcastToGuards(sanitizedEvent);
+      this.broadcastToAdmins(sanitizedEvent, estateId);
+      this.broadcastToGuards(sanitizedEvent, estateId);
     } else if (alertData.severity === 'high') {
       const sanitizedEvent = this.sanitizeEvent(event);
-      this.broadcastToGuards(sanitizedEvent);
+      this.broadcastToGuards(sanitizedEvent, estateId);
     }
 
     const sanitizedEvent = this.sanitizeEvent(event);
-    this.broadcastToDashboard(sanitizedEvent);
+    this.broadcastToDashboard(sanitizedEvent, estateId);
     this.logEvent(sanitizedEvent);
   }
 
   /**
-   * Emit system notification
+   * Emit system notification - estate-scoped
+   * @param {Object} notification - Notification data including estate_id
    */
   emitSystemNotification(notification) {
+    const estateId = notification.estate_id || notification.estateId;
     const event = {
       type: 'SYSTEM_NOTIFICATION',
       timestamp: new Date().toISOString(),
+      estateId: estateId,
       data: {
         id: notification.id,
         title: notification.title,
@@ -213,31 +238,35 @@ class DashboardEvents {
         type: notification.type, // info, warning, error, success
         targetRoles: notification.targetRoles || ['admin'],
         autoClose: notification.autoClose || false,
-        duration: notification.duration || 5000
+        duration: notification.duration || 5000,
+        estate_id: estateId
       }
     };
 
-    // Broadcast to specified roles
+    // Broadcast to specified roles - estate-scoped
     if (notification.targetRoles.includes('admin')) {
-      this.broadcastToAdmins(this.sanitizeEvent(event));
+      this.broadcastToAdmins(this.sanitizeEvent(event), estateId);
     }
     if (notification.targetRoles.includes('guard')) {
-      this.broadcastToGuards(this.sanitizeEvent(event));
+      this.broadcastToGuards(this.sanitizeEvent(event), estateId);
     }
     if (notification.targetRoles.includes('all')) {
-      this.broadcastToDashboard(this.sanitizeEvent(event));
+      this.broadcastToDashboard(this.sanitizeEvent(event), estateId);
     }
 
     this.logEvent(this.sanitizeEvent(event));
   }
 
   /**
-   * Emit bulk invitation status update
+   * Emit bulk invitation status update - estate-scoped
+   * @param {Object} updateData - Update data including estate_id
    */
   emitBulkInviteUpdate(updateData) {
+    const estateId = updateData.estate_id || updateData.estateId;
     const event = {
       type: 'BULK_INVITE_UPDATE',
       timestamp: new Date().toISOString(),
+      estateId: estateId,
       data: {
         batchId: updateData.batchId,
         processed: updateData.processed,
@@ -245,59 +274,73 @@ class DashboardEvents {
         successful: updateData.successful,
         failed: updateData.failed,
         status: updateData.status,
-        errors: updateData.errors || []
+        errors: updateData.errors || [],
+        estate_id: estateId
       }
     };
 
     const sanitizedEvent = this.sanitizeEvent(event);
-    this.broadcastToDashboard(sanitizedEvent);
+    this.broadcastToDashboard(sanitizedEvent, estateId);
     this.logEvent(sanitizedEvent);
   }
 
   /**
-   * Emit dashboard activity feed update
+   * Emit dashboard activity feed update - estate-scoped
+   * @param {Object} activity - Activity data including estate_id
    */
   emitActivityUpdate(activity) {
+    const estateId = activity.estate_id || activity.estateId;
     const event = {
       type: 'ACTIVITY_UPDATE',
       timestamp: new Date().toISOString(),
+      estateId: estateId,
       data: {
         id: activity.id,
         type: activity.type,
         description: activity.description,
         userId: activity.userId,
         userName: activity.userName,
-        metadata: activity.metadata || {}
+        metadata: activity.metadata || {},
+        estate_id: estateId
       }
     };
 
-    this.broadcastToDashboard(this.sanitizeEvent(event));
+    this.broadcastToDashboard(this.sanitizeEvent(event), estateId);
   }
 
   /**
-   * Broadcast event to dashboard room
+   * Broadcast event to dashboard room - estate-scoped
+   * @param {Object} event - Event to broadcast
+   * @param {number} estateId - Estate ID for scoping (optional)
    */
-  broadcastToDashboard(event) {
+  broadcastToDashboard(event, estateId = null) {
     if (this.webSocketService && this.webSocketService.io) {
-      this.webSocketService.io.to('dashboard').emit('dashboard_event', event);
+      const room = this.webSocketService.getEstateRoom('dashboard', estateId);
+      this.webSocketService.io.to(room).emit('dashboard_event', event);
     }
   }
 
   /**
-   * Broadcast event to admin room
+   * Broadcast event to admin room - estate-scoped
+   * @param {Object} event - Event to broadcast
+   * @param {number} estateId - Estate ID for scoping (optional)
    */
-  broadcastToAdmins(event) {
+  broadcastToAdmins(event, estateId = null) {
     if (this.webSocketService && this.webSocketService.io) {
-      this.webSocketService.io.to('admin').emit('admin_event', event);
+      const room = this.webSocketService.getEstateRoom('admin', estateId);
+      this.webSocketService.io.to(room).emit('admin_event', event);
     }
   }
 
   /**
-   * Broadcast event to guards room
+   * Broadcast event to guards room - estate-scoped
+   * @param {Object} event - Event to broadcast
+   * @param {number} estateId - Estate ID for scoping (optional)
    */
-  broadcastToGuards(event) {
+  broadcastToGuards(event, estateId = null) {
     if (this.webSocketService && this.webSocketService.io) {
-      this.webSocketService.io.to('guards').emit('guard_event', event);
+      const room = this.webSocketService.getEstateRoom('guards', estateId);
+      this.webSocketService.io.to(room).emit('guard_event', event);
     }
   }
 

@@ -268,7 +268,8 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
         phone: visitor.phone,
         purpose: visitor.purpose,
         checkInTime: now.toISOString(),
-        location: location
+        location: location,
+        estate_id: req.user.estate_id  // Estate context for room scoping
       });
     } catch (wsError) {
       console.warn('Failed to emit check-in event:', wsError.message);

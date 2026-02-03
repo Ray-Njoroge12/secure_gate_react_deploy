@@ -85,18 +85,33 @@ function generateVisitorToken() {
 }
 
 /**
- * Calculate token expiry (end of visit day or 24h from now)
+ * Get timezone grace period in hours from environment
+ * Default: 2 hours to accommodate timezone differences
+ */
+function getTokenExpiryGraceHours() {
+  const graceHours = parseInt(process.env.TOKEN_EXPIRY_GRACE_HOURS, 10);
+  return Number.isFinite(graceHours) && graceHours >= 0 ? graceHours : 2;
+}
+
+/**
+ * Calculate token expiry (end of visit day + grace period, or 24h from now)
+ * Grace period helps accommodate timezone differences for visitors
  */
 function calculateTokenExpiry(dateOfVisit) {
+  const graceHours = getTokenExpiryGraceHours();
+  
   if (dateOfVisit) {
     const visitDate = new Date(dateOfVisit);
     if (!Number.isNaN(visitDate.getTime())) {
+      // Set to end of visit day
       visitDate.setHours(23, 59, 59, 999);
+      // Add grace period for timezone differences
+      visitDate.setHours(visitDate.getHours() + graceHours);
       return visitDate;
     }
   }
-  // Fallback: 24 hours from now
-  return new Date(Date.now() + 24 * 60 * 60 * 1000);
+  // Fallback: 24 hours from now + grace period
+  return new Date(Date.now() + (24 + graceHours) * 60 * 60 * 1000);
 }
 
 /**
@@ -285,6 +300,7 @@ export const createVisitor = async (req, res) => {
     const inviteLink = `${CLIENT_ORIGIN}/invite/${inviteCode}`;
 
     // Send invite notification via WhatsApp/SMS
+    let notificationSent = false;
     try {
       const sent = await sendVisitorInviteSms(
         {
@@ -298,9 +314,11 @@ export const createVisitor = async (req, res) => {
         { name: resident.username || resident.resident_email, email: resident.resident_email },
         inviteLink
       );
-      if (!sent && visitor.email) {
+      if (sent) {
+        notificationSent = true;
+      } else if (visitor.email) {
         // Fallback to email if SMS fails
-        await sendVisitorInviteEmail(
+        const emailSent = await sendVisitorInviteEmail(
           {
             name: visitor.name,
             email: visitor.email,
@@ -313,16 +331,19 @@ export const createVisitor = async (req, res) => {
           inviteLink,
           null
         );
+        notificationSent = !!emailSent;
       }
     } catch (notifyError) {
       console.warn('[createVisitor] Notification sending failed:', notifyError.message);
+      notificationSent = false;
     }
 
     // Audit log
     await req.audit?.('visitor.create', 'visitor', String(visitor.id), {
       outcome: 'success',
       visitorName: name,
-      hasQR: false
+      hasQR: false,
+      notificationSent
     });
 
     // Build response
@@ -335,6 +356,7 @@ export const createVisitor = async (req, res) => {
       status: visitor.status,
       inviteCode,
       inviteLink,
+      notificationSent, // Indicate whether visitor was notified
       visitorToken: visitor.visitor_token,  // E2: Include visitor_token in response
       visitor_token: visitor.visitor_token,  // Also include snake_case for backward compatibility
       expiresAt: visitor.token_expires_at,

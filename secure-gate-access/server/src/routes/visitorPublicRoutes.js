@@ -17,7 +17,8 @@ import {
   getEstateInfo,
   getVisitorStatus,
   confirmVisitorByToken,
-  getInviteByCode
+  getInviteByCode,
+  regenerateQRCode
 } from '../controllers/visitorPublicController.js';
 import { validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { buildErrorPayload } from '../utils/responseFormatter.js';
@@ -58,6 +59,27 @@ const estateInfoLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => {
     const response = buildErrorPayload(req, res, 'Too many estate info requests, please try again later', 'RATE_LIMITED');
+    res.status(429).json(response);
+  }
+});
+
+// Rate limiter for QR regeneration (stricter - prevent abuse)
+const qrRegenerateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 requests per hour per IP
+  message: 'Too many QR regeneration requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit by IP + token combination
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
+               req.headers['x-real-ip'] || 
+               req.ip || 
+               'unknown';
+    return `qr-regen:${ip}:${req.params.token || 'unknown'}`;
+  },
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many QR regeneration requests. Please try again in an hour.', 'RATE_LIMITED');
     res.status(429).json(response);
   }
 });
@@ -125,6 +147,18 @@ router.post(
   '/:token/confirm',
   visitorTokenLimiter,
   confirmVisitorByToken
+);
+
+/**
+ * @route POST /api/public/visitors/:token/regenerate-qr
+ * @desc Regenerate QR code for visitor (if lost/corrupted)
+ * @access Public (no auth, token-based)
+ * @rateLimit 5 req/hour per IP+token
+ */
+router.post(
+  '/:token/regenerate-qr',
+  qrRegenerateLimiter,
+  regenerateQRCode
 );
 
 /**

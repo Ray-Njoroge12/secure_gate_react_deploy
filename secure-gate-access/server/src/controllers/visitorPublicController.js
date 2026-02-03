@@ -810,10 +810,156 @@ function generateConfirmationEmailHTML(visitor, qrData) {
   `;
 }
 
+/**
+ * Regenerate QR code for visitor (public endpoint)
+ * Allows visitors to request a new QR code if original is lost/corrupted
+ * 
+ * @route POST /api/public/visitors/:token/regenerate-qr
+ * @access Public (no auth required, token-based)
+ * @rateLimit 5 requests per hour per IP
+ * 
+ * @param {string} token - Visitor token (format: vst_[24 alphanumeric chars])
+ * @returns {Object} New QR code data URL
+ */
+export const regenerateQRCode = async (req, res) => {
+  const startTime = Date.now();
+
+  try {
+    const { token } = req.params;
+
+    // Validate token format - expects vst_ prefix + 24 alphanumeric chars = 28 total
+    if (!token || !token.startsWith('vst_') || token.length !== 28) {
+      logger.warn('Invalid visitor token format for QR regeneration', {
+        token: token?.substring(0, 10) + '...',
+        ip: req.ip
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid token format'
+      });
+    }
+
+    // Fetch visitor by token
+    const query = `
+      SELECT 
+        v.id,
+        v.name,
+        v.status,
+        v.date_of_visit,
+        v.visitor_token,
+        v.token_expires_at,
+        v.estate_id,
+        v.created_by
+      FROM visitors v
+      WHERE v.visitor_token = $1
+        AND v.token_expires_at > NOW()
+      LIMIT 1
+    `;
+
+    const result = await dbManager.query(query, [token]);
+
+    if (result.rows.length === 0) {
+      logger.warn('Visitor token not found or expired for QR regeneration', {
+        token: token.substring(0, 10) + '...',
+        ip: req.ip
+      });
+
+      return res.status(404).json({
+        success: false,
+        error: 'Invite not found or has expired'
+      });
+    }
+
+    const visitor = result.rows[0];
+
+    // Only allow QR regeneration for confirmed/approved visitors
+    const allowedStatuses = ['confirmed', 'approved', 'verified'];
+    if (!allowedStatuses.includes(visitor.status)) {
+      logger.warn('QR regeneration attempted for non-confirmed visitor', {
+        visitorId: visitor.id,
+        status: visitor.status,
+        ip: req.ip
+      });
+
+      return res.status(400).json({
+        success: false,
+        error: `QR code can only be regenerated for confirmed visits. Current status: ${visitor.status}`
+      });
+    }
+
+    // Invalidate any existing QR codes for this visitor
+    await dbManager.query(
+      `UPDATE qr_codes 
+       SET status = 'revoked', updated_at = NOW() 
+       WHERE visitor_id = $1 AND status = 'active'`,
+      [visitor.id]
+    );
+
+    // Generate new QR code
+    const visitorData = {
+      id: visitor.id,
+      name: visitor.name,
+      date_of_visit: visitor.date_of_visit,
+      estate_id: visitor.estate_id,
+      createdBy: visitor.created_by
+    };
+
+    const qrResult = await qrCodeService.generateVisitorQR(visitorData, {
+      generateOtp: false // Don't regenerate OTP, just the QR code
+    });
+
+    if (!qrResult.success) {
+      logger.error('Failed to regenerate QR code', {
+        visitorId: visitor.id,
+        error: qrResult.error
+      });
+
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to generate new QR code. Please try again.'
+      });
+    }
+
+    // Log successful regeneration (security audit)
+    logger.info('QR code regenerated for visitor', {
+      visitorId: visitor.id,
+      token: token.substring(0, 10) + '...',
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      responseTime: Date.now() - startTime
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'QR code regenerated successfully',
+      data: {
+        qrCodeDataUrl: qrResult.data.qrCodeDataUrl,
+        expiresAt: qrResult.data.expiresAt,
+        qrId: qrResult.data.qrId
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error regenerating QR code', {
+      error: error.message,
+      stack: error.stack,
+      token: req.params.token?.substring(0, 10) + '...',
+      responseTime: Date.now() - startTime
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to regenerate QR code'
+    });
+  }
+};
+
 export default {
   getVisitorByToken,
   getEstateInfo,
   getVisitorStatus,
   confirmVisitorByToken,
-  getInviteByCode
+  getInviteByCode,
+  regenerateQRCode
 };

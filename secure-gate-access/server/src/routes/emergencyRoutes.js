@@ -13,14 +13,16 @@
 import express from 'express';
 import emergencyService from '../services/emergencyService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import loggingService from '../services/loggingService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 import { maskEmail } from '../utils/redaction.js';
 
 const router = express.Router();
 
-// All routes require authentication
+// All routes require authentication and estate context
 router.use(authenticateToken);
+router.use(requireEstateContext);
 
 /**
  * @route POST /api/emergency/panic

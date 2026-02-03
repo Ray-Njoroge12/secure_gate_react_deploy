@@ -5,6 +5,7 @@
  * Features:
  * - JWT token validation for socket connections
  * - Role-based room access control
+ * - Estate isolation for multi-tenant security
  * - Connection throttling and rate limiting
  * - Secure token refresh handling
  */
@@ -15,6 +16,7 @@ import { maskEmail } from '../utils/redaction.js';
 
 /**
  * Authenticate WebSocket connection using JWT token
+ * Extracts user info INCLUDING estate_id for proper tenant isolation
  */
 export const authenticateSocket = (socket, next) => {
   try {
@@ -31,15 +33,29 @@ export const authenticateSocket = (socket, next) => {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach user info to socket
+    // Attach user info to socket - INCLUDING estate_id for isolation
     socket.userId = decoded.id || decoded.userId || decoded.sub;
     socket.userRole = decoded.role;
     socket.userEmail = decoded.email;
+    socket.estateId = decoded.estate_id || decoded.estateId || null;
+
+    // Validate estate_id for non-super_admin users
+    if (socket.userRole !== 'super_admin' && !socket.estateId) {
+      logger.warn('WebSocket connection without estate_id', {
+        socketId: socket.id,
+        userId: socket.userId,
+        role: socket.userRole,
+        ip: socket.handshake.address
+      });
+      // Allow connection but mark as requiring estate assignment
+      socket.requiresEstateAssignment = true;
+    }
 
     logger.info('WebSocket connection authenticated', {
       socketId: socket.id,
-      userId: decoded.userId,
-      role: decoded.role,
+      userId: socket.userId,
+      role: socket.userRole,
+      estateId: socket.estateId,
       ip: socket.handshake.address
     });
 

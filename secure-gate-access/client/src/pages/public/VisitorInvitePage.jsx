@@ -56,10 +56,16 @@ const VisitorInvitePage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved':
+      case 'confirmed':
+      case 'verified':
         return 'status-approved';
       case 'pending_approval':
+      case 'pending_confirmation':
+      case 'pending':
+      case 'otp_sent':
         return 'status-pending';
       case 'rejected':
+      case 'revoked':
         return 'status-rejected';
       case 'on_premise':
         return 'status-onpremise';
@@ -77,10 +83,16 @@ const VisitorInvitePage = () => {
     const statusMap = {
       'approved': 'Approved',
       'pending_approval': 'Pending Approval',
+      'pending_confirmation': 'Awaiting Confirmation',
+      'pending': 'Pending',
+      'confirmed': 'Confirmed',
+      'verified': 'Verified',
+      'otp_sent': 'OTP Sent',
       'rejected': 'Denied',
       'on_premise': 'On Premise',
       'checked_out': 'Checked Out',
-      'expired': 'Expired'
+      'expired': 'Expired',
+      'revoked': 'Revoked'
     };
     return statusMap[status] || status;
   };

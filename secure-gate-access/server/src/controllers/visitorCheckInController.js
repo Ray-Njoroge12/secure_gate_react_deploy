@@ -62,7 +62,8 @@ const checkInVisitor = async (req, res) => {
         phone: visitor.phone ? visitor.phone.replace(/.(?=.{4})/g, '*') : null,
         purpose: visitor.purpose || 'Not specified',
         checkInTime: now.toISOString(),
-        location: 'Main Gate'
+        location: 'Main Gate',
+        estate_id: req.user.estate_id  // Estate context for room scoping
       });
     } catch (wsError) {
       console.warn('WebSocket check-in event emission failed:', wsError.message);
@@ -151,7 +152,8 @@ const checkOutVisitor = async (req, res) => {
         id: visitor.id,
         name: visitor.name,
         checkOutTime: now.toISOString(),
-        duration: duration
+        duration: duration,
+        estate_id: req.user.estate_id  // Estate context for room scoping
       });
     } catch (wsError) {
       console.warn('WebSocket check-out event emission failed:', wsError.message);

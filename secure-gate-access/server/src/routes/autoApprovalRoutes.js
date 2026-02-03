@@ -4,13 +4,47 @@
  */
 
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import autoApprovalService from '../services/autoApprovalService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
+
+// Rate limiting for rule creation/modification
+const ruleModificationLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 rule modifications per 15 minutes per user
+  message: {
+    error: 'Too many rule modifications. Please try again later.',
+    retryAfter: '15 minutes',
+    code: 'RULE_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `auto_approval_${req.user?.id || req.ip}`,
+});
+
+// Rate limiting for auto-approval checks (guard actions)
+const checkApprovalLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 checks per minute (high volume for busy gates)
+  message: {
+    error: 'Too many approval checks. Please try again shortly.',
+    retryAfter: '1 minute',
+    code: 'CHECK_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `approval_check_${req.user?.id || req.ip}`,
+});
+
+// All auto-approval routes require authentication and estate context
+router.use(authenticateToken);
+router.use(requireEstateContext);
 
 /**
  * @swagger
@@ -21,7 +55,7 @@ const attachRequestAudit = auditLoggerFactory();
  *     security:
  *       - bearerAuth: []
  */
-router.post('/rules', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/rules', ruleModificationLimit, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
 
@@ -71,7 +105,7 @@ router.post('/rules', authenticateToken, attachRequestAudit, async (req, res) =>
  *     summary: Get all auto-approval rules for resident
  *     tags: [Auto-Approval]
  */
-router.get('/rules', authenticateToken, async (req, res) => {
+router.get('/rules', async (req, res) => {
   try {
     const { id: residentId } = req.user;
 
@@ -96,7 +130,7 @@ router.get('/rules', authenticateToken, async (req, res) => {
  *     summary: Update an auto-approval rule
  *     tags: [Auto-Approval]
  */
-router.put('/rules/:id', authenticateToken, attachRequestAudit, async (req, res) => {
+router.put('/rules/:id', ruleModificationLimit, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
@@ -127,7 +161,7 @@ router.put('/rules/:id', authenticateToken, attachRequestAudit, async (req, res)
  *     summary: Delete an auto-approval rule
  *     tags: [Auto-Approval]
  */
-router.delete('/rules/:id', authenticateToken, attachRequestAudit, async (req, res) => {
+router.delete('/rules/:id', ruleModificationLimit, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
@@ -152,7 +186,7 @@ router.delete('/rules/:id', authenticateToken, attachRequestAudit, async (req, r
  *     summary: Toggle rule active status
  *     tags: [Auto-Approval]
  */
-router.post('/rules/:id/toggle', authenticateToken, async (req, res) => {
+router.post('/rules/:id/toggle', ruleModificationLimit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const ruleId = parseInt(req.params.id);
@@ -186,7 +220,7 @@ router.post('/rules/:id/toggle', authenticateToken, async (req, res) => {
  *     summary: Check if visitor qualifies for auto-approval (Internal use)
  *     tags: [Auto-Approval]
  */
-router.post('/check', authenticateToken, async (req, res) => {
+router.post('/check', checkApprovalLimit, async (req, res) => {
   try {
     const { role } = req.user;
 
@@ -230,7 +264,7 @@ router.post('/check', authenticateToken, async (req, res) => {
  *     summary: Get auto-approval history for resident
  *     tags: [Auto-Approval]
  */
-router.get('/history', authenticateToken, async (req, res) => {
+router.get('/history', async (req, res) => {
   try {
     const { id: residentId } = req.user;
     const limit = parseInt(req.query.limit) || 20;
@@ -255,7 +289,7 @@ router.get('/history', authenticateToken, async (req, res) => {
  *     summary: Get auto-approval statistics (Admin only)
  *     tags: [Auto-Approval]
  */
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const { role } = req.user;
 
@@ -283,7 +317,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
  *     summary: Delete all rules (Resident privacy control)
  *     tags: [Auto-Approval]
  */
-router.delete('/rules/all', authenticateToken, attachRequestAudit, async (req, res) => {
+router.delete('/rules/all', ruleModificationLimit, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
 
@@ -303,7 +337,7 @@ router.delete('/rules/all', authenticateToken, attachRequestAudit, async (req, r
  *     summary: Export all rules (Data portability)
  *     tags: [Auto-Approval]
  */
-router.get('/export', authenticateToken, async (req, res) => {
+router.get('/export', async (req, res) => {
   try {
     const { id: residentId } = req.user;
 
@@ -325,7 +359,7 @@ router.get('/export', authenticateToken, async (req, res) => {
  *     summary: Get available rule categories
  *     tags: [Auto-Approval]
  */
-router.get('/categories', authenticateToken, async (req, res) => {
+router.get('/categories', async (req, res) => {
   res.json({
     success: true,
     categories: Object.entries(autoApprovalService.RULE_CATEGORIES).map(([key, value]) => ({

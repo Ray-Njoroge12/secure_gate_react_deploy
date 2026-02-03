@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
 import deliveryService from '../services/deliveryService.js';
 import { sendDeliveryNotification, sendHandoffDecisionNotification } from '../services/notificationService.js';
@@ -13,6 +14,10 @@ import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
+
+// All delivery routes require authentication and estate context
+router.use(authenticateToken);
+router.use(requireEstateContext);
 
 // Configure multer for photo uploads (in memory)
 const upload = multer({
@@ -38,7 +43,7 @@ const upload = multer({
  *     security:
  *       - bearerAuth: []
  */
-router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/', attachRequestAudit, async (req, res) => {
   try {
     const { role, id: guardId, estate_id: estateId } = req.user;
 
@@ -88,7 +93,7 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
  *     summary: Add photo to delivery (Guard)
  *     tags: [Deliveries]
  */
-router.post('/:id/photo', authenticateToken, upload.single('photo'), async (req, res) => {
+router.post('/:id/photo', upload.single('photo'), async (req, res) => {
   try {
     const { role, id: guardId } = req.user;
     const deliveryId = parseInt(req.params.id);
@@ -125,7 +130,7 @@ router.post('/:id/photo', authenticateToken, upload.single('photo'), async (req,
  *     summary: Get deliveries for resident (own deliveries only)
  *     tags: [Deliveries]
  */
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
     const { status, limit, offset } = req.query;
@@ -155,7 +160,7 @@ router.get('/', authenticateToken, async (req, res) => {
  *     summary: Get pending deliveries for pickup (Guard view)
  *     tags: [Deliveries]
  */
-router.get('/pending', authenticateToken, async (req, res) => {
+router.get('/pending', async (req, res) => {
   try {
     const { role, estate_id } = req.user;
 
@@ -184,7 +189,7 @@ router.get('/pending', authenticateToken, async (req, res) => {
  *     summary: Get delivery details (recipient only sees full info)
  *     tags: [Deliveries]
  */
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id: requesterId, role, estate_id } = req.user;
     const deliveryId = parseInt(req.params.id);
@@ -219,7 +224,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
  *     summary: Get delivery photo (recipient only)
  *     tags: [Deliveries]
  */
-router.get('/:id/photo', authenticateToken, async (req, res) => {
+router.get('/:id/photo', async (req, res) => {
   try {
     const { id: requesterId } = req.user;
     const deliveryId = parseInt(req.params.id);
@@ -248,7 +253,7 @@ router.get('/:id/photo', authenticateToken, async (req, res) => {
  *     summary: Mark delivery as collected
  *     tags: [Deliveries]
  */
-router.post('/:id/collect', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/:id/collect', attachRequestAudit, async (req, res) => {
   try {
     const { id: userId, role, estate_id } = req.user;
     const deliveryId = parseInt(req.params.id);
@@ -275,7 +280,7 @@ router.post('/:id/collect', authenticateToken, attachRequestAudit, async (req, r
  *     summary: Send notification to resident (Guard)
  *     tags: [Deliveries]
  */
-router.post('/:id/notify', authenticateToken, async (req, res) => {
+router.post('/:id/notify', async (req, res) => {
   try {
     const { role } = req.user;
     const deliveryId = parseInt(req.params.id);
@@ -297,7 +302,7 @@ router.post('/:id/notify', authenticateToken, async (req, res) => {
  * Route: POST /api/deliveries/:id/handoff
  * Body: { preference: 'pickup_at_gate' | 'deliver_to_residence' }
  */
-router.post('/:id/handoff', authenticateToken, attachRequestAudit, async (req, res) => {
+router.post('/:id/handoff', attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
     const deliveryId = parseInt(req.params.id);
@@ -330,7 +335,7 @@ router.post('/:id/handoff', authenticateToken, attachRequestAudit, async (req, r
  *     summary: Get aggregate delivery statistics (Admin)
  *     tags: [Deliveries]
  */
-router.get('/stats/overview', authenticateToken, async (req, res) => {
+router.get('/stats/overview', async (req, res) => {
   try {
     const { role, estate_id } = req.user;
 
@@ -358,7 +363,7 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
  *     summary: Delete all delivery history (Resident privacy control)
  *     tags: [Deliveries]
  */
-router.delete('/history', authenticateToken, attachRequestAudit, async (req, res) => {
+router.delete('/history', attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
 
