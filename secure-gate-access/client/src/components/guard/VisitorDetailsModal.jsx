@@ -6,11 +6,11 @@
  */
 
 import React, { useEffect } from 'react';
-import { 
-  X, Phone, Mail, Clock, Calendar, MapPin, Car, 
+import {
+  X, Phone, Mail, Clock, Calendar, MapPin, Car,
   UserCheck, UserX, Shield, AlertTriangle, User
 } from 'lucide-react';
-import { Button } from '../ui';
+import { Button, Input } from '../ui';
 import { getStatusChipClass, getStatusIcon } from '../../utils/statusColors';
 
 /**
@@ -35,6 +35,7 @@ export default function VisitorDetailsModal({
   onContact,
   isLoading = false
 }) {
+  const [otp, setOtp] = React.useState('');
   // Close on escape key
   useEffect(() => {
     const handleEscape = (event) => {
@@ -83,10 +84,10 @@ export default function VisitorDetailsModal({
   const formatDate = (date) => {
     if (!date) return 'N/A';
     try {
-      return new Date(date).toLocaleDateString([], { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
+      return new Date(date).toLocaleDateString([], {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
       });
     } catch {
       return date;
@@ -94,7 +95,7 @@ export default function VisitorDetailsModal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -119,7 +120,7 @@ export default function VisitorDetailsModal({
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
               {visitor.name ? visitor.name.charAt(0).toUpperCase() : <User className="w-8 h-8" />}
             </div>
-            
+
             <div>
               <h2 id="visitor-modal-title" className="text-xl font-bold">
                 {visitor.name || `Visitor #${visitor.id}`}
@@ -158,7 +159,7 @@ export default function VisitorDetailsModal({
                 {visitor.check_out_time ? 'Check-out' : 'Duration'}
               </div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {visitor.check_out_time 
+                {visitor.check_out_time
                   ? formatTime(visitor.check_out_time)
                   : visitor.duration || 'In progress'
                 }
@@ -237,6 +238,26 @@ export default function VisitorDetailsModal({
               <p className="text-sm text-amber-800">{visitor.notes}</p>
             </div>
           )}
+          {/* OTP Input for Verification */}
+          {canVerify && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <label htmlFor="otp-input" className="block text-sm font-medium text-blue-900 mb-2">
+                Verification Code (OTP)
+              </label>
+              <Input
+                id="otp-input"
+                type="text"
+                maxLength={6}
+                placeholder="Enter 6-digit code"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="bg-white"
+              />
+              <p className="text-xs text-blue-700 mt-2">
+                Ask the visitor for the code sent to their phone/email.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Actions Footer */}
@@ -247,10 +268,10 @@ export default function VisitorDetailsModal({
               <>
                 <Button
                   onClick={() => {
-                    onVerify?.(visitor.id);
+                    onVerify?.(visitor.id, otp);
                     onClose();
                   }}
-                  disabled={isLoading}
+                  disabled={isLoading || !otp || otp.length < 6}
                   className="flex-1 bg-green-500 hover:bg-green-600 text-white"
                 >
                   <UserCheck className="w-4 h-4 mr-2" />

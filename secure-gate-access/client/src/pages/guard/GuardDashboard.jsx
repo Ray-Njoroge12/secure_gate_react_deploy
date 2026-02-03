@@ -15,6 +15,7 @@ import { useLoading } from "../../contexts/LoadingContext";
 import DashboardKPIs from "../../components/guard/DashboardKPIs"; // Phase G3
 import QuickFilters from "../../components/guard/QuickFilters"; // Phase G3
 import PendingApprovalsQueue from "../../components/guard/PendingApprovalsQueue"; // Phase G3
+import { verifyOtp } from "../../services/visitorService";
 import PanicButton from "../../components/guard/PanicButton"; // Phase 1.1: Emergency Panic Button
 import EmergencyAlertBanner from "../../components/guard/EmergencyAlertBanner"; // Phase 1.1: Emergency Alerts
 import RecentVisitors from "../../components/guard/RecentVisitors"; // Phase 1.3: Recent Visitors
@@ -630,10 +631,18 @@ export default function GuardDashboard() {
           onClose={() => setSelectedVisitor(null)}
           onCheckIn={onCheckIn}
           onCheckOut={onCheckOut}
-          onVerify={(id) => {
-            // Handle verify action
-            notificationService.success('Verified', 'Visitor has been verified');
-            fetchActive();
+          onVerify={async (id, otp) => {
+            try {
+              setLoading('verify', true);
+              await verifyOtp(id, otp);
+              notificationService.success('Verified', 'Visitor has been verified');
+              fetchActive();
+              setSelectedVisitor(null);
+            } catch (e) {
+              handleApiError(e, 'Verification Failed');
+            } finally {
+              setLoading('verify', false);
+            }
           }}
           onDeny={onRevoke}
         />
