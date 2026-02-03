@@ -13,10 +13,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import syncService from '../../services/syncService';
 
-const OfflineIndicator = ({ 
-  showDetails = false, 
+const OfflineIndicator = ({
+  showDetails = false,
   position = 'bottom-right',
-  className = '' 
+  className = ''
 }) => {
   const [status, setStatus] = useState({
     isOnline: navigator.onLine,
@@ -45,7 +45,7 @@ const OfflineIndicator = ({
     // Subscribe to sync events
     const unsubscribe = syncService.subscribe((event) => {
       fetchStatus();
-      
+
       if (event.type === 'syncComplete') {
         setIsSyncing(false);
       }
@@ -57,7 +57,7 @@ const OfflineIndicator = ({
   // Manual sync handler
   const handleSync = useCallback(async () => {
     if (!status.isOnline || isSyncing) return;
-    
+
     setIsSyncing(true);
     try {
       await syncService.syncPendingChanges();
@@ -71,7 +71,7 @@ const OfflineIndicator = ({
   // Download offline package handler
   const handleDownloadOffline = useCallback(async () => {
     if (!status.isOnline || isDownloading) return;
-    
+
     setIsDownloading(true);
     try {
       await syncService.downloadOfflinePackage();
@@ -88,7 +88,7 @@ const OfflineIndicator = ({
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 60000) return 'Just now';
     if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
@@ -99,45 +99,42 @@ const OfflineIndicator = ({
   const positionClasses = {
     'top-left': 'top-4 left-4',
     'top-right': 'top-4 right-4',
-    'bottom-left': 'bottom-4 left-4',
-    'bottom-right': 'bottom-4 right-4'
+    'bottom-left': 'bottom-6 left-6', // Increased margin
+    'bottom-right': 'bottom-24 right-4 md:bottom-24 md:right-6' // Moved up to avoid FABs (which are usually bottom-6)
   };
 
   return (
-    <div 
+    <div
       className={`fixed ${positionClasses[position]} z-50 ${className}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
       {/* Status Badge */}
-      <div 
-        className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg cursor-pointer transition-all ${
-          status.isOnline 
-            ? 'bg-green-50 border border-green-200' 
+      <div
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg cursor-pointer transition-all ${status.isOnline
+            ? 'bg-green-50 border border-green-200'
             : 'bg-yellow-50 border border-yellow-300'
-        }`}
+          }`}
       >
         {/* Status Icon */}
-        <div className={`w-3 h-3 rounded-full ${
-          status.isOnline 
-            ? 'bg-green-500' 
+        <div className={`w-3 h-3 rounded-full ${status.isOnline
+            ? 'bg-green-500'
             : 'bg-yellow-500 animate-pulse'
-        }`} />
-        
+          }`} />
+
         {/* Status Text */}
-        <span className={`text-sm font-medium ${
-          status.isOnline ? 'text-green-700' : 'text-yellow-700'
-        }`}>
+        <span className={`text-sm font-medium ${status.isOnline ? 'text-green-700' : 'text-yellow-700'
+          }`}>
           {status.isOnline ? 'Online' : 'Offline'}
         </span>
-        
+
         {/* Pending Changes Badge */}
         {status.hasPendingChanges && (
           <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-orange-500 rounded-full">
             {status.pendingChangesCount}
           </span>
         )}
-        
+
         {/* Syncing Indicator */}
         {isSyncing && (
           <svg className="w-4 h-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
@@ -153,7 +150,7 @@ const OfflineIndicator = ({
           <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
             Sync Status
           </h4>
-          
+
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-300">Connection:</span>
@@ -161,21 +158,21 @@ const OfflineIndicator = ({
                 {status.isOnline ? 'Connected' : 'Offline'}
               </span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-300">Last Sync:</span>
               <span className="text-gray-700">
                 {formatLastSync(status.lastDownload)}
               </span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-300">Pending:</span>
               <span className="text-gray-700">
                 {status.pendingChangesCount} changes
               </span>
             </div>
-            
+
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-300">Offline Data:</span>
               <span className={status.hasOfflineData ? 'text-green-600' : 'text-gray-400'}>
@@ -195,7 +192,7 @@ const OfflineIndicator = ({
                 {isSyncing ? 'Syncing...' : 'Sync Now'}
               </button>
             )}
-            
+
             {status.isOnline && !status.hasOfflineData && (
               <button
                 onClick={handleDownloadOffline}

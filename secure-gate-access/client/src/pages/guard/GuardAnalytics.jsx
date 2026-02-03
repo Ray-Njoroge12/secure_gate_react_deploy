@@ -34,7 +34,8 @@ const GuardAnalytics = () => {
 
       if (response.ok) {
         const result = await response.json();
-        setAnalytics(result.data);
+        // Backend returns { data: { data: { ...analysis... } } }
+        setAnalytics(result.data?.data || null);
       }
     } catch (error) {
       handleApiError(error, 'Guard Analytics');

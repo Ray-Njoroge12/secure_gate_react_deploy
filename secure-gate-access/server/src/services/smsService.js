@@ -1,7 +1,8 @@
 import AfricasTalking from 'africastalking';
+import localMessageStore from './localMessageStore.js';
 
 /**
- * SMS Service (Africa's Talking)
+ * SMS Service (Africa's Talking + Local Simulation)
  */
 class SMSService {
   constructor() {
@@ -13,7 +14,16 @@ class SMSService {
   initialize() {
     const username = process.env.AT_USERNAME;
     const apiKey = process.env.AT_API_KEY;
+
+    // Check if explicitly using local provider
+    if (process.env.SMS_PROVIDER === 'local') {
+      console.log('📱 SMS Service initialized in LOCAL SIMULATION mode');
+      this.isConfigured = false;
+      return;
+    }
+
     if (!username || !apiKey) {
+      console.log('ℹ️  Africa\'s Talking credentials missing - defaulting to LOCAL SIMULATION mode');
       this.isConfigured = false;
       return;
     }
@@ -22,6 +32,7 @@ class SMSService {
       const africasTalking = AfricasTalking({ username, apiKey });
       this.client = africasTalking.SMS;
       this.isConfigured = true;
+      console.log('✅ SMS Service initialized with Africa\'s Talking');
     } catch (error) {
       console.error('Failed to initialize Africa\'s Talking SMS client:', error.message);
       this.isConfigured = false;
@@ -34,13 +45,26 @@ class SMSService {
   }
 
   async send(phone, message) {
-    if (!this.isConfigured) {
-      return {
-        success: false,
-        error: 'africas_talking_not_configured'
-      };
+    // Local Simulation Mode
+    if (!this.isConfigured || process.env.NODE_ENV === 'development') {
+      try {
+        await localMessageStore.save('sms', phone, message, { provider: 'local' });
+        console.log(`[SMS SIMULATION] To: ${phone} | Message: ${message}`);
+
+        return {
+          success: true,
+          messageId: `sim_${Date.now()}`,
+          simulation: true,
+          message: 'Message captured locally'
+        };
+      } catch (error) {
+        console.error('Failed to save local SMS:', error);
+        // Fallback to simpler logging if store fails
+        return { success: true, simulation: true };
+      }
     }
 
+    // Production Mode (Africa's Talking)
     const smsOptions = {
       to: [phone],
       message

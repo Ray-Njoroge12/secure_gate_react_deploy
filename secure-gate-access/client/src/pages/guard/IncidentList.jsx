@@ -52,7 +52,8 @@ const IncidentList = () => {
 
       if (response.ok) {
         const result = await response.json();
-        setIncidents(result.data || []);
+        // Backend wraps response in { data: { data: [...], pagination: ... } }
+        setIncidents(result.data?.data || []);
       }
     } catch (error) {
       handleApiError(error, 'Incident List');

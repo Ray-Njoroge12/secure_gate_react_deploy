@@ -186,10 +186,10 @@ export function auditPage(root = document.body, options = {}) {
 function isInteractiveElement(element) {
   const interactiveTags = ['button', 'a', 'input', 'select', 'textarea', 'details', 'summary'];
   const interactiveRoles = ['button', 'link', 'menuitem', 'tab', 'option', 'checkbox', 'radio'];
-  
+
   return interactiveTags.includes(element.tagName.toLowerCase()) ||
-         interactiveRoles.includes(element.getAttribute('role')) ||
-         element.tabIndex >= 0;
+    interactiveRoles.includes(element.getAttribute('role')) ||
+    element.tabIndex >= 0;
 }
 
 /**
@@ -198,10 +198,10 @@ function isInteractiveElement(element) {
  * @returns {boolean} True if custom interactive
  */
 function isCustomInteractiveElement(element) {
-  return element.onclick || 
-         element.getAttribute('onclick') ||
-         element.style.cursor === 'pointer' ||
-         element.classList.contains('clickable');
+  return element.onclick ||
+    element.getAttribute('onclick') ||
+    element.style.cursor === 'pointer' ||
+    element.classList.contains('clickable');
 }
 
 /**
@@ -262,7 +262,7 @@ function hasAltText(element) {
 function hasMinimumTouchTarget(element) {
   const rect = element.getBoundingClientRect();
   const minSize = 44; // 44px minimum touch target
-  
+
   return rect.width >= minSize && rect.height >= minSize;
 }
 
@@ -307,7 +307,7 @@ function auditHeadingHierarchy(headings) {
 
   headings.forEach((heading, index) => {
     const level = parseInt(heading.tagName.charAt(1));
-    
+
     if (index === 0 && level !== 1) {
       issues.push({
         ...ACCESSIBILITY_ISSUES.MISSING_HEADING_HIERARCHY,
@@ -367,7 +367,7 @@ function generateAuditSummary(issues) {
  */
 export function generateAccessibilityReport(auditResults) {
   const { issues, summary } = auditResults;
-  
+
   let report = `# Accessibility Audit Report\n\n`;
   report += `**Generated:** ${auditResults.timestamp}\n\n`;
   report += `## Summary\n\n`;
@@ -418,14 +418,14 @@ export function autoFixAccessibilityIssues(element, issues) {
           fixed.push(issue);
         }
         break;
-      
+
       case 'A11Y-002': // Missing role
         if (isInteractiveElement(element)) {
           element.setAttribute('role', 'button');
           fixed.push(issue);
         }
         break;
-      
+
       case 'A11Y-006': // Missing alt text
         if (element.tagName === 'IMG') {
           element.setAttribute('alt', '');
@@ -480,7 +480,7 @@ export function runAccessibilityChecks(options = {}) {
   return {
     elements: auditResults,
     theme: themeResults,
-    passed: auditResults.every(r => r.passed !== false) && themeResults.passed,
+    passed: auditResults.summary.fail === 0 && themeResults.passed,
     timestamp: new Date().toISOString(),
   };
 }

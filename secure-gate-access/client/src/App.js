@@ -77,6 +77,7 @@ const IncidentList = lazy(() => import("./pages/guard/IncidentList.jsx"));
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
+const MessageViewer = lazy(() => import("./pages/admin/MessageViewer.jsx")); // Dev Tool
 const SuperAdminDashboard = lazy(() => import("./pages/admin/SuperAdminDashboard.jsx"));
 const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings.jsx"));
@@ -455,6 +456,18 @@ function App() {
                         element={
                           <ProtectedRoute allowedRoles={["super_admin"]}>
                             <SuperAdminDashboard />
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* Dev Tools - Message Viewer */}
+                      <Route
+                        path="/admin/messages"
+                        element={
+                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                            <AppShell role="admin" title="Message Simulator">
+                              <MessageViewer />
+                            </AppShell>
                           </ProtectedRoute>
                         }
                       />

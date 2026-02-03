@@ -54,8 +54,8 @@
 
 /* Required field indicators */
 .screen-reader-enhanced .required::after,
-.screen-reader-enhanced [aria-required="true"] + label::after,
-.screen-reader-enhanced label[for] input[required] ~ label::after {
+.screen-reader-enhanced [aria-required="true"]+label::after,
+.screen-reader-enhanced label[for] input[required]~label::after {
   content: " (required)";
   color: var(--color-error, #ef4444);
   font-weight: normal;
@@ -290,7 +290,7 @@
 /* ===== ENHANCED ERROR AND SUCCESS STATES ===== */
 
 /* Error descriptions */
-.screen-reader-enhanced [aria-describedby] + .error-description,
+.screen-reader-enhanced [aria-describedby]+.error-description,
 .screen-reader-enhanced .error-description {
   color: var(--color-error, #ef4444);
   font-size: 0.875rem;
@@ -362,7 +362,7 @@
 }
 
 .screen-reader-enhanced [aria-expanded="false"]::after {
-  content: " (collapsed)";
+  /* content: " (collapsed)"; Removed debug text */
   font-size: 0.75rem;
   color: var(--color-muted-foreground, #6b7280);
   font-weight: normal;
@@ -406,12 +406,12 @@
     padding: 0.75rem 1rem;
     font-size: 1rem;
   }
-  
+
   .screen-reader-enhanced [role="menuitem"] {
     padding: 0.75rem 1rem;
     font-size: 1rem;
   }
-  
+
   .screen-reader-enhanced input,
   .screen-reader-enhanced select,
   .screen-reader-enhanced textarea {
@@ -428,18 +428,18 @@
     border-width: 2px;
     border-color: #000000;
   }
-  
+
   .screen-reader-enhanced [role="button"]:focus {
     outline: 3px solid #000000;
     background-color: #ffff00;
     color: #000000;
   }
-  
+
   .screen-reader-enhanced [aria-invalid="true"] {
     border-color: #ff0000 !important;
     border-width: 2px !important;
   }
-  
+
   .screen-reader-enhanced [aria-selected="true"] {
     background-color: #0000ff !important;
     color: #ffffff !important;
@@ -462,13 +462,14 @@
 /* ===== PRINT ENHANCEMENTS ===== */
 
 @media print {
+
   .screen-reader-enhanced .sr-only,
   .screen-reader-enhanced .live-region,
   .screen-reader-enhanced #sr-status-region,
   .screen-reader-enhanced #sr-alert-region {
     display: none !important;
   }
-  
+
   .screen-reader-enhanced [aria-expanded="true"]::after,
   .screen-reader-enhanced [aria-expanded="false"]::after {
     display: none !important;
