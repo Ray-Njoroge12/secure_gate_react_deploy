@@ -41,6 +41,7 @@ const QuickInvite = () => {
     phone: "",
     dateOfVisit: "",
     time: "",
+    duration: 60, // Default 1 hour (in minutes)
     allowResidenceLocation: false,
     unitPin: "",
   });
@@ -111,6 +112,14 @@ const QuickInvite = () => {
     { id: 'afternoon', label: 'Afternoon', sublabel: '~2:00 PM', value: '14:00' },
     { id: 'evening', label: 'Evening', sublabel: '~6:00 PM', value: '18:00' },
     { id: 'custom', label: 'Pick Time', sublabel: '⏰', value: null },
+  ];
+
+  // Validity/Duration chips configuration
+  const durationChips = [
+    { id: '1h', label: '1 Hour', sublabel: 'Quick Visit', value: 60 },
+    { id: '6h', label: '6 Hours', sublabel: 'Standard', value: 360 },
+    { id: '12h', label: '12 Hours', sublabel: 'Full Day', value: 720 },
+    { id: '24h', label: '24 Hours', sublabel: 'Overnight', value: 1440 },
   ];
 
   // Handle date chip selection
@@ -213,6 +222,7 @@ const QuickInvite = () => {
         time: formData.time || null,
         allowResidenceLocation: !!formData.allowResidenceLocation,
         unitPin: formData.allowResidenceLocation ? String(formData.unitPin || '').trim() : undefined,
+        duration: formData.duration || 60, // Pass duration in minutes
         // Note: No consent here - visitor will provide it on their page
         generatePassImmediately: false, // Pass generated after visitor confirms
         status: 'pending_confirmation', // Visitor needs to confirm
@@ -359,7 +369,7 @@ const QuickInvite = () => {
 
   // Reset form for new invite
   const createAnother = () => {
-    setFormData({ name: "", phone: "", dateOfVisit: "", time: "", allowResidenceLocation: false, unitPin: "" });
+    setFormData({ name: "", phone: "", dateOfVisit: "", time: "", duration: 60, allowResidenceLocation: false, unitPin: "" });
     setSuccess(null);
     setSelectedDateChip(null);
     setSelectedTimeChip(null);
@@ -638,6 +648,30 @@ const QuickInvite = () => {
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 )}
+              </div>
+
+              {/* Duration/Validity Selection */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
+                  <Clock className="w-4 h-4 inline mr-2 text-gray-400" />
+                  Pass Validity
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {durationChips.map((chip) => (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      onClick={() => handleInputChange('duration', chip.value)}
+                      className={`p-3 rounded-xl border-2 transition-all text-center ${formData.duration === chip.value
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                    >
+                      <div className="text-sm font-medium">{chip.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">

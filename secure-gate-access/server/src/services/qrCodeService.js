@@ -115,19 +115,22 @@ class OptimizedQRCodeService {
       }
 
       // SECURITY: Generate and store OTP for two-factor verification
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const otpHash = await bcrypt.hash(otp, 10);
+      let otp = null;
+      if (options.generateOtp !== false) {
+        // Generate 6-digit OTP
+        otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpHash = await bcrypt.hash(otp, 10);
 
-      // Store OTP hash in visitors table
-      await dbManager.query(
-        `UPDATE visitors 
-         SET otp_hash = $1, 
-             otp_expires_at = $2,
-             otp_attempts = 0
-         WHERE id = $3 AND estate_id = $4`,
-        [otpHash, expirationTime, visitorData.id, visitorData.estate_id]
-      );
+        // Store OTP hash in visitors table
+        await dbManager.query(
+          `UPDATE visitors 
+           SET otp_hash = $1, 
+               otp_expires_at = $2,
+               otp_attempts = 0
+           WHERE id = $3 AND estate_id = $4`,
+          [otpHash, expirationTime, visitorData.id, visitorData.estate_id]
+        );
+      }
 
       logger.info('[QRCodeService] Generated tokenized QR code', {
         qrId,

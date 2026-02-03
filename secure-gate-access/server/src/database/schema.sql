@@ -26,6 +26,11 @@ CREATE TABLE visitors (
     time_of_visit TIME,
     invite_code VARCHAR(100) UNIQUE,
     status VARCHAR(20) DEFAULT 'PENDING',
+    -- Consent Management
+    consent_given BOOLEAN DEFAULT false,
+    consent_timestamp TIMESTAMP,
+    consent_type VARCHAR(50),
+    consent_version VARCHAR(20),
     otp VARCHAR(10),
     otp_hash TEXT,
     otp_expires_at TIMESTAMP,

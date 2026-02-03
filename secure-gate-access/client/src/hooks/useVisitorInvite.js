@@ -29,13 +29,19 @@ export const useVisitorInvite = (token) => {
         }
     };
 
-    // Fetch visitor details
+    // Fetch visitor or invite details
     const fetchVisitorDetails = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const response = await fetch(`/api/public/visitors/by-token/${token}`, {
+            // Determine if this is a specific visitor token (vst_) or a generic invite code (inv_)
+            const isBulkInvite = token.startsWith('inv_');
+            const endpoint = isBulkInvite
+                ? `/api/public/invites/${token}`
+                : `/api/public/visitors/by-token/${token}`;
+
+            const response = await fetch(endpoint, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
@@ -45,6 +51,8 @@ export const useVisitorInvite = (token) => {
             if (!response.ok) {
                 if (response.status === 404) {
                     throw new Error('Invite not found or has expired');
+                } else if (response.status === 410) {
+                    throw new Error('This invitation has expired');
                 } else if (response.status === 429) {
                     throw new Error('Too many requests. Please wait a moment.');
                 } else {
@@ -54,10 +62,27 @@ export const useVisitorInvite = (token) => {
 
             const data = await response.json();
 
-            if (data.success) {
-                setVisitor(data.data);
-                // Fetch estate info after getting visitor details
-                await fetchEstateInfo(data.data.estateId);
+            if (data.success || isBulkInvite) { // Bulk invite endpoint might return data directly or wrapped
+                const payload = data.data || data;
+
+                if (isBulkInvite) {
+                    // Normalize bulk invite data to look somewhat like a visitor for basic display
+                    setVisitor({
+                        isBulkInvite: true,
+                        eventName: payload.eventName || payload.event_name,
+                        dateOfVisit: payload.date,
+                        timeOfVisit: payload.time,
+                        inviteCode: token,
+                        remainingSlots: payload.remainingSlots,
+                        expiresAt: payload.expiresAt
+                    });
+                } else {
+                    setVisitor(payload);
+                    // Fetch estate info after getting visitor details
+                    if (payload.estateId) {
+                        await fetchEstateInfo(payload.estateId);
+                    }
+                }
             } else {
                 throw new Error(data.error || 'Failed to load invite');
             }
