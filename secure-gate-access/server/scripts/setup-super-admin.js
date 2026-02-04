@@ -1,5 +1,5 @@
 
-import { db } from './src/database/db.enhanced.js';
+import { db } from '../src/database/db.enhanced.js';
 import argon2 from 'argon2';
 
 async function setupSuperAdmin() {
