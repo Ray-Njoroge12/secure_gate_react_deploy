@@ -40,20 +40,20 @@ const WalkInRegistration = () => {
       syncPendingWalkIns();
     };
     const handleOffline = () => setIsOnline(false);
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     // Load pending walk-ins
     loadPendingWalkIns();
-    
+
     // Listen for offline service events
     const unsubscribe = offlineService.addConnectionListener((event) => {
       if (event === 'sync_completed' || event === 'offline_walkin_queued') {
         loadPendingWalkIns();
       }
     });
-    
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -72,7 +72,7 @@ const WalkInRegistration = () => {
 
   const syncPendingWalkIns = async () => {
     if (!isOnline) return;
-    
+
     try {
       setLoading('syncWalkIns', true, { message: 'Syncing pending registrations...' });
       const result = await offlineService.syncPendingOperations();
@@ -84,6 +84,11 @@ const WalkInRegistration = () => {
     } finally {
       setLoading('syncWalkIns', false);
     }
+  };
+
+  const handleRetrySync = async (visitor) => {
+    // Retry syncing all pending items
+    await syncPendingWalkIns();
   };
 
   const generateLocalId = () => {
@@ -193,7 +198,7 @@ const WalkInRegistration = () => {
       };
 
       await offlineService.queueWalkInRegistration(offlineRecord);
-      
+
       // Refresh pending list
       await loadPendingWalkIns();
 
@@ -313,7 +318,7 @@ const WalkInRegistration = () => {
             <div>
               <p className="text-sm font-medium text-yellow-800">Offline Mode Active</p>
               <p className="text-xs text-yellow-700 mt-1">
-                Walk-in registrations will be saved locally and synced when you're back online. 
+                Walk-in registrations will be saved locally and synced when you're back online.
                 Approval requests cannot be sent while offline.
               </p>
             </div>
@@ -343,8 +348,8 @@ const WalkInRegistration = () => {
             <Card.Content>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {pendingWalkIns.map((walkIn, index) => (
-                  <div 
-                    key={walkIn.localId || index} 
+                  <div
+                    key={walkIn.localId || index}
                     className="flex items-center justify-between p-3 bg-orange-50 border border-orange-100 rounded-lg"
                   >
                     <div>
