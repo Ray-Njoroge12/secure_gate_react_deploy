@@ -9,7 +9,7 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
-        value: production
+        value: staging
       - key: PORT
         value: 3001
       - key: SITE_NAME
