@@ -7,7 +7,7 @@ import {
   getBulkInvite,
   completeInvite,
   cancelVisitor
-} from '../controllers/visitorInviteController-optimized.js';
+} from '../controllers/visitorInviteController.js';
 import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
 import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
@@ -39,10 +39,10 @@ const completeInviteLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Rate limit by IP + invite code combination
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-               req.headers['x-real-ip'] || 
-               req.ip || 
-               'unknown';
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.ip ||
+      'unknown';
     return `complete-invite:${ip}:${req.params.inviteCode || 'unknown'}`;
   },
   handler: (req, res) => {
