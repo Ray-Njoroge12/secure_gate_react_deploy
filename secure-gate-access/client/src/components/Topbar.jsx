@@ -160,13 +160,13 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
 
           {/* Dropdown Menu */}
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50" role="menu">
               <button
                 onClick={() => {
                   setIsMenuOpen(false);
                   handleProfileClick(); // Navigates to settings
                 }}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:focus:bg-slate-700"
                 role="menuitem"
               >
                 Profile Settings
@@ -176,7 +176,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                   setIsMenuOpen(false);
                   setShowChangePassword(true);
                 }}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:focus:bg-slate-700"
                 role="menuitem"
               >
                 Change Password
@@ -187,7 +187,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                     setIsMenuOpen(false);
                     setShowLogoutConfirm(true);
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  className="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:focus:bg-slate-700"
                   role="menuitem"
                 >
                   Logout

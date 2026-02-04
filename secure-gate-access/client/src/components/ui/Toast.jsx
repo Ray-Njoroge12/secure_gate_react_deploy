@@ -90,7 +90,7 @@ const Toast = memo(({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex rounded-md p-1.5 hover:bg-black hover:bg-opacity-20 focus:outline-none focus:ring-2 focus:ring-offset-2"
+            className="inline-flex rounded-md p-1.5 min-w-[44px] min-h-[44px] items-center justify-center hover:bg-black hover:bg-opacity-20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white dark:focus:ring-offset-slate-900 transition-colors"
             aria-label="Close notification"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

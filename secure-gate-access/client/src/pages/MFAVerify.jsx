@@ -15,35 +15,35 @@ const MFAVerify = () => {
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
 
-  // Get userId from location state or session storage (persistence fix)
+  // Get mfaSessionId from location state or session storage (persistence fix)
   const getStoredAuth = () => {
     const state = location.state;
-    if (state?.userId) return state;
+    if (state?.mfaSessionId) return state;
 
     // Try session storage
-    const stored = sessionStorage.getItem('mfa_temp_auth');
+    const stored = sessionStorage.getItem('mfa_session');
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        // Optional: Check timestamp expiry (e.g., 10 mins)
-        if (Date.now() - parsed.timestamp < 10 * 60 * 1000) {
+        // Check timestamp expiry (5 mins)
+        if (Date.now() - parsed.timestamp < (parsed.expiresIn || 300) * 1000) {
           return parsed;
         }
       } catch (e) {
-        console.error('Failed to parse stored MFA auth');
+        console.error('Failed to parse stored MFA session');
       }
     }
     return {};
   };
 
-  const { userId, username = 'your account' } = getStoredAuth();
+  const { mfaSessionId, userId, expiresIn = 300, username = 'your account' } = getStoredAuth();
 
-  // Redirect if no userId
+  // Redirect if no mfaSessionId
   React.useEffect(() => {
-    if (!userId) {
+    if (!mfaSessionId) {
       navigate('/login');
     }
-  }, [userId, navigate]);
+  }, [mfaSessionId, navigate]);
 
   // Handle MFA verification
   const handleVerify = async (e) => {
@@ -58,16 +58,28 @@ const MFAVerify = () => {
     }
 
     try {
+      // MFA-009 FIX: Use mfaSessionId instead of userId for verification
       const response = await api.post('/api/mfa/verify', {
-        userId,
+        mfaSessionId,
         token,
         useBackupCode
       });
 
       if (response.data.success) {
         // MFA verification successful - redirect to dashboard
-        sessionStorage.removeItem('mfa_temp_auth'); // Clear temp auth
-        navigate('/dashboard');
+        sessionStorage.removeItem('mfa_session'); // Clear temp session
+        
+        // Get user info from response
+        const user = response.data.data?.user;
+        if (user) {
+          // Redirect based on role
+          if (user.role === 'admin') navigate('/dashboard/admin');
+          else if (user.role === 'guard') navigate('/dashboard/guard');
+          else if (user.role === 'resident') navigate('/dashboard/resident');
+          else navigate('/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Verification failed';
@@ -91,7 +103,7 @@ const MFAVerify = () => {
 
   // Handle going back to login
   const handleCancel = () => {
-    sessionStorage.removeItem('mfa_temp_auth'); // Clear temp auth
+    sessionStorage.removeItem('mfa_session'); // Clear temp session
     navigate('/login');
   };
 
@@ -117,16 +129,16 @@ const MFAVerify = () => {
           <div className="px-8 py-6">
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+              <div id="mfa-error" className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded" role="alert">
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">{error}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
                       Attempts remaining: {attemptsLeft}
                     </p>
                   </div>
@@ -135,7 +147,7 @@ const MFAVerify = () => {
             )}
 
             {/* Instructions */}
-            <div className="mb-6 text-center">
+            <div id="mfa-instructions" className="mb-6 text-center">
               {!useBackupCode ? (
                 <>
                   <p className="text-gray-700 dark:text-gray-200 mb-2">
@@ -168,17 +180,19 @@ const MFAVerify = () => {
                   onChange={(e) => setToken(e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase())}
                   maxLength={useBackupCode ? 8 : 6}
                   placeholder={useBackupCode ? 'ABCD1234' : '000000'}
-                  className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg text-center text-3xl font-mono tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  className="w-full px-4 py-4 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-center text-3xl font-mono tracking-widest focus:ring-4 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-blue-500 transition-all"
                   autoComplete="off"
                   autoFocus
                   required
+                  aria-describedby={error ? "mfa-error" : "mfa-instructions"}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading || (!useBackupCode && token.length !== 6) || (useBackupCode && token.length !== 8)}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-lg shadow-md hover:shadow-lg"
+                className="w-full min-h-[44px] bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-lg shadow-md hover:shadow-lg"
+                aria-busy={loading}
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
@@ -203,7 +217,8 @@ const MFAVerify = () => {
                   setToken('');
                   setError('');
                 }}
-                className="w-full text-center text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                className="w-full min-h-[44px] text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded px-2 py-2 transition-colors"
+                aria-label={useBackupCode ? "Switch to authenticator code" : "Switch to backup code"}
               >
                 {useBackupCode ? (
                   '← Use authenticator code instead'
@@ -215,7 +230,8 @@ const MFAVerify = () => {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="w-full text-center text-sm text-gray-600 dark:text-gray-200 hover:text-gray-800 hover:underline transition-colors"
+                className="w-full min-h-[44px] text-center text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:underline focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded px-2 py-2 transition-colors"
+                aria-label="Back to login page"
               >
                 ← Back to login
               </button>

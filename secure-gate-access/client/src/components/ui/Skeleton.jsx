@@ -11,7 +11,7 @@ const Skeleton = ({
   ...props 
 }) => {
   const baseClasses = `
-    bg-slate-700 rounded
+    bg-gray-200 dark:bg-slate-700 rounded
     ${animated ? 'animate-pulse' : ''}
     ${className}
   `.trim().replace(/\s+/g, ' ');
@@ -55,7 +55,7 @@ const SkeletonCard = ({
   lines = 3,
   ...props 
 }) => (
-  <div className={`bg-slate-800 rounded-lg border border-slate-700 p-6 ${className}`} {...props}>
+  <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 ${className}`} {...props}>
     <div className="flex items-start space-x-4">
       {showAvatar && (
         <Skeleton 

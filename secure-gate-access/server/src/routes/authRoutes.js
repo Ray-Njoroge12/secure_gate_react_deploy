@@ -570,6 +570,43 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
+  // MFA-001 FIX: Check if MFA is enabled for user (admin/guard roles)
+  // If MFA is enabled, return a pending state requiring MFA verification
+  if (user.mfa_enabled) {
+    loggingService.info('MFA required for user', {
+      event: 'auth.login.mfa_required',
+      user_id: user.id,
+      role: user.role,
+      request_id: req.requestId
+    });
+
+    // Store temporary session for MFA verification (expires in 5 minutes)
+    const mfaSessionId = randomBytes(32).toString('hex');
+    const mfaSessionExpiry = new Date(Date.now() + 5 * 60 * 1000);
+    
+    await userService.db.query(
+      `INSERT INTO additional_auth_sessions (session_id, user_id, operation, required_factors, expires_at, context, ip_address, user_agent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        mfaSessionId,
+        user.id,
+        'login_mfa',
+        JSON.stringify(['totp']),
+        mfaSessionExpiry,
+        JSON.stringify({ estate_id: user.estate_id }),
+        req.ip,
+        req.get('User-Agent')
+      ]
+    );
+
+    return successResponse(res, {
+      requiresMFA: true,
+      mfaSessionId,
+      userId: user.id,
+      expiresIn: 300 // 5 minutes
+    }, 'MFA verification required');
+  }
+
   const platform = getClientPlatform(req);
   const isWebClient = platform === 'web';
 
@@ -623,7 +660,8 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
       username: user.username,
       email: user.email,
       role: user.role,
-      estate_id: user.estate_id
+      estate_id: user.estate_id,
+      mfa_enabled: user.mfa_enabled || false
     },
     ...(isWebClient
       ? { session: { type: 'cookie' } }
@@ -975,6 +1013,7 @@ router.get('/profile', authenticateToken, attachRequestAudit(), asyncHandler(asy
       estate_id: user.estate_id,
       notify_email: user.notify_email,
       notify_sms: user.notify_sms,
+      mfa_enabled: user.mfa_enabled || false,
       created_at: user.created_at
     }
   }, 'Profile retrieved successfully');
@@ -1044,7 +1083,8 @@ router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
       username: user.username,
       email: user.email,
       role: user.role,
-      estate_id: user.estate_id
+      estate_id: user.estate_id,
+      mfa_enabled: user.mfa_enabled || false
     }
   }, 'User retrieved successfully');
 }));

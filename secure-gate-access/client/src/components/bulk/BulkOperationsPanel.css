@@ -184,3 +184,106 @@
   padding: 2rem;
   color: var(--color-text-muted, #6b7280);
 }
+
+/* Dark mode support */
+.dark .bulk-toolbar {
+  background: var(--color-surface-dark, #1e293b);
+  border-color: var(--color-border-dark, #334155);
+}
+
+.dark .select-all-checkbox {
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .bulk-search {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .bulk-action-btn {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .bulk-action-btn:hover:not(:disabled) {
+  background: var(--color-hover-dark, #475569);
+}
+
+.dark .bulk-action-btn.danger {
+  color: #f87171;
+  border-color: #dc2626;
+}
+
+.dark .bulk-action-btn.danger:hover:not(:disabled) {
+  background: #7f1d1d;
+}
+
+.dark .bulk-progress {
+  background: var(--color-surface-dark, #1e293b);
+  border-color: var(--color-border-dark, #334155);
+}
+
+.dark .progress-label {
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .cancel-btn {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .progress-bar {
+  background: var(--color-border-dark, #334155);
+}
+
+.dark .import-preview {
+  background: var(--color-surface-dark, #1e293b);
+  border-color: #3b82f6;
+}
+
+.dark .import-header h4 {
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .import-header span {
+  color: var(--color-text-muted-dark, #94a3b8);
+}
+
+.dark .import-table th,
+.dark .import-table td {
+  border-color: var(--color-border-dark, #334155);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .import-table th {
+  background: var(--color-background-dark, #0f172a);
+}
+
+.dark .import-more {
+  color: var(--color-text-muted-dark, #94a3b8);
+}
+
+.dark .bulk-item {
+  background: var(--color-surface-dark, #1e293b);
+  border-color: var(--color-border-dark, #334155);
+}
+
+.dark .bulk-item.selected {
+  background: var(--color-selected-dark, #14532d);
+  border-color: var(--color-primary, #16a34a);
+}
+
+.dark .bulk-item:hover {
+  background: var(--color-hover-dark, #334155);
+}
+
+.dark .item-label {
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .bulk-empty {
+  color: var(--color-text-muted-dark, #94a3b8);
+}

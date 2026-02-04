@@ -146,7 +146,7 @@ const MFASetup = () => {
         <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-8">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-300 rounded" role="alert">
               <p className="font-medium">Error</p>
               <p className="text-sm">{error}</p>
             </div>
@@ -154,7 +154,7 @@ const MFASetup = () => {
 
           {/* Success Message */}
           {success && (
-            <div className="mb-4 p-4 bg-green-50 border-l-4 border-green-500 text-green-700">
+            <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 text-green-700 dark:text-green-300 rounded" role="status">
               <p className="text-sm">{success}</p>
             </div>
           )}
@@ -186,9 +186,9 @@ const MFASetup = () => {
                 )}
 
                 {/* Instructions */}
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-blue-900 mb-2">📱 Instructions:</h3>
-                  <ol className="list-decimal list-inside space-y-1 text-blue-800 text-sm">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h3 className="font-medium text-blue-900 dark:text-blue-200 mb-2">📱 Instructions:</h3>
+                  <ol className="list-decimal list-inside space-y-1 text-blue-800 dark:text-blue-300 text-sm">
                     <li>Download Google Authenticator on your phone</li>
                     <li>Open the app and tap "+" or "Add account"</li>
                     <li>Select "Scan a QR code"</li>
@@ -198,11 +198,11 @@ const MFASetup = () => {
                 </div>
 
                 {/* Manual Entry Key */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">
+                <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                     Can't scan? Enter this code manually:
                   </p>
-                  <code className="block p-2 bg-white border border-gray-300 rounded text-center font-mono text-sm">
+                  <code className="block p-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded text-center font-mono text-sm text-gray-900 dark:text-gray-100">
                     {mfaData.manualEntryKey}
                   </code>
                 </div>
@@ -210,25 +210,29 @@ const MFASetup = () => {
                 {/* Verification Form */}
                 <form onSubmit={verifyAndEnable} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="mfa-verification-token" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Enter 6-digit code from Google Authenticator:
                     </label>
                     <input
+                      id="mfa-verification-token"
                       type="text"
                       maxLength="6"
                       pattern="[0-9]{6}"
                       value={verificationToken}
                       onChange={(e) => setVerificationToken(e.target.value.replace(/\D/g, ''))}
                       placeholder="000000"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl font-mono tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-center text-2xl font-mono tracking-widest focus:ring-4 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-blue-500"
                       required
+                      autoFocus
+                      aria-describedby={error ? "mfa-setup-error" : undefined}
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading || verificationToken.length !== 6}
-                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="w-full min-h-[44px] bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                    aria-busy={loading}
                   >
                     {loading ? 'Verifying...' : 'Verify and Enable MFA'}
                   </button>
@@ -252,17 +256,17 @@ const MFASetup = () => {
 
               <div className="space-y-6">
                 {/* Backup Codes */}
-                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
-                  <h3 className="font-bold text-yellow-900 mb-2">⚠️ Important: Save Your Backup Codes</h3>
-                  <p className="text-yellow-800 text-sm mb-4">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-4 rounded">
+                  <h3 className="font-bold text-yellow-900 dark:text-yellow-200 mb-2">⚠️ Important: Save Your Backup Codes</h3>
+                  <p className="text-yellow-800 dark:text-yellow-300 text-sm mb-4">
                     These backup codes can be used to access your account if you lose your phone.
                     Each code can only be used once. Store them in a safe place!
                   </p>
                   
-                  <div className="bg-white p-4 rounded border border-yellow-300">
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded border border-yellow-300 dark:border-yellow-700">
                     <div className="grid grid-cols-2 gap-2 font-mono text-sm">
                       {mfaData.backupCodes.map((code, index) => (
-                        <div key={index} className="p-2 bg-gray-50 rounded text-center">
+                        <div key={index} className="p-2 bg-gray-50 dark:bg-slate-700 rounded text-center text-gray-900 dark:text-gray-100">
                           {code}
                         </div>
                       ))}
@@ -271,16 +275,17 @@ const MFASetup = () => {
 
                   <button
                     onClick={downloadBackupCodes}
-                    className="mt-4 w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors font-medium"
+                    className="mt-4 w-full min-h-[44px] bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 focus:ring-4 focus:ring-yellow-300 dark:focus:ring-yellow-800 transition-colors font-medium"
+                    aria-label="Download backup codes as text file"
                   >
                     📥 Download Backup Codes
                   </button>
                 </div>
 
                 {/* Next Steps */}
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-blue-900 mb-2">✅ What's Next?</h3>
-                  <ul className="space-y-1 text-blue-800 text-sm">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <h3 className="font-medium text-blue-900 dark:text-blue-200 mb-2">✅ What's Next?</h3>
+                  <ul className="space-y-1 text-blue-800 dark:text-blue-300 text-sm">
                     <li>• Your account now requires a 6-digit code when logging in</li>
                     <li>• Open Google Authenticator to get your code</li>
                     <li>• Keep your backup codes in a safe place</li>
@@ -290,7 +295,8 @@ const MFASetup = () => {
 
                 <button
                   onClick={() => navigate('/dashboard')}
-                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="w-full min-h-[44px] bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-colors font-medium"
+                  aria-label="Go to dashboard"
                 >
                   Go to Dashboard
                 </button>

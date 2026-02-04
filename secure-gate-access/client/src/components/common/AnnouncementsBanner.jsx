@@ -15,32 +15,32 @@ import announcementsService from '../../services/announcementsService';
 
 const priorityStyles = {
   critical: {
-    bg: 'bg-red-50',
-    border: 'border-red-300',
-    text: 'text-red-800',
+    bg: 'bg-red-50 dark:bg-red-900/30',
+    border: 'border-red-300 dark:border-red-700',
+    text: 'text-red-800 dark:text-red-300',
     icon: '🚨',
-    iconBg: 'bg-red-100'
+    iconBg: 'bg-red-100 dark:bg-red-900/50'
   },
   high: {
-    bg: 'bg-orange-50',
-    border: 'border-orange-300',
-    text: 'text-orange-800',
+    bg: 'bg-orange-50 dark:bg-orange-900/30',
+    border: 'border-orange-300 dark:border-orange-700',
+    text: 'text-orange-800 dark:text-orange-300',
     icon: '⚠️',
-    iconBg: 'bg-orange-100'
+    iconBg: 'bg-orange-100 dark:bg-orange-900/50'
   },
   normal: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    text: 'text-blue-800',
+    bg: 'bg-blue-50 dark:bg-blue-900/30',
+    border: 'border-blue-200 dark:border-blue-700',
+    text: 'text-blue-800 dark:text-blue-300',
     icon: '📢',
-    iconBg: 'bg-blue-100'
+    iconBg: 'bg-blue-100 dark:bg-blue-900/50'
   },
   low: {
-    bg: 'bg-gray-50',
-    border: 'border-gray-200',
-    text: 'text-gray-700',
+    bg: 'bg-gray-50 dark:bg-gray-800',
+    border: 'border-gray-200 dark:border-gray-700',
+    text: 'text-gray-700 dark:text-gray-300',
     icon: 'ℹ️',
-    iconBg: 'bg-gray-100'
+    iconBg: 'bg-gray-100 dark:bg-gray-700'
   }
 };
 
@@ -157,7 +157,7 @@ const AnnouncementsBanner = ({
       {hasMore && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="w-full py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium min-h-[44px]"
         >
           {expanded 
             ? 'Show Less' 

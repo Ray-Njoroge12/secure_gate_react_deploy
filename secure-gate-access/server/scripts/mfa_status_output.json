@@ -1,0 +1,542 @@
+[
+  {
+    "role": "admin",
+    "username": "admin",
+    "email": "admin@securegate.com",
+    "mfa_enabled": false
+  },
+  {
+    "role": "resident",
+    "username": "resident1",
+    "email": "resident1@securegate.com",
+    "mfa_enabled": false
+  },
+  {
+    "role": "guard",
+    "username": "guard1",
+    "email": "guard1@securegate.com",
+    "mfa_enabled": false
+  },
+  {
+    "role": "admin",
+    "username": "Calvin_admin",
+    "email": "country@securelabs.com",
+    "mfa_enabled": false
+  },
+  {
+    "role": "admin",
+    "username": "Defaul2_admin",
+    "email": "default2@securegate.com",
+    "mfa_enabled": false
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin_User",
+    "email": "estate.admin.1770008421089@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770011569753@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "res_1770008648927",
+    "email": "res.1770008648927@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770008648957",
+    "email": "guard.1770008648957@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin_User",
+    "email": "estate.admin.1770008719080@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Test_Admin",
+    "email": "admin.1770007542035@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770009939435@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "res_1770008233320",
+    "email": "res.1770008233320@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010626076@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "Name",
+    "email": "name@email.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770009776383@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010325455@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770009666998@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770009776383",
+    "email": "resident.1770009776383@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Test_Admin",
+    "email": "admin.1770007584072@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Test_Admin",
+    "email": "admin.1770007452100@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin_User",
+    "email": "estate.admin.1770008253484@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010459149",
+    "email": "resident.1770010459149@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010768109",
+    "email": "guard.1770010768109@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010788247@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010068163",
+    "email": "guard.1770010068163@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010068163",
+    "email": "resident.1770010068163@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770011569753",
+    "email": "resident.1770011569753@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "res_1770008212550",
+    "email": "res.1770008212550@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010896161",
+    "email": "guard.1770010896161@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010788247",
+    "email": "resident.1770010788247@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010264463",
+    "email": "guard.1770010264463@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770009939435",
+    "email": "resident.1770009939435@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Test_Admin",
+    "email": "admin.1770007770608@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "res_1770008421142",
+    "email": "res.1770008421142@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard.test",
+    "email": "guard.test@securegate.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "res_1770008253530",
+    "email": "res.1770008253530@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010459149",
+    "email": "guard.1770010459149@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010148640",
+    "email": "resident.1770010148640@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770009853619",
+    "email": "resident.1770009853619@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770011694948",
+    "email": "resident.1770011694948@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770009718952@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770011336089@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin_User",
+    "email": "estate.admin.1770008648257@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010264463",
+    "email": "resident.1770010264463@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010626076",
+    "email": "guard.1770010626076@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770009853619",
+    "email": "guard.1770009853619@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Test_Admin",
+    "email": "admin.1770007033151@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770011377446@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010117107@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "res_1770008719136",
+    "email": "res.1770008719136@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Test_Admin",
+    "email": "admin.1770009468305@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010415413",
+    "email": "guard.1770010415413@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010626076",
+    "email": "resident.1770010626076@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010117107",
+    "email": "guard.1770010117107@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010148640@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010896161",
+    "email": "resident.1770010896161@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010768109@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770011377446",
+    "email": "resident.1770011377446@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770011336089",
+    "email": "resident.1770011336089@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010016722@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "just",
+    "email": "just@beacuse.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010325455",
+    "email": "guard.1770010325455@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770011694948@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010788247",
+    "email": "guard.1770010788247@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770008719158",
+    "email": "guard.1770008719158@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770009939435",
+    "email": "guard.1770009939435@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin_User",
+    "email": "estate.admin.1770008233243@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010264463@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770009853619@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010148640",
+    "email": "guard.1770010148640@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "not",
+    "email": "notolny@securegate.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "res_1770008569285",
+    "email": "res.1770008569285@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770010016722",
+    "email": "guard.1770010016722@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010325455",
+    "email": "resident.1770010325455@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770011795279@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010117107",
+    "email": "resident.1770010117107@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin_User",
+    "email": "estate.admin.1770008569205@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010768109",
+    "email": "resident.1770010768109@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010068163@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010415413@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010896161@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010016722",
+    "email": "resident.1770010016722@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770010415413",
+    "email": "resident.1770010415413@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "resident",
+    "username": "resident_1770011795279",
+    "email": "resident.1770011795279@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin_User",
+    "email": "estate.admin.1770008212449@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "guard",
+    "username": "guard_1770009776383",
+    "email": "guard.1770009776383@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Estate_Admin",
+    "email": "estate.admin.1770010459149@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "Test_Admin",
+    "email": "admin.1770007052668@test.com",
+    "mfa_enabled": null
+  },
+  {
+    "role": "admin",
+    "username": "there",
+    "email": "there@nothing.com",
+    "mfa_enabled": null
+  }
+]

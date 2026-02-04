@@ -78,7 +78,7 @@ const PasswordStrengthIndicator = ({ password, className = '' }) => {
           <div
             key={level}
             className={`h-2 flex-1 rounded-full ${
-              level <= strength ? colorClasses[color] : 'bg-gray-200'
+              level <= strength ? colorClasses[color] : 'bg-gray-200 dark:bg-slate-700'
             }`}
           />
         ))}
@@ -93,23 +93,23 @@ const PasswordStrengthIndicator = ({ password, className = '' }) => {
 
       {/* Requirements checklist */}
       <div className="text-xs space-y-1">
-        <div className={`flex items-center ${checks?.length ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
+        <div className={`flex items-center ${checks?.length ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
           <span className="mr-2">{checks?.length ? '✓' : '○'}</span>
           At least 8 characters
         </div>
-        <div className={`flex items-center ${checks?.lowercase ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
+        <div className={`flex items-center ${checks?.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
           <span className="mr-2">{checks?.lowercase ? '✓' : '○'}</span>
           One lowercase letter
         </div>
-        <div className={`flex items-center ${checks?.uppercase ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
+        <div className={`flex items-center ${checks?.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
           <span className="mr-2">{checks?.uppercase ? '✓' : '○'}</span>
           One uppercase letter
         </div>
-        <div className={`flex items-center ${checks?.number ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
+        <div className={`flex items-center ${checks?.number ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
           <span className="mr-2">{checks?.number ? '✓' : '○'}</span>
           One number
         </div>
-        <div className={`flex items-center ${checks?.special ? 'text-green-600' : 'text-gray-500 dark:text-gray-300'}`}>
+        <div className={`flex items-center ${checks?.special ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-slate-400'}`}>
           <span className="mr-2">{checks?.special ? '✓' : '○'}</span>
           One special character (@$!%*?&)
         </div>

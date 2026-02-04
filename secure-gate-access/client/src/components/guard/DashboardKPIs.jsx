@@ -135,19 +135,28 @@ const DashboardKPIs = ({ onFilterClick }) => {
           <div
             key={kpi.id}
             onClick={() => onFilterClick?.(kpi.id)}
-            className={`${kpi.bgLight} border-2 ${kpi.borderColor} rounded-lg p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105`}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onFilterClick?.(kpi.id);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label={`${kpi.label}: ${kpi.value}`}
+            className={`${kpi.bgLight} dark:bg-slate-800 border-2 ${kpi.borderColor} dark:border-slate-600 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-500`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className={`p-2 ${kpi.color} rounded-lg`}>
-                <Icon className="w-5 h-5 text-white" />
+              <div className={`p-2 ${kpi.color} rounded-lg`} aria-hidden="true">
+                <Icon className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               {kpi.value > 0 && (
-                <span className={`text-xs font-medium ${kpi.textColor} bg-white px-2 py-1 rounded-full`}>
+                <span className={`text-xs font-medium ${kpi.textColor} dark:text-${kpi.color.replace('bg-', '')}-400 bg-white dark:bg-slate-700 px-2 py-1 rounded-full`}>
                   {kpi.value}
                 </span>
               )}
             </div>
-            <div className={`text-3xl font-bold ${kpi.textColor} mb-1`}>
+            <div className={`text-3xl font-bold ${kpi.textColor} dark:text-${kpi.color.replace('bg-', '')}-400 mb-1`}>
               {kpi.value}
             </div>
             <div className="text-sm font-medium text-gray-600 dark:text-gray-200">

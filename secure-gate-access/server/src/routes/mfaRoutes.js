@@ -72,13 +72,37 @@ router.post('/verify-setup', authenticateToken, asyncHandler(async (req, res) =>
 /**
  * @route   POST /api/mfa/verify
  * @desc    Verify MFA token during login and issue tokens
- * @access  Public (but requires valid userId from login)
+ * @access  Public (but requires valid mfaSessionId from login)
  */
 router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
-  const { userId, token, useBackupCode } = req.body;
+  const { mfaSessionId, token, useBackupCode } = req.body;
 
-  if (!userId || !token) {
-    throw new AppError('User ID and token are required', 400, 'VALIDATION_ERROR');
+  if (!mfaSessionId || !token) {
+    throw new AppError('MFA session ID and token are required', 400, 'VALIDATION_ERROR');
+  }
+
+  // Verify MFA session exists and is valid
+  const sessionResult = await userService.db.query(
+    `SELECT user_id, expires_at, status 
+     FROM additional_auth_sessions 
+     WHERE session_id = $1 AND operation = 'login_mfa' AND status = 'pending'`,
+    [mfaSessionId]
+  );
+
+  if (sessionResult.rows.length === 0) {
+    throw new AppError('Invalid or expired MFA session', 401, 'INVALID_MFA_SESSION');
+  }
+
+  const session = sessionResult.rows[0];
+  const userId = session.user_id;
+
+  // Check session expiry
+  if (new Date() > new Date(session.expires_at)) {
+    await userService.db.query(
+      `UPDATE additional_auth_sessions SET status = 'expired' WHERE session_id = $1`,
+      [mfaSessionId]
+    );
+    throw new AppError('MFA session expired, please login again', 401, 'MFA_SESSION_EXPIRED');
   }
 
   let verified = false;
@@ -94,6 +118,12 @@ router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
   if (!verified) {
     throw new AppError('Invalid MFA token', 401, 'INVALID_MFA_TOKEN');
   }
+
+  // Mark session as completed
+  await userService.db.query(
+    `UPDATE additional_auth_sessions SET status = 'completed', completed_at = NOW() WHERE session_id = $1`,
+    [mfaSessionId]
+  );
 
   // MFA verified - now issue tokens
   const user = await userService.getUserById(userId);

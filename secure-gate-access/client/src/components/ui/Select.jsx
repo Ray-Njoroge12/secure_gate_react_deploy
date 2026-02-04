@@ -28,11 +28,13 @@ export const SelectTrigger = ({ className = '', children }) => {
   return (
     <button
       type="button"
-      className={`flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`flex h-10 min-h-[44px] w-full items-center justify-between rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50 transition-colors ${className}`}
       onClick={() => setIsOpen(!isOpen)}
+      aria-expanded={isOpen}
+      aria-haspopup="listbox"
     >
       {children}
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <ChevronDown className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
     </button>
   );
 };
@@ -67,7 +69,8 @@ export const SelectContent = ({ className = '', children }) => {
   return (
     <div
       ref={ref}
-      className={`absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg ${className}`}
+      role="listbox"
+      className={`absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 py-1 shadow-lg ${className}`}
     >
       {children}
     </div>
@@ -80,10 +83,19 @@ export const SelectItem = ({ value, children, className = '' }) => {
 
   return (
     <div
-      className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-gray-100 ${
-        isSelected ? 'bg-gray-100 font-medium' : ''
+      role="option"
+      aria-selected={isSelected}
+      className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-2 px-3 text-sm outline-none transition-colors min-h-[44px] text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 focus:bg-gray-100 dark:focus:bg-slate-700 ${
+        isSelected ? 'bg-gray-100 dark:bg-slate-700 font-medium' : ''
       } ${className}`}
       onClick={() => handleValueChange(value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleValueChange(value);
+        }
+      }}
+      tabIndex={0}
     >
       {children}
     </div>

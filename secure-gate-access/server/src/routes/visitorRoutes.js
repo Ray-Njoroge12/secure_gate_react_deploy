@@ -18,6 +18,7 @@ import { validateRequest, ValidationSchemas } from '../middleware/validationMidd
 import { rateLimit } from 'express-rate-limit';
 import { minimizeData } from '../middleware/dataMinimization.js';
 import { buildErrorPayload } from '../utils/responseFormatter.js';
+import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 
 import { registerWalkIn, getTodayWalkIns } from '../controllers/walkInController.js';
 import {
@@ -276,6 +277,22 @@ router.post('/bulk-invite',
   bulkInvite
 );
 
+// Complete invite route (public - visitor completing their registration)
+// SEC-010: Rate-limited to prevent abuse of visitor registration
+router.post('/complete/:inviteCode',
+  completeInviteLimiter,
+  attachRequestAudit,
+  completeInvite
+);
+
+// Self check-in route (public - visitor self-checking in with invite code)
+// SEC-011: Rate-limited to prevent unauthorized access attempts
+router.post('/self-check-in/:inviteCode',
+  completeInviteLimiter,  // Reuse same rate limiter (similar abuse risk)
+  attachRequestAudit,
+  selfCheckIn
+);
+
 // Guard Operations (guard/admin roles required)
 router.post('/:id/check-in',
   authenticateToken,
@@ -306,12 +323,132 @@ router.get('/walk-ins/today',
   getTodayWalkIns
 );
 
-// Approval flow aliases (client compatibility)
-router.post('/:id/request-approval', authenticateToken, attachRequestAudit, requestApproval);
-router.post('/:id/approve', authenticateToken, attachRequestAudit, approveVisitor);
-router.post('/:id/reject', authenticateToken, attachRequestAudit, rejectVisitor);
-router.get('/pending-approvals', authenticateToken, attachRequestAudit, getPendingApprovals);
-router.get('/approval-history', authenticateToken, attachRequestAudit, getApprovalHistory);
+// Rate limiter for approval operations (prevent abuse)
+const approvalRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 approvals per minute per user
+  message: {
+    error: 'Too many approval operations, please try again later.',
+    retryAfter: '1 minute',
+    code: 'APPROVAL_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `approval_${req.user?.id || req.ip}`
+});
+
+// SEC-007: Strict IP-based rate limiter for OTP verification (prevent brute-force)
+const otpVerifyRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute window
+  max: 5, // 5 OTP verification attempts per minute per IP
+  message: {
+    error: 'Too many OTP verification attempts. Please wait and try again.',
+    retryAfter: '1 minute',
+    code: 'OTP_VERIFY_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Rate limit by IP + visitor ID combination to prevent enumeration
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.ip ||
+      'unknown';
+    return `otp_verify:${ip}:${req.params.id || req.body?.id || 'unknown'}`;
+  },
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many OTP verification attempts. Please wait a minute and try again.', 'OTP_VERIFY_RATE_LIMITED');
+    res.status(429).json(response);
+  }
+});
+
+// SEC-008: Stricter global IP rate limit for OTP (prevent mass enumeration)
+const otpGlobalIpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 total OTP attempts per IP across all visitors
+  message: {
+    error: 'Too many OTP requests from this IP. Please try again later.',
+    retryAfter: '15 minutes',
+    code: 'OTP_GLOBAL_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.ip ||
+      'unknown';
+    return `otp_global:${ip}`;
+  },
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many OTP requests from this IP address. Please try again in 15 minutes.', 'OTP_GLOBAL_RATE_LIMITED');
+    res.status(429).json(response);
+  }
+});
+
+// SEC-009: Rate limiter for OTP resend (prevent SMS/email flooding)
+const otpResendRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 3, // 3 resend attempts per 5 minutes per IP + visitor
+  message: {
+    error: 'Too many OTP resend requests. Please wait and try again.',
+    retryAfter: '5 minutes',
+    code: 'OTP_RESEND_RATE_LIMITED'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.ip ||
+      'unknown';
+    return `otp_resend:${ip}:${req.params.id || 'unknown'}`;
+  },
+  handler: (req, res) => {
+    const response = buildErrorPayload(req, res, 'Too many OTP resend requests. Please wait 5 minutes before trying again.', 'OTP_RESEND_RATE_LIMITED');
+    res.status(429).json(response);
+  }
+});
+
+// Approval flow - with proper role enforcement (RES-004 FIX)
+// Guards can request approval, residents can approve/reject
+router.post('/:id/request-approval',
+  authenticateToken,
+  requireRole(['guard', 'admin']),
+  approvalRateLimiter,
+  attachRequestAudit,
+  requestApproval
+);
+
+router.post('/:id/approve',
+  authenticateToken,
+  requireRole(['resident', 'admin']),
+  approvalRateLimiter,
+  attachRequestAudit,
+  approveVisitor
+);
+
+router.post('/:id/reject',
+  authenticateToken,
+  requireRole(['resident', 'admin']),
+  approvalRateLimiter,
+  attachRequestAudit,
+  rejectVisitor
+);
+
+router.get('/pending-approvals',
+  authenticateToken,
+  requireRole(['resident', 'admin']),
+  attachRequestAudit,
+  getPendingApprovals
+);
+
+router.get('/approval-history',
+  authenticateToken,
+  requireRole(['resident', 'admin']),
+  attachRequestAudit,
+  getApprovalHistory
+);
 
 /**
  * @swagger
@@ -432,16 +569,100 @@ router.get('/approval-history', authenticateToken, attachRequestAudit, getApprov
  */
 
 // OTP Operations (public endpoints for visitor verification)
-router.post('/:id/verify-otp', verifyOtp);
-router.post('/:id/resend-otp', resendOtp);
-
-// Public routes (guests) - cached for performance
-router.get('/bulk-invite/:inviteCode',
-  CacheMiddleware.createMiddleware({ ttl: 300 }),
-  getBulkInvite
+// SEC-007/008/009: IP-based rate limiting to prevent brute-force and enumeration attacks
+router.post('/:id/verify-otp',
+  otpGlobalIpRateLimiter,   // Global IP limit: 20 attempts per 15 min across all visitors
+  otpVerifyRateLimiter,      // Per-visitor limit: 5 attempts per minute per IP + visitor ID
+  attachRequestAudit,
+  verifyOtp
 );
-router.post('/complete/:inviteCode', completeInviteLimiter, completeInvite);
-router.post('/self-checkin/:inviteCode', selfCheckIn);
+router.post('/:id/resend-otp',
+  otpGlobalIpRateLimiter,   // Global IP limit
+  otpResendRateLimiter,      // Resend limit: 3 per 5 min per IP + visitor ID
+  attachRequestAudit,
+  resendOtp
+);
+
+// QR Code Regeneration (BULK-005: Allow visitors to regenerate failed QR codes)
+router.post('/:id/regenerate-qr', rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3, // 3 regeneration attempts per hour
+  message: 'Too many QR regeneration attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false
+}), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { QRCodeService } = await import('../services/qrCodeService.js');
+  const { dbManager } = await import('../config/database.js');
+  
+  // Get visitor details
+  const visitorResult = await dbManager.query(
+    `SELECT id, name, phone, email, purpose, date_of_visit, estate_id, status, visitor_token
+     FROM visitors WHERE id = $1`,
+    [id]
+  );
+  
+  if (visitorResult.rows.length === 0) {
+    return res.status(404).json({
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'Visitor not found' }
+    });
+  }
+  
+  const visitor = visitorResult.rows[0];
+  
+  // Only allow regeneration if status indicates QR issue
+  if (!['qr_pending', 'otp_verified', 'pending'].includes(visitor.status)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_STATUS', message: 'QR regeneration not available for this visitor status' }
+    });
+  }
+  
+  try {
+    const qrResult = await QRCodeService.generateVisitorQR({
+      id: visitor.id,
+      name: visitor.name,
+      phone: visitor.phone,
+      purpose: visitor.purpose,
+      date_of_visit: visitor.date_of_visit,
+      estate_id: visitor.estate_id
+    }, { generateOtp: false });
+    
+    if (qrResult?.success) {
+      const qrCodeDataUrl = qrResult.data.qrCodeDataUrl;
+      const qrId = qrResult.data.qrId;
+      
+      // Update visitor with QR code
+      if (qrId) {
+        await dbManager.query(
+          'UPDATE visitors SET qr_code = $1, status = $2 WHERE id = $3',
+          [qrId, 'otp_verified', visitor.id]
+        );
+      }
+      
+      res.json({
+        success: true,
+        message: 'QR code regenerated successfully',
+        data: {
+          qr_code: qrCodeDataUrl,
+          visitor_token: visitor.visitor_token
+        }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: { code: 'QR_GENERATION_FAILED', message: 'Failed to generate QR code, please try again later' }
+      });
+    }
+  } catch (error) {
+    console.error('[regenerateQR] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: 'QR regeneration failed' }
+    });
+  }
+}));
 
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
 router.delete('/:id', authenticateToken, attachRequestAudit, cancelVisitor);
@@ -460,8 +681,11 @@ router.get('/invite/:inviteCode',
   getBulkInvite
 );
 
-// OTP verification shim for frontend compatibility
-router.post('/verify-otp', (req, res) => {
+// OTP verification shim for frontend compatibility (also rate-limited)
+router.post('/verify-otp',
+  otpGlobalIpRateLimiter,
+  otpVerifyRateLimiter,
+  (req, res) => {
   const { id, otp } = req.body;
   if (!id || !otp) {
     return res.status(400).json({

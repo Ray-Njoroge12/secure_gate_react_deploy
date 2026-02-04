@@ -112,8 +112,8 @@ const OfflineIndicator = ({
       {/* Status Badge */}
       <div
         className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg cursor-pointer transition-all ${status.isOnline
-            ? 'bg-green-50 border border-green-200'
-            : 'bg-yellow-50 border border-yellow-300'
+            ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800'
+            : 'bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700'
           }`}
       >
         {/* Status Icon */}
@@ -123,7 +123,7 @@ const OfflineIndicator = ({
           }`} />
 
         {/* Status Text */}
-        <span className={`text-sm font-medium ${status.isOnline ? 'text-green-700' : 'text-yellow-700'
+        <span className={`text-sm font-medium ${status.isOnline ? 'text-green-700 dark:text-green-400' : 'text-yellow-700 dark:text-yellow-400'
           }`}>
           {status.isOnline ? 'Online' : 'Offline'}
         </span>
@@ -146,36 +146,36 @@ const OfflineIndicator = ({
 
       {/* Tooltip / Details Panel */}
       {showTooltip && showDetails && (
-        <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white rounded-lg shadow-xl border border-gray-200">
+        <div className="absolute bottom-full right-0 mb-2 w-64 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-gray-200 dark:border-slate-700">
           <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
             Sync Status
           </h4>
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-300">Connection:</span>
-              <span className={status.isOnline ? 'text-green-600' : 'text-yellow-600'}>
+              <span className="text-gray-500 dark:text-gray-400">Connection:</span>
+              <span className={status.isOnline ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
                 {status.isOnline ? 'Connected' : 'Offline'}
               </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-300">Last Sync:</span>
-              <span className="text-gray-700">
+              <span className="text-gray-500 dark:text-gray-400">Last Sync:</span>
+              <span className="text-gray-700 dark:text-gray-300">
                 {formatLastSync(status.lastDownload)}
               </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-300">Pending:</span>
-              <span className="text-gray-700">
+              <span className="text-gray-500 dark:text-gray-400">Pending:</span>
+              <span className="text-gray-700 dark:text-gray-300">
                 {status.pendingChangesCount} changes
               </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-300">Offline Data:</span>
-              <span className={status.hasOfflineData ? 'text-green-600' : 'text-gray-400'}>
+              <span className="text-gray-500 dark:text-gray-400">Offline Data:</span>
+              <span className={status.hasOfflineData ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}>
                 {status.hasOfflineData ? 'Available' : 'Not cached'}
               </span>
             </div>
@@ -187,7 +187,7 @@ const OfflineIndicator = ({
               <button
                 onClick={handleSync}
                 disabled={isSyncing}
-                className="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
                 {isSyncing ? 'Syncing...' : 'Sync Now'}
               </button>
@@ -197,7 +197,7 @@ const OfflineIndicator = ({
               <button
                 onClick={handleDownloadOffline}
                 disabled={isDownloading}
-                className="w-full px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 disabled:opacity-50"
+                className="w-full px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 min-h-[44px]"
               >
                 {isDownloading ? 'Downloading...' : 'Enable Offline Mode'}
               </button>
@@ -205,7 +205,7 @@ const OfflineIndicator = ({
           </div>
 
           {/* Privacy Notice */}
-          <p className="mt-3 text-xs text-gray-400">
+          <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
             Offline data is encrypted and auto-purges after 8 hours or on logout.
           </p>
         </div>

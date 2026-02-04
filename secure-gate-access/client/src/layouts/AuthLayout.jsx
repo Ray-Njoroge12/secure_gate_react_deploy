@@ -54,7 +54,7 @@ export default function AuthLayout({ title, subtitle, children }) {
   }, []);
 
   return (
-    <div ref={authRef} className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+    <div ref={authRef} className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4 py-12">
       {/* Skip Navigation Link - Accessibility */}
       <a 
         href="#auth-content" 
@@ -75,7 +75,7 @@ export default function AuthLayout({ title, subtitle, children }) {
         </div>
         
         {/* Auth Card */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
           {/* Green Accent Bar */}
           <div className="h-1 bg-gradient-to-r from-green-400 via-green-500 to-green-600"></div>
           
@@ -83,7 +83,7 @@ export default function AuthLayout({ title, subtitle, children }) {
             {/* Title & Subtitle */}
             <div className="mb-6">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{title}</h1>
-              {subtitle && <p className="text-lg text-gray-600 dark:text-gray-200">{subtitle}</p>}
+              {subtitle && <p className="text-lg text-gray-600 dark:text-gray-300">{subtitle}</p>}
             </div>
             
             {/* Content */}
@@ -92,7 +92,7 @@ export default function AuthLayout({ title, subtitle, children }) {
         </div>
         
         {/* Footer */}
-        <p className="text-xs text-gray-500 dark:text-gray-300 text-center mt-6">
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-6">
           &copy; 2025 SecureGate • Privacy • Terms
         </p>
       </main>

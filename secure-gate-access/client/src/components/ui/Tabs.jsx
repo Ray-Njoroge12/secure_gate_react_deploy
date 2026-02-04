@@ -22,15 +22,16 @@ export const Tabs = ({ defaultValue, value, onValueChange, children, className =
 export const TabsList = ({ className = '', children }) => {
   return (
     <div
-      className={`inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-500 dark:text-gray-300 ${className}`}
+      className={`inline-flex h-10 items-center justify-center rounded-md bg-gray-100 dark:bg-slate-800 p-1 text-gray-500 dark:text-slate-400 ${className}`}
       role="tablist"
+      aria-orientation="horizontal"
     >
       {children}
     </div>
   );
 };
 
-export const TabsTrigger = ({ value, children, className = '' }) => {
+export const TabsTrigger = ({ value, children, className = '', disabled = false }) => {
   const { selectedTab, setSelectedTab } = useContext(TabsContext);
   const isSelected = selectedTab === value;
 
@@ -39,12 +40,22 @@ export const TabsTrigger = ({ value, children, className = '' }) => {
       type="button"
       role="tab"
       aria-selected={isSelected}
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+      aria-controls={`tabpanel-${value}`}
+      id={`tab-${value}`}
+      disabled={disabled}
+      tabIndex={isSelected ? 0 : -1}
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium min-h-[36px] ring-offset-white dark:ring-offset-slate-900 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
         isSelected
-          ? 'bg-white text-gray-900 dark:text-white shadow-sm'
-          : 'hover:bg-gray-200'
+          ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm'
+          : 'text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-white'
       } ${className}`}
       onClick={() => setSelectedTab(value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setSelectedTab(value);
+        }
+      }}
     >
       {children}
     </button>
@@ -61,7 +72,10 @@ export const TabsContent = ({ value, children, className = '' }) => {
   return (
     <div
       role="tabpanel"
-      className={`mt-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${className}`}
+      id={`tabpanel-${value}`}
+      aria-labelledby={`tab-${value}`}
+      tabIndex={0}
+      className={`mt-2 ring-offset-white dark:ring-offset-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${className}`}
     >
       {children}
     </div>

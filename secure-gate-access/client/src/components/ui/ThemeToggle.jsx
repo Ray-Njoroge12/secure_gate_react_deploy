@@ -49,7 +49,7 @@ const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) =>
   return (
     <button
       onClick={handleToggle}
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${className}`}
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all min-h-[44px] min-w-[44px] ${className}`}
       style={{
         backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
         color: 'var(--color-text-primary)'

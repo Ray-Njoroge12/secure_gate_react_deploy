@@ -210,18 +210,18 @@ const SearchFilter = ({
 
           {/* Advanced Filters */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filterFields.map(field => (
                   <div key={field.key}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                       {field.label}
                     </label>
                     {field.type === 'select' ? (
                       <select
                         value={filters[field.key] || ''}
                         onChange={(e) => handleFilterChange(field.key, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                       >
                         <option value="">All {field.label}</option>
                         {getFilterOptions(field.key).map(option => (
@@ -246,7 +246,7 @@ const SearchFilter = ({
                               }}
                               className="mr-2"
                             />
-                            <span className="text-sm">{option}</span>
+                            <span className="text-sm text-gray-700 dark:text-slate-300">{option}</span>
                           </label>
                         ))}
                       </div>
@@ -266,7 +266,7 @@ const SearchFilter = ({
 
           {/* Sort Options */}
           {showSortOptions && enableSorting && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {searchFields.map(field => (
                   <Button

@@ -327,11 +327,11 @@ const ScanQR = () => {
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Offline Mode Banner */}
         {!isOnline && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-            <WifiOff className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 flex items-start gap-3">
+            <WifiOff className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-yellow-800">Offline Mode Active</p>
-              <p className="text-xs text-yellow-700 mt-1">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">Offline Mode Active</p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
                 QR codes will be validated against cached data. Check-ins will be queued and synced when you're back online.
               </p>
             </div>
@@ -341,13 +341,13 @@ const ScanQR = () => {
         <Card>
           <Card.Content className="p-6">
             {error && (
-              <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
+              <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 rounded-md">
                 {error}
               </div>
             )}
             
             {isProcessing && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md flex items-center gap-3">
+              <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md flex items-center gap-3">
                 <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
                 <span className="text-blue-700">Processing QR code...</span>
               </div>

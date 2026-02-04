@@ -7,6 +7,9 @@ import { buildRequestHash, getIdempotencyKey, resolveIdempotency, storeIdempoten
 
 // Import WebSocket service for real-time events
 import WebSocketService from '../services/websocketService.js';
+// Import notification service for resident check-in alerts
+import { sendCheckInNotification, sendCheckOutNotification } from '../services/whatsappService.js';
+import logger from '../config/logger.js';
 
 const checkInVisitor = async (req, res) => {
   try {
@@ -34,8 +37,13 @@ const checkInVisitor = async (req, res) => {
       }
     }
 
+    // Fetch visitor with resident info for notification
     const vRes = await dbManager.query(
-      'SELECT id, status, name, phone, email FROM visitors WHERE id = $1 AND estate_id = $2',
+      `SELECT v.id, v.status, v.name, v.phone, v.email, v.resident_id, v.host_id, v.purpose,
+              u.phone as resident_phone, u.email as resident_email, u.first_name as resident_name
+       FROM visitors v
+       LEFT JOIN users u ON (v.resident_id = u.id OR v.host_id = u.id)
+       WHERE v.id = $1 AND v.estate_id = $2`,
       [id, req.user.estate_id]
     );
     const visitor = vRes.rows[0];
@@ -67,6 +75,28 @@ const checkInVisitor = async (req, res) => {
       });
     } catch (wsError) {
       console.warn('WebSocket check-in event emission failed:', wsError.message);
+    }
+
+    // RES-001 FIX: Notify resident when their visitor checks in
+    if (visitor.resident_phone) {
+      try {
+        const checkInTimeFormatted = now.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        await sendCheckInNotification(visitor.resident_phone, visitor.name, checkInTimeFormatted);
+        logger.info('Resident notified of visitor check-in', {
+          visitorId: visitor.id,
+          residentPhone: visitor.resident_phone?.replace(/.(?=.{4})/g, '*')
+        });
+      } catch (notifyError) {
+        // Log but don't fail the check-in if notification fails
+        logger.warn('Failed to send check-in notification to resident', {
+          visitorId: visitor.id,
+          error: notifyError.message
+        });
+      }
     }
 
     await req.audit?.('visitor.checkin', 'visitor', String(id), { outcome: 'success', message: 'Visitor checked in by guard', checkInTime: now.toISOString() });
@@ -113,8 +143,13 @@ const checkOutVisitor = async (req, res) => {
       }
     }
 
+    // Fetch visitor with resident info for notification (RES-002 FIX)
     const vRes = await dbManager.query(
-      'SELECT id, status, name, phone, email FROM visitors WHERE id = $1 AND estate_id = $2',
+      `SELECT v.id, v.status, v.name, v.phone, v.email, v.resident_id, v.host_id,
+              u.phone as resident_phone, u.email as resident_email
+       FROM visitors v
+       LEFT JOIN users u ON (v.resident_id = u.id OR v.host_id = u.id)
+       WHERE v.id = $1 AND v.estate_id = $2`,
       [id, req.user.estate_id]
     );
     const visitor = vRes.rows[0];
@@ -159,6 +194,28 @@ const checkOutVisitor = async (req, res) => {
       console.warn('WebSocket check-out event emission failed:', wsError.message);
     }
 
+    // RES-002 FIX: Notify resident when their visitor checks out
+    if (visitor.resident_phone) {
+      try {
+        const checkOutTimeFormatted = now.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        await sendCheckOutNotification(visitor.resident_phone, visitor.name, checkOutTimeFormatted);
+        logger.info('Resident notified of visitor check-out', {
+          visitorId: visitor.id,
+          residentPhone: visitor.resident_phone?.replace(/.(?=.{4})/g, '*')
+        });
+      } catch (notifyError) {
+        // Log but don't fail the check-out if notification fails
+        logger.warn('Failed to send check-out notification to resident', {
+          visitorId: visitor.id,
+          error: notifyError.message
+        });
+      }
+    }
+
     await req.audit?.('visitor.checkout', 'visitor', String(id), { outcome: 'success', message: 'Visitor checked out by guard', checkOutTime: now.toISOString() });
     const responseBody = { success: true, data: camelize({ message: 'Visitor checked out successfully', check_out: now }) };
     if (idempotencyKey) {
@@ -180,8 +237,13 @@ const checkOutVisitor = async (req, res) => {
 const selfCheckIn = async (req, res) => {
   try {
     const { inviteCode } = req.params;
+    // Fetch visitor with resident info for notification (RES-003 FIX)
     const vRes = await dbManager.query(
-      'SELECT id, status, name, phone, email, estate_id FROM visitors WHERE invite_code = $1',
+      `SELECT v.id, v.status, v.name, v.phone, v.email, v.estate_id, v.resident_id, v.host_id,
+              u.phone as resident_phone, u.email as resident_email
+       FROM visitors v
+       LEFT JOIN users u ON (v.resident_id = u.id OR v.host_id = u.id)
+       WHERE v.invite_code = $1`,
       [inviteCode]
     );
     const visitor = vRes.rows[0];
@@ -195,6 +257,28 @@ const selfCheckIn = async (req, res) => {
       'UPDATE visitors SET status = $1, check_in_time = $2 WHERE id = $3 AND estate_id = $4',
       [PASS_STATUS.ON_PREMISE, now, visitor.id, visitor.estate_id]
     );
+
+    // RES-003 FIX: Notify resident when their visitor self-checks in
+    if (visitor.resident_phone) {
+      try {
+        const checkInTimeFormatted = now.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        });
+        await sendCheckInNotification(visitor.resident_phone, visitor.name, checkInTimeFormatted);
+        logger.info('Resident notified of visitor self-check-in', {
+          visitorId: visitor.id,
+          residentPhone: visitor.resident_phone?.replace(/.(?=.{4})/g, '*')
+        });
+      } catch (notifyError) {
+        // Log but don't fail the check-in if notification fails
+        logger.warn('Failed to send self-check-in notification to resident', {
+          visitorId: visitor.id,
+          error: notifyError.message
+        });
+      }
+    }
 
     await req.audit?.('visitor.selfcheckin', 'visitor', String(visitor.id), { outcome: 'success', message: 'Visitor self-checked in', checkInTime: now.toISOString() });
     respond(res, { message: 'Self check-in successful', check_in: now });

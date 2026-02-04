@@ -216,7 +216,10 @@ export default function RegistrationPage() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    // Estate is now optional - admin will assign during activation
+    // Estate is REQUIRED for residents - they need approval from specific estate admin
+    if (formData.role === 'resident' && !formData.estateId) {
+      newErrors.estateId = 'Estate selection is required for residents';
+    }
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
@@ -388,6 +391,16 @@ Redirecting to login in 10 seconds...`, {
       // Expecting { visitor, otp_issued, otp_ttl_minutes, debug_otp? }
       const v = (response && response.visitor) ? response.visitor : response;
       setConfirmedVisitor(v || null);
+      
+      // BULK-004 FIX: Handle QR generation warnings
+      if (response.warning) {
+        handleWarning(response.warning, {
+          context: 'QR Code Generation',
+          title: 'Partial Success',
+          autoClose: false
+        });
+      }
+      
       // Show OTP step; QR will be shown after verification
       setShowOtpSection(true);
       setSuccess("Registration submitted. Please check your email/SMS for the OTP and verify to view your QR code.");
@@ -435,8 +448,8 @@ Redirecting to login in 10 seconds...`, {
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Event Registration</h1>
             {inviteDetails && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <h3 className="text-lg font-semibold text-brand-600 mb-2">{inviteDetails.eventName}</h3>
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                <h3 className="text-lg font-semibold text-brand-600 dark:text-brand-400 mb-2">{inviteDetails.eventName}</h3>
                 <p className="text-gray-600 dark:text-gray-300">
                   Date: {inviteDetails.date} | Time: {inviteDetails.time}
                 </p>
@@ -446,24 +459,24 @@ Redirecting to login in 10 seconds...`, {
 
 
           {success && (
-            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">
+            <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/20 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 rounded-md">
               {success}
             </div>
           )}
 
           {/* Show QR and confirmation details after OTP verification */}
           {qrCode && (
-            <div className="mb-4 p-4 border border-gray-200 rounded-md bg-gray-50 flex justify-center">
+            <div className="mb-4 p-4 border border-gray-200 dark:border-slate-600 rounded-md bg-gray-50 dark:bg-slate-700 flex justify-center">
               <QRCodeDisplay value={qrCode} size={220} otp={otp} altImg={qrCode} />
             </div>
           )}
 
           {/* OTP verification section */}
           {showOtpSection && (
-            <div className="mb-4 p-4 border border-gray-200 rounded-md bg-white">
+            <div className="mb-4 p-4 border border-gray-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800">
               <fieldset className="mb-2" aria-describedby="otp-instructions otp-error otp-success">
                 <legend className="font-semibold text-gray-700 dark:text-gray-300">Verify your OTP</legend>
-                <p id="otp-instructions" className="text-sm text-gray-500 mb-2">
+                <p id="otp-instructions" className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                   Enter the 6-digit code sent to you.
                 </p>
                 <div className="flex gap-2 mb-2" role="group" aria-label="One-time password digits">
@@ -527,7 +540,7 @@ Redirecting to login in 10 seconds...`, {
                       }}
                       aria-label={`OTP digit ${index + 1}`}
                       aria-invalid={Boolean(otpError)}
-                      className="w-12 h-12 text-center text-lg border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                      className="w-12 h-12 text-center text-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-brand-500"
                     />
                   ))}
                 </div>
@@ -603,12 +616,12 @@ Redirecting to login in 10 seconds...`, {
                   type="text"
                   value={bulkFormData.name}
                   onChange={e => setBulkFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-brand-500 text-base disabled:bg-gray-100 dark:disabled:bg-slate-600"
                   placeholder="Enter your full name"
                   disabled={loading}
                   required
                 />
-                {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.name}</p>}
               </div>
 
               <div>
@@ -617,12 +630,12 @@ Redirecting to login in 10 seconds...`, {
                   type="tel"
                   value={bulkFormData.visitorPhone}
                   onChange={e => setBulkFormData(prev => ({ ...prev, visitorPhone: e.target.value }))}
-                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-brand-500 text-base disabled:bg-gray-100 dark:disabled:bg-slate-600"
                   placeholder="0xxxxxxxxx"
                   disabled={loading}
                   required
                 />
-                {errors.visitorPhone && <p className="text-red-600 text-sm mt-1">{errors.visitorPhone}</p>}
+                {errors.visitorPhone && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.visitorPhone}</p>}
               </div>
             </div>
 
@@ -632,12 +645,12 @@ Redirecting to login in 10 seconds...`, {
                 type="email"
                 value={bulkFormData.visitorEmail}
                 onChange={e => setBulkFormData(prev => ({ ...prev, visitorEmail: e.target.value }))}
-                className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                className="w-full min-h-[44px] px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-brand-500 text-base disabled:bg-gray-100 dark:disabled:bg-slate-600"
                 placeholder="your.email@example.com"
                 disabled={loading}
                 required
               />
-              {errors.visitorEmail && <p className="text-red-600 text-sm mt-1">{errors.visitorEmail}</p>}
+              {errors.visitorEmail && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.visitorEmail}</p>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -753,7 +766,7 @@ Redirecting to login in 10 seconds...`, {
 
       <form onSubmit={handleRegister} className="space-y-6">
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Username
           </label>
           <input
@@ -762,7 +775,7 @@ Redirecting to login in 10 seconds...`, {
             placeholder="Enter username"
             value={formData.username}
             onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
           {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
@@ -770,7 +783,7 @@ Redirecting to login in 10 seconds...`, {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               First Name *
             </label>
             <input
@@ -779,14 +792,14 @@ Redirecting to login in 10 seconds...`, {
               placeholder="First Name"
               value={formData.first_name}
               onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
             {errors.first_name && <p className="text-red-600 text-sm mt-1">{errors.first_name}</p>}
           </div>
 
           <div>
-            <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Last Name *
             </label>
             <input
@@ -795,7 +808,7 @@ Redirecting to login in 10 seconds...`, {
               placeholder="Last Name"
               value={formData.last_name}
               onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
             {errors.last_name && <p className="text-red-600 text-sm mt-1">{errors.last_name}</p>}
@@ -803,7 +816,7 @@ Redirecting to login in 10 seconds...`, {
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Email Address
           </label>
           <input
@@ -812,7 +825,7 @@ Redirecting to login in 10 seconds...`, {
             placeholder="Enter email address"
             value={formData.email}
             onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
           {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
@@ -823,23 +836,31 @@ Redirecting to login in 10 seconds...`, {
         }
 
         <div>
-          <label htmlFor="estateId" className="block text-sm font-medium text-gray-700 mb-2">
-            Estate (Optional)
+          <label htmlFor="estateId" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Estate <span className="text-red-500">*</span>
           </label>
           <select
             id="estateId"
             value={formData.estateId}
             onChange={(e) => setFormData(prev => ({ ...prev, estateId: e.target.value }))}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${estateError ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300'
+            className={`w-full min-h-[44px] px-3 py-2 border rounded-md shadow-sm text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 focus:border-brand-500 ${
+              errors.estateId 
+                ? 'border-red-500 bg-red-50 dark:bg-red-900/20' 
+                : estateError 
+                  ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20' 
+                  : 'border-gray-300 dark:border-slate-600'
               }`}
             disabled={estatesLoading}
+            required
+            aria-invalid={!!errors.estateId}
+            aria-describedby={errors.estateId ? "estate-error" : "estate-help"}
           >
             <option value="">
               {estatesLoading
                 ? 'Loading estates...'
                 : estateError
-                  ? 'Administrator will assign (unable to load list)'
-                  : 'Administrator will assign'}
+                  ? 'Unable to load estates - please refresh'
+                  : 'Select your estate'}
             </option>
             {!estateError && estates.map((estate) => (
               <option key={estate.id} value={estate.id}>
@@ -847,24 +868,36 @@ Redirecting to login in 10 seconds...`, {
               </option>
             ))}
           </select>
-          <p className="text-sm text-gray-500 mt-1">
+          {errors.estateId && (
+            <p id="estate-error" className="text-red-600 dark:text-red-400 text-sm mt-1 flex items-center" role="alert">
+              <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {errors.estateId}
+            </p>
+          )}
+          <p id="estate-help" className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {estateError ? (
-              <span className="text-yellow-600 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="text-yellow-600 dark:text-yellow-400 flex items-center">
+                <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                {estateError}. You can still register - estate will be assigned by admin.
+                {estateError}. Please try refreshing the page to load estates.
               </span>
             ) : (
-              'ℹ️ Your estate will be assigned by an administrator during account activation'
+              <span className="flex items-center">
+                <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Select the estate where you live. An estate admin will review your registration.
+              </span>
             )}
           </p>
-          {errors.estateId && <p className="text-red-600 text-sm mt-1">{errors.estateId}</p>}
         </div>
 
         {formData.role === "resident" && (
           <div>
-            <label htmlFor="houseNumber" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="houseNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               House Number
             </label>
             <input
@@ -873,7 +906,7 @@ Redirecting to login in 10 seconds...`, {
               placeholder="Enter house number"
               value={formData.houseNumber}
               onChange={(e) => setFormData(prev => ({ ...prev, houseNumber: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
             {errors.houseNumber && <p className="text-red-600 text-sm mt-1">{errors.houseNumber}</p>}
@@ -881,7 +914,7 @@ Redirecting to login in 10 seconds...`, {
         )}
 
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Phone Number
           </label>
           <input
@@ -890,14 +923,14 @@ Redirecting to login in 10 seconds...`, {
             placeholder="Enter phone number"
             value={formData.phone}
             onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
           {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Password
           </label>
           <div className="relative">
@@ -907,13 +940,13 @@ Redirecting to login in 10 seconds...`, {
               placeholder="Enter password"
               value={formData.password}
               onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="w-full px-3 py-2 pr-12 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 rounded p-1"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none"
               aria-label={showPassword ? "Hide password" : "Show password"}
               tabIndex={-1}
             >
@@ -934,7 +967,7 @@ Redirecting to login in 10 seconds...`, {
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Confirm Password
           </label>
           <div className="relative">
@@ -944,17 +977,17 @@ Redirecting to login in 10 seconds...`, {
               placeholder="Confirm your password"
               value={formData.confirmPassword}
               onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-              className={`w-full px-3 py-2 pr-12 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${formData.confirmPassword && formData.password
+              className={`w-full px-3 py-2 pr-20 border rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 ${formData.confirmPassword && formData.password
                 ? formData.confirmPassword === formData.password
-                  ? 'border-green-300 bg-green-50'
-                  : 'border-red-300 bg-red-50'
-                : 'border-gray-300'
+                  ? 'border-green-300 bg-green-50 dark:bg-green-900/20'
+                  : 'border-red-300 bg-red-50 dark:bg-red-900/20'
+                : 'border-gray-300 dark:border-slate-600'
                 }`}
               required
             />
-            <div className="absolute right-3 top-2.5 flex items-center gap-2">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 gap-2">
               {formData.confirmPassword && formData.password && (
-                <div className="pointer-events-none">
+                <div className="pointer-events-none flex-shrink-0">
                   {formData.confirmPassword === formData.password ? (
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -969,7 +1002,7 @@ Redirecting to login in 10 seconds...`, {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 rounded p-1"
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 rounded p-1"
                 aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                 tabIndex={-1}
               >

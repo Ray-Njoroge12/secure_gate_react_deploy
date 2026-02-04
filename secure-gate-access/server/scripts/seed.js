@@ -97,6 +97,9 @@ async function upsertUser(user) {
   const hasVerificationToken = await columnExists('users', 'verification_token');
   const hasVerificationExpires = await columnExists('users', 'verification_expires');
   const hasEstateId = await columnExists('users', 'estate_id');
+  const hasMfaEnabled = await columnExists('users', 'mfa_enabled');
+  const hasMfaSecret = await columnExists('users', 'mfa_secret');
+  const hasBackupCodes = await columnExists('users', 'backup_codes');
   const defaultEstateId = hasEstateId ? await getDefaultEstateId() : null;
   const conflictTarget = await resolveUserConflictTarget(hasEstateId);
 
@@ -138,6 +141,24 @@ async function upsertUser(user) {
 
   if (hasVerificationExpires) {
     columns.push('verification_expires');
+    values.push(null);
+  }
+
+  // MFA-001 FIX: Add MFA columns if they exist
+  // For admin/guard roles, set mfa_enabled to false (they must set it up on first login)
+  // For other roles, also set to false as it's optional
+  if (hasMfaEnabled) {
+    columns.push('mfa_enabled');
+    values.push(false);
+  }
+
+  if (hasMfaSecret) {
+    columns.push('mfa_secret');
+    values.push(null);
+  }
+
+  if (hasBackupCodes) {
+    columns.push('backup_codes');
     values.push(null);
   }
 
@@ -204,11 +225,13 @@ async function upsertUser(user) {
         area = $7,
         notify_email = $8,
         notify_sms = $9,
+        mfa_enabled = COALESCE(mfa_enabled, $10),
         updated_at = NOW()
-      WHERE id = $10
+      WHERE id = $11
       RETURNING id, username, email, role, verified
     `;
 
+    updateParams.push(false); // mfa_enabled default
     updateParams.push(lookupRes.rows[0].id);
     const updateRes = await dbManager.query(updateQuery, updateParams);
     return updateRes.rows[0];

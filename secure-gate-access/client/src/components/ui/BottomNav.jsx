@@ -117,7 +117,7 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
     <nav 
       className={`
         fixed bottom-0 left-0 right-0 z-50
-        bg-white border-t border-gray-200
+        bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700
         md:hidden
         safe-area-pb
         ${className}
@@ -139,8 +139,8 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
                 rounded-lg transition-all duration-200
                 ${item.highlight ? 'relative' : ''}
                 ${active 
-                  ? 'text-green-600' 
-                  : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:bg-gray-50'
+                  ? 'text-green-600 dark:text-green-400' 
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700'
                 }
               `}
               aria-label={item.label}
@@ -152,8 +152,8 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
                   absolute -top-2 left-1/2 -translate-x-1/2
                   w-12 h-12 rounded-full
                   ${active 
-                    ? 'bg-green-100 border-2 border-green-500' 
-                    : 'bg-gray-100 border-2 border-gray-200'
+                    ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500' 
+                    : 'bg-gray-100 dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600'
                   }
                   -z-10
                 `} />
@@ -189,7 +189,7 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
       </div>
       
       {/* Safe area spacer for iOS */}
-      <div className="h-safe-area-inset-bottom bg-white" />
+      <div className="h-safe-area-inset-bottom bg-white dark:bg-slate-800" />
     </nav>
   );
 };

@@ -24,6 +24,11 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
 
+  // GUARD-003 FIX: Validate that user is actually a guard or admin
+  if (!['guard', 'admin'].includes(req.user.role)) {
+    throw new AppError('Only guards and admins can perform check-out operations', 403, 'UNAUTHORIZED_ROLE');
+  }
+
   if (!qrCode) {
     throw new AppError('QR code is required', 400);
   }
