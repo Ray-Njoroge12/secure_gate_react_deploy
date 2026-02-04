@@ -30,6 +30,11 @@ router.post('/qr', authorize(['guard', 'admin']), strictRateLimit(), attachReque
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
 
+  // GUARD-003 FIX: Validate that user is actually a guard or admin
+  if (!['guard', 'admin'].includes(req.user.role)) {
+    throw new AppError('Only guards and admins can perform check-in operations', 403, 'UNAUTHORIZED_ROLE');
+  }
+
   if (!qrCode) {
     throw new AppError('QR code is required', 400);
   }
@@ -149,6 +154,11 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
   const { visitorId } = req.params;
   const guardId = req.user.id;
   const { notes, vehicle_plate } = req.body;
+
+  // GUARD-003 FIX: Validate that user is actually a guard or admin
+  if (!['guard', 'admin'].includes(req.user.role)) {
+    throw new AppError('Only guards and admins can perform check-in operations', 403, 'UNAUTHORIZED_ROLE');
+  }
 
   // Verify visitor exists and is in valid state
   const visitor = await dbManager.query(

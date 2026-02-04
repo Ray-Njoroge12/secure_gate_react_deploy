@@ -17,32 +17,32 @@ import { createPortal } from 'react-dom';
 const variants = {
   danger: {
     icon: '⚠️',
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
+    iconBg: 'bg-red-100 dark:bg-red-900/30',
+    iconColor: 'text-red-600 dark:text-red-400',
     buttonBg: 'bg-red-600 hover:bg-red-700',
     buttonFocusRing: 'focus-visible:ring-red-500',
     title: 'Confirm Deletion',
   },
   warning: {
     icon: '⚡',
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+    iconColor: 'text-amber-600 dark:text-amber-400',
     buttonBg: 'bg-amber-600 hover:bg-amber-700',
     buttonFocusRing: 'focus-visible:ring-amber-500',
     title: 'Confirm Action',
   },
   info: {
     icon: 'ℹ️',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+    iconColor: 'text-blue-600 dark:text-blue-400',
     buttonBg: 'bg-blue-600 hover:bg-blue-700',
     buttonFocusRing: 'focus-visible:ring-blue-500',
     title: 'Confirmation',
   },
   success: {
     icon: '✅',
-    iconBg: 'bg-green-100',
-    iconColor: 'text-green-600',
+    iconBg: 'bg-green-100 dark:bg-green-900/30',
+    iconColor: 'text-green-600 dark:text-green-400',
     buttonBg: 'bg-green-600 hover:bg-green-700',
     buttonFocusRing: 'focus-visible:ring-green-500',
     title: 'Confirm',
@@ -168,7 +168,7 @@ const ConfirmationDialog = ({
           aria-describedby="dialog-description"
           className="
             relative w-full max-w-md
-            bg-white rounded-xl shadow-xl
+            bg-white dark:bg-slate-800 rounded-xl shadow-xl
             transform transition-all
             animate-scale-in
           "

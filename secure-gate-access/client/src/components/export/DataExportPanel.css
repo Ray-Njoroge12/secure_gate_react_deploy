@@ -224,3 +224,105 @@
   font-size: 0.8rem;
   font-weight: 500;
 }
+
+/* Dark mode support */
+.dark .data-export-panel {
+  background: var(--color-surface-dark, #1e293b);
+  border-color: var(--color-border-dark, #334155);
+}
+
+.dark .format-section h4,
+.dark .fields-section h4,
+.dark .date-section h4,
+.dark .templates-section h4,
+.dark .schedule-section h4,
+.dark .export-header h3 {
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .format-card {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .format-card:hover {
+  border-color: var(--color-primary, #16a34a);
+}
+
+.dark .format-card.active {
+  border-color: var(--color-primary, #16a34a);
+  background: var(--color-primary-dark-bg, #14532d);
+}
+
+.dark .format-desc {
+  color: var(--color-text-muted-dark, #94a3b8);
+}
+
+.dark .link-btn {
+  color: var(--color-primary-light, #22c55e);
+}
+
+.dark .field-checkbox {
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .field-checkbox:hover {
+  background: var(--color-hover-dark, #334155);
+}
+
+.dark .date-inputs input,
+.dark .save-template input,
+.dark .schedule-field input,
+.dark .schedule-field select {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .date-inputs span {
+  color: var(--color-text-muted-dark, #94a3b8);
+}
+
+.dark .template-chip {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .template-chip:hover {
+  background: var(--color-hover-dark, #475569);
+}
+
+.dark .save-template button {
+  background: var(--color-text-muted-dark, #64748b);
+}
+
+.dark .export-btn.schedule {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .export-btn.schedule:hover {
+  background: var(--color-hover-dark, #475569);
+}
+
+.dark .schedule-section {
+  background: var(--color-background-dark, #0f172a);
+  border-color: var(--color-border-dark, #334155);
+}
+
+.dark .schedule-field label {
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .cancel-btn {
+  background: var(--color-surface-dark, #334155);
+  border-color: var(--color-border-dark, #475569);
+  color: var(--color-text-dark, #e2e8f0);
+}
+
+.dark .cancel-btn:hover {
+  background: var(--color-hover-dark, #475569);
+}

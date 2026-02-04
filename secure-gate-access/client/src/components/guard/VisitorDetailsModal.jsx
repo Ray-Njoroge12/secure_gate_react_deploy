@@ -104,21 +104,21 @@ export default function VisitorDetailsModal({
       aria-modal="true"
       aria-labelledby="visitor-modal-title"
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-scale-in">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-scale-in">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[44px] min-h-[44px]"
             aria-label="Close modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
 
           <div className="flex items-center gap-4">
             {/* Avatar */}
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
-              {visitor.name ? visitor.name.charAt(0).toUpperCase() : <User className="w-8 h-8" />}
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold" aria-hidden="true">
+              {visitor.name ? visitor.name.charAt(0).toUpperCase() : <User className="w-8 h-8" aria-hidden="true" />}
             </div>
 
             <div>
@@ -142,9 +142,9 @@ export default function VisitorDetailsModal({
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Check-in Time */}
-            <div className="bg-gray-50 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
                 Check-in
               </div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -153,9 +153,9 @@ export default function VisitorDetailsModal({
             </div>
 
             {/* Duration / Check-out */}
-            <div className="bg-gray-50 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
                 {visitor.check_out_time ? 'Check-out' : 'Duration'}
               </div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -167,9 +167,9 @@ export default function VisitorDetailsModal({
             </div>
 
             {/* Host */}
-            <div className="bg-gray-50 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <User className="w-3.5 h-3.5" />
+                <User className="w-3.5 h-3.5" aria-hidden="true" />
                 Host
               </div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -178,9 +178,9 @@ export default function VisitorDetailsModal({
             </div>
 
             {/* Visit Date */}
-            <div className="bg-gray-50 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <Calendar className="w-3.5 h-3.5" />
+                <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                 Date
               </div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -190,9 +190,9 @@ export default function VisitorDetailsModal({
 
             {/* Vehicle (if present) */}
             {(visitor.vehicleNumber || visitor.vehicle_number) && (
-              <div className="bg-gray-50 rounded-lg p-3 col-span-2">
+              <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 col-span-2">
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                  <Car className="w-3.5 h-3.5" />
+                  <Car className="w-3.5 h-3.5" aria-hidden="true" />
                   Vehicle
                 </div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">

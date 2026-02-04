@@ -68,12 +68,12 @@ class MFAService {
         length: 32
       });
 
-      // Store secret in database (encrypted)
+      // Store secret in users table (encrypted) - MFA-002 FIX
       const encryptedSecret = this.encryptSecret(secret.base32);
       
       await databaseService.query(
-        'INSERT INTO user_mfa_secrets (user_id, secret, method, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, method) DO UPDATE SET secret = $2, updated_at = $4',
-        [userId, encryptedSecret, 'totp', new Date()]
+        'UPDATE users SET mfa_secret = $1 WHERE id = $2',
+        [encryptedSecret, userId]
       );
 
       loggingService.logInfo('TOTP secret generated for user', {
@@ -127,17 +127,17 @@ class MFAService {
         throw new Error('User is temporarily locked out due to too many failed attempts');
       }
 
-      // Get user's TOTP secret
+      // Get user's TOTP secret from users table - MFA-003 FIX
       const result = await databaseService.query(
-        'SELECT secret FROM user_mfa_secrets WHERE user_id = $1 AND method = $2',
-        [userId, 'totp']
+        'SELECT mfa_secret FROM users WHERE id = $1',
+        [userId]
       );
 
-      if (result.rows.length === 0) {
+      if (result.rows.length === 0 || !result.rows[0].mfa_secret) {
         throw new Error('TOTP not configured for user');
       }
 
-      const encryptedSecret = result.rows[0].secret;
+      const encryptedSecret = result.rows[0].mfa_secret;
       const secret = this.decryptSecret(encryptedSecret);
 
       // Verify token
@@ -191,12 +191,12 @@ class MFAService {
         codes.push(code);
       }
 
-      // Store backup codes in database (hashed)
+      // Store backup codes in users table (hashed) - MFA-004 FIX
       const hashedCodes = codes.map(code => this.hashBackupCode(code));
       
       await databaseService.query(
-        'INSERT INTO user_backup_codes (user_id, codes, created_at) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET codes = $2, updated_at = $3',
-        [userId, JSON.stringify(hashedCodes), new Date()]
+        'UPDATE users SET backup_codes = $1 WHERE id = $2',
+        [JSON.stringify(hashedCodes), userId]
       );
 
       loggingService.logInfo('Backup codes generated for user', {
@@ -224,17 +224,17 @@ class MFAService {
         throw new Error('User is temporarily locked out due to too many failed attempts');
       }
 
-      // Get user's backup codes
+      // Get user's backup codes from users table - MFA-007 FIX
       const result = await databaseService.query(
-        'SELECT codes FROM user_backup_codes WHERE user_id = $1',
+        'SELECT backup_codes FROM users WHERE id = $1',
         [userId]
       );
 
-      if (result.rows.length === 0) {
+      if (result.rows.length === 0 || !result.rows[0].backup_codes) {
         throw new Error('No backup codes found for user');
       }
 
-      const hashedCodes = JSON.parse(result.rows[0].codes);
+      const hashedCodes = JSON.parse(result.rows[0].backup_codes);
       const hashedInputCode = this.hashBackupCode(code);
 
       // Check if code matches
@@ -245,8 +245,8 @@ class MFAService {
         hashedCodes.splice(codeIndex, 1);
         
         await databaseService.query(
-          'UPDATE user_backup_codes SET codes = $1, updated_at = $2 WHERE user_id = $3',
-          [JSON.stringify(hashedCodes), new Date(), userId]
+          'UPDATE users SET backup_codes = $1 WHERE id = $2',
+          [JSON.stringify(hashedCodes), userId]
         );
 
         loggingService.logInfo('Backup code verified successfully', {

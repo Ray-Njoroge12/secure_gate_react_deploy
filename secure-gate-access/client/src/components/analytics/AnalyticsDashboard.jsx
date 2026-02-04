@@ -122,15 +122,15 @@ const AnalyticsDashboard = () => {
     <Card className="metric-card">
       <CardContent className="metric-content">
         <div className="metric-header">
-          <div className="metric-icon" style={{ backgroundColor: `${color}20` }}>
-            <Icon className="icon" style={{ color }} />
+          <div className="metric-icon" style={{ backgroundColor: `${color}20` }} aria-hidden="true">
+            <Icon className="icon" style={{ color }} aria-hidden="true" />
           </div>
           <div className="metric-info">
             <h3 className="metric-title">{title}</h3>
             <div className="metric-value">{value}</div>
             {change && (
               <div className={`metric-change ${change >= 0 ? 'positive' : 'negative'}`}>
-                <TrendingUp className="change-icon" />
+                <TrendingUp className="change-icon" aria-hidden="true" />
                 {Math.abs(change)}% vs last period
               </div>
             )}

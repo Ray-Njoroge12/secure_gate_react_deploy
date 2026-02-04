@@ -14,6 +14,7 @@ import AutoApprovalRules from "../../components/resident/AutoApprovalRules"; // 
 import FavoriteVisitors from "../../components/resident/FavoriteVisitors"; // Phase 4: Favorites System
 import { LiveVisitorFeed, LiveStatsBar } from "../../components/dashboard/LiveVisitorFeed";
 import { useResidentVisitorEvents } from "../../hooks/useVisitorEvents";
+import { ShieldCheck, X as CloseIcon } from 'lucide-react';
 
 // Unused page imports removed
 import QuickInvite from "./QuickInvite"; // Quick invite flow
@@ -32,6 +33,13 @@ const DashboardHome = () => {
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
   const { loading, startLoading, stopLoading, setLoadingError } = useLoadingState();
+  const { user } = useAuth();
+  
+  // RES-007: MFA recommendation state for residents
+  const [showMfaBanner, setShowMfaBanner] = useState(false);
+  const [mfaDismissed, setMfaDismissed] = useState(
+    () => localStorage.getItem('resident_mfa_reminder_dismissed') === 'true'
+  );
 
   // Widget customization state
   const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
@@ -95,6 +103,38 @@ const DashboardHome = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // RES-007: Check MFA status for resident and show recommendation banner
+  useEffect(() => {
+    const checkMfaStatus = async () => {
+      if (mfaDismissed) return;
+      
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const userData = data.data || data.user || data;
+          if (userData && userData.mfa_enabled === false) {
+            setShowMfaBanner(true);
+          }
+        }
+      } catch (error) {
+        logger.error('Error checking MFA status:', error);
+      }
+    };
+
+    checkMfaStatus();
+  }, [mfaDismissed]);
+
+  const handleDismissMfaBanner = () => {
+    setShowMfaBanner(false);
+    setMfaDismissed(true);
+    localStorage.setItem('resident_mfa_reminder_dismissed', 'true');
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -174,6 +214,38 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* RES-007: MFA Recommendation Banner for Residents */}
+      {showMfaBanner && !mfaDismissed && (
+        <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start justify-between">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <div>
+              <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                Enhance Your Account Security
+              </h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                Enable Multi-Factor Authentication (MFA) for extra protection when managing visitors. 
+                This is especially recommended for bulk invite operations.
+              </p>
+              <button
+                onClick={() => navigateTo('/resident/settings?tab=security')}
+                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                aria-label="Set up multi-factor authentication"
+              >
+                Set up MFA now →
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={handleDismissMfaBanner}
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded min-w-[44px] min-h-[44px]"
+            aria-label="Dismiss MFA reminder"
+          >
+            <CloseIcon className="w-5 h-5" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       {/* PHASE A1: Mobile-First Above-the-Fold Summary Card */}
       <div className="md:hidden bg-white dark:bg-slate-800 border-2 border-green-500 rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">

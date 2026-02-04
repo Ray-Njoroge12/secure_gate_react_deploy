@@ -24,8 +24,8 @@ const TermsOfService = () => {
             By accessing or using our Service, you agree to be bound by these Terms. If you disagree 
             with any part of these terms, you may not access the Service.
           </p>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
               <strong>Last Updated:</strong> October 11, 2025<br/>
               <strong>Effective Date:</strong> October 11, 2025<br/>
               <strong>Version:</strong> 1.0
@@ -48,8 +48,8 @@ const TermsOfService = () => {
             <li>You will not use the Service for illegal or unauthorized purposes</li>
             <li>You will provide accurate and truthful information</li>
           </ul>
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <p className="text-sm text-yellow-800">
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg">
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
               <strong>Important:</strong> Continued use of the Service constitutes acceptance of any 
               updates or modifications to these Terms.
             </p>
@@ -85,8 +85,8 @@ const TermsOfService = () => {
               </ul>
             </div>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <p className="text-sm text-green-800">
+          <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg">
+            <p className="text-sm text-green-800 dark:text-green-300">
               <strong>Service Availability:</strong> We strive to maintain 99.9% uptime, 
               but service may be temporarily unavailable for maintenance.
             </p>

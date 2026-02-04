@@ -49,20 +49,20 @@ const EmptyState = ({
         <div className={`${compact ? 'mb-3' : 'mb-4 md:mb-6'}`}>
           <div className={`
             ${compact ? 'w-14 h-14' : 'w-16 h-16 md:w-20 md:h-20'} rounded-full flex items-center justify-center
-            ${variant === 'info' ? 'bg-blue-100' : 
-              variant === 'success' ? 'bg-green-100' : 
-              variant === 'warning' ? 'bg-amber-100' : 
-              variant === 'error' ? 'bg-red-100' :
-              variant === 'search' ? 'bg-purple-100' :
-              'bg-gray-100'}
+            ${variant === 'info' ? 'bg-blue-100 dark:bg-blue-900/30' : 
+              variant === 'success' ? 'bg-green-100 dark:bg-green-900/30' : 
+              variant === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30' : 
+              variant === 'error' ? 'bg-red-100 dark:bg-red-900/30' :
+              variant === 'search' ? 'bg-purple-100 dark:bg-purple-900/30' :
+              'bg-gray-100 dark:bg-slate-700'}
           `}>
             <Icon className={`
               ${compact ? 'w-8 h-8' : 'w-8 h-8 md:w-10 md:h-10'}
-              ${variant === 'info' ? 'text-blue-600' : 
-                variant === 'success' ? 'text-green-600' : 
-                variant === 'warning' ? 'text-amber-600' : 
-                variant === 'error' ? 'text-red-600' :
-                variant === 'search' ? 'text-purple-600' :
+              ${variant === 'info' ? 'text-blue-600 dark:text-blue-400' : 
+                variant === 'success' ? 'text-green-600 dark:text-green-400' : 
+                variant === 'warning' ? 'text-amber-600 dark:text-amber-400' : 
+                variant === 'error' ? 'text-red-600 dark:text-red-400' :
+                variant === 'search' ? 'text-purple-600 dark:text-purple-400' :
                 'text-gray-500 dark:text-gray-300'}
             `} />
           </div>

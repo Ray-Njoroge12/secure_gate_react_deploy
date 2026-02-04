@@ -66,13 +66,17 @@ const EstateSelection = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="estateId" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                Available estates
+                Available estates <span className="text-red-500">*</span>
               </label>
               <select
                 id="estateId"
-                className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2"
+                className="w-full min-h-[44px] rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
                 value={estateId}
                 onChange={(event) => setEstateId(event.target.value)}
+                required
+                aria-required="true"
+                aria-invalid={!estateId && "true"}
+                aria-describedby="estate-help"
               >
                 <option value="">Select an estate</option>
                 {estates.map((estate) => (
@@ -82,6 +86,9 @@ const EstateSelection = () => {
                 ))}
               </select>
             </div>
+            <p id="estate-help" className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+              Select the estate you belong to. This assignment is required to access the system.
+            </p>
 
             {error && (
               <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-300 rounded-lg px-3 py-2">
@@ -97,8 +104,9 @@ const EstateSelection = () => {
 
             <button
               type="submit"
-              disabled={submitting}
-              className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition"
+              disabled={submitting || !estateId}
+              className="w-full min-h-[44px] px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition"
+              aria-busy={submitting}
             >
               {submitting ? 'Assigning estate...' : 'Confirm estate'}
             </button>

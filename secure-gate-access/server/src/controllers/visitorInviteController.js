@@ -99,7 +99,7 @@ function getTokenExpiryGraceHours() {
  */
 function calculateTokenExpiry(dateOfVisit) {
   const graceHours = getTokenExpiryGraceHours();
-  
+
   if (dateOfVisit) {
     const visitDate = new Date(dateOfVisit);
     if (!Number.isNaN(visitDate.getTime())) {
@@ -1053,6 +1053,7 @@ export const completeInvite = async (req, res) => {
 
       // OPTIMIZATION: Generate QR Code OUTSIDE the transaction
       let qrCodeDataUrl = null;
+      let qrGenerationFailed = false;
       try {
         const qrResult = await QRCodeService.generateVisitorQR({
           id: visitor.id,
@@ -1069,10 +1070,18 @@ export const completeInvite = async (req, res) => {
         if (qrId) {
           // Update visitor with QR code - this is a separate quick update
           await dbManager.query('UPDATE visitors SET qr_code = $1 WHERE id = $2', [qrId, visitor.id]);
+        } else {
+          qrGenerationFailed = true;
+          console.warn('[completeInvite] QR generation returned no qrId');
         }
       } catch (qrError) {
+        qrGenerationFailed = true;
         console.error('[completeInvite] QR generation failed (non-fatal):', qrError);
-        // Continue even if QR fails - they can regenerate it later or use the token
+        // BULK-001 FIX: Mark QR as failed for later retry
+        await dbManager.query(
+          'UPDATE visitors SET status = $1 WHERE id = $2',
+          ['qr_pending', visitor.id]
+        ).catch(err => console.error('[completeInvite] Failed to update QR status:', err));
       }
 
       if (resultData?.error) {
@@ -1102,7 +1111,9 @@ export const completeInvite = async (req, res) => {
         passLink,
         date_of_visit: visitor.date_of_visit,
         time_of_visit: visitor.time_of_visit,
-        qr_code: qrCodeDataUrl
+        qr_code: qrCodeDataUrl,
+        // BULK-002 FIX: Include QR status in response
+        qr_generation_status: qrGenerationFailed ? 'failed' : (qrCodeDataUrl ? 'success' : 'pending')
       };
 
       // Always return OTP for immediate display to visitor
@@ -1110,6 +1121,11 @@ export const completeInvite = async (req, res) => {
 
       if (OTP_DEBUG_ECHO) {
         responseData.debug_otp = otp;
+      }
+
+      // BULK-003 FIX: Add warning message if QR failed
+      if (qrGenerationFailed) {
+        responseData.warning = 'Registration successful, but QR code generation failed. You can regenerate it later from your pass page.';
       }
 
       return respond(res, responseData, 201);

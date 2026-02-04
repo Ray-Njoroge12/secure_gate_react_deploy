@@ -225,8 +225,9 @@ class UserService {
     try {
       // Get user by username OR email using parameterized query, including email verification status
       // Uses column names matching render_init.sql schema: verified instead of email_verified_at
+      // MFA-005 FIX: Include mfa_enabled in query
       const result = await this.db.query(
-        `SELECT id, username, first_name, last_name, email, password_hash, role, estate_id, created_at, verified
+        `SELECT id, username, first_name, last_name, email, password_hash, role, estate_id, created_at, verified, mfa_enabled
          FROM users
          WHERE (username = $1 OR email = $1)
            AND estate_id IS NOT DISTINCT FROM COALESCE($2, estate_id)`,
@@ -287,8 +288,9 @@ class UserService {
     }
 
     try {
+      // MFA-006 FIX: Include mfa_enabled in getUserById
       const result = await this.db.query(
-        'SELECT id, username, first_name, last_name, email, role, estate_id, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, username, first_name, last_name, email, role, estate_id, created_at, updated_at, mfa_enabled FROM users WHERE id = $1',
         [userId]
       );
 

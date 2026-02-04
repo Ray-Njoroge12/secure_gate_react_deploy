@@ -121,7 +121,7 @@ export default function GeneratePass() {
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl text-red-700 dark:text-red-300">
             {error}
           </div>
         )}
@@ -148,11 +148,11 @@ export default function GeneratePass() {
 
             <form onSubmit={generatePass} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Approved Visitor
                 </label>
                 <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200"
                   value={selectedVisitor}
                   onChange={e => setSelectedVisitor(e.target.value)}
                   disabled={loading}
@@ -241,19 +241,19 @@ export default function GeneratePass() {
                   )}
 
                   <div className="space-y-1 mb-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-300">Expires</p>
-                    <p className="text-gray-700">{new Date(result.expiresAt).toLocaleString()}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Expires</p>
+                    <p className="text-gray-700 dark:text-gray-300">{new Date(result.expiresAt).toLocaleString()}</p>
                   </div>
 
                   {result.inviteLink && (
                     <div className="space-y-2 mb-4">
-                      <p className="text-sm text-gray-500 dark:text-gray-300">Invite Link</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Invite Link</p>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={result.inviteLink}
                           readOnly
-                          className="flex-1 px-3 py-2 text-sm bg-gray-100 rounded-lg border border-gray-200"
+                          className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-200 rounded-lg border border-gray-200 dark:border-slate-600"
                           onClick={e => e.target.select()}
                         />
                         <Button
@@ -270,7 +270,7 @@ export default function GeneratePass() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-slate-700">
                 <Button
                   variant="outline"
                   onClick={reset}

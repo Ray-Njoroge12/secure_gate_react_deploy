@@ -77,7 +77,7 @@ const Breadcrumbs = ({
   return (
     <nav 
       ref={breadcrumbsRef}
-      className={`flex items-center text-sm text-slate-400 mb-6 ${className}`}
+      className={`flex items-center text-sm text-gray-500 dark:text-slate-400 mb-6 ${className}`}
       aria-label="Breadcrumb navigation"
       role="navigation"
     >
@@ -86,7 +86,7 @@ const Breadcrumbs = ({
           <li key={`${crumb.path}-${index}`} className="flex items-center">
             {index > 0 && (
               <svg 
-                className="w-4 h-4 mx-2 text-slate-500 dark:text-slate-300 flex-shrink-0" 
+                className="w-4 h-4 mx-2 text-gray-400 dark:text-slate-500 flex-shrink-0" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -102,12 +102,12 @@ const Breadcrumbs = ({
             )}
             
             {crumb.isEllipsis ? (
-              <span className="text-slate-500 dark:text-slate-300 px-2" aria-hidden="true">
+              <span className="text-gray-400 dark:text-slate-500 px-2" aria-hidden="true">
                 ...
               </span>
             ) : crumb.isCurrent ? (
               <span 
-                className="text-slate-200 font-medium px-2 py-1 rounded-md bg-slate-800" 
+                className="text-gray-900 dark:text-slate-200 font-medium px-2 py-1 rounded-md bg-gray-100 dark:bg-slate-800" 
                 aria-current="page"
               >
                 {crumb.label}
@@ -115,7 +115,7 @@ const Breadcrumbs = ({
             ) : (
               <Link
                 to={crumb.path}
-                className="text-slate-400 hover:text-slate-200 hover:bg-slate-800 px-2 py-1 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                className="text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 px-2 py-1 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900"
                 aria-label={`Navigate to ${crumb.label}`}
               >
                 {crumb.label}

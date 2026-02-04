@@ -204,7 +204,7 @@ const FAB = ({
           flex items-center justify-center gap-2
           transform transition-all duration-200
           hover:scale-105 active:scale-95
-          focus:outline-none focus:ring-2 focus:ring-offset-2 ${styles.ring}
+          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 ${styles.ring}
         `}
         aria-label={label}
         aria-expanded={hasMultipleActions ? isExpanded : undefined}

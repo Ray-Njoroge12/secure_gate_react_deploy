@@ -75,9 +75,20 @@ export const AuthProvider = ({ children }) => {
       throw new Error(data.message || data.error || "Login failed");
     }
 
-    // Check if MFA is required
+    // MFA-010 FIX: Check if MFA is required (new response format)
+    if (data.data?.requiresMFA) {
+      return {
+        requiresMFA: true,
+        mfaSessionId: data.data.mfaSessionId,
+        userId: data.data.userId,
+        expiresIn: data.data.expiresIn || 300
+      };
+    }
+
+    // Legacy support for old mfaRequired format
     if (data.data?.mfaRequired) {
       return {
+        requiresMFA: true,
         mfaRequired: true,
         userId: data.data.userId,
         username: email,

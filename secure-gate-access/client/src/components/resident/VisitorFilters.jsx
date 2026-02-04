@@ -55,7 +55,7 @@ const VisitorFilters = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-slate-400" />
+          <Filter className="w-5 h-5 text-slate-400" aria-hidden="true" />
           <h3 className="text-lg font-semibold text-slate-200">Filters</h3>
           {hasActiveFilters && (
             <Badge variant="primary">{totalResults} results</Badge>
@@ -67,8 +67,9 @@ const VisitorFilters = ({
             size="sm"
             onClick={onClearFilters}
             className="text-slate-400 hover:text-slate-200"
+            aria-label="Clear all filters"
           >
-            <X className="w-4 h-4 mr-1" />
+            <X className="w-4 h-4 mr-1" aria-hidden="true" />
             Clear All
           </Button>
         )}
@@ -76,7 +77,7 @@ const VisitorFilters = ({
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden="true" />
         <input
           type="text"
           placeholder="Search by name, phone, email, or plate..."
@@ -84,6 +85,7 @@ const VisitorFilters = ({
           onChange={(e) => onFilterChange({ ...filters, search: e.target.value })}
           className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           disabled={isLoading}
+          aria-label="Search visitors"
         />
       </div>
 
@@ -140,7 +142,7 @@ const VisitorFilters = ({
         {/* From Date */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            <Calendar className="w-4 h-4 inline mr-1" />
+            <Calendar className="w-4 h-4 inline mr-1" aria-hidden="true" />
             From Date
           </label>
           <input
@@ -150,6 +152,7 @@ const VisitorFilters = ({
             max={toDate || today}
             className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             disabled={isLoading}
+            aria-label="Filter from date"
           />
         </div>
 

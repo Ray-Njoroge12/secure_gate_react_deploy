@@ -45,13 +45,13 @@ const ErrorDisplay = ({
   const getStyles = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-300';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-300';
       default:
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-300';
     }
   };
 
@@ -75,7 +75,8 @@ const ErrorDisplay = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="flex-shrink-0 ml-3 text-gray-400 hover:text-gray-600 dark:text-gray-200"
+              className="flex-shrink-0 ml-3 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
+              aria-label="Close notification"
             >
               <X className="w-4 h-4" />
             </button>

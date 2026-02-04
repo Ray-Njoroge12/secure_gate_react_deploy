@@ -137,14 +137,16 @@ const DataExportPanel = ({
 
       {/* Format Selection */}
       <div className="format-section">
-        <h4>Format</h4>
-        <div className="format-grid">
+        <h4 id="format-heading">Format</h4>
+        <div className="format-grid" role="radiogroup" aria-labelledby="format-heading">
           {EXPORT_FORMATS.map((f) => (
             <button
               key={f.key}
               className={`format-card ${format === f.key ? 'active' : ''}`}
               onClick={() => setFormat(f.key)}
-              aria-pressed={format === f.key}
+              role="radio"
+              aria-checked={format === f.key}
+              aria-label={`${f.label} format: ${f.description}`}
             >
               <span className="format-icon">{f.icon}</span>
               <span className="format-label">{f.label}</span>
@@ -179,20 +181,22 @@ const DataExportPanel = ({
 
       {/* Date Range */}
       <div className="date-section">
-        <h4>Date Range (optional)</h4>
-        <div className="date-inputs">
+        <h4 id="date-range-heading">Date Range (optional)</h4>
+        <div className="date-inputs" role="group" aria-labelledby="date-range-heading">
           <input
             type="date"
             value={dateRange.start}
             onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
             aria-label="Start date"
+            className="min-h-[44px]"
           />
-          <span>to</span>
+          <span aria-hidden="true">to</span>
           <input
             type="date"
             value={dateRange.end}
             onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
             aria-label="End date"
+            className="min-h-[44px]"
           />
         </div>
       </div>
@@ -231,6 +235,8 @@ const DataExportPanel = ({
           className="export-btn primary"
           onClick={handleExport}
           disabled={isExporting || selectedFields.size === 0}
+          aria-busy={isExporting}
+          aria-label={isExporting ? 'Exporting data' : `Export data as ${format.toUpperCase()}`}
         >
           {isExporting ? 'Exporting...' : `Export as ${format.toUpperCase()}`}
         </button>
@@ -239,6 +245,8 @@ const DataExportPanel = ({
           <button
             className="export-btn schedule"
             onClick={() => setShowSchedule(!showSchedule)}
+            aria-expanded={showSchedule}
+            aria-label={showSchedule ? 'Hide schedule form' : 'Show schedule form'}
           >
             Schedule Report
           </button>

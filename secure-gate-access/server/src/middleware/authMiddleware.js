@@ -244,6 +244,51 @@ export async function attachUserFromToken(req, res, next) {
   return next();
 }
 
+/**
+ * Optional authentication middleware
+ * Attempts to authenticate but proceeds even if no token is present
+ * Useful for demo routes that should work without auth but can benefit from user context
+ */
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const headerToken = authHeader && authHeader.split(' ')[1];
+    const cookieToken = req.cookies?.accessToken || req.cookies?.token;
+    const token = headerToken || cookieToken;
+
+    if (token) {
+      try {
+        const payload = await tokenService.verifyAccessToken(token);
+        const userIdentifier = payload.email || payload.sub || payload.userId;
+        
+        if (userIdentifier) {
+          let userQuery;
+          if (typeof userIdentifier === 'string' && userIdentifier.includes('@')) {
+            userQuery = await dbManager.query(
+              'SELECT id, username, email, role, estate_id FROM users WHERE email = $1',
+              [userIdentifier]
+            );
+          } else {
+            userQuery = await dbManager.query(
+              'SELECT id, username, email, role, estate_id FROM users WHERE id = $1',
+              [userIdentifier]
+            );
+          }
+          
+          if (userQuery.rows.length > 0) {
+            req.user = userQuery.rows[0];
+          }
+        }
+      } catch {
+        // Token invalid or expired - proceed without user context
+      }
+    }
+  } catch {
+    // Error during auth - proceed without user context
+  }
+  next();
+};
+
 // Export 'protect' as an alias for authenticateToken for compatibility
 export { authenticateToken as protect };
 
@@ -285,6 +330,19 @@ export const requireRole = (...allowedRoles) => {
 export const requireMFA = asyncHandler(async (req, res, next) => {
   const mfaRequiredRoles = ['super_admin', 'admin', 'guard'];
   
+  // MFA-002 FIX: Allow access to MFA setup endpoints even without MFA enabled
+  // This enables first-time MFA setup for admin/guard/super_admin roles
+  const mfaSetupEndpoints = [
+    '/api/mfa/setup',
+    '/api/mfa/qr-code',
+    '/api/mfa/enable',
+    '/api/mfa/status'
+  ];
+  
+  const isMfaSetupEndpoint = mfaSetupEndpoints.some(endpoint => 
+    req.originalUrl.startsWith(endpoint)
+  );
+  
   if (mfaRequiredRoles.includes(req.user.role)) {
     // Check if user has MFA enabled
     const user = await dbManager.query(
@@ -293,6 +351,18 @@ export const requireMFA = asyncHandler(async (req, res, next) => {
     );
     
     if (!user.rows[0]?.mfa_enabled) {
+      // Allow access to MFA setup endpoints for first-time setup
+      if (isMfaSetupEndpoint) {
+        loggingService.info('Allowing MFA setup endpoint access for first-time setup', {
+          route: req.originalUrl,
+          method: req.method,
+          requestId: req.requestId,
+          user_id: req.user.id,
+          role: req.user.role
+        });
+        return next();
+      }
+      
       loggingService.warn('MFA required but not enabled', {
         route: req.originalUrl,
         method: req.method,
@@ -306,7 +376,11 @@ export const requireMFA = asyncHandler(async (req, res, next) => {
       throw new AppError(
         'Multi-Factor Authentication is required for your role. Please set up MFA to continue.',
         403,
-        'MFA_REQUIRED'
+        'MFA_REQUIRED',
+        {
+          setupRequired: true,
+          setupUrl: '/api/mfa/setup'
+        }
       );
     }
   }

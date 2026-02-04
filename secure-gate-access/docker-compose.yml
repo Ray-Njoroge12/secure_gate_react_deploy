@@ -89,6 +89,17 @@ services:
       timeout: 5s
       retries: 5
 
+  # MailHog - Email testing/simulation for demo
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: securegate-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP server
+      - "8025:8025"   # Web UI
+    logging:
+      driver: "none"  # Suppress mailhog logs
+
 volumes:
   postgres_data:
   redis_data:

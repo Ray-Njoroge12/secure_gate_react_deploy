@@ -149,7 +149,7 @@ const ConsentForm = ({
 
                 {/* Consent Timestamp */}
                 {consentGiven && consentTimestamp && (
-                  <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 p-2 rounded">
+                  <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-2 rounded">
                     <CheckCircle className="h-3 w-3" />
                     <span>Consent given on {new Date(consentTimestamp).toLocaleString()}</span>
                   </div>
@@ -170,15 +170,15 @@ const ConsentForm = ({
           {showDetails && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">What this means:</span>
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-gray-900 dark:text-slate-200">What this means:</span>
               </div>
               
-              <div className="bg-gray-50 p-3 rounded-lg space-y-2">
-                <ul className="text-xs text-gray-700 space-y-1">
+              <div className="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg space-y-2">
+                <ul className="text-xs text-gray-700 dark:text-slate-300 space-y-1">
                   {currentConsent.details.map((detail, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <span className="text-blue-600 mt-0.5">•</span>
+                      <span className="text-blue-600 dark:text-blue-400 mt-0.5">•</span>
                       <span>{detail}</span>
                     </li>
                   ))}
@@ -186,10 +186,10 @@ const ConsentForm = ({
               </div>
 
               {/* Data Retention Notice */}
-              <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-blue-600 mt-0.5" />
-                  <div className="text-xs text-blue-800">
+                  <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <div className="text-xs text-blue-800 dark:text-blue-300">
                     <p className="font-medium">Data Retention:</p>
                     <p>Your data will be retained for 5 years (visitors) or 7 years (users) as required by law and business needs.</p>
                   </div>
@@ -197,10 +197,10 @@ const ConsentForm = ({
               </div>
 
               {/* Rights Information */}
-              <div className="bg-green-50 p-3 rounded-lg">
+              <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Shield className="h-4 w-4 text-green-600 mt-0.5" />
-                  <div className="text-xs text-green-800">
+                  <Shield className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" />
+                  <div className="text-xs text-green-800 dark:text-green-300">
                     <p className="font-medium">Your Rights:</p>
                     <p>You have the right to access, rectify, delete, or restrict processing of your data. Contact us at privacy@securegate.com to exercise your rights.</p>
                   </div>

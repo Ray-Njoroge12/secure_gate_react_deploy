@@ -177,10 +177,10 @@ const CookieConsentBanner = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Necessary Cookies</Label>
-                        <p className="text-xs text-gray-600 dark:text-gray-200">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           Essential for the website to function properly
                         </p>
                       </div>
@@ -191,10 +191,10 @@ const CookieConsentBanner = () => {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Analytics Cookies</Label>
-                        <p className="text-xs text-gray-600 dark:text-gray-200">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           Help us understand how visitors interact with our website
                         </p>
                       </div>
@@ -204,10 +204,10 @@ const CookieConsentBanner = () => {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Marketing Cookies</Label>
-                        <p className="text-xs text-gray-600 dark:text-gray-200">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           Used to deliver relevant advertisements and marketing campaigns
                         </p>
                       </div>
@@ -217,10 +217,10 @@ const CookieConsentBanner = () => {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Preference Cookies</Label>
-                        <p className="text-xs text-gray-600 dark:text-gray-200">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">
                           Remember your preferences and settings
                         </p>
                       </div>

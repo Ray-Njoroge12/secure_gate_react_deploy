@@ -80,16 +80,16 @@ const PrivacyPolicy = () => {
             when you use our visitor management system.
           </p>
           {(dpoMissing || odpcMissing || policyMissing) && (
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <p className="text-sm text-yellow-800 font-semibold mb-2">
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700">
+              <p className="text-sm text-yellow-800 dark:text-yellow-300 font-semibold mb-2">
                 Compliance data is not fully configured.
               </p>
-              <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+              <ul className="text-sm text-yellow-800 dark:text-yellow-300 space-y-1 list-disc list-inside">
                 {dpoMissing && <li>Data Protection Officer status: Not configured.</li>}
                 {odpcMissing && <li>ODPC registration status: Not configured.</li>}
                 {policyMissing && <li>Policy metadata (Last Updated): Not configured.</li>}
               </ul>
-              <div className="mt-3 text-sm text-yellow-900">
+              <div className="mt-3 text-sm text-yellow-900 dark:text-yellow-200">
                 {canAccessAdminSettings ? (
                   <Link
                     to="/dashboard/admin/settings"
@@ -115,8 +115,8 @@ const PrivacyPolicy = () => {
               </div>
             </div>
           )}
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
               <strong>Last Updated:</strong> {formatDate(policyMetadata?.last_updated_at)}<br/>
               <strong>Effective Date:</strong> {formatDate(policyMetadata?.last_updated_at)}<br/>
               <strong>Version:</strong> 1.0
@@ -156,8 +156,8 @@ const PrivacyPolicy = () => {
               </ul>
             </div>
           </div>
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <p className="text-sm text-yellow-800">
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg">
+            <p className="text-sm text-yellow-800 dark:text-yellow-300">
               <strong>Legal Basis:</strong> We collect this data based on legitimate interest for security 
               purposes, contractual necessity for service delivery, and with your explicit consent.
             </p>

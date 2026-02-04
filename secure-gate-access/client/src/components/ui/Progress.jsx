@@ -39,8 +39,8 @@ const Progress = ({
     error: 'bg-red-600',
   };
 
-  const baseClasses = 'w-full bg-slate-200 rounded-full overflow-hidden';
-  const progressClasses = `transition-all duration-300 ease-in-out ${variantClasses[variant]} ${
+  const baseClasses = 'w-full bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden';
+  const progressClasses = `h-full transition-all duration-300 ease-in-out ${variantClasses[variant]} ${
     animated ? 'animate-pulse' : ''
   }`;
 

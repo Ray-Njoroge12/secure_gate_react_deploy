@@ -99,20 +99,22 @@ export default function LoginPage() {
     try {
       const result = await login(email, password, remember);
 
-      // Check if MFA is required
-      if (result.mfaRequired) {
-        // Store temp auth state for MFA persistence (survives refresh)
-        sessionStorage.setItem('mfa_temp_auth', JSON.stringify({
+      // MFA-008 FIX: Check if MFA is required
+      if (result?.requiresMFA || result?.mfaRequired) {
+        // Store MFA session info for verification
+        sessionStorage.setItem('mfa_session', JSON.stringify({
+          mfaSessionId: result.mfaSessionId,
           userId: result.userId,
-          username: result.username,
+          expiresIn: result.expiresIn || 300,
           timestamp: Date.now()
         }));
 
         // Redirect to MFA verification page
         navigate('/mfa/verify', {
           state: {
+            mfaSessionId: result.mfaSessionId,
             userId: result.userId,
-            username: result.username
+            expiresIn: result.expiresIn || 300
           }
         });
         return;
@@ -341,6 +343,8 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 autoFocus
+                aria-invalid={!!emailError}
+                aria-describedby={emailError ? "email-error" : undefined}
               />
 
               <FloatingLabelInput
@@ -357,6 +361,8 @@ export default function LoginPage() {
                 icon={<Lock className="w-5 h-5" />}
                 required
                 autoComplete="current-password"
+                aria-invalid={!!passwordError}
+                aria-describedby={passwordError ? "password-error" : undefined}
                 endIcon={
                   <button
                     type="button"
@@ -378,7 +384,7 @@ export default function LoginPage() {
                   id="remember-me"
                   label="Remember me"
                   checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
+                  onCheckedChange={(checked) => setRemember(checked)}
                 />
 
                 <button

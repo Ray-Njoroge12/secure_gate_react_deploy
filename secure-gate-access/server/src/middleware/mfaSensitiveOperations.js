@@ -2,6 +2,7 @@
  * MFA Requirements for Sensitive Operations
  * Additional MFA enforcement layer for destructive/sensitive actions
  * Phase 4: Extended to include Guard sensitive operations
+ * Phase 5: Extended to include Resident sensitive operations (RES-005)
  */
 
 import asyncHandler from '../utils/asyncHandler.js';
@@ -19,6 +20,13 @@ export const GUARD_SENSITIVE_OPS = [
   '/api/guards/shifts/end'
 ];
 
+// Resident operations that should recommend MFA (RES-005)
+// These are sensitive but not strictly required - we warn rather than block
+export const RESIDENT_SENSITIVE_OPS = [
+  '/api/visitors/bulk-invite',
+  '/api/resident/favorites' // POST/DELETE operations
+];
+
 /**
  * Check if the current route is a guard sensitive operation
  * @param {string} url - The request URL
@@ -30,6 +38,24 @@ export const isGuardSensitiveOp = (url) => {
     const regex = new RegExp('^' + pattern.replace(/:\w+/g, '\\d+') + '(?:\\?.*)?$');
     return regex.test(url) || url.includes(pattern.replace(/:\w+/g, ''));
   });
+};
+
+/**
+ * Check if the current route is a resident sensitive operation (RES-005)
+ * @param {string} url - The request URL
+ * @param {string} method - The HTTP method
+ * @returns {boolean}
+ */
+export const isResidentSensitiveOp = (url, method) => {
+  // Bulk invite is always sensitive
+  if (url.includes('/api/visitors/bulk-invite')) {
+    return true;
+  }
+  // Favorites modifications (POST/DELETE) are sensitive
+  if (url.includes('/api/resident/favorites') && ['POST', 'DELETE'].includes(method)) {
+    return true;
+  }
+  return false;
 };
 
 /**
@@ -49,6 +75,10 @@ export const isGuardSensitiveOp = (url) => {
  * - Bulk check-out operations
  * - Shift handover submission
  * 
+ * Resident (recommended, not enforced - RES-005):
+ * - Bulk invite operations
+ * - Favorites modifications
+ * 
  * @access Private - Use after authenticateToken
  */
 export const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => {
@@ -58,10 +88,12 @@ export const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => 
   // Determine if this is a sensitive operation for the user's role
   const isAdmin = adminRoles.includes(req.user.role);
   const isGuard = req.user.role === 'guard';
+  const isResident = req.user.role === 'resident';
   const isGuardSensitive = isGuard && isGuardSensitiveOp(req.originalUrl);
+  const isResidentSensitive = isResident && isResidentSensitiveOp(req.originalUrl, req.method);
 
   // Skip MFA check if not a sensitive operation for this role
-  if (!isAdmin && !isGuardSensitive) {
+  if (!isAdmin && !isGuardSensitive && !isResidentSensitive) {
     return next();
   }
 
@@ -75,10 +107,37 @@ export const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => 
     throw new AppError('User not found', 404, 'USER_NOT_FOUND');
   }
 
-  // For guards, MFA is optional but recommended for sensitive ops
-  // If MFA is not enabled, log a warning but allow the operation
+  // GUARD-001 FIX: MFA is now REQUIRED for guard sensitive operations
+  // Guards must have MFA enabled to perform critical security operations
   if (isGuardSensitive && !user.rows[0].mfa_enabled) {
-    logger.warn('Guard performing sensitive operation without MFA', {
+    logger.warn('Guard sensitive operation blocked - MFA not enabled', {
+      route: req.originalUrl,
+      method: req.method,
+      status: 403,
+      requestId: req.requestId,
+      user_id: req.user.id,
+      role: req.user.role,
+      username: user.rows[0].username,
+      estate_id: req.user.estate_id || null,
+      operation: 'guard_sensitive_operation_blocked',
+      reason: 'MFA_REQUIRED'
+    });
+
+    throw new AppError(
+      'This security operation requires Multi-Factor Authentication. Please enable MFA on your account to continue.',
+      403,
+      'MFA_REQUIRED_FOR_GUARD_SENSITIVE_OPS',
+      {
+        setupUrl: '/api/mfa/setup',
+        requiredFor: 'guard_sensitive_operations'
+      }
+    );
+  }
+
+  // RES-005: For residents, MFA is RECOMMENDED (warn but allow)
+  // Log a warning but don't block the operation
+  if (isResidentSensitive && !user.rows[0].mfa_enabled) {
+    logger.warn('Resident sensitive operation without MFA', {
       route: req.originalUrl,
       method: req.method,
       requestId: req.requestId,
@@ -86,13 +145,13 @@ export const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => 
       role: req.user.role,
       username: user.rows[0].username,
       estate_id: req.user.estate_id || null,
-      operation: 'guard_sensitive_operation_no_mfa',
+      operation: 'resident_sensitive_operation_without_mfa',
       recommendation: 'Enable MFA for enhanced security'
     });
-
-    // Allow operation but add warning header
-    res.set('X-Security-Warning', 'MFA-recommended-for-sensitive-operations');
-    return next();
+    
+    // Add header to inform client that MFA is recommended
+    res.setHeader('X-MFA-Recommended', 'true');
+    res.setHeader('X-MFA-Reason', 'This operation is sensitive. Consider enabling MFA.');
   }
 
   // For admins, MFA is required
@@ -117,15 +176,22 @@ export const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => 
   }
 
   // Log successful MFA check for sensitive operation
-  logger.info('MFA verified for sensitive operation', {
-    route: req.originalUrl,
-    method: req.method,
-    requestId: req.requestId,
-    user_id: req.user.id,
-    role: req.user.role,
-    estate_id: req.user.estate_id || null,
-    operation: isGuardSensitive ? 'guard_sensitive_operation' : 'sensitive_admin_operation'
-  });
+  if (user.rows[0].mfa_enabled) {
+    let operationType = 'sensitive_operation';
+    if (isGuardSensitive) operationType = 'guard_sensitive_operation';
+    else if (isResidentSensitive) operationType = 'resident_sensitive_operation';
+    else if (isAdmin) operationType = 'admin_sensitive_operation';
+
+    logger.info('MFA verified for sensitive operation', {
+      route: req.originalUrl,
+      method: req.method,
+      requestId: req.requestId,
+      user_id: req.user.id,
+      role: req.user.role,
+      estate_id: req.user.estate_id || null,
+      operation: operationType
+    });
+  }
 
   next();
 });

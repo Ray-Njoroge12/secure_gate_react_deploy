@@ -270,7 +270,7 @@ const SessionTimeoutWarning = ({
           </div>
 
           {/* Keyboard hint */}
-          <p className="text-xs text-center text-gray-400 dark:text-gray-500 dark:text-gray-300 mt-4">
+          <p className="text-xs text-center text-gray-400 dark:text-gray-400 mt-4">
             Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Enter</kbd> to stay logged in
           </p>
         </div>

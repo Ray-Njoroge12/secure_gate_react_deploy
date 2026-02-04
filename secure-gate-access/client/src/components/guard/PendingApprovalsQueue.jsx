@@ -58,8 +58,8 @@ const PendingApprovalsQueue = () => {
     return (
       <Card>
         <Card.Header>
-          <Card.Title className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
+          <Card.Title className="flex items-center gap-2 text-slate-200 dark:text-slate-100">
+            <Clock className="w-5 h-5" aria-hidden="true" />
             Pending Approvals
           </Card.Title>
         </Card.Header>
@@ -76,15 +76,15 @@ const PendingApprovalsQueue = () => {
     return (
       <Card>
         <Card.Header>
-          <Card.Title className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
+          <Card.Title className="flex items-center gap-2 text-slate-200 dark:text-slate-100">
+            <Clock className="w-5 h-5" aria-hidden="true" />
             Pending Approvals
             <Badge variant="default">0</Badge>
           </Card.Title>
         </Card.Header>
         <Card.Content>
           <div className="text-center py-8">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" aria-hidden="true" />
             <p className="text-gray-600 dark:text-gray-200">No visitors waiting for approval</p>
             <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">All walk-ins have been processed</p>
           </div>
@@ -96,8 +96,8 @@ const PendingApprovalsQueue = () => {
   return (
     <Card>
       <Card.Header>
-        <Card.Title className="flex items-center gap-2">
-          <Clock className="w-5 h-5 animate-pulse text-yellow-500" />
+        <Card.Title className="flex items-center gap-2 text-slate-200 dark:text-slate-100">
+          <Clock className="w-5 h-5 animate-pulse text-yellow-500" aria-hidden="true" />
           Pending Approvals
           <Badge variant="warning">{pendingVisitors.length}</Badge>
         </Card.Title>
@@ -107,12 +107,12 @@ const PendingApprovalsQueue = () => {
           {pendingVisitors.map(visitor => (
             <div
               key={visitor.id}
-              className="border border-yellow-200 bg-yellow-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <User className="w-4 h-4 text-gray-600 dark:text-gray-200" />
+                    <User className="w-4 h-4 text-gray-600 dark:text-gray-200" aria-hidden="true" />
                     <span className="font-semibold text-gray-900 dark:text-white">{visitor.name}</span>
                   </div>
                   {visitor.phone && (
@@ -138,15 +138,15 @@ const PendingApprovalsQueue = () => {
               </div>
 
               {visitor.resident_id && (
-                <div className="flex items-center gap-2 text-sm text-gray-700 bg-white px-3 py-2 rounded mt-2">
-                  <Home className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 px-3 py-2 rounded mt-2">
+                  <Home className="w-4 h-4" aria-hidden="true" />
                   <span>Requesting approval from resident</span>
                 </div>
               )}
 
               {!visitor.resident_id && (
-                <div className="flex items-center gap-2 text-sm text-orange-700 bg-orange-100 px-3 py-2 rounded mt-2">
-                  <AlertCircle className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 rounded mt-2">
+                  <AlertCircle className="w-4 h-4" aria-hidden="true" />
                   <span>Resident not found in system</span>
                 </div>
               )}
