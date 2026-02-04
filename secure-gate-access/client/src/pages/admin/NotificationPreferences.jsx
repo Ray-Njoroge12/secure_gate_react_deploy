@@ -1,31 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Switch,
-  FormControlLabel,
-  FormGroup,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
-  Alert,
-  CircularProgress,
-  Divider,
-  Grid,
-  Chip
-} from '@mui/material';
-import {
-  Notifications as NotificationsIcon,
-  Email as EmailIcon,
-  Sms as SmsIcon,
-  NotificationsActive as InAppIcon,
-  Save as SaveIcon
-} from '@mui/icons-material';
-import { apiCall } from '../../utils/api';
+  Bell,
+  Mail,
+  MessageSquare,
+  Smartphone,
+  Save,
+  Info,
+  CheckCircle,
+  AlertTriangle,
+  AlertCircle
+} from 'lucide-react';
+import { apiCall } from '../../services/http';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Alert from '../../components/ui/Alert';
+import Loading from '../../components/ui/Loading';
 
 const NotificationPreferences = () => {
   const [preferences, setPreferences] = useState([]);
@@ -118,7 +107,7 @@ const NotificationPreferences = () => {
       setLoading(true);
       setError('');
       const response = await apiCall('GET', '/api/admin/notification-preferences');
-      
+
       if (response.success) {
         setPreferences(response.data);
       }
@@ -187,196 +176,186 @@ const NotificationPreferences = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Loading size="lg" />
+      </div>
     );
   }
 
   const groupedPreferences = groupByCategory();
 
   return (
-    <Box>
+    <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <Box mb={3} display="flex" alignItems="center" justifyContent="space-between">
-        <Box display="flex" alignItems="center">
-          <NotificationsIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
-          <Box>
-            <Typography variant="h4" gutterBottom>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Bell className="w-8 h-8 text-blue-600" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
               Notification Preferences
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            </h1>
+            <p className="text-sm text-gray-500">
               Configure how and when you receive notifications for estate events
-            </Typography>
-          </Box>
-        </Box>
+            </p>
+          </div>
+        </div>
         <Button
-          variant="contained"
-          startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
+          variant="primary"
           onClick={handleSave}
           disabled={saving}
+          className="flex items-center gap-2"
         >
+          {saving ? <Loading size="sm" /> : <Save className="w-4 h-4" />}
           {saving ? 'Saving...' : 'Save Preferences'}
         </Button>
-      </Box>
+      </div>
 
       {/* Alerts */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+        <Alert variant="destructive" className="mb-4">
           {error}
         </Alert>
       )}
       {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+        <Alert variant="success" className="mb-4">
           {success}
         </Alert>
       )}
 
       {/* Notification Channels Legend */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
             Notification Channels
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={4}>
-              <Box display="flex" alignItems="center">
-                <EmailIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">Email</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Receive notifications via email
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box display="flex" alignItems="center">
-                <SmsIcon sx={{ mr: 1, color: 'success.main' }} />
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">SMS</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Receive text message alerts
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box display="flex" alignItems="center">
-                <InAppIcon sx={{ mr: 1, color: 'warning.main' }} />
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">In-App</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Receive in-app notifications
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-          </Grid>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <Mail className="w-5 h-5 text-blue-600" />
+              <div>
+                <p className="font-medium text-gray-900">Email</p>
+                <p className="text-xs text-gray-500">Receive notifications via email</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+              <Smartphone className="w-5 h-5 text-green-600" />
+              <div>
+                <p className="font-medium text-gray-900">SMS</p>
+                <p className="text-xs text-gray-500">Receive text message alerts</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+              <Bell className="w-5 h-5 text-yellow-600" />
+              <div>
+                <p className="font-medium text-gray-900">In-App</p>
+                <p className="text-xs text-gray-500">Receive in-app notifications</p>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
       {/* Preferences by Category */}
       {Object.entries(groupedPreferences).map(([category, prefs]) => (
-        <Card key={category} sx={{ mb: 3 }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" mb={2}>
-              <Typography variant="h6" flexGrow={1}>
-                {category}
-              </Typography>
-              <Chip label={`${prefs.length} events`} size="small" />
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-
-            {prefs.map((pref, index) => {
+        <Card key={category}>
+          <CardHeader className="border-b bg-gray-50/50">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg">{category}</CardTitle>
+              <span className="bg-gray-200 text-gray-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                {prefs.length} events
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="divide-y divide-gray-100">
+            {prefs.map((pref) => {
               const config = eventTypes[pref.event_type] || {
                 label: pref.event_type,
                 description: 'Event notification'
               };
 
-              return (
-                <Box key={pref.id} sx={{ mb: index < prefs.length - 1 ? 3 : 0 }}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    {config.label}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {config.description}
-                  </Typography>
+              // Determine if frequency selection should be disabled
+              const isFrequencyDisabled = !pref.notify_email && !pref.notify_sms && !pref.notify_in_app;
 
-                  <Grid container spacing={2} alignItems="center" sx={{ mt: 1 }}>
+              return (
+                <div key={pref.id} className="py-6 first:pt-4 last:pb-2">
+                  <div className="mb-4">
+                    <h4 className="text-base font-semibold text-gray-900">
+                      {config.label}
+                    </h4>
+                    <p className="text-sm text-gray-500">
+                      {config.description}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                     {/* Notification Channels */}
-                    <Grid item xs={12} md={6}>
-                      <FormGroup row>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={pref.notify_email}
-                              onChange={() => handleToggle(pref.id, 'notify_email')}
-                              color="primary"
-                            />
-                          }
-                          label={
-                            <Box display="flex" alignItems="center">
-                              <EmailIcon fontSize="small" sx={{ mr: 0.5 }} />
-                              Email
-                            </Box>
-                          }
-                        />
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={pref.notify_sms}
-                              onChange={() => handleToggle(pref.id, 'notify_sms')}
-                              color="success"
-                            />
-                          }
-                          label={
-                            <Box display="flex" alignItems="center">
-                              <SmsIcon fontSize="small" sx={{ mr: 0.5 }} />
-                              SMS
-                            </Box>
-                          }
-                        />
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={pref.notify_in_app}
-                              onChange={() => handleToggle(pref.id, 'notify_in_app')}
-                              color="warning"
-                            />
-                          }
-                          label={
-                            <Box display="flex" alignItems="center">
-                              <InAppIcon fontSize="small" sx={{ mr: 0.5 }} />
-                              In-App
-                            </Box>
-                          }
-                        />
-                      </FormGroup>
-                    </Grid>
+                    <div className="flex flex-wrap gap-6">
+                      <label className="flex items-center cursor-pointer gap-2 group">
+                        <div className="relative inline-flex items-center">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={pref.notify_email}
+                            onChange={() => handleToggle(pref.id, 'notify_email')}
+                          />
+                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex items-center gap-1.5">
+                          <Mail className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+                          Email
+                        </span>
+                      </label>
+
+                      <label className="flex items-center cursor-pointer gap-2 group">
+                        <div className="relative inline-flex items-center">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={pref.notify_sms}
+                            onChange={() => handleToggle(pref.id, 'notify_sms')}
+                          />
+                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex items-center gap-1.5">
+                          <Smartphone className="w-4 h-4 text-gray-400 group-hover:text-green-500" />
+                          SMS
+                        </span>
+                      </label>
+
+                      <label className="flex items-center cursor-pointer gap-2 group">
+                        <div className="relative inline-flex items-center">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={pref.notify_in_app}
+                            onChange={() => handleToggle(pref.id, 'notify_in_app')}
+                          />
+                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500"></div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 flex items-center gap-1.5">
+                          <Bell className="w-4 h-4 text-gray-400 group-hover:text-yellow-500" />
+                          In-App
+                        </span>
+                      </label>
+                    </div>
 
                     {/* Frequency */}
-                    <Grid item xs={12} md={6}>
-                      <FormControl size="small" fullWidth>
-                        <InputLabel>Frequency</InputLabel>
-                        <Select
-                          value={pref.frequency}
-                          label="Frequency"
-                          onChange={(e) => handleFrequencyChange(pref.id, e.target.value)}
-                          disabled={!pref.notify_email && !pref.notify_sms && !pref.notify_in_app}
-                        >
-                          {frequencyOptions.map(option => (
-                            <MenuItem key={option.value} value={option.value}>
-                              {option.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                  </Grid>
-
-                  {index < prefs.length - 1 && <Divider sx={{ mt: 3 }} />}
-                </Box>
+                    <div>
+                      <select
+                        className={`bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 ${!pref.notify_email && !pref.notify_sms && !pref.notify_in_app ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        value={pref.frequency}
+                        onChange={(e) => handleFrequencyChange(pref.id, e.target.value)}
+                        disabled={!pref.notify_email && !pref.notify_sms && !pref.notify_in_app}
+                      >
+                        {frequencyOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </CardContent>
@@ -385,14 +364,20 @@ const NotificationPreferences = () => {
 
       {preferences.length === 0 && (
         <Card>
-          <CardContent>
-            <Typography variant="body1" color="text.secondary" align="center">
-              No notification preferences configured. Contact your system administrator.
-            </Typography>
+          <CardContent className="py-12">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+                <Bell className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900">No preferences found</h3>
+              <p className="mt-1 text-gray-500">
+                Notification preferences have not been configured. Contact your system administrator.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
-    </Box>
+    </div>
   );
 };
 
