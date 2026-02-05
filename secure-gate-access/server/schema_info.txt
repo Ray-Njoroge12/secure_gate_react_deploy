@@ -1,0 +1,39 @@
+Users table structure:
+- id (nullable: NO, default: nextval('users_id_seq'::regclass))
+- username (nullable: NO, default: null)
+- email (nullable: NO, default: null)
+- password (nullable: YES, default: null)
+- password_hash (nullable: NO, default: null)
+- role (nullable: NO, default: null)
+- phone (nullable: YES, default: null)
+- area (nullable: YES, default: null)
+- house (nullable: YES, default: null)
+- estate_id (nullable: NO, default: null)
+- notify_email (nullable: YES, default: true)
+- notify_sms (nullable: YES, default: false)
+- verified (nullable: YES, default: false)
+- verification_token (nullable: YES, default: null)
+- verification_expires (nullable: YES, default: null)
+- created_at (nullable: YES, default: now())
+- updated_at (nullable: YES, default: now())
+- account_status (nullable: YES, default: 'pending'::character varying)
+- preferences (nullable: YES, default: '{}'::jsonb)
+- last_login (nullable: YES, default: null)
+- failed_login_attempts (nullable: YES, default: 0)
+- account_locked_until (nullable: YES, default: null)
+- consent_given (nullable: YES, default: false)
+- consent_timestamp (nullable: YES, default: null)
+- consent_type (nullable: YES, default: null)
+- consent_withdrawn (nullable: YES, default: false)
+- consent_withdrawn_at (nullable: YES, default: null)
+- email_encrypted (nullable: YES, default: null)
+- phone_encrypted (nullable: YES, default: null)
+- encryption_version (nullable: YES, default: 'v1'::character varying)
+- encrypted_at (nullable: YES, default: null)
+- status (nullable: YES, default: 'active'::character varying)
+
+Required columns (NOT NULL, no default): ["username","email","password_hash","role","estate_id"]
+
+Estates: [{"id":1,"name":"Default Estate"}]
+
+All Users: [{"id":2,"username":"resident1","email":"resident1@securegate.com","role":"resident","verified":true},{"id":3,"username":"guard1","email":"guard1@securegate.com","role":"guard","verified":true},{"id":4,"username":"BenMaina","email":"benweru80@gmail.com","role":"resident","verified":true},{"id":5,"username":"resident2","email":"resident2@example.com","role":"resident","verified":false},{"id":1,"username":"admin","email":"admin@securegate.com","role":"admin","verified":true}]
