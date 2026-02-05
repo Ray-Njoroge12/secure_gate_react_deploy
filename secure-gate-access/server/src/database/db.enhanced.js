@@ -243,10 +243,15 @@ class DatabaseManager extends EventEmitter {
 
   /**
    * Ensure essential tables exist for a fresh database
+   * NOTE: Most tables are now handled by the migration system (001_initial_schema.sql)
+   * This method only handles tables that might be missing from early migrations
+   * or are critical for the application to start before migrations run.
    */
   async ensureEssentialTables() {
     logDb('🔄 Ensuring essential database tables...');
 
+    // Only ensure tables that might not be in the initial migration
+    // or are absolutely critical for boot (though migrations should handle this)
     const tables = [
       {
         name: 'estates',
@@ -255,60 +260,6 @@ class DatabaseManager extends EventEmitter {
           name VARCHAR(255) NOT NULL,
           plan_id VARCHAR(50),
           status VARCHAR(20) NOT NULL DEFAULT 'active',
-          created_at TIMESTAMP DEFAULT NOW(),
-          updated_at TIMESTAMP DEFAULT NOW()
-        )`
-      },
-      {
-        name: 'users',
-        sql: `CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(100) UNIQUE NOT NULL,
-          email VARCHAR(255) UNIQUE NOT NULL,
-          password VARCHAR(255),
-          password_hash VARCHAR(255) NOT NULL,
-          role VARCHAR(50) NOT NULL,
-          phone VARCHAR(20),
-          area VARCHAR(100),
-          house VARCHAR(100),
-          estate_id INT REFERENCES estates(id),
-          notify_email BOOLEAN DEFAULT true,
-          notify_sms BOOLEAN DEFAULT false,
-          verified BOOLEAN DEFAULT false,
-          verification_token TEXT,
-          verification_expires TIMESTAMP,
-          created_at TIMESTAMP DEFAULT NOW(),
-          updated_at TIMESTAMP DEFAULT NOW()
-        )`
-      },
-      {
-        name: 'visitors',
-        sql: `CREATE TABLE IF NOT EXISTS visitors (
-          id SERIAL PRIMARY KEY,
-          name VARCHAR(100) NOT NULL,
-          estate_id INT REFERENCES estates(id),
-          resident_id INT,
-          phone VARCHAR(20),
-          email VARCHAR(100),
-          id_number VARCHAR(50),
-          vehicle_plate VARCHAR(20),
-          purpose TEXT,
-          date_of_visit DATE,
-          time_of_visit TIME,
-          invite_code VARCHAR(100) UNIQUE,
-          status VARCHAR(20) DEFAULT 'PENDING',
-          otp_hash TEXT,
-          otp_expires_at TIMESTAMP,
-          otp_attempts INT DEFAULT 0,
-          qr_code TEXT,
-          check_in_time TIMESTAMP,
-          check_out_time TIMESTAMP,
-          check_in_guard_id INT REFERENCES users(id),
-          check_out_guard_id INT REFERENCES users(id),
-          check_in_notes TEXT,
-          check_out_notes TEXT,
-          created_by VARCHAR(255),
-          host_id INT,
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
         )`
@@ -340,65 +291,6 @@ class DatabaseManager extends EventEmitter {
           estate_id INT REFERENCES estates(id),
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
-        )`
-      },
-      {
-        name: 'bulk_invites',
-        sql: `CREATE TABLE IF NOT EXISTS bulk_invites (
-          id SERIAL PRIMARY KEY,
-          event_name VARCHAR(255) NOT NULL,
-          date DATE NOT NULL,
-          time TIME NOT NULL,
-          num_guests INT NOT NULL,
-          invite_code VARCHAR(100) UNIQUE NOT NULL,
-          expires_at TIMESTAMP NOT NULL,
-          created_by VARCHAR(100),
-          remaining_slots INT NOT NULL DEFAULT 0,
-          created_at TIMESTAMP DEFAULT NOW()
-        )`
-      },
-      {
-        name: 'access_logs',
-        sql: `CREATE TABLE IF NOT EXISTS access_logs (
-          id SERIAL PRIMARY KEY,
-          user_id INT,
-          action VARCHAR(100),
-          log_time TIMESTAMP DEFAULT NOW(),
-          request_id VARCHAR(100),
-          entity_type VARCHAR(50),
-          entity_id VARCHAR(100),
-          outcome VARCHAR(20),
-          message TEXT,
-          metadata JSONB
-        )`
-      },
-      {
-        name: 'audit_logs',
-        sql: `CREATE TABLE IF NOT EXISTS audit_logs (
-          id SERIAL PRIMARY KEY,
-          user_id INT,
-          action VARCHAR(100) NOT NULL,
-          resource VARCHAR(100) NOT NULL DEFAULT 'system',
-          user_role VARCHAR(50),
-          request_id VARCHAR(100),
-          estate_id INTEGER,
-          entity_type VARCHAR(50),
-          entity_id VARCHAR(100),
-          outcome VARCHAR(20),
-          message TEXT,
-          details TEXT,
-          metadata JSONB,
-          ip_address INET,
-          user_agent TEXT,
-          timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-          created_at TIMESTAMP DEFAULT NOW()
-        )`
-      },
-      {
-        name: 'revoked_tokens',
-        sql: `CREATE TABLE IF NOT EXISTS revoked_tokens (
-          jti TEXT PRIMARY KEY,
-          revoked_at TIMESTAMP DEFAULT NOW()
         )`
       },
       {
