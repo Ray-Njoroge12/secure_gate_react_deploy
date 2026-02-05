@@ -5,10 +5,16 @@
  * Phase 5: Extended to include Resident sensitive operations (RES-005)
  */
 
+<<<<<<< HEAD
 import asyncHandler from '../utils/asyncHandler.js';
 import { AppError } from './standardizedErrorHandler.js';
 import { db } from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
+=======
+import { asyncHandler, AppError } from './standardizedErrorHandler.js';
+import { dbManager } from '../database/db.enhanced.js';
+import loggingService from '../services/loggingService.js';
+>>>>>>> infra/login-fix-and-automation
 
 // Guard operations that require MFA (when enabled)
 export const GUARD_SENSITIVE_OPS = [
@@ -279,7 +285,11 @@ export const requireRecentMFAVerification = asyncHandler(async (req, res, next) 
   next();
 });
 
+<<<<<<< HEAD
 export default {
+=======
+export {
+>>>>>>> infra/login-fix-and-automation
   requireMFAForSensitiveOps,
   requireMFAForGuardSensitiveOps,
   requireRecentMFAVerification,
