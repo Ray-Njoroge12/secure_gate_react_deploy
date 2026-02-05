@@ -1,0 +1,10 @@
+file:///C:/Ben/SecureGate/secure_gate_react_deploy/secure-gate-access/server/src/routes/adminRoutes.js:23
+import { requireMFAForSensitiveOps, requireRecentMFAVerification } from '../middleware/mfaSensitiveOperations.js';
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: The requested module '../middleware/mfaSensitiveOperations.js' does not provide an export named 'requireMFAForSensitiveOps'
+    at ModuleJob._instantiate (node:internal/modules/esm/module_job:177:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:260:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:543:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)
+
+Node.js v22.11.0
