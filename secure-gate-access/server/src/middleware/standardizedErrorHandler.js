@@ -251,6 +251,7 @@ export const errorHandler = (err, req, res, next) => {
       user: req.user?.id,
       requestId: req.requestId
     });
+    
   }
 
   const securityCodes = new Set([

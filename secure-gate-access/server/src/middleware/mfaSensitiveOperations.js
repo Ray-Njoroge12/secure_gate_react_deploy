@@ -4,10 +4,9 @@
  * Phase 4: Extended to include Guard sensitive operations
  */
 
-const asyncHandler = require('../utils/asyncHandler');
-const AppError = require('../utils/AppError');
-const dbManager = require('../utils/dbManager');
-const loggingService = require('../utils/loggingService');
+import { asyncHandler, AppError } from './standardizedErrorHandler.js';
+import { dbManager } from '../database/db.enhanced.js';
+import loggingService from '../services/loggingService.js';
 
 // Guard operations that require MFA (when enabled)
 const GUARD_SENSITIVE_OPS = [
@@ -213,7 +212,7 @@ const requireRecentMFAVerification = asyncHandler(async (req, res, next) => {
   next();
 });
 
-module.exports = {
+export {
   requireMFAForSensitiveOps,
   requireMFAForGuardSensitiveOps,
   requireRecentMFAVerification,
