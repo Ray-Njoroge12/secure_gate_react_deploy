@@ -287,9 +287,9 @@ class EnvironmentConfig {
 
     const clientOrigin = process.env.CLIENT_ORIGIN;
     if (!clientOrigin) {
-      this.validationErrors.push('CLIENT_ORIGIN is required in production for CORS');
+      this.validationErrors.push('CLIENT_ORIGIN is required. Set it to your frontend URL (e.g., https://yourdomain.com).');
     } else if (this.isLocalOrigin(clientOrigin)) {
-      this.validationErrors.push('CLIENT_ORIGIN must not point to localhost in production');
+      this.validationErrors.push(`CLIENT_ORIGIN (${clientOrigin}) cannot point to localhost in production.`);
     }
 
     const additionalOrigins = process.env.ADDITIONAL_ORIGINS;
