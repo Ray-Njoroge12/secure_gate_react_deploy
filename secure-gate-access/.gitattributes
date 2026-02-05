@@ -1,0 +1,77 @@
+# =============================================================================
+# GIT ATTRIBUTES - CROSS-PLATFORM LINE ENDING NORMALIZATION
+# =============================================================================
+# This file ensures consistent line endings across Mac, Windows, and Linux
+# to prevent corruption of SQL files, scripts, and source code.
+# =============================================================================
+
+# Auto detect text files and normalize to LF
+* text=auto eol=lf
+
+# =============================================================================
+# SOURCE CODE - Always LF (Unix style)
+# =============================================================================
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# =============================================================================
+# DATABASE & MIGRATIONS - Critical for cross-platform SQL execution
+# =============================================================================
+*.sql text eol=lf
+
+# =============================================================================
+# SHELL SCRIPTS - Unix LF required for execution
+# =============================================================================
+*.sh text eol=lf
+*.bash text eol=lf
+
+# =============================================================================
+# WINDOWS SCRIPTS - CRLF required
+# =============================================================================
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# =============================================================================
+# CONFIGURATION FILES - Always LF
+# =============================================================================
+.env* text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+.eslintrc* text eol=lf
+.prettierrc* text eol=lf
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
+
+# =============================================================================
+# BINARY FILES - No conversion
+# =============================================================================
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.pdf binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
