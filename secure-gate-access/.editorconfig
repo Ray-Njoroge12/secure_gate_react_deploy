@@ -1,0 +1,94 @@
+# =============================================================================
+# EDITORCONFIG - CROSS-PLATFORM CODE FORMATTING
+# =============================================================================
+# This file ensures consistent coding styles across different editors and IDEs
+# Works with VSCode, IntelliJ, Sublime Text, Atom, and others
+# Documentation: https://editorconfig.org
+# =============================================================================
+
+root = true
+
+# =============================================================================
+# DEFAULT SETTINGS - Applied to all files
+# =============================================================================
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# =============================================================================
+# JAVASCRIPT / TYPESCRIPT - 2 space indentation
+# =============================================================================
+[*.{js,jsx,ts,tsx,mjs,cjs}]
+indent_style = space
+indent_size = 2
+max_line_length = 120
+
+# =============================================================================
+# JSON - 2 space indentation
+# =============================================================================
+[*.json]
+indent_style = space
+indent_size = 2
+
+# =============================================================================
+# YAML - 2 space indentation (strict for YAML)
+# =============================================================================
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# =============================================================================
+# MARKDOWN - Preserve trailing whitespace (needed for line breaks)
+# =============================================================================
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# =============================================================================
+# SHELL SCRIPTS - Unix LF, 2 space indentation
+# =============================================================================
+[*.sh]
+end_of_line = lf
+indent_style = space
+indent_size = 2
+
+# =============================================================================
+# WINDOWS SCRIPTS - CRLF required
+# =============================================================================
+[*.{bat,cmd,ps1}]
+end_of_line = crlf
+indent_style = space
+indent_size = 2
+
+# =============================================================================
+# SQL FILES - 2 space indentation, Unix LF
+# =============================================================================
+[*.sql]
+end_of_line = lf
+indent_style = space
+indent_size = 2
+
+# =============================================================================
+# PACKAGE FILES - 2 space indentation
+# =============================================================================
+[{package.json,package-lock.json}]
+indent_style = space
+indent_size = 2
+
+# =============================================================================
+# MAKEFILES - Tabs required
+# =============================================================================
+[Makefile]
+indent_style = tab
+
+# =============================================================================
+# PYTHON - 4 space indentation (PEP 8)
+# =============================================================================
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 88
