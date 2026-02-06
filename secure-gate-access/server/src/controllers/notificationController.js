@@ -636,26 +636,19 @@ export async function getNotificationLogs(req, res) {
  */
 export async function updateNotificationPreferences(req, res) {
   try {
-    const { userId, visitorId } = req.body;
-    const preferences = req.body.preferences;
-
-    // Validate that exactly one of userId or visitorId is provided
-    if ((userId && visitorId) || (!userId && !visitorId)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Provide either userId or visitorId, not both'
-      });
-    }
-
+    // Use authenticated user's ID from token instead of body
+    const userId = req.user.id;
+    const preferences = req.body.preferences || req.body; // Support both formats
+    
     // Upsert preferences
     const query = `
       INSERT INTO notification_preferences (
-        user_id, visitor_id, email_enabled, sms_enabled,
+        user_id, email_enabled, sms_enabled,
         notify_on_invite, notify_on_approval, notify_on_rejection,
         notify_on_checkin, notify_on_checkout, notify_on_reminder,
         language
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      ON CONFLICT (user_id, visitor_id)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (user_id)
       DO UPDATE SET
         email_enabled = EXCLUDED.email_enabled,
         sms_enabled = EXCLUDED.sms_enabled,
@@ -671,8 +664,7 @@ export async function updateNotificationPreferences(req, res) {
     `;
 
     const values = [
-      userId || null,
-      visitorId || null,
+      userId,
       preferences.emailEnabled !== undefined ? preferences.emailEnabled : true,
       preferences.smsEnabled !== undefined ? preferences.smsEnabled : true,
       preferences.notifyOnInvite !== undefined ? preferences.notifyOnInvite : true,
@@ -688,6 +680,7 @@ export async function updateNotificationPreferences(req, res) {
 
     return res.status(200).json({
       success: true,
+      message: 'Preferences updated successfully',
       data: result.rows[0]
     });
   } catch (error) {
@@ -695,7 +688,8 @@ export async function updateNotificationPreferences(req, res) {
 
     return res.status(500).json({
       success: false,
-      error: 'Failed to update preferences'
+      error: 'Failed to update preferences',
+      message: error.message
     });
   }
 }

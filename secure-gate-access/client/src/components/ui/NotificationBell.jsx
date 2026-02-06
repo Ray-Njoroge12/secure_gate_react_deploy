@@ -269,11 +269,12 @@ const NotificationBell = ({ className = '' }) => {
           </div>
 
           {/* Connection Status */}
-          {!isConnected && (
+          {/* WebSocket connection status hidden until WebSocket server is implemented */}
+          {/* {!isConnected && (
             <div className="notification-connection-warning">
               <span>⚠️ Disconnected - Reconnecting...</span>
             </div>
-          )}
+          )} */}
 
           {/* Notifications List */}
           <div className="notification-list">

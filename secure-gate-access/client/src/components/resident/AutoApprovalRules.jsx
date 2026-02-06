@@ -106,7 +106,7 @@ const AutoApprovalRules = () => {
 
   if (loading && rules.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="h-20 bg-gray-200 rounded"></div>
@@ -119,7 +119,7 @@ const AutoApprovalRules = () => {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🤖 Auto-Approval Rules</h2>
@@ -162,7 +162,7 @@ const AutoApprovalRules = () => {
       </div>
 
       {/* Rules List */}
-      <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow divide-y divide-gray-200">
         {rules.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">📋</span>
@@ -216,7 +216,7 @@ const AutoApprovalRules = () => {
                       rule.isActive ? 'bg-green-500' : 'bg-gray-300'
                     }`}
                   >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
                       rule.isActive ? 'translate-x-6' : 'translate-x-1'
                     }`} />
                   </button>
@@ -341,7 +341,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold">
             {rule ? 'Edit Rule' : 'Create Auto-Approval Rule'}
