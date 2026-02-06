@@ -77,10 +77,10 @@ export default function AppShell({
   return (
     <NavigationProvider>
       <div ref={appShellRef} className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
-        {/* Skip Navigation Link */}
+        {/* Skip Navigation Link - Hidden except on keyboard focus for accessibility */}
         <a 
           href="#main-content" 
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-brand-600 text-white px-4 py-2 rounded-md font-medium"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:bg-brand-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-md focus:font-medium focus:shadow-lg"
         >
           Skip to main content
         </a>

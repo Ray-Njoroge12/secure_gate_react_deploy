@@ -23,7 +23,7 @@ router.get('/profile', authenticateToken, requireEstateContext, requireRolePolic
   const userId = req.user.id;
 
   const result = await dbManager.query(
-    `SELECT id, first_name, last_name, username, email, phone, house as unit_number, role, estate_id, created_at, updated_at 
+    `SELECT id, first_name, last_name, username, email, phone, area, house as unit_number, role, estate_id, created_at, updated_at 
      FROM users WHERE id = $1 AND estate_id = $2`,
     [userId, req.user.estate_id]
   );
@@ -41,18 +41,20 @@ router.get('/profile', authenticateToken, requireEstateContext, requireRolePolic
  */
 router.put('/profile', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { first_name, last_name, phone, unit_number } = req.body;
+  const { first_name, last_name, email, phone, area, unit_number } = req.body;
 
   const result = await dbManager.query(
     `UPDATE users 
      SET first_name = COALESCE($1, first_name), 
          last_name = COALESCE($2, last_name),
-         phone = COALESCE($3, phone), 
-         house = COALESCE($4, house),
+         email = COALESCE($3, email),
+         phone = COALESCE($4, phone),
+         area = COALESCE($5, area), 
+         house = COALESCE($6, house),
          updated_at = NOW()
-     WHERE id = $5 AND estate_id = $6
-     RETURNING id, first_name, last_name, username, email, phone, house as unit_number, role, estate_id`,
-    [first_name, last_name, phone, unit_number, userId, req.user.estate_id]
+     WHERE id = $7 AND estate_id = $8
+     RETURNING id, first_name, last_name, username, email, phone, area, house as unit_number, role, estate_id`,
+    [first_name, last_name, email, phone, area, unit_number, userId, req.user.estate_id]
   );
 
   return successResponse(res, result.rows[0], 'Profile updated successfully');

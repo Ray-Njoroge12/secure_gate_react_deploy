@@ -430,6 +430,95 @@
   }
 }
 
+/* Dark class override */
+.dark .accessibility-settings {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .accessibility-settings__header {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+.dark .accessibility-settings__title {
+  color: #f9fafb;
+}
+
+.dark .accessibility-settings__close {
+  color: #9ca3af;
+}
+
+.dark .accessibility-settings__close:hover {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .accessibility-settings__tabs {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+.dark .accessibility-settings__tab {
+  color: #9ca3af;
+}
+
+.dark .accessibility-settings__tab:hover {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.dark .accessibility-settings__tab--active {
+  color: #60a5fa;
+  background-color: #1f2937;
+}
+
+.dark .accessibility-settings__section h3 {
+  color: #f9fafb;
+}
+
+.dark .accessibility-settings__toggle-label,
+.dark .accessibility-settings__label {
+  color: #e5e7eb;
+}
+
+.dark .accessibility-settings__description {
+  color: #9ca3af;
+}
+
+.dark .accessibility-settings__select {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+.dark .accessibility-settings__select:hover {
+  background-color: #4b5563;
+  border-color: #60a5fa;
+}
+
+.dark .accessibility-settings__slider {
+  background: #4b5563;
+}
+
+.dark .accessibility-settings__subsection {
+  border-left-color: #4b5563;
+}
+
+.dark .accessibility-settings__color-tester {
+  background: #111827;
+  border-color: #374151;
+}
+
+.dark .accessibility-settings__footer {
+  background: #111827;
+  border-top-color: #374151;
+}
+
+.dark .accessibility-settings__info {
+  color: #9ca3af;
+}
+
 /* Print styles */
 @media print {
   .accessibility-settings {

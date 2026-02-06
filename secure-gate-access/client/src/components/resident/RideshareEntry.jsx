@@ -107,18 +107,18 @@ const RideshareEntry = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
+          <div className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-4 border-b border-gray-200">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🚗 Rideshare Entry</h2>
@@ -134,14 +134,14 @@ const RideshareEntry = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border-l-4 border-red-400">
-          <p className="text-red-700">{error}</p>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500">
+          <p className="text-red-700 dark:text-red-300">{error}</p>
           <button onClick={() => setError(null)} className="text-sm text-red-600 underline">Dismiss</button>
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-50 border-l-4 border-green-400">
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 dark:border-green-500">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-green-700 font-medium">✅ Entry Created!</p>
@@ -157,7 +157,7 @@ const RideshareEntry = () => {
       )}
 
       {showForm && (
-        <div className="p-4 bg-gray-50 border-b border-gray-200">
+        <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -254,7 +254,7 @@ const RideshareEntry = () => {
         </div>
       )}
 
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-slate-700">
         {entries.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">🚕</span>
@@ -309,7 +309,7 @@ const RideshareEntry = () => {
         )}
       </div>
 
-      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
+      <div className="p-3 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-300">
         💡 Share the access code with your driver. Guards will verify before entry.
       </div>
     </div>

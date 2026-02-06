@@ -37,8 +37,10 @@ export default function Settings() {
             notify_email: !!user.notify_email,
             notify_sms: !!user.notify_sms
           });
+          // Combine first_name and last_name into name for display
+          const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
           setProfile({
-            name: user.name || '',
+            name: fullName || '',
             email: user.email || '',
             phone: user.phone || '',
             area: user.area || '', // Note: Resident routes might not return area if not in query
@@ -80,17 +82,30 @@ export default function Settings() {
 
     try {
       if (type === 'Profile') {
+        // Split name into first_name and last_name
+        const nameParts = profile.name.trim().split(/\s+/);
+        const first_name = nameParts[0] || '';
+        const last_name = nameParts.slice(1).join(' ') || '';
+        
         const res = await fetch('/api/resident/profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: profile.name,
+            first_name,
+            last_name,
+            email: profile.email,
             phone: profile.phone,
+            area: profile.area,
             unit_number: profile.house
           })
         });
         const data = await res.json();
-        if (data.success) setSuccess('Profile updated successfully!');
+        console.log('Profile update response:', data);
+        console.log('Returned data object:', data.data);
+        if (data.success) {
+          setSuccess('Profile updated successfully!');
+          console.log('Success state set:', success);
+        }
         else throw new Error(data.message || 'Failed to update profile');
       } else if (type === 'Password') {
         // Use auth endpoint for password change
@@ -116,8 +131,11 @@ export default function Settings() {
       setError(err.message);
     } finally {
       setLoading(false);
+      // Auto-scroll to top to show success/error message
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
 
   const tabs = [
     { key: "profile", label: "Profile", icon: <User size={16} /> },
@@ -129,7 +147,8 @@ export default function Settings() {
     { key: "preferences", label: "Appearance", icon: <Eye size={16} /> },
   ];
 
-  const inputClass = "input";
+  // Consistent input styling for all fields
+  const inputClass = "w-full h-11 px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:text-white dark:placeholder-gray-400 transition-colors";
   const btnClass = "btn btn-primary w-full md:w-auto"; // Enhanced button class
 
   return (
@@ -146,7 +165,14 @@ export default function Settings() {
       <div className="max-w-3xl mx-auto px-4 py-6">
         {/* Messages */}
         {error && <ErrorDisplay message={error} onDismiss={() => setError("")} className="mb-4" />}
-        {success && <SuccessDisplay message={success} onDismiss={() => setSuccess("")} className="mb-4" />}
+        {success && (
+          <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg">
+            <div className="flex items-center justify-between">
+              <p className="text-green-700 dark:text-green-300 font-medium">✓ {success}</p>
+              <button onClick={() => setSuccess("")} className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100">✕</button>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           {/* Tabs */}
@@ -174,23 +200,23 @@ export default function Settings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
-                  <input type="text" placeholder="Your name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="Your name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
-                  <input type="text" placeholder="Phone number" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="Phone number" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={inputClass} />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
-                  <input type="email" placeholder="Email address" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="email" placeholder="Email address" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Area</label>
-                  <input type="text" placeholder="Area/Block" value={profile.area} onChange={(e) => setProfile({ ...profile, area: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="Area/Block" value={profile.area} onChange={(e) => setProfile({ ...profile, area: e.target.value })} className={inputClass} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">House Number</label>
-                  <input type="text" placeholder="House number" value={profile.house} onChange={(e) => setProfile({ ...profile, house: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="House number" value={profile.house} onChange={(e) => setProfile({ ...profile, house: e.target.value })} className={inputClass} />
                 </div>
               </div>
               <div className="mt-4">

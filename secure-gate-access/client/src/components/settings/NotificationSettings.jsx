@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from '../ui';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePushNotifications from '../../hooks/usePushNotifications';
+import api from '../../utils/apiClient';
 import { 
   Bell, 
   BellOff, 
@@ -95,11 +96,10 @@ const NotificationSettings = ({ className = '' }) => {
   const [channels, setChannels] = useState({});
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
-  const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
-  const [quietHoursStart, setQuietHoursStart] = useState('22:00');
-  const [quietHoursEnd, setQuietHoursEnd] = useState('07:00');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [saveError, setSaveError] = useState('');
 
   // Initialize channel preferences
   useEffect(() => {
@@ -147,25 +147,38 @@ const NotificationSettings = ({ className = '' }) => {
     });
   };
 
-  // Save preferences to server
   const savePreferences = async () => {
     setSaving(true);
+    setSuccess('');
+    setSaveError('');
+    
     try {
-      await fetch('/api/notifications/preferences', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channels,
-          emailNotifications,
-          smsNotifications,
-          quietHours: quietHoursEnabled ? { start: quietHoursStart, end: quietHoursEnd } : null,
-          soundEnabled
-        })
-      });
-      // Show success feedback
+      // Map frontend channel state to backend preferences format
+      const preferencesPayload = {
+        emailEnabled: emailNotifications,
+        smsEnabled: smsNotifications,
+        // Map channels to notification type preferences
+        notifyOnInvite: channels.visitor_arrival !== false,
+        notifyOnApproval: channels.visitor_approved !== false,
+        notifyOnRejection: channels.visitor_denied !== false,
+        notifyOnCheckin: channels.visitor_arrival !== false,
+        notifyOnCheckout: channels.visitor_arrival !== false,
+        notifyOnReminder: channels.reminders !== false,
+        language: 'en'
+      };
+      
+      const response = await api.put('/api/notifications/preferences', preferencesPayload);
+      
+      if (response.data.success || response.status === 200) {
+        setSuccess('Notification preferences saved successfully!');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        throw new Error(response.data.message || 'Failed to save preferences');
+      }
     } catch (err) {
       console.error('Error saving preferences:', err);
+      setSaveError(err.message || 'Failed to save notification preferences');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSaving(false);
     }
@@ -178,6 +191,26 @@ const NotificationSettings = ({ className = '' }) => {
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Success Message */}
+      {success && (
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg">
+          <div className="flex items-center justify-between">
+            <p className="text-green-700 dark:text-green-300 font-medium">✓ {success}</p>
+            <button onClick={() => setSuccess('')} className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100">✕</button>
+          </div>
+        </div>
+      )}
+      
+      {/* Error Message */}
+      {saveError && (
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg">
+          <div className="flex items-center justify-between">
+            <p className="text-red-700 dark:text-red-300 font-medium">✕ {saveError}</p>
+            <button onClick={() => setSaveError('')} className="text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100">✕</button>
+          </div>
+        </div>
+      )}
+      
       {/* Push Notifications Section */}
       <Card className={`p-6 ${cardClass}`}>
         <div className="flex items-start justify-between mb-4">
@@ -376,46 +409,6 @@ const NotificationSettings = ({ className = '' }) => {
         </div>
       </Card>
 
-      {/* Quiet Hours */}
-      <Card className={`p-6 ${cardClass}`}>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className={`text-lg font-semibold ${textClass}`}>Quiet Hours</h3>
-            <p className={`text-sm ${mutedClass}`}>
-              Pause non-critical notifications during specific hours
-            </p>
-          </div>
-          <input
-            type="checkbox"
-            checked={quietHoursEnabled}
-            onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-            className="w-5 h-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-          />
-        </div>
-
-        {quietHoursEnabled && (
-          <div className="flex items-center gap-4 mt-4">
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${mutedClass}`}>From</label>
-              <input
-                type="time"
-                value={quietHoursStart}
-                onChange={(e) => setQuietHoursStart(e.target.value)}
-                className={`px-3 py-2 rounded-lg border ${borderClass} ${isDark ? 'bg-slate-700 text-white' : 'bg-white'}`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${mutedClass}`}>To</label>
-              <input
-                type="time"
-                value={quietHoursEnd}
-                onChange={(e) => setQuietHoursEnd(e.target.value)}
-                className={`px-3 py-2 rounded-lg border ${borderClass} ${isDark ? 'bg-slate-700 text-white' : 'bg-white'}`}
-              />
-            </div>
-          </div>
-        )}
-      </Card>
 
       {/* Save Button */}
       <div className="flex justify-end">

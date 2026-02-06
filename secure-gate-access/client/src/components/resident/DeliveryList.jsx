@@ -98,19 +98,19 @@ const DeliveryList = () => {
 
   if (loading && deliveries.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
+          <div className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
+          <div className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-4 border-b border-gray-200">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">📦 My Deliveries</h2>
           <select
@@ -126,12 +126,12 @@ const DeliveryList = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border-l-4 border-red-400">
-          <p className="text-red-700">{error}</p>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500">
+          <p className="text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-slate-700">
         {deliveries.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">📭</span>
@@ -139,7 +139,7 @@ const DeliveryList = () => {
           </div>
         ) : (
           deliveries.map((delivery) => (
-            <div key={delivery.id} className="p-4 hover:bg-gray-50">
+            <div key={delivery.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700">
               <div className="flex justify-between items-start">
                 <div>
                   <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ const DeliveryList = () => {
       </div>
 
       {/* Privacy Notice */}
-      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
+      <div className="p-4 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-300">
         <p>🔒 Privacy: Only you can see your deliveries. Photos auto-delete 30 days after collection.</p>
       </div>
     </div>
