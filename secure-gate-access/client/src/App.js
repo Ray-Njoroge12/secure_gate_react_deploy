@@ -31,7 +31,6 @@ import Loading from "./components/ui/Loading.jsx";
 import ToastContainer from "./components/ToastContainer.jsx";
 import RootProvider from "./contexts/RootProvider.jsx";
 import PWAManager from "./components/pwa/PWAManager.jsx"; // Added for Task 4.4
-import SkipLinks from "./components/accessibility/SkipLinks.jsx"; // Added for Task 8.1
 import { refreshCSRFToken } from "./utils/apiClient.js";
 import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
 
@@ -193,9 +192,6 @@ function App() {
 
             {/* BUG-002 FIX: Global Keyboard Shortcuts (uses AuthContext, no localStorage) */}
             <GlobalKeyboardShortcuts />
-
-            {/* Skip to Main Content - Accessibility */}
-            <SkipLinks />
 
             {/* Session Timeout Warning - Global (uses role-based configuration) */}
             <SessionTimeoutWarning />

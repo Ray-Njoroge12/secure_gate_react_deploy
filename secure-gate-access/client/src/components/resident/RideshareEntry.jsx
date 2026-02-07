@@ -109,8 +109,8 @@ const RideshareEntry = () => {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-20 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
+          <div className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
         </div>
       </div>
     );
@@ -134,14 +134,14 @@ const RideshareEntry = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border-l-4 border-red-400">
-          <p className="text-red-700">{error}</p>
+        <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500">
+          <p className="text-red-700 dark:text-red-300">{error}</p>
           <button onClick={() => setError(null)} className="text-sm text-red-600 underline">Dismiss</button>
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-50 border-l-4 border-green-400">
+        <div className="p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-400 dark:border-green-500">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-green-700 font-medium">✅ Entry Created!</p>

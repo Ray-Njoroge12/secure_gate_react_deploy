@@ -108,15 +108,23 @@ const FavoriteVisitors = () => {
         if (response.status === 401 || response.status === 403) {
           throw new Error('Your session has expired. Please log in again.');
         }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to fetch favorites');
+        
+        // For any other error (including database errors), show empty state instead of error
+        console.error('Error fetching favorites:', await response.text());
+        setFavorites([]);
+        return;
       }
 
       const data = await response.json();
       setFavorites(data.data?.favorites || []);
     } catch (err) {
       console.error('Error fetching favorites:', err);
-      setError(err.message);
+      // Only show error for auth issues, otherwise show empty state
+      if (err.message.includes('session has expired') || err.message.includes('log in')) {
+        setError(err.message);
+      } else {
+        setFavorites([]);
+      }
     } finally {
       setLoading(false);
     }
