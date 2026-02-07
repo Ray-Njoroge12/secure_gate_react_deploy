@@ -54,7 +54,7 @@ const router = express.Router();
  */
 router.get('/stats', authenticateToken, asyncHandler(async (req, res) => {
   // Only admins can view rate limiting stats
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
     throw new AppError('Forbidden: Only administrators can view rate limiting statistics.', 403, 'AUTH_FORBIDDEN');
   }
 
@@ -106,7 +106,7 @@ router.get('/stats', authenticateToken, asyncHandler(async (req, res) => {
  *               $ref: '#/components/schemas/ForbiddenErrorResponse'
  */
 router.get('/alerts', authenticateToken, asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
     throw new AppError('Forbidden: Only administrators can view rate limiting alerts.', 403, 'AUTH_FORBIDDEN');
   }
 
@@ -154,7 +154,7 @@ router.get('/alerts', authenticateToken, asyncHandler(async (req, res) => {
  *               $ref: '#/components/schemas/ForbiddenErrorResponse'
  */
 router.post('/clear', authenticateToken, asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
     throw new AppError('Forbidden: Only administrators can clear rate limiting statistics.', 403, 'AUTH_FORBIDDEN');
   }
 

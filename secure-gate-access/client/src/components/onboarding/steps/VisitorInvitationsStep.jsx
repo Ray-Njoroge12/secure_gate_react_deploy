@@ -138,7 +138,7 @@ const VisitorInvitationsStep = ({
           Inviting guests is simple and secure. Let's walk through the process step by step, 
           so you'll be confident inviting your first guest.
         </p>
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
           <span className="mr-2">🎯</span>
           <span>Complete {completionThreshold} of {requiredStages} demo stages to continue</span>
         </div>
@@ -161,7 +161,7 @@ const VisitorInvitationsStep = ({
                     ? 'bg-blue-500 text-white shadow-md' 
                     : isCompleted
                       ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
                   }
                 `}
                 aria-pressed={isActive}
@@ -178,12 +178,12 @@ const VisitorInvitationsStep = ({
 
       {/* Current Stage Content */}
       {currentStage && (
-        <div className="demo-stage bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <div className="demo-stage bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6">
           <div className="stage-header mb-6">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               {currentStage.title}
             </h4>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               {currentStage.description}
             </p>
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -208,7 +208,7 @@ const VisitorInvitationsStep = ({
                     <input
                       type="text"
                       placeholder="John Doe"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                       onChange={() => !isStageCompleted && handleStageComplete('form')}
                     />
                   </div>
@@ -219,7 +219,7 @@ const VisitorInvitationsStep = ({
                     <input
                       type="tel"
                       placeholder="+1 (555) 123-4567"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -230,7 +230,7 @@ const VisitorInvitationsStep = ({
                   <input
                     type="email"
                     placeholder="john@example.com"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -245,7 +245,7 @@ const VisitorInvitationsStep = ({
                     </label>
                     <input
                       type="date"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                       onChange={() => !isStageCompleted && handleStageComplete('details')}
                     />
                   </div>
@@ -255,7 +255,7 @@ const VisitorInvitationsStep = ({
                     </label>
                     <input
                       type="time"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
@@ -263,7 +263,7 @@ const VisitorInvitationsStep = ({
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Purpose of Visit
                   </label>
-                  <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                  <select className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white">
                     <option>Social Visit</option>
                     <option>Business Meeting</option>
                     <option>Delivery</option>
@@ -276,23 +276,23 @@ const VisitorInvitationsStep = ({
 
             {currentDemo === 'preview' && (
               <div className="demo-preview">
-                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
                   <h5 className="font-medium text-gray-900 dark:text-white mb-3">Invitation Preview</h5>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Guest:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Guest:</span>
                       <span className="text-gray-900 dark:text-white">John Doe</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Phone:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Phone:</span>
                       <span className="text-gray-900 dark:text-white">+1 (555) 123-4567</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Expected:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Expected:</span>
                       <span className="text-gray-900 dark:text-white">Today at 2:00 PM</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Purpose:</span>
+                      <span className="text-gray-600 dark:text-gray-300">Purpose:</span>
                       <span className="text-gray-900 dark:text-white">Social Visit</span>
                     </div>
                   </div>
@@ -308,14 +308,14 @@ const VisitorInvitationsStep = ({
 
             {currentDemo === 'qr-code' && (
               <div className="demo-qr text-center">
-                <div className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 inline-block">
-                  <div className="w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-lg border border-gray-200 dark:border-slate-700 inline-block">
+                  <div className="w-32 h-32 bg-gray-200 dark:bg-slate-700 rounded-lg flex items-center justify-center mb-4 mx-auto">
                     <div className="text-4xl">📱</div>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                     QR Code Generated Successfully
                   </p>
-                  <div className="text-xs text-gray-500 dark:text-gray-500 space-y-1">
+                  <div className="text-xs text-gray-500 dark:text-gray-300 space-y-1">
                     <div>Invitation ID: INV-2025-001</div>
                     <div>Valid until: Today 11:59 PM</div>
                     <div>Security Level: Encrypted</div>
@@ -334,13 +334,13 @@ const VisitorInvitationsStep = ({
       )}
 
       {/* Progress Summary */}
-      <div className="progress-summary p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="progress-summary p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               Demo Progress: {demoProgress.size} of {requiredStages} stages completed
             </p>
-            <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+            <div className="w-64 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mt-2">
               <div
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(demoProgress.size / requiredStages) * 100}%` }}

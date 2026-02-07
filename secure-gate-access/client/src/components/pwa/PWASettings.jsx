@@ -558,14 +558,14 @@ const PWASettings = () => {
           align-items: center;
           justify-content: center;
           min-height: 200px;
-          color: #6b7280;
+          color: var(--color-text-tertiary, #6b7280);
         }
 
         .loading-spinner {
           width: 32px;
           height: 32px;
-          border: 3px solid #e5e7eb;
-          border-top: 3px solid #3b82f6;
+          border: 3px solid var(--color-border-primary, #e5e7eb);
+          border-top: 3px solid var(--color-info, #3b82f6);
           border-radius: 50%;
           animation: spin 1s linear infinite;
           margin-bottom: 16px;
@@ -579,18 +579,18 @@ const PWASettings = () => {
           font-size: 24px;
           font-weight: 600;
           margin: 0 0 8px 0;
-          color: #111827;
+          color: var(--color-text-primary, #111827);
         }
 
         .settings-header p {
           font-size: 16px;
-          color: #6b7280;
+          color: var(--color-text-tertiary, #6b7280);
           margin: 0;
         }
 
         .settings-section {
-          background: white;
-          border: 1px solid #e5e7eb;
+          background: var(--color-bg-secondary, white);
+          border: 1px solid var(--color-border-primary, #e5e7eb);
           border-radius: 8px;
           padding: 24px;
           margin-bottom: 24px;
@@ -600,8 +600,8 @@ const PWASettings = () => {
           font-size: 18px;
           font-weight: 600;
           margin: 0 0 20px 0;
-          color: #111827;
-          border-bottom: 1px solid #e5e7eb;
+          color: var(--color-text-primary, #111827);
+          border-bottom: 1px solid var(--color-border-primary, #e5e7eb);
           padding-bottom: 12px;
         }
 
@@ -610,7 +610,7 @@ const PWASettings = () => {
           align-items: center;
           justify-content: space-between;
           padding: 16px 0;
-          border-bottom: 1px solid #f3f4f6;
+          border-bottom: 1px solid var(--color-bg-tertiary, #f3f4f6);
         }
 
         .setting-item:last-child {
@@ -626,13 +626,13 @@ const PWASettings = () => {
           display: block;
           font-size: 16px;
           font-weight: 500;
-          color: #111827;
+          color: var(--color-text-primary, #111827);
           margin-bottom: 4px;
         }
 
         .setting-info p {
           font-size: 14px;
-          color: #6b7280;
+          color: var(--color-text-tertiary, #6b7280);
           margin: 0;
         }
 
@@ -661,7 +661,7 @@ const PWASettings = () => {
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: #d1d5db;
+          background-color: var(--color-text-disabled, #d1d5db);
           transition: 0.3s;
           border-radius: 24px;
         }
@@ -679,7 +679,7 @@ const PWASettings = () => {
         }
 
         input:checked + .toggle-slider {
-          background-color: #3b82f6;
+          background-color: var(--color-info, #3b82f6);
         }
 
         input:checked + .toggle-slider:before {
@@ -695,23 +695,23 @@ const PWASettings = () => {
         }
 
         .status-badge.installed {
-          background: #d1fae5;
-          color: #065f46;
+          background: var(--color-success-light, #d1fae5);
+          color: var(--color-success-dark, #065f46);
         }
 
         .status-badge.online {
-          background: #d1fae5;
-          color: #065f46;
+          background: var(--color-success-light, #d1fae5);
+          color: var(--color-success-dark, #065f46);
         }
 
         .status-badge.offline {
-          background: #fee2e2;
-          color: #991b1b;
+          background: var(--color-error-light, #fee2e2);
+          color: var(--color-error-dark, #991b1b);
         }
 
         .status-badge.unavailable {
-          background: #f3f4f6;
-          color: #6b7280;
+          background: var(--color-bg-tertiary, #f3f4f6);
+          color: var(--color-text-tertiary, #6b7280);
         }
 
         .install-btn,
@@ -728,50 +728,50 @@ const PWASettings = () => {
         }
 
         .install-btn {
-          background: #3b82f6;
+          background: var(--color-info, #3b82f6);
           color: white;
         }
 
         .install-btn:hover {
-          background: #2563eb;
+          background: var(--color-info-dark, #2563eb);
         }
 
         .test-btn {
-          background: #10b981;
+          background: var(--color-success, #10b981);
           color: white;
         }
 
         .test-btn:hover {
-          background: #059669;
+          background: var(--color-success-dark, #059669);
         }
 
         .clear-btn {
-          background: #ef4444;
+          background: var(--color-error, #ef4444);
           color: white;
         }
 
         .clear-btn:hover {
-          background: #dc2626;
+          background: var(--color-error-dark, #dc2626);
         }
 
         .sync-btn {
-          background: #3b82f6;
+          background: var(--color-info, #3b82f6);
           color: white;
         }
 
         .sync-btn:hover:not(:disabled) {
-          background: #2563eb;
+          background: var(--color-info-dark, #2563eb);
         }
 
         .sync-btn:disabled {
-          background: #9ca3af;
+          background: var(--color-text-muted, #9ca3af);
           cursor: not-allowed;
         }
 
         .quiet-hours-config {
           margin-top: 16px;
           padding: 16px;
-          background: #f9fafb;
+          background: var(--color-bg-subtle, #f9fafb);
           border-radius: 6px;
         }
 
@@ -788,14 +788,14 @@ const PWASettings = () => {
           display: block;
           font-size: 14px;
           font-weight: 500;
-          color: #374151;
+          color: var(--color-text-secondary, #374151);
           margin-bottom: 4px;
         }
 
         .time-input input {
           width: 100%;
           padding: 8px 12px;
-          border: 1px solid #d1d5db;
+          border: 1px solid var(--color-border-secondary, #d1d5db);
           border-radius: 6px;
           font-size: 14px;
         }
@@ -803,21 +803,21 @@ const PWASettings = () => {
         .setting-actions {
           margin-top: 16px;
           padding-top: 16px;
-          border-top: 1px solid #e5e7eb;
+          border-top: 1px solid var(--color-border-primary, #e5e7eb);
         }
 
         .pending-syncs {
           margin-top: 16px;
           padding: 16px;
-          background: #fef3c7;
-          border: 1px solid #f59e0b;
+          background: var(--color-warning-light, #fef3c7);
+          border: 1px solid var(--color-warning, #f59e0b);
           border-radius: 6px;
         }
 
         .pending-syncs h4 {
           font-size: 14px;
           font-weight: 600;
-          color: #92400e;
+          color: var(--color-warning-dark, #92400e);
           margin: 0 0 12px 0;
         }
 
@@ -836,18 +836,18 @@ const PWASettings = () => {
 
         .sync-tag {
           padding: 2px 6px;
-          background: #92400e;
+          background: var(--color-warning-dark, #92400e);
           color: white;
           border-radius: 4px;
           font-weight: 500;
         }
 
         .sync-time {
-          color: #92400e;
+          color: var(--color-warning-dark, #92400e);
         }
 
         .sync-retries {
-          color: #dc2626;
+          color: var(--color-error, #dc2626);
           font-weight: 500;
         }
 

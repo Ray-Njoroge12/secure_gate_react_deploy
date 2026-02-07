@@ -484,7 +484,7 @@ router.get('/check', authenticateToken, asyncHandler(async (req, res) => {
  */
 router.get('/statistics', authenticateToken, asyncHandler(async (req, res) => {
   // Check if user is admin
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
     throw new AppError('Admin access required', 403, 'FORBIDDEN');
   }
   

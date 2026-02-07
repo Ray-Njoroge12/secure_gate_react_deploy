@@ -181,7 +181,7 @@ export const LayoutManager = ({
     }
     
     if (resizedItem?.i === item.i) {
-      style.boxShadow = '0 0 0 2px #3b82f6';
+      style.boxShadow = '0 0 0 2px var(--color-info, #3b82f6)';
     }
     
     return style;
@@ -579,7 +579,7 @@ export const LayoutItem = ({
   
   return (
     <div 
-      className={`layout-item-content bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow ${className}`}
+      className={`layout-item-content bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow ${className}`}
       {...props}
     >
       {/* Widget configuration menu */}
@@ -587,7 +587,7 @@ export const LayoutItem = ({
         <div className="widget-config-menu absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => setShowConfigMenu(!showConfigMenu)}
-            className="p-1 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400"
+            className="p-1 rounded bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-gray-300"
             aria-label="Configure widget"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -596,10 +596,10 @@ export const LayoutItem = ({
           </button>
           
           {showConfigMenu && (
-            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-50">
+            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
               <button
                 onClick={handleConfigure}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
               >
                 Configure
               </button>

@@ -84,57 +84,65 @@ export default function Reports() {
 
   return (
     <>
-      <div className="grid two">
-        <div className="panel">
-          <h3 style={{ marginTop: 0 }}>Overview</h3>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Badge label="CONFIRMED" value={aggregates.counts?.CONFIRMED || 0} color="#3b82f6" />
-            <Badge label="ON_PREMISE" value={aggregates.counts?.ON_PREMISE || 0} color="#10b981" />
-            <Badge label="EXITED" value={aggregates.counts?.EXITED || 0} color="#6b7280" />
-            <Badge label="REVOKED" value={aggregates.counts?.REVOKED || 0} color="#ef4444" />
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Visitor Reports</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Overview Panel */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Overview</h2>
+          <div className="flex flex-wrap gap-3">
+            <StatusBadge label="CONFIRMED" value={aggregates.counts?.CONFIRMED || 0} className="bg-blue-500" />
+            <StatusBadge label="ON_PREMISE" value={aggregates.counts?.ON_PREMISE || 0} className="bg-emerald-500" />
+            <StatusBadge label="EXITED" value={aggregates.counts?.EXITED || 0} className="bg-gray-500" />
+            <StatusBadge label="REVOKED" value={aggregates.counts?.REVOKED || 0} className="bg-red-500" />
           </div>
-          <div style={{ marginTop: 12 }}>
-            <h4 style={{ margin: '12px 0 6px' }}>Visitors per Day</h4>
-            <div data-testid="daily-chart" style={{ display: 'grid', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
+          <div className="mt-4">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Visitors per Day</h3>
+            <div data-testid="daily-chart" className="grid gap-1.5 max-h-56 overflow-y-auto">
               {(() => {
                 const rows = aggregates.dailyTotals || [];
                 const max = Math.max(1, ...rows.map(r => Number(r.total) || 0));
-                return rows.map(r => (
-                  <div key={r.date || r.day} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 100, fontSize: 12, color: '#6b7280' }}>{r.date || r.day}</div>
-                    <div style={{ background: '#e5e7eb', borderRadius: 6, height: 10, width: '100%', position: 'relative' }}>
-                      <div style={{ background: '#3b82f6', height: '100%', borderRadius: 6, width: `${Math.round(((Number(r.total) || 0) / max) * 100)}%` }} />
+                return rows.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-300 italic py-4 text-center">No data for selected period</p>
+                ) : rows.map(r => (
+                  <div key={r.date || r.day} className="flex items-center gap-2">
+                    <div className="w-24 text-xs text-gray-500 dark:text-gray-300 shrink-0">{r.date || r.day}</div>
+                    <div className="bg-gray-200 dark:bg-slate-700 rounded-md h-2.5 w-full relative">
+                      <div className="bg-blue-500 h-full rounded-md transition-all" style={{ width: `${Math.round(((Number(r.total) || 0) / max) * 100)}%` }} />
                     </div>
-                    <div style={{ width: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.total}</div>
+                    <div className="w-9 text-right text-sm tabular-nums text-gray-700 dark:text-gray-300 shrink-0">{r.total}</div>
                   </div>
                 ));
               })()}
             </div>
           </div>
         </div>
-        <div className="panel">
-          <h3 style={{ marginTop: 0 }}>Top Hosts (PII-safe)</h3>
-          <div style={{ maxHeight: 260, overflowY: 'auto' }}>
-            <table className="table" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-              <thead>
-                <tr>
-                  <th>Host</th>
-                  <th>
-                    <button data-testid="sort-host-total" className="btn" style={{ padding: '2px 8px' }} onClick={() => setHostSortDir(d => d === 'desc' ? 'asc' : 'desc')}>
+
+        {/* Hosts Panel */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Hosts (PII-safe)</h2>
+          <div className="max-h-64 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-white dark:bg-slate-800">
+                <tr className="border-b border-gray-200 dark:border-slate-700">
+                  <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Host</th>
+                  <th className="text-left py-2 px-2">
+                    <button data-testid="sort-host-total" className="font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => setHostSortDir(d => d === 'desc' ? 'asc' : 'desc')}>
                       Invites {hostSortDir === 'desc' ? '▼' : '▲'}
                     </button>
                   </th>
-                  <th>On Premise</th><th>Exited</th><th>Revoked</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">On Premise</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Exited</th>
+                  <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Revoked</th>
                 </tr>
               </thead>
               <tbody>
                 {[...(aggregates.hostSummary || [])].sort((a, b) => hostSortDir === 'desc' ? (b.total || 0) - (a.total || 0) : (a.total || 0) - (b.total || 0)).map((h, i) => (
-                  <tr key={i}>
-                    <td>{h.host || '-'}</td>
-                    <td>{h.total || 0}</td>
-                    <td>{h.on_premise || 0}</td>
-                    <td>{h.exited || 0}</td>
-                    <td>{h.revoked || 0}</td>
+                  <tr key={i} className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                    <td className="py-2 px-2 text-gray-900 dark:text-gray-100">{h.host || '-'}</td>
+                    <td className="py-2 px-2 font-medium text-gray-900 dark:text-gray-100">{h.total || 0}</td>
+                    <td className="py-2 px-2 text-emerald-600 dark:text-emerald-400">{h.on_premise || 0}</td>
+                    <td className="py-2 px-2 text-gray-500 dark:text-gray-300">{h.exited || 0}</td>
+                    <td className="py-2 px-2 text-red-500">{h.revoked || 0}</td>
                   </tr>
                 ))}
               </tbody>
@@ -143,37 +151,68 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="panel" style={{ marginTop: 16 }}>
-        <h3 style={{ marginTop: 0 }}>Export</h3>
-        <div style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input type="date" value={from} onChange={e => setFrom(e.target.value)} />
-          <input type="date" value={to} onChange={e => setTo(e.target.value)} />
-          {showHostFilter && (<input placeholder="Host email" value={host} onChange={e => setHost(e.target.value)} />)}
-          <select value={status} onChange={e => setStatus(e.target.value)}>
+      {/* Export Panel */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export</h2>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <label className="sr-only" htmlFor="report-from">From date</label>
+          <input id="report-from" type="date" value={from} onChange={e => setFrom(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+          <label className="sr-only" htmlFor="report-to">To date</label>
+          <input id="report-to" type="date" value={to} onChange={e => setTo(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+          {showHostFilter && (
+            <>
+              <label className="sr-only" htmlFor="report-host">Host email</label>
+              <input id="report-host" placeholder="Host email" value={host} onChange={e => setHost(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+            </>
+          )}
+          <label className="sr-only" htmlFor="report-status">Status filter</label>
+          <select id="report-status" value={status} onChange={e => setStatus(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
             <option value="">Any status</option>
             <option value="CONFIRMED">CONFIRMED</option>
             <option value="ON_PREMISE">ON_PREMISE</option>
             <option value="EXITED">EXITED</option>
             <option value="REVOKED">REVOKED</option>
           </select>
-          <button className="btn" onClick={refreshPreview} disabled={loading}>{loading ? 'Refreshing...' : 'Preview'}</button>
+          <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50" onClick={refreshPreview} disabled={loading}>
+            {loading ? 'Refreshing…' : 'Preview'}
+          </button>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn" onClick={exportCsv}>Export CSV</button>
-          <button className="btn" onClick={exportJson}>Export JSON</button>
+        <div className="flex gap-3 mb-4">
+          <button className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium px-4 py-2 rounded-lg text-sm transition-colors" onClick={exportCsv}>Export CSV</button>
+          <button className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium px-4 py-2 rounded-lg text-sm transition-colors" onClick={exportJson}>Export JSON</button>
         </div>
-        {error && <div className="alert" style={{ marginTop: 8 }}>{error}</div>}
-        <div style={{ marginTop: 12, overflowX: 'auto' }}>
-          <table className="table">
+        {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg px-4 py-2 text-sm mb-4" role="alert">{error}</div>}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
-              <tr>
-                <th>ID</th><th>Name</th><th>Phone</th><th>Email</th><th>Host</th><th>Status</th><th>Date</th><th>Time</th><th>In</th><th>Out</th>
+              <tr className="border-b border-gray-200 dark:border-slate-700">
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">ID</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Name</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Phone</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Email</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Host</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Date</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Time</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">In</th>
+                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Out</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(r => (
-                <tr key={r.id}>
-                  <td>{r.id}</td><td>{r.name || ''}</td><td>{r.phone || ''}</td><td>{r.email || ''}</td><td>{r.host || ''}</td><td>{r.status || ''}</td><td>{r.date_of_visit || ''}</td><td>{r.time_of_visit || ''}</td><td>{r.check_in_time || ''}</td><td>{r.check_out_time || ''}</td>
+              {rows.length === 0 ? (
+                <tr><td colSpan={10} className="text-center py-8 text-gray-500 dark:text-gray-300 italic">{loading ? 'Loading…' : 'No records found'}</td></tr>
+              ) : rows.map(r => (
+                <tr key={r.id} className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                  <td className="py-2 px-2">{r.id}</td>
+                  <td className="py-2 px-2">{r.name || ''}</td>
+                  <td className="py-2 px-2">{r.phone || ''}</td>
+                  <td className="py-2 px-2">{r.email || ''}</td>
+                  <td className="py-2 px-2">{r.host || ''}</td>
+                  <td className="py-2 px-2">{r.status || ''}</td>
+                  <td className="py-2 px-2">{r.date_of_visit || ''}</td>
+                  <td className="py-2 px-2">{r.time_of_visit || ''}</td>
+                  <td className="py-2 px-2">{r.check_in_time || ''}</td>
+                  <td className="py-2 px-2">{r.check_out_time || ''}</td>
                 </tr>
               ))}
             </tbody>
@@ -184,11 +223,12 @@ export default function Reports() {
   );
 }
 
-function Badge({ label, value, color }) {
+/** Local status badge for report overview counts */
+function StatusBadge({ label, value, className = '' }) {
   return (
-    <div style={{ background: color, color: '#fff', padding: '8px 12px', borderRadius: 8, minWidth: 120, display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <span style={{ fontSize: 12, opacity: 0.9 }}>{label}</span>
-      <span style={{ fontWeight: 700 }}>{value}</span>
+    <div className={`${className} text-white px-3 py-2 rounded-lg min-w-[120px] inline-flex items-center justify-between gap-3`}>
+      <span className="text-xs opacity-90">{label}</span>
+      <span className="font-bold">{value}</span>
     </div>
   );
 }

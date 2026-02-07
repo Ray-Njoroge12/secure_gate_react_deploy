@@ -175,7 +175,7 @@ router.put('/:id', authenticateToken, requireEstate, requireRolePolicy('adminOrR
       });
     }
 
-    if (event.host_id !== user.id && user.role !== 'admin') {
+    if (event.host_id !== user.id && user.role !== 'admin' && user.role !== 'super_admin') {
       return errorResponse(res, 'Unauthorized to update this event', 'FORBIDDEN', 403, null, req);
     }
 
@@ -214,7 +214,7 @@ router.delete('/:id', authenticateToken, requireEstate, requireRolePolicy('admin
       });
     }
 
-    if (event.host_id !== user.id && user.role !== 'admin') {
+    if (event.host_id !== user.id && user.role !== 'admin' && user.role !== 'super_admin') {
       return errorResponse(res, 'Unauthorized to delete this event', 'FORBIDDEN', 403, null, req);
     }
 

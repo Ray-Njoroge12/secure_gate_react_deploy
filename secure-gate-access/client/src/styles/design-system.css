@@ -55,8 +55,9 @@
   --color-text-primary: #111827;    /* gray-900 - 16:1 contrast ✅ */
   --color-text-secondary: #4B5563;  /* gray-600 - 7:1 contrast ✅ */
   --color-text-tertiary: #6B7280;   /* gray-500 - 4.5:1 contrast ✅ */
-  --color-text-muted: #9CA3AF;      /* gray-400 - Muted text */
-  --color-text-disabled: #D1D5DB;   /* gray-300 - Disabled states */
+  --color-text-muted: #6B7280;      /* gray-500 - 4.5:1 contrast ✅ (upgraded from gray-400) */
+  --color-text-disabled: #9CA3AF;   /* gray-400 - 3:1 for large text / non-text ✅ (upgraded from gray-300) */
+  --color-text-placeholder: #6B7280; /* gray-500 - 4.5:1 contrast ✅ for input placeholders */
   
   /* Border Colors */
   --color-border-primary: #E5E7EB;   /* gray-200 - Default borders */
@@ -149,14 +150,31 @@ body {
   --color-bg-hover: #334155;        /* slate-700 */
   --color-bg-subtle: #0f172a;       /* slate-900 */
   
-  --color-text-primary: #f8fafc;    /* slate-50 */
-  --color-text-secondary: #cbd5e1;  /* slate-300 */
-  --color-text-tertiary: #94a3b8;   /* slate-400 */
-  --color-text-muted: #64748b;      /* slate-500 */
-  --color-text-disabled: #475569;   /* slate-600 */
+  --color-text-primary: #f8fafc;    /* slate-50 - 15.4:1 contrast on slate-900 ✅ */
+  --color-text-secondary: #cbd5e1;  /* slate-300 - 9.1:1 contrast ✅ */
+  --color-text-tertiary: #94a3b8;   /* slate-400 - 5.6:1 contrast ✅ */
+  --color-text-muted: #94a3b8;      /* slate-400 - 5.6:1 contrast ✅ (upgraded from slate-500) */
+  --color-text-disabled: #64748b;   /* slate-500 - 3.5:1 for large text ✅ (upgraded from slate-600) */
+  --color-text-placeholder: #94a3b8; /* slate-400 - 5.6:1 contrast ✅ */
   
   --color-border-primary: #334155;   /* slate-700 */
   --color-border-secondary: #475569; /* slate-600 */
+
+  /* Dark mode semantic background tints */
+  --color-success-bg: #064e3b;       /* green-900 */
+  --color-success-light: #065f46;    /* green-800 */
+  --color-error-bg: #7f1d1d;        /* red-900 */
+  --color-error-light: #991b1b;     /* red-800 */
+  --color-warning-bg: #78350f;      /* amber-900 */
+  --color-warning-light: #92400e;   /* amber-800 */
+  --color-info-bg: #1e3a8a;         /* blue-900 */
+  --color-info-light: #1e40af;      /* blue-800 */
+
+  /* Dark mode shadow adjustments */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
 }
 
 /* Button Variants */
@@ -295,6 +313,407 @@ p:last-child {
   color: var(--color-text-secondary) !important; /* Fix contrast */
 }
 
+/* Override problematic muted text classes for WCAG AA compliance */
+.text-gray-500 {
+  color: var(--color-text-tertiary) !important; /* 4.5:1 minimum ✅ */
+}
+
+/* ============================================
+   PLACEHOLDER CONTRAST FIX (WCAG AA)
+   ============================================ */
+
+/* Global placeholder text must meet 4.5:1 contrast ratio */
+::placeholder {
+  color: var(--color-text-placeholder) !important;
+  opacity: 1 !important;
+}
+
+::-webkit-input-placeholder {
+  color: var(--color-text-placeholder) !important;
+  opacity: 1 !important;
+}
+
+::-moz-placeholder {
+  color: var(--color-text-placeholder) !important;
+  opacity: 1 !important;
+}
+
+:-ms-input-placeholder {
+  color: var(--color-text-placeholder) !important;
+  opacity: 1 !important;
+}
+
+/* ============================================
+   DARK MODE UTILITY OVERRIDES (WCAG AA)
+   Ensures Tailwind dark: utilities use compliant colors
+   ============================================ */
+
+/* Fix dark mode text-gray-400 — too low contrast on dark backgrounds */
+[data-theme="dark"] .dark\:text-gray-400,
+.dark .dark\:text-gray-400 {
+  color: #cbd5e1 !important; /* slate-300: 9.1:1 ✅ */
+}
+
+/* Fix dark mode text-gray-500 — too low contrast on dark backgrounds */
+[data-theme="dark"] .dark\:text-gray-500,
+.dark .dark\:text-gray-500 {
+  color: #94a3b8 !important; /* slate-400: 5.6:1 ✅ */
+}
+
+/* ============================================
+   COMPREHENSIVE DARK MODE SAFETY NET
+   Catches all Tailwind utility classes missing explicit dark: overrides
+   ============================================ */
+
+/* --- Background Color Overrides --- */
+[data-theme="dark"] .bg-white:not([class*="dark:bg-"]),
+.dark .bg-white:not([class*="dark:bg-"]) {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+[data-theme="dark"] .bg-gray-50:not([class*="dark:bg-"]),
+.dark .bg-gray-50:not([class*="dark:bg-"]) {
+  background-color: #0f172a !important; /* slate-900 */
+}
+
+[data-theme="dark"] .bg-gray-100:not([class*="dark:bg-"]),
+.dark .bg-gray-100:not([class*="dark:bg-"]) {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+[data-theme="dark"] .bg-gray-200:not([class*="dark:bg-"]),
+.dark .bg-gray-200:not([class*="dark:bg-"]) {
+  background-color: #334155 !important; /* slate-700 */
+}
+
+[data-theme="dark"] .bg-gray-300:not([class*="dark:bg-"]),
+.dark .bg-gray-300:not([class*="dark:bg-"]) {
+  background-color: #475569 !important; /* slate-600 */
+}
+
+[data-theme="dark"] .bg-gray-400:not([class*="dark:bg-"]),
+.dark .bg-gray-400:not([class*="dark:bg-"]) {
+  background-color: #64748b !important; /* slate-500 */
+}
+
+[data-theme="dark"] .bg-gray-500:not([class*="dark:bg-"]),
+.dark .bg-gray-500:not([class*="dark:bg-"]) {
+  background-color: #64748b !important; /* slate-500 */
+}
+
+/* --- Text Color Overrides — WCAG AA Compliant --- */
+[data-theme="dark"] .text-gray-900:not([class*="dark:text-"]),
+.dark .text-gray-900:not([class*="dark:text-"]) {
+  color: #f1f5f9 !important; /* slate-100: 14.5:1 on slate-900 ✅ */
+}
+
+[data-theme="dark"] .text-gray-800:not([class*="dark:text-"]),
+.dark .text-gray-800:not([class*="dark:text-"]) {
+  color: #e2e8f0 !important; /* slate-200: 12.1:1 ✅ */
+}
+
+[data-theme="dark"] .text-gray-700:not([class*="dark:text-"]),
+.dark .text-gray-700:not([class*="dark:text-"]) {
+  color: #cbd5e1 !important; /* slate-300: 9.1:1 ✅ */
+}
+
+[data-theme="dark"] .text-gray-600:not([class*="dark:text-"]),
+.dark .text-gray-600:not([class*="dark:text-"]) {
+  color: #cbd5e1 !important; /* slate-300: 9.1:1 ✅ */
+}
+
+[data-theme="dark"] .text-gray-500:not([class*="dark:text-"]),
+.dark .text-gray-500:not([class*="dark:text-"]) {
+  color: #94a3b8 !important; /* slate-400: 5.6:1 ✅ */
+}
+
+[data-theme="dark"] .text-gray-400:not([class*="dark:text-"]),
+.dark .text-gray-400:not([class*="dark:text-"]) {
+  color: #cbd5e1 !important; /* slate-300: 9.1:1 ✅ */
+}
+
+[data-theme="dark"] .text-gray-300:not([class*="dark:text-"]),
+.dark .text-gray-300:not([class*="dark:text-"]) {
+  color: #e2e8f0 !important; /* slate-200: 12.1:1 ✅ */
+}
+
+[data-theme="dark"] .text-black:not([class*="dark:text-"]),
+.dark .text-black:not([class*="dark:text-"]) {
+  color: #f8fafc !important; /* slate-50 ✅ */
+}
+
+/* --- Border Color Overrides --- */
+[data-theme="dark"] .border-gray-200:not([class*="dark:border-"]),
+.dark .border-gray-200:not([class*="dark:border-"]) {
+  border-color: #334155 !important; /* slate-700 */
+}
+
+[data-theme="dark"] .border-gray-300:not([class*="dark:border-"]),
+.dark .border-gray-300:not([class*="dark:border-"]) {
+  border-color: #475569 !important; /* slate-600 */
+}
+
+[data-theme="dark"] .border-gray-100:not([class*="dark:border-"]),
+.dark .border-gray-100:not([class*="dark:border-"]) {
+  border-color: #334155 !important; /* slate-700 */
+}
+
+[data-theme="dark"] .border-gray-400:not([class*="dark:border-"]),
+.dark .border-gray-400:not([class*="dark:border-"]) {
+  border-color: #64748b !important; /* slate-500 */
+}
+
+/* --- Divide Color Overrides --- */
+[data-theme="dark"] .divide-gray-200:not([class*="dark:divide-"]) > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200:not([class*="dark:divide-"]) > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important; /* slate-700 */
+}
+
+[data-theme="dark"] .divide-gray-300:not([class*="dark:divide-"]) > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-300:not([class*="dark:divide-"]) > :not([hidden]) ~ :not([hidden]) {
+  border-color: #475569 !important; /* slate-600 */
+}
+
+/* --- Ring Color Overrides --- */
+[data-theme="dark"] .ring-gray-300:not([class*="dark:ring-"]),
+.dark .ring-gray-300:not([class*="dark:ring-"]) {
+  --tw-ring-color: #475569 !important; /* slate-600 */
+}
+
+[data-theme="dark"] .ring-gray-200:not([class*="dark:ring-"]),
+.dark .ring-gray-200:not([class*="dark:ring-"]) {
+  --tw-ring-color: #334155 !important; /* slate-700 */
+}
+
+/* --- Hover State Overrides --- */
+[data-theme="dark"] .hover\:bg-gray-50:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-gray-50:not([class*="dark:hover:bg-"]):hover {
+  background-color: #334155 !important; /* slate-700 */
+}
+
+[data-theme="dark"] .hover\:bg-gray-100:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-gray-100:not([class*="dark:hover:bg-"]):hover {
+  background-color: #334155 !important; /* slate-700 */
+}
+
+[data-theme="dark"] .hover\:bg-gray-200:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-gray-200:not([class*="dark:hover:bg-"]):hover {
+  background-color: #475569 !important; /* slate-600 */
+}
+
+[data-theme="dark"] .hover\:bg-gray-300:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-gray-300:not([class*="dark:hover:bg-"]):hover {
+  background-color: #475569 !important; /* slate-600 */
+}
+
+[data-theme="dark"] .hover\:bg-gray-400:not([class*="dark:hover:bg-"]):hover,
+.dark .hover\:bg-gray-400:not([class*="dark:hover:bg-"]):hover {
+  background-color: #64748b !important; /* slate-500 */
+}
+
+[data-theme="dark"] .active\:bg-gray-400:not([class*="dark:active:bg-"]):active,
+.dark .active\:bg-gray-400:not([class*="dark:active:bg-"]):active {
+  background-color: #64748b !important; /* slate-500 */
+}
+
+[data-theme="dark"] .disabled\:bg-gray-400:disabled,
+.dark .disabled\:bg-gray-400:disabled {
+  background-color: #475569 !important; /* slate-600 */
+}
+
+/* --- Placeholder Overrides for Dark Mode --- */
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8 !important; /* slate-400: 5.6:1 ✅ */
+}
+
+/* --- Focus Ring Overrides for Dark Mode --- */
+[data-theme="dark"] .focus\:ring-gray-300:focus,
+.dark .focus\:ring-gray-300:focus {
+  --tw-ring-color: #475569 !important; /* slate-600 */
+}
+
+[data-theme="dark"] .focus\:ring-gray-500:focus,
+.dark .focus\:ring-gray-500:focus {
+  --tw-ring-color: #94a3b8 !important; /* slate-400 */
+}
+
+[data-theme="dark"] .focus\:border-gray-300:focus,
+.dark .focus\:border-gray-300:focus {
+  border-color: #475569 !important; /* slate-600 */
+}
+
+/* --- Semantic Light Backgrounds in Dark Mode --- */
+[data-theme="dark"] .bg-blue-50:not([class*="dark:bg-"]),
+.dark .bg-blue-50:not([class*="dark:bg-"]) {
+  background-color: #1e3a8a !important; /* blue-900 */
+}
+
+[data-theme="dark"] .bg-green-50:not([class*="dark:bg-"]),
+.dark .bg-green-50:not([class*="dark:bg-"]) {
+  background-color: #064e3b !important; /* green-900 */
+}
+
+[data-theme="dark"] .bg-red-50:not([class*="dark:bg-"]),
+.dark .bg-red-50:not([class*="dark:bg-"]) {
+  background-color: #7f1d1d !important; /* red-900 */
+}
+
+[data-theme="dark"] .bg-yellow-50:not([class*="dark:bg-"]),
+.dark .bg-yellow-50:not([class*="dark:bg-"]) {
+  background-color: #78350f !important; /* amber-900 */
+}
+
+[data-theme="dark"] .bg-amber-50:not([class*="dark:bg-"]),
+.dark .bg-amber-50:not([class*="dark:bg-"]) {
+  background-color: #78350f !important; /* amber-900 */
+}
+
+[data-theme="dark"] .bg-indigo-50:not([class*="dark:bg-"]),
+.dark .bg-indigo-50:not([class*="dark:bg-"]) {
+  background-color: #312e81 !important; /* indigo-900 */
+}
+
+[data-theme="dark"] .bg-purple-50:not([class*="dark:bg-"]),
+.dark .bg-purple-50:not([class*="dark:bg-"]) {
+  background-color: #4c1d95 !important; /* purple-900 */
+}
+
+[data-theme="dark"] .bg-orange-50:not([class*="dark:bg-"]),
+.dark .bg-orange-50:not([class*="dark:bg-"]) {
+  background-color: #7c2d12 !important; /* orange-900 */
+}
+
+/* --- Semantic Text Colors in Dark Mode --- */
+[data-theme="dark"] .text-blue-900:not([class*="dark:text-"]),
+.dark .text-blue-900:not([class*="dark:text-"]) {
+  color: #93c5fd !important; /* blue-300 */
+}
+
+[data-theme="dark"] .text-blue-800:not([class*="dark:text-"]),
+.dark .text-blue-800:not([class*="dark:text-"]) {
+  color: #93c5fd !important; /* blue-300 */
+}
+
+[data-theme="dark"] .text-blue-700:not([class*="dark:text-"]),
+.dark .text-blue-700:not([class*="dark:text-"]) {
+  color: #93c5fd !important; /* blue-300 */
+}
+
+[data-theme="dark"] .text-green-900:not([class*="dark:text-"]),
+.dark .text-green-900:not([class*="dark:text-"]) {
+  color: #86efac !important; /* green-300 */
+}
+
+[data-theme="dark"] .text-green-800:not([class*="dark:text-"]),
+.dark .text-green-800:not([class*="dark:text-"]) {
+  color: #86efac !important; /* green-300 */
+}
+
+[data-theme="dark"] .text-green-700:not([class*="dark:text-"]),
+.dark .text-green-700:not([class*="dark:text-"]) {
+  color: #86efac !important; /* green-300 */
+}
+
+[data-theme="dark"] .text-red-900:not([class*="dark:text-"]),
+.dark .text-red-900:not([class*="dark:text-"]) {
+  color: #fca5a5 !important; /* red-300 */
+}
+
+[data-theme="dark"] .text-red-800:not([class*="dark:text-"]),
+.dark .text-red-800:not([class*="dark:text-"]) {
+  color: #fca5a5 !important; /* red-300 */
+}
+
+[data-theme="dark"] .text-red-700:not([class*="dark:text-"]),
+.dark .text-red-700:not([class*="dark:text-"]) {
+  color: #fca5a5 !important; /* red-300 */
+}
+
+[data-theme="dark"] .text-yellow-900:not([class*="dark:text-"]),
+.dark .text-yellow-900:not([class*="dark:text-"]) {
+  color: #fcd34d !important; /* amber-300 */
+}
+
+[data-theme="dark"] .text-yellow-800:not([class*="dark:text-"]),
+.dark .text-yellow-800:not([class*="dark:text-"]) {
+  color: #fcd34d !important; /* amber-300 */
+}
+
+/* --- Semantic Border Colors in Dark Mode --- */
+[data-theme="dark"] .border-blue-200:not([class*="dark:border-"]),
+.dark .border-blue-200:not([class*="dark:border-"]) {
+  border-color: #1e40af !important; /* blue-800 */
+}
+
+[data-theme="dark"] .border-green-200:not([class*="dark:border-"]),
+.dark .border-green-200:not([class*="dark:border-"]) {
+  border-color: #065f46 !important; /* green-800 */
+}
+
+[data-theme="dark"] .border-red-200:not([class*="dark:border-"]),
+.dark .border-red-200:not([class*="dark:border-"]) {
+  border-color: #991b1b !important; /* red-800 */
+}
+
+[data-theme="dark"] .border-yellow-200:not([class*="dark:border-"]),
+.dark .border-yellow-200:not([class*="dark:border-"]) {
+  border-color: #92400e !important; /* amber-800 */
+}
+
+[data-theme="dark"] .border-amber-200:not([class*="dark:border-"]),
+.dark .border-amber-200:not([class*="dark:border-"]) {
+  border-color: #92400e !important; /* amber-800 */
+}
+
+/* --- Table Overrides for Dark Mode --- */
+[data-theme="dark"] table thead,
+.dark table thead {
+  background-color: #1e293b; /* slate-800 */
+}
+
+[data-theme="dark"] table tbody tr:hover,
+.dark table tbody tr:hover {
+  background-color: #334155; /* slate-700 */
+}
+
+[data-theme="dark"] table th,
+.dark table th {
+  color: #e2e8f0; /* slate-200 */
+  border-color: #334155; /* slate-700 */
+}
+
+[data-theme="dark"] table td,
+.dark table td {
+  color: #cbd5e1; /* slate-300 */
+  border-color: #334155; /* slate-700 */
+}
+
+/* --- Shadow Normalization for Dark Mode --- */
+[data-theme="dark"] .shadow-sm,
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .shadow,
+[data-theme="dark"] .shadow-md,
+.dark .shadow,
+.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .shadow-lg,
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .shadow-xl,
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
 /* ============================================
    FOCUS STATES (Accessibility)
    ============================================ */
@@ -389,7 +808,7 @@ select:focus-visible {
 }
 
 .input::placeholder {
-  color: var(--color-text-disabled);
+  color: var(--color-text-placeholder);
 }
 
 /* Labels */

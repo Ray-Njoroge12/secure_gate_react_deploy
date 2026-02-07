@@ -76,8 +76,8 @@ const Dropdown = ({
 
   // Variant classes
   const variantClasses = {
-    default: 'bg-slate-800 border-slate-600 text-slate-200',
-    outline: 'bg-transparent border-slate-600 text-slate-200'
+    default: 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-slate-200',
+    outline: 'bg-transparent border-gray-300 dark:border-slate-600 text-gray-900 dark:text-slate-200'
   };
 
   // Get selected option
@@ -224,7 +224,7 @@ const Dropdown = ({
           ${variantClasses[variant]}
           ${disabled 
             ? 'opacity-50 cursor-not-allowed' 
-            : 'hover:border-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900'
+            : 'hover:border-gray-400 dark:hover:border-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900'
           }
           transition-colors duration-200
         `}
@@ -248,7 +248,7 @@ const Dropdown = ({
       {isOpen && (
         <div
           ref={listRef}
-          className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg max-h-60 overflow-auto"
+          className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-auto"
           role="listbox"
           aria-label={ariaLabel || 'Options'}
         >
@@ -262,9 +262,9 @@ const Dropdown = ({
                 flex items-center justify-between px-4 py-2 cursor-pointer min-h-[44px]
                 ${option.disabled 
                   ? 'opacity-50 cursor-not-allowed' 
-                  : 'hover:bg-slate-700 focus:bg-slate-700'
+                  : 'hover:bg-gray-100 dark:hover:bg-slate-700 focus:bg-gray-100 dark:focus:bg-slate-700'
                 }
-                ${option.value === value ? 'bg-slate-700' : ''}
+                ${option.value === value ? 'bg-gray-100 dark:bg-slate-700' : ''}
                 transition-colors duration-150
               `}
               onClick={() => handleSelect(option)}
@@ -272,11 +272,11 @@ const Dropdown = ({
             >
               <div className="flex items-center space-x-3">
                 {option.icon && (
-                  <span className="flex-shrink-0 text-slate-400">
+                  <span className="flex-shrink-0 text-gray-500 dark:text-slate-400">
                     {option.icon}
                   </span>
                 )}
-                <span className="text-slate-200 truncate">
+                <span className="text-gray-900 dark:text-slate-200 truncate">
                   {option.label}
                 </span>
               </div>
@@ -288,7 +288,7 @@ const Dropdown = ({
           ))}
           
           {options.length === 0 && (
-            <div className="px-4 py-2 text-slate-400 text-center">
+            <div className="px-4 py-2 text-gray-500 dark:text-slate-400 text-center">
               No options available
             </div>
           )}

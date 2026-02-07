@@ -9,6 +9,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Card, Button } from '../ui';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 import logger from '../../utils/logger';
 
 // Icons
@@ -99,6 +100,7 @@ export default function MFAVerificationModal({
   operationDetails = ''
 }) {
   const { user } = useAuth();
+  const { modalRef } = useModalAccessibility(isOpen, onClose);
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -266,12 +268,13 @@ export default function MFAVerificationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="mfa-modal-title">
+      <div ref={modalRef} tabIndex={-1} className="outline-none">
       <Card className="max-w-md w-full p-6 relative">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           aria-label="Close"
         >
           <CloseIcon />
@@ -282,24 +285,24 @@ export default function MFAVerificationModal({
           <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-4">
             <ShieldIcon className="text-blue-600 dark:text-blue-400" />
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 id="mfa-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">
             Security Verification
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
             {operation?.name || 'Sensitive Operation'}
           </p>
         </div>
 
         {/* Operation Description */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+        <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 mb-6">
           <div className="flex items-start gap-3">
-            <LockIcon className="flex-shrink-0 text-gray-400 mt-0.5" />
+            <LockIcon className="flex-shrink-0 text-gray-400 dark:text-gray-300 mt-0.5" />
             <div>
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 {operation?.description || 'This action requires verification'}
               </p>
               {operationDetails && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                   {operationDetails}
                 </p>
               )}
@@ -330,7 +333,7 @@ export default function MFAVerificationModal({
                   }}
                   rows={2}
                   placeholder="Please explain why this action is necessary..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             )}
@@ -354,7 +357,7 @@ export default function MFAVerificationModal({
                   onChange={(e) => handleInputChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   disabled={isVerifying || countdown > 0}
-                  className="w-12 h-14 text-center text-2xl font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-800"
+                  className="w-12 h-14 text-center text-2xl font-mono border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-slate-800"
                 />
               ))}
             </div>
@@ -372,7 +375,7 @@ export default function MFAVerificationModal({
                   }}
                   rows={2}
                   placeholder="Please explain why this action is necessary..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             )}
@@ -380,7 +383,7 @@ export default function MFAVerificationModal({
         ) : (
           <div className="mb-6 text-center">
             <SpinnerIcon className="mx-auto text-blue-600" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            <p className="text-sm text-gray-500 dark:text-gray-300 mt-2">
               Checking security settings...
             </p>
           </div>
@@ -434,10 +437,11 @@ export default function MFAVerificationModal({
         </div>
 
         {/* Help text */}
-        <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-4">
+        <p className="text-xs text-center text-gray-500 dark:text-gray-300 mt-4">
           Open your authenticator app to get the verification code
         </p>
       </Card>
+      </div>
     </div>
   );
 }

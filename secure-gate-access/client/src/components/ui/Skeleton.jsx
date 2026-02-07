@@ -87,9 +87,9 @@ const SkeletonTable = ({
   showHeader = true,
   ...props 
 }) => (
-  <div className={`bg-slate-800 rounded-lg border border-slate-700 overflow-hidden ${className}`} {...props}>
+  <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden ${className}`} {...props}>
     {showHeader && (
-      <div className="bg-slate-700 px-6 py-3 border-b border-slate-600">
+      <div className="bg-gray-100 dark:bg-slate-700 px-6 py-3 border-b border-gray-200 dark:border-slate-600">
         <div className="flex space-x-4">
           {Array.from({ length: columns }, (_, index) => (
             <Skeleton 
@@ -101,7 +101,7 @@ const SkeletonTable = ({
         </div>
       </div>
     )}
-    <div className="divide-y divide-slate-700">
+    <div className="divide-y divide-gray-200 dark:divide-slate-700">
       {Array.from({ length: rows }, (_, rowIndex) => (
         <div key={rowIndex} className="px-6 py-4">
           <div className="flex space-x-4">
@@ -151,7 +151,7 @@ const SkeletonList = ({
 }) => (
   <div className={`space-y-3 ${className}`} {...props}>
     {Array.from({ length: items }, (_, index) => (
-      <div key={index} className="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg">
+      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
         {showAvatar && (
           <Skeleton 
             variant="circle" 
@@ -184,7 +184,7 @@ const SkeletonDashboard = ({
     {/* Stats Cards */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {Array.from({ length: 4 }, (_, index) => (
-        <div key={index} className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+        <div key={index} className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <Skeleton height="1rem" width="8rem" />
@@ -221,10 +221,10 @@ const SkeletonOverlay = ({
   return (
     <div className={`relative ${className}`} {...props}>
       {children}
-      <div className="absolute inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 text-center">
+      <div className="absolute inset-0 bg-white/75 dark:bg-slate-900/75 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mx-auto mb-4"></div>
-          <p className="text-slate-300">{message}</p>
+          <p className="text-gray-600 dark:text-slate-300">{message}</p>
         </div>
       </div>
     </div>
@@ -247,7 +247,7 @@ const SkeletonProgress = ({
 
   return (
     <div className={`space-y-2 ${className}`} {...props}>
-      <div className={`bg-slate-700 rounded-full ${sizeClasses[size]}`}>
+      <div className={`bg-gray-200 dark:bg-slate-700 rounded-full ${sizeClasses[size]}`}>
         <div 
           className="bg-brand-500 rounded-full transition-all duration-300 ease-out"
           style={{ 
@@ -257,7 +257,7 @@ const SkeletonProgress = ({
         />
       </div>
       {showPercentage && (
-        <div className="text-right text-sm text-slate-400">
+        <div className="text-right text-sm text-gray-600 dark:text-slate-400">
           {Math.round(progress)}%
         </div>
       )}

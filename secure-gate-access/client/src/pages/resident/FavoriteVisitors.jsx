@@ -284,7 +284,7 @@ const FavoriteVisitors = () => {
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
             Favorite Visitors
           </h1>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'}`}>
+          <p className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'}`}>
             Save frequently visiting guests for quick invites
           </p>
         </div>
@@ -310,7 +310,7 @@ const FavoriteVisitors = () => {
           {/* Search Bar */}
           {favorites.length > 0 && (
             <div className="relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-500 dark:text-gray-300'
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'
                 }`} />
               <input
                 type="text"
@@ -319,7 +319,7 @@ const FavoriteVisitors = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`w-full pl-10 pr-4 py-3 rounded-lg border ${isDark
                   ? 'bg-slate-800 border-slate-600 text-white placeholder-gray-400'
-                  : 'bg-white border-gray-300 text-gray-900 dark:text-white placeholder-gray-500'
+                  : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500'
                   } focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent`}
               />
             </div>
@@ -344,14 +344,14 @@ const FavoriteVisitors = () => {
           {!error && favorites.length === 0 && (
             <Card className={`p-12 text-center ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
               <div className="flex flex-col items-center">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100'
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100 dark:bg-slate-700'
                   }`}>
-                  <Heart className={`w-8 h-8 ${isDark ? 'text-gray-400' : 'text-gray-500 dark:text-gray-300'}`} />
+                  <Heart className={`w-8 h-8 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'}`} />
                 </div>
                 <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                   No Favorite Visitors Yet
                 </h3>
-                <p className={`text-sm mb-6 max-w-sm ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'}`}>
+                <p className={`text-sm mb-6 max-w-sm ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'}`}>
                   Add your frequently visiting guests here for quick one-tap invites.
                   Save time by not entering their details every time!
                 </p>
@@ -366,11 +366,11 @@ const FavoriteVisitors = () => {
           {/* No Search Results */}
           {!error && favorites.length > 0 && filteredFavorites.length === 0 && (
             <Card className={`p-8 text-center ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
-              <Search className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-400'}`} />
+              <Search className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-400 dark:text-gray-300'}`} />
               <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                 No Results Found
               </h3>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'}`}>
+              <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'}`}>
                 No favorites match "{searchQuery}". Try a different search term.
               </p>
             </Card>
@@ -382,12 +382,12 @@ const FavoriteVisitors = () => {
               {filteredFavorites.map((favorite) => (
                 <Card
                   key={favorite.id}
-                  className={`p-4 hover:shadow-lg transition-shadow ${isDark ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'hover:border-gray-300'
+                  className={`p-4 hover:shadow-lg transition-shadow ${isDark ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'hover:border-gray-300 dark:border-slate-600'
                     }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${isDark ? 'bg-slate-700' : 'bg-gray-100'
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${isDark ? 'bg-slate-700' : 'bg-gray-100 dark:bg-slate-700'
                         }`}>
                         {getRelationshipIcon(favorite.relationship)}
                       </div>
@@ -405,8 +405,8 @@ const FavoriteVisitors = () => {
                       <button
                         onClick={() => handleEdit(favorite)}
                         className={`p-2 rounded-lg transition-colors ${isDark
-                          ? 'hover:bg-slate-700 text-gray-400 hover:text-white'
-                          : 'hover:bg-gray-100 text-gray-500 dark:text-gray-300 hover:text-gray-700'
+                          ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
+                          : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300'
                           }`}
                         aria-label="Edit favorite"
                       >
@@ -415,7 +415,7 @@ const FavoriteVisitors = () => {
                       <button
                         onClick={() => setDeleteConfirm(favorite.id)}
                         className={`p-2 rounded-lg transition-colors ${isDark
-                          ? 'hover:bg-red-900/30 text-gray-400 hover:text-red-400'
+                          ? 'hover:bg-red-900/30 text-gray-300 hover:text-red-400'
                           : 'hover:bg-red-50 text-gray-500 dark:text-gray-300 hover:text-red-600'
                           }`}
                         aria-label="Delete favorite"
@@ -428,14 +428,14 @@ const FavoriteVisitors = () => {
                   {/* Contact Info */}
                   <div className="space-y-2 mb-4">
                     {favorite.visitor_phone && (
-                      <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'
+                      <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'
                         }`}>
                         <Phone className="w-4 h-4" />
                         <span>{favorite.visitor_phone}</span>
                       </div>
                     )}
                     {favorite.visitor_email && (
-                      <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-200'
+                      <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'
                         }`}>
                         <Mail className="w-4 h-4" />
                         <span className="truncate">{favorite.visitor_email}</span>
@@ -444,7 +444,7 @@ const FavoriteVisitors = () => {
                   </div>
 
                   {/* Visit Stats */}
-                  <div className={`flex items-center justify-between py-2 border-t ${isDark ? 'border-slate-700' : 'border-gray-200'
+                  <div className={`flex items-center justify-between py-2 border-t ${isDark ? 'border-slate-700' : 'border-gray-200 dark:border-slate-700'
                     }`}>
                     <div className={`flex items-center gap-4 text-xs ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-500 dark:text-gray-300'
                       }`}>
@@ -481,11 +481,11 @@ const FavoriteVisitors = () => {
           >
             {/* Tabs for Add Mode */}
             {!editingFavorite && (
-              <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+              <div className="flex border-b border-gray-200 dark:border-slate-700 mb-4">
                 <button
                   className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'new'
                       ? 'border-brand-500 text-brand-600 dark:text-brand-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
                     }`}
                   onClick={() => setActiveTab('new')}
                 >
@@ -494,7 +494,7 @@ const FavoriteVisitors = () => {
                 <button
                   className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'history'
                       ? 'border-brand-500 text-brand-600 dark:text-brand-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                      : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
                     }`}
                   onClick={() => {
                     setActiveTab('history');
@@ -509,14 +509,14 @@ const FavoriteVisitors = () => {
             {activeTab === 'history' && !editingFavorite ? (
               <div className="space-y-4">
                 <div className="relative">
-                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-500'
+                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
                     }`} />
                   <input
                     type="text"
                     placeholder="Search history..."
                     className={`w-full pl-9 pr-4 py-2 text-sm rounded-lg border ${isDark
                         ? 'bg-slate-700 border-slate-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900'
+                        : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white'
                       } focus:outline-none focus:ring-2 focus:ring-brand-500`}
                   />
                 </div>
@@ -528,14 +528,14 @@ const FavoriteVisitors = () => {
                 ) : (
                   <div className="max-h-60 overflow-y-auto space-y-2 custom-scrollbar">
                     {uniqueHistoryVisitors.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                      <div className="text-center py-8 text-gray-500 dark:text-gray-300 text-sm">
                         No recent visitors found.
                       </div>
                     ) : (
                       uniqueHistoryVisitors.map((visitor) => (
                         <div
                           key={visitor.id || Math.random()}
-                          className={`p-3 rounded-lg border cursor-pointer hover:border-brand-500 transition-colors ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'
+                          className={`p-3 rounded-lg border cursor-pointer hover:border-brand-500 transition-colors ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700'
                             }`}
                           onClick={() => {
                             setFormData({
@@ -551,10 +551,10 @@ const FavoriteVisitors = () => {
                         >
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                              <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                                 {visitor.name || 'Unknown'}
                               </p>
-                              <div className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
+                              <div className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-300">
                                 {visitor.phone && <span>{visitor.phone}</span>}
                                 {visitor.email && <span>{visitor.email}</span>}
                               </div>
@@ -568,7 +568,7 @@ const FavoriteVisitors = () => {
                     )}
                   </div>
                 )}
-                <div className="text-center border-t pt-3 mt-2 border-gray-200 dark:border-gray-700">
+                <div className="text-center border-t pt-3 mt-2 border-gray-200 dark:border-slate-700">
                   <button
                     onClick={() => setActiveTab('new')}
                     className="text-sm text-brand-600 hover:underline"
@@ -580,7 +580,7 @@ const FavoriteVisitors = () => {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                     }`}>
                     Visitor Name *
                   </label>
@@ -592,14 +592,14 @@ const FavoriteVisitors = () => {
                     placeholder="Enter visitor's full name"
                     className={`w-full px-3 py-2 rounded-lg border ${isDark
                       ? 'bg-slate-700 border-slate-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900 dark:text-white'
+                      : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white'
                       } focus:outline-none focus:ring-2 focus:ring-brand-500`}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'
+                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                       }`}>
                       Phone Number
                     </label>
@@ -610,12 +610,12 @@ const FavoriteVisitors = () => {
                       placeholder="+254..."
                       className={`w-full px-3 py-2 rounded-lg border ${isDark
                         ? 'bg-slate-700 border-slate-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900 dark:text-white'
+                        : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white'
                         } focus:outline-none focus:ring-2 focus:ring-brand-500`}
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'
+                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                       }`}>
                       Email Address
                     </label>
@@ -626,14 +626,14 @@ const FavoriteVisitors = () => {
                       placeholder="visitor@email.com"
                       className={`w-full px-3 py-2 rounded-lg border ${isDark
                         ? 'bg-slate-700 border-slate-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-900 dark:text-white'
+                        : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white'
                         } focus:outline-none focus:ring-2 focus:ring-brand-500`}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                     }`}>
                     Relationship
                   </label>
@@ -642,7 +642,7 @@ const FavoriteVisitors = () => {
                     onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
                     className={`w-full px-3 py-2 rounded-lg border ${isDark
                       ? 'bg-slate-700 border-slate-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900 dark:text-white'
+                      : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white'
                       } focus:outline-none focus:ring-2 focus:ring-brand-500`}
                   >
                     {RELATIONSHIP_TYPES.map(type => (
@@ -654,7 +654,7 @@ const FavoriteVisitors = () => {
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                     }`}>
                     Notes (optional)
                   </label>
@@ -665,7 +665,7 @@ const FavoriteVisitors = () => {
                     rows={3}
                     className={`w-full px-3 py-2 rounded-lg border ${isDark
                       ? 'bg-slate-700 border-slate-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-900 dark:text-white'
+                      : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white'
                       } focus:outline-none focus:ring-2 focus:ring-brand-500`}
                   />
                 </div>

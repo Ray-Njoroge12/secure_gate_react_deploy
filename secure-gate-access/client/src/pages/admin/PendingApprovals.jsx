@@ -250,7 +250,7 @@ const PendingApprovals = ({ siteId }) => {
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-center py-8 text-gray-500">Loading...</div>
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
                 </CardContent>
             </Card>
         );
@@ -318,7 +318,7 @@ const PendingApprovals = ({ siteId }) => {
             </CardHeader>
             <CardContent>
                 {pendingUsers.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
                         <p>No pending approvals</p>
                         <p className="text-sm mt-1">All users have been processed</p>
@@ -336,25 +336,25 @@ const PendingApprovals = ({ siteId }) => {
                                             className="mr-3"
                                             disabled={processingUserId === 'bulk'}
                                         />
-                                        <User className="h-5 w-5 text-gray-400" />
+                                        <User className="h-5 w-5 text-gray-400 dark:text-gray-300" />
                                         <h3 className="user-name">{user.username}</h3>
                                     </div>
 
                                     <div className="user-details">
                                         <div className="detail-row">
-                                            <Mail className="h-4 w-4 text-gray-400" />
+                                            <Mail className="h-4 w-4 text-gray-400 dark:text-gray-300" />
                                             <span className="detail-text">{user.email}</span>
                                         </div>
 
                                         {user.phone && (
                                             <div className="detail-row">
-                                                <span className="text-gray-400">📱</span>
+                                                <span className="text-gray-500 dark:text-gray-300">📱</span>
                                                 <span className="detail-text">{user.phone}</span>
                                             </div>
                                         )}
 
                                         <div className="detail-row">
-                                            <Calendar className="h-4 w-4 text-gray-400" />
+                                            <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-300" />
                                             <span className="detail-text">Registered: {formatDate(user.created_at)}</span>
                                         </div>
                                     </div>

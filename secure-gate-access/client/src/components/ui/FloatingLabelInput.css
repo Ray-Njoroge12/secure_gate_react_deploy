@@ -182,6 +182,9 @@
   background-color: transparent;
   padding: 0 4px;
   cursor: text;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 

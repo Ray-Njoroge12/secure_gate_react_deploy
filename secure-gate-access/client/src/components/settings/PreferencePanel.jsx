@@ -124,7 +124,7 @@ const PreferencePanel = () => {
   ];
 
   return (
-    <div className="preference-panel bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div className="preference-panel bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           User Preferences
@@ -144,7 +144,7 @@ const PreferencePanel = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+      <div className="border-b border-gray-200 dark:border-slate-700 mb-6">
         <nav className="flex space-x-8">
           {tabs.map((tab) => (
             <button
@@ -153,7 +153,7 @@ const PreferencePanel = () => {
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-300'
               }`}
             >
               <span className="mr-2">{tab.icon}</span>
@@ -179,7 +179,7 @@ const PreferencePanel = () => {
               <select
                 value={dashboardPreferences.theme}
                 onChange={(e) => handleDashboardUpdate({ theme: e.target.value })}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={loading}
               >
                 {THEME_OPTIONS.map((option) => (
@@ -198,7 +198,7 @@ const PreferencePanel = () => {
               <select
                 value={dashboardPreferences.density}
                 onChange={(e) => handleDashboardUpdate({ density: e.target.value })}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={loading}
               >
                 {DENSITY_OPTIONS.map((option) => (
@@ -234,7 +234,7 @@ const PreferencePanel = () => {
                           [channel]: e.target.checked
                         }
                       })}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                       disabled={loading}
                     />
                     <span className="ml-2 text-sm text-gray-700 dark:text-gray-300 capitalize">
@@ -257,7 +257,7 @@ const PreferencePanel = () => {
                       enabled: e.target.checked
                     }
                   })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                   disabled={loading}
                 />
                 <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -268,7 +268,7 @@ const PreferencePanel = () => {
               {notificationPreferences.quietHours.enabled && (
                 <div className="grid grid-cols-2 gap-4 ml-6">
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
                       Start Time
                     </label>
                     <input
@@ -280,12 +280,12 @@ const PreferencePanel = () => {
                           start: e.target.value
                         }
                       })}
-                      className="block w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                       disabled={loading}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">
                       End Time
                     </label>
                     <input
@@ -297,7 +297,7 @@ const PreferencePanel = () => {
                           end: e.target.value
                         }
                       })}
-                      className="block w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      className="block w-full px-2 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                       disabled={loading}
                     />
                   </div>
@@ -322,7 +322,7 @@ const PreferencePanel = () => {
                     onChange={(e) => handleAccessibilityUpdate({
                       [key]: e.target.checked
                     })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                     disabled={loading}
                   />
                   <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -349,7 +349,7 @@ const PreferencePanel = () => {
                   onChange={(e) => handlePerformanceUpdate({
                     animationsEnabled: e.target.checked
                   })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                   disabled={loading}
                 />
                 <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -364,7 +364,7 @@ const PreferencePanel = () => {
                   onChange={(e) => handlePerformanceUpdate({
                     autoRefresh: e.target.checked
                   })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded"
                   disabled={loading}
                 />
                 <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -383,7 +383,7 @@ const PreferencePanel = () => {
                 onChange={(e) => handlePerformanceUpdate({
                   refreshInterval: parseInt(e.target.value)
                 })}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={loading || !performancePreferences.autoRefresh}
               >
                 <option value={5000}>5 seconds</option>
@@ -407,7 +407,7 @@ const PreferencePanel = () => {
                 onChange={(e) => handlePerformanceUpdate({
                   dataPageSize: parseInt(e.target.value) || 20
                 })}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                 disabled={loading}
               />
             </div>
@@ -431,7 +431,7 @@ const PreferencePanel = () => {
                   value={backupName}
                   onChange={(e) => setBackupName(e.target.value)}
                   placeholder="Enter backup name"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                   disabled={backupLoading}
                 />
                 <button
@@ -453,7 +453,7 @@ const PreferencePanel = () => {
                 <select
                   value={selectedBackup}
                   onChange={(e) => setSelectedBackup(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                   disabled={backupLoading}
                 >
                   <option value="">Select a backup</option>
@@ -494,7 +494,7 @@ const PreferencePanel = () => {
                     type="file"
                     accept=".json"
                     onChange={(e) => setImportFile(e.target.files[0])}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                   <button
                     onClick={handleImportPreferences}
@@ -522,10 +522,10 @@ const PreferencePanel = () => {
 
       {/* Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 dark:bg-gray-800 dark:bg-opacity-75 flex items-center justify-center rounded-lg">
+        <div className="absolute inset-0 bg-white bg-opacity-75 dark:bg-slate-800 dark:bg-opacity-75 flex items-center justify-center rounded-lg">
           <div className="flex items-center space-x-2">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-            <span className="text-gray-600 dark:text-gray-400">Updating preferences...</span>
+            <span className="text-gray-600 dark:text-gray-300">Updating preferences...</span>
           </div>
         </div>
       )}

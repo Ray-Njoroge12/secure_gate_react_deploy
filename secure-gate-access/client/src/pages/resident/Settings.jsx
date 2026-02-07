@@ -134,7 +134,7 @@ export default function Settings() {
 
   return (
     // <AppShell role={role}>
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader
         title="Settings"
         subtitle="Manage your account preferences"
@@ -148,16 +148,16 @@ export default function Settings() {
         {error && <ErrorDisplay message={error} onDismiss={() => setError("")} className="mb-4" />}
         {success && <SuccessDisplay message={success} onDismiss={() => setSuccess("")} className="mb-4" />}
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
           {/* Tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 space-x-1 overflow-x-auto tabs-scroll pb-2">
+          <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6 space-x-1 overflow-x-auto tabs-scroll pb-2">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg font-medium cursor-pointer whitespace-nowrap text-sm transition-colors focus:outline-none ${activeTab === tab.key
                     ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
               >
                 {tab.icon}
@@ -168,29 +168,29 @@ export default function Settings() {
 
           {/* Tab Content */}
           {activeTab === "profile" && (
-            <form onSubmit={(e) => handleUpdate("Profile", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
+            <form onSubmit={(e) => handleUpdate("Profile", e)} className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile Information</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">Update your personal details</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
-                  <input type="text" placeholder="Your name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="Your name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
-                  <input type="text" placeholder="Phone number" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="Phone number" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
-                  <input type="email" placeholder="Email address" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="email" placeholder="Email address" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Area</label>
-                  <input type="text" placeholder="Area/Block" value={profile.area} onChange={(e) => setProfile({ ...profile, area: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="Area/Block" value={profile.area} onChange={(e) => setProfile({ ...profile, area: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">House Number</label>
-                  <input type="text" placeholder="House number" value={profile.house} onChange={(e) => setProfile({ ...profile, house: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="text" placeholder="House number" value={profile.house} onChange={(e) => setProfile({ ...profile, house: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
               </div>
               <div className="mt-4">
@@ -200,17 +200,17 @@ export default function Settings() {
           )}
 
           {activeTab === "password" && (
-            <form onSubmit={(e) => handleUpdate("Password", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
+            <form onSubmit={(e) => handleUpdate("Password", e)} className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">Update your password for security</p>
               <div className="grid grid-cols-1 gap-4 mt-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Current Password</label>
-                  <input type="password" placeholder="Enter current password" value={passwords.old} onChange={(e) => setPasswords({ ...passwords, old: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="password" placeholder="Enter current password" value={passwords.old} onChange={(e) => setPasswords({ ...passwords, old: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">New Password</label>
-                  <input type="password" placeholder="Enter new password" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <input type="password" placeholder="Enter new password" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
               </div>
               <div className="mt-4">
@@ -226,11 +226,11 @@ export default function Settings() {
           )}
 
           {activeTab === "security" && (
-            <form onSubmit={(e) => handleUpdate("Security", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
+            <form onSubmit={(e) => handleUpdate("Security", e)} className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Security Settings</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">Configure account security options</p>
               <div className="space-y-4 mt-4">
-                <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:border-green-500 transition-colors">
+                <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 cursor-pointer hover:border-green-500 transition-colors">
                   <input
                     type="checkbox"
                     checked={security.twoFA}
@@ -242,7 +242,7 @@ export default function Settings() {
                     <p className="text-sm text-gray-500 dark:text-gray-300">Add an extra layer of security to your account</p>
                   </div>
                 </label>
-                <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:border-green-500 transition-colors">
+                <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 cursor-pointer hover:border-green-500 transition-colors">
                   <input
                     type="checkbox"
                     checked={security.showLoginHistory}
@@ -268,7 +268,7 @@ export default function Settings() {
           )}
 
           {activeTab === "visitorPrefs" && (
-            <form onSubmit={(e) => handleUpdate("Visitor Preferences", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
+            <form onSubmit={(e) => handleUpdate("Visitor Preferences", e)} className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Visitor Preferences</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">Configure default visitor settings</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -277,7 +277,7 @@ export default function Settings() {
                   <select
                     value={visitorPrefs.defaultDuration}
                     onChange={(e) => setVisitorPrefs({ ...visitorPrefs, defaultDuration: e.target.value })}
-                    className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`}
+                    className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`}
                   >
                     <option>1 hour</option>
                     <option>3 hours</option>
@@ -291,7 +291,7 @@ export default function Settings() {
                     type="number"
                     value={visitorPrefs.maxVisitors}
                     onChange={(e) => setVisitorPrefs({ ...visitorPrefs, maxVisitors: e.target.value })}
-                    className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`}
+                    className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`}
                     min="1"
                     max="20"
                   />
@@ -304,7 +304,7 @@ export default function Settings() {
           )}
 
           {activeTab === "preferences" && (
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-6">
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-2xl p-6 space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Appearance</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -312,7 +312,7 @@ export default function Settings() {
                 </p>
               </div>
               <ThemeRadioGroup />
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>
                   {theme === 'system' && <span className="ml-1 text-gray-500 dark:text-gray-300">(following system preference)</span>}

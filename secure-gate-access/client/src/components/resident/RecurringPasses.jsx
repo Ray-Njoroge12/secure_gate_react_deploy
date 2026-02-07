@@ -152,11 +152,11 @@ const RecurringPasses = () => {
     const styles = {
       active: 'bg-green-100 text-green-800',
       suspended: 'bg-yellow-100 text-yellow-800',
-      expired: 'bg-gray-100 text-gray-800',
+      expired: 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200',
       revoked: 'bg-red-100 text-red-800'
     };
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || 'bg-gray-100'}`}>
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || 'bg-gray-100 dark:bg-slate-700'}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -172,7 +172,7 @@ const RecurringPasses = () => {
 
   if (loading && passes.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/4"></div>
           <div className="h-20 bg-gray-200 rounded"></div>
@@ -213,11 +213,11 @@ const RecurringPasses = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
       {/* Offline/Cached Data Indicator */}
       <OfflineIndicator />
       
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -230,7 +230,7 @@ const RecurringPasses = () => {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="text-sm border-gray-300 rounded-md"
+              className="text-sm border-gray-300 dark:border-slate-600 rounded-md"
               disabled={isOffline}
             >
               <option value="active">Active</option>
@@ -253,7 +253,7 @@ const RecurringPasses = () => {
         </div>
       )}
 
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-slate-700">
         {passes.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">🔑</span>
@@ -264,7 +264,7 @@ const RecurringPasses = () => {
           passes.map((pass) => {
             const typeInfo = getPassTypeInfo(pass.pass_type);
             return (
-              <div key={pass.id} className="p-4 hover:bg-gray-50">
+              <div key={pass.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700">
                 <div className="flex justify-between items-start">
                   <div className="flex gap-3">
                     <span className="text-2xl">{typeInfo.icon}</span>
@@ -281,7 +281,7 @@ const RecurringPasses = () => {
                         {pass.total_entries > 0 && <span>🚪 {pass.total_entries} entries</span>}
                       </div>
                       {pass.status === 'active' && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                        <div className="mt-2 p-2 bg-gray-50 dark:bg-slate-900 rounded text-xs">
                           <span className="font-medium">PIN:</span> {pass.access_pin}
                           <button
                             onClick={() => setSelectedPass(pass)}
@@ -326,7 +326,7 @@ const RecurringPasses = () => {
         )}
       </div>
 
-      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
+      <div className="p-4 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-300">
         🔒 Passes are validated by PIN or QR code. You can suspend or revoke access at any time.
       </div>
 
@@ -406,10 +406,10 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Create Recurring Pass</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
@@ -418,13 +418,13 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Visitor Name *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Visitor Name *</label>
             <input
               type="text"
               name="visitorName"
               value={formData.visitorName}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md"
               placeholder="e.g., John Mwangi"
               required
             />
@@ -432,36 +432,36 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
               <input
                 type="tel"
                 name="visitorPhone"
                 value={formData.visitorPhone}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 rounded-md"
                 placeholder="+254..."
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Plate</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vehicle Plate</label>
               <input
                 type="text"
                 name="vehiclePlate"
                 value={formData.vehiclePlate}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 rounded-md"
                 placeholder="KXX 000X"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pass Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pass Type</label>
             <select
               name="passType"
               value={formData.passType}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md"
             >
               {PASS_TYPES.map(type => (
                 <option key={type.value} value={type.value}>
@@ -472,32 +472,32 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Purpose</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Purpose</label>
             <input
               type="text"
               name="purpose"
               value={formData.purpose}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md"
               placeholder="e.g., House cleaning"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Valid Until *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valid Until *</label>
             <input
               type="date"
               name="validUntil"
               value={formData.validUntil}
               onChange={handleChange}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Allowed Days</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Allowed Days</label>
             <div className="flex flex-wrap gap-2">
               {DAYS.map(day => (
                 <button
@@ -507,7 +507,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
                   className={`px-3 py-1 rounded-full text-sm ${
                     formData.allowedDays.includes(day.value)
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700'
+                      : 'bg-gray-200 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {day.label}
@@ -518,23 +518,23 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Time</label>
               <input
                 type="time"
                 name="allowedTimeStart"
                 value={formData.allowedTimeStart}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 rounded-md"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Time</label>
               <input
                 type="time"
                 name="allowedTimeEnd"
                 value={formData.allowedTimeEnd}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 rounded-md"
               />
             </div>
           </div>
@@ -543,7 +543,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
             >
               Cancel
             </button>
@@ -582,10 +582,10 @@ const PassDetailsModal = ({ pass, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Pass Details</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300">✕</button>
         </div>
 
         <div className="p-4">
@@ -594,12 +594,12 @@ const PassDetailsModal = ({ pass, onClose }) => {
             <p className="text-gray-500 dark:text-gray-300">{pass.pass_type}</p>
           </div>
 
-          <div className="bg-gray-100 p-4 rounded-lg text-center mb-4">
+          <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg text-center mb-4">
             <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">Access PIN</p>
             <p className="text-3xl font-mono font-bold tracking-wider">{pass.access_pin}</p>
           </div>
 
-          <div className="bg-gray-100 p-4 rounded-lg text-center mb-4">
+          <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg text-center mb-4">
             <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">QR Token</p>
             <p className="text-xs font-mono break-all">{pass.qr_code_token}</p>
             <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">Guards can scan this QR code for entry</p>
@@ -624,10 +624,10 @@ const PassDetailsModal = ({ pass, onClose }) => {
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 dark:border-slate-700">
           <button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+            className="w-full px-4 py-2 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300"
           >
             Close
           </button>

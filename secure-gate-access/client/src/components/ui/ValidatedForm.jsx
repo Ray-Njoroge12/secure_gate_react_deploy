@@ -53,23 +53,23 @@ const ValidatedForm = memo(({
 
         {/* Validation Summary */}
         {showValidationSummary && formValidation.submitAttempted && (
-          <div className="bg-slate-800 border border-slate-600 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-slate-200 mb-2">Validation Summary</h4>
+          <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-900 dark:text-slate-200 mb-2">Validation Summary</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="text-slate-400">Total Fields:</span>
-                <span className="ml-2 text-slate-200">{validationSummary.totalFields}</span>
+                <span className="text-gray-500 dark:text-slate-400">Total Fields:</span>
+                <span className="ml-2 text-gray-900 dark:text-slate-200">{validationSummary.totalFields}</span>
               </div>
               <div>
-                <span className="text-slate-400">Valid:</span>
+                <span className="text-gray-500 dark:text-slate-400">Valid:</span>
                 <span className="ml-2 text-green-400">{validationSummary.validFields}</span>
               </div>
               <div>
-                <span className="text-slate-400">Invalid:</span>
+                <span className="text-gray-500 dark:text-slate-400">Invalid:</span>
                 <span className="ml-2 text-red-400">{validationSummary.invalidFields}</span>
               </div>
               <div>
-                <span className="text-slate-400">Warnings:</span>
+                <span className="text-gray-500 dark:text-slate-400">Warnings:</span>
                 <span className="ml-2 text-yellow-400">{validationSummary.warningFields}</span>
               </div>
             </div>
@@ -77,7 +77,7 @@ const ValidatedForm = memo(({
         )}
 
         {/* Form Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-700">
+        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-slate-700">
           <div className="flex items-center space-x-4">
             {showResetButton && (
               <Button
@@ -93,7 +93,7 @@ const ValidatedForm = memo(({
 
           <div className="flex items-center space-x-4">
             {/* Form Status */}
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-gray-500 dark:text-slate-400">
               {formValidation.isSubmitting ? (
                 <span className="flex items-center">
                   <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24">

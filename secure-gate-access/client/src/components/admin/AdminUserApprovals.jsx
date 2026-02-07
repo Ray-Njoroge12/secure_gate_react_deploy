@@ -76,7 +76,7 @@ const AdminUserApprovals = ({ siteId }) => {
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Pending Approvals ({pendingUsers.length})
                 </h3>
@@ -89,13 +89,13 @@ const AdminUserApprovals = ({ siteId }) => {
             </div>
 
             {pendingUsers.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div className="p-8 text-center text-gray-500 dark:text-gray-300">
                     No pending account requests.
                 </div>
             ) : (
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-slate-700">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                        <thead className="bg-gray-50 dark:bg-slate-800">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
@@ -104,23 +104,23 @@ const AdminUserApprovals = ({ siteId }) => {
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                             {pendingUsers.map((user) => (
                                 <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">ID: {user.id}</div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-300">ID: {user.id}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm text-gray-900 dark:text-gray-100">{user.email}</div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">{user.phone || 'N/A'}</div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-300">{user.phone || 'N/A'}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 capitalize">
                                             {user.role}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                         {new Date(user.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">

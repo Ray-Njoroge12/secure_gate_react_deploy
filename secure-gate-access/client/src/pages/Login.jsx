@@ -314,7 +314,7 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  className="w-full text-center text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:text-white dark:hover:text-gray-100 text-sm font-medium py-2 transition-colors"
+                  className="w-full text-center text-gray-600 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100 text-sm font-medium py-2 transition-colors"
                   onClick={() => {
                     setShowForgot(false);
                     setEmailError("");
@@ -367,7 +367,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-200 transition-colors p-2 -m-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="text-gray-500 hover:text-gray-600 dark:text-gray-300 transition-colors p-2 -m-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (

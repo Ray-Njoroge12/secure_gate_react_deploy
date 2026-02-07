@@ -70,7 +70,7 @@ export const SelectContent = ({ className = '', children }) => {
     <div
       ref={ref}
       role="listbox"
-      className={`absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 py-1 shadow-lg ${className}`}
+      className={`absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-1 shadow-lg ${className}`}
     >
       {children}
     </div>

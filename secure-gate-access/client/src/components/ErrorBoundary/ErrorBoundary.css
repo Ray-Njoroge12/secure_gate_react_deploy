@@ -135,6 +135,9 @@
   border-bottom: 1px solid #e9ecef;
   margin-bottom: 10px;
   display: block;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 

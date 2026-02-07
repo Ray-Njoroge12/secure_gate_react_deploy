@@ -123,7 +123,7 @@ const NavigationAnalytics = ({
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="bg-slate-800 border border-slate-600 text-slate-300 rounded-md px-3 py-1 text-sm"
+          className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-md px-3 py-1 text-sm"
         >
           <option value="session">This Session</option>
           <option value="hour">Last Hour</option>
@@ -201,12 +201,12 @@ const NavigationAnalytics = ({
                       <span className="w-6 h-6 bg-brand-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
                         {index + 1}
                       </span>
-                      <span className="text-slate-300 text-sm">
+                      <span className="text-gray-600 dark:text-slate-300 text-sm">
                         {formatRouteName(route.path)}
                       </span>
                     </div>
                     <div className="flex items-center">
-                      <div className="w-20 bg-slate-700 rounded-full h-2 mr-3">
+                      <div className="w-20 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mr-3">
                         <div 
                           className="bg-brand-500 h-2 rounded-full"
                           style={{ 
@@ -214,7 +214,7 @@ const NavigationAnalytics = ({
                           }}
                         />
                       </div>
-                      <span className="text-slate-400 text-sm font-medium">
+                      <span className="text-gray-500 dark:text-slate-400 text-sm font-medium">
                         {route.count}
                       </span>
                     </div>
@@ -222,7 +222,7 @@ const NavigationAnalytics = ({
                 ))}
               </div>
             ) : (
-              <p className="text-slate-400 text-center py-4">No navigation data available</p>
+              <p className="text-gray-500 dark:text-slate-400 text-center py-4">No navigation data available</p>
             )}
           </Card>
 
@@ -238,26 +238,26 @@ const NavigationAnalytics = ({
                 {navigationPatterns.map((pattern, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <span className="w-6 h-6 bg-slate-600 text-slate-300 rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                      <span className="w-6 h-6 bg-gray-300 dark:bg-slate-600 text-gray-700 dark:text-slate-300 rounded-full flex items-center justify-center text-xs font-bold mr-3">
                         {index + 1}
                       </span>
-                      <div className="text-slate-300 text-sm">
+                      <div className="text-gray-600 dark:text-slate-300 text-sm">
                         <div className="font-medium">
                           {formatRouteName(pattern.from)}
                         </div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-gray-500 dark:text-slate-400">
                           → {formatRouteName(pattern.to)}
                         </div>
                       </div>
                     </div>
-                    <span className="text-slate-400 text-sm font-medium">
+                    <span className="text-gray-500 dark:text-slate-400 text-sm font-medium">
                       {pattern.count}x
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-400 text-center py-4">No patterns detected</p>
+              <p className="text-gray-500 dark:text-slate-400 text-center py-4">No patterns detected</p>
             )}
           </Card>
         </div>
@@ -272,18 +272,18 @@ const NavigationAnalytics = ({
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
-              <span className="text-slate-400">Path:</span>
-              <span className="text-slate-300 ml-2 font-mono">{currentRoute.path}</span>
+              <span className="text-gray-500 dark:text-slate-400">Path:</span>
+              <span className="text-gray-600 dark:text-slate-300 ml-2 font-mono">{currentRoute.path}</span>
             </div>
             <div>
-              <span className="text-slate-400">Search:</span>
-              <span className="text-slate-300 ml-2 font-mono">
+              <span className="text-gray-500 dark:text-slate-400">Search:</span>
+              <span className="text-gray-600 dark:text-slate-300 ml-2 font-mono">
                 {currentRoute.search || 'None'}
               </span>
             </div>
             <div>
-              <span className="text-slate-400">Hash:</span>
-              <span className="text-slate-300 ml-2 font-mono">
+              <span className="text-gray-500 dark:text-slate-400">Hash:</span>
+              <span className="text-gray-600 dark:text-slate-300 ml-2 font-mono">
                 {currentRoute.hash || 'None'}
               </span>
             </div>

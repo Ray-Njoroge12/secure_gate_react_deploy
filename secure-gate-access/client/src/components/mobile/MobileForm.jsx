@@ -76,16 +76,16 @@ const MobileFormInput = ({
     'rounded-lg',
     'transition-all',
     'duration-200',
-    'bg-white',
-    'dark:bg-gray-800',
+    'bg-white dark:bg-slate-800',
+    'dark:bg-slate-800',
     // Touch-optimized sizing - ensure minimum 44px height
     'min-h-[48px]', // Increased from conditional to always 48px minimum
     // Focus states
-    isFocused ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-300 dark:border-gray-600',
+    isFocused ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-300 dark:border-slate-600',
     // Error states
     error ? 'border-red-500 ring-2 ring-red-200 dark:ring-red-800' : '',
     // Disabled states
-    disabled ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-60' : '',
+    disabled ? 'bg-gray-100 dark:bg-slate-700 cursor-not-allowed opacity-60' : '',
     className
   ].filter(Boolean).join(' ');
 
@@ -99,7 +99,7 @@ const MobileFormInput = ({
             'block',
             'text-sm',
             'font-medium',
-            'text-gray-700',
+            'text-gray-700 dark:text-gray-300',
             'dark:text-gray-300',
             required ? "after:content-['*'] after:text-red-500 after:ml-1" : ''
           ].join(' ')}
@@ -136,7 +136,7 @@ const MobileFormInput = ({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
@@ -198,12 +198,12 @@ const MobileFormSelect = ({
     'rounded-lg',
     'transition-all',
     'duration-200',
-    'bg-white',
-    'dark:bg-gray-800',
+    'bg-white dark:bg-slate-800',
+    'dark:bg-slate-800',
     'cursor-pointer',
     'min-h-[48px]', // Ensure minimum 48px height for all select elements
-    error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600',
-    disabled ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed opacity-60' : '',
+    error ? 'border-red-500' : 'border-gray-300 dark:border-slate-600',
+    disabled ? 'bg-gray-100 dark:bg-slate-700 cursor-not-allowed opacity-60' : '',
     className
   ].filter(Boolean).join(' ');
 
@@ -216,7 +216,7 @@ const MobileFormSelect = ({
             'block',
             'text-sm',
             'font-medium',
-            'text-gray-700',
+            'text-gray-700 dark:text-gray-300',
             'dark:text-gray-300',
             required ? "after:content-['*'] after:text-red-500 after:ml-1" : ''
           ].join(' ')}
@@ -238,11 +238,11 @@ const MobileFormSelect = ({
           {...props}
         >
           <div className="flex items-center justify-between">
-            <span className={selectedOption ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}>
+            <span className={selectedOption ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-300'}>
               {selectedOption ? selectedOption.label : placeholder}
             </span>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 text-gray-400 dark:text-gray-300 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -254,7 +254,7 @@ const MobileFormSelect = ({
         
         {/* Options dropdown */}
         {isOpen && (
-          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-auto">
             {options.map((option) => (
               <button
                 key={option.value}
@@ -266,8 +266,8 @@ const MobileFormSelect = ({
                   'py-3',
                   'text-left',
                   'text-base',
-                  'hover:bg-gray-100',
-                  'dark:hover:bg-gray-700',
+                  'hover:bg-gray-100 dark:hover:bg-slate-700',
+                  'dark:hover:bg-slate-700',
                   'transition-colors',
                   'duration-150',
                   'min-h-[48px]', // Ensure minimum 48px height for all option buttons

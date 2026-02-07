@@ -156,7 +156,7 @@ const RateLimitIndicator = ({
         {/* Icon */}
         <div className={`
           flex-shrink-0 
-          ${isCritical ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-gray-400'}
+          ${isCritical ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-gray-500 dark:text-gray-300'}
         `}>
           {rateLimitInfo.isLimited ? (
             <RefreshCw className="w-5 h-5 animate-spin" />
@@ -187,7 +187,7 @@ const RateLimitIndicator = ({
                 {rateLimitInfo.remaining} requests remaining
               </p>
               {rateLimitInfo.resetTime && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <p className="text-xs text-gray-500 dark:text-gray-300 flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   Resets in {getResetTimeDisplay()}
                 </p>
@@ -197,7 +197,7 @@ const RateLimitIndicator = ({
         </div>
 
         {/* Progress bar */}
-        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div className="w-16 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div 
             className={`h-full transition-all duration-300 ${
               isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-green-500'
@@ -210,7 +210,7 @@ const RateLimitIndicator = ({
         {!showAlways && (
           <button
             onClick={() => setIsVisible(false)}
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="flex-shrink-0 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-300"
             aria-label="Dismiss rate limit indicator"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

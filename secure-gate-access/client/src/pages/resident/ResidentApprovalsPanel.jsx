@@ -206,10 +206,10 @@ const ResidentApprovalsPanel = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-200">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-200">
             Visitor Approvals
           </h2>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
             Approve or reject visitors requesting entry
           </p>
         </div>
@@ -228,10 +228,10 @@ const ResidentApprovalsPanel = () => {
       {pendingApprovals.length === 0 ? (
         <Card className="text-center py-12">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-slate-200 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-200 mb-2">
             All Clear!
           </h3>
-          <p className="text-slate-400">
+          <p className="text-gray-500 dark:text-slate-400">
             No pending visitor approvals at the moment.
           </p>
         </Card>
@@ -278,9 +278,9 @@ const ResidentApprovalsPanel = () => {
 
                       {/* Purpose */}
                       {approval.purpose && (
-                        <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
-                          <p className="text-sm text-slate-300">
-                            <span className="font-medium text-slate-400">Purpose:</span> {approval.purpose}
+                        <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
+                          <p className="text-sm text-gray-600 dark:text-slate-300">
+                            <span className="font-medium text-gray-500 dark:text-slate-400">Purpose:</span> {approval.purpose}
                           </p>
                         </div>
                       )}

@@ -4,6 +4,7 @@
 import express from 'express';
 import { authenticateToken, requireEstate } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { validateRequest } from '../middleware/validationMiddleware.js';
 import { rateLimiters } from '../config/rateLimits.js';
 import {
@@ -185,7 +186,7 @@ router.post('/reset',
 
 // Get preference statistics (Admin and Super Admin only)
 router.get('/statistics',
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   rateLimiters.admin,
   getPreferenceStatistics
 );

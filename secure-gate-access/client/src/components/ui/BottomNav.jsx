@@ -153,7 +153,7 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
                   w-12 h-12 rounded-full
                   ${active 
                     ? 'bg-green-100 dark:bg-green-900/30 border-2 border-green-500' 
-                    : 'bg-gray-100 dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-600'
+                    : 'bg-gray-100 dark:bg-slate-700 border-2 border-gray-200 dark:border-slate-700'
                   }
                   -z-10
                 `} />

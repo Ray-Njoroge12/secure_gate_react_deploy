@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import apiEnhancementMiddleware from '../middleware/apiEnhancementMiddleware.js';
 import { successResponse, errorResponse } from '../utils/responseUtils.js';
 
@@ -27,7 +28,7 @@ router.get('/documentation', (req, res) => {
  */
 router.post('/clients',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   async (req, res) => {
     try {
       const { name, tier, permissions, rateLimit } = req.body;
@@ -65,7 +66,7 @@ router.post('/clients',
  */
 router.get('/clients',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   async (req, res) => {
     try {
       // This would typically fetch from database
@@ -95,7 +96,7 @@ router.get('/clients',
  */
 router.delete('/clients/:clientId',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   async (req, res) => {
     try {
       const { clientId } = req.params;
@@ -120,7 +121,7 @@ router.delete('/clients/:clientId',
  */
 router.get('/analytics',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   (req, res) => {
     try {
       const { clientId, period } = req.query;

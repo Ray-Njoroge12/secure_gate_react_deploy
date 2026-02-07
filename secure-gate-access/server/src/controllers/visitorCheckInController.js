@@ -15,7 +15,7 @@ const checkInVisitor = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     // Allow guards and admins to check in visitors
-    const allowedRoles = ['guard', 'admin'];
+    const allowedRoles = ['guard', 'admin', 'super_admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     const idempotencyKey = getIdempotencyKey(req);
@@ -121,7 +121,7 @@ const checkOutVisitor = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
     // Allow guards and admins to check out visitors
-    const allowedRoles = ['guard', 'admin'];
+    const allowedRoles = ['guard', 'admin', 'super_admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
     const idempotencyKey = getIdempotencyKey(req);

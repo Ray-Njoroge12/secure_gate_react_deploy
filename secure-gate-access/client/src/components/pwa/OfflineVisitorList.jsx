@@ -151,14 +151,14 @@ const OfflineVisitorList = ({
 
   const getVisitorStatusColor = (visitor) => {
     const colors = {
-      'PENDING': '#fbbf24',
-      'APPROVED': '#10b981',
-      'ON_PREMISE': '#3b82f6',
-      'CHECKED_OUT': '#6b7280',
-      'REVOKED': '#ef4444'
+      'PENDING': 'var(--color-warning, #fbbf24)',
+      'APPROVED': 'var(--color-success, #10b981)',
+      'ON_PREMISE': 'var(--color-info, #3b82f6)',
+      'CHECKED_OUT': 'var(--color-text-tertiary, #6b7280)',
+      'REVOKED': 'var(--color-error, #ef4444)'
     };
 
-    return colors[visitor.status] || '#6b7280';
+    return colors[visitor.status] || 'var(--color-text-tertiary, #6b7280)';
   };
 
   const isActionPending = (visitorId, action) => {
@@ -330,12 +330,12 @@ const OfflineVisitorList = ({
           align-items: center;
           gap: 8px;
           padding: 12px 16px;
-          background: #fef3c7;
-          border: 1px solid #f59e0b;
+          background: var(--color-warning-light, #fef3c7);
+          border: 1px solid var(--color-warning, #f59e0b);
           border-radius: 8px;
           margin-bottom: 16px;
           font-size: 14px;
-          color: #92400e;
+          color: var(--color-warning-dark, #92400e);
         }
 
         .offline-icon {
@@ -351,7 +351,7 @@ const OfflineVisitorList = ({
           align-items: center;
           gap: 12px;
           padding: 16px;
-          background: #f9fafb;
+          background: var(--color-bg-subtle, #f9fafb);
           border-radius: 8px;
           animation: pulse 1.5s ease-in-out infinite;
         }
@@ -359,7 +359,7 @@ const OfflineVisitorList = ({
         .skeleton-avatar {
           width: 48px;
           height: 48px;
-          background: #e5e7eb;
+          background: var(--color-border-primary, #e5e7eb);
           border-radius: 50%;
         }
 
@@ -369,7 +369,7 @@ const OfflineVisitorList = ({
 
         .skeleton-line {
           height: 16px;
-          background: #e5e7eb;
+          background: var(--color-border-primary, #e5e7eb);
           border-radius: 4px;
           margin-bottom: 8px;
         }
@@ -381,10 +381,10 @@ const OfflineVisitorList = ({
         .error-message {
           text-align: center;
           padding: 32px;
-          background: #fef2f2;
-          border: 1px solid #fecaca;
+          background: var(--color-error-bg, #fef2f2);
+          border: 1px solid var(--color-error-light, #fecaca);
           border-radius: 8px;
-          color: #991b1b;
+          color: var(--color-error-dark, #991b1b);
         }
 
         .error-icon {
@@ -395,7 +395,7 @@ const OfflineVisitorList = ({
         .retry-button {
           margin-top: 16px;
           padding: 8px 16px;
-          background: #dc2626;
+          background: var(--color-error, #dc2626);
           color: white;
           border: none;
           border-radius: 6px;
@@ -404,7 +404,7 @@ const OfflineVisitorList = ({
         }
 
         .retry-button:hover {
-          background: #b91c1c;
+          background: var(--color-error-dark, #b91c1c);
         }
 
         .visitor-list {
@@ -419,8 +419,8 @@ const OfflineVisitorList = ({
           align-items: center;
           gap: 16px;
           padding: 16px;
-          background: white;
-          border: 1px solid #e5e7eb;
+          background: var(--color-bg-secondary, white);
+          border: 1px solid var(--color-border-primary, #e5e7eb);
           border-radius: 8px;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           transition: all 0.2s ease;
@@ -441,8 +441,8 @@ const OfflineVisitorList = ({
         .sync-spinner {
           width: 16px;
           height: 16px;
-          border: 2px solid #e5e7eb;
-          border-top: 2px solid #3b82f6;
+          border: 2px solid var(--color-border-primary, #e5e7eb);
+          border-top: 2px solid var(--color-info, #3b82f6);
           border-radius: 50%;
           animation: spin 1s linear infinite;
         }
@@ -458,7 +458,7 @@ const OfflineVisitorList = ({
         .visitor-avatar {
           width: 48px;
           height: 48px;
-          background: #3b82f6;
+          background: var(--color-info, #3b82f6);
           color: white;
           border-radius: 50%;
           display: flex;
@@ -478,12 +478,12 @@ const OfflineVisitorList = ({
           font-size: 16px;
           font-weight: 600;
           margin: 0 0 4px 0;
-          color: #111827;
+          color: var(--color-text-primary, #111827);
         }
 
         .visitor-meta {
           font-size: 14px;
-          color: #6b7280;
+          color: var(--color-text-tertiary, #6b7280);
           margin: 0 0 8px 0;
         }
 
@@ -504,7 +504,7 @@ const OfflineVisitorList = ({
 
         .arrival-time {
           font-size: 12px;
-          color: #6b7280;
+          color: var(--color-text-tertiary, #6b7280);
         }
 
         .visitor-actions {
@@ -534,39 +534,39 @@ const OfflineVisitorList = ({
         }
 
         .approve-btn {
-          background: #10b981;
+          background: var(--color-success, #10b981);
           color: white;
         }
 
         .approve-btn:hover:not(:disabled) {
-          background: #059669;
+          background: var(--color-success-dark, #059669);
         }
 
         .deny-btn {
-          background: #ef4444;
+          background: var(--color-error, #ef4444);
           color: white;
         }
 
         .deny-btn:hover:not(:disabled) {
-          background: #dc2626;
+          background: var(--color-error-dark, #dc2626);
         }
 
         .checkin-btn {
-          background: #3b82f6;
+          background: var(--color-info, #3b82f6);
           color: white;
         }
 
         .checkin-btn:hover:not(:disabled) {
-          background: #2563eb;
+          background: var(--color-info-dark, #2563eb);
         }
 
         .checkout-btn {
-          background: #6b7280;
+          background: var(--color-text-tertiary, #6b7280);
           color: white;
         }
 
         .checkout-btn:hover:not(:disabled) {
-          background: #4b5563;
+          background: var(--color-text-secondary, #4b5563);
         }
 
         .btn-spinner {
@@ -581,7 +581,7 @@ const OfflineVisitorList = ({
         .empty-state {
           text-align: center;
           padding: 48px 24px;
-          color: #6b7280;
+          color: var(--color-text-tertiary, #6b7280);
         }
 
         .empty-icon {
@@ -593,7 +593,7 @@ const OfflineVisitorList = ({
           font-size: 18px;
           font-weight: 600;
           margin: 0 0 8px 0;
-          color: #374151;
+          color: var(--color-text-secondary, #374151);
         }
 
         .empty-state p {

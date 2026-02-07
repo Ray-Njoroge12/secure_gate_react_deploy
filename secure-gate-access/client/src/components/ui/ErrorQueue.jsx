@@ -127,7 +127,7 @@ const ErrorQueue = ({
         <div className="flex justify-end mb-2">
           <button
             onClick={handleDismissAll}
-            className="text-xs text-slate-400 hover:text-slate-200 bg-slate-800 px-2 py-1 rounded"
+            className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded"
             aria-label="Dismiss all notifications"
           >
             Dismiss All
@@ -140,7 +140,7 @@ const ErrorQueue = ({
         <div
           key={item.id}
           className={`
-            max-w-sm w-full bg-slate-800 border border-slate-700 rounded-lg shadow-lg
+            max-w-sm w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg
             transform transition-all duration-300 ease-in-out
             ${item.type === 'error' ? 'border-red-500' : ''}
             ${item.type === 'success' ? 'border-green-500' : ''}
@@ -158,21 +158,21 @@ const ErrorQueue = ({
               
               <div className="flex-1 min-w-0">
                 {item.title && (
-                  <h4 className="text-sm font-medium text-slate-200 mb-1">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-slate-200 mb-1">
                     {item.title}
                   </h4>
                 )}
                 
-                <p className="text-sm text-slate-300">
+                <p className="text-sm text-gray-600 dark:text-slate-300">
                   {item.message}
                 </p>
                 
                 {item.details && (
                   <details className="mt-2">
-                    <summary className="text-xs text-slate-400 cursor-pointer hover:text-slate-300">
+                    <summary className="text-xs text-gray-500 dark:text-slate-400 cursor-pointer hover:text-gray-700 dark:hover:text-slate-300">
                       Show details
                     </summary>
-                    <div className="mt-2 text-xs text-slate-400 bg-slate-900 p-2 rounded">
+                    <div className="mt-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-900 p-2 rounded">
                       <pre className="whitespace-pre-wrap">{item.details}</pre>
                     </div>
                   </details>
@@ -184,7 +184,7 @@ const ErrorQueue = ({
                     {item.onRetry && (
                       <button
                         onClick={() => handleRetry(item)}
-                        className="text-xs px-3 py-1 rounded transition-colors bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1"
+                        className="text-xs px-3 py-1 rounded transition-colors bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-slate-600 flex items-center gap-1"
                       >
                         <RefreshCw className="w-3 h-3" />
                         Retry
@@ -194,7 +194,7 @@ const ErrorQueue = ({
                     {item.onHelp && (
                       <button
                         onClick={() => handleHelp(item)}
-                        className="text-xs px-3 py-1 rounded transition-colors bg-slate-700 text-slate-300 hover:bg-slate-600 flex items-center gap-1"
+                        className="text-xs px-3 py-1 rounded transition-colors bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-slate-600 flex items-center gap-1"
                       >
                         <HelpCircle className="w-3 h-3" />
                         Help
@@ -207,7 +207,7 @@ const ErrorQueue = ({
               <div className="flex-shrink-0 ml-2">
                 <button
                   onClick={() => handleDismiss(item.id)}
-                  className="text-slate-400 hover:text-slate-200 transition-colors"
+                  className="text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors"
                   aria-label={`Dismiss ${item.type} notification`}
                 >
                   <X className="w-4 h-4" />

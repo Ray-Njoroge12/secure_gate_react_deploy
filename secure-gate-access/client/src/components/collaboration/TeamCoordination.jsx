@@ -693,12 +693,15 @@ const EventBlock = ({ event, calendars, onClick, compact = false }) => {
   const startTime = new Date(event.start_time);
   const endTime = new Date(event.end_time);
   
+  const fallbackColor = 'var(--color-info, #3B82F6)';
+  const eventColor = calendar?.color || fallbackColor;
+  
   return (
     <div
       className={`event-block ${compact ? 'compact' : ''}`}
       style={{ 
-        backgroundColor: calendar?.color || '#3B82F6',
-        borderLeft: `4px solid ${calendar?.color || '#3B82F6'}`
+        backgroundColor: eventColor,
+        borderLeft: `4px solid ${eventColor}`
       }}
       onClick={onClick}
     >
@@ -1301,7 +1304,7 @@ const formatHour = (hour) => {
 
 const getCalendarColor = (calendarId, calendars) => {
   const calendar = calendars.find(c => c.id === calendarId);
-  return calendar?.color || '#3B82F6';
+  return calendar?.color || 'var(--color-info, #3B82F6)';
 };
 
 export default TeamCoordination;

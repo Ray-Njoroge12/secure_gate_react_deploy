@@ -30,7 +30,7 @@ const PageLayout = ({
   children,
   maxWidth = 'xl',
   noPadding = false,
-  bgColor = 'bg-gray-50',
+  bgColor = 'bg-gray-50 dark:bg-slate-900',
   className = '',
 }) => {
   // Max width mapping
@@ -83,7 +83,7 @@ export const PageSection = ({
   noPadding = false,
 }) => (
   <section className={`
-    bg-white rounded-xl border border-gray-200 shadow-sm
+    bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm
     ${noPadding ? '' : 'p-4 md:p-6'}
     ${className}
   `}>
@@ -154,7 +154,7 @@ export const ActionBar = ({
 }) => (
   <div className={`
     ${position === 'bottom' ? 'fixed bottom-0 left-0 right-0 pb-safe' : ''}
-    bg-white border-t border-gray-200 p-4
+    bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 p-4
     md:relative md:border-t-0 md:p-0 md:bg-transparent
     z-30
     ${className}

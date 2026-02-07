@@ -39,20 +39,20 @@ const PerformanceAnalyticsDashboard = () => {
   const eventSourceRef = useRef(null);
   const refreshIntervalRef = useRef(null);
 
-  // Color schemes for charts
+  // Color schemes for charts — aligned with design-system.css tokens
   const colors = {
-    primary: '#10b981',
-    warning: '#f59e0b',
-    danger: '#ef4444',
-    info: '#3b82f6',
-    success: '#22c55e',
-    secondary: '#6b7280'
+    primary: '#10b981',   // --color-brand-primary / --color-success
+    warning: '#f59e0b',   // --color-warning
+    danger: '#ef4444',    // --color-error
+    info: '#3b82f6',      // --color-info
+    success: '#22c55e',   // green-500
+    secondary: '#6b7280'  // --color-text-tertiary
   };
 
   const alertColors = {
-    critical: '#dc2626',
-    warning: '#d97706',
-    info: '#2563eb'
+    critical: '#dc2626',  // --color-error-dark
+    warning: '#d97706',   // --color-warning-dark
+    info: '#2563eb'       // --color-info-dark
   };
 
   /**

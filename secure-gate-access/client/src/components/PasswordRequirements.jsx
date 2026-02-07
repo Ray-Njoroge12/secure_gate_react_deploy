@@ -41,8 +41,8 @@ const PasswordRequirements = ({ password }) => {
                             className={`text-xs flex items-center transition-colors ${isMet
                                     ? 'text-green-600 dark:text-green-400'
                                     : password
-                                        ? 'text-gray-500 dark:text-gray-400'
-                                        : 'text-gray-400 dark:text-gray-500'
+                                        ? 'text-gray-500 dark:text-gray-300'
+                                        : 'text-gray-400 dark:text-gray-300'
                                 }`}
                         >
                             <span className="mr-2 font-bold">{isMet ? '✓' : '○'}</span>

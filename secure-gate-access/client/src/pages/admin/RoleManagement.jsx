@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
@@ -26,6 +27,8 @@ const RoleManagement = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);
+  const closeAssignModal = () => setShowAssignModal(false);
+  const { modalRef } = useModalAccessibility(showAssignModal, closeAssignModal);
 
   useEffect(() => {
     fetchRolesAndPermissions();
@@ -302,13 +305,22 @@ const RoleManagement = () => {
 
       {/* Assign Role Modal */}
       {showAssignModal && selectedUser && (
-        <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={closeAssignModal}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="role-modal-title"
+            tabIndex={-1}
+          >
             <div className="modal-header">
-              <h2>Assign Role to {selectedUser.name}</h2>
+              <h2 id="role-modal-title">Assign Role to {selectedUser.name}</h2>
               <button 
                 className="modal-close"
-                onClick={() => setShowAssignModal(false)}
+                onClick={closeAssignModal}
+                aria-label="Close"
               >
                 ×
               </button>
@@ -338,7 +350,7 @@ const RoleManagement = () => {
             <div className="modal-footer">
               <button 
                 className="btn-cancel"
-                onClick={() => setShowAssignModal(false)}
+                onClick={closeAssignModal}
               >
                 Cancel
               </button>

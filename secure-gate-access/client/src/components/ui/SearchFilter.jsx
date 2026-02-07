@@ -140,7 +140,7 @@ const SearchFilter = memo(({
         {(searchState.searchTerm || activeFiltersCount > 0) && (
           <button
             onClick={handleClearAll}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-200"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
             aria-label="Clear all search and filters"
           >
             <X className="w-4 h-4" />
@@ -151,7 +151,7 @@ const SearchFilter = memo(({
       {/* Controls Row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Search Stats */}
-        <div className="text-sm text-slate-400">
+        <div className="text-sm text-gray-600 dark:text-slate-400">
           {searchState.searchTerm || activeFiltersCount > 0 ? (
             <>
               Showing {stats.filteredItems} of {stats.totalItems} results
@@ -170,7 +170,7 @@ const SearchFilter = memo(({
             <div className="relative">
               <button
                 onClick={() => setShowSortOptions(!showSortOptions)}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg transition-colors"
               >
                 {searchState.sortField ? (
                   <>
@@ -190,9 +190,9 @@ const SearchFilter = memo(({
               </button>
 
               {showSortOptions && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-600 rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg z-50">
                   <div className="p-2">
-                    <div className="text-xs font-medium text-slate-400 mb-2 px-2">Sort by</div>
+                    <div className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-2 px-2">Sort by</div>
                     {sortableFields.map((field) => (
                       <div key={field.key} className="space-y-1">
                         <button
@@ -200,7 +200,7 @@ const SearchFilter = memo(({
                           className={`w-full text-left px-2 py-1 text-sm rounded ${
                             searchState.sortField === field.key && searchState.sortDirection === 'asc'
                               ? 'bg-brand-500 text-white'
-                              : 'text-slate-200 hover:bg-slate-700'
+                              : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -213,7 +213,7 @@ const SearchFilter = memo(({
                           className={`w-full text-left px-2 py-1 text-sm rounded ${
                             searchState.sortField === field.key && searchState.sortDirection === 'desc'
                               ? 'bg-brand-500 text-white'
-                              : 'text-slate-200 hover:bg-slate-700'
+                              : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ const SearchFilter = memo(({
                           updateSort('', 'asc');
                           setShowSortOptions(false);
                         }}
-                        className="w-full text-left px-2 py-1 text-sm text-slate-400 hover:text-slate-200 mt-2 pt-2 border-t border-slate-600"
+                        className="w-full text-left px-2 py-1 text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 mt-2 pt-2 border-t border-gray-200 dark:border-slate-600"
                       >
                         Clear Sort
                       </button>
@@ -246,7 +246,7 @@ const SearchFilter = memo(({
             className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
               showFilters || activeFiltersCount > 0
                 ? 'bg-brand-500 text-white'
-                : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+                : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200'
             }`}
           >
             <Filter className="w-4 h-4" />
@@ -309,7 +309,7 @@ const SearchFilter = memo(({
             return (
               <div
                 key={key}
-                className="flex items-center gap-2 px-3 py-1 bg-slate-700 text-slate-200 rounded-full text-sm"
+                className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-full text-sm"
               >
                 <span className="font-medium">{label}:</span>
                 <span>{displayValue}</span>
@@ -319,7 +319,7 @@ const SearchFilter = memo(({
                     delete newFilters[key];
                     handleFilterChange(newFilters);
                   }}
-                  className="text-slate-400 hover:text-slate-200"
+                  className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200"
                   aria-label={`Remove ${label} filter`}
                 >
                   <X className="w-3 h-3" />

@@ -42,7 +42,7 @@ export default function Settings() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader 
         title="Settings"
         subtitle="Manage your guard profile and preferences"
@@ -52,9 +52,9 @@ export default function Settings() {
       />
       
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
           {/* Tab Buttons */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 space-x-1 overflow-x-auto pb-2">
+          <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6 space-x-1 overflow-x-auto pb-2">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -62,7 +62,7 @@ export default function Settings() {
                 className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
                   activeTab === tab.key 
                     ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" 
-                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                 }`}
               >
                 {tab.icon}
@@ -75,11 +75,11 @@ export default function Settings() {
           {activeTab === "profile" && (
             <form onSubmit={handleProfileUpdate} className="space-y-6">
               <div className="flex flex-col items-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center border-2 border-green-500 overflow-hidden mb-3">
+                <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center border-2 border-green-500 overflow-hidden mb-3">
                   {profilePic ? (
                     <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <User className="w-10 h-10 text-gray-400" />
+                    <User className="w-10 h-10 text-gray-400 dark:text-gray-300" />
                   )}
                 </div>
                 <label className="cursor-pointer text-sm text-green-600 dark:text-green-400 hover:underline">
@@ -92,7 +92,7 @@ export default function Settings() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
                   <input 
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" 
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white" 
                     placeholder="Your name" 
                     value={profile.name} 
                     onChange={e=>setProfile({...profile, name:e.target.value})} 
@@ -101,7 +101,7 @@ export default function Settings() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
                   <input 
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" 
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white" 
                     placeholder="Email address" 
                     type="email"
                     value={profile.email} 
@@ -111,7 +111,7 @@ export default function Settings() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
                   <input 
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" 
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white" 
                     placeholder="Phone number" 
                     value={profile.phone} 
                     onChange={e=>setProfile({...profile, phone:e.target.value})} 
@@ -178,7 +178,7 @@ export default function Settings() {
             <div className="space-y-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Security Settings</h2>
               <div className="space-y-4">
-                <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                   <input 
                     type="checkbox" 
                     checked={security.twoFA}
@@ -191,7 +191,7 @@ export default function Settings() {
                   </div>
                 </label>
                 
-                <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                   <input 
                     type="checkbox" 
                     checked={security.showLoginHistory}
@@ -221,7 +221,7 @@ export default function Settings() {
                 </p>
               </div>
               <ThemeRadioGroup />
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>
                   {theme === 'system' && <span className="ml-1 text-gray-500 dark:text-gray-300">(following system preference)</span>}

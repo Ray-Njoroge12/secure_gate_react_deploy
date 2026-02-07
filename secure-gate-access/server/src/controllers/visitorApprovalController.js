@@ -25,9 +25,9 @@ const respondError = (req, res, status, message, code) =>
  */
 export const requestApproval = async (req, res) => {
   try {
-    // Authorization: Only guards can request approval
-    if (!req.user || req.user.role !== 'guard') {
-      return respondError(req, res, 403, 'Only guards can request visitor approval', 'FORBIDDEN');
+    // Authorization: Guards and admins can request approval
+    if (!req.user || (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+      return respondError(req, res, 403, 'Only guards and admins can request visitor approval', 'FORBIDDEN');
     }
 
     const { id } = req.params;
@@ -121,9 +121,9 @@ export const requestApproval = async (req, res) => {
  */
 export const approveVisitor = async (req, res) => {
   try {
-    // Authorization: Only residents can approve
-    if (!req.user || req.user.role !== 'resident') {
-      return respondError(req, res, 403, 'Only residents can approve visitors', 'FORBIDDEN');
+    // Authorization: Residents and admins can approve
+    if (!req.user || (req.user.role !== 'resident' && req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+      return respondError(req, res, 403, 'Only residents and admins can approve visitors', 'FORBIDDEN');
     }
 
     const { id } = req.params;
@@ -212,9 +212,9 @@ export const approveVisitor = async (req, res) => {
  */
 export const rejectVisitor = async (req, res) => {
   try {
-    // Authorization: Only residents can reject
-    if (!req.user || req.user.role !== 'resident') {
-      return respondError(req, res, 403, 'Only residents can reject visitors', 'FORBIDDEN');
+    // Authorization: Residents and admins can reject
+    if (!req.user || (req.user.role !== 'resident' && req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+      return respondError(req, res, 403, 'Only residents and admins can reject visitors', 'FORBIDDEN');
     }
 
     const { id } = req.params;
@@ -299,9 +299,9 @@ export const rejectVisitor = async (req, res) => {
  */
 export const getPendingApprovals = async (req, res) => {
   try {
-    // Authorization: Only residents can view their pending approvals
-    if (!req.user || req.user.role !== 'resident') {
-      return respondError(req, res, 403, 'Only residents can view pending approvals', 'FORBIDDEN');
+    // Authorization: Residents and admins can view pending approvals
+    if (!req.user || (req.user.role !== 'resident' && req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+      return respondError(req, res, 403, 'Only residents and admins can view pending approvals', 'FORBIDDEN');
     }
 
     const residentId = req.user.id;
@@ -343,9 +343,9 @@ export const getPendingApprovals = async (req, res) => {
  */
 export const getApprovalHistory = async (req, res) => {
   try {
-    // Authorization: Only residents can view their approval history
-    if (!req.user || req.user.role !== 'resident') {
-      return respondError(req, res, 403, 'Only residents can view approval history', 'FORBIDDEN');
+    // Authorization: Residents and admins can view approval history
+    if (!req.user || (req.user.role !== 'resident' && req.user.role !== 'admin' && req.user.role !== 'super_admin')) {
+      return respondError(req, res, 403, 'Only residents and admins can view approval history', 'FORBIDDEN');
     }
 
     const residentId = req.user.id;

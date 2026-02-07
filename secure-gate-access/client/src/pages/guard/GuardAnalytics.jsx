@@ -72,21 +72,21 @@ const GuardAnalytics = () => {
         <Card.Content>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
               <input
                 type="date"
                 value={dateRange.from}
                 onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
               <input
                 type="date"
                 value={dateRange.to}
                 onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200"
               />
             </div>
           </div>
@@ -100,8 +100,8 @@ const GuardAnalytics = () => {
             <Card>
               <Card.Content className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Clock className="w-6 h-6 text-blue-600" />
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -116,8 +116,8 @@ const GuardAnalytics = () => {
             <Card>
               <Card.Content className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <Users className="w-6 h-6 text-green-600" />
+                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                    <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -132,8 +132,8 @@ const GuardAnalytics = () => {
             <Card>
               <Card.Content className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-red-100 rounded-lg">
-                    <AlertCircle className="w-6 h-6 text-red-600" />
+                  <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                    <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
                   </div>
                   <div>
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -156,17 +156,17 @@ const GuardAnalytics = () => {
             </Card.Header>
             <Card.Content>
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-purple-900">
+                <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-900 dark:text-purple-300">
                     {analytics.visitorTypes.walkIns}
                   </div>
-                  <div className="text-sm text-purple-700">Walk-Ins</div>
+                  <div className="text-sm text-purple-700 dark:text-purple-400">Walk-Ins</div>
                 </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-blue-900">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                  <div className="text-2xl font-bold text-blue-900 dark:text-blue-300">
                     {analytics.visitorTypes.preRegistered}
                   </div>
-                  <div className="text-sm text-blue-700">Pre-Registered</div>
+                  <div className="text-sm text-blue-700 dark:text-blue-400">Pre-Registered</div>
                 </div>
               </div>
             </Card.Content>
@@ -205,7 +205,7 @@ const GuardAnalytics = () => {
               <Card.Content>
                 <div className="space-y-3">
                   {analytics.incidentsByCategory.map(incident => (
-                    <div key={`${incident.category}-${incident.severity}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={`${incident.category}-${incident.severity}`} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white capitalize">
                           {incident.category.replace('_', ' ')}
@@ -229,7 +229,7 @@ const GuardAnalytics = () => {
               <Card.Content>
                 <div className="space-y-3">
                   {analytics.topResidents.map((resident, index) => (
-                    <div key={resident.email} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={resident.email} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
                           {index + 1}

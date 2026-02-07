@@ -177,7 +177,7 @@ const CookieConsentBanner = () => {
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Necessary Cookies</Label>
                         <p className="text-xs text-gray-600 dark:text-gray-300">
@@ -191,7 +191,7 @@ const CookieConsentBanner = () => {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Analytics Cookies</Label>
                         <p className="text-xs text-gray-600 dark:text-gray-300">
@@ -204,7 +204,7 @@ const CookieConsentBanner = () => {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Marketing Cookies</Label>
                         <p className="text-xs text-gray-600 dark:text-gray-300">
@@ -217,7 +217,7 @@ const CookieConsentBanner = () => {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-600 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg">
                       <div className="space-y-1">
                         <Label className="font-medium">Preference Cookies</Label>
                         <p className="text-xs text-gray-600 dark:text-gray-300">

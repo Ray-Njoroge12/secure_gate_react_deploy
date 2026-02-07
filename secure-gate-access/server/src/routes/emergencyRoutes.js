@@ -13,6 +13,7 @@
 import express from 'express';
 import emergencyService from '../services/emergencyService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import loggingService from '../services/loggingService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
@@ -123,9 +124,9 @@ router.post('/:id/cancel', requireRole(['guard', 'resident']), async (req, res) 
 /**
  * @route POST /api/emergency/:id/acknowledge
  * @desc Acknowledge an emergency (admin or guard responding)
- * @access Admins and Guards
+ * @access Admins, Guards, and Super Admins
  */
-router.post('/:id/acknowledge', requireRole(['admin', 'guard']), async (req, res) => {
+router.post('/:id/acknowledge', requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const responderId = req.user.id;
@@ -168,7 +169,7 @@ router.post('/:id/acknowledge', requireRole(['admin', 'guard']), async (req, res
  * @desc Resolve an emergency (admin only)
  * @access Admins only
  */
-router.post('/:id/resolve', requireRole(['admin']), async (req, res) => {
+router.post('/:id/resolve', requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const resolverId = req.user.id;
@@ -210,15 +211,15 @@ router.post('/:id/resolve', requireRole(['admin']), async (req, res) => {
 /**
  * @route GET /api/emergency/active
  * @desc Get all active emergencies
- * @access Admins and Guards
+ * @access Admins, Guards, and Super Admins
  */
-router.get('/active', requireRole(['admin', 'guard']), async (req, res) => {
+router.get('/active', requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const emergencies = await emergencyService.getActiveEmergencies(req.user.estate_id);
 
     // For guards, redact exact location coordinates
     const sanitizedEmergencies = emergencies.map(e => {
-      if (req.user.role !== 'admin') {
+      if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
         return {
           ...e,
           latitude: e.latitude ? '[Location available]' : null,
@@ -306,7 +307,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
  * @desc Get aggregate emergency statistics (privacy-safe)
  * @access Admins only
  */
-router.get('/stats/aggregate', requireRole(['admin']), async (req, res) => {
+router.get('/stats/aggregate', requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const period = req.query.period || 'month';
 

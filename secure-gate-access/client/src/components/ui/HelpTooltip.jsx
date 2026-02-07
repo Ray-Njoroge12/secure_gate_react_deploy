@@ -55,7 +55,7 @@ const PlayIcon = () => (
 
 // Keyboard shortcut badge
 const KeyboardBadge = ({ shortcut }) => (
-  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+  <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded">
     {shortcut}
   </kbd>
 );
@@ -94,7 +94,7 @@ const HelpTooltip = ({
   position = 'top',
   showIcon = true,
   iconSize = 16,
-  iconClassName = 'text-gray-400 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300 cursor-help',
+  iconClassName = 'text-gray-500 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-300 cursor-help',
   triggerOnClick = false,
   dismissable = false,
   dismissKey,
@@ -255,7 +255,7 @@ const HelpTooltip = ({
           role="tooltip"
           className={`
             absolute z-50 ${positions[calculatedPosition]}
-            bg-gray-800 dark:bg-gray-700 text-white rounded-lg shadow-xl
+            bg-gray-800 dark:bg-slate-700 text-white rounded-lg shadow-xl
             animate-fade-in
           `}
           style={{ maxWidth, minWidth: 200 }}
@@ -299,7 +299,7 @@ const HelpTooltip = ({
                   />
                 ) : (
                   <div className="w-full h-24 bg-gray-700 flex items-center justify-center">
-                    <span className="text-gray-400 text-sm">Video Tutorial</span>
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">Video Tutorial</span>
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/30 transition-colors">
@@ -337,7 +337,7 @@ const HelpTooltip = ({
                 {dismissable && (
                   <button
                     onClick={handleDismiss}
-                    className="text-xs text-gray-400 hover:text-gray-300"
+                    className="text-xs text-gray-500 dark:text-gray-300 hover:text-gray-300"
                   >
                     Don't show again
                   </button>

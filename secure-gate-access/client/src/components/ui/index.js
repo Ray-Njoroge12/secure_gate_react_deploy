@@ -13,7 +13,6 @@ export { default as Input } from './Input.jsx';
 export { default as Card } from './Card.jsx';
 export { default as Badge } from './Badge.jsx';
 export { default as EmptyState, UpcomingVisitsEmpty, RecentVisitorsEmpty, SearchEmpty, ErrorState } from './EmptyState.jsx';
-export { default as EnhancedInput } from './EnhancedInput.jsx';
 export { default as SuccessAnimation, VisitorCreatedSuccess, PassGeneratedSuccess, BulkInviteSuccess, DraftSavedSuccess } from './SuccessAnimation.jsx';
 export { default as Progress } from './Progress.jsx';
 export { default as Tooltip } from './Tooltip.jsx';
@@ -42,8 +41,14 @@ export const FormWizard = React.lazy(() => import('./FormWizard.jsx'));
 export const EnhancedFormWizard = React.lazy(() => import('./EnhancedFormWizard.jsx'));
 export { default as FormStep } from './FormStep.jsx';
 export { default as ProgressiveDisclosure } from './ProgressiveDisclosure.jsx';
+/**
+ * Input Component Hierarchy (use the simplest that fits your need):
+ *   Input            — Base input with label, error, icon, keyboard shortcuts
+ *   ValidatedInput   — Input + real-time validation rules, debouncing
+ *   FormField        — ValidatedInput + form context integration
+ *   FloatingLabelInput     — Standalone Material-style input (Login page only)
+ */
 export { default as ValidatedInput, ValidatedForm } from './ValidatedInput.jsx';
-export { default as AdvancedValidatedInput } from './AdvancedValidatedInput.jsx';
 export { default as ValidationSummary } from './ValidationSummary.jsx';
 export { default as ResponsiveTable } from './ResponsiveTable.jsx'; // Added for Task 1.3
 export { default as OptimizedImage } from './OptimizedImage.jsx'; // Added for Task 3.2
@@ -62,6 +67,7 @@ export { default as NotificationBell } from './NotificationBell.jsx'; // Real-ti
 export { Alert, AlertTitle, AlertDescription } from './Alert.jsx';
 export { Checkbox } from './Checkbox.jsx';
 export { default as IconButton } from './IconButton.jsx';
+export { default as Icon, ICON_SIZES } from './Icon.jsx';
 export { Label } from './Label.jsx';
 export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from './Select.jsx';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs.jsx';

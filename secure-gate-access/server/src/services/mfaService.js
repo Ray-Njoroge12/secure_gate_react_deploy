@@ -1,12 +1,52 @@
 /**
  * Multi-Factor Authentication (MFA) Service
  * 
+ * IMPLEMENTATION STATUS: ✅ FIXED (February 5, 2026)
+ * ====================================================
+ * 
+ * DATABASE SCHEMA FIX:
+ * - This service expects MFA data in users table (mfa_enabled, mfa_secret, backup_codes, mfa_methods)
+ * - Migration 061 adds these columns to users table
+ * - Previously these were in separate user_security_settings table (causing failures)
+ * 
+ * DATA STORAGE:
+ * =============
+ * Column           | Type    | Purpose
+ * -----------------|---------|--------------------------------------------------
+ * mfa_enabled      | BOOLEAN | Whether MFA is enabled for user
+ * mfa_secret       | VARCHAR | Encrypted TOTP secret (for Google Authenticator)
+ * backup_codes     | JSONB   | Array of hashed backup codes
+ * mfa_methods      | JSONB   | Array of enabled methods ['totp', 'sms', 'email']
+ * 
+ * SECURITY:
+ * =========
+ * - TOTP secrets are encrypted before storage (encryptSecret method)
+ * - Backup codes are hashed before storage (one-time use, consumed on verification)
+ * - Failed attempts are tracked with automatic lockout after 3 failures
+ * - Lockout duration: 15 minutes
+ * - TOTP window: ±30 seconds for clock skew
+ * 
  * Provides comprehensive MFA functionality including:
  * - TOTP (Time-based One-Time Password) generation and validation
  * - SMS-based OTP
  * - Email-based OTP
  * - Backup codes
  * - MFA enforcement policies
+ * 
+ * METHODS:
+ * ========
+ * - generateTOTPSecret(userId, email) -> { secret, qrCodeUrl, manualEntryKey }
+ * - verifyTOTPToken(userId, token) -> boolean
+ * - generateBackupCodes(userId) -> string[] (plaintext, shown once)
+ * - verifyBackupCode(userId, code) -> boolean
+ * - disableMFA(userId) -> void
+ * 
+ * TROUBLESHOOTING:
+ * ================
+ * If this service throws "column does not exist" errors:
+ * 1. Run: npm run mfa:migrate
+ * 2. Verify: npm run mfa:verify
+ * 3. Check logs for specific column name
  */
 
 import speakeasy from 'speakeasy';
@@ -36,6 +76,7 @@ class MFAService {
     
     this.attempts = new Map();
     this.lockouts = new Map();
+    this.otpCodes = new Map(); // In-memory OTP storage (short-lived, 5-min expiry)
     
     this.initializeService();
   }
@@ -281,13 +322,9 @@ class MFAService {
     try {
       const otp = this.generateOTP(this.config.smsOtpLength);
       
-      // Store OTP in database with expiration
-      const expiresAt = new Date(Date.now() + this.config.otpValidityPeriod);
-      
-      await databaseService.query(
-        'INSERT INTO user_otp_codes (user_id, code, method, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)',
-        [userId, otp, 'sms', expiresAt, new Date()]
-      );
+      // Store OTP in memory with expiration (short-lived, no DB table needed)
+      const expiresAt = Date.now() + this.config.otpValidityPeriod;
+      this.storeOTP(userId, otp, 'sms', expiresAt);
 
       // Send SMS
       await smsService.sendOTP(phoneNumber, otp);
@@ -316,13 +353,9 @@ class MFAService {
     try {
       const otp = this.generateOTP(this.config.emailOtpLength);
       
-      // Store OTP in database with expiration
-      const expiresAt = new Date(Date.now() + this.config.otpValidityPeriod);
-      
-      await databaseService.query(
-        'INSERT INTO user_otp_codes (user_id, code, method, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)',
-        [userId, otp, 'email', expiresAt, new Date()]
-      );
+      // Store OTP in memory with expiration (short-lived, no DB table needed)
+      const expiresAt = Date.now() + this.config.otpValidityPeriod;
+      this.storeOTP(userId, otp, 'email', expiresAt);
 
       // Send email
       await emailService.sendOTP(email, otp);
@@ -354,24 +387,16 @@ class MFAService {
         throw new Error('User is temporarily locked out due to too many failed attempts');
       }
 
-      // Get valid OTP from database
-      const result = await databaseService.query(
-        'SELECT code FROM user_otp_codes WHERE user_id = $1 AND method = $2 AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
-        [userId, method]
-      );
+      // Get valid OTP from in-memory storage
+      const storedOTP = this.getStoredOTP(userId, method);
 
-      if (result.rows.length === 0) {
+      if (!storedOTP) {
         throw new Error('No valid OTP found for user');
       }
 
-      const storedCode = result.rows[0].code;
-
-      if (storedCode === code) {
+      if (storedOTP.code === code) {
         // Remove used OTP
-        await databaseService.query(
-          'DELETE FROM user_otp_codes WHERE user_id = $1 AND method = $2 AND code = $3',
-          [userId, method, code]
-        );
+        this.removeOTP(userId, method);
 
         // Reset failed attempts
         this.attempts.delete(userId);
@@ -435,13 +460,21 @@ class MFAService {
   async getUserMFAMethods(userId) {
     try {
       const result = await databaseService.query(
-        'SELECT method, created_at FROM user_mfa_secrets WHERE user_id = $1',
+        'SELECT mfa_methods, updated_at FROM users WHERE id = $1',
         [userId]
       );
 
-      return result.rows.map(row => ({
-        method: row.method,
-        createdAt: row.created_at
+      if (result.rows.length === 0 || !result.rows[0].mfa_methods) {
+        return [];
+      }
+
+      const methods = typeof result.rows[0].mfa_methods === 'string'
+        ? JSON.parse(result.rows[0].mfa_methods)
+        : result.rows[0].mfa_methods;
+
+      return methods.map(method => ({
+        method,
+        createdAt: result.rows[0].updated_at
       }));
 
     } catch (error) {
@@ -481,27 +514,22 @@ class MFAService {
    */
   async disableMFA(userId) {
     try {
-      // Remove MFA secrets
+      // Clear all MFA data from users table and disable MFA
       await databaseService.query(
-        'DELETE FROM user_mfa_secrets WHERE user_id = $1',
-        [userId]
-      );
-
-      // Remove backup codes
-      await databaseService.query(
-        'DELETE FROM user_backup_codes WHERE user_id = $1',
-        [userId]
-      );
-
-      // Update user settings
-      await databaseService.query(
-        'UPDATE users SET mfa_enabled = false, mfa_methods = NULL, updated_at = $1 WHERE id = $2',
+        'UPDATE users SET mfa_enabled = false, mfa_secret = NULL, backup_codes = NULL, mfa_methods = NULL, updated_at = $1 WHERE id = $2',
         [new Date(), userId]
       );
+
+      // Clear any active attempts/lockouts and OTP codes
+      this.attempts.delete(userId);
+      this.lockouts.delete(userId);
+      this.removeAllOTPs(userId);
 
       loggingService.logInfo('MFA disabled for user', {
         userId
       });
+
+      return true;
 
     } catch (error) {
       loggingService.logError('Failed to disable MFA for user', error, {
@@ -657,6 +685,49 @@ class MFAService {
   }
 
   /**
+   * Store OTP in memory with expiration
+   * Key format: userId:method
+   */
+  storeOTP(userId, code, method, expiresAt) {
+    const key = `${userId}:${method}`;
+    this.otpCodes.set(key, { code, method, expiresAt });
+  }
+
+  /**
+   * Get stored OTP if not expired
+   */
+  getStoredOTP(userId, method) {
+    const key = `${userId}:${method}`;
+    const stored = this.otpCodes.get(key);
+    if (!stored) return null;
+    if (Date.now() > stored.expiresAt) {
+      this.otpCodes.delete(key);
+      return null;
+    }
+    return stored;
+  }
+
+  /**
+   * Remove a specific OTP
+   */
+  removeOTP(userId, method) {
+    const key = `${userId}:${method}`;
+    this.otpCodes.delete(key);
+  }
+
+  /**
+   * Remove all OTPs for a user
+   */
+  removeAllOTPs(userId) {
+    const prefix = `${userId}:`;
+    for (const key of this.otpCodes.keys()) {
+      if (key.startsWith(prefix)) {
+        this.otpCodes.delete(key);
+      }
+    }
+  }
+
+  /**
    * Mask phone number for logging
    */
   maskPhoneNumber(phoneNumber) {
@@ -672,41 +743,6 @@ class MFAService {
     const [local, domain] = email.split('@');
     const maskedLocal = local.length > 2 ? local[0] + '*'.repeat(local.length - 2) + local[local.length - 1] : local;
     return `${maskedLocal}@${domain}`;
-  }
-
-  /**
-   * Disable MFA for user (remove secrets and backup codes)
-   */
-  async disableMFA(userId) {
-    try {
-      // Delete TOTP secrets
-      await databaseService.query(
-        'DELETE FROM user_mfa_secrets WHERE user_id = $1',
-        [userId]
-      );
-
-      // Delete backup codes
-      await databaseService.query(
-        'DELETE FROM user_backup_codes WHERE user_id = $1',
-        [userId]
-      );
-
-      // Clear any active attempts/lockouts
-      this.attempts.delete(userId);
-      this.lockouts.delete(userId);
-
-      loggingService.logInfo('MFA disabled for user', {
-        userId
-      });
-
-      return true;
-
-    } catch (error) {
-      loggingService.logError('Failed to disable MFA', error, {
-        userId
-      });
-      throw error;
-    }
   }
 
   /**

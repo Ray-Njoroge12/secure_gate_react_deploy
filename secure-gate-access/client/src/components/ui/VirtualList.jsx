@@ -90,8 +90,8 @@ const VirtualList = memo(({
   if (items.length === 0) {
     return (
       <div className={`flex items-center justify-center ${className}`} style={{ height: containerHeight }}>
-        <div className="text-slate-500 dark:text-slate-300 text-center">
-          <svg className="w-12 h-12 mx-auto mb-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-gray-500 dark:text-slate-300 text-center">
+          <svg className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <p>No items to display</p>
@@ -113,7 +113,7 @@ const VirtualList = memo(({
         onScroll={handleScroll}
         style={{
           scrollbarWidth: 'thin',
-          scrollbarColor: '#64748b #f1f5f9'
+          scrollbarColor: 'var(--color-text-tertiary, #64748b) var(--color-bg-tertiary, #f1f5f9)'
         }}
       >
         <div style={{ height: totalHeight, position: 'relative' }}>
@@ -148,7 +148,7 @@ const VirtualList = memo(({
       {scrollTop > 0 && (
         <button
           onClick={scrollToTop}
-          className="absolute top-2 right-2 p-2 bg-slate-800 text-white rounded-full shadow-lg hover:bg-slate-700 transition-colors"
+          className="absolute top-2 right-2 p-2 bg-gray-800 dark:bg-slate-800 text-white rounded-full shadow-lg hover:bg-gray-700 dark:hover:bg-slate-700 transition-colors"
           aria-label="Scroll to top"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,7 +160,7 @@ const VirtualList = memo(({
       {scrollTop < totalHeight - containerHeight && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-2 right-2 p-2 bg-slate-800 text-white rounded-full shadow-lg hover:bg-slate-700 transition-colors"
+          className="absolute bottom-2 right-2 p-2 bg-gray-800 dark:bg-slate-800 text-white rounded-full shadow-lg hover:bg-gray-700 dark:hover:bg-slate-700 transition-colors"
           aria-label="Scroll to bottom"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

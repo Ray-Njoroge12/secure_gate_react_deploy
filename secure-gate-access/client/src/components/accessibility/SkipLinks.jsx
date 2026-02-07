@@ -18,16 +18,6 @@ const SKIP_LINKS = [
     href: '#navigation',
     label: 'Skip to navigation',
     key: 'Alt+N'
-  },
-  {
-    href: '#search',
-    label: 'Skip to search',
-    key: 'Alt+S'
-  },
-  {
-    href: '#footer',
-    label: 'Skip to footer',
-    key: 'Alt+F'
   }
 ];
 

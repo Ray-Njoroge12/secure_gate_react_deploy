@@ -1,4 +1,8 @@
 /**
+ * @deprecated Use `ValidatedInput` or `AdvancedValidatedInput` instead.
+ * This component is not used anywhere in the codebase and will be removed
+ * in a future cleanup. Prefer the Input → ValidatedInput → FormField hierarchy.
+ * 
  * EnhancedInput Component
  * 
  * Advanced input field with inline validation, format helpers,
@@ -176,7 +180,7 @@ const EnhancedInput = ({
       <div className="relative">
         {/* Left Icon */}
         {Icon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-400">
             <Icon className="w-5 h-5" />
           </div>
         )}
@@ -209,7 +213,7 @@ const EnhancedInput = ({
             <button
               type="button"
               onClick={togglePassword}
-              className="text-slate-400 hover:text-slate-300 transition-colors"
+              className="text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? (

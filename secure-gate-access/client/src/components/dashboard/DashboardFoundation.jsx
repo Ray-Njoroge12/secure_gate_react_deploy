@@ -129,7 +129,7 @@ const WIDGET_COMPONENTS = {
       renderItem={(activity) => (
         <div className="flex justify-between items-center">
           <span>{activity.user}</span>
-          <span className="text-sm text-gray-500">{activity.action}</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{activity.action}</span>
         </div>
       )}
     />
@@ -141,7 +141,7 @@ const WIDGET_COMPONENTS = {
       renderItem={(alert) => (
         <div className={`p-2 rounded ${alert.severity === 'high' ? 'bg-red-100' : 'bg-yellow-100'}`}>
           <div className="font-medium">{alert.title}</div>
-          <div className="text-sm text-gray-600">{alert.message}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">{alert.message}</div>
         </div>
       )}
     />
@@ -166,7 +166,7 @@ const WIDGET_COMPONENTS = {
         <div className="flex justify-between items-center">
           <div>
             <div className="font-medium">{user.name}</div>
-            <div className="text-sm text-gray-500">{user.role}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{user.role}</div>
           </div>
           <div className="flex space-x-2">
             <button className="text-green-600 hover:text-green-800">Approve</button>
@@ -192,7 +192,7 @@ const WIDGET_COMPONENTS = {
           <div className={`w-3 h-3 rounded-full ${alert.level === 'high' ? 'bg-red-500' : 'bg-yellow-500'}`} />
           <div>
             <div className="font-medium">{alert.type}</div>
-            <div className="text-sm text-gray-500">{alert.time}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{alert.time}</div>
           </div>
         </div>
       )}
@@ -203,8 +203,8 @@ const WIDGET_COMPONENTS = {
   'qr-scanner': () => (
     <DashboardWidget title="QR Scanner" icon="qr-code">
       <div className="flex flex-col items-center justify-center h-48">
-        <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-          <span className="text-gray-500">QR Scanner</span>
+        <div className="w-32 h-32 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg flex items-center justify-center">
+          <span className="text-gray-500 dark:text-gray-400">QR Scanner</span>
         </div>
         <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Start Scanning
@@ -220,7 +220,7 @@ const WIDGET_COMPONENTS = {
         <div className="flex justify-between items-center">
           <div>
             <div className="font-medium">{visitor.name}</div>
-            <div className="text-sm text-gray-500">Expected: {visitor.expectedTime}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Expected: {visitor.expectedTime}</div>
           </div>
           <div className="flex space-x-2">
             <button className="px-3 py-1 bg-green-600 text-white rounded text-sm">Check In</button>
@@ -252,12 +252,12 @@ const WIDGET_COMPONENTS = {
         <input
           type="text"
           placeholder="Visitor name"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="tel"
           placeholder="Phone number"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
         <button className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Send Invitation
@@ -283,7 +283,7 @@ const WIDGET_COMPONENTS = {
         <div className="flex justify-between items-center">
           <div>
             <div className="font-medium">{visit.visitorName}</div>
-            <div className="text-sm text-gray-500">{visit.expectedTime}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">{visit.expectedTime}</div>
           </div>
           <span className={`px-2 py-1 rounded text-xs ${
             visit.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -302,10 +302,10 @@ const WIDGET_COMPONENTS = {
         <div className="text-3xl font-bold text-blue-600">
           {data?.status || 'Pending'}
         </div>
-        <div className="text-gray-600">
+        <div className="text-gray-600 dark:text-gray-300">
           Visit to {data?.estateName || 'Estate'}
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
           Expected: {data?.expectedTime || 'TBD'}
         </div>
       </div>
@@ -314,10 +314,10 @@ const WIDGET_COMPONENTS = {
   'qr-display': ({ data }) => (
     <DashboardWidget title="Access Pass" icon="qr-code">
       <div className="flex flex-col items-center justify-center space-y-4">
-        <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-          <span className="text-gray-500">QR Code</span>
+        <div className="w-32 h-32 bg-gray-100 dark:bg-slate-700 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg flex items-center justify-center">
+          <span className="text-gray-500 dark:text-gray-400">QR Code</span>
         </div>
-        <div className="text-sm text-gray-600 text-center">
+        <div className="text-sm text-gray-600 dark:text-gray-300 text-center">
           Show this code at the gate
         </div>
       </div>
@@ -573,7 +573,7 @@ export const DashboardFoundation = ({
       <div className="dashboard-loading flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -589,7 +589,7 @@ export const DashboardFoundation = ({
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Platform Dashboard
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-300">
                 Monitor and manage the entire SecureGate platform
               </p>
             </div>
@@ -624,7 +624,7 @@ export const DashboardFoundation = ({
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Estate Dashboard
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-300">
                 Manage your estate and monitor visitor activity
               </p>
             </div>
@@ -659,7 +659,7 @@ export const DashboardFoundation = ({
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Security Dashboard
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-300">
                 Monitor visitors and manage security operations
               </p>
             </div>
@@ -697,7 +697,7 @@ export const DashboardFoundation = ({
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Resident Portal
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-300">
                 Manage your visitors and invitations
               </p>
             </div>
@@ -730,7 +730,7 @@ export const DashboardFoundation = ({
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Visitor Access
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-300">
             Your visit information and access details
           </p>
         </div>
@@ -752,7 +752,7 @@ export const DashboardFoundation = ({
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Welcome to SecureGate
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-300">
             Please log in to access your dashboard
           </p>
         </div>

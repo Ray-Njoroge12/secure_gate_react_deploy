@@ -26,12 +26,12 @@ router.use(requireEstateContext);
  * SEC-004: Enforces one-time QR code use
  * POST /api/check-in/qr
  */
-router.post('/qr', authorize(['guard', 'admin']), strictRateLimit(), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/qr', authorize(['guard', 'admin', 'super_admin']), strictRateLimit(), attachRequestAudit, asyncHandler(async (req, res) => {
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
 
   // GUARD-003 FIX: Validate that user is actually a guard or admin
-  if (!['guard', 'admin'].includes(req.user.role)) {
+  if (!['guard', 'admin', 'super_admin'].includes(req.user.role)) {
     throw new AppError('Only guards and admins can perform check-in operations', 403, 'UNAUTHORIZED_ROLE');
   }
 
@@ -150,13 +150,13 @@ router.post('/qr', authorize(['guard', 'admin']), strictRateLimit(), attachReque
  * Check in a visitor by ID
  * POST /api/check-in/:visitorId
  */
-router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/:visitorId', authorize(['guard', 'admin', 'super_admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { visitorId } = req.params;
   const guardId = req.user.id;
   const { notes, vehicle_plate } = req.body;
 
   // GUARD-003 FIX: Validate that user is actually a guard or admin
-  if (!['guard', 'admin'].includes(req.user.role)) {
+  if (!['guard', 'admin', 'super_admin'].includes(req.user.role)) {
     throw new AppError('Only guards and admins can perform check-in operations', 403, 'UNAUTHORIZED_ROLE');
   }
 
@@ -210,7 +210,7 @@ router.post('/:visitorId', authorize(['guard', 'admin']), attachRequestAudit, as
  * Get today's check-ins
  * GET /api/check-in/today
  */
-router.get('/today', authorize(['guard', 'admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
+router.get('/today', authorize(['guard', 'admin', 'super_admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
      FROM visitors v
@@ -229,7 +229,7 @@ router.get('/today', authorize(['guard', 'admin']), minimizeData('check-in'), as
  * Get check-in history
  * GET /api/check-in/history
  */
-router.get('/history', authorize(['guard', 'admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
+router.get('/history', authorize(['guard', 'admin', 'super_admin']), minimizeData('check-in'), asyncHandler(async (req, res) => {
   const { limit = 50, offset = 0, date } = req.query;
 
   let query = `

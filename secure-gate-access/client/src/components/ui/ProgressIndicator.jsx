@@ -99,7 +99,7 @@ const ProgressIndicator = ({
         )}
         
         <div 
-          className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full ${config.bar}`}
+          className={`w-full bg-gray-200 dark:bg-slate-700 rounded-full ${config.bar}`}
           role="progressbar"
           aria-valuenow={Math.round(progressPercentage)}
           aria-valuemin="0"
@@ -141,7 +141,7 @@ const ProgressIndicator = ({
               stroke="currentColor"
               strokeWidth="2"
               fill="none"
-              className="text-gray-200 dark:text-gray-700"
+              className="text-gray-200 dark:text-gray-300"
             />
             {/* Progress circle */}
             <circle
@@ -170,7 +170,7 @@ const ProgressIndicator = ({
         </div>
         
         {showLabels && (
-          <span className={`mt-2 text-gray-600 dark:text-gray-400 ${config.text}`}>
+          <span className={`mt-2 text-gray-600 dark:text-gray-300 ${config.text}`}>
             {current} of {total}
           </span>
         )}
@@ -199,8 +199,8 @@ const ProgressIndicator = ({
                       ${isCompleted 
                         ? `${progressColor} text-white` 
                         : isCurrent
-                          ? `border-2 border-${color}-500 text-${color}-500 bg-white dark:bg-gray-800`
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                          ? `border-2 border-${color}-500 text-${color}-500 bg-white dark:bg-slate-800`
+                          : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-300'
                       }
                     `}
                     role="progressbar"
@@ -219,7 +219,7 @@ const ProgressIndicator = ({
                   </div>
                   
                   {showLabels && (
-                    <span className={`mt-1 text-gray-600 dark:text-gray-400 ${config.text}`}>
+                    <span className={`mt-1 text-gray-600 dark:text-gray-300 ${config.text}`}>
                       Step {step}
                     </span>
                   )}
@@ -227,7 +227,7 @@ const ProgressIndicator = ({
                 
                 {!isLast && (
                   <div className={`flex-1 h-0.5 mx-2 ${
-                    step < current ? progressColor : 'bg-gray-200 dark:bg-gray-700'
+                    step < current ? progressColor : 'bg-gray-200 dark:bg-slate-700'
                   } transition-colors duration-200`} />
                 )}
               </React.Fragment>

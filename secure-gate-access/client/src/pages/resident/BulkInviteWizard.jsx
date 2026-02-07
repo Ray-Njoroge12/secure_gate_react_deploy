@@ -291,10 +291,10 @@ const BulkInviteWizard = () => {
           <div className="space-y-6">
             <div className="text-center mb-6">
               <Upload className="w-16 h-16 text-brand-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-200 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
                 Add Guest Information
               </h3>
-              <p className="text-slate-400">
+              <p className="text-gray-500 dark:text-slate-400">
                 You can upload a CSV file or add guests manually.
               </p>
             </div>
@@ -302,12 +302,12 @@ const BulkInviteWizard = () => {
             {/* CSV Upload Section */}
             <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
               <Card.Header>
-                <Card.Title className="text-slate-200">CSV Upload</Card.Title>
+                <Card.Title className="text-gray-900 dark:text-slate-200">CSV Upload</Card.Title>
               </Card.Header>
               <Card.Content>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-200 mb-2">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-slate-200 mb-2">
                       CSV Format: Name, Email, Phone (optional)
                     </label>
                     <textarea
@@ -326,12 +326,12 @@ const BulkInviteWizard = () => {
                         }
                       }}
                       placeholder="John Doe,john@example.com,0123456789&#10;Jane Smith,jane@example.com&#10;Bob Johnson,bob@example.com,0987654321"
-                      className="w-full min-h-[120px] px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-mono text-sm"
+                      className="w-full min-h-[120px] px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent font-mono text-sm"
                     />
                   </div>
                   
                   {stepData.csvInfo && (
-                    <div className="text-sm text-slate-400">
+                    <div className="text-sm text-gray-500 dark:text-slate-400">
                       {stepData.csvInfo}
                     </div>
                   )}
@@ -354,19 +354,19 @@ const BulkInviteWizard = () => {
             {stepData.guestData && stepData.guestData.length > 0 && (
               <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <Card.Header>
-                  <Card.Title className="text-slate-200">
+                  <Card.Title className="text-gray-900 dark:text-slate-200">
                     Guest List ({stepData.guestData.length} guests)
                   </Card.Title>
                 </Card.Header>
                 <Card.Content>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {stepData.guestData.map((guest, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-slate-800 rounded-md">
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-md">
                         <div>
-                          <div className="text-slate-200 font-medium">{guest.name}</div>
-                          <div className="text-slate-400 text-sm">{guest.email}</div>
+                          <div className="text-gray-900 dark:text-slate-200 font-medium">{guest.name}</div>
+                          <div className="text-gray-500 dark:text-slate-400 text-sm">{guest.email}</div>
                           {guest.phone && (
-                            <div className="text-slate-500 dark:text-slate-300 text-sm">{guest.phone}</div>
+                            <div className="text-gray-500 dark:text-slate-300 text-sm">{guest.phone}</div>
                           )}
                         </div>
                         <Badge variant="success" size="sm">
@@ -386,10 +386,10 @@ const BulkInviteWizard = () => {
           <div className="space-y-6">
             <div className="text-center mb-6">
               <CheckCircle className="w-16 h-16 text-brand-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-200 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
                 Review Bulk Invitation
               </h3>
-              <p className="text-slate-400">
+              <p className="text-gray-500 dark:text-slate-400">
                 Review all information before generating invitations.
               </p>
             </div>
@@ -397,46 +397,46 @@ const BulkInviteWizard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <Card.Header>
-                  <Card.Title className="text-slate-200">Event Details</Card.Title>
+                  <Card.Title className="text-gray-900 dark:text-slate-200">Event Details</Card.Title>
                 </Card.Header>
                 <Card.Content className="space-y-3">
                   <div>
-                    <span className="text-sm text-slate-400">Event:</span>
-                    <p className="text-slate-200">{allStepData[0]?.eventName || 'Not provided'}</p>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">Event:</span>
+                    <p className="text-gray-900 dark:text-slate-200">{allStepData[0]?.eventName || 'Not provided'}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-slate-400">Date:</span>
-                    <p className="text-slate-200">{allStepData[0]?.date || 'Not provided'}</p>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">Date:</span>
+                    <p className="text-gray-900 dark:text-slate-200">{allStepData[0]?.date || 'Not provided'}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-slate-400">Time:</span>
-                    <p className="text-slate-200">{allStepData[0]?.time || 'Not provided'}</p>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">Time:</span>
+                    <p className="text-gray-900 dark:text-slate-200">{allStepData[0]?.time || 'Not provided'}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-slate-400">Expected Guests:</span>
-                    <p className="text-slate-200">{allStepData[0]?.numGuests || 'Not provided'}</p>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">Expected Guests:</span>
+                    <p className="text-gray-900 dark:text-slate-200">{allStepData[0]?.numGuests || 'Not provided'}</p>
                   </div>
                 </Card.Content>
               </Card>
 
               <Card className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700">
                 <Card.Header>
-                  <Card.Title className="text-slate-200">
+                  <Card.Title className="text-gray-900 dark:text-slate-200">
                     Guest List ({allStepData[1]?.guestData?.length || 0} guests)
                   </Card.Title>
                 </Card.Header>
                 <Card.Content>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {allStepData[1]?.guestData?.map((guest, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-slate-800 rounded">
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-800 rounded">
                         <div>
-                          <div className="text-slate-200 text-sm font-medium">{guest.name}</div>
-                          <div className="text-slate-400 text-xs">{guest.email}</div>
+                          <div className="text-gray-900 dark:text-slate-200 text-sm font-medium">{guest.name}</div>
+                          <div className="text-gray-500 dark:text-slate-400 text-xs">{guest.email}</div>
                         </div>
                         <Badge variant="success" size="sm">✓</Badge>
                       </div>
                     )) || (
-                      <div className="text-slate-400 text-sm">No guests added</div>
+                      <div className="text-gray-500 dark:text-slate-400 text-sm">No guests added</div>
                     )}
                   </div>
                 </Card.Content>
@@ -491,24 +491,24 @@ const BulkInviteWizard = () => {
               {/* Success Message */}
               <div className="text-center py-4">
                 <div className="text-6xl mb-3">🎉</div>
-                <h3 className="text-xl font-semibold text-slate-200 mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-slate-200 mb-2">
                   {inviteData.guests?.length || 0} guests can now register!
                 </h3>
-                <p className="text-slate-400 text-sm">
+                <p className="text-gray-500 dark:text-slate-400 text-sm">
                   Share this link with your guests so they can add their details
                 </p>
               </div>
               
               {/* Link Display */}
-              <div className="bg-slate-900 p-4 rounded-lg border border-slate-700">
-                <label className="text-xs text-slate-400 mb-2 block">🔗 Your Event Registration Link</label>
+              <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
+                <label className="text-xs text-gray-500 dark:text-slate-400 mb-2 block">🔗 Your Event Registration Link</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={inviteData.inviteLink || ''}
                     readOnly
                     onClick={(e) => e.target.select()}
-                    className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded text-slate-200 text-sm font-mono"
+                    className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-200 text-sm font-mono"
                   />
                   <Button
                     variant={copySuccess ? "success" : "outline"}
@@ -578,7 +578,7 @@ const BulkInviteWizard = () => {
                       setSuccess("✅ Link copied to clipboard!");
                       setTimeout(() => setCopySuccess(false), 2000);
                     }}
-                    className="bg-slate-700/50 border-slate-600 hover:bg-slate-700 text-slate-300"
+                    className="bg-gray-100/50 dark:bg-slate-700/50 border-gray-300 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy

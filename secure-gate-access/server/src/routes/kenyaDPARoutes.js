@@ -6,6 +6,7 @@
 import express from 'express';
 import kenyaDPAAuditService from '../services/kenyaDPAAuditService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 
 const router = express.Router();
 
@@ -99,7 +100,7 @@ router.get('/policy-metadata', async (req, res) => {
  * @desc Get comprehensive Kenya DPA compliance status
  * @access Admin only
  */
-router.get('/compliance/kenya-dpa', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/compliance/kenya-dpa', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const compliance = kenyaDPAAuditService.getComplianceStatus();
 
@@ -121,7 +122,7 @@ router.get('/compliance/kenya-dpa', authenticateToken, requireRole(['admin']), a
  * @desc Trigger Kenya DPA compliance review
  * @access Admin only
  */
-router.post('/compliance/kenya-dpa/review', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/compliance/kenya-dpa/review', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     await kenyaDPAAuditService.runComplianceReview('manual');
     const metadata = kenyaDPAAuditService.getPolicyMetadata();
@@ -145,7 +146,7 @@ router.post('/compliance/kenya-dpa/review', authenticateToken, requireRole(['adm
  * @desc Update Data Protection Officer information
  * @access Admin only
  */
-router.put('/compliance/dpo', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.put('/compliance/dpo', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { name, email, phone, office, qualifications, appointed_date } = req.body;
 
@@ -177,7 +178,7 @@ router.put('/compliance/dpo', authenticateToken, requireRole(['admin']), async (
  * @desc Update ODPC registration information
  * @access Admin only
  */
-router.put('/compliance/odpc-registration', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.put('/compliance/odpc-registration', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { registration_number, registration_date, status } = req.body;
 

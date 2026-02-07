@@ -39,7 +39,7 @@ import {
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     active: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: <CheckCircle className="w-3 h-3" />, label: 'Active' },
-    inactive: { color: 'bg-gray-100 text-gray-600 dark:text-gray-200 dark:bg-gray-800 dark:text-gray-300', icon: <XCircle className="w-3 h-3" />, label: 'Inactive' },
+    inactive: { color: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200', icon: <XCircle className="w-3 h-3" />, label: 'Inactive' },
     suspended: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: <AlertTriangle className="w-3 h-3" />, label: 'Suspended' },
     lost: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', icon: <AlertTriangle className="w-3 h-3" />, label: 'Lost' },
   };
@@ -66,7 +66,7 @@ const ZoneBadge = ({ zone }) => {
   };
   
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${zoneColors[zone] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}`}>
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${zoneColors[zone] || 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}>
       <MapPin className="w-3 h-3" />
       {zone || 'Unknown'}
     </span>
@@ -456,7 +456,7 @@ export default function AccessControl() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-300" />
                 <input
                   type="text"
                   placeholder="Search by card ID, holder, or zone..."
@@ -494,7 +494,7 @@ export default function AccessControl() {
                   variant="ghost"
                   size="sm"
                   onClick={clearFilters}
-                  className="mt-2 text-gray-500 dark:text-gray-300 hover:text-gray-700"
+                  className="mt-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300"
                 >
                   Clear all filters
                 </Button>
@@ -546,7 +546,7 @@ export default function AccessControl() {
           </>
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-12 text-center">
-            <CreditCard className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 dark:text-gray-200 mb-4" />
+            <CreditCard className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-200 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {isSearching || hasFilters ? 'No cards found' : 'No access cards'}
             </h3>

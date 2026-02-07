@@ -5,9 +5,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 import './IncidentDetailModal.css';
 
 const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
+  const { modalRef } = useModalAccessibility(!!incident, onClose);
   const [activeTab, setActiveTab] = useState('details');
   const [comments, setComments] = useState([]);
   const [history, setHistory] = useState([]);
@@ -144,12 +146,12 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="incident-detail-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="incident-detail-title">
+      <div className="incident-detail-modal" ref={modalRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="modal-header">
           <div className="header-content">
-            <h2>Incident #{incident.id}</h2>
+            <h2 id="incident-detail-title">Incident #{incident.id}</h2>
             <div className="header-badges">
               <span 
                 className="severity-badge"
@@ -160,7 +162,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
               <span className="status-badge">{incident.status.replace('_', ' ')}</span>
             </div>
           </div>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close incident details">×</button>
         </div>
 
         {/* Tabs */}

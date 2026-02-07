@@ -18,7 +18,7 @@ export const getGuardAnalytics = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+    if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'super_admin') {
       return respondError(res, 403, 'Forbidden');
     }
 
@@ -28,7 +28,7 @@ export const getGuardAnalytics = async (req, res) => {
 
     // Fix G-002: Enforce estate scoping
     const estateId = req.user.estate_id;
-    if (!estateId && req.user.role !== 'admin') {
+    if (!estateId && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       // Only super-admins might lack estate_id, but guards MUST have it
       throw new Error('Estate context required for analytics');
     }

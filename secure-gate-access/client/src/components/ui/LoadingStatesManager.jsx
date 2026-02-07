@@ -384,8 +384,8 @@ const LoadingOverlay = ({
   return (
     <div className={`relative ${className}`} {...props}>
       {children}
-      <div className="absolute inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 text-center max-w-sm mx-4">
+      <div className="absolute inset-0 bg-black/50 dark:bg-slate-900/75 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 text-center max-w-sm mx-4">
           <EnhancedLoading
             type={loadingState.type}
             message={loadingMessage || loadingState.message}
@@ -411,7 +411,7 @@ const GlobalLoadingIndicator = ({
 
   return (
     <div className={`fixed top-4 right-4 z-50 ${className}`} {...props}>
-      <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 shadow-lg">
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4 shadow-lg">
         <EnhancedLoading
           type={globalState.type}
           message={globalState.message}

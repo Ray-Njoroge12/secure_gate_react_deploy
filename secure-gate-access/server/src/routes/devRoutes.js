@@ -1,5 +1,6 @@
 import express from 'express';
 import { requireRole, optionalAuth } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import localMessageStore from '../services/localMessageStore.js';
 import { successResponse, errorResponse } from '../utils/responseUtils.js';
 
@@ -146,7 +147,7 @@ router.post('/simulate-sms', requireDevMode, optionalAuth, async (req, res) => {
  * Clear stored messages
  * DELETE /api/dev/messages
  */
-router.delete('/messages', requireDevMode, requireRole(['admin', 'super_admin']), (req, res) => {
+router.delete('/messages', requireDevMode, requireRolePolicy('adminOnly'), (req, res) => {
     try {
         localMessageStore.clear();
         successResponse(res, null, 'Message history cleared');

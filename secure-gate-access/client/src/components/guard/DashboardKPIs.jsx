@@ -118,7 +118,7 @@ const DashboardKPIs = ({ onFilterClick }) => {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="bg-gray-100 rounded-lg p-6 animate-pulse">
+          <div key={i} className="bg-gray-100 dark:bg-slate-700 rounded-lg p-6 animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-24"></div>
           </div>

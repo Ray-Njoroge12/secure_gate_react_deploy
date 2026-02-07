@@ -75,7 +75,7 @@ const ErrorDisplay = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="flex-shrink-0 ml-3 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
+              className="flex-shrink-0 ml-3 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
               aria-label="Close notification"
             >
               <X className="w-4 h-4" />

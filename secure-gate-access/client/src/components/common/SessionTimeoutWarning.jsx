@@ -245,7 +245,7 @@ const SessionTimeoutWarning = ({
           </div>
 
           {/* Progress bar */}
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-6">
+          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 mb-6">
             <div 
               className="bg-yellow-500 h-2 rounded-full transition-all duration-1000"
               style={{ width: `${(countdown / (warningTime / 1000)) * 100}%` }}
@@ -256,7 +256,7 @@ const SessionTimeoutWarning = ({
           <div className="flex gap-3">
             <button
               onClick={handleLogout}
-              className="flex-1 py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="flex-1 py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Log Out Now
             </button>
@@ -270,8 +270,8 @@ const SessionTimeoutWarning = ({
           </div>
 
           {/* Keyboard hint */}
-          <p className="text-xs text-center text-gray-400 dark:text-gray-400 mt-4">
-            Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">Enter</kbd> to stay logged in
+          <p className="text-xs text-center text-gray-500 dark:text-gray-300 mt-4">
+            Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 rounded text-xs font-mono">Enter</kbd> to stay logged in
           </p>
         </div>
       </div>

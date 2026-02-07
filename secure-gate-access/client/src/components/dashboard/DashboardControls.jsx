@@ -52,7 +52,7 @@ export const DashboardControls = ({
     <div className={`dashboard-controls flex items-center space-x-3 ${className}`}>
       {/* Save Status */}
       {lastSaved && (
-        <div className="save-status text-sm text-gray-500 dark:text-gray-400">
+        <div className="save-status text-sm text-gray-500 dark:text-gray-300">
           <span className="hidden sm:inline">Last saved: </span>
           <span className="font-medium">{formatLastSaved(lastSaved)}</span>
         </div>
@@ -77,7 +77,7 @@ export const DashboardControls = ({
       <div className="relative inline-block text-left">
         <div className="group">
           <button
-            className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-slate-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             aria-label="Dashboard actions menu"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -87,13 +87,13 @@ export const DashboardControls = ({
           </button>
 
           {/* Dropdown Menu */}
-          <div className="absolute right-0 z-10 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+          <div className="absolute right-0 z-10 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
             <div className="py-1" role="menu">
               {/* Reset Layout */}
               {onResetLayout && (
                 <button
                   onClick={onResetLayout}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   role="menuitem"
                 >
                   <svg className="w-4 h-4 inline mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,12 +106,12 @@ export const DashboardControls = ({
               {/* Export/Import - Only for non-simplified mode */}
               {!simplified && (
                 <>
-                  <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                  <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
                   
                   {onExportDashboard && (
                     <button
                       onClick={onExportDashboard}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                       role="menuitem"
                     >
                       <svg className="w-4 h-4 inline mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +125,7 @@ export const DashboardControls = ({
                     <>
                       <button
                         onClick={handleImportClick}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                         role="menuitem"
                       >
                         <svg className="w-4 h-4 inline mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,8 +148,8 @@ export const DashboardControls = ({
               )}
 
               {/* Help/Info */}
-              <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
-              <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
+              <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-300">
                 <div>Role: {role}</div>
                 {lastSaved && (
                   <div>Saved: {formatLastSaved(lastSaved)}</div>

@@ -1,5 +1,9 @@
 # Environment files (secrets)
 .env
+.env.production
+.env.production.template
+.env.local
+.env.*.local
 
-# Keep the example template
+# Keep the template/example file (no secrets)
 !.env.example

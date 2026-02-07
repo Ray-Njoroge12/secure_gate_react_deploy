@@ -12,10 +12,10 @@ const AuditLogs = () => {
                     <div className="w-2 h-2 mt-2 rounded-full bg-green-500"></div>
                     <div className="flex-1">
                         <p className="text-sm text-gray-900 dark:text-white font-medium">System initialized</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Just now</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-300">Just now</p>
                     </div>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-300 text-center py-4">
                     📝 Audit logs will appear here
                 </p>
             </div>

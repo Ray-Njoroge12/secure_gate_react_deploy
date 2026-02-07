@@ -81,14 +81,14 @@ const Loading = ({
 
   const renderProgress = () => (
     <div className="w-full max-w-xs">
-      <div className="bg-slate-700 rounded-full h-2">
+      <div className="bg-gray-200 dark:bg-slate-700 rounded-full h-2">
         <div 
           className="bg-brand-500 rounded-full h-2 transition-all duration-300 ease-out"
           style={{ width: `${Math.min(100, Math.max(0, progress || 0))}%` }}
         />
       </div>
       {progress !== null && (
-        <div className="text-center text-sm text-slate-400 mt-1">
+        <div className="text-center text-sm text-gray-500 dark:text-slate-400 mt-1">
           {Math.round(progress)}%
         </div>
       )}
@@ -111,14 +111,14 @@ const Loading = ({
   const content = (
     <div ref={loadingRef} className={`inline-flex items-center gap-3 ${className}`} {...props}>
       {renderVariant()}
-      {text && <span className="text-slate-400 animate-pulse">{text}</span>}
+      {text && <span className="text-gray-500 dark:text-slate-400 animate-pulse">{text}</span>}
     </div>
   );
 
   if (overlay) {
     return (
-      <div className="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 text-center">
+      <div className="fixed inset-0 bg-black/50 dark:bg-slate-900/75 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 text-center">
           {content}
         </div>
       </div>
@@ -160,7 +160,7 @@ const LoadingCard = ({
 
   if (loading) {
     return (
-      <div className={`bg-slate-800 rounded-lg border border-slate-700 p-6 ${className}`} {...props}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 ${className}`} {...props}>
         <div className="flex items-center justify-center py-8">
           <Loading text="Loading..." />
         </div>
@@ -289,10 +289,10 @@ const LoadingOverlay = ({
   return (
     <div className={`relative ${className}`} {...props}>
       {children}
-      <div className="absolute inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 text-center">
+      <div className="absolute inset-0 bg-black/50 dark:bg-slate-900/75 flex items-center justify-center z-50">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 text-center">
           <Loading size="lg" />
-          <p className="text-slate-300 mt-4">{message}</p>
+          <p className="text-gray-600 dark:text-slate-300 mt-4">{message}</p>
         </div>
       </div>
     </div>
@@ -319,19 +319,19 @@ const ProgressLoading = ({
   return (
     <div className={`text-center ${className}`} {...props}>
       <div className="mb-4">
-        <div className="w-full max-w-xs mx-auto bg-slate-700 rounded-full h-2">
+        <div className="w-full max-w-xs mx-auto bg-gray-200 dark:bg-slate-700 rounded-full h-2">
           <div 
             className="bg-brand-500 rounded-full h-2 transition-all duration-300 ease-out"
             style={{ width: `${Math.min(100, Math.max(0, displayProgress))}%` }}
           />
         </div>
         {showPercentage && (
-          <div className="text-sm text-slate-400 mt-2">
+          <div className="text-sm text-gray-500 dark:text-slate-400 mt-2">
             {Math.round(displayProgress)}%
           </div>
         )}
       </div>
-      <p className="text-slate-300">{message}</p>
+      <p className="text-gray-600 dark:text-slate-300">{message}</p>
     </div>
   );
 };

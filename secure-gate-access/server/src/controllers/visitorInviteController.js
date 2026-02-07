@@ -124,7 +124,7 @@ export const createVisitor = async (req, res) => {
     }
 
     // Allow residents and admins to create visitors (guards use walk-in flow)
-    const allowedRoles = ['resident', 'admin'];
+    const allowedRoles = ['resident', 'admin', 'super_admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) {
       return respondError(res, 403, 'Forbidden - Only residents and admins can create visitors');
     }
@@ -421,7 +421,7 @@ export const getMyVisitors = async (req, res) => {
         query += ` AND estate_id = $2`;
         params.push(req.user.estate_id);
       }
-    } else if (role === 'guard' || role === 'admin') {
+    } else if (role === 'guard' || role === 'admin' || role === 'super_admin') {
       if (!req.user.estate_id) {
         return respondError(res, 403, 'Estate context required');
       }
@@ -540,7 +540,7 @@ export const createPass = async (req, res) => {
       if (!residentId || !ownsVisitor) {
         return respondError(res, 403, 'Forbidden');
       }
-    } else if (req.user.role !== 'admin' && req.user.role !== 'guard') {
+    } else if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.role !== 'guard') {
       return respondError(res, 403, 'Forbidden');
     }
 
@@ -649,7 +649,7 @@ export const bulkInvite = async (req, res) => {
     }
 
     // Allow residents and admins to create bulk invites
-    const allowedRoles = ['resident', 'admin'];
+    const allowedRoles = ['resident', 'admin', 'super_admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) {
       return respondError(res, 403, 'Forbidden - Only residents and admins can create bulk invites');
     }
@@ -1332,15 +1332,22 @@ export const cancelVisitor = async (req, res) => {
       if (visitor.host_id !== residentId && visitor.resident_id !== residentId) {
         return respondError(res, 403, 'You can only cancel your own visitors');
       }
-    } else if (role !== 'admin') {
+    } else if (role !== 'admin' && role !== 'super_admin') {
       return respondError(res, 403, 'Forbidden');
     }
 
-    // Delete the visitor
+    // Soft-delete: update status to 'cancelled' instead of hard deleting
+    // This preserves the audit trail and allows data recovery
     if (req.user.estate_id) {
-      await dbManager.query('DELETE FROM visitors WHERE id = $1 AND estate_id = $2', [id, req.user.estate_id]);
+      await dbManager.query(
+        'UPDATE visitors SET status = $1, updated_at = NOW() WHERE id = $2 AND estate_id = $3',
+        [PASS_STATUS.CANCELLED, id, req.user.estate_id]
+      );
     } else {
-      await dbManager.query('DELETE FROM visitors WHERE id = $1', [id]);
+      await dbManager.query(
+        'UPDATE visitors SET status = $1, updated_at = NOW() WHERE id = $2',
+        [PASS_STATUS.CANCELLED, id]
+      );
     }
 
     await req.audit?.('visitor.cancel', 'visitor', String(id), {

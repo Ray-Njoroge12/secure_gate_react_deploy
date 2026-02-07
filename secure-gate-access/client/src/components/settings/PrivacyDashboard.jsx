@@ -192,7 +192,7 @@ const PrivacyDashboard = ({ className = '' }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               📊
@@ -210,7 +210,7 @@ const PrivacyDashboard = ({ className = '' }) => {
           </button>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               📥
@@ -228,7 +228,7 @@ const PrivacyDashboard = ({ className = '' }) => {
           </button>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
               ⚙️
@@ -246,7 +246,7 @@ const PrivacyDashboard = ({ className = '' }) => {
           </button>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               ✅
@@ -280,7 +280,7 @@ const PrivacyDashboard = ({ className = '' }) => {
       {dataInventory ? (
         <div className="space-y-4">
           {/* Personal Info */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
             <h4 className="font-medium text-gray-900 dark:text-white mb-3">Personal Information</h4>
             <dl className="grid grid-cols-2 gap-2 text-sm">
               <dt className="text-gray-500 dark:text-gray-300">Name:</dt>
@@ -295,7 +295,7 @@ const PrivacyDashboard = ({ className = '' }) => {
           </div>
 
           {/* Visitors */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-medium text-gray-900 dark:text-white">Visitor Records</h4>
               <span className="text-sm text-gray-500 dark:text-gray-300">
@@ -314,7 +314,7 @@ const PrivacyDashboard = ({ className = '' }) => {
           </div>
 
           {/* Deliveries */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-medium text-gray-900 dark:text-white">Delivery Records</h4>
               <span className="text-sm text-gray-500 dark:text-gray-300">
@@ -333,7 +333,7 @@ const PrivacyDashboard = ({ className = '' }) => {
           </div>
 
           {/* Activity Logs */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-medium text-gray-900 dark:text-white">Activity Logs</h4>
               <span className="text-sm text-gray-500 dark:text-gray-300">
@@ -362,7 +362,7 @@ const PrivacyDashboard = ({ className = '' }) => {
         </p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
         <h4 className="font-medium text-gray-900 dark:text-white mb-4">What's included:</h4>
         <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-200 mb-6">
           <li className="flex items-center gap-2">
@@ -449,7 +449,7 @@ const PrivacyDashboard = ({ className = '' }) => {
 
       <div className="space-y-4">
         {/* Visitor Frequency */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">Show Visitor Frequency to Guards</h4>
@@ -471,7 +471,7 @@ const PrivacyDashboard = ({ className = '' }) => {
         </div>
 
         {/* Delivery Photos */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">Allow Delivery Photos</h4>
@@ -493,7 +493,7 @@ const PrivacyDashboard = ({ className = '' }) => {
         </div>
 
         {/* Non-Critical Announcements */}
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">Receive Non-Critical Announcements</h4>
@@ -512,7 +512,7 @@ const PrivacyDashboard = ({ className = '' }) => {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
-          <p className="mt-2 text-xs text-gray-400">
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-300">
             Note: Critical safety announcements cannot be disabled.
           </p>
         </div>
@@ -530,9 +530,9 @@ const PrivacyDashboard = ({ className = '' }) => {
         </p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+          <thead className="bg-gray-50 dark:bg-slate-800/50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
                 Consent Type
@@ -545,7 +545,7 @@ const PrivacyDashboard = ({ className = '' }) => {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
             {consents.length > 0 ? (
               consents.map((consent, index) => (
                 <tr key={index}>
@@ -581,16 +581,16 @@ const PrivacyDashboard = ({ className = '' }) => {
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-8 ${className}`}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-8 ${className}`}>
         <div className="text-center text-gray-500 dark:text-gray-300">Loading privacy dashboard...</div>
       </div>
     );
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 ${className}`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🔒 Privacy Dashboard</h2>
         <p className="text-sm text-gray-500 dark:text-gray-300">Manage your personal data and privacy settings</p>
       </div>
@@ -609,7 +609,7 @@ const PrivacyDashboard = ({ className = '' }) => {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200 dark:border-slate-700">
         <nav className="flex px-4 -mb-px space-x-4">
           {[
             { id: 'overview', label: 'Overview' },
@@ -624,7 +624,7 @@ const PrivacyDashboard = ({ className = '' }) => {
               className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300 dark:border-slate-600'
               }`}
             >
               {tab.label}

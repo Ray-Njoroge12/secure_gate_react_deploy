@@ -525,10 +525,10 @@ export default function ManageGuards({ estateId }) {
                 </button>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300">
+                    <thead className="bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300">
                       <tr>
                         <th className="px-6 py-4 font-medium">Username</th>
                         <th className="px-6 py-4 font-medium">Contact</th>
@@ -537,16 +537,16 @@ export default function ManageGuards({ estateId }) {
                         <th className="px-6 py-4 font-medium text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                       {guards.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                          <td colSpan="5" className="px-6 py-8 text-center text-gray-500 dark:text-gray-300">
                             No guards found. Add your first guard to get started.
                           </td>
                         </tr>
                       ) : (
                         guards.map((guard) => (
-                          <tr key={guard.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                          <tr key={guard.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 font-bold">
@@ -554,7 +554,7 @@ export default function ManageGuards({ estateId }) {
                                 </div>
                                 <div>
                                   <p className="font-medium text-gray-900 dark:text-white">{guard.username || 'Unknown Guard'}</p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">ID: {guard.id}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-300">ID: {guard.id}</p>
                                 </div>
                               </div>
                             </td>
@@ -573,7 +573,7 @@ export default function ManageGuards({ estateId }) {
                             <td className="px-6 py-4">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${guard.status === 'active'
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
                                 }`}>
                                 {guard.status}
                               </span>
@@ -585,14 +585,14 @@ export default function ManageGuards({ estateId }) {
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => initEditGuard(guard)}
-                                  className="p-2 text-gray-500 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400 transition"
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400 transition"
                                   title="Edit Guard"
                                 >
                                   <Edit2 size={16} />
                                 </button>
                                 <button
                                   onClick={() => confirmDeleteGuard(guard.id)}
-                                  className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition"
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 transition"
                                   title="Remove Guard"
                                 >
                                   <Trash2 size={16} />
@@ -612,7 +612,7 @@ export default function ManageGuards({ estateId }) {
           {activeTab === 'shifts' && (
             <div className="space-y-6">
 
-              <section className="bg-white shadow-sm border border-slate-200 rounded-lg p-6">
+              <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-semibold text-slate-900">Shift Scheduling</h2>
@@ -851,7 +851,7 @@ export default function ManageGuards({ estateId }) {
                 </div>
               </section>
 
-              <section className="bg-white shadow-sm border border-slate-200 rounded-lg p-6">
+              <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
                 <h2 className="text-lg font-semibold text-slate-900">Handover Notes</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-300">Review guard-to-guard shift handovers.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
@@ -901,7 +901,7 @@ export default function ManageGuards({ estateId }) {
           )}
 
           {activeTab === 'performance' && (
-            <section className="bg-white shadow-sm border border-slate-200 rounded-lg p-6">
+            <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-slate-900">Performance Metrics</h2>
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <form onSubmit={handleRecordPerformance} className="space-y-4">
@@ -1025,7 +1025,7 @@ export default function ManageGuards({ estateId }) {
 
           {activeTab === 'equipment' && (
 
-            <section className="bg-white shadow-sm border border-slate-200 rounded-lg p-6">
+            <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-slate-900">Equipment Checkout & Returns</h2>
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <form onSubmit={handleCheckoutEquipment} className="space-y-4">
@@ -1149,7 +1149,7 @@ export default function ManageGuards({ estateId }) {
 
           {activeTab === 'training' && (
 
-            <section className="bg-white shadow-sm border border-slate-200 rounded-lg p-6">
+            <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
               <h2 className="text-lg font-semibold text-slate-900">Training & Certifications</h2>
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <form onSubmit={handleAddTraining} className="space-y-4">
@@ -1278,14 +1278,14 @@ export default function ManageGuards({ estateId }) {
       {/* Guard Modal */}
       {showGuardModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full p-6 shadow-xl overflow-y-auto max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full p-6 shadow-xl overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {editingGuard ? 'Edit Guard' : 'Add New Guard'}
               </h2>
               <button
                 onClick={() => setShowGuardModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
               >
                 <X size={24} />
               </button>
@@ -1302,7 +1302,7 @@ export default function ManageGuards({ estateId }) {
                     required
                     value={guardForm.username}
                     onChange={(e) => setGuardForm({ ...guardForm, username: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
@@ -1314,7 +1314,7 @@ export default function ManageGuards({ estateId }) {
                     required
                     value={guardForm.email}
                     onChange={(e) => setGuardForm({ ...guardForm, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
@@ -1326,7 +1326,7 @@ export default function ManageGuards({ estateId }) {
                     required
                     value={guardForm.first_name}
                     onChange={(e) => setGuardForm({ ...guardForm, first_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
@@ -1338,7 +1338,7 @@ export default function ManageGuards({ estateId }) {
                     required
                     value={guardForm.last_name}
                     onChange={(e) => setGuardForm({ ...guardForm, last_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 <div>
@@ -1349,7 +1349,7 @@ export default function ManageGuards({ estateId }) {
                     type="tel"
                     value={guardForm.phone}
                     onChange={(e) => setGuardForm({ ...guardForm, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   />
                 </div>
                 {!editingGuard && (
@@ -1363,7 +1363,7 @@ export default function ManageGuards({ estateId }) {
                       minLength={8}
                       value={guardForm.password}
                       onChange={(e) => setGuardForm({ ...guardForm, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                     />
                   </div>
                 )}
@@ -1374,7 +1374,7 @@ export default function ManageGuards({ estateId }) {
                   <select
                     value={guardForm.status}
                     onChange={(e) => setGuardForm({ ...guardForm, status: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -1383,11 +1383,11 @@ export default function ManageGuards({ estateId }) {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setShowGuardModal(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 rounded-md transition-colors"
                 >
                   Cancel
                 </button>

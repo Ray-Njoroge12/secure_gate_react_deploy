@@ -90,16 +90,16 @@ const ApprovalStatusCard = ({ visitor, onRequestApproval }) => {
   const status = getStatusDisplay();
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           {status.icon}
-          <span className="font-semibold text-slate-200">{status.label}</span>
+          <span className="font-semibold text-gray-900 dark:text-slate-200">{status.label}</span>
         </div>
         <Badge variant={status.color}>{approvalStatus}</Badge>
       </div>
 
-      <p className="text-sm text-slate-300 mb-4">{status.message}</p>
+      <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">{status.message}</p>
 
       {/* Request Approval Button (only show if not yet requested) */}
       {approvalStatus !== 'pending_approval' && 

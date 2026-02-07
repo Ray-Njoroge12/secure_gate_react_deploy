@@ -29,12 +29,12 @@ const Badge = ({
   const baseClasses = 'inline-flex items-center font-medium rounded-full';
   
   const variantClasses = {
-    default: 'bg-slate-700 text-slate-300',
-    success: 'bg-success-50 text-success-700',
-    warning: 'bg-warning-50 text-warning-700',
-    danger: 'bg-error-50 text-error-700',
-    info: 'bg-info-50 text-info-700',
-    pending: 'bg-warning-50 text-warning-700'
+    default: 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300',
+    success: 'bg-success-50 dark:bg-green-900/30 text-success-700 dark:text-green-400',
+    warning: 'bg-warning-50 dark:bg-amber-900/30 text-warning-700 dark:text-amber-400',
+    danger: 'bg-error-50 dark:bg-red-900/30 text-error-700 dark:text-red-400',
+    info: 'bg-info-50 dark:bg-blue-900/30 text-info-700 dark:text-blue-400',
+    pending: 'bg-warning-50 dark:bg-amber-900/30 text-warning-700 dark:text-amber-400'
   };
   
   const sizeClasses = {

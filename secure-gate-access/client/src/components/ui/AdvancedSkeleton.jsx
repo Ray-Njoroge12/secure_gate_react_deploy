@@ -31,7 +31,7 @@ const BaseSkeleton = ({
   }, []);
 
   const baseClasses = `
-    bg-slate-700 rounded
+    bg-gray-200 dark:bg-slate-700 rounded
     ${animated ? 'animate-pulse' : ''}
     ${shimmer ? 'relative overflow-hidden' : ''}
     ${isVisible ? 'opacity-100' : 'opacity-0'}
@@ -166,7 +166,7 @@ const SkeletonCard = ({
   return (
     <div
       {...(addAriaAttributes && { role: "status", "aria-label": "Loading..." })}
-      className={`bg-slate-800 rounded-lg border border-slate-700 overflow-hidden ${className}`}
+      className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden ${className}`}
     >
       {cardVariants[variant] || cardVariants.default}
     </div>
@@ -187,7 +187,7 @@ const SkeletonTable = ({
     default: (
       <div className="space-y-4">
         {showHeader && (
-          <div className="bg-slate-700 px-4 py-2 border-b border-slate-600">
+          <div className="bg-gray-100 dark:bg-slate-700 px-4 py-2 border-b border-gray-200 dark:border-slate-600">
             <div className="flex space-x-3">
               {Array.from({ length: columns }, (_, index) => (
                 <BaseSkeleton 
@@ -200,7 +200,7 @@ const SkeletonTable = ({
             </div>
           </div>
         )}
-        <div className="divide-y divide-slate-700">
+        <div className="divide-y divide-gray-200 dark:divide-slate-700">
           {Array.from({ length: rows }, (_, rowIndex) => (
             <div key={rowIndex} className="px-4 py-2">
               <div className="flex space-x-3">
@@ -231,7 +231,7 @@ const SkeletonTable = ({
     compact: (
       <div className="space-y-2">
         {showHeader && (
-          <div className="bg-slate-700 px-3 py-1 border-b border-slate-600">
+          <div className="bg-gray-100 dark:bg-slate-700 px-3 py-1 border-b border-gray-200 dark:border-slate-600">
             <div className="flex space-x-2">
               {Array.from({ length: columns }, (_, index) => (
                 <BaseSkeleton 
@@ -244,7 +244,7 @@ const SkeletonTable = ({
             </div>
           </div>
         )}
-        <div className="divide-y divide-slate-700">
+        <div className="divide-y divide-gray-200 dark:divide-slate-700">
           {Array.from({ length: rows }, (_, rowIndex) => (
             <div key={rowIndex} className="px-3 py-1">
               <div className="flex space-x-2">
@@ -267,7 +267,7 @@ const SkeletonTable = ({
   return (
     <div
       {...(addAriaAttributes && { role: "status", "aria-label": "Loading..." })}
-      className={`bg-slate-800 rounded-lg border border-slate-700 overflow-hidden ${className}`}
+      className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden ${className}`}
     >
       {tableVariants[variant] || tableVariants.default}
     </div>
@@ -331,7 +331,7 @@ const SkeletonForm = ({
     <div
       role="status"
       aria-label="Loading..."
-      className={`bg-slate-800 rounded-lg border border-slate-700 p-6 ${className}`}
+      className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 ${className}`}
     >
       {formVariants[variant] || formVariants.default}
     </div>
@@ -398,7 +398,7 @@ const SkeletonList = ({
     <div
       role="status"
       aria-label="Loading..."
-      className={`bg-slate-800 rounded-lg border border-slate-700 ${className}`}
+      className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 ${className}`}
     >
       {listVariants[variant] || listVariants.default}
     </div>
@@ -420,7 +420,7 @@ const SkeletonDashboard = ({
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Array.from({ length: 4 }, (_, index) => (
-              <div key={index} className="bg-slate-800 rounded-lg p-4">
+              <div key={index} className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
                     <BaseSkeleton height="0.875rem" width="6rem" addAriaAttributes={false} />
@@ -446,7 +446,7 @@ const SkeletonDashboard = ({
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className="bg-slate-800 rounded-lg p-3">
+            <div key={index} className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
               <BaseSkeleton height="0.875rem" width="6rem" addAriaAttributes={false} />
               <BaseSkeleton height="1.5rem" width="3rem" addAriaAttributes={false} />
             </div>
@@ -508,7 +508,7 @@ const SkeletonChart = ({
     ),
     pie: (
       <div className="flex items-center space-x-6">
-        <div className="w-32 h-32 rounded-full bg-slate-700 animate-pulse" />
+        <div className="w-32 h-32 rounded-full bg-gray-200 dark:bg-slate-700 animate-pulse" />
         <div className="space-y-2">
           {Array.from({ length: 4 }, (_, index) => (
             <div key={index} className="flex items-center space-x-2">
@@ -525,7 +525,7 @@ const SkeletonChart = ({
     <div
       role="status"
       aria-label="Loading..."
-      className={`bg-slate-800 rounded-lg border border-slate-700 p-6 ${className}`}
+      className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 ${className}`}
     >
       {chartVariants[type] || chartVariants.line}
     </div>

@@ -191,13 +191,13 @@ const BulkInvite = () => {
                       max="100"
                       value={formData.numGuests}
                       onChange={(e) => handleInputChange('numGuests', parseInt(e.target.value))}
-                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
                     />
                     <span className="w-16 text-center font-bold text-lg text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-lg">
                       {formData.numGuests}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Limit the number of people who can register with this link.
                   </p>
                 </div>

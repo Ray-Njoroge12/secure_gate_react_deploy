@@ -62,7 +62,7 @@ const getEventColorClass = (type) => {
     case 'visitor.arrival':
       return 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800';
     default:
-      return 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700';
+      return 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:border-slate-700';
   }
 };
 
@@ -144,9 +144,9 @@ export function LiveVisitorFeed({
   }, [events, autoScroll]);
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${
             connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
@@ -163,19 +163,19 @@ export function LiveVisitorFeed({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
               title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
             >
               {soundEnabled ? (
                 <Volume2 className="w-4 h-4 text-gray-600 dark:text-gray-300" />
               ) : (
-                <VolumeX className="w-4 h-4 text-gray-400 dark:text-gray-500 dark:text-gray-300" />
+                <VolumeX className="w-4 h-4 text-gray-400 dark:text-gray-300" />
               )}
             </button>
             {onRefresh && (
               <button
                 onClick={onRefresh}
-                className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
                 title="Refresh"
               >
                 <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-300" />
@@ -204,13 +204,13 @@ export function LiveVisitorFeed({
             <p className="text-xs opacity-75">Events will appear here in real-time</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {visibleEvents.map((event, index) => (
               <div
                 key={event.id || index}
                 className={`px-4 py-3 transition-all duration-300 ${
                   event.isNew ? 'animate-pulse bg-green-50 dark:bg-green-900/10' : ''
-                } hover:bg-gray-50 dark:hover:bg-gray-700/50`}
+                } hover:bg-gray-50 dark:hover:bg-slate-700/50`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`flex-shrink-0 p-2 rounded-lg ${getEventColorClass(event.type)}`}>
@@ -225,7 +225,7 @@ export function LiveVisitorFeed({
                         {formatRelativeTime(event.timestamp)}
                       </span>
                       {event.location && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-300">
+                        <span className="text-xs text-gray-500 dark:text-gray-300">
                           • {event.location}
                         </span>
                       )}
@@ -247,7 +247,7 @@ export function LiveVisitorFeed({
       {hasMore && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-4 py-2 flex items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 transition-colors"
+          className="w-full px-4 py-2 flex items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border-t border-gray-200 dark:border-slate-700 transition-colors"
         >
           {isExpanded ? (
             <>
@@ -274,7 +274,7 @@ export function LiveStatsBar({
   className = ''
 }) {
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${

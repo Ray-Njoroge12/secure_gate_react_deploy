@@ -7,6 +7,7 @@
 import express from 'express';
 import { getGuardAnalytics } from '../controllers/guardAnalyticsController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
 import { customRateLimit } from '../middleware/rateLimitMiddleware.js';
 
@@ -26,9 +27,9 @@ router.use(requireEstateContext);
 /**
  * @route GET /api/guard/analytics
  * @desc Get guard operational analytics
- * @access Private (guard, admin)
+ * @access Private (guard, admin, super_admin)
  * @query fromDate, toDate
  */
-router.get('/', requireRole(['guard', 'admin']), analyticsLimiter, getGuardAnalytics);
+router.get('/', requireRolePolicy('adminOrGuard'), analyticsLimiter, getGuardAnalytics);
 
 export default router;

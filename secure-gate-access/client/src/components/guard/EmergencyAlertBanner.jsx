@@ -186,7 +186,7 @@ const EmergencyAlertBanner = ({
                     <button
                       onClick={() => handleAcknowledge(emergency.id)}
                       disabled={acknowledging === emergency.id}
-                      className="px-4 py-2 bg-white text-red-600 font-medium rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                      className="px-4 py-2 bg-white dark:bg-slate-800 text-red-600 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
                     >
                       {acknowledging === emergency.id ? 'Acknowledging...' : 'I\'m Responding'}
                     </button>

@@ -117,7 +117,7 @@ router.post('/validate', authenticateToken, requireEstateContext, attachRequestA
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
 
     // Only guards and admins can validate QR codes
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+    if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       return respondError(res, 403, 'Only guards and admins can validate QR codes');
     }
 
@@ -194,7 +194,7 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
 
     // Only guards and admins can check-in visitors
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+    if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       return respondError(res, 403, 'Only guards and admins can check-in visitors');
     }
 
@@ -355,7 +355,7 @@ router.get('/analytics', authenticateToken, attachRequestAudit(), async (req, re
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
 
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       return respondError(res, 403, 'Admin access required');
     }
 
@@ -385,7 +385,7 @@ router.post('/cleanup', authenticateToken, attachRequestAudit(), async (req, res
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
 
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       return respondError(res, 403, 'Admin access required');
     }
 

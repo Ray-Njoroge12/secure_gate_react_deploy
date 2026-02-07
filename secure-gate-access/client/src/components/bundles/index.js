@@ -19,7 +19,6 @@ export { default as Dropdown } from '../ui/Dropdown';
 // Form Components Bundle - Form-related components
 export { default as ValidatedInput } from '../ui/ValidatedInput';
 export { default as ValidatedForm } from '../ui/ValidatedForm';
-export { default as AdvancedValidatedInput } from '../ui/AdvancedValidatedInput';
 export { default as ValidationSummary } from '../ui/ValidationSummary';
 export { default as FormField } from '../ui/FormField';
 export { default as FormWizard } from '../ui/FormWizard';

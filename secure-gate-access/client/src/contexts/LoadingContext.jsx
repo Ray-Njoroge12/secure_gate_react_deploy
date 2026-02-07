@@ -150,8 +150,8 @@ export const LoadingProvider = ({ children }) => {
       {children}
       {/* Global loading overlay */}
       {globalLoading && (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 text-center">
+        <div className="fixed inset-0 bg-black/50 dark:bg-slate-900/75 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 text-center">
             <Loading
               size="lg"
               variant={getLoadingVariant('global')}

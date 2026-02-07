@@ -136,7 +136,7 @@ const Pagination = memo(({
         <button
           onClick={() => handlePageChange(1)}
           onKeyDown={(e) => handleKeyDown(e, 1)}
-          className={`${currentSize.button} flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
+          className={`${currentSize.button} flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label="Go to first page"
         >
           <ChevronLeft className={currentSize.icon} />
@@ -149,7 +149,7 @@ const Pagination = memo(({
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           onKeyDown={(e) => handleKeyDown(e, currentPage - 1)}
-          className={`${currentSize.button} flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
+          className={`${currentSize.button} flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label="Go to previous page"
         >
           <ChevronLeft className={currentSize.icon} />
@@ -159,7 +159,7 @@ const Pagination = memo(({
 
       {/* Start Ellipsis */}
       {showStartEllipsis && (
-        <span className={`${currentSize.button} text-slate-400`} aria-hidden="true">
+        <span className={`${currentSize.button} text-gray-400 dark:text-slate-400`} aria-hidden="true">
           <MoreHorizontal className={currentSize.icon} />
         </span>
       )}
@@ -173,7 +173,7 @@ const Pagination = memo(({
           className={`${currentSize.button} ${
             page === currentPage
               ? 'bg-brand-500 text-white'
-              : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
+              : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200'
           } rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label={`Go to page ${page}`}
           aria-current={page === currentPage ? 'page' : undefined}
@@ -184,7 +184,7 @@ const Pagination = memo(({
 
       {/* End Ellipsis */}
       {showEndEllipsis && (
-        <span className={`${currentSize.button} text-slate-400`} aria-hidden="true">
+        <span className={`${currentSize.button} text-gray-400 dark:text-slate-400`} aria-hidden="true">
           <MoreHorizontal className={currentSize.icon} />
         </span>
       )}
@@ -194,7 +194,7 @@ const Pagination = memo(({
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           onKeyDown={(e) => handleKeyDown(e, currentPage + 1)}
-          className={`${currentSize.button} flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
+          className={`${currentSize.button} flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label="Go to next page"
         >
           <span className="hidden sm:inline">Next</span>
@@ -207,7 +207,7 @@ const Pagination = memo(({
         <button
           onClick={() => handlePageChange(totalPages)}
           onKeyDown={(e) => handleKeyDown(e, totalPages)}
-          className={`${currentSize.button} flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
+          className={`${currentSize.button} flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label="Go to last page"
         >
           <ChevronRight className={currentSize.icon} />

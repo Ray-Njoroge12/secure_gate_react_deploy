@@ -166,7 +166,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                   setIsMenuOpen(false);
                   handleProfileClick(); // Navigates to settings
                 }}
-                className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:focus:bg-slate-700"
+                className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:bg-slate-700 dark:focus:bg-slate-700"
                 role="menuitem"
               >
                 Profile Settings
@@ -176,7 +176,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                   setIsMenuOpen(false);
                   setShowChangePassword(true);
                 }}
-                className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:focus:bg-slate-700"
+                className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:bg-slate-700 dark:focus:bg-slate-700"
                 role="menuitem"
               >
                 Change Password
@@ -187,7 +187,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                     setIsMenuOpen(false);
                     setShowLogoutConfirm(true);
                   }}
-                  className="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:focus:bg-slate-700"
+                  className="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:bg-slate-700 dark:focus:bg-slate-700"
                   role="menuitem"
                 >
                   Logout

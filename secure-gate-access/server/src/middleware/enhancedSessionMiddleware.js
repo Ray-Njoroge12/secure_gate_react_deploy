@@ -418,7 +418,8 @@ class EnhancedSessionManager {
       'resident': 1,
       'guard': 2,
       'admin': 3,
-      'superadmin': 4
+      'super_admin': 4,
+      'superadmin': 4  // Legacy alias for backward compatibility
     };
 
     // Define minimum required roles for different operations

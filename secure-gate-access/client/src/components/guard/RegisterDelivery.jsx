@@ -120,7 +120,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
 
   if (success) {
     return (
-      <div className="bg-white rounded-lg shadow p-6 text-center">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 text-center">
         <div className="text-6xl mb-4">✅</div>
         <h3 className="text-xl font-semibold text-green-600">Delivery Registered!</h3>
         <p className="text-gray-600 dark:text-gray-200 mt-2">Resident has been notified</p>
@@ -129,8 +129,8 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-4 border-b border-gray-200">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">📦 Register Delivery</h2>
         <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">Log incoming package for resident</p>
       </div>
@@ -144,7 +144,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
 
         {/* Carrier */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Carrier / Courier *
           </label>
           <select
@@ -152,7 +152,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             value={formData.carrierName}
             onChange={handleChange}
             required
-            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Select carrier...</option>
             {carriers.map(carrier => (
@@ -163,7 +163,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
 
         {/* Recipient */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Recipient (Resident) *
           </label>
           <select
@@ -171,7 +171,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             value={formData.recipientId}
             onChange={handleChange}
             required
-            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Select resident...</option>
             {residents.map(resident => (
@@ -184,7 +184,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
 
         {/* Package Size */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Package Size *
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -194,7 +194,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
                 className={`flex items-center p-3 border rounded-md cursor-pointer transition ${
                   formData.packageSize === size.value
                     ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600'
                 }`}
               >
                 <input
@@ -213,9 +213,9 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
 
         {/* Tracking Number (Optional) */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Tracking Number
-            <span className="text-gray-400 ml-1">(Optional, encrypted)</span>
+            <span className="text-gray-500 dark:text-gray-300 ml-1">(Optional, encrypted)</span>
           </label>
           <input
             type="text"
@@ -223,14 +223,14 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             value={formData.trackingNumber}
             onChange={handleChange}
             placeholder="e.g., 1234567890"
-            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
           <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">🔒 Encrypted and visible only to recipient</p>
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Description
           </label>
           <input
@@ -239,15 +239,15 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             value={formData.packageDescription}
             onChange={handleChange}
             placeholder="e.g., Electronics, Documents, Food"
-            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
         {/* Photo Capture */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Package Photo
-            <span className="text-gray-400 ml-1">(Visible only to recipient)</span>
+            <span className="text-gray-500 dark:text-gray-300 ml-1">(Visible only to recipient)</span>
           </label>
           <input
             type="file"
@@ -279,7 +279,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full p-4 border-2 border-dashed border-gray-300 rounded-md text-center hover:border-gray-400"
+              className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-md text-center hover:border-gray-400"
             >
               <span className="text-3xl">📷</span>
               <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Tap to capture photo</p>
@@ -290,7 +290,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Notes
           </label>
           <textarea
@@ -299,7 +299,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             onChange={handleChange}
             rows={2}
             placeholder="Any special handling instructions..."
-            className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
@@ -309,7 +309,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
             >
               Cancel
             </button>

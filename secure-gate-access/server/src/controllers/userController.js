@@ -18,7 +18,7 @@ export async function registerUser(req, res) {
   // Security: Only allow role selection if requester is an Admin
   // Otherwise default to 'resident' for public registration
   let role = 'resident';
-  if (req.user && req.user.role === 'admin' && body.role) {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'super_admin') && body.role) {
     role = body.role.toString().toLowerCase();
   } else if (body.role && body.role === 'guard') {
     // Allow requesting guard role? Probably not for public. 

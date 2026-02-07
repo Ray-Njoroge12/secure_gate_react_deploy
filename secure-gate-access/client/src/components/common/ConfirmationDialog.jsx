@@ -208,7 +208,7 @@ const ConfirmationDialog = ({
             {/* Double confirm input */}
             {requireDoubleConfirm && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {doubleConfirmText}
                 </label>
                 <input
@@ -219,7 +219,7 @@ const ConfirmationDialog = ({
                   placeholder={doubleConfirmValue}
                   className="
                     w-full px-3 py-2 
-                    border border-gray-300 rounded-lg
+                    border border-gray-300 dark:border-slate-600 rounded-lg
                     focus:ring-2 focus:ring-red-500 focus:border-red-500
                     text-center font-mono
                   "
@@ -261,8 +261,8 @@ const ConfirmationDialog = ({
                 disabled={isLoading}
                 className="
                   flex-1 px-4 py-2.5
-                  bg-gray-100 hover:bg-gray-200
-                  text-gray-700 font-medium
+                  bg-gray-100 dark:bg-slate-700 hover:bg-gray-200
+                  text-gray-700 dark:text-gray-300 font-medium
                   rounded-lg
                   transition-colors
                   focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2

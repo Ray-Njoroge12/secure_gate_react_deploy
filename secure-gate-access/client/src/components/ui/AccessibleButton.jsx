@@ -42,14 +42,14 @@ const AccessibleButton = forwardRef(({
     'disabled:pointer-events-none'
   ];
 
-  // Variant classes
+  // Variant classes — aligned with brand color system (#10b981 emerald)
   const variantClasses = {
     primary: [
-      'bg-blue-600',
+      'bg-emerald-600',
       'text-white',
-      'hover:bg-blue-700',
-      'focus:ring-blue-500',
-      'active:bg-blue-800'
+      'hover:bg-emerald-700',
+      'focus:ring-emerald-500',
+      'active:bg-emerald-800'
     ],
     secondary: [
       'bg-gray-200',
@@ -60,18 +60,18 @@ const AccessibleButton = forwardRef(({
     ],
     outline: [
       'border',
-      'border-gray-300',
-      'bg-white',
-      'text-gray-700',
-      'hover:bg-gray-50',
-      'focus:ring-blue-500',
-      'active:bg-gray-100'
+      'border-gray-300 dark:border-slate-600',
+      'bg-white dark:bg-slate-800',
+      'text-gray-700 dark:text-slate-200',
+      'hover:bg-gray-50 dark:hover:bg-slate-700',
+      'focus:ring-emerald-500',
+      'active:bg-gray-100 dark:bg-slate-700 dark:active:bg-slate-600'
     ],
     ghost: [
-      'text-gray-700',
-      'hover:bg-gray-100',
+      'text-gray-700 dark:text-slate-300',
+      'hover:bg-gray-100 dark:hover:bg-slate-700',
       'focus:ring-gray-500',
-      'active:bg-gray-200'
+      'active:bg-gray-200 dark:active:bg-slate-600'
     ],
     danger: [
       'bg-red-600',
@@ -81,11 +81,11 @@ const AccessibleButton = forwardRef(({
       'active:bg-red-800'
     ],
     success: [
-      'bg-green-600',
+      'bg-emerald-600',
       'text-white',
-      'hover:bg-green-700',
-      'focus:ring-green-500',
-      'active:bg-green-800'
+      'hover:bg-emerald-700',
+      'focus:ring-emerald-500',
+      'active:bg-emerald-800'
     ]
   };
 

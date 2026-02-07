@@ -22,7 +22,7 @@ export default function PrivateRoute({
   // Show loading while authentication is being checked
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-gray-600 dark:text-gray-200">Verifying access...</p>
@@ -40,7 +40,7 @@ export default function PrivateRoute({
   if (roles.length > 0 && !roles.includes(user?.role)) {
     if (showUnauthorized) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
           <div className="max-w-md mx-auto">
             <Card>
               <Card.Header>
@@ -75,7 +75,7 @@ export default function PrivateRoute({
                 <div className="flex justify-center">
                   <button
                     onClick={() => window.history.back()}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
                   >
                     Go Back
                   </button>

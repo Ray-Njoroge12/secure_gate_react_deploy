@@ -110,7 +110,7 @@ export default function Settings() {
   // Filter tabs based on role
   const tabs = isSuperAdmin ? allTabs : allTabs.filter(tab => !tab.superAdminOnly);
 
-  const inputClass = "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent";
+  const inputClass = "w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1";
 
   const formatDateValue = (dateValue) => {
@@ -239,7 +239,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader
         title="Admin Settings"
         subtitle="Configure system-wide settings and preferences"
@@ -249,16 +249,16 @@ export default function Settings() {
       />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
           {/* Tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 space-x-1 overflow-x-auto pb-2">
+          <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6 space-x-1 overflow-x-auto pb-2">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${activeTab === tab.key
                     ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
               >
                 {tab.icon}
@@ -308,7 +308,7 @@ export default function Settings() {
                 </div>
 
                 <div className="mt-6 space-y-4">
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
                     <input
                       type="checkbox"
                       checked={systemSettings.requireOTP}
@@ -321,7 +321,7 @@ export default function Settings() {
                     </div>
                   </label>
 
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
                     <input
                       type="checkbox"
                       checked={systemSettings.autoApproveFrequentVisitors}
@@ -388,7 +388,7 @@ export default function Settings() {
                 </div>
 
                 <div className="mt-6 space-y-4">
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
                     <input
                       type="checkbox"
                       checked={securitySettings.enforcePasswordPolicy}
@@ -401,7 +401,7 @@ export default function Settings() {
                     </div>
                   </label>
 
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
                     <input
                       type="checkbox"
                       checked={securitySettings.require2FA}
@@ -414,7 +414,7 @@ export default function Settings() {
                     </div>
                   </label>
 
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
                     <input
                       type="checkbox"
                       checked={securitySettings.ipWhitelisting}
@@ -478,7 +478,7 @@ export default function Settings() {
                 </div>
 
                 <div className="mt-6">
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg cursor-pointer">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer">
                     <input
                       type="checkbox"
                       checked={emailSettings.enableSSL}
@@ -513,7 +513,7 @@ export default function Settings() {
                 </p>
               </div>
               <ThemeRadioGroup />
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>
                   {theme === 'system' && <span className="ml-1 text-gray-500 dark:text-gray-300">(following system preference)</span>}
@@ -533,7 +533,7 @@ export default function Settings() {
               </div>
 
               {complianceLoading && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-200">
+                <div className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-200">
                   Loading compliance settings...
                 </div>
               )}
@@ -672,7 +672,7 @@ export default function Settings() {
                     </form>
                   </div>
 
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <div className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg border border-gray-200 dark:border-slate-700">
                     <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Policy Metadata</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-200">
                       <strong>Last Updated:</strong> {formatDateValue(policyMetadata.last_updated_at)}
@@ -705,7 +705,7 @@ export default function Settings() {
                     </button>
                   </div>
 
-                  <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
                     <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-2">Retention Policy Overview</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-200">
                       Legal basis: {retentionPolicy.legalBasis || "Kenya Data Protection Act 2019"}
@@ -720,7 +720,7 @@ export default function Settings() {
                         retentionPolicy.policies.map((policy) => (
                           <div
                             key={policy.table_name}
-                            className="flex items-start justify-between gap-4 border border-gray-100 dark:border-gray-700 rounded-md p-3"
+                            className="flex items-start justify-between gap-4 border border-gray-100 dark:border-slate-700 rounded-md p-3"
                           >
                             <div>
                               <p className="text-sm font-medium text-gray-900 dark:text-white">

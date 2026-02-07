@@ -7,6 +7,7 @@
 import express from 'express';
 import { createIncident, getIncidents, resolveIncident } from '../controllers/incidentController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 
 const router = express.Router();
@@ -18,19 +19,19 @@ router.use(attachRequestAudit);
 /**
  * @route POST /api/guard/incidents
  * @desc Create a new incident report (guard/admin only)
- * @access Private (guard, admin)
+ * @access Private (guard, admin, super_admin)
  */
 // GUARD-002 FIX: Added requireRole middleware for proper access control
-router.post('/', requireRole(['guard', 'admin']), createIncident);
+router.post('/', requireRolePolicy('adminOrGuard'), createIncident);
 
 /**
  * @route GET /api/guard/incidents
  * @desc Get incidents with filtering (guard/admin only)
- * @access Private (guard, admin)
+ * @access Private (guard, admin, super_admin)
  * @query fromDate, toDate, category, severity, resolved, limit, offset
  */
 // GUARD-002 FIX: Added requireRole middleware for proper access control
-router.get('/', requireRole(['guard', 'admin']), getIncidents);
+router.get('/', requireRolePolicy('adminOrGuard'), getIncidents);
 
 /**
  * @route PUT /api/guard/incidents/:id/resolve
@@ -38,6 +39,6 @@ router.get('/', requireRole(['guard', 'admin']), getIncidents);
  * @access Private (admin)
  */
 // GUARD-002 FIX: Added requireRole middleware - only admins can resolve
-router.put('/:id/resolve', requireRole(['admin']), resolveIncident);
+router.put('/:id/resolve', requireRolePolicy('adminOnly'), resolveIncident);
 
 export default router;

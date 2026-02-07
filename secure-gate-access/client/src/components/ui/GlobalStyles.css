@@ -5,6 +5,7 @@
 html {
   scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
@@ -318,6 +319,9 @@ html {
 
 /* Prevent text selection on buttons */
 button, [role="button"] {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 

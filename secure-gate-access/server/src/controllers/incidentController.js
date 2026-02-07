@@ -18,7 +18,7 @@ export const createIncident = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+    if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       await req.audit?.('incident.create', 'incident', null, {
         outcome: 'fail',
         message: 'Forbidden: only guards and admins can log incidents'
@@ -121,7 +121,7 @@ export const getIncidents = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+    if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       return respondError(res, 403, 'Forbidden');
     }
 
@@ -242,7 +242,7 @@ export const resolveIncident = async (req, res) => {
     if (!req.user || !req.user.email) {
       return respondError(res, 401, 'Unauthorized');
     }
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') {
+    if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       return respondError(res, 403, 'Forbidden - guards/admins only');
     }
 

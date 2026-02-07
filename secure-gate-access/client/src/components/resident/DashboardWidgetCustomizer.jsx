@@ -77,7 +77,7 @@ const WidgetItem = ({ widget, onToggleVisibility, onDragStart, onDragOver, onDro
         hover:shadow-sm cursor-grab active:cursor-grabbing
       `}
     >
-      <GripVertical className="w-4 h-4 text-gray-400 flex-shrink-0" />
+      <GripVertical className="w-4 h-4 text-gray-400 dark:text-gray-300 flex-shrink-0" />
       
       <span className="text-lg">{widget.icon}</span>
       
@@ -92,7 +92,7 @@ const WidgetItem = ({ widget, onToggleVisibility, onDragStart, onDragOver, onDro
         className={`p-1.5 rounded-md transition-colors ${
           widget.visible 
             ? 'text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20' 
-            : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+            : 'text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
         }`}
         aria-label={widget.visible ? `Hide ${widget.name}` : `Show ${widget.name}`}
       >
@@ -228,7 +228,7 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
               variant="ghost"
               size="sm"
               onClick={handleReset}
-              className="text-gray-500 dark:text-gray-300 hover:text-gray-700"
+              className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset to Default

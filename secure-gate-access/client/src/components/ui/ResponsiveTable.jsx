@@ -149,10 +149,10 @@ const ResponsiveTable = memo(({
   // Loading state
   if (loading) {
     return (
-      <div className={`bg-slate-800 rounded-lg border border-slate-700 ${className}`}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 ${className}`}>
         <div className="p-8 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading data...</p>
+          <p className="text-gray-600 dark:text-slate-400">Loading data...</p>
         </div>
       </div>
     );
@@ -161,17 +161,17 @@ const ResponsiveTable = memo(({
   // Empty state
   if (!data || data.length === 0 || !columns || columns.length === 0) {
     return (
-      <div className={`bg-slate-800 rounded-lg border border-slate-700 ${className}`}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 ${className}`}>
         <div className="p-8 text-center">
           {emptyState.icon && (
-            <div className="mb-4 text-slate-400">
+            <div className="mb-4 text-gray-600 dark:text-slate-400">
               {emptyState.icon}
             </div>
           )}
-          <h3 className="text-lg font-medium text-slate-200 mb-2">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-slate-200 mb-2">
             {emptyState.title}
           </h3>
-          <p className="text-slate-400">
+          <p className="text-gray-600 dark:text-slate-400">
             {emptyState.description}
           </p>
         </div>
@@ -180,19 +180,19 @@ const ResponsiveTable = memo(({
   }
 
   return (
-    <div className={`bg-slate-800 rounded-lg border border-slate-700 ${className}`} {...props}>
+    <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 ${className}`} {...props}>
       {/* Desktop/Tablet Table View */}
       {!isMobile && (
         <div className="overflow-x-auto">
           <table className="w-full" ref={tableRef}>
             <thead>
-              <tr className="border-b border-slate-700">
+              <tr className="border-b border-gray-200 dark:border-slate-700">
                 {visibleColumns.map((column) => (
                   <th
                     key={column.key}
                     className={`
-                      px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider
-                      ${column.sortable ? 'cursor-pointer hover:text-slate-200 select-none' : ''}
+                      px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-slate-400 uppercase tracking-wider
+                      ${column.sortable ? 'cursor-pointer hover:text-gray-900 dark:hover:text-slate-200 select-none' : ''}
                       ${column.className || ''}
                     `}
                     onClick={() => column.sortable && handleSort(column.key)}
@@ -201,7 +201,7 @@ const ResponsiveTable = memo(({
                     <div className="flex items-center gap-2">
                       <span>{column.label}</span>
                       {column.sortable && (
-                        <span className="text-slate-500 dark:text-slate-300" aria-hidden="true">
+                        <span className="text-gray-500 dark:text-slate-300" aria-hidden="true">
                           {renderSortIcon(column.key)}
                         </span>
                       )}
@@ -211,7 +211,7 @@ const ResponsiveTable = memo(({
               </tr>
             </thead>
             <tbody
-              className="divide-y divide-slate-700"
+              className="divide-y divide-gray-200 dark:divide-slate-700"
               ref={containerRef}
               onScroll={handleScroll}
               style={{
@@ -227,8 +227,8 @@ const ResponsiveTable = memo(({
                 <tr
                   key={item.id || index}
                   className={`
-                    hover:bg-slate-700/50 transition-colors cursor-pointer
-                    ${onRowClick ? 'hover:bg-slate-700/50' : ''}
+                    hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer
+                    ${onRowClick ? 'hover:bg-gray-50 dark:hover:bg-slate-700/50' : ''}
                   `}
                   onClick={() => onRowClick?.(item)}
                   style={{
@@ -241,7 +241,7 @@ const ResponsiveTable = memo(({
                     <td
                       key={column.key}
                       className={`
-                        px-4 py-3 text-sm text-slate-200
+                        px-4 py-3 text-sm text-gray-900 dark:text-slate-200
                         ${column.className || ''}
                       `}
                     >
@@ -262,18 +262,18 @@ const ResponsiveTable = memo(({
             <div
               key={item.id || index}
               className={`
-                bg-slate-700/30 rounded-lg p-4 border border-slate-600
-                ${onRowClick ? 'cursor-pointer hover:bg-slate-700/50 transition-colors' : ''}
+                bg-gray-50 dark:bg-slate-700/30 rounded-lg p-4 border border-gray-200 dark:border-slate-600
+                ${onRowClick ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors' : ''}
               `}
               onClick={() => onRowClick?.(item)}
             >
               <div className="space-y-3">
                 {visibleColumns.map((column) => (
                   <div key={column.key} className="flex justify-between items-start">
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider min-w-0 flex-shrink-0 mr-2">
+                    <span className="text-xs font-medium text-gray-600 dark:text-slate-400 uppercase tracking-wider min-w-0 flex-shrink-0 mr-2">
                       {column.label}
                     </span>
-                    <div className="text-sm text-slate-200 text-right max-w-[60%] break-words min-w-0">
+                    <div className="text-sm text-gray-900 dark:text-slate-200 text-right max-w-[60%] break-words min-w-0">
                       {renderCell(item, column)}
                     </div>
                   </div>
@@ -286,8 +286,8 @@ const ResponsiveTable = memo(({
 
       {/* Column priority indicator for mobile */}
       {isMobile && columns.some(col => col.priority > 2) && (
-        <div className="px-4 py-2 border-t border-slate-700">
-          <p className="text-xs text-slate-500 dark:text-slate-300 text-center">
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-slate-700">
+          <p className="text-xs text-gray-500 dark:text-slate-400 text-center">
             Showing {visibleColumns.length} of {columns.length} columns. 
             Switch to desktop view to see all columns.
           </p>

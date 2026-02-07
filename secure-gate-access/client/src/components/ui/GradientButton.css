@@ -15,6 +15,9 @@
   cursor: pointer;
   transition: all var(--transition-normal, 200ms) var(--ease-out, cubic-bezier(0, 0, 0.2, 1));
   overflow: hidden;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
   text-decoration: none;
   white-space: nowrap;
@@ -250,6 +253,14 @@
   pointer-events: none;
 }
 
+/* Disabled state text contrast fix — ensure 3:1 minimum even at 50% opacity */
+.dark .gradient-button--disabled,
+[data-theme="dark"] .gradient-button--disabled,
+.dark .gradient-button:disabled,
+[data-theme="dark"] .gradient-button:disabled {
+  opacity: 0.6; /* Slightly higher for dark mode legibility */
+}
+
 /* Loading State */
 .gradient-button--loading {
   cursor: wait;
@@ -355,6 +366,48 @@
 .dark .gradient-button--ghost:hover:not(:disabled),
 [data-theme="dark"] .gradient-button--ghost:hover:not(:disabled) {
   background: #1e293b;
+}
+
+/* Dark mode: primary & secondary button shadow adjustments */
+.dark .gradient-button--primary,
+[data-theme="dark"] .gradient-button--primary {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.dark .gradient-button--primary:hover:not(:disabled),
+[data-theme="dark"] .gradient-button--primary:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
+}
+
+.dark .gradient-button--secondary,
+[data-theme="dark"] .gradient-button--secondary {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.dark .gradient-button--secondary:hover:not(:disabled),
+[data-theme="dark"] .gradient-button--secondary:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+
+.dark .gradient-button--danger,
+[data-theme="dark"] .gradient-button--danger {
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+}
+
+.dark .gradient-button--danger:hover:not(:disabled),
+[data-theme="dark"] .gradient-button--danger:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+}
+
+/* Dark mode: success variant */
+.dark .gradient-button--success,
+[data-theme="dark"] .gradient-button--success {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.dark .gradient-button--success:hover:not(:disabled),
+[data-theme="dark"] .gradient-button--success:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
 }
 
 /* System preference fallback */

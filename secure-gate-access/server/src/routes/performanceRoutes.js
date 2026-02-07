@@ -7,6 +7,7 @@
 
 import express from 'express';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { successResponse, errorResponse } from '../utils/responseUtils.js';
 import performanceMonitoringService from '../services/performanceMonitoringService.js';
 import loggingService from '../services/loggingService.js';
@@ -19,7 +20,7 @@ const router = express.Router();
  */
 router.get('/metrics', 
   authenticateToken, 
-  requireRole(['admin', 'super_admin']), 
+  requireRolePolicy('adminOnly'), 
   async (req, res) => {
     try {
       const metrics = performanceMonitoringService.getMetrics();
@@ -43,7 +44,7 @@ router.get('/metrics',
  */
 router.get('/stream', 
   authenticateToken, 
-  requireRole(['admin', 'super_admin']), 
+  requireRolePolicy('adminOnly'), 
   (req, res) => {
     try {
       // Set up Server-Sent Events
@@ -136,7 +137,7 @@ router.get('/stream',
  */
 router.put('/thresholds', 
   authenticateToken, 
-  requireRole(['admin', 'super_admin']), 
+  requireRolePolicy('adminOnly'), 
   async (req, res) => {
     try {
       const { thresholds } = req.body;
@@ -172,7 +173,7 @@ router.put('/thresholds',
  */
 router.post('/alerts/:alertId/acknowledge', 
   authenticateToken, 
-  requireRole(['admin', 'super_admin']), 
+  requireRolePolicy('adminOnly'), 
   async (req, res) => {
     try {
       const { alertId } = req.params;
@@ -207,7 +208,7 @@ router.post('/alerts/:alertId/acknowledge',
  */
 router.get('/history', 
   authenticateToken, 
-  requireRole(['admin', 'super_admin']), 
+  requireRolePolicy('adminOnly'), 
   async (req, res) => {
     try {
       const { timeRange = '24h', metric = 'all' } = req.query;
@@ -258,7 +259,7 @@ router.get('/history',
  */
 router.get('/health', 
   authenticateToken, 
-  requireRole(['admin', 'super_admin']), 
+  requireRolePolicy('adminOnly'), 
   async (req, res) => {
     try {
       const metrics = performanceMonitoringService.getMetrics();
@@ -323,7 +324,7 @@ router.get('/health',
  */
 router.post('/test', 
   authenticateToken, 
-  requireRole(['admin', 'super_admin']), 
+  requireRolePolicy('adminOnly'), 
   async (req, res) => {
     try {
       const { testType = 'load', duration = 60 } = req.body;

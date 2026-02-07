@@ -293,7 +293,7 @@ router.get('/stats', async (req, res) => {
   try {
     const { role } = req.user;
 
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'super_admin') {
       return errorResponse(res, 'Only admins can view auto-approval statistics', 'FORBIDDEN', 403, null, req);
     }
 

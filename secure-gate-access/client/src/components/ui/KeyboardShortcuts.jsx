@@ -81,7 +81,7 @@ const KeyboardShortcuts = ({
       >
         <div className="space-y-6">
           {/* Introduction */}
-          <div className="text-slate-300 text-sm">
+          <div className="text-gray-600 dark:text-slate-300 text-sm">
             <p className="mb-2">
               Use these keyboard shortcuts to navigate the application more efficiently:
             </p>
@@ -94,7 +94,7 @@ const KeyboardShortcuts = ({
           {/* Shortcuts by Category */}
           {Object.entries(groupedShortcuts).map(([category, categoryShortcuts]) => (
             <div key={category} className="space-y-3">
-              <h3 className="text-lg font-semibold text-slate-200 border-b border-slate-700 pb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 border-b border-gray-200 dark:border-slate-700 pb-2">
                 {category}
               </h3>
               
@@ -102,12 +102,12 @@ const KeyboardShortcuts = ({
                 {categoryShortcuts.map((shortcut, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between py-2 px-3 bg-slate-700/50 rounded-lg"
+                    className="flex items-center justify-between py-2 px-3 bg-gray-100/50 dark:bg-slate-700/50 rounded-lg"
                   >
-                    <span className="text-slate-300 text-sm">
+                    <span className="text-gray-600 dark:text-slate-300 text-sm">
                       {shortcut.description}
                     </span>
-                    <kbd className="px-2 py-1 bg-slate-600 text-slate-200 text-xs rounded border border-slate-500 font-mono">
+                    <kbd className="px-2 py-1 bg-gray-200 dark:bg-slate-600 text-gray-900 dark:text-slate-200 text-xs rounded border border-gray-300 dark:border-slate-500 font-mono">
                       {shortcut.key}
                     </kbd>
                   </div>
@@ -118,51 +118,51 @@ const KeyboardShortcuts = ({
 
           {/* Navigation Help */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-slate-200 border-b border-slate-700 pb-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 border-b border-gray-200 dark:border-slate-700 pb-2">
               Navigation
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="space-y-2">
-                <h4 className="text-sm font-medium text-slate-300">General Navigation</h4>
-                <div className="space-y-1 text-sm text-slate-400">
+                <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">General Navigation</h4>
+                <div className="space-y-1 text-sm text-gray-500 dark:text-slate-400">
                   <div className="flex justify-between">
                     <span>Move between elements</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">Tab</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">Tab</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>Move backwards</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">Shift + Tab</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">Shift + Tab</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>Activate element</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">Enter</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">Enter</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>Close dialogs</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">Escape</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">Escape</kbd>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <h4 className="text-sm font-medium text-slate-300">Menu Navigation</h4>
-                <div className="space-y-1 text-sm text-slate-400">
+                <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">Menu Navigation</h4>
+                <div className="space-y-1 text-sm text-gray-500 dark:text-slate-400">
                   <div className="flex justify-between">
                     <span>Next menu item</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">↓</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">↓</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>Previous menu item</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">↑</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">↑</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>First menu item</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">Home</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">Home</kbd>
                   </div>
                   <div className="flex justify-between">
                     <span>Last menu item</span>
-                    <kbd className="px-1 py-0.5 bg-slate-600 text-xs rounded">End</kbd>
+                    <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-slate-600 text-xs rounded">End</kbd>
                   </div>
                 </div>
               </div>

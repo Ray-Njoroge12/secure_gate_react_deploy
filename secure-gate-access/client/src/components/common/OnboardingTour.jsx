@@ -391,7 +391,7 @@ const OnboardingTour = ({
         aria-labelledby="tour-step-title"
       >
         {/* Progress bar */}
-        <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-t-xl overflow-hidden">
+        <div className="h-1 bg-gray-200 dark:bg-slate-700 rounded-t-xl overflow-hidden">
           <div 
             className="h-full bg-green-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -430,7 +430,7 @@ const OnboardingTour = ({
               {currentStepIndex > 0 && (
                 <button
                   onClick={handlePrevious}
-                  className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
+                  className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600"
                 >
                   ← Back
                 </button>
@@ -445,7 +445,7 @@ const OnboardingTour = ({
           </div>
 
           {/* Keyboard hint */}
-          <p className="text-xs text-center text-gray-400 dark:text-gray-500 dark:text-gray-300 mt-3">
+          <p className="text-xs text-center text-gray-500 dark:text-gray-300 mt-3">
             Use arrow keys to navigate, Esc to skip
           </p>
         </div>

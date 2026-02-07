@@ -139,10 +139,10 @@ const FilterPanel = memo(({
       <div key={field.key} className="space-y-2">
         <button
           onClick={() => toggleSection(field.key)}
-          className="flex items-center justify-between w-full p-3 text-left bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+          className="flex items-center justify-between w-full p-3 text-left bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-200">{field.label}</span>
+            <span className="font-medium text-gray-900 dark:text-slate-200">{field.label}</span>
             {currentValue.length > 0 && (
               <span className="px-2 py-1 text-xs bg-brand-500 text-white rounded-full">
                 {currentValue.length}
@@ -150,9 +150,9 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
@@ -163,7 +163,7 @@ const FilterPanel = memo(({
               return (
                 <label
                   key={value}
-                  className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer"
+                  className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded cursor-pointer"
                 >
                   <input
                     type="checkbox"
@@ -175,9 +175,9 @@ const FilterPanel = memo(({
                         updateFilter(field.key, currentValue.filter(v => v !== value));
                       }
                     }}
-                    className="w-4 h-4 text-brand-500 bg-slate-800 border-slate-600 rounded focus:ring-brand-500"
+                    className="w-4 h-4 text-brand-500 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 rounded focus:ring-brand-500"
                   />
-                  <span className="text-sm text-slate-200">{value}</span>
+                  <span className="text-sm text-gray-900 dark:text-slate-200">{value}</span>
                   {isSelected && <Check className="w-4 h-4 text-brand-400" />}
                 </label>
               );
@@ -197,11 +197,11 @@ const FilterPanel = memo(({
       <div key={field.key} className="space-y-2">
         <button
           onClick={() => toggleSection(field.key)}
-          className="flex items-center justify-between w-full p-3 text-left bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+          className="flex items-center justify-between w-full p-3 text-left bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="font-medium text-slate-200">{field.label}</span>
+            <Calendar className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <span className="font-medium text-gray-900 dark:text-slate-200">{field.label}</span>
             {(currentValue.start || currentValue.end) && (
               <span className="px-2 py-1 text-xs bg-brand-500 text-white rounded-full">
                 Active
@@ -209,34 +209,34 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
         {isExpanded && (
-          <div className="space-y-3 p-3 bg-slate-800 rounded-lg">
+          <div className="space-y-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1">
                 Start Date
               </label>
               <input
                 type="date"
                 value={currentValue.start}
                 onChange={(e) => updateFilter(field.key, { ...currentValue, start: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1">
                 End Date
               </label>
               <input
                 type="date"
                 value={currentValue.end}
                 onChange={(e) => updateFilter(field.key, { ...currentValue, end: e.target.value })}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
           </div>
@@ -254,10 +254,10 @@ const FilterPanel = memo(({
       <div key={field.key} className="space-y-2">
         <button
           onClick={() => toggleSection(field.key)}
-          className="flex items-center justify-between w-full p-3 text-left bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+          className="flex items-center justify-between w-full p-3 text-left bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-200">{field.label}</span>
+            <span className="font-medium text-gray-900 dark:text-slate-200">{field.label}</span>
             {currentValue && (
               <span className="px-2 py-1 text-xs bg-brand-500 text-white rounded-full">
                 Active
@@ -265,20 +265,20 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
         {isExpanded && (
-          <div className="p-3 bg-slate-800 rounded-lg">
+          <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
             <input
               type="text"
               value={currentValue}
               onChange={(e) => updateFilter(field.key, e.target.value)}
               placeholder={`Filter by ${field.label.toLowerCase()}...`}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
         )}
@@ -295,10 +295,10 @@ const FilterPanel = memo(({
       <div key={field.key} className="space-y-2">
         <button
           onClick={() => toggleSection(field.key)}
-          className="flex items-center justify-between w-full p-3 text-left bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+          className="flex items-center justify-between w-full p-3 text-left bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
         >
           <div className="flex items-center gap-2">
-            <span className="font-medium text-slate-200">{field.label}</span>
+            <span className="font-medium text-gray-900 dark:text-slate-200">{field.label}</span>
             {(currentValue.min || currentValue.max) && (
               <span className="px-2 py-1 text-xs bg-brand-500 text-white rounded-full">
                 Active
@@ -306,16 +306,16 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
         {isExpanded && (
-          <div className="space-y-3 p-3 bg-slate-800 rounded-lg">
+          <div className="space-y-3 p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1">
                 Minimum
               </label>
               <input
@@ -323,11 +323,11 @@ const FilterPanel = memo(({
                 value={currentValue.min}
                 onChange={(e) => updateFilter(field.key, { ...currentValue, min: e.target.value })}
                 placeholder="Min value"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-1">
                 Maximum
               </label>
               <input
@@ -335,7 +335,7 @@ const FilterPanel = memo(({
                 value={currentValue.max}
                 onChange={(e) => updateFilter(field.key, { ...currentValue, max: e.target.value })}
                 placeholder="Max value"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
             </div>
           </div>
@@ -389,7 +389,7 @@ const FilterPanel = memo(({
           {activeFiltersCount > 0 && (
             <button
               onClick={onClearFilters}
-              className="text-sm text-slate-400 hover:text-slate-200"
+              className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
             >
               Clear All
             </button>
@@ -397,7 +397,7 @@ const FilterPanel = memo(({
           {onToggle && (
             <button
               onClick={onToggle}
-              className="text-slate-400 hover:text-slate-200"
+              className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
               aria-label="Close filters"
             >
               <X className="w-5 h-5" />
@@ -409,23 +409,23 @@ const FilterPanel = memo(({
       {/* Saved Filters */}
       {savedFilters.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-slate-300">Saved Filters</h4>
+          <h4 className="text-sm font-medium text-gray-600 dark:text-slate-300">Saved Filters</h4>
           <div className="space-y-1">
             {savedFilters.map((savedFilter) => (
               <div
                 key={savedFilter.id}
-                className="flex items-center justify-between p-2 bg-slate-700 hover:bg-slate-600 rounded"
+                className="flex items-center justify-between p-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded"
               >
                 <button
                   onClick={() => loadSavedFilter(savedFilter)}
-                  className="flex items-center gap-2 text-sm text-slate-200 hover:text-brand-400"
+                  className="flex items-center gap-2 text-sm text-gray-900 dark:text-slate-200 hover:text-brand-400"
                 >
                   <Star className="w-4 h-4 text-yellow-400" />
                   {savedFilter.name}
                 </button>
                 <button
                   onClick={() => deleteSavedFilter(savedFilter.id)}
-                  className="text-slate-400 hover:text-red-400"
+                  className="text-gray-400 dark:text-slate-400 hover:text-red-400"
                   aria-label={`Delete saved filter: ${savedFilter.name}`}
                 >
                   <X className="w-3 h-3" />
@@ -442,8 +442,8 @@ const FilterPanel = memo(({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-600">
-        <div className="text-sm text-slate-400">
+      <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-slate-600">
+        <div className="text-sm text-gray-500 dark:text-slate-400">
           {activeFiltersCount > 0 ? `${activeFiltersCount} filter${activeFiltersCount === 1 ? '' : 's'} active` : 'No filters applied'}
         </div>
         <div className="flex items-center gap-2">
@@ -452,7 +452,7 @@ const FilterPanel = memo(({
               const name = prompt('Enter a name for this filter set:');
               if (name) saveFilters(name);
             }}
-            className="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 rounded"
+            className="px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded"
           >
             Save Filters
           </button>

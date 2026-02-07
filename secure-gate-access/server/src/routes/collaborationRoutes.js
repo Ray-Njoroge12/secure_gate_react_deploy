@@ -1,6 +1,7 @@
 import express from 'express';
 import { collaborationService } from '../services/collaborationService.js';
 import { authenticateToken, requireRole, requireEstate } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { validateRequest as validateInput } from '../middleware/validationMiddleware.js';
 import { successResponse, errorResponse } from '../utils/responseUtils.js';
 import loggingService from '../services/loggingService.js';
@@ -246,7 +247,7 @@ const createApprovalWorkflowSchema = Joi.object({
 router.post('/workflows',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   validateInput(createApprovalWorkflowSchema),
   async (req, res) => {
     try {

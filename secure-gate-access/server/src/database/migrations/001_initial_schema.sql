@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255), -- legacy column, nullable
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL, -- admin, guard, visitor, resident
+    role VARCHAR(50) NOT NULL, -- super_admin, admin, guard, resident
     phone VARCHAR(20),
     area VARCHAR(100),
     house VARCHAR(100),

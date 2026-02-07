@@ -6,6 +6,7 @@
 import express from 'express';
 import breachNotificationService from '../services/breachNotificationService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const router = express.Router();
  * @desc Register a new security breach
  * @access Admin only
  */
-router.post('/detect', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/detect', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { type, description, affected_data_types, affected_users_count } = req.body;
 
@@ -52,7 +53,7 @@ router.post('/detect', authenticateToken, requireRole(['admin']), async (req, re
  * @desc Get breach incident details
  * @access Admin only
  */
-router.get('/:breachId', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/:breachId', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { breachId } = req.params;
     const breach = breachNotificationService.getBreachIncident(breachId);
@@ -82,7 +83,7 @@ router.get('/:breachId', authenticateToken, requireRole(['admin']), async (req, 
  * @desc Get all breach incidents
  * @access Admin only
  */
-router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const breaches = breachNotificationService.getAllBreachIncidents();
 
@@ -107,7 +108,7 @@ router.get('/', authenticateToken, requireRole(['admin']), async (req, res) => {
  * @desc Get breach statistics
  * @access Admin only
  */
-router.get('/stats/summary', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/stats/summary', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const statistics = breachNotificationService.getBreachStatistics();
 
@@ -129,7 +130,7 @@ router.get('/stats/summary', authenticateToken, requireRole(['admin']), async (r
  * @desc Complete breach investigation
  * @access Admin only
  */
-router.post('/:breachId/complete-investigation', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:breachId/complete-investigation', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { breachId } = req.params;
     const { summary, mitigation_measures, root_cause } = req.body;
@@ -166,7 +167,7 @@ router.post('/:breachId/complete-investigation', authenticateToken, requireRole(
  * @desc Notify affected data subjects
  * @access Admin only
  */
-router.post('/:breachId/notify-data-subjects', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:breachId/notify-data-subjects', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { breachId } = req.params;
     const { affected_users } = req.body;
@@ -199,7 +200,7 @@ router.post('/:breachId/notify-data-subjects', authenticateToken, requireRole(['
  * @desc Manually trigger ODPC notification
  * @access Admin only
  */
-router.post('/:breachId/send-odpc-notification', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:breachId/send-odpc-notification', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { breachId } = req.params;
     const breach = breachNotificationService.getBreachIncident(breachId);

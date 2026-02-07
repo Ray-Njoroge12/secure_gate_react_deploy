@@ -70,7 +70,7 @@ const FlowNavigation = ({
   };
 
   return (
-    <div ref={flowRef} className={`flex items-center justify-between p-4 bg-gray-50 border-t ${className}`}>
+    <div ref={flowRef} className={`flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-900 border-t ${className}`}>
       {/* Progress indicator */}
       {showProgress && (
         <div className="flex items-center space-x-2">

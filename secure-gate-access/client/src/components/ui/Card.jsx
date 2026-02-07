@@ -65,7 +65,7 @@ const Card = ({
   // Theme-aware variant classes
   const variantClasses = {
     outlined: 'border-gray-200 dark:border-slate-700',
-    elevated: 'shadow-lg border-gray-200 dark:border-slate-600',
+    elevated: 'shadow-lg border-gray-200 dark:border-slate-700',
     flat: 'shadow-none border-gray-200 dark:border-slate-700'
   };
 

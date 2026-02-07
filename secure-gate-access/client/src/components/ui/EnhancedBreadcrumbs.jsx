@@ -184,7 +184,7 @@ const EnhancedBreadcrumbs = ({
     <div className={`breadcrumbs-container ${className}`}>
       {/* Progress bar */}
       {showProgress && progress !== null && (
-        <div className="w-full bg-slate-700 rounded-full h-1 mb-4">
+        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1 mb-4">
           <div 
             className="bg-brand-500 h-1 rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}

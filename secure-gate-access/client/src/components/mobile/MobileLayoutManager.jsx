@@ -205,7 +205,7 @@ const MobileLayoutManager = ({
       
       {/* Layout switcher for development/admin */}
       {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 z-50">
+        <div className="fixed bottom-4 right-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 z-50">
           <div className="flex space-x-1">
             {['stack', 'grid', 'masonry', 'carousel'].map((layoutType) => (
               <button
@@ -216,7 +216,7 @@ const MobileLayoutManager = ({
                   'min-w-[44px] min-h-[44px] flex items-center justify-center',
                   currentLayout === layoutType
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-200 text-gray-700 dark:text-gray-300 hover:bg-gray-300'
                 ].join(' ')}
               >
                 {layoutType}
@@ -307,8 +307,8 @@ const MobileLayoutItem = ({
       
       {/* Drag handle for reorderable items */}
       {enableReorder && (
-        <div className="absolute top-2 right-2 p-1 bg-gray-200 dark:bg-gray-700 rounded opacity-50 hover:opacity-100 transition-opacity">
-          <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+        <div className="absolute top-2 right-2 p-1 bg-gray-200 dark:bg-slate-700 rounded opacity-50 hover:opacity-100 transition-opacity">
+          <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
           </svg>
         </div>

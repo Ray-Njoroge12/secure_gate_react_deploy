@@ -14,7 +14,8 @@ export const PASS_STATUS = {
   // Phase 3: Walk-in approval flow statuses
   PENDING_APPROVAL: 'pending_approval', // Walk-in visitor waiting for resident approval
   APPROVED: 'approved',                 // Resident approved entry
-  REJECTED: 'rejected'                  // Resident rejected entry
+  REJECTED: 'rejected',                 // Resident rejected entry
+  CANCELLED: 'cancelled'                // Invitation cancelled by resident/admin
 };
 
 /**

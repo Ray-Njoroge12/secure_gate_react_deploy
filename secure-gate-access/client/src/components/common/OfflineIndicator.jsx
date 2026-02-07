@@ -153,29 +153,29 @@ const OfflineIndicator = ({
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Connection:</span>
+              <span className="text-gray-500 dark:text-gray-300">Connection:</span>
               <span className={status.isOnline ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}>
                 {status.isOnline ? 'Connected' : 'Offline'}
               </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Last Sync:</span>
+              <span className="text-gray-500 dark:text-gray-300">Last Sync:</span>
               <span className="text-gray-700 dark:text-gray-300">
                 {formatLastSync(status.lastDownload)}
               </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Pending:</span>
+              <span className="text-gray-500 dark:text-gray-300">Pending:</span>
               <span className="text-gray-700 dark:text-gray-300">
                 {status.pendingChangesCount} changes
               </span>
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">Offline Data:</span>
-              <span className={status.hasOfflineData ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}>
+              <span className="text-gray-500 dark:text-gray-300">Offline Data:</span>
+              <span className={status.hasOfflineData ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-300'}>
                 {status.hasOfflineData ? 'Available' : 'Not cached'}
               </span>
             </div>
@@ -205,7 +205,7 @@ const OfflineIndicator = ({
           </div>
 
           {/* Privacy Notice */}
-          <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+          <p className="mt-3 text-xs text-gray-500 dark:text-gray-300">
             Offline data is encrypted and auto-purges after 8 hours or on logout.
           </p>
         </div>

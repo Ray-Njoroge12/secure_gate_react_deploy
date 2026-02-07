@@ -150,7 +150,7 @@ const SearchResults = memo(({
     return (
       <div
         key={index}
-        className="p-4 bg-slate-800 border border-slate-600 rounded-lg hover:bg-slate-700 transition-colors"
+        className="p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
       >
         <div className="space-y-2">
           {/* Primary fields */}
@@ -160,10 +160,10 @@ const SearchResults = memo(({
             
             return (
               <div key={field} className="flex items-start gap-2">
-                <span className="text-sm font-medium text-slate-400 capitalize min-w-0 flex-shrink-0">
+                <span className="text-sm font-medium text-gray-500 dark:text-slate-400 capitalize min-w-0 flex-shrink-0">
                   {field.replace(/_/g, ' ')}:
                 </span>
-                <span className="text-sm text-slate-200">
+                <span className="text-sm text-gray-900 dark:text-slate-200">
                   {getHighlightedValue(item, field)}
                 </span>
               </div>
@@ -172,7 +172,7 @@ const SearchResults = memo(({
           
           {/* Additional fields if any */}
           {searchableFields.length > 3 && (
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-gray-500 dark:text-slate-400">
               +{searchableFields.length - 3} more field{searchableFields.length - 3 === 1 ? '' : 's'}
             </div>
           )}
@@ -184,7 +184,7 @@ const SearchResults = memo(({
   if (results.length === 0) {
     return (
       <div className={`text-center py-12 ${className}`}>
-        <div className="text-slate-400 mb-4">
+        <div className="text-gray-500 dark:text-slate-400 mb-4">
           <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">No results found</h3>
           <p>Try adjusting your search terms or filters</p>
@@ -197,7 +197,7 @@ const SearchResults = memo(({
     <div className={`space-y-4 ${className}`}>
       {/* Results Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="text-sm text-slate-400">
+        <div className="text-sm text-gray-500 dark:text-slate-400">
           {searchTerm ? (
             <>
               Found {results.length} result{results.length === 1 ? '' : 's'} for "{searchTerm}"
@@ -211,11 +211,11 @@ const SearchResults = memo(({
 
         {/* Export Options */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-400">Export:</span>
+          <span className="text-sm text-gray-500 dark:text-slate-400">Export:</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => handleExport('csv')}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
+              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors"
               title="Export as CSV"
             >
               <FileSpreadsheet className="w-4 h-4" />
@@ -223,7 +223,7 @@ const SearchResults = memo(({
             </button>
             <button
               onClick={() => handleExport('json')}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
+              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors"
               title="Export as JSON"
             >
               <FileText className="w-4 h-4" />
@@ -231,7 +231,7 @@ const SearchResults = memo(({
             </button>
             <button
               onClick={() => handleExport('pdf')}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
+              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors"
               title="Export as PDF"
             >
               <FileText className="w-4 h-4" />
@@ -247,7 +247,7 @@ const SearchResults = memo(({
       </div>
 
       {/* Results Footer */}
-      <div className="text-center text-sm text-slate-400 pt-4 border-t border-slate-600">
+      <div className="text-center text-sm text-gray-500 dark:text-slate-400 pt-4 border-t border-gray-200 dark:border-slate-600">
         {searchTerm && (
           <p>
             Search completed in {performance.now().toFixed(2)}ms

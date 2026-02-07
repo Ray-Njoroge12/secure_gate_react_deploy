@@ -303,7 +303,7 @@ const CommunityFeaturesStep = ({
           Your community offers amazing features to help you connect, stay informed, and make the most of your living experience. 
           Let's explore what's available to you as a valued resident.
         </p>
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
           <span className="mr-2">🎯</span>
           <span>Discover {completionThreshold} of {requiredFeatures} community features to complete your onboarding</span>
         </div>
@@ -328,7 +328,7 @@ const CommunityFeaturesStep = ({
                     feature-card p-6 rounded-lg border-2 transition-all duration-300
                     ${isDiscovered 
                       ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' 
-                      : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600'
+                      : 'border-gray-200 dark:border-slate-700 bg-white dark:border-slate-700 dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600'
                     }
                   `}
                 >
@@ -342,7 +342,7 @@ const CommunityFeaturesStep = ({
                         <h5 className="text-lg font-semibold text-gray-900 dark:text-white">
                           {feature.title}
                         </h5>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                           {feature.description}
                         </p>
                       </div>
@@ -368,7 +368,7 @@ const CommunityFeaturesStep = ({
                       <div className="announcements-demo space-y-3">
                         <h6 className="text-sm font-medium text-gray-900 dark:text-white">Recent Announcements:</h6>
                         {feature.content.examples.map((announcement, index) => (
-                          <div key={index} className="p-3 bg-gray-50 dark:bg-gray-900 rounded border-l-4 border-blue-500">
+                          <div key={index} className="p-3 bg-gray-50 dark:bg-slate-900 rounded border-l-4 border-blue-500">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{announcement.type}</span>
                               <span className={`text-xs px-2 py-1 rounded ${
@@ -380,7 +380,7 @@ const CommunityFeaturesStep = ({
                               </span>
                             </div>
                             <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-1">{announcement.title}</h6>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">{announcement.preview}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-300">{announcement.preview}</p>
                           </div>
                         ))}
                       </div>
@@ -391,12 +391,12 @@ const CommunityFeaturesStep = ({
                         <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Upcoming Events:</h6>
                         <div className="space-y-2">
                           {feature.content.upcomingEvents.map((event, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-900 rounded">
                               <div>
                                 <span className="text-sm font-medium text-gray-900 dark:text-white">{event.title}</span>
-                                <p className="text-xs text-gray-600 dark:text-gray-400">{event.date} at {event.time}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-300">{event.date} at {event.time}</p>
                               </div>
-                              <span className="text-xs text-gray-500 dark:text-gray-500">{event.attendees} attending</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-300">{event.attendees} attending</span>
                             </div>
                           ))}
                         </div>
@@ -408,10 +408,10 @@ const CommunityFeaturesStep = ({
                         <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Your Neighbors:</h6>
                         <div className="space-y-2">
                           {feature.content.examples.map((neighbor, index) => (
-                            <div key={index} className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                            <div key={index} className="p-2 bg-gray-50 dark:bg-slate-900 rounded">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-sm font-medium text-gray-900 dark:text-white">{neighbor.name}</span>
-                                <span className="text-xs text-gray-500 dark:text-gray-500">{neighbor.unit}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-300">{neighbor.unit}</span>
                               </div>
                               <div className="flex flex-wrap gap-1 mb-1">
                                 {neighbor.interests.map((interest, i) => (
@@ -420,7 +420,7 @@ const CommunityFeaturesStep = ({
                                   </span>
                                 ))}
                               </div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
+                              <div className="text-xs text-gray-600 dark:text-gray-300">
                                 Services: {neighbor.services.join(', ')}
                               </div>
                             </div>
@@ -434,14 +434,14 @@ const CommunityFeaturesStep = ({
                         <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Available Amenities:</h6>
                         <div className="space-y-2">
                           {feature.content.amenities.map((amenity, index) => (
-                            <div key={index} className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                            <div key={index} className="p-2 bg-gray-50 dark:bg-slate-900 rounded">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-sm font-medium text-gray-900 dark:text-white">{amenity.name}</span>
                                 <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 px-2 py-1 rounded">
                                   Available
                                 </span>
                               </div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                              <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1">
                                 <div>Hours: {amenity.availability}</div>
                                 <div>Capacity: {amenity.capacity}</div>
                                 <div>Booking: {amenity.booking}</div>
@@ -457,9 +457,9 @@ const CommunityFeaturesStep = ({
                         <h6 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Feedback Categories:</h6>
                         <div className="space-y-2">
                           {feature.content.categories.map((category, index) => (
-                            <div key={index} className="p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                            <div key={index} className="p-2 bg-gray-50 dark:bg-slate-900 rounded">
                               <span className="text-sm font-medium text-gray-900 dark:text-white">{category.title}</span>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">{category.description}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300">{category.description}</p>
                             </div>
                           ))}
                         </div>
@@ -490,13 +490,13 @@ const CommunityFeaturesStep = ({
       ))}
 
       {/* Progress Summary */}
-      <div className="progress-summary p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="progress-summary p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               Discovery Progress: {discoveredFeatures.size} of {requiredFeatures} features discovered
             </p>
-            <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+            <div className="w-64 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mt-2">
               <div
                 className="bg-green-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(discoveredFeatures.size / requiredFeatures) * 100}%` }}
@@ -529,7 +529,7 @@ const CommunityFeaturesStep = ({
               You've successfully completed the onboarding process and discovered the amazing features available to you. 
               You're now ready to make the most of your community living experience!
             </p>
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-green-200 dark:border-green-700">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-green-200 dark:border-green-700">
               <h5 className="font-medium text-gray-900 dark:text-white mb-2">Quick Start Checklist:</h5>
               <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 text-left">
                 <li className="flex items-center">

@@ -353,11 +353,11 @@ const WalkInRegistration = () => {
                     className="flex items-center justify-between p-3 bg-orange-50 border border-orange-100 rounded-lg"
                   >
                     <div>
-                      <p className="font-medium text-gray-900">{walkIn.name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="font-medium text-gray-900 dark:text-white">{walkIn.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {walkIn.phone} • House: {walkIn.houseNumber}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-300">
                         {new Date(walkIn.timestamp).toLocaleString()}
                       </p>
                     </div>
@@ -381,7 +381,7 @@ const WalkInRegistration = () => {
               <form onSubmit={handleRegister} data-testid="walk-in-form" className="space-y-4">
                 {/* Visitor Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     <User className="w-4 h-4 inline mr-1" />
                     Visitor Name *
                   </label>
@@ -392,14 +392,14 @@ const WalkInRegistration = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Enter visitor's full name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                     required
                   />
                 </div>
 
                 {/* Phone Number */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     <Phone className="w-4 h-4 inline mr-1" />
                     Phone Number *
                   </label>
@@ -410,14 +410,14 @@ const WalkInRegistration = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     placeholder="e.g., +254712345678"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                     required
                   />
                 </div>
 
                 {/* House Number */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     <Home className="w-4 h-4 inline mr-1" />
                     House Number *
                   </label>
@@ -428,15 +428,15 @@ const WalkInRegistration = () => {
                     value={formData.houseNumber}
                     onChange={handleInputChange}
                     placeholder="e.g., A-14, B-23, Villa 101"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">Enter the resident's house/unit number for accurate lookup</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter the resident's house/unit number for accurate lookup</p>
                 </div>
 
                 {/* Purpose */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     <FileText className="w-4 h-4 inline mr-1" />
                     Purpose (Optional)
                   </label>
@@ -447,13 +447,13 @@ const WalkInRegistration = () => {
                     onChange={handleInputChange}
                     placeholder="Reason for visit"
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                   />
                 </div>
 
                 {/* Vehicle Plate */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     🚗 Vehicle Plate (Optional)
                   </label>
                   <input
@@ -462,7 +462,7 @@ const WalkInRegistration = () => {
                     value={formData.vehiclePlate}
                     onChange={handleInputChange}
                     placeholder="e.g., KXX 123A"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                   />
                 </div>
 
@@ -550,18 +550,18 @@ const WalkInRegistration = () => {
             <Card.Content>
               <div className="space-y-2">
                 {pendingWalkIns.length === 0 ? (
-                  <div className="text-center text-gray-500 py-4">
+                  <div className="text-center text-gray-500 dark:text-gray-400 py-4">
                     No pending registrations found.
                   </div>
                 ) : (
                   pendingWalkIns.map(visitor => (
-                    <div key={visitor.localId} className="p-4 bg-gray-50 rounded-md shadow-sm flex justify-between items-center">
+                    <div key={visitor.localId} className="p-4 bg-gray-50 dark:bg-slate-900 rounded-md shadow-sm flex justify-between items-center">
                       <div>
                         <div className="font-medium">{visitor.name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
                           {visitor.phone} &bull; {visitor.houseNumber}
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">
+                        <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                           Registered {new Date(visitor.dateOfVisit).toLocaleDateString()} at {visitor.timeOfVisit}
                         </div>
                       </div>

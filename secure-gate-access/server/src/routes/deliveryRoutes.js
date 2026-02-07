@@ -339,7 +339,7 @@ router.get('/stats/overview', async (req, res) => {
   try {
     const { role, estate_id } = req.user;
 
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'super_admin') {
       return errorResponse(res, 'Only admins can view delivery statistics', 'FORBIDDEN', 403, null, req);
     }
 

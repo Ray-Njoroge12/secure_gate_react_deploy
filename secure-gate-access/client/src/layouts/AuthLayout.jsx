@@ -92,7 +92,7 @@ export default function AuthLayout({ title, subtitle, children }) {
         </div>
         
         {/* Footer */}
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-6">
+        <p className="text-xs text-gray-500 dark:text-gray-300 text-center mt-6">
           &copy; 2025 SecureGate • Privacy • Terms
         </p>
       </main>

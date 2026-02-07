@@ -10,6 +10,7 @@ import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { requireEstateContext as requireEstate } from '../middleware/estateContextMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { validateRequest as validateInput } from '../middleware/validationMiddleware.js';
 import { privacyComplianceService } from '../services/privacyComplianceService.js';
 import { successResponse, errorResponse } from '../utils/responseUtils.js';
@@ -253,7 +254,7 @@ router.get('/data-subject-requests',
 router.get('/retention-policies',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { user } = req;
 
@@ -270,7 +271,7 @@ router.get('/retention-policies',
 router.post('/retention-policies',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   validateInput(retentionPolicySchema),
   asyncHandler(async (req, res) => {
     const { user, body } = req;
@@ -292,7 +293,7 @@ router.post('/retention-policies',
 router.post('/retention-policies/execute',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { user } = req;
     const { dryRun = false } = req.body;
@@ -317,7 +318,7 @@ router.post('/retention-policies/execute',
 router.get('/compliance-report',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { user } = req;
     const {
@@ -356,7 +357,7 @@ router.get('/compliance-report',
 router.get('/compliance-reports',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { user } = req;
     const { limit = 20, offset = 0, reportType } = req.query;
@@ -430,7 +431,7 @@ router.get('/audit-trail',
 router.get('/admin/users/:userId/privacy-settings',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { user } = req;
     const { userId } = req.params;
@@ -451,7 +452,7 @@ router.get('/admin/users/:userId/privacy-settings',
 router.get('/admin/compliance-overview',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { user } = req;
 
@@ -468,7 +469,7 @@ router.get('/admin/compliance-overview',
 router.post('/admin/bulk-consent-update',
   authenticateToken,
   requireEstate,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { user, body } = req;
     const { userIds, consentType, granted, reason } = body;

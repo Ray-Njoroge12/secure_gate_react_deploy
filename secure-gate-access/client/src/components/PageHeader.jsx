@@ -43,7 +43,7 @@ const PageHeader = ({
               variant="ghost"
               size="sm"
               onClick={handleBack}
-              className="mb-4 text-gray-700 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white"
+              className="mb-4 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white"
               icon={
                 <ArrowLeft className="w-4 h-4 mr-2" />
               }

@@ -238,13 +238,13 @@ const MFAVerify = () => {
             </div>
 
             {/* Security Info */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-slate-700">
               <div className="flex items-start space-x-3 text-xs text-gray-600 dark:text-gray-200">
-                <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-400 dark:text-gray-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p className="font-medium text-gray-700 mb-1">Why do I need this?</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">Why do I need this?</p>
                   <p>Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password.</p>
                 </div>
               </div>

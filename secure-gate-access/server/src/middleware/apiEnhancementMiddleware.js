@@ -183,7 +183,7 @@ class APIEnhancementMiddleware {
       if (req.apiClient) {
         limiterType = req.apiClient.tier || 'authenticated';
       } else if (req.user) {
-        limiterType = req.user.role === 'admin' ? 'admin' : 'authenticated';
+        limiterType = (req.user.role === 'admin' || req.user.role === 'super_admin') ? 'admin' : 'authenticated';
       }
 
       const limiter = this.rateLimiters.get(limiterType);

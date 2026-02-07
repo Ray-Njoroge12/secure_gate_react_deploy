@@ -1,6 +1,7 @@
 // server/src/routes/securityRoutes.js
 import express from 'express';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { adminRateLimit } from '../middleware/rateLimitMiddleware.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
 import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
@@ -19,7 +20,7 @@ const router = express.Router();
 router.get('/headers',
   adminRateLimit(),
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const headerConfig = {
       csp: {
@@ -72,7 +73,7 @@ router.get('/headers',
 router.get('/status',
   adminRateLimit(),
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const securityStatus = {
       environment: process.env.NODE_ENV || 'development',
@@ -105,7 +106,7 @@ router.get('/status',
 router.get('/audit',
   adminRateLimit(),
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { limit = 100, offset = 0, severity, type } = req.query;
 
@@ -137,7 +138,7 @@ router.get('/audit',
 router.post('/headers/test',
   adminRateLimit(),
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const { url, headers } = req.body;
 
@@ -203,7 +204,7 @@ router.post('/scan',
 router.get('/compliance',
   adminRateLimit(),
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     const compliance = {
       standards: {

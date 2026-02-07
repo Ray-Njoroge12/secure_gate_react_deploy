@@ -4,6 +4,7 @@ import { CacheKeys } from '../services/redisService.js';
 import enhancedSessionManager from '../middleware/enhancedSessionMiddleware.js';
 const sessionManager = enhancedSessionManager;
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
 import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 
@@ -18,7 +19,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.get('/health',
     authenticateToken,
-    requireRole(['admin', 'super_admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
       const health = await redisService.healthCheck();
 
@@ -58,7 +59,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.delete('/pattern/:pattern',
     authenticateToken,
-    requireRole(['admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
       const { pattern } = req.params;
 
@@ -82,7 +83,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.delete('/key/:key',
     authenticateToken,
-    requireRole(['admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
       const { key } = req.params;
 
@@ -106,7 +107,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.delete('/all',
     authenticateToken,
-    requireRole(['admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
     // Clear common cache patterns
       const patterns = [
@@ -140,7 +141,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.post('/warm',
     authenticateToken,
-    requireRole(['admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
       const { type } = req.body;
 
@@ -190,7 +191,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.get('/sessions/stats',
     authenticateToken,
-    requireRole(['admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
       const stats = await sessionManager.getSessionStats();
 
@@ -205,7 +206,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.post('/sessions/logout-user',
     authenticateToken,
-    requireRole(['admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
       const { userId } = req.body;
 
@@ -228,7 +229,7 @@ export default function createCacheRoutes(redisService) {
  */
   router.post('/reset-stats',
     authenticateToken,
-    requireRole(['admin']),
+    requireRolePolicy('adminOnly'),
     asyncHandler(async (req, res) => {
       redisService.resetStats();
 

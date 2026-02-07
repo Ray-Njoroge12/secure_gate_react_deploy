@@ -57,7 +57,7 @@ const ActivityDashboard = () => {
       case 'high': return 'text-red-600 bg-red-100';
       case 'medium': return 'text-orange-600 bg-orange-100';
       case 'low': return 'text-yellow-600 bg-yellow-100';
-      default: return 'text-gray-600 bg-gray-100';
+      default: return 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-700';
     }
   };
 
@@ -89,7 +89,7 @@ const ActivityDashboard = () => {
       <div className="activity-dashboard">
         <div className="text-center py-8">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-500" />
-          <p className="text-gray-500">Loading activity data...</p>
+          <p className="text-gray-500 dark:text-gray-400">Loading activity data...</p>
         </div>
       </div>
     );
@@ -146,7 +146,7 @@ const ActivityDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Last 24 Hours</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Last 24 Hours</p>
                   <p className="text-3xl font-bold">{summary.last24h}</p>
                 </div>
                 <Clock className="h-10 w-10 text-blue-500" />
@@ -158,7 +158,7 @@ const ActivityDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Last 7 Days</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Last 7 Days</p>
                   <p className="text-3xl font-bold">{summary.last7d}</p>
                 </div>
                 <TrendingUp className="h-10 w-10 text-green-500" />
@@ -170,7 +170,7 @@ const ActivityDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending Approvals</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Pending Approvals</p>
                   <p className="text-3xl font-bold">{summary.pendingApprovals}</p>
                 </div>
                 <Users className="h-10 w-10 text-orange-500" />
@@ -182,7 +182,7 @@ const ActivityDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Visitors Today</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Visitors Today</p>
                   <p className="text-3xl font-bold">{summary.visitorsToday}</p>
                 </div>
                 <CheckCircle className="h-10 w-10 text-purple-500" />
@@ -238,7 +238,7 @@ const ActivityDashboard = () => {
           <CardContent>
             <div className="activity-feed">
               {activityFeed.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">No recent activity</p>
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">No recent activity</p>
               ) : (
                 activityFeed.map((activity) => (
                   <div key={activity.id} className="activity-item">
@@ -274,7 +274,7 @@ const ActivityDashboard = () => {
             <CardContent>
               {/* Action Breakdown */}
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Top Actions</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Top Actions</h3>
                 <div className="space-y-2">
                   {trends.actionBreakdown.slice(0, 5).map((action, idx) => (
                     <div key={idx} className="flex items-center gap-2">
@@ -299,17 +299,17 @@ const ActivityDashboard = () => {
 
               {/* Most Active Users */}
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Most Active Users</h3>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Most Active Users</h3>
                 <div className="space-y-2">
                   {trends.activeUsers.slice(0, 5).map((user, idx) => (
                     <div key={idx} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{user.username}</span>
-                        <span className="px-2 py-0.5 text-xs bg-gray-100 rounded">
+                        <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-slate-700 rounded">
                           {user.role}
                         </span>
                       </div>
-                      <span className="text-gray-500">{user.activity_count} actions</span>
+                      <span className="text-gray-500 dark:text-gray-400">{user.activity_count} actions</span>
                     </div>
                   ))}
                 </div>

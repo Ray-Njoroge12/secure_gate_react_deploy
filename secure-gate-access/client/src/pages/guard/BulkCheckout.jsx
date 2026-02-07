@@ -279,7 +279,7 @@ export default function BulkCheckout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader
         title="Bulk Checkout"
         description="Check out multiple visitors at once"
@@ -292,26 +292,26 @@ export default function BulkCheckout() {
           <Card className="p-4 text-center">
             <UserGroupIcon className="w-8 h-8 mx-auto text-blue-500 mb-2" />
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{activeVisitors.length}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">On Premise</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">On Premise</p>
           </Card>
           <Card className="p-4 text-center">
             <WarningIcon className="w-8 h-8 mx-auto text-yellow-500 mb-2" />
             <p className="text-2xl font-bold text-yellow-600">
               {activeVisitors.filter(v => v.isOverdue).length}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Overdue (8h+)</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Overdue (8h+)</p>
           </Card>
           <Card className="p-4 text-center">
             <CheckAllIcon className="w-8 h-8 mx-auto text-green-500 mb-2" />
             <p className="text-2xl font-bold text-green-600">{selectedIds.size}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Selected</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Selected</p>
           </Card>
           <Card className="p-4 text-center">
             <ClockIcon className="w-8 h-8 mx-auto text-purple-500 mb-2" />
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Current Time</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Current Time</p>
           </Card>
         </div>
 
@@ -323,7 +323,7 @@ export default function BulkCheckout() {
                 <p className="font-medium text-gray-900 dark:text-white">
                   Checkout Complete
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-gray-300">
                   {checkoutResults.success} successful, {checkoutResults.failed} failed
                 </p>
               </div>
@@ -362,7 +362,7 @@ export default function BulkCheckout() {
                   setSelectedIds(new Set());
                   setSelectAll(false);
                 }}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Visitors ({activeVisitors.length})</option>
                 <option value="overdue">Overdue Only ({activeVisitors.filter(v => v.isOverdue).length})</option>
@@ -401,13 +401,13 @@ export default function BulkCheckout() {
         {/* Visitor List */}
         <Card>
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={selectAll}
                 onChange={handleSelectAll}
-                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500"
                 disabled={filteredVisitors.length === 0}
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -420,19 +420,19 @@ export default function BulkCheckout() {
           {isLoading('bulkCheckout') ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-400">Loading visitors...</p>
+              <p className="mt-2 text-gray-500 dark:text-gray-300">Loading visitors...</p>
             </div>
           ) : filteredVisitors.length === 0 ? (
             <div className="p-8 text-center">
-              <UserGroupIcon className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-500 dark:text-gray-400">No visitors on premise.</p>
+              <UserGroupIcon className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-300 mb-2" />
+              <p className="text-gray-500 dark:text-gray-300">No visitors on premise.</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredVisitors.map((visitor) => (
                 <div
                   key={visitor.id}
-                  className={`px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+                  className={`px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${
                     selectedIds.has(visitor.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
                 >
@@ -440,7 +440,7 @@ export default function BulkCheckout() {
                     type="checkbox"
                     checked={selectedIds.has(visitor.id)}
                     onChange={() => handleSelect(visitor.id)}
-                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500"
                   />
 
                   <div className="flex-1 min-w-0">
@@ -455,7 +455,7 @@ export default function BulkCheckout() {
                         <Badge variant="info" size="sm">Walk-in</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
                       Host: {visitor.host_name || 'Unknown'} • Unit: {visitor.host_unit || '-'}
                     </p>
                   </div>
@@ -464,7 +464,7 @@ export default function BulkCheckout() {
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {visitor.duration}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-300">
                       In: {formatTime(visitor.check_in)}
                     </p>
                   </div>
@@ -512,7 +512,7 @@ export default function BulkCheckout() {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                     End of Day Checkout
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-gray-500 dark:text-gray-300">
                     This will check out ALL {activeVisitors.length} visitors
                   </p>
                 </div>
@@ -527,7 +527,7 @@ export default function BulkCheckout() {
                   onChange={(e) => setEodNotes(e.target.value)}
                   rows={3}
                   placeholder="Add any notes about this EOD checkout..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 />
               </div>
 

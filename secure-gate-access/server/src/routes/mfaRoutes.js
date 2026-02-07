@@ -1,3 +1,59 @@
+/**
+ * MFA Routes - Multi-Factor Authentication Endpoints
+ * 
+ * IMPLEMENTATION STATUS: ✅ FIXED (February 5, 2026)
+ * ====================================================
+ * 
+ * CRITICAL FIX APPLIED:
+ * - Migration 061 adds mfa_enabled, mfa_secret, backup_codes, mfa_methods to users table
+ * - userService.js updated to include all MFA fields in queries
+ * - Emergency restore script available: npm run mfa:restore
+ * - Verification script available: npm run mfa:verify
+ * 
+ * ENDPOINTS:
+ * ==========
+ * POST   /api/mfa/setup                  - Initialize MFA setup (requires auth)
+ * POST   /api/mfa/verify-setup           - Verify and enable MFA (requires auth)
+ * POST   /api/mfa/verify                 - Verify MFA during login (public with session)
+ * POST   /api/mfa/disable                - Disable MFA (requires auth + password)
+ * GET    /api/mfa/status                 - Get MFA status (requires auth)
+ * POST   /api/mfa/regenerate-backup-codes - Generate new backup codes (requires auth + MFA code)
+ * POST   /api/mfa/verify-operation       - Verify MFA for sensitive operations (requires auth + MFA code)
+ * 
+ * FLOW DIAGRAM:
+ * =============
+ * 1. User Login (admin/guard)
+ *    └─> authRoutes.js checks user.mfa_enabled
+ *        ├─> If false: Normal login
+ *        └─> If true: Return requiresMFA=true + mfaSessionId
+ *            └─> Frontend redirects to /mfa/verify
+ *                └─> POST /api/mfa/verify with mfaSessionId + code
+ *                    ├─> Success: Returns full access token
+ *                    └─> Failure: Returns error
+ * 
+ * 2. MFA Setup (new user)
+ *    └─> POST /api/mfa/setup
+ *        └─> Returns QR code + manual key
+ *            └─> User scans QR code in authenticator app
+ *                └─> POST /api/mfa/verify-setup with code
+ *                    ├─> Success: Enables MFA + returns backup codes
+ *                    └─> Failure: MFA not enabled
+ * 
+ * SECURITY NOTES:
+ * ===============
+ * - MFA secrets are encrypted before storage
+ * - Backup codes are hashed (one-time use)
+ * - MFA sessions expire after 5 minutes
+ * - Rate limiting applied to prevent brute force
+ * - MFA required for admin/guard/super_admin roles
+ * 
+ * TROUBLESHOOTING:
+ * ================
+ * - Users locked out? Run: npm run mfa:restore
+ * - MFA not working? Run: npm run mfa:verify
+ * - Missing columns? Run: npm run mfa:migrate
+ */
+
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.js';

@@ -240,7 +240,7 @@ export default function ShiftHandover() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader
         title="Shift Handover"
         description="Manage shift transitions and handover notes"
@@ -265,32 +265,32 @@ export default function ShiftHandover() {
           {currentShift ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Shift Type</span>
+                <span className="text-gray-500 dark:text-gray-300">Shift Type</span>
                 <p className="font-medium text-gray-900 dark:text-white capitalize">
                   {currentShift.shift_type}
                 </p>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Started</span>
+                <span className="text-gray-500 dark:text-gray-300">Started</span>
                 <p className="font-medium text-gray-900 dark:text-white">
                   {formatTime(currentShift.actual_start_time || currentShift.start_time)}
                 </p>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Scheduled End</span>
+                <span className="text-gray-500 dark:text-gray-300">Scheduled End</span>
                 <p className="font-medium text-gray-900 dark:text-white">
                   {formatTime(currentShift.end_time)}
                 </p>
               </div>
               <div>
-                <span className="text-gray-500 dark:text-gray-400">Post</span>
+                <span className="text-gray-500 dark:text-gray-300">Post</span>
                 <p className="font-medium text-gray-900 dark:text-white">
                   {currentShift.post_location || 'Main Gate'}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-center py-8 text-gray-500 dark:text-gray-300">
               <p>No active shift found.</p>
               <p className="text-sm mt-2">Start a shift to enable handover features.</p>
             </div>
@@ -305,7 +305,7 @@ export default function ShiftHandover() {
               Incoming Handover Notes
             </h2>
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-300">
                 <UserIcon />
                 <span>From: {incomingHandover.from_guard_name || 'Previous Guard'}</span>
                 <span className="mx-2">•</span>
@@ -332,7 +332,7 @@ export default function ShiftHandover() {
               )}
 
               {incomingHandover.equipment_status && (
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
                   <h3 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                     <ToolIcon />
                     Equipment Status
@@ -380,7 +380,7 @@ export default function ShiftHandover() {
                 name="to_guard_id"
                 value={handoverForm.to_guard_id}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">-- Any incoming guard --</option>
                 {guards.map(guard => (
@@ -402,7 +402,7 @@ export default function ShiftHandover() {
                 rows={4}
                 required
                 placeholder="Summary of shift activities, ongoing issues, special instructions for the next guard..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
@@ -416,7 +416,7 @@ export default function ShiftHandover() {
                 onChange={handleInputChange}
                 rows={3}
                 placeholder="List any incidents that occurred during your shift and their current status..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
@@ -428,7 +428,7 @@ export default function ShiftHandover() {
                 name="equipment_status"
                 value={handoverForm.equipment_status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="good">All equipment in good condition</option>
                 <option value="issues">Some equipment has issues (describe in notes)</option>

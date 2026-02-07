@@ -91,7 +91,7 @@ const SystemHealthDashboard = () => {
               {statusDisplay.text}
             </Badge>
             {data.responseTime && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
                 {data.responseTime}ms
               </span>
             )}
@@ -100,18 +100,18 @@ const SystemHealthDashboard = () => {
           {data.details && (
             <div className="mt-2 space-y-1">
               {data.details.connectionPool && (
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 dark:text-gray-300">
                   Pool: {data.details.connectionPool.total}/{data.details.connectionPool.max} 
                   ({data.details.connectionPool.utilization}%)
                 </div>
               )}
               {data.details.memory && (
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 dark:text-gray-300">
                   Memory: {data.details.memory.usage}%
                 </div>
               )}
               {data.details.services && (
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 dark:text-gray-300">
                   Services: {data.details.services.filter(s => s.status === 'healthy').length}/{data.details.services.length} healthy
                 </div>
               )}
@@ -146,7 +146,7 @@ const SystemHealthDashboard = () => {
             <div className="metric-item">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium">CPU Usage</span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {Math.round(metrics.cpu.usage * 100)}%
                 </span>
               </div>
@@ -159,7 +159,7 @@ const SystemHealthDashboard = () => {
                   style={{ width: `${metrics.cpu.usage * 100}%` }}
                 />
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {metrics.cpu.cores} cores
               </div>
             </div>
@@ -168,7 +168,7 @@ const SystemHealthDashboard = () => {
             <div className="metric-item">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium">Memory Usage</span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {Math.round(metrics.memory.usage * 100)}%
                 </span>
               </div>
@@ -181,7 +181,7 @@ const SystemHealthDashboard = () => {
                   style={{ width: `${metrics.memory.usage * 100}%` }}
                 />
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {Math.round(metrics.memory.used / 1024 / 1024 / 1024 * 100) / 100}GB / 
                 {Math.round(metrics.memory.total / 1024 / 1024 / 1024 * 100) / 100}GB
               </div>
@@ -191,7 +191,7 @@ const SystemHealthDashboard = () => {
             <div className="metric-item">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium">Disk Usage</span>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {Math.round(metrics.disk.usage * 100)}%
                 </span>
               </div>
@@ -207,7 +207,7 @@ const SystemHealthDashboard = () => {
             </div>
           </div>
 
-          <div className="mt-4 text-xs text-gray-500">
+          <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
             Uptime: {Math.floor(metrics.uptime / 3600)}h {Math.floor((metrics.uptime % 3600) / 60)}m
           </div>
         </CardContent>
@@ -227,7 +227,7 @@ const SystemHealthDashboard = () => {
             </h3>
           </CardHeader>
           <CardContent>
-            <div className="text-center text-gray-500 py-4">
+            <div className="text-center text-gray-500 dark:text-gray-400 py-4">
               No active alerts
             </div>
           </CardContent>
@@ -285,6 +285,7 @@ const SystemHealthDashboard = () => {
               <XAxis dataKey="timestamp" />
               <YAxis />
               <Tooltip />
+              {/* Chart library requires raw hex — aligned with --color-info */}
               <Line 
                 type="monotone" 
                 dataKey="responseTime" 
@@ -368,7 +369,7 @@ const SystemHealthDashboard = () => {
         </div>
         
         {healthData?.timestamp && (
-          <div className="text-sm text-gray-500 mt-2">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Last updated: {new Date(healthData.timestamp).toLocaleString()}
             {healthData.responseTime && (
               <span className="ml-4">

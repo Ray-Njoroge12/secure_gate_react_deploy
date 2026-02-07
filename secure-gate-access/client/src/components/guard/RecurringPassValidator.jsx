@@ -48,8 +48,8 @@ const RecurringPassValidator = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-4 border-b border-gray-200">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🔑 Recurring Pass Check</h2>
         <p className="text-sm text-gray-500 dark:text-gray-300">Validate daily workers & regular visitors</p>
       </div>
@@ -63,7 +63,7 @@ const RecurringPassValidator = () => {
               className={`flex-1 py-2 rounded-md text-sm font-medium ${
                 method === 'pin'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
               }`}
             >
               🔢 PIN Entry
@@ -74,7 +74,7 @@ const RecurringPassValidator = () => {
               className={`flex-1 py-2 rounded-md text-sm font-medium ${
                 method === 'qr'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
               }`}
             >
               📱 QR Scan
@@ -87,7 +87,7 @@ const RecurringPassValidator = () => {
               value={credential}
               onChange={(e) => setCredential(e.target.value)}
               placeholder={method === 'pin' ? 'Enter 6-digit PIN' : 'Enter or scan QR token'}
-              className="w-full border-gray-300 rounded-md text-center text-xl tracking-wider"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md text-center text-xl tracking-wider"
               maxLength={method === 'pin' ? 6 : 50}
               autoFocus
             />
@@ -153,7 +153,7 @@ const RecurringPassValidator = () => {
             
             <button
               onClick={clearResult}
-              className="mt-4 w-full py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              className="mt-4 w-full py-2 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300"
             >
               Check Another
             </button>
@@ -161,7 +161,7 @@ const RecurringPassValidator = () => {
         )}
       </div>
 
-      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
+      <div className="p-3 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-300">
         💡 Recurring passes are pre-authorized by residents for regular visitors
       </div>
     </div>

@@ -20,8 +20,8 @@ router.post('/', authenticateToken, attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId, role } = req.user;
 
-    if (!['resident', 'admin'].includes(role)) {
-      return errorResponse(res, 'Only residents can create recurring passes', 'FORBIDDEN', 403, null, req);
+    if (!['resident', 'admin', 'super_admin'].includes(role)) {
+      return errorResponse(res, 'Only residents and admins can create recurring passes', 'FORBIDDEN', 403, null, req);
     }
 
     const result = await recurringVisitorService.createRecurringPass(residentId, req.body);
@@ -46,8 +46,8 @@ router.get('/', authenticateToken, async (req, res) => {
     const { id: residentId, role } = req.user;
     const { status, includeExpired } = req.query;
 
-    if (!['resident', 'admin'].includes(role)) {
-      return errorResponse(res, 'Only residents can view their recurring passes', 'FORBIDDEN', 403, null, req);
+    if (!['resident', 'admin', 'super_admin'].includes(role)) {
+      return errorResponse(res, 'Only residents and admins can view recurring passes', 'FORBIDDEN', 403, null, req);
     }
 
     const passes = await recurringVisitorService.getResidentRecurringPasses(residentId, {
@@ -208,8 +208,8 @@ router.post('/validate', authenticateToken, async (req, res) => {
     const { role, id: guardId } = req.user;
     const { credential, method = 'pin' } = req.body;
 
-    if (!['guard', 'admin'].includes(role)) {
-      return errorResponse(res, 'Only guards can validate passes', 'FORBIDDEN', 403, null, req);
+    if (!['guard', 'admin', 'super_admin'].includes(role)) {
+      return errorResponse(res, 'Only guards and admins can validate passes', 'FORBIDDEN', 403, null, req);
     }
 
     if (!credential) {

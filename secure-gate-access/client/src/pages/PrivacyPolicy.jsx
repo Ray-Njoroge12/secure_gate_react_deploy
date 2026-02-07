@@ -453,7 +453,7 @@ const PrivacyPolicy = () => {
               )}
             </div>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg mt-4">
+          <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg mt-4">
             <h4 className="font-semibold mb-2">General Privacy Inquiries</h4>
             <p className="text-sm text-gray-600 dark:text-gray-200">
               Email: privacy@securegate.com<br/>
@@ -461,8 +461,8 @@ const PrivacyPolicy = () => {
               Response Time: Within 72 hours
             </p>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-800">
+          <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
+            <p className="text-sm text-gray-800 dark:text-gray-200">
               <strong>Complaints:</strong> If you believe your privacy rights have been violated, 
               you can file a complaint with the Office of the Data Protection Commissioner (ODPC) 
               at complaints@odpc.go.ke.

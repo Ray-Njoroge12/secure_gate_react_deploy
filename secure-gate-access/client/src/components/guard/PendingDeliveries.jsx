@@ -98,7 +98,7 @@ const PendingDeliveries = () => {
 
   if (loading && deliveries.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="animate-pulse flex space-x-4">
           <div className="flex-1 space-y-4">
             <div className="h-4 bg-gray-200 rounded w-1/4"></div>
@@ -110,9 +110,9 @@ const PendingDeliveries = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -138,7 +138,7 @@ const PendingDeliveries = () => {
       )}
 
       {/* Deliveries List */}
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-slate-700">
         {deliveries.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">📭</span>
@@ -146,7 +146,7 @@ const PendingDeliveries = () => {
           </div>
         ) : (
           deliveries.map((delivery) => (
-            <div key={delivery.id} className="p-4 hover:bg-gray-50">
+            <div key={delivery.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700">
               <div className="flex justify-between items-start">
                 <div className="flex gap-3">
                   <span className="text-2xl">{getSizeIcon(delivery.packageSize)}</span>
@@ -193,7 +193,7 @@ const PendingDeliveries = () => {
       </div>
 
       {/* Privacy Notice */}
-      <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 dark:text-gray-300">
+      <div className="p-3 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 text-xs text-gray-500 dark:text-gray-300">
         🔒 Tracking numbers and package details are visible only to recipients
       </div>
 
@@ -219,10 +219,10 @@ const RegisterDeliveryModal = ({ onClose, onSuccess }) => {
   // For now, a simplified inline version
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Register New Delivery</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300">
             ✕
           </button>
         </div>
@@ -232,7 +232,7 @@ const RegisterDeliveryModal = ({ onClose, onSuccess }) => {
           </p>
           <button
             onClick={onClose}
-            className="w-full mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+            className="w-full mt-4 px-4 py-2 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300"
           >
             Close
           </button>

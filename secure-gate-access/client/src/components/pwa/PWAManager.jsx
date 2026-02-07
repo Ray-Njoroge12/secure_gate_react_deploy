@@ -387,7 +387,7 @@ const PWAManager = ({ children }) => {
           top: 0;
           left: 0;
           right: 0;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, var(--color-info, #667eea) 0%, var(--color-brand-accent, #764ba2) 100%);
           color: white;
           z-index: 9999;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -395,7 +395,7 @@ const PWAManager = ({ children }) => {
         }
 
         .pwa-offline-banner {
-          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+          background: linear-gradient(135deg, var(--color-error, #ff6b6b) 0%, var(--color-error-dark, #ee5a24) 100%);
         }
 
         .pwa-banner-content {

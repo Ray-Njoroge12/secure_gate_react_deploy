@@ -13,6 +13,7 @@ import {
   comprehensiveSecurityMiddleware
 } from '../middleware/enhancedSecurityMiddleware.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { validateRequest as validateInput } from '../middleware/validationMiddleware.js';
 import { successResponse, errorResponse } from '../utils/responseUtils.js';
 import { dbManager } from '../database/db.enhanced.js';
@@ -132,6 +133,9 @@ router.post('/additional-auth/verify',
 /**
  * Get user security settings
  * GET /api/security/settings
+ * 
+ * UPDATED: Now reads MFA settings from users table (Feb 5, 2026)
+ * MFA fields migrated from user_security_settings to users table
  */
 router.get('/settings',
   authenticateToken,
@@ -140,10 +144,18 @@ router.get('/settings',
     try {
       const userId = req.user.id;
 
-      const result = await dbManager.query(`
+      // MFA settings now in users table (mfa_enabled, mfa_methods)
+      // Other security settings remain in user_security_settings
+      const userResult = await dbManager.query(`
         SELECT 
           mfa_enabled,
-          mfa_methods,
+          mfa_methods
+        FROM users 
+        WHERE id = $1
+      `, [userId]);
+
+      const securityResult = await dbManager.query(`
+        SELECT 
           require_additional_auth_for,
           session_timeout_minutes,
           max_concurrent_sessions,
@@ -156,7 +168,10 @@ router.get('/settings',
         WHERE user_id = $1
       `, [userId]);
 
-      const settings = result.rows[0] || {};
+      const settings = {
+        ...(userResult.rows[0] || {}),
+        ...(securityResult.rows[0] || {})
+      };
 
       successResponse(res, { settings }, 'Security settings retrieved successfully');
     } catch (error) {
@@ -168,6 +183,10 @@ router.get('/settings',
 /**
  * Update user security settings
  * PUT /api/security/settings
+ * 
+ * UPDATED: Now writes MFA settings to users table (Feb 5, 2026)
+ * MFA fields (mfa_enabled, mfa_methods) go to users table
+ * Other settings go to user_security_settings table
  */
 router.put('/settings',
   authenticateToken,
@@ -179,43 +198,72 @@ router.put('/settings',
       const userId = req.user.id;
       const updates = req.body;
 
-      // Build dynamic update query
-      const updateFields = [];
-      const values = [];
-      let paramIndex = 1;
+      // Separate MFA fields from other security settings
+      const mfaFields = {};
+      const securityFields = {};
 
       Object.entries(updates).forEach(([key, value]) => {
-        const dbField = camelToSnakeCase(key);
-        updateFields.push(`${dbField} = $${paramIndex}`);
-        values.push(typeof value === 'object' ? JSON.stringify(value) : value);
-        paramIndex++;
+        if (key === 'mfaEnabled' || key === 'mfaMethods') {
+          mfaFields[camelToSnakeCase(key)] = value;
+        } else {
+          securityFields[key] = value;
+        }
       });
 
-      if (updateFields.length === 0) {
-        return errorResponse(res, 'No valid fields to update', 'NO_UPDATES_PROVIDED', 400);
+      // Update MFA settings in users table
+      if (Object.keys(mfaFields).length > 0) {
+        const mfaUpdateFields = [];
+        const mfaValues = [];
+        let paramIndex = 1;
+
+        Object.entries(mfaFields).forEach(([key, value]) => {
+          mfaUpdateFields.push(`${key} = $${paramIndex}`);
+          mfaValues.push(typeof value === 'object' ? JSON.stringify(value) : value);
+          paramIndex++;
+        });
+
+        mfaValues.push(userId);
+
+        await dbManager.query(`
+          UPDATE users 
+          SET ${mfaUpdateFields.join(', ')}, updated_at = NOW()
+          WHERE id = $${paramIndex}
+        `, mfaValues);
       }
 
-      values.push(userId); // For WHERE clause
+      // Update other security settings in user_security_settings table
+      if (Object.keys(securityFields).length > 0) {
+        const securityUpdateFields = [];
+        const securityValues = [];
+        let paramIndex = 1;
 
-      const query = `
-        UPDATE user_security_settings 
-        SET ${updateFields.join(', ')}, updated_at = NOW()
-        WHERE user_id = $${paramIndex}
-        RETURNING *
-      `;
+        Object.entries(securityFields).forEach(([key, value]) => {
+          const dbField = camelToSnakeCase(key);
+          securityUpdateFields.push(`${dbField} = $${paramIndex}`);
+          securityValues.push(typeof value === 'object' ? JSON.stringify(value) : value);
+          paramIndex++;
+        });
 
-      const result = await dbManager.query(query, values);
+        securityValues.push(userId);
 
-      if (result.rows.length === 0) {
-        // Create settings if they don't exist
-        await dbManager.query(`
-          INSERT INTO user_security_settings (user_id, ${Object.keys(updates).map(camelToSnakeCase).join(', ')})
-          VALUES ($1, ${Object.keys(updates).map((_, i) => `$${i + 2}`).join(', ')})
-        `, [userId, ...Object.values(updates).map(v => typeof v === 'object' ? JSON.stringify(v) : v)]);
+        const result = await dbManager.query(`
+          UPDATE user_security_settings 
+          SET ${securityUpdateFields.join(', ')}, updated_at = NOW()
+          WHERE user_id = $${paramIndex}
+          RETURNING *
+        `, securityValues);
+
+        if (result.rows.length === 0) {
+          // Create settings if they don't exist
+          await dbManager.query(`
+            INSERT INTO user_security_settings (user_id, ${Object.keys(securityFields).map(camelToSnakeCase).join(', ')})
+            VALUES ($1, ${Object.keys(securityFields).map((_, i) => `$${i + 2}`).join(', ')})
+          `, [userId, ...Object.values(securityFields).map(v => typeof v === 'object' ? JSON.stringify(v) : v)]);
+        }
       }
 
       successResponse(res, {
-        settings: result.rows[0]
+        message: 'Security settings updated successfully'
       }, 'Security settings updated successfully');
     } catch (error) {
       errorResponse(res, error.message, 'SECURITY_SETTINGS_UPDATE_FAILED', 500);
@@ -231,7 +279,7 @@ router.put('/settings',
  */
 router.get('/incidents',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   ...comprehensiveSecurityMiddleware('security_incident_access'),
   async (req, res) => {
     try {
@@ -342,7 +390,7 @@ router.get('/incidents',
  */
 router.get('/incidents/:id',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   ...comprehensiveSecurityMiddleware('security_incident_detail_access'),
   async (req, res) => {
     try {
@@ -395,7 +443,7 @@ router.get('/incidents/:id',
  */
 router.put('/incidents/:id',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   validateInput(incidentUpdateSchema),
   requireAdditionalAuth('security_incident_management'),
   ...comprehensiveSecurityMiddleware('security_incident_update'),
@@ -458,7 +506,7 @@ router.put('/incidents/:id',
  */
 router.get('/audit-logs',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   ...comprehensiveSecurityMiddleware('security_audit_log_access'),
   async (req, res) => {
     try {
@@ -567,7 +615,7 @@ router.get('/audit-logs',
  */
 router.get('/analytics',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   ...comprehensiveSecurityMiddleware('security_analytics_access'),
   async (req, res) => {
     try {

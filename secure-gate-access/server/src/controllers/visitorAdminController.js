@@ -5,7 +5,7 @@ import { PASS_STATUS } from '../constants/statuses.js';
 const getActiveVisitors = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role !== 'guard' && req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+    if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin') return respondError(res, 403, 'Forbidden');
 
     const estateId = req.user.estate_id;
 
@@ -33,7 +33,7 @@ const getActiveVisitors = async (req, res) => {
 const getVisitorReport = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') return respondError(res, 403, 'Forbidden');
 
     const estateId = req.user.estate_id;
     if (!estateId) return respondError(res, 400, 'Estate context required');
@@ -129,7 +129,7 @@ const getVisitorReport = async (req, res) => {
 const revokeVisitor = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
-    if (req.user.role !== 'admin') return respondError(res, 403, 'Forbidden');
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') return respondError(res, 403, 'Forbidden');
 
     const { visitorId } = req.params;
     const estateId = req.user.estate_id;
