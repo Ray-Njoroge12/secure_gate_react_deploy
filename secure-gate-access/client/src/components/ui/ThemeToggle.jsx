@@ -80,11 +80,11 @@ export const ThemeRadioGroup = ({ className = '' }) => {
       {themes.map(({ value, icon: Icon, label, description }) => (
         <label
           key={value}
-          className="flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all"
-          style={{
-            backgroundColor: theme === value ? 'var(--color-brand-50)' : 'var(--color-background-primary)',
-            borderColor: theme === value ? 'var(--color-brand-500)' : 'var(--color-border-primary)'
-          }}
+          className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+            theme === value
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
+              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+          }`}
         >
           <input
             type="radio"
@@ -96,12 +96,12 @@ export const ThemeRadioGroup = ({ className = '' }) => {
           />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <Icon className="w-5 h-5" />
-              <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>
+              <Icon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+              <span className="font-medium text-gray-900 dark:text-white">
                 {label}
               </span>
             </div>
-            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <p className="text-sm mt-1 text-gray-600 dark:text-gray-400">
               {description}
             </p>
           </div>
