@@ -151,7 +151,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
       critical: 'bg-red-100 text-red-800',
       high: 'bg-orange-100 text-orange-800',
       normal: 'bg-blue-100 text-blue-800',
-      low: 'bg-gray-100 text-gray-800'
+      low: 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
     };
     return colors[priority] || colors.normal;
   };
@@ -163,9 +163,9 @@ const AnnouncementsAdmin = ({ className = '' }) => {
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
         <div>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Community Announcements</h2>
           <p className="text-sm text-gray-500 dark:text-gray-300">Manage announcements for residents and guards</p>
@@ -182,7 +182,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
       </div>
 
       {/* Announcements List */}
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-slate-700">
         {loading ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">Loading announcements...</div>
         ) : announcements.length === 0 ? (
@@ -194,7 +194,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
           announcements.map((announcement) => (
             <div 
               key={announcement.id}
-              className={`p-4 ${isExpired(announcement.expires_at) ? 'opacity-60 bg-gray-50' : ''}`}
+              className={`p-4 ${isExpired(announcement.expires_at) ? 'opacity-60 bg-gray-50 dark:bg-slate-900' : ''}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
@@ -230,7 +230,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                 <div className="flex items-center gap-2 ml-4">
                   <button
                     onClick={() => handleEdit(announcement)}
-                    className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                    className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 rounded-lg hover:bg-blue-50"
                     title="Edit"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,7 +239,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                   </button>
                   <button
                     onClick={() => handleDelete(announcement.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                    className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 rounded-lg hover:bg-red-50"
                     title="Delete"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,8 +256,8 @@ const AnnouncementsAdmin = ({ className = '' }) => {
       {/* Create/Edit Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-200">
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {editingAnnouncement ? 'Edit Announcement' : 'Create Announcement'}
               </h3>
@@ -272,7 +272,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
 
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Title *
                 </label>
                 <input
@@ -280,7 +280,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Announcement title"
                   required
                 />
@@ -288,7 +288,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Content *
                 </label>
                 <textarea
@@ -296,7 +296,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                   value={formData.content}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Announcement content..."
                   required
                 />
@@ -304,14 +304,14 @@ const AnnouncementsAdmin = ({ className = '' }) => {
 
               {/* Priority */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Priority
                 </label>
                 <select
                   name="priority"
                   value={formData.priority}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {PRIORITY_OPTIONS.map(option => (
                     <option key={option.value} value={option.value}>
@@ -323,14 +323,14 @@ const AnnouncementsAdmin = ({ className = '' }) => {
 
               {/* Target Audience */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Target Audience
                 </label>
                 <select
                   name="targetAudience"
                   value={formData.targetAudience}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   {AUDIENCE_OPTIONS.map(option => (
                     <option key={option.value} value={option.value}>
@@ -345,7 +345,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
 
               {/* Expiration */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Expires At (Optional)
                 </label>
                 <input
@@ -353,7 +353,7 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                   name="expiresAt"
                   value={formData.expiresAt}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
@@ -365,9 +365,9 @@ const AnnouncementsAdmin = ({ className = '' }) => {
                   id="isPinned"
                   checked={formData.isPinned}
                   onChange={handleInputChange}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-600 rounded focus:ring-blue-500"
                 />
-                <label htmlFor="isPinned" className="ml-2 text-sm text-gray-700">
+                <label htmlFor="isPinned" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
                   Pin to top of announcements
                 </label>
               </div>
@@ -381,14 +381,14 @@ const AnnouncementsAdmin = ({ className = '' }) => {
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200"
                 >
                   Cancel
                 </button>

@@ -215,7 +215,7 @@ const ManualCheck = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />
                 <Button onClick={handleSearch} disabled={isLoading('manualCheck')}>
                   {isLoading('manualCheck') ? 'Searching...' : 'Search'}
@@ -230,7 +230,7 @@ const ManualCheck = () => {
             <Card.Header>
               <Card.Title className="flex items-center">
                 <span className="text-lg md:text-xl">Search Results</span>
-                <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-600 dark:text-gray-200 text-sm rounded-full">
+                <span className="ml-2 px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200 text-sm rounded-full">
                   {searchResults.length}
                 </span>
               </Card.Title>
@@ -239,7 +239,7 @@ const ManualCheck = () => {
               {/* PHASE B6: Optimized Mobile Card Layout */}
               <div className="space-y-3 md:space-y-4">
                 {searchResults.map(visitor => (
-                  <div key={visitor.id} className="bg-white border-2 border-gray-200 rounded-xl p-4 md:p-5 hover:border-blue-300 hover:shadow-md transition-all">
+                  <div key={visitor.id} className="bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 md:p-5 hover:border-blue-300 hover:shadow-md transition-all">
                     {/* Header with Status */}
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 min-w-0">
@@ -264,9 +264,9 @@ const ManualCheck = () => {
 
                     {/* Host and Purpose Info */}
                     {(visitor.host_name || visitor.purpose) && (
-                      <div className="bg-gray-50 rounded-lg p-3 mb-3 space-y-1">
+                      <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3 mb-3 space-y-1">
                         {visitor.host_name && (
-                          <p className="text-sm text-gray-700">
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
                             <span className="font-medium">🏠 Host:</span> {visitor.host_name}
                           </p>
                         )}
@@ -306,7 +306,7 @@ const ManualCheck = () => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="w-full md:w-auto text-gray-600 dark:text-gray-200 hover:bg-gray-100"
+                        className="w-full md:w-auto text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                         onClick={() => setIncidentModal({ isOpen: true, visitor })}
                       >
                         <span className="mr-1">⚠️</span>
@@ -323,7 +323,7 @@ const ManualCheck = () => {
         {searchResults.length === 0 && !isLoading('manualCheck') && searchTerm && (
           <Card>
             <Card.Content className="text-center py-8">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <p className="text-gray-500 dark:text-gray-300 mt-2">No visitors found matching "{searchTerm}"</p>

@@ -283,7 +283,7 @@ const VisitorInvitePage = () => {
 
             <div className="p-6 space-y-6">
               {/* Event Details */}
-              <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Event Details</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -299,7 +299,7 @@ const VisitorInvitePage = () => {
                   {visitor.remainingSlots !== null && (
                     <div className="flex justify-between">
                       <span className="text-gray-600 dark:text-gray-200">Remaining Slots:</span>
-                      <span className="font-medium text-indigo-700">{visitor.remainingSlots}</span>
+                      <span className="font-medium text-indigo-700 dark:text-indigo-400">{visitor.remainingSlots}</span>
                     </div>
                   )}
                 </div>
@@ -320,7 +320,7 @@ const VisitorInvitePage = () => {
                     value={additionalInfo.name || ''}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="John Doe"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -335,7 +335,7 @@ const VisitorInvitePage = () => {
                     value={additionalInfo.phone || ''}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="0712 345 678"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -350,7 +350,7 @@ const VisitorInvitePage = () => {
                     value={additionalInfo.idNumber || ''}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, idNumber: e.target.value }))}
                     placeholder="Enter your ID Number"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for security verification</p>
                 </div>
@@ -363,13 +363,13 @@ const VisitorInvitePage = () => {
                     value={additionalInfo.vehiclePlate}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, vehiclePlate: e.target.value.toUpperCase() }))}
                     placeholder="KAA 123A"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required if driving in</p>
                 </div>
 
                 {/* Privacy Consent */}
-                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -379,16 +379,16 @@ const VisitorInvitePage = () => {
                         setConsentGiven(e.target.checked);
                         if (e.target.checked) setConfirmError(null);
                       }}
-                      className="w-5 h-5 mt-0.5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      className="w-5 h-5 mt-0.5 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500"
                     />
                     <label htmlFor="consent-bulk" className="text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
                       <span className="font-medium">I consent to SecureGate processing my personal data</span>
                       <span className="text-gray-600 dark:text-gray-200"> for visitor management and security purposes in accordance with the </span>
-                      <Link to="/privacy-policy" className="text-blue-600 underline" target="_blank">Privacy Policy</Link>.
+                      <Link to="/privacy-policy" className="text-blue-600 dark:text-blue-400 underline" target="_blank">Privacy Policy</Link>.
                     </label>
                   </div>
                   {confirmError && (
-                    <p className="text-red-600 text-sm mt-2">{confirmError}</p>
+                    <p className="text-red-600 dark:text-red-400 text-sm mt-2">{confirmError}</p>
                   )}
                 </div>
 
@@ -428,7 +428,7 @@ const VisitorInvitePage = () => {
 
             <div className="p-6 space-y-6">
               {/* Visit Summary */}
-              <div className="bg-gray-50 rounded-xl p-4">
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Visit Details</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -450,14 +450,14 @@ const VisitorInvitePage = () => {
 
               {/* Additional Info (Optional) */}
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Complete Your Details <span className="text-gray-400 dark:text-gray-500 dark:text-gray-300 font-normal text-sm">(optional)</span></h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Complete Your Details <span className="text-gray-500 dark:text-gray-300 font-normal text-sm">(optional)</span></h3>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Purpose of Visit</label>
                   <select
                     value={additionalInfo.purpose}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, purpose: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   >
                     <option value="">Select purpose...</option>
                     <option value="Personal Visit">Personal Visit</option>
@@ -476,7 +476,7 @@ const VisitorInvitePage = () => {
                     value={additionalInfo.vehiclePlate}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, vehiclePlate: e.target.value.toUpperCase() }))}
                     placeholder="KAA 123A"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for vehicle entry</p>
                 </div>
@@ -491,7 +491,7 @@ const VisitorInvitePage = () => {
                     value={additionalInfo.idNumber || ''}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, idNumber: e.target.value }))}
                     placeholder="Enter your ID Number"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for security verification</p>
                 </div>
@@ -508,7 +508,7 @@ const VisitorInvitePage = () => {
                       setConsentGiven(e.target.checked);
                       if (e.target.checked) setConfirmError(null);
                     }}
-                    className="w-5 h-5 mt-0.5 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                    className="w-5 h-5 mt-0.5 text-green-600 rounded border-gray-300 dark:border-slate-600 focus:ring-green-500"
                   />
                   <label htmlFor="consent" className="text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
                     <span className="font-medium">I consent to SecureGate processing my personal data</span>
@@ -549,7 +549,7 @@ const VisitorInvitePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       <div className="max-w-2xl mx-auto p-4 md:py-12 py-6">
-        <div className="bg-white rounded-xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 md:p-8 text-white text-center">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Visitor Pass</h1>
             <p className="text-green-100 text-sm md:text-base">Your digital access to the estate</p>
@@ -603,7 +603,7 @@ const VisitorInvitePage = () => {
                     />
                   )}
                 </div>
-                <p className="text-center text-sm text-gray-700 font-medium">
+                <p className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
                   📱 Show this QR code at the gate
                 </p>
                 <p className="qr-code-text">
@@ -613,7 +613,7 @@ const VisitorInvitePage = () => {
                 {/* Phase 1.2: Save Pass Button */}
                 <button
                   onClick={() => setShowSavePassModal(true)}
-                  className="w-full mt-4 flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-300 transition-colors shadow-sm"
+                  className="w-full mt-4 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-300 transition-colors shadow-sm"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -684,7 +684,7 @@ const VisitorInvitePage = () => {
                     <p className="font-semibold text-gray-900 dark:text-white">{estateInfo.name}</p>
                     {estateInfo.address && (
                       <p className="text-gray-600 dark:text-gray-200 text-sm flex items-start">
-                        <svg className="w-4 h-4 mr-1 mt-0.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mr-1 mt-0.5 text-gray-400 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -693,7 +693,7 @@ const VisitorInvitePage = () => {
                     )}
                     {estateInfo.contact && (
                       <p className="text-gray-600 dark:text-gray-200 text-sm flex items-center">
-                        <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
                         {estateInfo.contact}

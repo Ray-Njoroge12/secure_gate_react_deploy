@@ -106,7 +106,7 @@ const AutoApprovalRules = () => {
 
   if (loading && rules.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="h-20 bg-gray-200 rounded"></div>
@@ -119,7 +119,7 @@ const AutoApprovalRules = () => {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🤖 Auto-Approval Rules</h2>
@@ -130,7 +130,7 @@ const AutoApprovalRules = () => {
           <div className="flex gap-2">
             <button
               onClick={handleExport}
-              className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
             >
               📥 Export
             </button>
@@ -162,7 +162,7 @@ const AutoApprovalRules = () => {
       </div>
 
       {/* Rules List */}
-      <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow divide-y divide-gray-200 dark:divide-slate-700">
         {rules.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">📋</span>
@@ -171,7 +171,7 @@ const AutoApprovalRules = () => {
           </div>
         ) : (
           rules.map((rule) => (
-            <div key={rule.id} className="p-4 hover:bg-gray-50">
+            <div key={rule.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700">
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">
@@ -183,7 +183,7 @@ const AutoApprovalRules = () => {
                       <span className={`px-2 py-0.5 text-xs rounded-full ${
                         rule.isActive 
                           ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-600 dark:text-gray-200'
+                          : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200'
                       }`}>
                         {rule.isActive ? 'Active' : 'Paused'}
                       </span>
@@ -199,7 +199,7 @@ const AutoApprovalRules = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                       📅 {formatTimeRestrictions(rule.timeRestrictions)}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                       Used {rule.matchCount || 0} times
                       {rule.lastMatchedAt && (
                         <span className="ml-2">
@@ -222,13 +222,13 @@ const AutoApprovalRules = () => {
                   </button>
                   <button
                     onClick={() => setEditingRule(rule)}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-200"
+                    className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300"
                   >
                     ✏️
                   </button>
                   <button
                     onClick={() => handleDelete(rule.id)}
-                    className="p-1 text-gray-400 hover:text-red-600"
+                    className="p-1 text-gray-500 dark:text-gray-300 hover:text-red-600"
                   >
                     🗑️
                   </button>
@@ -341,8 +341,8 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-4 border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold">
             {rule ? 'Edit Rule' : 'Create Auto-Approval Rule'}
           </h2>
@@ -357,7 +357,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
 
           {/* Rule Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Rule Name *
             </label>
             <input
@@ -367,20 +367,20 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
               onChange={handleChange}
               required
               placeholder="e.g., Mom's weekly visit"
-              className="w-full border-gray-300 rounded-md shadow-sm"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm"
             />
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Category
             </label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-md shadow-sm"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm"
             >
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.label}</option>
@@ -390,7 +390,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
 
           {/* Visitor Match Criteria */}
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Match Visitor By
             </label>
             <input
@@ -399,7 +399,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
               value={formData.visitorName}
               onChange={handleChange}
               placeholder="Visitor name (partial match)"
-              className="w-full border-gray-300 rounded-md shadow-sm"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm"
             />
             <input
               type="tel"
@@ -407,14 +407,14 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
               value={formData.visitorPhone}
               onChange={handleChange}
               placeholder="Visitor phone number"
-              className="w-full border-gray-300 rounded-md shadow-sm"
+              className="w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm"
             />
             <p className="text-xs text-gray-500 dark:text-gray-300">Enter name, phone, or both</p>
           </div>
 
           {/* Time Restrictions */}
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Time Restrictions (Optional)
             </label>
             
@@ -427,7 +427,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
                   className={`px-3 py-1 text-sm rounded-full border ${
                     formData.days.includes(day.value)
                       ? 'bg-blue-500 text-white border-blue-500'
-                      : 'border-gray-300 hover:border-gray-400'
+                      : 'border-gray-300 dark:border-slate-600 hover:border-gray-400'
                   }`}
                 >
                   {day.label}
@@ -441,7 +441,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
-                className="border-gray-300 rounded-md shadow-sm"
+                className="border-gray-300 dark:border-slate-600 rounded-md shadow-sm"
               />
               <span className="text-gray-500 dark:text-gray-300">to</span>
               <input
@@ -449,14 +449,14 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
-                className="border-gray-300 rounded-md shadow-sm"
+                className="border-gray-300 dark:border-slate-600 rounded-md shadow-sm"
               />
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-300">Leave empty for anytime approval</p>
           </div>
 
           {/* Privacy Notice */}
-          <div className="bg-gray-50 p-3 rounded-md">
+          <div className="bg-gray-50 dark:bg-slate-900 p-3 rounded-md">
             <p className="text-xs text-gray-600 dark:text-gray-200">
               🔒 This rule is encrypted and only you can see its details.
             </p>
@@ -467,7 +467,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
             >
               Cancel
             </button>

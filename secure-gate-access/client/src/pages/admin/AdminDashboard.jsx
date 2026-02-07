@@ -302,10 +302,10 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   ]);
 
   const healthStatusColor = (status) => {
-    if (status === 'healthy') return 'text-green-600 bg-green-50';
-    if (status === 'degraded' || status === 'warning') return 'text-yellow-700 bg-yellow-50';
-    if (status === 'unhealthy' || status === 'error') return 'text-red-600 bg-red-50';
-    return 'text-gray-600 dark:text-gray-200 bg-gray-50';
+    if (status === 'healthy') return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20';
+    if (status === 'degraded' || status === 'warning') return 'text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20';
+    if (status === 'unhealthy' || status === 'error') return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20';
+    return 'text-gray-600 dark:text-gray-200 bg-gray-50 dark:bg-slate-900';
   };
 
   const healthComponents = Object.entries(healthDetails?.components || {});
@@ -326,13 +326,13 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             Admin Dashboard
             {currentEstate && !isSuperAdmin && (
-              <span className="text-sm font-normal px-3 py-1 bg-green-100 text-green-800 rounded-full border border-green-200">
+              <span className="text-sm font-normal px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full border border-green-200 dark:border-green-700">
                 {currentEstate.name}
               </span>
             )}
             {isSuperAdmin && (
               <select
-                className="text-sm font-normal px-3 py-1 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="text-sm font-normal px-3 py-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                 value={currentEstate?.id || ''}
                 onChange={(e) => {
                   const selectedId = Number(e.target.value);
@@ -352,7 +352,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                 ))}
               </select>
             )}
-            <span className={`text-xs px-2 py-1 rounded-full ${role === 'super_admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+            <span className={`text-xs px-2 py-1 rounded-full ${role === 'super_admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
               }`}>
               {role === 'super_admin' ? 'Super Admin' : 'Administrator'}
             </span>
@@ -374,7 +374,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       <AnnouncementsBanner showDismiss={true} className="mb-4" />
 
       {/* Tabs for Admin Dashboard */}
-      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="mb-6 border-b border-gray-200 dark:border-slate-700">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
@@ -386,7 +386,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               }}
               className={`${activeTab === tab.id
                 ? 'border-brand-500 text-brand-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:border-gray-600'
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               {tab.label}
@@ -440,21 +440,21 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               </h3>
 
               {queueError ? (
-                <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm border border-red-200">
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-lg text-sm border border-red-200 dark:border-red-800">
                   Error loading notification status: {queueError}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">Active Jobs</span>
+                  <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">Active Jobs</span>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.active || 0}</div>
                   </div>
-                  <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">Completed</span>
+                  <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">Completed</span>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.completed || 0}</div>
                   </div>
-                  <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">Failed</span>
+                  <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">Failed</span>
                     <div className="text-2xl font-bold text-red-600">{queueStats?.failed || 0}</div>
                   </div>
                 </div>

@@ -253,16 +253,16 @@ const DashboardHome = () => {
           <span className="text-2xl">📊</span>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-green-50 rounded-lg p-2">
-            <div className="text-2xl font-bold text-green-600">{todayExpected}</div>
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{todayExpected}</div>
             <div className="text-xs text-gray-600 dark:text-gray-200">Expected</div>
           </div>
-          <div className="bg-blue-50 rounded-lg p-2">
-            <div className="text-2xl font-bold text-blue-600">{onPremises}</div>
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{onPremises}</div>
             <div className="text-xs text-gray-600 dark:text-gray-200">On Site</div>
           </div>
-          <div className="bg-amber-50 rounded-lg p-2">
-            <div className="text-2xl font-bold text-amber-600">{todayActive}</div>
+          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
+            <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{todayActive}</div>
             <div className="text-xs text-gray-600 dark:text-gray-200">Checked In</div>
           </div>
         </div>
@@ -310,9 +310,9 @@ const DashboardHome = () => {
               <>
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 animate-pulse">
-                    <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
-                    <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1"></div>
-                    <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="h-8 w-8 bg-gray-200 dark:bg-slate-700 rounded mb-2"></div>
+                    <div className="h-8 w-16 bg-gray-200 dark:bg-slate-700 rounded mb-1"></div>
+                    <div className="h-4 w-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
                   </div>
                 ))}
               </>
@@ -373,7 +373,7 @@ const DashboardHome = () => {
               ) : (
                 <div className="space-y-3">
                   {upcomingInvites.map(invite => (
-                    <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 border-l-4 border-green-500 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 border-l-4 border-green-500 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">👤 {invite.name}</div>
                         <div className="text-sm text-gray-600 dark:text-gray-200">📅 {invite.time}</div>
@@ -413,7 +413,7 @@ const DashboardHome = () => {
               ) : (
                 <div className="space-y-3">
                   {recentVisitors.map(visitor => (
-                    <div key={visitor.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border-l-4 border-gray-300 hover:bg-gray-100 transition-colors">
+                    <div key={visitor.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border-l-4 border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">👤 {visitor.name}</div>
                         <div className="text-sm text-green-600">✅ Checked in</div>
@@ -518,7 +518,7 @@ const DashboardHome = () => {
               onClick={() => navigateTo('/resident/settings')}
             >
               <Card.Content className="p-4 md:p-6 text-center">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
                   <svg className="w-6 h-6 md:w-7 md:h-7 text-gray-600 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

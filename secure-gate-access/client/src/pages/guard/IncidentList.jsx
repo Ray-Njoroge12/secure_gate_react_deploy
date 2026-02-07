@@ -133,11 +133,11 @@ const IncidentList = () => {
           <Card.Content>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                 <select
                   value={filters.category}
                   onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 >
                   <option value="">All Categories</option>
                   <option value="suspicious">Suspicious</option>
@@ -150,11 +150,11 @@ const IncidentList = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Severity</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Severity</label>
                 <select
                   value={filters.severity}
                   onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 >
                   <option value="">All Levels</option>
                   <option value="low">Low</option>
@@ -165,11 +165,11 @@ const IncidentList = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                 <select
                   value={filters.resolved}
                   onChange={(e) => setFilters({ ...filters, resolved: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md"
                 >
                   <option value="">All</option>
                   <option value="false">Open</option>
@@ -198,7 +198,7 @@ const IncidentList = () => {
                 {incidents.map(incident => (
                   <div
                     key={incident.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-3">
@@ -242,7 +242,7 @@ const IncidentList = () => {
                       </div>
                     </div>
 
-                    <div className="text-sm text-gray-700 mb-3">
+                    <div className="text-sm text-gray-700 dark:text-gray-300 mb-3">
                       {incident.description}
                     </div>
 

@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 import './IntegrationsHub.css';
 
 const IntegrationsHub = () => {
@@ -21,6 +22,8 @@ const IntegrationsHub = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(''); // 'webhook', 'automation', 'apikey'
   const [editingItem, setEditingItem] = useState(null);
+  const closeModal = () => setShowModal(false);
+  const { modalRef } = useModalAccessibility(showModal, closeModal);
 
   // Webhook form data
   const [webhookForm, setWebhookForm] = useState({
@@ -462,15 +465,23 @@ const IntegrationsHub = () => {
 
       {/* Modal for creating/editing */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={closeModal}>
+          <div
+            className="modal-content large"
+            onClick={(e) => e.stopPropagation()}
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="integrations-modal-title"
+            tabIndex={-1}
+          >
             <div className="modal-header">
-              <h2>
+              <h2 id="integrations-modal-title">
                 {modalType === 'webhook' && (editingItem ? 'Edit Webhook' : 'Add Webhook')}
                 {modalType === 'automation' && (editingItem ? 'Edit Automation' : 'Add Automation')}
                 {modalType === 'apikey' && 'Generate API Key'}
               </h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+              <button className="modal-close" onClick={closeModal} aria-label="Close">×</button>
             </div>
 
             <div className="modal-body">
@@ -515,7 +526,7 @@ const IntegrationsHub = () => {
                     </label>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
+                    <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
                     <button type="submit" className="btn-primary">{editingItem ? 'Update' : 'Create'}</button>
                   </div>
                 </form>
@@ -570,7 +581,7 @@ const IntegrationsHub = () => {
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
+                    <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
                     <button type="submit" className="btn-primary">{editingItem ? 'Update' : 'Create'}</button>
                   </div>
                 </form>
@@ -592,7 +603,7 @@ const IntegrationsHub = () => {
                           alert('Copied to clipboard!');
                         }}>Copy</button>
                       </div>
-                      <button className="btn-primary" onClick={() => { setShowModal(false); resetForms(); }}>
+                      <button className="btn-primary" onClick={() => { closeModal(); resetForms(); }}>
                         Done
                       </button>
                     </div>
@@ -632,7 +643,7 @@ const IntegrationsHub = () => {
                           onChange={(e) => setApiKeyForm({...apiKeyForm, rate_limit_per_hour: parseInt(e.target.value)})} />
                       </div>
                       <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>Cancel</button>
+                        <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
                         <button type="submit" className="btn-primary">Generate Key</button>
                       </div>
                     </form>

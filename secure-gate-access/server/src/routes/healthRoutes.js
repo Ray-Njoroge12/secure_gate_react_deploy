@@ -9,6 +9,7 @@ import performanceMonitoringService from '../services/performanceMonitoringServi
 import performanceAlertingService from '../services/performanceAlertingService.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { successResponse, errorResponse } from '../utils/responseUtils.js';
 import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 import loggingService from '../services/loggingService.js';
@@ -77,7 +78,7 @@ router.get('/ready', asyncHandler(async (req, res) => {
  */
 router.get('/detailed',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const healthReport = await systemHealthService.performHealthCheck();
@@ -111,7 +112,7 @@ router.get('/detailed',
  */
 router.get('/history',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const limit = Math.min(parseInt(req.query.limit) || 50, 100);
@@ -141,7 +142,7 @@ router.get('/history',
  */
 router.get('/metrics',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const metrics = await performanceMonitoringService.getSystemMetrics();
@@ -164,7 +165,7 @@ router.get('/metrics',
  */
 router.get('/alerts',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const { severity, limit = 50, status = 'active' } = req.query;
@@ -193,7 +194,7 @@ router.get('/alerts',
  */
 router.post('/alerts/:alertId/acknowledge',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const { alertId } = req.params;
@@ -231,7 +232,7 @@ router.post('/alerts/:alertId/acknowledge',
  */
 router.post('/check',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const healthReport = await systemHealthService.performHealthCheck();
@@ -264,7 +265,7 @@ router.post('/check',
  */
 router.get('/components/:componentName',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const { componentName } = req.params;
@@ -295,7 +296,7 @@ router.get('/components/:componentName',
  */
 router.get('/launch-readiness',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const healthReport = await systemHealthService.performHealthCheck();
@@ -356,7 +357,7 @@ router.get('/launch-readiness',
  */
 router.get('/stream',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     // Set up Server-Sent Events
     res.writeHead(200, {
@@ -404,7 +405,7 @@ router.get('/stream',
  */
 router.post('/deployment/enable',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       await systemHealthService.enableDeploymentMode();
@@ -434,7 +435,7 @@ router.post('/deployment/enable',
  */
 router.post('/deployment/disable',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       await systemHealthService.disableDeploymentMode();
@@ -464,7 +465,7 @@ router.post('/deployment/disable',
  */
 router.get('/deployment/readiness',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const readinessStatus = await systemHealthService.checkDeploymentReadiness();
@@ -487,7 +488,7 @@ router.get('/deployment/readiness',
  */
 router.post('/shutdown/graceful',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       // Send response before initiating shutdown
@@ -521,7 +522,7 @@ router.post('/shutdown/graceful',
  */
 router.get('/capacity',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const capacityStatus = await systemHealthService.checkCapacity();
@@ -544,7 +545,7 @@ router.get('/capacity',
  */
 router.get('/metrics/realtime',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const realTimeMetrics = systemHealthService.getRealTimeMetrics();
@@ -567,7 +568,7 @@ router.get('/metrics/realtime',
  */
 router.post('/circuit-breaker/:component/enable',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const { component } = req.params;
@@ -605,7 +606,7 @@ router.post('/circuit-breaker/:component/enable',
  */
 router.get('/circuit-breaker/:component',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const { component } = req.params;
@@ -630,7 +631,7 @@ router.get('/circuit-breaker/:component',
  */
 router.post('/degradation/:component/enable',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const { component } = req.params;
@@ -666,7 +667,7 @@ router.post('/degradation/:component/enable',
  */
 router.post('/degradation/:component/disable',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     try {
       const { component } = req.params;
@@ -699,7 +700,7 @@ router.post('/degradation/:component/disable',
  */
 router.get('/metrics/stream',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   asyncHandler(async (req, res) => {
     // Set up Server-Sent Events
     res.writeHead(200, {

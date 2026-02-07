@@ -242,8 +242,8 @@ const SearchBar = memo(({
     <div
       key={`suggestion-${index}`}
       ref={el => suggestionRefs.current[index] = el}
-      className={`px-4 py-2 cursor-pointer text-sm text-slate-200 hover:bg-slate-700 ${
-        highlightedIndex === index ? 'bg-slate-700' : ''
+      className={`px-4 py-2 cursor-pointer text-sm text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 ${
+        highlightedIndex === index ? 'bg-gray-100 dark:bg-slate-700' : ''
       }`}
       onClick={() => {
         onChange(suggestion);
@@ -251,7 +251,7 @@ const SearchBar = memo(({
       }}
     >
       <div className="flex items-center gap-2">
-        <Search className="w-4 h-4 text-slate-400" />
+        <Search className="w-4 h-4 text-gray-400 dark:text-slate-400" />
         <span>{suggestion}</span>
       </div>
     </div>
@@ -262,8 +262,8 @@ const SearchBar = memo(({
     <div
       key={`history-${index}`}
       ref={el => suggestionRefs.current[index] = el}
-      className={`px-4 py-2 cursor-pointer text-sm text-slate-200 hover:bg-slate-700 ${
-        highlightedIndex === index ? 'bg-slate-700' : ''
+      className={`px-4 py-2 cursor-pointer text-sm text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 ${
+        highlightedIndex === index ? 'bg-gray-100 dark:bg-slate-700' : ''
       }`}
       onClick={() => {
         onChange(historyItem);
@@ -271,7 +271,7 @@ const SearchBar = memo(({
       }}
     >
       <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-slate-400" />
+        <Clock className="w-4 h-4 text-gray-400 dark:text-slate-400" />
         <span>{historyItem}</span>
       </div>
     </div>
@@ -282,8 +282,8 @@ const SearchBar = memo(({
     <div
       key={`saved-${savedSearch.id}`}
       ref={el => suggestionRefs.current[index] = el}
-      className={`px-4 py-2 cursor-pointer text-sm text-slate-200 hover:bg-slate-700 ${
-        highlightedIndex === index ? 'bg-slate-700' : ''
+      className={`px-4 py-2 cursor-pointer text-sm text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 ${
+        highlightedIndex === index ? 'bg-gray-100 dark:bg-slate-700' : ''
       }`}
       onClick={() => loadSavedSearch(savedSearch)}
     >
@@ -297,7 +297,7 @@ const SearchBar = memo(({
             e.stopPropagation();
             deleteSavedSearch(savedSearch.id);
           }}
-          className="text-slate-400 hover:text-red-400"
+          className="text-gray-400 dark:text-slate-400 hover:text-red-400"
           aria-label={`Delete saved search: ${savedSearch.name}`}
         >
           <X className="w-3 h-3" />
@@ -317,7 +317,7 @@ const SearchBar = memo(({
 
     if (!hasContent) {
       return (
-        <div className="px-4 py-8 text-center text-slate-400">
+        <div className="px-4 py-8 text-center text-gray-500 dark:text-slate-400">
           <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No {activeTab} available</p>
         </div>
@@ -338,7 +338,7 @@ const SearchBar = memo(({
       {/* Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="w-4 h-4 text-slate-400" />
+          <Search className="w-4 h-4 text-gray-400 dark:text-slate-400" />
         </div>
         <input
           ref={inputRef}
@@ -351,8 +351,8 @@ const SearchBar = memo(({
           placeholder={placeholder}
           disabled={disabled}
           className={`
-            w-full pl-10 pr-10 py-2 sm:py-3 bg-slate-800 border border-slate-600 rounded-lg
-            text-sm sm:text-base text-slate-200 placeholder-slate-400
+            w-full pl-10 pr-10 py-2 sm:py-3 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg
+            text-sm sm:text-base text-gray-900 dark:text-slate-200 placeholder-gray-400 dark:placeholder-slate-400
             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-colors duration-200
@@ -366,7 +366,7 @@ const SearchBar = memo(({
         {value && (
           <button
             onClick={handleClear}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
             aria-label="Clear search"
           >
             <X className="w-4 h-4" />
@@ -378,19 +378,19 @@ const SearchBar = memo(({
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-lg"
+          className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg"
           role="listbox"
         >
           {/* Tabs */}
           {(showSuggestions || showHistory || showSavedSearches) && (
-            <div className="flex border-b border-slate-600">
+            <div className="flex border-b border-gray-200 dark:border-slate-600">
               {showSuggestions && (
                 <button
                   onClick={() => setActiveTab('suggestions')}
                   className={`px-4 py-2 text-xs font-medium ${
                     activeTab === 'suggestions'
                       ? 'text-brand-400 border-b-2 border-brand-400'
-                      : 'text-slate-400 hover:text-slate-200'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                   }`}
                 >
                   Suggestions
@@ -402,7 +402,7 @@ const SearchBar = memo(({
                   className={`px-4 py-2 text-xs font-medium ${
                     activeTab === 'history'
                       ? 'text-brand-400 border-b-2 border-brand-400'
-                      : 'text-slate-400 hover:text-slate-200'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                   }`}
                 >
                   History
@@ -414,7 +414,7 @@ const SearchBar = memo(({
                   className={`px-4 py-2 text-xs font-medium ${
                     activeTab === 'saved'
                       ? 'text-brand-400 border-b-2 border-brand-400'
-                      : 'text-slate-400 hover:text-slate-200'
+                      : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                   }`}
                 >
                   Saved

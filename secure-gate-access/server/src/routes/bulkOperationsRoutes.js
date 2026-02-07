@@ -18,6 +18,7 @@ import {
   getCompletionReport
 } from '../controllers/bulkOperationsController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import { rateLimit } from 'express-rate-limit';
 
@@ -156,7 +157,7 @@ const csvImportLimit = rateLimit({
 router.post('/execute',
   bulkOperationLimit,
   authenticateToken,
-  requireRole(['admin', 'guard']), // Only admin and guard can execute bulk operations
+  requireRolePolicy('adminOrGuard'), // Admin, guard, and super_admin can execute bulk operations
   attachRequestAudit,
   executeBulkOperation
 );
@@ -237,7 +238,7 @@ router.post('/execute',
 router.post('/import',
   csvImportLimit,
   authenticateToken,
-  requireRole(['admin']), // Only admin can import data
+  requireRolePolicy('adminOnly'), // Only admin/super_admin can import data
   attachRequestAudit,
   importFromCSV
 );
@@ -631,7 +632,7 @@ router.get('/search/:entityType',
  */
 router.post('/templates/create',
   authenticateToken,
-  requireRole(['admin']), // Only admin can create templates
+  requireRolePolicy('adminOnly'), // Only admin/super_admin can create templates
   attachRequestAudit,
   createOperationTemplate
 );
@@ -701,7 +702,7 @@ router.post('/templates/create',
 router.post('/templates/:templateId/execute',
   bulkOperationLimit,
   authenticateToken,
-  requireRole(['admin', 'guard']),
+  requireRolePolicy('adminOrGuard'),
   attachRequestAudit,
   executeFromTemplate
 );
@@ -779,7 +780,7 @@ router.post('/templates/:templateId/execute',
  */
 router.post('/automation/schedule',
   authenticateToken,
-  requireRole(['admin']), // Only admin can schedule automation
+  requireRolePolicy('adminOnly'), // Only admin/super_admin can schedule automation
   attachRequestAudit,
   scheduleAutomatedOperation
 );

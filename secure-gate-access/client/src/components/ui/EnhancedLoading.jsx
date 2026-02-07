@@ -306,12 +306,12 @@ const EnhancedLoading = ({
   // Overlay variant
   if (overlay || fullscreen) {
     const overlayClasses = fullscreen 
-      ? 'fixed inset-0 bg-slate-900 bg-opacity-90 flex items-center justify-center z-50'
-      : 'absolute inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50';
+      ? 'fixed inset-0 bg-black/50 dark:bg-slate-900/90 flex items-center justify-center z-50'
+      : 'absolute inset-0 bg-black/50 dark:bg-slate-900/75 flex items-center justify-center z-50';
     
     return (
       <div className={overlayClasses}>
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 text-center max-w-sm mx-4">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 text-center max-w-sm mx-4">
           {content}
           {showProgress && progress !== null && (
             <div className="mt-4">
@@ -393,14 +393,14 @@ const LoadingCard = ({
 }) => {
   if (loading && showSkeleton) {
     return (
-      <div className={`bg-slate-800 rounded-lg border border-slate-700 p-6 ${className}`} {...props}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6 ${className}`} {...props}>
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
           <div className="space-y-2">
-            <div className="h-4 bg-slate-700 rounded"></div>
-            <div className="h-4 bg-slate-700 rounded w-5/6"></div>
+            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded"></div>
+            <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-5/6"></div>
           </div>
-          <div className="h-4 bg-slate-700 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4"></div>
         </div>
       </div>
     );
@@ -437,23 +437,23 @@ const LoadingTable = ({
 }) => {
   if (loading && showSkeleton) {
     return (
-      <div className={`bg-slate-800 rounded-lg border border-slate-700 overflow-hidden ${className}`} {...props}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden ${className}`} {...props}>
         <div className="animate-pulse">
           {/* Header */}
-          <div className="bg-slate-700 px-6 py-3 border-b border-slate-600">
+          <div className="bg-gray-100 dark:bg-slate-700 px-6 py-3 border-b border-gray-200 dark:border-slate-600">
             <div className="flex space-x-4">
               {Array.from({ length: columns }, (_, index) => (
-                <div key={index} className="h-4 bg-slate-600 rounded w-24"></div>
+                <div key={index} className="h-4 bg-gray-300 dark:bg-slate-600 rounded w-24"></div>
               ))}
             </div>
           </div>
           {/* Rows */}
-          <div className="divide-y divide-slate-700">
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {Array.from({ length: rows }, (_, rowIndex) => (
               <div key={rowIndex} className="px-6 py-4">
                 <div className="flex space-x-4">
                   {Array.from({ length: columns }, (_, colIndex) => (
-                    <div key={colIndex} className="h-4 bg-slate-600 rounded w-20"></div>
+                    <div key={colIndex} className="h-4 bg-gray-200 dark:bg-slate-600 rounded w-20"></div>
                   ))}
                 </div>
               </div>

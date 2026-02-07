@@ -62,7 +62,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
       triggered: 'bg-red-100 text-red-800',
       acknowledged: 'bg-blue-100 text-blue-800',
       resolved: 'bg-green-100 text-green-800',
-      cancelled: 'bg-gray-100 text-gray-800'
+      cancelled: 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
     };
     
     return (
@@ -74,12 +74,12 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-lg p-6 ${className}`}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg p-6 ${className}`}>
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-4 bg-gray-100 rounded w-full"></div>
-          <div className="h-4 bg-gray-100 rounded w-full"></div>
-          <div className="h-4 bg-gray-100 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-100 dark:bg-slate-700 rounded w-full"></div>
+          <div className="h-4 bg-gray-100 dark:bg-slate-700 rounded w-full"></div>
+          <div className="h-4 bg-gray-100 dark:bg-slate-700 rounded w-3/4"></div>
         </div>
       </div>
     );
@@ -87,7 +87,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
 
   if (error) {
     return (
-      <div className={`bg-white rounded-lg p-6 ${className}`}>
+      <div className={`bg-white dark:bg-slate-800 rounded-lg p-6 ${className}`}>
         <div className="text-center text-red-600">
           <svg className="w-12 h-12 mx-auto mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -99,7 +99,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-100 ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 ${className}`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
@@ -141,7 +141,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
       )}
 
       {/* History List */}
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100 dark:divide-slate-700">
         {history.length === 0 ? (
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,7 +152,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
           </div>
         ) : (
           history.map((item) => (
-            <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors">
+            <div key={item.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -192,7 +192,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
                 {item.acknowledged_at && (
                   <div className="text-right">
                     <p className="text-xs text-gray-500 dark:text-gray-300">Response time</p>
-                    <p className="text-sm font-medium text-gray-700">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {Math.round((new Date(item.acknowledged_at) - new Date(item.triggered_at)) / 1000)}s
                     </p>
                   </div>
@@ -205,7 +205,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
 
       {/* Footer */}
       {history.length > 0 && (
-        <div className="p-3 bg-gray-50 border-t border-gray-100 text-center">
+        <div className="p-3 bg-gray-50 dark:bg-slate-900 border-t border-gray-100 text-center">
           <p className="text-xs text-gray-500 dark:text-gray-300">
             Showing last {history.length} emergency alerts
           </p>

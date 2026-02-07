@@ -12,6 +12,7 @@ import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
 import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
 import { attachUserFromToken, authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
@@ -167,7 +168,7 @@ const bulkInviteLimit = rateLimit({
   },
   skip: (req) => {
     // Skip rate limiting for admins in emergency situations
-    return req.user?.role === 'admin' && req.headers['x-emergency-bypass'] === 'true';
+    return (req.user?.role === 'admin' || req.user?.role === 'super_admin') && req.headers['x-emergency-bypass'] === 'true';
   }
 });
 
@@ -293,32 +294,32 @@ router.post('/self-check-in/:inviteCode',
   selfCheckIn
 );
 
-// Guard Operations (guard/admin roles required)
+// Guard Operations (guard/admin/super_admin roles required)
 router.post('/:id/check-in',
   authenticateToken,
-  requireRole(['guard', 'admin']),
+  requireRolePolicy('adminOrGuard'),
   attachRequestAudit,
   checkInVisitor
 );
 
 router.post('/:id/check-out',
   authenticateToken,
-  requireRole(['guard', 'admin']),
+  requireRolePolicy('adminOrGuard'),
   attachRequestAudit,
   checkOutVisitor
 );
 
-// Walk-in registration (guard/admin only)
+// Walk-in registration (guard/admin/super_admin only)
 router.post('/walk-in',
   authenticateToken,
-  requireRole(['guard', 'admin']),
+  requireRolePolicy('adminOrGuard'),
   attachRequestAudit,
   registerWalkIn
 );
 
 router.get('/walk-ins/today',
   authenticateToken,
-  requireRole(['guard', 'admin']),
+  requireRolePolicy('adminOrGuard'),
   attachRequestAudit,
   getTodayWalkIns
 );
@@ -414,7 +415,7 @@ const otpResendRateLimiter = rateLimit({
 // Guards can request approval, residents can approve/reject
 router.post('/:id/request-approval',
   authenticateToken,
-  requireRole(['guard', 'admin']),
+  requireRolePolicy('adminOrGuard'),
   approvalRateLimiter,
   attachRequestAudit,
   requestApproval
@@ -422,7 +423,7 @@ router.post('/:id/request-approval',
 
 router.post('/:id/approve',
   authenticateToken,
-  requireRole(['resident', 'admin']),
+  requireRolePolicy('adminOrResident'),
   approvalRateLimiter,
   attachRequestAudit,
   approveVisitor
@@ -430,7 +431,7 @@ router.post('/:id/approve',
 
 router.post('/:id/reject',
   authenticateToken,
-  requireRole(['resident', 'admin']),
+  requireRolePolicy('adminOrResident'),
   approvalRateLimiter,
   attachRequestAudit,
   rejectVisitor
@@ -438,14 +439,14 @@ router.post('/:id/reject',
 
 router.get('/pending-approvals',
   authenticateToken,
-  requireRole(['resident', 'admin']),
+  requireRolePolicy('adminOrResident'),
   attachRequestAudit,
   getPendingApprovals
 );
 
 router.get('/approval-history',
   authenticateToken,
-  requireRole(['resident', 'admin']),
+  requireRolePolicy('adminOrResident'),
   attachRequestAudit,
   getApprovalHistory
 );
@@ -668,12 +669,12 @@ router.post('/:id/regenerate-qr', rateLimit({
 router.delete('/:id', authenticateToken, attachRequestAudit, cancelVisitor);
 
 // Admin Operations (admin role required)
-router.get('/active', authenticateToken, requireRole(['admin', 'guard']), minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
-router.get('/report', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, getVisitorReport);
-router.delete('/:visitorId/revoke', authenticateToken, requireRole(['admin']), attachRequestAudit, revokeVisitor);
+router.get('/active', authenticateToken, requireRolePolicy('adminOrGuard'), minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
+router.get('/report', authenticateToken, requireRolePolicy('adminOnly'), minimizeData('visitor'), attachRequestAudit, getVisitorReport);
+router.delete('/:visitorId/revoke', authenticateToken, requireRolePolicy('adminOnly'), attachRequestAudit, revokeVisitor);
 
 // Route aliases to match frontend expectations
-router.get('/reports', authenticateToken, requireRole(['admin']), minimizeData('visitor'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
+router.get('/reports', authenticateToken, requireRolePolicy('adminOnly'), minimizeData('visitor'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
 
 // Public invite route alias
 router.get('/invite/:inviteCode',

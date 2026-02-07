@@ -264,7 +264,7 @@ export default function GuardDashboard() {
   let panel = (
     <div className="space-y-6">
       {/* Enhanced: Live Connection Status Header */}
-      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-3 mb-4">
+      <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 mb-4">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Guard Station</h2>
           <LiveConnectionStatus isConnected={isConnected} showLabel={true} />
@@ -373,7 +373,7 @@ export default function GuardDashboard() {
         {/* Tertiary: Walk-In (less emphasis) */}
         <div
           onClick={() => navigate('/dashboard/guard/walk-in')}
-          className="bg-white border-2 border-purple-200 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all col-span-2 md:col-span-1"
+          className="bg-white dark:bg-slate-800 border-2 border-purple-200 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all col-span-2 md:col-span-1"
         >
           <div className="flex md:flex-col items-center md:text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-3 md:mr-0 md:mb-2">
@@ -393,7 +393,7 @@ export default function GuardDashboard() {
       <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4">
         <div
           onClick={() => navigate('/dashboard/guard/shift-handover')}
-          className="bg-white border border-indigo-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all"
+          className="bg-white dark:bg-slate-800 border border-indigo-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all"
         >
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -405,7 +405,7 @@ export default function GuardDashboard() {
         </div>
         <div
           onClick={() => navigate('/dashboard/guard/activity-log')}
-          className="bg-white border border-cyan-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-cyan-300 transition-all"
+          className="bg-white dark:bg-slate-800 border border-cyan-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-cyan-300 transition-all"
         >
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,7 +417,7 @@ export default function GuardDashboard() {
         </div>
         <div
           onClick={() => navigate('/dashboard/guard/bulk-checkout')}
-          className="bg-white border border-orange-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-orange-300 transition-all"
+          className="bg-white dark:bg-slate-800 border border-orange-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-orange-300 transition-all"
         >
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -507,7 +507,7 @@ export default function GuardDashboard() {
             <StatusBadge
               label="Exited"
               value={isSearching || hasFilters ? getFilteredStatusCount('EXITED') : getStatusCount('EXITED')}
-              color="text-gray-600 dark:text-gray-200 bg-gray-50"
+              color="text-gray-600 dark:text-gray-200 bg-gray-50 dark:bg-slate-900"
             />
             <StatusBadge
               label="Revoked"
@@ -539,7 +539,7 @@ export default function GuardDashboard() {
             {/* Mobile Cards */}
             {filteredActive.length === 0 ? (
               <div className="text-center py-8">
-                <svg className="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 {/* PHASE A5: Improved empty state messages */}
@@ -590,7 +590,7 @@ export default function GuardDashboard() {
             {/* Desktop Table */}
             {filteredActive.length === 0 ? (
               <div className="text-center py-8">
-                <svg className="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
                 {/* PHASE A5: Improved empty state messages - Desktop */}
@@ -774,7 +774,7 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
 
   return (
     <div
-      className="border border-gray-200 rounded-lg p-4 space-y-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
+      className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 space-y-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
       onClick={() => onViewDetails?.()}
     >
       <div className="flex justify-between items-start">

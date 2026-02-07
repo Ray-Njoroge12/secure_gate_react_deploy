@@ -107,7 +107,7 @@ export const Checkbox = React.forwardRef(
               /* Default state */
               ${checked 
                 ? 'bg-green-600 border-green-600 text-white dark:bg-green-500 dark:border-green-500' 
-                : 'bg-white border-gray-300 dark:bg-slate-800 dark:border-slate-600'
+                : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600'
               }
               
               /* Hover state */

@@ -327,7 +327,7 @@ export default function ActivityLog() {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader
         title="Activity Log"
         description="View your shift activities and history"
@@ -339,23 +339,23 @@ export default function ActivityLog() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="p-4 text-center">
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total Activities</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Total Activities</p>
           </Card>
           <Card className="p-4 text-center">
             <p className="text-2xl font-bold text-green-600">{stats.checkIns}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Check-Ins</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Check-Ins</p>
           </Card>
           <Card className="p-4 text-center">
             <p className="text-2xl font-bold text-red-600">{stats.checkOuts}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Check-Outs</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Check-Outs</p>
           </Card>
           <Card className="p-4 text-center">
             <p className="text-2xl font-bold text-blue-600">{stats.walkIns}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Walk-Ins</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Walk-Ins</p>
           </Card>
           <Card className="p-4 text-center">
             <p className="text-2xl font-bold text-yellow-600">{stats.incidents}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Incidents</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Incidents</p>
           </Card>
         </div>
 
@@ -368,7 +368,7 @@ export default function ActivityLog() {
                 placeholder="Search activities..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <Button
                 variant="outline"
@@ -385,7 +385,7 @@ export default function ActivityLog() {
           </div>
 
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Activity Type
@@ -393,7 +393,7 @@ export default function ActivityLog() {
                 <select
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 >
                   <option value="all">All Types</option>
                   {Object.entries(ACTIVITY_TYPES).map(([key, { label }]) => (
@@ -409,7 +409,7 @@ export default function ActivityLog() {
                   type="date"
                   value={filters.dateFrom}
                   onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div>
@@ -420,7 +420,7 @@ export default function ActivityLog() {
                   type="date"
                   value={filters.dateTo}
                   onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 />
               </div>
               <div className="flex items-end">
@@ -437,16 +437,16 @@ export default function ActivityLog() {
         </Card>
 
         {/* Activity List */}
-        <Card className="divide-y divide-gray-200 dark:divide-gray-700">
+        <Card className="divide-y divide-gray-200 dark:divide-slate-700">
           {isLoading('activityLog') ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-400">Loading activities...</p>
+              <p className="mt-2 text-gray-500 dark:text-gray-300">Loading activities...</p>
             </div>
           ) : paginatedActivities.length === 0 ? (
             <div className="p-8 text-center">
-              <ActivityIcon className="w-12 h-12 mx-auto text-gray-400" />
-              <p className="mt-2 text-gray-500 dark:text-gray-400">No activities found.</p>
+              <ActivityIcon className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-300" />
+              <p className="mt-2 text-gray-500 dark:text-gray-300">No activities found.</p>
             </div>
           ) : (
             paginatedActivities.map((activity) => {
@@ -454,7 +454,7 @@ export default function ActivityLog() {
               const IconComponent = config.icon;
 
               return (
-                <div key={activity.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <div key={activity.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                   <div className="flex items-start gap-4">
                     <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-${config.color}-100 dark:bg-${config.color}-900/20 flex items-center justify-center`}>
                       <IconComponent />
@@ -468,11 +468,11 @@ export default function ActivityLog() {
                           {config.label}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                         {formatTime(activity.timestamp)}
                       </p>
                       {activity.details && Object.keys(activity.details).length > 0 && (
-                        <div className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                        <div className="mt-2 text-xs text-gray-500 dark:text-gray-300">
                           {activity.details.visitorName && (
                             <span className="mr-3">Visitor: {activity.details.visitorName}</span>
                           )}
@@ -495,7 +495,7 @@ export default function ActivityLog() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               Showing {((pagination.page - 1) * pagination.pageSize) + 1} to {Math.min(pagination.page * pagination.pageSize, pagination.total)} of {pagination.total}
             </p>
             <div className="flex gap-2">

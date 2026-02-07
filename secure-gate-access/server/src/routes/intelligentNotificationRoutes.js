@@ -10,6 +10,7 @@
 
 import express from 'express';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { dbManager as db } from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
 import intelligentNotificationManager from '../services/intelligentNotificationManager.js';
@@ -86,7 +87,7 @@ router.post('/queue', authenticateToken, async (req, res) => {
  * @desc Get notification queue status
  * @access Private (admin only)
  */
-router.get('/queue/status', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/queue/status', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const status = intelligentNotificationManager.getQueueStatus();
     
@@ -108,7 +109,7 @@ router.get('/queue/status', authenticateToken, requireRole(['admin', 'super_admi
  * @desc Clear notification queue (maintenance)
  * @access Private (admin only)
  */
-router.post('/queue/clear', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.post('/queue/clear', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     intelligentNotificationManager.clearQueue();
     
@@ -627,7 +628,7 @@ router.post('/test', authenticateToken, async (req, res) => {
  * @desc Get intelligent notification system health status
  * @access Private (admin only)
  */
-router.get('/system/health', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/system/health', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const queueStatus = intelligentNotificationManager.getQueueStatus();
     

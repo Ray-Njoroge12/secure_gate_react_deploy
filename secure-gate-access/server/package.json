@@ -52,8 +52,6 @@
     "db:init": "node src/database/init.js",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
-    "db:seed:demo": "node scripts/seed-demo.js",
-    "demo:start": "DEMO_MODE=true npm run dev",
     "create:guard": "node scripts/create-guard.js",
     "create:resident": "node scripts/create-resident.js",
     "retention:run": "node scripts/run-retention.js",
@@ -62,7 +60,10 @@
     "test:reset": "node tests/seeds/index.js reset",
     "test:mutation": "npx stryker run",
     "test:mutation:analyze": "node tests/mutation/mutation.utils.js",
-    "test:contracts": "NODE_ENV=test NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/contracts"
+    "test:contracts": "NODE_ENV=test NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/contracts",
+    "mfa:migrate": "node src/scripts/run-mfa-migration.js",
+    "mfa:restore": "node src/scripts/restore-mfa-access.js",
+    "mfa:verify": "node src/scripts/verify-mfa-implementation.js"
   },
   "engines": {
     "node": ">=20.11.0"

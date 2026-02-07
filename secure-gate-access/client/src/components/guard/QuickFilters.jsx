@@ -48,7 +48,7 @@ const QuickFilters = ({ activeFilter, onFilterChange, onClearFilter }) => {
   ];
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Filter className="w-5 h-5 text-gray-600 dark:text-gray-200" />
@@ -74,7 +74,7 @@ const QuickFilters = ({ activeFilter, onFilterChange, onClearFilter }) => {
               px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
               ${activeFilter === filter.id 
                 ? `${filter.color} text-white shadow-md scale-105` 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
               }
             `}
           >

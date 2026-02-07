@@ -217,11 +217,11 @@ export default function GeneratePass() {
                     <img
                       src={result.qrDataUrl}
                       alt="QR Code"
-                      className="w-48 h-48 rounded-xl border-2 border-gray-200"
+                      className="w-48 h-48 rounded-xl border-2 border-gray-200 dark:border-slate-700"
                     />
                   ) : (
-                    <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-gray-200">
-                      <QrCode className="w-16 h-16 text-gray-400" />
+                    <div className="w-48 h-48 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center border-2 border-gray-200 dark:border-slate-700">
+                      <QrCode className="w-16 h-16 text-gray-400 dark:text-gray-300" />
                     </div>
                   )}
                 </div>
@@ -241,19 +241,19 @@ export default function GeneratePass() {
                   )}
 
                   <div className="space-y-1 mb-4">
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Expires</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-300">Expires</p>
                     <p className="text-gray-700 dark:text-gray-300">{new Date(result.expiresAt).toLocaleString()}</p>
                   </div>
 
                   {result.inviteLink && (
                     <div className="space-y-2 mb-4">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Invite Link</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">Invite Link</p>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={result.inviteLink}
                           readOnly
-                          className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-200 rounded-lg border border-gray-200 dark:border-slate-600"
+                          className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-200 rounded-lg border border-gray-200 dark:border-slate-700"
                           onClick={e => e.target.select()}
                         />
                         <Button

@@ -12,10 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from '../ui/Badge';
 import { userFeedbackService } from '../../services/userFeedbackService';
 import { useAuth } from '../../contexts/AuthContext';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 import './FeedbackModal.css';
 
 const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) => {
   const { user } = useAuth();
+  const { modalRef } = useModalAccessibility(isOpen, onClose);
   const [feedbackType, setFeedbackType] = useState(initialType || '');
   const [category, setCategory] = useState('');
   const [title, setTitle] = useState('');
@@ -146,12 +148,12 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="feedback-modal-overlay" onClick={handleClose}>
-      <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="feedback-modal-overlay" onClick={handleClose} role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+      <div className="feedback-modal" ref={modalRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <Card className="feedback-card">
           <CardHeader className="feedback-header">
             <div className="header-content">
-              <h2 className="feedback-title">
+              <h2 id="feedback-modal-title" className="feedback-title">
                 {submitted ? 'Thank You!' : 'Share Your Feedback'}
               </h2>
               <button

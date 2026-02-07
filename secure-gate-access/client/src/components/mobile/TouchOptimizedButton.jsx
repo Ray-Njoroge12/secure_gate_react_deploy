@@ -77,9 +77,9 @@ const TouchOptimizedButton = ({
   // Variant styles
   const variantClasses = {
     primary: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white border-transparent',
-    secondary: 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-900 border-gray-300',
-    outline: 'bg-transparent hover:bg-gray-50 active:bg-gray-100 text-gray-700 border-gray-300',
-    ghost: 'bg-transparent hover:bg-gray-100 active:bg-gray-200 text-gray-700 border-transparent',
+    secondary: 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 active:bg-gray-300 text-gray-900 dark:text-white border-gray-300 dark:border-slate-600',
+    outline: 'bg-transparent hover:bg-gray-50 dark:hover:bg-slate-700 active:bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-slate-600',
+    ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-slate-700 active:bg-gray-200 text-gray-700 dark:text-gray-300 border-transparent',
     danger: 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border-transparent',
     success: 'bg-green-600 hover:bg-green-700 active:bg-green-800 text-white border-transparent'
   };

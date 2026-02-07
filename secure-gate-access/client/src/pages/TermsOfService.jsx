@@ -311,8 +311,8 @@ const TermsOfService = () => {
               </ul>
             </div>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-800">
+          <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
+            <p className="text-sm text-gray-800 dark:text-gray-200">
               <strong>Data Retention:</strong> Upon termination, we will retain your data 
               as required by law and our data retention policy, then securely delete it.
             </p>

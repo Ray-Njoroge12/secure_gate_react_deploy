@@ -27,12 +27,13 @@ import {
   switchSite
 } from '../controllers/integrationsController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 
 const router = express.Router();
 
 // All routes require authentication AND admin role
 router.use(authenticateToken);
-router.use(requireRole(['admin']));
+router.use(requireRolePolicy('adminOnly'));
 
 // ==================== WEBHOOKS ====================
 router.get('/webhooks', getWebhooks);

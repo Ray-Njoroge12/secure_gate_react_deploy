@@ -296,7 +296,7 @@ export default function GuestInvite() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
         <Loading size="lg" overlay={false} />
         <StatusAnnouncement message="Loading invitation details..." />
       </div>
@@ -304,7 +304,7 @@ export default function GuestInvite() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 xs:py-6 sm:py-8 px-4 xs:px-6 sm:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-4 xs:py-6 sm:py-8 px-4 xs:px-6 sm:px-8">
       <div className="max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg mx-auto">
         <Card>
           <Card.Header>
@@ -351,7 +351,7 @@ export default function GuestInvite() {
                 )}
 
                 {/* Visitor Details */}
-                <Card className="bg-gray-50">
+                <Card className="bg-gray-50 dark:bg-slate-800/50">
                   <Card.Header>
                     <h3 className="font-medium text-gray-900 dark:text-white">Your Visit Details</h3>
                   </Card.Header>
@@ -487,14 +487,14 @@ export default function GuestInvite() {
                     }
                   />
 
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-md">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-900 rounded-md">
                     <input
                       type="checkbox"
                       id="consent"
                       checked={consentGiven}
                       onChange={(e) => setConsentGiven(e.target.checked)}
                       disabled={submitting}
-                      className="mt-1 h-4 w-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500"
+                      className="mt-1 h-4 w-4 text-brand-600 border-gray-300 dark:border-slate-600 rounded focus:ring-brand-500"
                     />
                     <label htmlFor="consent" className="text-sm text-gray-600 dark:text-gray-200">
                       I consent to the collection and processing of my personal data for visitor registration and estate access management, in accordance with the Kenya Data Protection Act 2019.

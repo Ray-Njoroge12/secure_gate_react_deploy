@@ -225,7 +225,7 @@ export default function SuperAdminDashboard() {
     const StatCard = ({ title, value, icon: Icon, color }) => (
         <GradientCard className="p-6 flex items-center justify-between">
             <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-300">{title}</p>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</h3>
             </div>
             <div className={`p-3 rounded-xl bg-${color}-100 dark:bg-${color}-900/30 text-${color}-600 dark:text-${color}-400`}>
@@ -237,14 +237,14 @@ export default function SuperAdminDashboard() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
             {/* Top Navigation */}
-            <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                     <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg">
                         <Shield className="w-6 h-6 text-white" />
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-gray-900 dark:text-white">SecureGate <span className="text-indigo-600">Platform</span></h1>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Super Admin Control Center</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-300">Super Admin Control Center</p>
                     </div>
                 </div>
 
@@ -326,12 +326,12 @@ export default function SuperAdminDashboard() {
                                 <input
                                     type="text"
                                     placeholder="Search users by name, email, or phone (min 3 chars to preserve privacy)..."
-                                    className="w-full pl-10 pr-24 py-2 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700/50 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-400"
+                                    className="w-full pl-10 pr-24 py-2 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700/50 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-500 dark:placeholder:text-slate-400"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
-                                <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
+                                <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-300" />
                                 <button
                                     onClick={handleSearch}
                                     disabled={isSearching || searchQuery.length < 3}
@@ -345,35 +345,35 @@ export default function SuperAdminDashboard() {
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
-                                            <tr className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                                            <tr className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">
                                                 <th className="px-6 py-3 font-semibold">User Info</th>
                                                 <th className="px-6 py-3 font-semibold">Contact (Redacted)</th>
                                                 <th className="px-6 py-3 font-semibold">Role</th>
                                                 <th className="px-6 py-3 font-semibold">Estate</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                                             {searchResults.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                                                    <td colSpan="4" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                                         No users found.
                                                     </td>
                                                 </tr>
                                             ) : (
                                                 searchResults.map((user) => (
-                                                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                                                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50">
                                                         <td className="px-6 py-3">
                                                             <div className="font-medium text-gray-900 dark:text-white">{user.name}</div>
-                                                            <div className="text-xs text-gray-500">Joined: {new Date(user.created_at).toLocaleDateString()}</div>
+                                                            <div className="text-xs text-gray-500 dark:text-gray-400">Joined: {new Date(user.created_at).toLocaleDateString()}</div>
                                                         </td>
                                                         <td className="px-6 py-3 text-sm text-gray-600 dark:text-gray-300">
                                                             <div className="font-mono text-xs">{user.email}</div>
-                                                            <div className="font-mono text-xs text-gray-400">{user.phone}</div>
+                                                            <div className="font-mono text-xs text-gray-500 dark:text-gray-300">{user.phone}</div>
                                                         </td>
                                                         <td className="px-6 py-3">
                                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
                                                         ${user.role === 'admin' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' :
-                                                                    user.role === 'guard' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'}`}>
+                                                                    user.role === 'guard' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}>
                                                                 {user.role}
                                                             </span>
                                                         </td>
@@ -391,18 +391,18 @@ export default function SuperAdminDashboard() {
 
                         {/* Estates Management */}
                         <GradientCard className="overflow-hidden">
-                            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                                     <Building2 className="w-5 h-5 mr-2 text-indigo-500" />
                                     Manage Estates
                                 </h3>
-                                <span className="text-sm text-gray-500">{estates.length} Estates found</span>
+                                <span className="text-sm text-gray-500 dark:text-gray-400">{estates.length} Estates found</span>
                             </div>
 
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                                        <tr className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">
                                             <th className="px-6 py-4 font-semibold">Estate Name</th>
                                             <th className="px-6 py-4 font-semibold">Status</th>
                                             <th className="px-6 py-4 font-semibold">Created</th>
@@ -411,10 +411,10 @@ export default function SuperAdminDashboard() {
                                             <th className="px-6 py-4 font-semibold text-right">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                                         {loading ? (
                                             <tr>
-                                                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                                     <div className="flex justify-center items-center">
                                                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
                                                         <span className="ml-2">Loading network data...</span>
@@ -423,23 +423,23 @@ export default function SuperAdminDashboard() {
                                             </tr>
                                         ) : estates.length === 0 ? (
                                             <tr>
-                                                <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                                                <td colSpan="6" className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                                     No estates found.
                                                 </td>
                                             </tr>
                                         ) : (
                                             estates.map((estate) => (
-                                                <tr key={estate.id} className={`hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors ${estate.status === 'suspended' ? 'opacity-75 bg-red-50/30' : ''}`}>
+                                                <tr key={estate.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${estate.status === 'suspended' ? 'opacity-75 bg-red-50/30' : ''}`}>
                                                     <td className="px-6 py-4">
                                                         <div className="font-medium text-gray-900 dark:text-white">{estate.name}</div>
-                                                        <div className="text-xs text-gray-500">ID: {estate.id}</div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">ID: {estate.id}</div>
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estate.status === 'active'
                                                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                                                             : estate.status === 'suspended'
                                                                 ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+                                                                : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
                                                             }`}>
                                                             {estate.status || 'Active'}
                                                         </span>
@@ -488,7 +488,7 @@ export default function SuperAdminDashboard() {
                                                         {estate.status !== 'decommissioned' && (
                                                             <button
                                                                 onClick={() => handleDecommissionClick(estate)}
-                                                                className="inline-flex items-center px-2 py-1.5 border border-transparent text-xs font-medium rounded-md text-gray-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none transition-colors"
+                                                                className="inline-flex items-center px-2 py-1.5 border border-transparent text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none transition-colors"
                                                                 title="Decommission Estate"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
@@ -517,7 +517,7 @@ export default function SuperAdminDashboard() {
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
-                                        <thead className="bg-gray-50 dark:bg-slate-800/50 text-xs uppercase font-semibold text-gray-500">
+                                        <thead className="bg-gray-50 dark:bg-slate-800/50 text-xs uppercase font-semibold text-gray-500 dark:text-gray-400">
                                             <tr>
                                                 <th className="px-4 py-3">Time</th>
                                                 <th className="px-4 py-3">Event</th>
@@ -526,12 +526,12 @@ export default function SuperAdminDashboard() {
                                                 <th className="px-4 py-3 text-right">Details</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                        <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                                             {logs.length === 0 ? (
-                                                <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500">No logs found</td></tr>
+                                                <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No logs found</td></tr>
                                             ) : (
                                                 logs.map((log) => (
-                                                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
                                                         <td className="px-4 py-3 whitespace-nowrap text-xs">
                                                             {new Date(log.created_at).toLocaleString()}
                                                         </td>
@@ -540,7 +540,7 @@ export default function SuperAdminDashboard() {
                                                     ${log.action?.includes('delete') || log.action?.includes('suspend') || log.action?.includes('fail') ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
                                                                     log.action?.includes('create') || log.action?.includes('success') ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
                                                                         log.action?.includes('update') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
-                                                                            'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'}`}>
+                                                                            'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}>
                                                                 {log.action}
                                                             </span>
                                                         </td>
@@ -548,10 +548,10 @@ export default function SuperAdminDashboard() {
                                                             {log.user_id ? (
                                                                 <span title={`User ID: ${log.user_id}`}>{log.user_role || 'User'} (#{log.user_id})</span>
                                                             ) : (
-                                                                <span className="text-gray-400">System</span>
+                                                                <span className="text-gray-500 dark:text-gray-300">System</span>
                                                             )}
                                                         </td>
-                                                        <td className="px-4 py-3 font-mono text-xs truncate max-w-[200px] text-gray-500">
+                                                        <td className="px-4 py-3 font-mono text-xs truncate max-w-[200px] text-gray-500 dark:text-gray-400">
                                                             {log.resource}
                                                         </td>
                                                         <td className="px-4 py-3 text-right">
@@ -589,12 +589,12 @@ export default function SuperAdminDashboard() {
                                     <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
                                         <Activity className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-medium text-gray-500">Latency (P95)</span>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Latency (P95)</span>
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {systemMetrics?.latency?.p95 ? `${Math.round(systemMetrics.latency.p95)}ms` : '--'}
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-1">P99: {systemMetrics?.latency?.p99 ? `${Math.round(systemMetrics.latency.p99)}ms` : '--'}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">P99: {systemMetrics?.latency?.p99 ? `${Math.round(systemMetrics.latency.p99)}ms` : '--'}</p>
                             </GradientCard>
 
                             <GradientCard className="p-6">
@@ -602,12 +602,12 @@ export default function SuperAdminDashboard() {
                                     <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
                                         <AlertTriangle className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-medium text-gray-500">Error Rate</span>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Error Rate</span>
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {systemMetrics?.errorRate ? `${(systemMetrics.errorRate * 100).toFixed(2)}%` : '0%'}
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-1">{systemMetrics?.requestCount || 0} Total Requests</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{systemMetrics?.requestCount || 0} Total Requests</p>
                             </GradientCard>
 
                             <GradientCard className="p-6">
@@ -615,12 +615,12 @@ export default function SuperAdminDashboard() {
                                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                                         <Database className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-medium text-gray-500">DB Utilization</span>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">DB Utilization</span>
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {systemMetrics?.dbPool?.utilization ? `${(systemMetrics.dbPool.utilization * 100).toFixed(1)}%` : '0%'}
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-1">{systemMetrics?.dbPool?.totalCount || 0} / {systemMetrics?.dbPool?.maxConnections || 0} Conn.</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{systemMetrics?.dbPool?.totalCount || 0} / {systemMetrics?.dbPool?.maxConnections || 0} Conn.</p>
                             </GradientCard>
 
                             <GradientCard className="p-6">
@@ -628,12 +628,12 @@ export default function SuperAdminDashboard() {
                                     <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
                                         <Server className="w-5 h-5" />
                                     </div>
-                                    <span className="text-xs font-medium text-gray-500">Queue Depth</span>
+                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Queue Depth</span>
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                                     {systemMetrics?.queueDepth?.totalBacklog || 0}
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-1">Pending Jobs</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Pending Jobs</p>
                             </GradientCard>
                         </div>
 
@@ -645,22 +645,22 @@ export default function SuperAdminDashboard() {
                                     System Status Details
                                 </h3>
                                 <dl className="space-y-4 text-sm">
-                                    <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
-                                        <span className="text-gray-500">Auth Anomalies</span>
+                                    <div className="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-2">
+                                        <span className="text-gray-500 dark:text-gray-400">Auth Anomalies</span>
                                         <span className="font-medium text-gray-900 dark:text-white">{systemMetrics?.authAnomalies || 0}</span>
                                     </div>
-                                    <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
-                                        <span className="text-gray-500">Last Snapshot</span>
+                                    <div className="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-2">
+                                        <span className="text-gray-500 dark:text-gray-400">Last Snapshot</span>
                                         <span className="font-medium text-gray-900 dark:text-white">
                                             {systemMetrics?.timestamp ? new Date(systemMetrics.timestamp).toLocaleTimeString() : '--'}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
-                                        <span className="text-gray-500">Notification Queue</span>
+                                    <div className="flex justify-between items-center border-b border-gray-100 dark:border-slate-700 pb-2">
+                                        <span className="text-gray-500 dark:text-gray-400">Notification Queue</span>
                                         <span className="font-medium text-gray-900 dark:text-white">{systemMetrics?.queueDepth?.notification?.backlog || 0}</span>
                                     </div>
                                     <div className="flex justify-between items-center pb-2">
-                                        <span className="text-gray-500">Export Queue</span>
+                                        <span className="text-gray-500 dark:text-gray-400">Export Queue</span>
                                         <span className="font-medium text-gray-900 dark:text-white">{systemMetrics?.queueDepth?.export?.queued || 0}</span>
                                     </div>
                                 </dl>

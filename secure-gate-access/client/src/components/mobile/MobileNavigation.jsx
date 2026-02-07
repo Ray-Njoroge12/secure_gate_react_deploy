@@ -125,10 +125,10 @@ const MobileNavigation = ({
   };
 
   const containerClasses = [
-    'bg-white',
-    'dark:bg-gray-900',
-    'border-gray-200',
-    'dark:border-gray-700',
+    'bg-white dark:bg-slate-800',
+    'dark:bg-slate-900',
+    'border-gray-200 dark:border-slate-700',
+    'dark:border-slate-700',
     'z-50',
     'transition-transform',
     'duration-300',
@@ -179,8 +179,8 @@ const MobileNavigation = ({
                 'rounded-lg',
                 'transition-colors',
                 'duration-150',
-                isActive ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400',
-                !isActive ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : ''
+                isActive ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300',
+                !isActive ? 'hover:bg-gray-100 dark:hover:bg-slate-700' : ''
               ].join(' ')}
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}

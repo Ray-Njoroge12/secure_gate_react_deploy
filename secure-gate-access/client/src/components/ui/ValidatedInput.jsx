@@ -161,7 +161,7 @@ const ValidatedInput = ({
       {label && (
         <label 
           htmlFor={inputId}
-          className="block text-sm sm:text-base font-medium text-slate-300 mb-1"
+          className="block text-sm sm:text-base font-medium text-gray-700 dark:text-slate-300 mb-1"
         >
           {label}
           {required && (
@@ -198,7 +198,7 @@ const ValidatedInput = ({
         {/* Validation indicator */}
         {isValidating && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 dark:border-slate-600 border-t-blue-600"></div>
           </div>
         )}
       </div>
@@ -219,7 +219,7 @@ const ValidatedInput = ({
       {helpText && !hasError && (
         <div 
           id={helpId}
-          className="mt-1 text-sm text-slate-400"
+          className="mt-1 text-sm text-gray-500 dark:text-slate-400"
         >
           {helpText}
         </div>

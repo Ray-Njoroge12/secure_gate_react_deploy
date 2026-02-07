@@ -245,7 +245,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
               variant="ghost"
               size="sm"
               onClick={handleClose}
-              className="text-gray-500 dark:text-gray-300 hover:text-gray-700"
+              className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300"
             >
               ✕
             </Button>
@@ -299,13 +299,13 @@ const QRScanner = ({ onScan, onError, onClose }) => {
 
           {devices.length > 1 && (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Select Camera:
               </label>
               <select
                 value={selectedDevice || ''}
                 onChange={(e) => setSelectedDevice(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isScanning}
               >
                 {devices.map((device, index) => (

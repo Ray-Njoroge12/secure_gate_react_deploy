@@ -217,84 +217,84 @@ const WelcomeFlow = ({
     'PlatformOverviewStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Platform Overview</h3>
-        <p className="text-gray-600 mb-6">Learn about your platform-wide responsibilities and capabilities.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Learn about your platform-wide responsibilities and capabilities.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'EstateManagementStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Estate Management</h3>
-        <p className="text-gray-600 mb-6">Discover how to manage multiple estates and their configurations.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Discover how to manage multiple estates and their configurations.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'SystemMonitoringStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">System Monitoring</h3>
-        <p className="text-gray-600 mb-6">Learn to monitor system health and performance metrics.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Learn to monitor system health and performance metrics.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'UserSupportStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">User Support</h3>
-        <p className="text-gray-600 mb-6">Handle escalations and provide platform support.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Handle escalations and provide platform support.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'EstateOverviewStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Estate Overview</h3>
-        <p className="text-gray-600 mb-6">Understanding your estate management responsibilities.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Understanding your estate management responsibilities.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'UserManagementStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">User Management</h3>
-        <p className="text-gray-600 mb-6">Approve users, manage roles, and handle permissions.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Approve users, manage roles, and handle permissions.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'VisitorOversightStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Visitor Oversight</h3>
-        <p className="text-gray-600 mb-6">Monitor visitor activities and security protocols.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Monitor visitor activities and security protocols.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'ReportingAnalyticsStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Reporting & Analytics</h3>
-        <p className="text-gray-600 mb-6">Generate reports and analyze estate metrics.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Generate reports and analyze estate metrics.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'SecurityOverviewStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Security Overview</h3>
-        <p className="text-gray-600 mb-6">Understanding your security responsibilities.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Understanding your security responsibilities.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'VisitorProcessingStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Visitor Processing</h3>
-        <p className="text-gray-600 mb-6">Learn to check in/out visitors and verify credentials.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Learn to check in/out visitors and verify credentials.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'QRScanningStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">QR Code Scanning</h3>
-        <p className="text-gray-600 mb-6">Master the QR code scanning system.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Master the QR code scanning system.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     ),
     'IncidentManagementStep': ({ onStepComplete }) => (
       <div className="p-8 text-center">
         <h3 className="text-xl font-semibold mb-4">Incident Management</h3>
-        <p className="text-gray-600 mb-6">Handle security incidents and emergency procedures.</p>
+        <p className="text-gray-600 dark:text-gray-300 mb-6">Handle security incidents and emergency procedures.</p>
         <GradientButton onClick={onStepComplete}>Continue</GradientButton>
       </div>
     )
@@ -433,13 +433,13 @@ const WelcomeFlow = ({
         {/* Step Content */}
         <main className="welcome-flow__content">
           {currentStepData && (
-            <div className="step-container bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mb-6">
+            <div className="step-container bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 mb-6">
               <div className="step-header mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                     {currentStepData.title}
                   </h2>
-                  <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                  <span className="text-sm text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 px-3 py-1 rounded-full">
                     {currentStepData.estimatedTime}
                   </span>
                 </div>
@@ -453,9 +453,9 @@ const WelcomeFlow = ({
                 fallback={
                   <div className="step-placeholder p-8 text-center">
                     <div className="animate-pulse">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto mb-4"></div>
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto mb-4"></div>
-                      <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mx-auto mb-4"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mx-auto mb-4"></div>
+                      <div className="h-32 bg-gray-200 dark:bg-slate-700 rounded mb-4"></div>
                     </div>
                   </div>
                 }
@@ -471,7 +471,7 @@ const WelcomeFlow = ({
                     />
                   ) : (
                     <div className="p-8 text-center">
-                      <p className="text-gray-600 dark:text-gray-400">
+                      <p className="text-gray-600 dark:text-gray-300">
                         Step content not yet implemented: {currentStepData.content}
                       </p>
                       <GradientButton 
@@ -502,7 +502,7 @@ const WelcomeFlow = ({
             
             <button
               onClick={handleSkip}
-              className="px-4 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+              className="px-4 py-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               aria-label="Skip welcome flow"
             >
               Skip for now

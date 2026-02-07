@@ -257,7 +257,7 @@ class ErrorBoundary extends React.Component {
       const errorMessage = getErrorMessage();
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 p-4">
           <Card className="max-w-lg w-full">
             <Card.Header>
               <div className="text-center">
@@ -275,8 +275,8 @@ class ErrorBoundary extends React.Component {
                 </p>
                 
                 {errorId && (
-                  <div className="mb-4 p-3 bg-gray-100 rounded-md">
-                    <p className="text-xs text-gray-700">
+                  <div className="mb-4 p-3 bg-gray-100 dark:bg-slate-700 rounded-md">
+                    <p className="text-xs text-gray-700 dark:text-gray-300">
                       Error ID: <code className="font-mono bg-gray-200 px-1 rounded">{errorId}</code>
                     </p>
                     {retryCount > 0 && (

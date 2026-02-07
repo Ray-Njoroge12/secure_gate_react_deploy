@@ -159,6 +159,24 @@ export async function createTestUsers() {
   // No cleanup needed - each test suite gets unique users
   // Insert into both 'password' and 'password_hash' columns for compatibility
 
+  const superAdminResult = await dbManager.query(
+    `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, phone, house, verified, estate_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+    [
+      `superadmin_${uniqueSuffix}`,
+      'Super',
+      'Admin',
+      `superadmin_${uniqueSuffix}@test.com`,
+      hashedPassword,
+      hashedPassword,
+      'super_admin',
+      `+2547${(timestamp + 99).toString().slice(-8)}`,
+      'SuperAdmin',
+      true,
+      1
+    ]
+  );
+
   const adminResult = await dbManager.query(
     `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, phone, house, verified, estate_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
@@ -232,6 +250,7 @@ export async function createTestUsers() {
   );
 
   return {
+    superAdmin: superAdminResult.rows[0],
     admin: adminResult.rows[0],
     guard: guardResult.rows[0],
     guard2: guard2Result.rows[0],

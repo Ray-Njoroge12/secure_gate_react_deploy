@@ -107,7 +107,7 @@ export const CACHE_STRATEGIES = {
     },
     cacheCondition: (req) => {
       // Only cache for admin users
-      return req.user && req.user.role === 'admin';
+      return req.user && (req.user.role === 'admin' || req.user.role === 'super_admin');
     }
   },
   
@@ -251,7 +251,7 @@ export const ROUTE_CACHE_CONFIG = {
         includeQuery: true,
         includeHeaders: ['authorization']
       },
-      cacheCondition: (req) => req.user && req.user.role === 'admin'
+      cacheCondition: (req) => req.user && (req.user.role === 'admin' || req.user.role === 'super_admin')
     },
     invalidationPatterns: [
       INVALIDATION_PATTERNS.VISITOR_CREATED,

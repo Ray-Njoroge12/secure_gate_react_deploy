@@ -383,7 +383,7 @@ const QuickInvite = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
         <div className="max-w-lg mx-auto px-4 py-8">
           {/* Success Card */}
-          <Card className="bg-white border-0 rounded-2xl shadow-xl overflow-hidden">
+          <Card className="bg-white dark:bg-slate-800 border-0 rounded-2xl shadow-xl overflow-hidden">
             <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
                 <CheckCircle className="w-10 h-10 text-white" aria-hidden="true" />
@@ -396,10 +396,10 @@ const QuickInvite = () => {
 
               {/* Access Code Display - NEW */}
               {success.data.inviteCode && (
-                <div className="bg-gray-50 rounded-xl p-6 text-center border-2 border-dashed border-gray-300">
-                  <p className="text-sm text-gray-500 uppercase tracking-widest font-semibold mb-2">Access Code</p>
+                <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-6 text-center border-2 border-dashed border-gray-300 dark:border-slate-600">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-widest font-semibold mb-2">Access Code</p>
                   <div className="flex items-center justify-center gap-3">
-                    <span className="text-4xl font-mono font-bold text-gray-900 tracking-wider">
+                    <span className="text-4xl font-mono font-bold text-gray-900 dark:text-white tracking-wider">
                       {success.data.inviteCode}
                     </span>
                     <button
@@ -411,10 +411,10 @@ const QuickInvite = () => {
                       className="p-2 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 min-w-[44px] min-h-[44px]"
                       aria-label="Copy access code"
                     >
-                      {copied ? <CheckCircle className="w-5 h-5 text-green-500" aria-hidden="true" /> : <Copy className="w-5 h-5 text-gray-400" aria-hidden="true" />}
+                      {copied ? <CheckCircle className="w-5 h-5 text-green-500" aria-hidden="true" /> : <Copy className="w-5 h-5 text-gray-400 dark:text-gray-300" aria-hidden="true" />}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Share this code with your guest for entry</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Share this code with your guest for entry</p>
                 </div>
               )}
 
@@ -447,7 +447,7 @@ const QuickInvite = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={copyInviteLink}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 min-h-[44px]"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 rounded-xl text-gray-700 dark:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 min-h-[44px]"
                     aria-label="Copy invite link"
                   >
                     <Copy className="w-4 h-4" aria-hidden="true" />
@@ -479,7 +479,7 @@ const QuickInvite = () => {
                 <Button
                   onClick={createAnother}
                   variant="ghost"
-                  className="w-full py-3 rounded-xl text-gray-600"
+                  className="w-full py-3 rounded-xl text-gray-600 dark:text-gray-300"
                 >
                   Invite Another Guest
                 </Button>
@@ -494,7 +494,7 @@ const QuickInvite = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
@@ -514,7 +514,7 @@ const QuickInvite = () => {
 
       {/* Main Content */}
       <div className="max-w-lg mx-auto px-4 py-6">
-        <Card className="bg-white border-0 rounded-2xl shadow-lg">
+        <Card className="bg-white dark:bg-slate-800 border-0 rounded-2xl shadow-lg">
           <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Error display */}
@@ -530,7 +530,7 @@ const QuickInvite = () => {
                   type="button"
                   onClick={handlePickContact}
                   disabled={pickingContact || loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 transition-all disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px]"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 transition-all disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px]"
                   aria-label="Pick contact from device"
                 >
                   <Contact className="w-5 h-5" aria-hidden="true" />
@@ -541,7 +541,7 @@ const QuickInvite = () => {
               {/* Guest Name */}
               <div className="space-y-2">
                 <label htmlFor="guest-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <User className="w-4 h-4 inline mr-2 text-gray-400" aria-hidden="true" />
+                  <User className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   Guest Name
                 </label>
                 <input
@@ -562,7 +562,7 @@ const QuickInvite = () => {
               {/* Phone Number */}
               <div className="space-y-2">
                 <label htmlFor="guest-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Phone className="w-4 h-4 inline mr-2 text-gray-400" aria-hidden="true" />
+                  <Phone className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   Phone Number
                 </label>
                 <div className="relative">
@@ -589,7 +589,7 @@ const QuickInvite = () => {
               {/* Date Selection */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Calendar className="w-4 h-4 inline mr-2 text-gray-400" aria-hidden="true" />
+                  <Calendar className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   When are they visiting?
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -617,7 +617,7 @@ const QuickInvite = () => {
                     value={formData.dateOfVisit}
                     onChange={(e) => handleInputChange('dateOfVisit', e.target.value)}
                     min={formatDateForInput(today)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 )}
                 {validationErrors.dateOfVisit && (
@@ -628,8 +628,8 @@ const QuickInvite = () => {
               {/* Time Selection (Optional) */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Clock className="w-4 h-4 inline mr-2 text-gray-400" aria-hidden="true" />
-                  Approximate time <span className="text-gray-400 font-normal">(optional)</span>
+                  <Clock className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
+                  Approximate time <span className="text-gray-500 dark:text-gray-300 font-normal">(optional)</span>
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {timeChips.map((chip) => (
@@ -653,15 +653,15 @@ const QuickInvite = () => {
                     type="time"
                     value={formData.time}
                     onChange={(e) => handleInputChange('time', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 )}
               </div>
 
               {/* Duration/Validity Selection */}
               <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  <Clock className="w-4 h-4 inline mr-2 text-gray-400" />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Clock className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" />
                   Pass Validity
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -672,7 +672,7 @@ const QuickInvite = () => {
                       onClick={() => handleInputChange('duration', chip.value)}
                       className={`p-3 rounded-xl border-2 transition-all text-center ${formData.duration === chip.value
                         ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-700 dark:text-gray-300'
                         }`}
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
@@ -683,10 +683,10 @@ const QuickInvite = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Share residence details <span className="text-gray-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Share residence details <span className="text-gray-500 dark:text-gray-300 font-normal">(optional)</span>
                 </label>
-                <label className="flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <label className="flex items-start gap-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
                   <input
                     type="checkbox"
                     checked={!!formData.allowResidenceLocation}
@@ -709,7 +709,7 @@ const QuickInvite = () => {
                       value={formData.unitPin}
                       onChange={(e) => handleInputChange('unitPin', e.target.value)}
                       placeholder="Unit PIN (e.g. A12)"
-                      className={`w-full px-4 py-3 rounded-xl border ${validationErrors.unitPin ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                      className={`w-full px-4 py-3 rounded-xl border ${validationErrors.unitPin ? 'border-red-300 bg-red-50' : 'border-gray-200 dark:border-slate-700'
                         } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
                       disabled={loading}
                     />
@@ -721,9 +721,9 @@ const QuickInvite = () => {
               </div>
 
               {/* Info note */}
-              <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 dark:text-gray-200">
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 text-sm text-gray-600 dark:text-gray-200">
                 <p className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <Info className="w-4 h-4 text-gray-400 dark:text-gray-300 mt-0.5 flex-shrink-0" />
                   <span>
                     Your guest will complete their details and accept the privacy policy when they open the invite link.
                   </span>

@@ -48,8 +48,8 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
   // Responsive QR code sizing
   const responsiveSize = TOUCH_SIZES.qr[breakpoint] || size;
   
-  const wrapperClasses = 'flex flex-col items-center p-4 xs:p-6 sm:p-8 bg-white rounded-lg shadow-md max-w-full';
-  const qrContainerClasses = 'bg-white p-3 xs:p-4 sm:p-6 rounded-md border border-gray-200 max-w-full overflow-hidden';
+  const wrapperClasses = 'flex flex-col items-center p-4 xs:p-6 sm:p-8 bg-white dark:bg-slate-800 rounded-lg shadow-md max-w-full';
+  const qrContainerClasses = 'bg-white dark:bg-slate-800 p-3 xs:p-4 sm:p-6 rounded-md border border-gray-200 dark:border-slate-700 max-w-full overflow-hidden';
 
   // If value looks like a Data URL (svg/png) we render an <img> fallback (some libraries return dataURL)
   const isDataUrl = typeof value === 'string' && value.startsWith('data:');

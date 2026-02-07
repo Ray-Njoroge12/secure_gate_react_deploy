@@ -16,8 +16,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { exportToPDF, exportToCSV } from '../../utils/exportUtils';
 
+// Color palette using semantic design tokens (SVG needs raw values)
+const CHART_COLORS = {
+  success: '#10b981',    // --color-success
+  info: '#3b82f6',       // --color-info
+  warning: '#f59e0b',    // --color-warning
+  error: '#ef4444',      // --color-error
+  accent: '#8b5cf6',     // --color-brand-accent
+  pink: '#ec4899',
+  cyan: '#06b6d4',
+};
+
 // Sparkline component for inline charts
-const Sparkline = ({ data = [], color = '#10b981', height = 32, width = 100 }) => {
+const Sparkline = ({ data = [], color = CHART_COLORS.success, height = 32, width = 100 }) => {
   if (!data.length) return null;
 
   const max = Math.max(...data);
@@ -54,7 +65,7 @@ const Sparkline = ({ data = [], color = '#10b981', height = 32, width = 100 }) =
 };
 
 // Simple bar chart component
-const BarChart = ({ data = [], labels = [], color = '#10b981', height = 200 }) => {
+const BarChart = ({ data = [], labels = [], color = CHART_COLORS.success, height = 200 }) => {
   if (!data.length) return null;
 
   const max = Math.max(...data) || 1;
@@ -98,7 +109,8 @@ const DoughnutChart = ({ data = [], labels = [], colors = [], size = 160 }) => {
   let currentAngle = -90; // Start from top
 
   const defaultColors = [
-    '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'
+    CHART_COLORS.success, CHART_COLORS.info, CHART_COLORS.warning, 
+    CHART_COLORS.error, CHART_COLORS.accent, CHART_COLORS.pink, CHART_COLORS.cyan
   ];
 
   const segments = data.map((value, index) => {
@@ -277,7 +289,7 @@ const StatCard = ({
   const changeColors = {
     positive: 'text-green-600 bg-green-50',
     negative: 'text-red-600 bg-red-50',
-    neutral: 'text-gray-600 dark:text-gray-200 bg-gray-50',
+    neutral: 'text-gray-600 dark:text-gray-200 bg-gray-50 dark:bg-slate-900',
   };
 
   const changeIcons = {
@@ -288,16 +300,16 @@ const StatCard = ({
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
-        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
-        <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-        <div className="h-8 w-full bg-gray-200 dark:bg-gray-700 rounded" />
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 animate-pulse">
+        <div className="h-4 w-24 bg-gray-200 dark:bg-slate-700 rounded mb-4" />
+        <div className="h-8 w-16 bg-gray-200 dark:bg-slate-700 rounded mb-2" />
+        <div className="h-8 w-full bg-gray-200 dark:bg-slate-700 rounded" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{title}</h3>
         {icon && <span className="text-2xl">{icon}</span>}
@@ -316,7 +328,7 @@ const StatCard = ({
         {sparklineData.length > 0 && (
           <Sparkline 
             data={sparklineData} 
-            color={changeType === 'positive' ? '#10b981' : changeType === 'negative' ? '#ef4444' : '#6b7280'}
+            color={changeType === 'positive' ? CHART_COLORS.success : changeType === 'negative' ? CHART_COLORS.error : '#6b7280'}
           />
         )}
       </div>
@@ -457,7 +469,7 @@ const AnalyticsDashboard = ({
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                 selectedRange === range.value
                   ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
               }`}
             >
               {range.label}
@@ -507,33 +519,33 @@ const AnalyticsDashboard = ({
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hourly Activity */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Hourly Activity
           </h3>
           <BarChart 
             data={analyticsData.hourlyData}
             labels={analyticsData.hourlyLabels}
-            color="#10b981"
+            color={CHART_COLORS.success}
             height={200}
           />
         </div>
 
         {/* Visitor Purpose */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Visitor Purpose
           </h3>
           <DoughnutChart 
             data={analyticsData.purposeData}
             labels={analyticsData.purposeLabels}
-            colors={['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']}
+            colors={[CHART_COLORS.success, CHART_COLORS.info, CHART_COLORS.warning, CHART_COLORS.error, CHART_COLORS.accent]}
           />
         </div>
       </div>
 
       {/* Weekly Heatmap */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Weekly Activity Pattern
         </h3>
@@ -550,7 +562,7 @@ const AnalyticsDashboard = ({
           <button
             onClick={() => setShowExportMenu(!showExportMenu)}
             disabled={isExporting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isExporting ? '⏳ Exporting...' : '📊 Export CSV'}
             <span className="text-xs">▼</span>
@@ -558,29 +570,29 @@ const AnalyticsDashboard = ({
 
           {/* CSV Export Dropdown Menu */}
           {showExportMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-10">
               <div className="py-1">
                 <button
                   onClick={() => handleCSVExport('visitors')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   📋 Visitor Log (Detailed)
                 </button>
                 <button
                   onClick={() => handleCSVExport('hourly')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   ⏰ Hourly Activity
                 </button>
                 <button
                   onClick={() => handleCSVExport('purpose')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   🎯 Purpose Distribution
                 </button>
                 <button
                   onClick={() => handleCSVExport('full')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   📊 Full Analytics Summary
                 </button>

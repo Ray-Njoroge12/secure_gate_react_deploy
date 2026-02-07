@@ -91,21 +91,22 @@
   --color-info-600: #2563eb;
   --color-info-700: #1d4ed8;
 
-  /* Application-specific color mappings */
-  --color-background-primary: #0f172a;
-  --color-background-secondary: #1e293b;
-  --color-background-tertiary: #334155;
-  --color-background-inverse: #f8fafc;
+  /* Application-specific color mappings — Light mode default (aligned with design-system.css) */
+  --color-background-primary: #f8fafc;
+  --color-background-secondary: #ffffff;
+  --color-background-tertiary: #f1f5f9;
+  --color-background-inverse: #0f172a;
 
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #0f172a;
-  --color-text-muted: #64748b;
-  --color-text-disabled: #475569;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-inverse: #f8fafc;
+  --color-text-muted: #6b7280;      /* Upgraded from #9ca3af for WCAG AA 4.5:1 ✅ */
+  --color-text-disabled: #9ca3af;    /* Upgraded from #d1d5db for 3:1 non-text contrast ✅ */
+  --color-text-placeholder: #6b7280; /* gray-500: WCAG AA 4.5:1 ✅ */
 
-  --color-border-primary: #334155;
-  --color-border-secondary: #475569;
+  --color-border-primary: #e5e7eb;
+  --color-border-secondary: #d1d5db;
   --color-border-focus: #10b981;
   --color-border-error: #ef4444;
   --color-border-success: #10b981;
@@ -223,10 +224,27 @@
   --breakpoint-2xl: 1536px;
 }
 
-/* Dark theme (default) - supports both [data-theme="dark"] and .dark for Tailwind compatibility */
+/* Dark theme — supports both [data-theme="dark"] and .dark for Tailwind compatibility */
 [data-theme="dark"],
 .dark {
-  /* Override any dark theme specific values here if needed */
+  /* Override application-specific text/bg colors for dark mode */
+  --color-background-primary: #0f172a;
+  --color-background-secondary: #1e293b;
+  --color-background-tertiary: #334155;
+  --color-background-inverse: #f8fafc;
+
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5e1;
+  --color-text-tertiary: #94a3b8;
+  --color-text-inverse: #0f172a;
+  --color-text-muted: #94a3b8;      /* Upgraded from #cbd5e1 → slate-400: 5.6:1 ✅ */
+  --color-text-disabled: #64748b;    /* Upgraded: slate-500: 3.5:1 for non-text ✅ */
+  --color-text-placeholder: #94a3b8; /* slate-400: 5.6:1 on slate-900 ✅ */
+
+  --color-border-primary: #334155;
+  --color-border-secondary: #475569;
+
+  /* Component-specific dark colors */
   --color-card-bg: #1e293b;
   --color-card-border: #334155;
   --color-input-bg: #1e293b;
@@ -250,25 +268,25 @@
   --color-badge-bg: rgba(255, 255, 255, 0.1);
   --color-skeleton: #334155;
   --color-skeleton-shimmer: #475569;
-  --color-text-muted: #cbd5e1; /* Lighter gray for dark mode legibility */
+  /* Note: --color-text-muted already set to #94a3b8 (slate-400: 5.6:1 ✅) above */
 }
 
-/* Light theme */
+/* Light theme — explicit overrides for theme switching */
 [data-theme="light"] {
   --color-background-primary: #f8fafc;
-  --color-background-secondary: #f1f5f9;
-  --color-background-tertiary: #e2e8f0;
+  --color-background-secondary: #ffffff;
+  --color-background-tertiary: #f1f5f9;
   --color-background-inverse: #0f172a;
 
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #334155;
-  --color-text-tertiary: #475569;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
   --color-text-inverse: #f8fafc;
-  --color-text-muted: #64748b;
-  --color-text-disabled: #94a3b8;
+  --color-text-muted: #6b7280;      /* gray-500: 4.5:1 ✅ (upgraded from gray-400) */
+  --color-text-disabled: #9ca3af;    /* gray-400: 3:1 for large text/non-text ✅ */
 
-  --color-border-primary: #e2e8f0;
-  --color-border-secondary: #cbd5e1;
+  --color-border-primary: #e5e7eb;
+  --color-border-secondary: #d1d5db;
   --color-border-focus: #10b981;
   --color-border-error: #ef4444;
   --color-border-success: #10b981;
@@ -278,7 +296,7 @@
   --color-card-border: #e2e8f0;
   --color-input-bg: #ffffff;
   --color-input-border: #d1d5db;
-  --color-input-placeholder: #9ca3af;
+  --color-input-placeholder: #6b7280; /* gray-500: 4.5:1 ✅ */
   --color-button-hover: rgba(0, 0, 0, 0.05);
   --color-overlay: rgba(0, 0, 0, 0.5);
   --color-shadow: rgba(0, 0, 0, 0.1);
@@ -365,17 +383,29 @@ body,
 
 /* Scrollbar styling */
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
+  overflow: -moz-scrollbars-none; /* Older Firefox fallback */
+}
+
+@supports (scrollbar-width: none) {
+  .scrollbar-hide {
+    scrollbar-width: none; /* Firefox 64+ */
+  }
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  display: none; /* Chrome, Safari, Edge */
 }
 
 /* Text balance utility */
 .text-balance {
-  text-wrap: balance;
+  overflow-wrap: break-word; /* Fallback for older browsers */
+}
+
+@supports (text-wrap: balance) {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
 /* Container utilities */

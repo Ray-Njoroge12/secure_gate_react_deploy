@@ -59,8 +59,8 @@ const ActionItem = ({
       onClick={handleClick}
       className={`
         flex items-center gap-3 px-4 py-3 rounded-full
-        bg-white shadow-lg border border-gray-200
-        hover:bg-gray-50 hover:shadow-xl
+        bg-white dark:bg-slate-800 shadow-lg border border-gray-200 dark:border-slate-700
+        hover:bg-gray-50 dark:hover:bg-slate-700 hover:shadow-xl
         active:scale-95
         transition-all duration-200 ease-out
         ${isExpanded
@@ -74,7 +74,7 @@ const ActionItem = ({
       aria-label={label}
     >
       <span className="text-xl">{icon}</span>
-      <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{label}</span>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">{label}</span>
     </button>
   );
 };
@@ -285,7 +285,7 @@ export const SpeedDial = ({
             </span>
             <span className="
               w-10 h-10 rounded-full
-              bg-gray-100 hover:bg-gray-200
+              bg-gray-100 dark:bg-slate-700 hover:bg-gray-200
               flex items-center justify-center
               text-lg shadow
             ">

@@ -108,28 +108,29 @@ const Button = memo(({
    * Base CSS classes for all button variants
    * @constant {string}
    */
-  const baseClasses = `inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed ${fullWidth ? 'w-full' : ''}`;
+  const baseClasses = `inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed ${fullWidth ? 'w-full' : ''}`;
   
   /**
-   * CSS classes for different button variants
+   * CSS classes for different button variants — aligned with brand color #10b981
    * @constant {Object.<string, string>}
    */
   const variantClasses = {
-    primary: 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-green-500',
-    secondary: 'bg-slate-700 hover:bg-slate-600 text-white shadow-md hover:shadow-lg focus-visible:ring-slate-500',
-    outlined: 'border-2 border-slate-600 hover:border-slate-500 text-slate-200 hover:bg-slate-800 bg-transparent focus-visible:ring-slate-500',
-    ghost: 'hover:bg-slate-800 text-slate-300 hover:text-slate-100 bg-transparent focus-visible:ring-slate-600',
+    primary: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-emerald-500',
+    secondary: 'bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white shadow-md hover:shadow-lg focus-visible:ring-slate-500',
+    outlined: 'border-2 border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 bg-transparent focus-visible:ring-slate-500',
+    ghost: 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 bg-transparent focus-visible:ring-slate-600',
     danger: 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg focus-visible:ring-red-500'
   };
   
   /**
    * CSS classes for different button sizes
+   * WCAG 2.1 AA: All sizes meet 44px minimum touch target
    * @constant {Object.<string, string>}
    */
   const sizeClasses = {
-    sm: 'h-9 px-3 py-1.5 text-sm',
-    md: 'h-11 px-4 py-2 text-base',
-    lg: 'h-14 px-6 py-3 text-lg'
+    sm: 'h-11 px-3 py-1.5 text-sm',  // 44px - meets WCAG minimum
+    md: 'h-12 px-4 py-2 text-base',  // 48px
+    lg: 'h-14 px-6 py-3 text-lg'      // 56px
   };
   
   /**

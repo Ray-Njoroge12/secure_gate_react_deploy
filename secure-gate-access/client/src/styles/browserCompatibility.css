@@ -55,11 +55,14 @@
 .edge-grid-fix {
   /* Fix for Edge's CSS Grid issues */
   display: -ms-grid;
+  display: grid;
 }
 
 .edge-grid-fix .grid-item {
   -ms-grid-column: 1;
+  grid-column: 1;
   -ms-grid-row: 1;
+  grid-row: 1;
 }
 
 /* =======================

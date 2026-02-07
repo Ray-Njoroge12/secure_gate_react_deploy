@@ -66,7 +66,7 @@ router.put('/estate', authenticateToken, async (req, res) => {
     const { role } = req.user;
     const estateId = req.user?.estate_id || getEstateIdFromRequest(req);
     
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'super_admin') {
       return errorResponse(res, 'Only admins can update estate location', 'FORBIDDEN', 403, null, req);
     }
 

@@ -68,7 +68,7 @@ const BrowserCompatibilityWarning = () => {
       case 'info':
         return 'text-blue-600 bg-blue-50 border-blue-200';
       default:
-        return 'text-gray-600 dark:text-gray-200 bg-gray-50 border-gray-200';
+        return 'text-gray-600 dark:text-gray-200 bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700';
     }
   };
 
@@ -134,7 +134,7 @@ const BrowserCompatibilityWarning = () => {
               {/* Browser Recommendations */}
               {browserRecommendations.length > 0 && (
                 <div className="mb-3">
-                  <h4 className="text-xs font-medium text-gray-700 mb-1">Recommendations:</h4>
+                  <h4 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Recommendations:</h4>
                   <ul className="text-xs text-gray-600 dark:text-gray-200 space-y-1">
                     {browserRecommendations.map((rec, index) => (
                       <li key={index} className="flex items-start gap-1">

@@ -213,7 +213,7 @@ const NotificationHistory = () => {
       case 'pending':
         return <ClockIcon className="h-5 w-5 text-yellow-500" />;
       default:
-        return <ExclamationTriangleIcon className="h-5 w-5 text-gray-500" />;
+        return <ExclamationTriangleIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
     }
   };
 
@@ -231,9 +231,9 @@ const NotificationHistory = () => {
       case 2: // NORMAL
         return 'bg-blue-100 text-blue-800';
       case 1: // LOW
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -272,7 +272,7 @@ const NotificationHistory = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Loading notification history...</span>
+        <span className="ml-2 text-gray-600 dark:text-gray-300">Loading notification history...</span>
       </div>
     );
   }
@@ -282,8 +282,8 @@ const NotificationHistory = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Notification History</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Notification History</h2>
+          <p className="text-gray-600 dark:text-gray-300">
             View and analyze your notification history and delivery patterns
           </p>
         </div>
@@ -291,7 +291,7 @@ const NotificationHistory = () => {
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setViewMode(viewMode === 'list' ? 'analytics' : 'list')}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700"
           >
             {viewMode === 'list' ? (
               <>
@@ -334,59 +334,59 @@ const NotificationHistory = () => {
       ) : (
         <>
           {/* Filters */}
-          <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               {/* Search */}
               <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Search
                 </label>
                 <div className="relative">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-300 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search notifications..."
-                    className="pl-10 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="pl-10 block w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
               </div>
 
               {/* Date Range */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   End Date
                 </label>
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
 
               {/* Type Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Type
                 </label>
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 >
                   <option value="all">All Types</option>
                   {notificationTypes.map(type => (
@@ -397,13 +397,13 @@ const NotificationHistory = () => {
 
               {/* Status Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Status
                 </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 >
                   <option value="all">All Status</option>
                   <option value="sent">Sent</option>
@@ -415,7 +415,7 @@ const NotificationHistory = () => {
 
             {/* Channel Filter */}
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Channel
               </label>
               <div className="flex flex-wrap gap-2">
@@ -424,7 +424,7 @@ const NotificationHistory = () => {
                   className={`px-3 py-1 rounded-full text-sm font-medium ${
                     channelFilter === 'all'
                       ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                   }`}
                 >
                   All Channels
@@ -436,7 +436,7 @@ const NotificationHistory = () => {
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
                       channelFilter === channel
                         ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                     }`}
                   >
                     {channel}
@@ -447,7 +447,7 @@ const NotificationHistory = () => {
           </div>
 
           {/* Results Summary */}
-          <div className="flex items-center justify-between text-sm text-gray-600">
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
             <span>
               Showing {startIndex + 1}-{Math.min(endIndex, filteredNotifications.length)} of {filteredNotifications.length} notifications
             </span>
@@ -457,36 +457,36 @@ const NotificationHistory = () => {
           </div>
 
           {/* Notification List */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <div className="bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-md">
             {currentNotifications.length === 0 ? (
               <div className="text-center py-12">
-                <ClockIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No notifications found</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <ClockIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No notifications found</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Try adjusting your filters or date range.
                 </p>
               </div>
             ) : (
-              <ul className="divide-y divide-gray-200">
+              <ul className="divide-y divide-gray-200 dark:divide-slate-700">
                 {currentNotifications.map((notification) => (
-                  <li key={notification.id} className="px-6 py-4 hover:bg-gray-50">
+                  <li key={notification.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-slate-700">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4 flex-1">
                         {getStatusIcon(notification.status)}
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2">
-                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                            <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
                               {notification.title}
                             </h4>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(notification.priority)}`}>
                               {getPriorityLabel(notification.priority)}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
                             {notification.message}
                           </p>
-                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
                             <span>{notification.type}</span>
                             <span>•</span>
                             <span>{format(parseISO(notification.createdAt), 'MMM dd, yyyy HH:mm')}</span>
@@ -520,7 +520,7 @@ const NotificationHistory = () => {
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -535,7 +535,7 @@ const NotificationHistory = () => {
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${
                         currentPage === page
                           ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                          : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       {page}
@@ -547,7 +547,7 @@ const NotificationHistory = () => {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -565,7 +565,7 @@ const NotificationHistory = () => {
 const NotificationAnalytics = ({ analytics }) => {
   if (!analytics) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
         <div className="animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
@@ -581,7 +581,7 @@ const NotificationAnalytics = ({ analytics }) => {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -589,15 +589,15 @@ const NotificationAnalytics = ({ analytics }) => {
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Notifications</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Notifications</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {analytics.summary?.totalNotifications || 0}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -605,15 +605,15 @@ const NotificationAnalytics = ({ analytics }) => {
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Delivery Rate</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Delivery Rate</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {analytics.summary?.deliveryRate || 0}%
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -621,15 +621,15 @@ const NotificationAnalytics = ({ analytics }) => {
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Failed</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Failed</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {analytics.summary?.failedNotifications || 0}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -637,8 +637,8 @@ const NotificationAnalytics = ({ analytics }) => {
               </div>
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Avg Engagement</p>
-              <p className="text-2xl font-semibold text-gray-900">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Avg Engagement</p>
+              <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {analytics.engagement?.length > 0 
                   ? (analytics.engagement.reduce((sum, item) => sum + parseFloat(item.engagementRate), 0) / analytics.engagement.length).toFixed(1)
                   : 0}%
@@ -649,17 +649,17 @@ const NotificationAnalytics = ({ analytics }) => {
       </div>
 
       {/* Engagement by Type */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Engagement by Notification Type</h3>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Engagement by Notification Type</h3>
         <div className="space-y-4">
           {analytics.engagement?.map((item, index) => (
             <div key={index} className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
                     {item.notificationType}
                   </span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
                     {item.engagementRate}% engagement
                   </span>
                 </div>
@@ -669,7 +669,7 @@ const NotificationAnalytics = ({ analytics }) => {
                     style={{ width: `${Math.min(item.engagementRate, 100)}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                   <span>{item.deliveredCount} delivered</span>
                   <span>{item.clickedCount} clicked</span>
                 </div>
@@ -680,12 +680,12 @@ const NotificationAnalytics = ({ analytics }) => {
       </div>
 
       {/* Hourly Distribution */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Notification Activity by Hour</h3>
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Notification Activity by Hour</h3>
         <div className="grid grid-cols-12 gap-1">
           {analytics.hourlyDistribution?.map((item, index) => (
             <div key={index} className="text-center">
-              <div className="text-xs text-gray-500 mb-1">{item.hour}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{item.hour}</div>
               <div
                 className="bg-blue-200 rounded"
                 style={{
@@ -693,7 +693,7 @@ const NotificationAnalytics = ({ analytics }) => {
                 }}
                 title={`${item.notificationsSent} notifications, ${item.readRate}% read rate`}
               ></div>
-              <div className="text-xs text-gray-400 mt-1">{item.notificationsSent}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">{item.notificationsSent}</div>
             </div>
           ))}
         </div>

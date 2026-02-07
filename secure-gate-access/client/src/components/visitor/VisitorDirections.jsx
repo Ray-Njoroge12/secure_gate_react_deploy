@@ -68,7 +68,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="h-32 bg-gray-200 rounded"></div>
@@ -79,7 +79,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center text-red-600">
           <span className="text-4xl">📍</span>
           <p className="mt-2">{error}</p>
@@ -89,7 +89,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
         <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -101,13 +101,13 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       </div>
 
       {/* Map App Links */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">Open in your favorite maps app:</p>
         <div className="flex gap-2">
           <button
             onClick={() => openInMaps('google')}
             disabled={!directions?.mapLinks?.google}
-            className="flex-1 py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex flex-col items-center">
               <span className="text-2xl mb-1">🗺️</span>
@@ -117,7 +117,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
           <button
             onClick={() => openInMaps('apple')}
             disabled={!directions?.mapLinks?.apple}
-            className="flex-1 py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex flex-col items-center">
               <span className="text-2xl mb-1">🍎</span>
@@ -127,7 +127,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
           <button
             onClick={() => openInMaps('waze')}
             disabled={!directions?.mapLinks?.waze}
-            className="flex-1 py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 px-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex flex-col items-center">
               <span className="text-2xl mb-1">🚗</span>
@@ -139,18 +139,18 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
       {/* General Directions */}
       {(directions?.fromHighway || directions?.fromCity) && (
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700">
           <h3 className="font-medium text-gray-900 dark:text-white mb-2">General Directions</h3>
           {directions.fromHighway && (
             <div className="mb-3">
               <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">From Highway</p>
-              <p className="text-sm text-gray-700">{directions.fromHighway}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">{directions.fromHighway}</p>
             </div>
           )}
           {directions.fromCity && (
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-300 uppercase">From City Center</p>
-              <p className="text-sm text-gray-700">{directions.fromCity}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">{directions.fromCity}</p>
             </div>
           )}
         </div>
@@ -158,17 +158,17 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
       {/* Custom Instructions from Host */}
       {directions?.customInstructions && (
-        <div className="p-4 border-b border-gray-200 bg-yellow-50">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-yellow-50">
           <h3 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             <span>💬</span> Message from {directions.hostName}
           </h3>
-          <p className="text-sm text-gray-700">{directions.customInstructions}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300">{directions.customInstructions}</p>
         </div>
       )}
 
       {/* Building Area */}
       {directions?.buildingArea && (
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700">
           <h3 className="font-medium text-gray-900 dark:text-white mb-1">Once Inside</h3>
           <p className="text-sm text-gray-600 dark:text-gray-200">
             Ask the guard at the gate to direct you to <strong>{directions.buildingArea}</strong>
@@ -177,9 +177,9 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       )}
 
       {directions?.unitPin && (
-        <div className="p-4 border-b border-gray-200 bg-emerald-50">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-emerald-50">
           <h3 className="font-medium text-gray-900 dark:text-white mb-2">Unit PIN</h3>
-          <div className="flex items-center justify-between bg-white border border-emerald-200 rounded-lg px-4 py-3">
+          <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-emerald-200 rounded-lg px-4 py-3">
             <span className="font-mono text-lg text-emerald-800">{directions.unitPin}</span>
             <span className="text-xs text-emerald-700">Show at gate if asked</span>
           </div>
@@ -190,7 +190,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       )}
 
       {/* Share & Actions */}
-      <div className="p-4 bg-gray-50">
+      <div className="p-4 bg-gray-50 dark:bg-slate-900">
         <button
           onClick={shareLink}
           className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"

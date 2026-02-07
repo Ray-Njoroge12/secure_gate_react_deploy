@@ -61,6 +61,7 @@ const mfaService = await import('../../src/services/mfaService.js').then(m => m.
 const resetMFAServiceState = () => {
   mfaService.attempts.clear();
   mfaService.lockouts.clear();
+  mfaService.otpCodes.clear();
 };
 
 describe('MFAService - TOTP', () => {
@@ -101,8 +102,8 @@ describe('MFAService - TOTP', () => {
       await mfaService.generateTOTPSecret(1, 'test@example.com');
 
       expect(mockDatabaseService.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_mfa_secrets'),
-        expect.arrayContaining([1, expect.any(String), 'totp', expect.any(Date)])
+        expect.stringContaining('UPDATE users SET mfa_secret'),
+        expect.arrayContaining([expect.any(String), 1])
       );
     });
 
@@ -171,7 +172,7 @@ describe('MFAService - TOTP', () => {
 
     test('should verify valid TOTP token', async () => {
       mockDatabaseService.query.mockResolvedValue({
-        rows: [{ secret: encryptedSecret }]
+        rows: [{ mfa_secret: encryptedSecret }]
       });
       mockSpeakeasy.totp.verify.mockReturnValue(true);
 
@@ -186,7 +187,7 @@ describe('MFAService - TOTP', () => {
 
     test('should reject invalid TOTP token', async () => {
       mockDatabaseService.query.mockResolvedValue({
-        rows: [{ secret: encryptedSecret }]
+        rows: [{ mfa_secret: encryptedSecret }]
       });
       mockSpeakeasy.totp.verify.mockReturnValue(false);
 
@@ -211,7 +212,7 @@ describe('MFAService - TOTP', () => {
 
     test('should increment failed attempts on failure', async () => {
       mockDatabaseService.query.mockResolvedValue({
-        rows: [{ secret: encryptedSecret }]
+        rows: [{ mfa_secret: encryptedSecret }]
       });
       mockSpeakeasy.totp.verify.mockReturnValue(false);
 
@@ -223,7 +224,7 @@ describe('MFAService - TOTP', () => {
     test('should reset failed attempts on success', async () => {
       mfaService.attempts.set(1, 2);
       mockDatabaseService.query.mockResolvedValue({
-        rows: [{ secret: encryptedSecret }]
+        rows: [{ mfa_secret: encryptedSecret }]
       });
       mockSpeakeasy.totp.verify.mockReturnValue(true);
 
@@ -258,8 +259,8 @@ describe('MFAService - Backup Codes', () => {
       await mfaService.generateBackupCodes(1);
 
       expect(mockDatabaseService.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_backup_codes'),
-        expect.arrayContaining([1, expect.any(String), expect.any(Date)])
+        expect.stringContaining('UPDATE users SET backup_codes'),
+        expect.arrayContaining([expect.any(String), 1])
       );
     });
 
@@ -292,7 +293,7 @@ describe('MFAService - Backup Codes', () => {
       
       mockDatabaseService.query
         .mockResolvedValueOnce({
-          rows: [{ codes: JSON.stringify([hashedCode, 'other-code']) }]
+          rows: [{ backup_codes: JSON.stringify([hashedCode, 'other-code']) }]
         })
         .mockResolvedValueOnce({ rows: [] }); // Update query
 
@@ -311,7 +312,7 @@ describe('MFAService - Backup Codes', () => {
       
       mockDatabaseService.query
         .mockResolvedValueOnce({
-          rows: [{ codes: JSON.stringify([hashedCode, 'other-code']) }]
+          rows: [{ backup_codes: JSON.stringify([hashedCode, 'other-code']) }]
         })
         .mockResolvedValueOnce({ rows: [] });
 
@@ -319,14 +320,14 @@ describe('MFAService - Backup Codes', () => {
 
       expect(mockDatabaseService.query).toHaveBeenNthCalledWith(
         2,
-        expect.stringContaining('UPDATE user_backup_codes'),
-        expect.arrayContaining([expect.any(String), expect.any(Date), 1])
+        expect.stringContaining('UPDATE users SET backup_codes'),
+        expect.arrayContaining([expect.any(String), 1])
       );
     });
 
     test('should reject invalid backup code', async () => {
       mockDatabaseService.query.mockResolvedValue({
-        rows: [{ codes: JSON.stringify(['different-hash']) }]
+        rows: [{ backup_codes: JSON.stringify(['different-hash']) }]
       });
 
       const result = await mfaService.verifyBackupCode(1, 'wrong-code');
@@ -349,7 +350,7 @@ describe('MFAService - Backup Codes', () => {
 
     test('should increment failed attempts on invalid code', async () => {
       mockDatabaseService.query.mockResolvedValue({
-        rows: [{ codes: JSON.stringify(['different-hash']) }]
+        rows: [{ backup_codes: JSON.stringify(['different-hash']) }]
       });
 
       await mfaService.verifyBackupCode(1, 'wrong-code');
@@ -367,44 +368,39 @@ describe('MFAService - OTP', () => {
 
   describe('sendSMSOTP', () => {
     test('should generate and send SMS OTP', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
       mockSmsService.sendOTP.mockResolvedValue({ success: true });
 
       const result = await mfaService.sendSMSOTP(1, '+15551234567');
 
       expect(result).toEqual({ success: true, message: 'SMS OTP sent successfully' });
-      expect(mockDatabaseService.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_otp_codes'),
-        expect.arrayContaining([1, expect.any(String), 'sms', expect.any(Date), expect.any(Date)])
-      );
       expect(mockSmsService.sendOTP).toHaveBeenCalledWith('+15551234567', expect.any(String));
     });
 
     test('should generate 6-digit OTP', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
-      mockSmsService.sendOTP.mockResolvedValue({ success: true });
+      let capturedOtp;
+      mockSmsService.sendOTP.mockImplementation((phone, otp) => {
+        capturedOtp = otp;
+        return Promise.resolve({ success: true });
+      });
 
       await mfaService.sendSMSOTP(1, '+15551234567');
 
-      const otpCall = mockDatabaseService.query.mock.calls[0];
-      const otp = otpCall[1][1];
-      expect(otp).toMatch(/^\d{6}$/);
+      expect(capturedOtp).toMatch(/^\d{6}$/);
     });
 
-    test('should set OTP expiration', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
+    test('should store OTP in memory with expiration', async () => {
       mockSmsService.sendOTP.mockResolvedValue({ success: true });
 
       await mfaService.sendSMSOTP(1, '+15551234567');
 
-      const otpCall = mockDatabaseService.query.mock.calls[0];
-      const expiresAt = otpCall[1][3];
-      expect(expiresAt).toBeInstanceOf(Date);
-      expect(expiresAt.getTime()).toBeGreaterThan(Date.now());
+      // Verify OTP is stored in memory
+      const storedOTP = mfaService.getStoredOTP(1, 'sms');
+      expect(storedOTP).not.toBeNull();
+      expect(storedOTP.code).toMatch(/^\d{6}$/);
+      expect(storedOTP.expiresAt).toBeGreaterThan(Date.now());
     });
 
     test('should mask phone number in logs', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
       mockSmsService.sendOTP.mockResolvedValue({ success: true });
 
       await mfaService.sendSMSOTP(1, '+15551234567');
@@ -418,7 +414,6 @@ describe('MFAService - OTP', () => {
     });
 
     test('should handle SMS sending error', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
       mockSmsService.sendOTP.mockRejectedValue(new Error('SMS service down'));
 
       await expect(mfaService.sendSMSOTP(1, '+15551234567')).rejects.toThrow();
@@ -428,32 +423,27 @@ describe('MFAService - OTP', () => {
 
   describe('sendEmailOTP', () => {
     test('should generate and send email OTP', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
       mockEmailService.sendOTP.mockResolvedValue({ success: true });
 
       const result = await mfaService.sendEmailOTP(1, 'test@example.com');
 
       expect(result).toEqual({ success: true, message: 'Email OTP sent successfully' });
-      expect(mockDatabaseService.query).toHaveBeenCalledWith(
-        expect.stringContaining('INSERT INTO user_otp_codes'),
-        expect.arrayContaining([1, expect.any(String), 'email', expect.any(Date), expect.any(Date)])
-      );
       expect(mockEmailService.sendOTP).toHaveBeenCalledWith('test@example.com', expect.any(String));
     });
 
     test('should generate 6-digit OTP', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
-      mockEmailService.sendOTP.mockResolvedValue({ success: true });
+      let capturedOtp;
+      mockEmailService.sendOTP.mockImplementation((email, otp) => {
+        capturedOtp = otp;
+        return Promise.resolve({ success: true });
+      });
 
       await mfaService.sendEmailOTP(1, 'test@example.com');
 
-      const otpCall = mockDatabaseService.query.mock.calls[0];
-      const otp = otpCall[1][1];
-      expect(otp).toMatch(/^\d{6}$/);
+      expect(capturedOtp).toMatch(/^\d{6}$/);
     });
 
     test('should mask email in logs', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
       mockEmailService.sendOTP.mockResolvedValue({ success: true });
 
       await mfaService.sendEmailOTP(1, 'test@example.com');
@@ -467,7 +457,6 @@ describe('MFAService - OTP', () => {
     });
 
     test('should handle email sending error', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
       mockEmailService.sendOTP.mockRejectedValue(new Error('Email service down'));
 
       await expect(mfaService.sendEmailOTP(1, 'test@example.com')).rejects.toThrow();
@@ -477,9 +466,8 @@ describe('MFAService - OTP', () => {
 
   describe('verifyOTP', () => {
     test('should verify valid OTP', async () => {
-      mockDatabaseService.query
-        .mockResolvedValueOnce({ rows: [{ code: '123456' }] }) // Get OTP
-        .mockResolvedValueOnce({ rows: [] }); // Delete OTP
+      // Store OTP in memory first
+      mfaService.storeOTP(1, '123456', 'sms', Date.now() + 300000);
 
       const result = await mfaService.verifyOTP(1, '123456', 'sms');
 
@@ -490,24 +478,17 @@ describe('MFAService - OTP', () => {
       );
     });
 
-    test('should delete used OTP', async () => {
-      mockDatabaseService.query
-        .mockResolvedValueOnce({ rows: [{ code: '123456' }] })
-        .mockResolvedValueOnce({ rows: [] });
+    test('should remove used OTP', async () => {
+      mfaService.storeOTP(1, '123456', 'sms', Date.now() + 300000);
 
       await mfaService.verifyOTP(1, '123456', 'sms');
 
-      expect(mockDatabaseService.query).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('DELETE FROM user_otp_codes'),
-        [1, 'sms', '123456']
-      );
+      // OTP should be removed after successful verification
+      expect(mfaService.getStoredOTP(1, 'sms')).toBeNull();
     });
 
     test('should reject invalid OTP', async () => {
-      mockDatabaseService.query.mockResolvedValue({
-        rows: [{ code: '123456' }]
-      });
+      mfaService.storeOTP(1, '123456', 'sms', Date.now() + 300000);
 
       const result = await mfaService.verifyOTP(1, '999999', 'sms');
 
@@ -516,8 +497,6 @@ describe('MFAService - OTP', () => {
     });
 
     test('should reject if no valid OTP found', async () => {
-      mockDatabaseService.query.mockResolvedValue({ rows: [] });
-
       await expect(mfaService.verifyOTP(1, '123456', 'sms')).rejects.toThrow('No valid OTP found for user');
     });
 
@@ -529,9 +508,7 @@ describe('MFAService - OTP', () => {
 
     test('should reset failed attempts on success', async () => {
       mfaService.attempts.set(1, 2);
-      mockDatabaseService.query
-        .mockResolvedValueOnce({ rows: [{ code: '123456' }] })
-        .mockResolvedValueOnce({ rows: [] });
+      mfaService.storeOTP(1, '123456', 'sms', Date.now() + 300000);
 
       await mfaService.verifyOTP(1, '123456', 'sms');
 
@@ -539,9 +516,7 @@ describe('MFAService - OTP', () => {
     });
 
     test('should increment failed attempts on failure', async () => {
-      mockDatabaseService.query.mockResolvedValue({
-        rows: [{ code: '123456' }]
-      });
+      mfaService.storeOTP(1, '123456', 'sms', Date.now() + 300000);
 
       await mfaService.verifyOTP(1, '999999', 'sms');
 
@@ -597,20 +572,27 @@ describe('MFAService - Management', () => {
 
   describe('getUserMFAMethods', () => {
     test('should return user MFA methods', async () => {
-      const methods = [
-        { method: 'totp', created_at: new Date('2024-01-01') },
-        { method: 'sms', created_at: new Date('2024-01-02') }
-      ];
-      mockDatabaseService.query.mockResolvedValue({ rows: methods });
+      const updatedAt = new Date('2024-01-01');
+      mockDatabaseService.query.mockResolvedValue({
+        rows: [{ mfa_methods: ['totp', 'sms'], updated_at: updatedAt }]
+      });
 
       const result = await mfaService.getUserMFAMethods(1);
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({ method: 'totp', createdAt: methods[0].created_at });
-      expect(result[1]).toEqual({ method: 'sms', createdAt: methods[1].created_at });
+      expect(result[0]).toEqual({ method: 'totp', createdAt: updatedAt });
+      expect(result[1]).toEqual({ method: 'sms', createdAt: updatedAt });
     });
 
     test('should return empty array if no methods', async () => {
+      mockDatabaseService.query.mockResolvedValue({ rows: [{ mfa_methods: null, updated_at: null }] });
+
+      const result = await mfaService.getUserMFAMethods(1);
+
+      expect(result).toEqual([]);
+    });
+
+    test('should return empty array if user not found', async () => {
       mockDatabaseService.query.mockResolvedValue({ rows: [] });
 
       const result = await mfaService.getUserMFAMethods(1);
@@ -653,23 +635,28 @@ describe('MFAService - Management', () => {
   });
 
   describe('disableMFA', () => {
-    test('should disable MFA and remove all secrets', async () => {
+    test('should disable MFA and clear all data from users table', async () => {
       mockDatabaseService.query.mockResolvedValue({ rows: [] });
 
       await mfaService.disableMFA(1);
 
-      // The service makes 2 delete queries (secrets and backup codes)
-      expect(mockDatabaseService.query).toHaveBeenCalledTimes(2);
-      expect(mockDatabaseService.query).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining('DELETE FROM user_mfa_secrets'),
-        [1]
+      // Should make single UPDATE query to clear all MFA columns
+      expect(mockDatabaseService.query).toHaveBeenCalledTimes(1);
+      expect(mockDatabaseService.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE users SET mfa_enabled = false'),
+        expect.arrayContaining([expect.any(Date), 1])
       );
-      expect(mockDatabaseService.query).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('DELETE FROM user_backup_codes'),
-        [1]
-      );
+    });
+
+    test('should clear attempts and lockouts', async () => {
+      mockDatabaseService.query.mockResolvedValue({ rows: [] });
+      mfaService.attempts.set(1, 2);
+      mfaService.lockouts.set(1, Date.now());
+
+      await mfaService.disableMFA(1);
+
+      expect(mfaService.attempts.has(1)).toBe(false);
+      expect(mfaService.lockouts.has(1)).toBe(false);
     });
 
     test('should log successful disable', async () => {

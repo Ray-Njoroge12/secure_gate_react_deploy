@@ -117,20 +117,20 @@ const shortcuts = {
 
 // Key component for displaying individual keys
 const Key = ({ children }) => (
-  <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm">
+  <kbd className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded shadow-sm">
     {children}
   </kbd>
 );
 
 // Shortcut row component
 const ShortcutRow = ({ keys, description }) => (
-  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
     <span className="text-sm text-gray-600 dark:text-gray-300">{description}</span>
     <div className="flex items-center gap-1">
       {keys.map((key, index) => (
         <React.Fragment key={index}>
           <Key>{key}</Key>
-          {index < keys.length - 1 && <span className="text-gray-400 text-xs mx-0.5">+</span>}
+          {index < keys.length - 1 && <span className="text-gray-500 dark:text-gray-300 text-xs mx-0.5">+</span>}
         </React.Fragment>
       ))}
     </div>
@@ -144,7 +144,7 @@ const ShortcutCategory = ({ icon, label, items }) => (
       <span>{icon}</span>
       <span>{label}</span>
     </h3>
-    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+    <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-3">
       {items.map((item, index) => (
         <ShortcutRow key={index} {...item} />
       ))}
@@ -235,13 +235,13 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div 
-          className="relative w-full max-w-2xl bg-white dark:bg-gray-900 rounded-xl shadow-2xl overflow-hidden"
+          className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl overflow-hidden"
           role="dialog"
           aria-labelledby="shortcuts-title"
           aria-modal="true"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
             <h2 
               id="shortcuts-title" 
               className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2"
@@ -251,7 +251,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
             </h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
               aria-label="Close shortcuts modal"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,10 +261,10 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Search */}
-          <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-3 border-b border-gray-200 dark:border-slate-700">
             <div className="relative">
               <svg 
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-300"
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -276,7 +276,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
                 placeholder="Search shortcuts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 autoFocus
               />
             </div>
@@ -306,7 +306,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="px-6 py-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-300">
               <span>
                 Press <Key>Esc</Key> to close

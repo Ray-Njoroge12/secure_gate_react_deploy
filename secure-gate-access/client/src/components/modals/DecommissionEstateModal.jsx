@@ -135,11 +135,11 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                             </h4>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <span className="text-gray-500 dark:text-gray-400">Name:</span>
+                                    <span className="text-gray-500 dark:text-gray-300">Name:</span>
                                     <span className="ml-2 font-medium text-gray-900 dark:text-white">{impact.estate?.name}</span>
                                 </div>
                                 <div>
-                                    <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                                    <span className="text-gray-500 dark:text-gray-300">Status:</span>
                                     <span className="ml-2 font-medium text-gray-900 dark:text-white capitalize">{impact.estate?.status}</span>
                                 </div>
                             </div>
@@ -210,7 +210,7 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     placeholder="Enter reason for audit trail..."
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
                                     rows={2}
                                 />
                             </div>
@@ -227,7 +227,7 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                                     className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 ${
                                         isConfirmationValid() 
                                             ? 'border-green-500 focus:ring-green-500' 
-                                            : 'border-gray-300 dark:border-gray-600 focus:ring-red-500'
+                                            : 'border-gray-300 dark:border-slate-600 focus:ring-red-500'
                                     }`}
                                     autoComplete="off"
                                 />
@@ -238,11 +238,11 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                                 )}
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-md hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                                     disabled={loading}
                                 >
                                     Cancel

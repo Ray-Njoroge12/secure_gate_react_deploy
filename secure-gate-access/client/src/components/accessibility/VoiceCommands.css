@@ -156,6 +156,9 @@
   color: var(--color-foreground, #1f2937);
   border: none;
   outline: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
   min-height: 44px;
   display: flex;

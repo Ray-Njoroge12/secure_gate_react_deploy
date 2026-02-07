@@ -260,7 +260,7 @@ const PanicButton = ({
   // Render confirmation modal
   const renderConfirmationModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-slideUp">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6 animate-slideUp">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -294,7 +294,7 @@ const PanicButton = ({
         <div className="flex gap-3">
           <button
             onClick={handleCancelConfirm}
-            className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors"
+            className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -338,7 +338,7 @@ const PanicButton = ({
             <button
               onClick={handleCancelPanic}
               disabled={state === STATES.CANCELLING}
-              className="px-6 py-3 bg-white text-red-600 font-bold rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+              className="px-6 py-3 bg-white dark:bg-slate-800 text-red-600 font-bold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               {state === STATES.CANCELLING ? 'Cancelling...' : `Cancel (${cancelTimeLeft}s)`}
             </button>
@@ -352,7 +352,7 @@ const PanicButton = ({
             </p>
             <button
               onClick={handleReset}
-              className="mt-4 px-6 py-2 bg-white text-red-600 font-medium rounded-lg hover:bg-gray-100"
+              className="mt-4 px-6 py-2 bg-white dark:bg-slate-800 text-red-600 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
             >
               Close
             </button>
@@ -365,7 +365,7 @@ const PanicButton = ({
   // Render error state
   const renderErrorState = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6">
         <div className="text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,7 +386,7 @@ const PanicButton = ({
             </button>
             <button
               onClick={handleReset}
-              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg"
+              className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-800 dark:text-gray-200 rounded-lg"
             >
               Close
             </button>
@@ -399,12 +399,12 @@ const PanicButton = ({
   // Render privacy info modal
   const renderPrivacyModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Panic Button Privacy</h2>
           <button
             onClick={() => setShowPrivacyInfo(false)}
-            className="text-gray-500 dark:text-gray-300 hover:text-gray-700"
+            className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -426,14 +426,14 @@ const PanicButton = ({
           </div>
         ) : (
           <div className="text-center py-8">
-            <div className="animate-spin w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full mx-auto mb-4"></div>
+            <div className="animate-spin w-8 h-8 border-4 border-gray-300 dark:border-slate-600 border-t-blue-600 rounded-full mx-auto mb-4"></div>
             <p className="text-gray-500 dark:text-gray-300">Loading privacy information...</p>
           </div>
         )}
         
         <button
           onClick={() => setShowPrivacyInfo(false)}
-          className="w-full mt-6 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg"
+          className="w-full mt-6 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-medium rounded-lg"
         >
           Close
         </button>

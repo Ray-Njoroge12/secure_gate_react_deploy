@@ -174,7 +174,7 @@ const NotificationSettings = ({ className = '' }) => {
   const cardClass = isDark ? 'bg-slate-800 border-slate-700' : 'bg-white';
   const textClass = isDark ? 'text-white' : 'text-gray-900 dark:text-white';
   const mutedClass = isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200';
-  const borderClass = isDark ? 'border-slate-700' : 'border-gray-200';
+  const borderClass = isDark ? 'border-slate-700' : 'border-gray-200 dark:border-slate-700';
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -332,7 +332,7 @@ const NotificationSettings = ({ className = '' }) => {
               type="checkbox"
               checked={emailNotifications}
               onChange={(e) => setEmailNotifications(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+              className="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
             />
           </label>
 
@@ -349,7 +349,7 @@ const NotificationSettings = ({ className = '' }) => {
               type="checkbox"
               checked={smsNotifications}
               onChange={(e) => setSmsNotifications(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+              className="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
             />
           </label>
 
@@ -370,7 +370,7 @@ const NotificationSettings = ({ className = '' }) => {
               type="checkbox"
               checked={soundEnabled}
               onChange={(e) => setSoundEnabled(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+              className="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
             />
           </label>
         </div>
@@ -389,7 +389,7 @@ const NotificationSettings = ({ className = '' }) => {
             type="checkbox"
             checked={quietHoursEnabled}
             onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-            className="w-5 h-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+            className="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
           />
         </div>
 

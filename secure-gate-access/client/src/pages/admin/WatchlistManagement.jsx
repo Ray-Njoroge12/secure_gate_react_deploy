@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 import './WatchlistManagement.css';
 
 const WatchlistManagement = () => {
@@ -14,6 +15,8 @@ const WatchlistManagement = () => {
   const [activeTab, setActiveTab] = useState('entries'); // 'entries' or 'matches'
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const closeModal = () => setShowModal(false);
+  const { modalRef } = useModalAccessibility(showModal, closeModal);
   const [formData, setFormData] = useState({
     entry_type: 'person',
     name: '',
@@ -336,11 +339,19 @@ const WatchlistManagement = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={closeModal}>
+          <div
+            className="modal-content large"
+            onClick={(e) => e.stopPropagation()}
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="watchlist-modal-title"
+            tabIndex={-1}
+          >
             <div className="modal-header">
-              <h2>{editingEntry ? 'Edit Watchlist Entry' : 'Add to Watchlist'}</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
+              <h2 id="watchlist-modal-title">{editingEntry ? 'Edit Watchlist Entry' : 'Add to Watchlist'}</h2>
+              <button className="modal-close" onClick={closeModal} aria-label="Close">×</button>
             </div>
 
             <form onSubmit={handleSubmit} className="modal-body">
@@ -476,7 +487,7 @@ const WatchlistManagement = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setShowModal(false)}>
+                <button type="button" className="btn-cancel" onClick={closeModal}>
                   Cancel
                 </button>
                 <button type="submit" className="btn-primary">

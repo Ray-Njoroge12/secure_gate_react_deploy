@@ -115,7 +115,7 @@ const MFASetup = () => {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-300'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
                 1
               </div>
@@ -124,7 +124,7 @@ const MFASetup = () => {
             <div className="flex-1 h-1 mx-4 bg-gray-300">
               <div className={`h-full ${step >= 2 ? 'bg-blue-600' : ''} transition-all`} style={{width: step >= 2 ? '100%' : '0%'}}></div>
             </div>
-            <div className={`flex items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`flex items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-300'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
                 2
               </div>
@@ -133,7 +133,7 @@ const MFASetup = () => {
             <div className="flex-1 h-1 mx-4 bg-gray-300">
               <div className={`h-full ${step >= 3 ? 'bg-blue-600' : ''} transition-all`} style={{width: step >= 3 ? '100%' : '0%'}}></div>
             </div>
-            <div className={`flex items-center ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`flex items-center ${step >= 3 ? 'text-blue-600' : 'text-gray-500 dark:text-gray-300'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
                 3
               </div>
@@ -179,7 +179,7 @@ const MFASetup = () => {
                     <img 
                       src={mfaData.qrCode} 
                       alt="MFA QR Code" 
-                      className="border-4 border-gray-200 rounded-lg"
+                      className="border-4 border-gray-200 dark:border-slate-700 rounded-lg"
                       style={{ width: '250px', height: '250px' }}
                     />
                   </div>
@@ -198,7 +198,7 @@ const MFASetup = () => {
                 </div>
 
                 {/* Manual Entry Key */}
-                <div className="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg border border-gray-200 dark:border-slate-600">
+                <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-slate-700">
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                     Can't scan? Enter this code manually:
                   </p>

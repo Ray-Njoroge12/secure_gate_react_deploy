@@ -158,7 +158,13 @@ const SuccessAnimation = ({
               style={{
                 left: `${Math.random() * 100}%`,
                 top: '-10px',
-                backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'][i % 5],
+                backgroundColor: [
+                  'var(--color-success, #10B981)', 
+                  'var(--color-info, #3B82F6)', 
+                  'var(--color-warning, #F59E0B)', 
+                  'var(--color-error, #EF4444)', 
+                  'var(--color-brand-accent, #8B5CF6)'
+                ][i % 5],
                 animationDelay: `${Math.random() * 0.5}s`,
                 animationDuration: `${2 + Math.random()}s`
               }}

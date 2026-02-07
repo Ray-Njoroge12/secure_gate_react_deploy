@@ -241,7 +241,7 @@ const FormStep = ({
         {/* Field help tooltip */}
         {showFieldHelp && help && (
           <Tooltip content={help} position="top">
-            <HelpCircle className="w-4 h-4 text-slate-400 ml-2 inline" />
+            <HelpCircle className="w-4 h-4 text-gray-400 dark:text-slate-400 ml-2 inline" />
           </Tooltip>
         )}
       </div>
@@ -268,13 +268,13 @@ const FormStep = ({
     return (
       <div key={group.id || groupIndex} className={`field-group ${getSizeStyles().group}`}>
         {group.title && (
-          <h4 className="text-lg font-medium text-slate-200 mb-3">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-slate-200 mb-3">
             {group.title}
           </h4>
         )}
         
         {group.description && (
-          <p className="text-slate-400 mb-4">
+          <p className="text-gray-500 dark:text-slate-400 mb-4">
             {group.description}
           </p>
         )}
@@ -297,11 +297,11 @@ const FormStep = ({
       {/* Step Header */}
       {showTitle && (
         <div className="mb-6">
-          <h2 className={`${sizeStyles.title} font-semibold text-slate-100 mb-2`}>
+          <h2 className={`${sizeStyles.title} font-semibold text-gray-900 dark:text-slate-100 mb-2`}>
             {title}
           </h2>
           {showDescription && description && (
-            <p className={`${sizeStyles.description} text-slate-400`}>
+            <p className={`${sizeStyles.description} text-gray-500 dark:text-slate-400`}>
               {description}
             </p>
           )}
@@ -312,7 +312,7 @@ const FormStep = ({
       {showProgress && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">Step Progress</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">Step Progress</span>
             <div className="flex items-center space-x-2">
               {isStepComplete && (
                 <Badge variant="success" size="sm">
@@ -328,7 +328,7 @@ const FormStep = ({
               )}
             </div>
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-2">
+          <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
             <div 
               className={`h-2 rounded-full transition-all duration-300 ${
                 isStepComplete ? 'bg-green-500' : 'bg-brand-500'

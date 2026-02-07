@@ -250,6 +250,19 @@ async function upsertUser(user) {
 async function run() {
   await dbManager.initializeAsync();
 
+  const superAdmin = await upsertUser({
+    username: 'superadmin',
+    email: 'superadmin@securegate.com',
+    password: 'SuperAdmin123!',
+    role: 'super_admin',
+    verified: true,
+    phone: '+254799999999',
+    area: 'General',
+    house: 'SUPERADMIN',
+    notifyEmail: true,
+    notifySms: false
+  });
+
   const admin = await upsertUser({
     username: 'admin',
     email: 'admin@securegate.com',
@@ -290,6 +303,7 @@ async function run() {
   });
 
   console.log('[db:seed] Seed complete');
+  console.log('[db:seed] Super Admin:', superAdmin);
   console.log('[db:seed] Admin:', admin);
   console.log('[db:seed] Resident:', resident);
   console.log('[db:seed] Guard:', guard);

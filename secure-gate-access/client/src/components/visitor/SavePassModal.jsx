@@ -14,7 +14,7 @@
  * - Apple Wallet / Google Pay (future enhancement)
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -28,6 +28,58 @@ const SavePassModal = ({
   const [saveFormat, setSaveFormat] = useState('image');
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
   const passRef = useRef(null);
+  const modalRef = useRef(null);
+  const previousActiveElementRef = useRef(null);
+
+  // Focus trap and keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Store previously focused element
+    previousActiveElementRef.current = document.activeElement;
+
+    // Focus modal
+    if (modalRef.current) {
+      modalRef.current.focus();
+    }
+
+    // Handle escape key
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+
+      // Tab trap
+      if (e.key === 'Tab') {
+        const focusableElements = modalRef.current?.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        
+        if (!focusableElements || focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Restore focus on unmount
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousActiveElementRef.current) {
+        previousActiveElementRef.current.focus();
+      }
+    };
+  }, [isOpen, onClose]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -77,7 +129,7 @@ const SavePassModal = ({
       
       const canvas = await html2canvas(passRef.current, {
         scale: 2, // Higher resolution
-        backgroundColor: '#ffffff',
+        backgroundColor: '#ffffff', // Intentional: html2canvas requires raw hex for print/export
         logging: false,
         useCORS: true
       });
@@ -110,7 +162,7 @@ const SavePassModal = ({
       
       const canvas = await html2canvas(passRef.current, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#ffffff', // Intentional: html2canvas requires raw hex for print/export
         logging: false,
         useCORS: true
       });
@@ -153,14 +205,25 @@ const SavePassModal = ({
   const passContent = generatePassContent();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="save-pass-title"
+    >
+      <div 
+        ref={modalRef}
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+        tabIndex={-1}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Save Your Pass</h2>
+          <h2 id="save-pass-title" className="text-xl font-bold text-gray-900 dark:text-white">Save Your Pass</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             aria-label="Close"
           >
             <svg className="w-5 h-5 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +248,7 @@ const SavePassModal = ({
 
             {/* QR Code */}
             <div className="flex justify-center mb-4">
-              <div className="bg-white p-3 rounded-xl shadow-sm">
+              <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm">
                 <QRCodeSVG
                   value={passContent.passCode}
                   size={140}
@@ -197,25 +260,25 @@ const SavePassModal = ({
 
             {/* Pass Details */}
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between py-1 border-b border-gray-200">
+              <div className="flex justify-between py-1 border-b border-gray-200 dark:border-slate-700">
                 <span className="text-gray-600 dark:text-gray-200">Visitor</span>
                 <span className="font-semibold text-gray-900 dark:text-white">{passContent.visitorName}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-gray-200">
+              <div className="flex justify-between py-1 border-b border-gray-200 dark:border-slate-700">
                 <span className="text-gray-600 dark:text-gray-200">Host</span>
                 <span className="font-semibold text-gray-900 dark:text-white">{passContent.hostName}</span>
               </div>
               {passContent.hostUnit && (
-                <div className="flex justify-between py-1 border-b border-gray-200">
+                <div className="flex justify-between py-1 border-b border-gray-200 dark:border-slate-700">
                   <span className="text-gray-600 dark:text-gray-200">Unit</span>
                   <span className="font-semibold text-gray-900 dark:text-white">{passContent.hostUnit}</span>
                 </div>
               )}
-              <div className="flex justify-between py-1 border-b border-gray-200">
+              <div className="flex justify-between py-1 border-b border-gray-200 dark:border-slate-700">
                 <span className="text-gray-600 dark:text-gray-200">Date</span>
                 <span className="font-semibold text-gray-900 dark:text-white">{passContent.visitDate}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-gray-200">
+              <div className="flex justify-between py-1 border-b border-gray-200 dark:border-slate-700">
                 <span className="text-gray-600 dark:text-gray-200">Time</span>
                 <span className="font-semibold text-gray-900 dark:text-white">{passContent.visitTime}</span>
               </div>
@@ -226,11 +289,11 @@ const SavePassModal = ({
             </div>
 
             {/* Pass Footer */}
-            <div className="mt-4 pt-3 border-t border-gray-200 text-center">
+            <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-700 text-center">
               <p className="text-xs text-gray-500 dark:text-gray-300">
                 Valid until: {passContent.expiresAt}
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                 Pass Code: {passContent.passCode}
               </p>
             </div>
@@ -239,14 +302,14 @@ const SavePassModal = ({
 
         {/* Format Selection */}
         <div className="px-4 pb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Save Format</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Save Format</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setSaveFormat('image')}
               className={`p-3 rounded-xl border-2 transition-colors flex flex-col items-center ${
                 saveFormat === 'image'
                   ? 'border-green-500 bg-green-50 text-green-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:text-gray-200'
+                  : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-200'
               }`}
             >
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +324,7 @@ const SavePassModal = ({
               className={`p-3 rounded-xl border-2 transition-colors flex flex-col items-center ${
                 saveFormat === 'pdf'
                   ? 'border-green-500 bg-green-50 text-green-700'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-600 dark:text-gray-200'
+                  : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600 text-gray-600 dark:text-gray-200'
               }`}
             >
               <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,7 +362,7 @@ const SavePassModal = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="p-4 border-t bg-gray-50 rounded-b-2xl">
+        <div className="p-4 border-t bg-gray-50 dark:bg-slate-900 rounded-b-2xl">
           <button
             onClick={handleSave}
             disabled={saving}

@@ -6,6 +6,7 @@
 import express from 'express';
 import notificationQueueService from '../services/notificationQueueService.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ const router = express.Router();
  * @desc Get notification queue statistics
  * @access Admin only
  */
-router.get('/stats', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/stats', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const stats = await notificationQueueService.getStatistics();
 
@@ -36,7 +37,7 @@ router.get('/stats', authenticateToken, requireRole(['admin']), async (req, res)
  * @desc Get failed notifications from dead letter queue
  * @access Admin only
  */
-router.get('/failed', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/failed', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const failedNotifications = await notificationQueueService.getFailedNotifications(limit);
@@ -60,7 +61,7 @@ router.get('/failed', authenticateToken, requireRole(['admin']), async (req, res
  * @desc Retry a failed notification
  * @access Admin only
  */
-router.post('/retry/:jobId', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/retry/:jobId', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const { jobId } = req.params;
     const result = await notificationQueueService.retryFailedNotification(jobId);
@@ -84,7 +85,7 @@ router.post('/retry/:jobId', authenticateToken, requireRole(['admin']), async (r
  * @desc Clean old completed jobs
  * @access Admin only
  */
-router.post('/clean', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/clean', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const olderThanHours = parseInt(req.body.hours) || 24;
     const olderThanMs = olderThanHours * 60 * 60 * 1000;

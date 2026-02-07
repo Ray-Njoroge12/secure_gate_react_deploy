@@ -325,7 +325,7 @@ const GlobalLoadingIndicator = ({
 
   return (
     <div className={`fixed top-4 right-4 z-50 ${className}`} {...props}>
-      <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 shadow-lg">
+      <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4 shadow-lg">
         <EnhancedLoading
           type={loadingState.type}
           message={loadingState.message}

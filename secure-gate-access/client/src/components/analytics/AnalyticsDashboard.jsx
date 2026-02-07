@@ -37,13 +37,14 @@ const AnalyticsDashboard = () => {
     { value: '1y', label: '1 Year' }
   ];
 
+  // Semantic color palette — aligned with design-system.css tokens
   const colors = {
-    primary: '#3b82f6',
-    success: '#10b981',
-    warning: '#f59e0b',
-    danger: '#ef4444',
-    info: '#06b6d4',
-    purple: '#8b5cf6'
+    primary: '#3b82f6',   // --color-info
+    success: '#10b981',   // --color-success / --color-brand-primary
+    warning: '#f59e0b',   // --color-warning
+    danger: '#ef4444',    // --color-error
+    info: '#06b6d4',      // cyan
+    purple: '#8b5cf6'     // --color-brand-accent
   };
 
   useEffect(() => {

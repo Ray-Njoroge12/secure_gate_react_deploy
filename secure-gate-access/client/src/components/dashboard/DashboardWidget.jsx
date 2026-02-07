@@ -94,12 +94,12 @@ export const DashboardWidget = ({
       {...props}
     >
       {/* Widget Header */}
-      <div className={`widget-header flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 ${headerClassName}`}>
+      <div className={`widget-header flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700 ${headerClassName}`}>
         <div className="flex items-center space-x-3">
           {icon && (
             <div className="widget-icon flex-shrink-0">
               {typeof icon === 'string' ? (
-                <div className="w-6 h-6 text-gray-500 dark:text-gray-400">
+                <div className="w-6 h-6 text-gray-500 dark:text-gray-300">
                   {/* Icon placeholder - replace with actual icon component */}
                   <div className="w-full h-full bg-current opacity-20 rounded" />
                 </div>
@@ -114,7 +114,7 @@ export const DashboardWidget = ({
               {title}
             </h3>
             {subtitle && (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 {subtitle}
               </p>
             )}
@@ -211,7 +211,7 @@ export const StatWidget = ({
       case 'negative':
         return 'text-red-600 dark:text-red-400';
       default:
-        return 'text-gray-600 dark:text-gray-400';
+        return 'text-gray-600 dark:text-gray-300';
     }
   };
 
@@ -273,12 +273,12 @@ export const ChartWidget = ({
     >
       <div className="chart-widget-content">
         {/* Placeholder for chart component */}
-        <div className="chart-placeholder bg-gray-100 dark:bg-gray-800 rounded-lg h-64 flex items-center justify-center">
+        <div className="chart-placeholder bg-gray-100 dark:bg-slate-700 rounded-lg h-64 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-gray-400 dark:text-gray-600 mb-2">
+            <div className="text-gray-400 dark:text-gray-300 mb-2">
               Chart Component
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-300">
               {chartType} chart with {data.length} data points
             </div>
           </div>
@@ -310,7 +310,7 @@ export const ListWidget = ({
     >
       <div className="list-widget-content">
         {displayItems.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-8 text-gray-500 dark:text-gray-300">
             {emptyMessage}
           </div>
         ) : (
@@ -328,7 +328,7 @@ export const ListWidget = ({
             </div>
 
             {showViewAll && items.length > maxItems && (
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
                 <button
                   onClick={onViewAll}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"

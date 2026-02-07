@@ -36,11 +36,11 @@ const priorityStyles = {
     iconBg: 'bg-blue-100 dark:bg-blue-900/50'
   },
   low: {
-    bg: 'bg-gray-50 dark:bg-gray-800',
-    border: 'border-gray-200 dark:border-gray-700',
+    bg: 'bg-gray-50 dark:bg-slate-800',
+    border: 'border-gray-200 dark:border-slate-700',
     text: 'text-gray-700 dark:text-gray-300',
     icon: 'ℹ️',
-    iconBg: 'bg-gray-100 dark:bg-gray-700'
+    iconBg: 'bg-gray-100 dark:bg-slate-700'
   }
 };
 

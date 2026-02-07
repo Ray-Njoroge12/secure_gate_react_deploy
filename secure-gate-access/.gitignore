@@ -18,11 +18,17 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
-# Exception: Allow template files without secrets
+# Exception: Allow template/example files without secrets
 !.env.development
 !.env.staging
-!.env.production
 !.env.example
+!.env.staging.example
+!.env.production.template
+
+# SECURITY: Explicitly block production env files with secrets
+server/.env
+server/.env.production
+server/.env.local
 
 # Node modules
 node_modules/

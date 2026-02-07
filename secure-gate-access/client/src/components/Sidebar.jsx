@@ -74,7 +74,7 @@ const NavigationLink = memo(({ to, children, icon, description, badge }) => {
             <Badge
               variant="outline"
               size="sm"
-              className="ml-2 text-xs bg-gray-100 dark:bg-slate-600 border-gray-300 dark:border-slate-500 text-gray-600 dark:text-slate-200"
+              className="ml-2 text-xs bg-gray-100 dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-200"
               aria-label={`${badge} badge`}
             >
               {badge}
@@ -521,7 +521,7 @@ const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1" aria-label={`${getRoleDisplayName(role)} navigation`}>
+        <nav id="navigation" className="flex-1" aria-label={`${getRoleDisplayName(role)} navigation`}>
           <ul ref={navListRef} className="space-y-1">
             {navigation.map((item) => (
               <li key={item.path}>

@@ -409,7 +409,7 @@ const TutorialSystem = ({
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="tutorial-tooltip absolute bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-w-sm z-10"
+        className="tutorial-tooltip absolute bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-gray-200 dark:border-slate-700 max-w-sm z-10"
         style={{
           left: tooltipPosition.x,
           top: tooltipPosition.y,
@@ -417,7 +417,7 @@ const TutorialSystem = ({
         }}
       >
         {/* Header */}
-        <div className="tutorial-header p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="tutorial-header p-4 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-2">
             <h3 
               id="tutorial-title"
@@ -429,7 +429,7 @@ const TutorialSystem = ({
             {defaultOptions.allowSkip && (
               <button
                 onClick={handleSkip}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="text-gray-500 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-100 transition-colors"
                 aria-label="Skip tutorial"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -441,9 +441,9 @@ const TutorialSystem = ({
 
           {/* Progress */}
           {defaultOptions.showProgress && (
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center text-sm text-gray-500 dark:text-gray-300">
               <span>{currentStep + 1} of {steps.length}</span>
-              <div className="flex-1 mx-3 bg-gray-200 dark:bg-gray-700 rounded-full h-1">
+              <div className="flex-1 mx-3 bg-gray-200 dark:bg-slate-700 rounded-full h-1">
                 <div
                   className="bg-blue-500 h-1 rounded-full transition-all duration-300"
                   style={{ width: `${progressPercentage}%` }}
@@ -476,7 +476,7 @@ const TutorialSystem = ({
         </div>
 
         {/* Footer */}
-        <div className="tutorial-footer p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="tutorial-footer p-4 border-t border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <button
             onClick={handlePrevious}
             disabled={currentStep === 0}
@@ -489,7 +489,7 @@ const TutorialSystem = ({
             {defaultOptions.allowSkip && (
               <button
                 onClick={handleSkip}
-                className="px-3 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                className="px-3 py-1 text-sm text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               >
                 Skip
               </button>

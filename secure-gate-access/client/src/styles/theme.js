@@ -1,18 +1,20 @@
 // client/src/styles/theme.js
+// UNIFIED COLOR SYSTEM — Single source of truth: #10b981 (brand-500)
+// All color values aligned with design-system.css and design-system/tokens.js
 export const theme = {
-  // Brand Colors
+  // Brand Colors — Unified to #10b981 emerald green
   colors: {
     primary: {
-      50: '#f0fdf4',
-      100: '#dcfce7',
-      200: '#bbf7d0',
-      300: '#86efac',
-      400: '#4ade80',
-      500: '#22c55e',  // Main brand color
-      600: '#16a34a',  // Primary button background
-      700: '#15803d',
-      800: '#166534',
-      900: '#14532d',
+      50: '#ecfdf5',
+      100: '#d1fae5',
+      200: '#a7f3d0',
+      300: '#6ee7b7',
+      400: '#34d399',
+      500: '#10b981',  // Main brand color — UNIFIED
+      600: '#059669',  // Primary button background — UNIFIED
+      700: '#047857',
+      800: '#065f46',
+      900: '#064e3b',
     },
     secondary: {
       50: '#f8fafc',
@@ -39,12 +41,13 @@ export const theme = {
       900: '#1e3a8a',
     },
     success: {
-      50: '#f0fdf4',
-      500: '#22c55e',
-      600: '#15803d',  // Darker for WCAG AA compliance
-      700: '#166534',
-      800: '#14532d',
-      900: '#0f5132',
+      50: '#ecfdf5',
+      100: '#d1fae5',
+      500: '#10b981',
+      600: '#059669',
+      700: '#047857',
+      800: '#065f46',
+      900: '#064e3b',
     },
     warning: {
       50: '#fffbeb',
@@ -160,7 +163,7 @@ export const brandConfig = {
     name: 'Greenwood Estate', // Default - can be configured
     logo: null, // Configurable estate logo
     colors: {
-      primary: '#22c55e', // Can be overridden per estate
+      primary: '#10b981', // Unified brand color
       secondary: '#1e293b'
     }
   },
@@ -237,7 +240,7 @@ export const a11y = {
   }
 };
 
-// Dark mode support (future enhancement)
+// Dark mode support
 export const darkTheme = {
   ...theme,
   colors: {
@@ -245,9 +248,12 @@ export const darkTheme = {
     background: theme.colors.secondary[900],
     surface: theme.colors.secondary[800],
     text: {
-      primary: theme.colors.neutral[50],
-      secondary: theme.colors.neutral[300],
-      tertiary: theme.colors.neutral[500]
+      primary: theme.colors.neutral[50],    // #fafafa — 15.4:1 on slate-900 ✅
+      secondary: theme.colors.neutral[300], // #d4d4d4 — 9.7:1 ✅
+      tertiary: theme.colors.neutral[400],  // #a3a3a3 — 5.9:1 ✅
+      muted: theme.colors.neutral[400],     // #a3a3a3 — 5.9:1 ✅ (upgraded)
+      disabled: theme.colors.neutral[500],  // #737373 — 3.6:1 for non-text ✅
+      placeholder: theme.colors.neutral[400] // #a3a3a3 — 5.9:1 ✅
     }
   }
 };

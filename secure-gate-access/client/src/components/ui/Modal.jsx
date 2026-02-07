@@ -140,7 +140,7 @@ const Modal = ({
       <div
         ref={modalRef}
         className={`
-          relative bg-slate-800 rounded-lg shadow-xl w-full
+          relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full
           ${sizeClasses[size]}
           ${className}
         `}
@@ -148,12 +148,12 @@ const Modal = ({
       >
         {/* Header */}
         {(title || onClose) && (
-          <div className="flex items-center justify-between p-6 border-b border-slate-700">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
             {title && (
               <h2
                 ref={titleRef}
                 id={ariaLabelledBy}
-                className="text-xl font-semibold text-slate-200"
+                className="text-xl font-semibold text-gray-900 dark:text-slate-200"
                 tabIndex={-1}
               >
                 {title}
@@ -163,7 +163,7 @@ const Modal = ({
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+                className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />

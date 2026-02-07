@@ -199,10 +199,10 @@ const ProgressiveLoading = ({
     return (
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-slate-300">{config.message}</span>
-          <span className="text-sm text-slate-400">{Math.round(progress)}%</span>
+          <span className="text-sm text-gray-600 dark:text-slate-300">{config.message}</span>
+          <span className="text-sm text-gray-500 dark:text-slate-400">{Math.round(progress)}%</span>
         </div>
-        <div className="w-full bg-slate-700 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
           <div 
             className="bg-brand-500 rounded-full h-2 transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}

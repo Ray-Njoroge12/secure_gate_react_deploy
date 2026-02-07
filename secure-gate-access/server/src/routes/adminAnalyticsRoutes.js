@@ -17,6 +17,7 @@ import {
 
 const router = express.Router();
 import { requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { customRateLimit } from '../middleware/rateLimitMiddleware.js';
 
 // Fix A-007: Rate Limiting
@@ -27,7 +28,7 @@ const analyticsLimiter = customRateLimit({
 });
 
 // Fix A-006: Inconsistent Auth Pattern (Use shared middleware)
-const requireAdmin = requireRole(['admin']);
+const requireAdmin = requireRolePolicy('adminOnly');
 
 /**
  * @route GET /api/admin/analytics/overview

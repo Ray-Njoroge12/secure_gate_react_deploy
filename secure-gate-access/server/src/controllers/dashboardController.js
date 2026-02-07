@@ -29,7 +29,7 @@ export const getDashboardStats = async (req, res) => {
 
     let stats = {};
 
-    if (userRole === 'admin') {
+    if (userRole === 'admin' || userRole === 'super_admin') {
       // Admin dashboard stats
       stats = await getAdminStats(estateId);
     } else if (userRole === 'guard' || userRole === 'security') {

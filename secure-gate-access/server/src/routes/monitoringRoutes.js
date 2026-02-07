@@ -6,6 +6,7 @@
 
 import express from 'express';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import monitoringDashboard from '../services/monitoringDashboardService.js';
 import { logAuditEvent } from '../middleware/loggingMiddleware.js';
 import loggingService from '../services/loggingService.js';
@@ -21,7 +22,7 @@ const router = express.Router();
  * @desc Get current system metrics
  * @access Admin
  */
-router.get('/metrics', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/metrics', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const metrics = monitoringDashboard.getMetrics();
 
@@ -52,7 +53,7 @@ router.get('/metrics', authenticateToken, requireRole(['admin', 'super_admin']),
  * @desc Get system health status
  * @access Admin
  */
-router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/health', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const health = monitoringDashboard.getHealthStatus();
 
@@ -81,7 +82,7 @@ router.get('/health', authenticateToken, requireRole(['admin', 'super_admin']), 
  * @desc Get comprehensive dashboard data
  * @access Admin
  */
-router.get('/dashboard', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/dashboard', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const metrics = monitoringDashboard.getMetrics();
     const health = monitoringDashboard.getHealthStatus();
@@ -153,7 +154,7 @@ router.get('/dashboard', authenticateToken, requireRole(['admin', 'super_admin']
  * @desc Get current alerts
  * @access Admin
  */
-router.get('/alerts', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/alerts', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const metrics = monitoringDashboard.getMetrics();
     const alerts = metrics.current.alerts || [];
@@ -354,7 +355,7 @@ router.post('/stop', authenticateToken, requireRole(['super_admin']), async (req
  * @desc Real-time monitoring data stream (Server-Sent Events)
  * @access Admin
  */
-router.get('/stream', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/stream', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const clientId = uuidv4();
 
@@ -418,7 +419,7 @@ router.get('/stream', authenticateToken, requireRole(['admin', 'super_admin']), 
  * @desc Get historical metrics data
  * @access Admin
  */
-router.get('/historical', authenticateToken, requireRole(['admin', 'super_admin']), async (req, res) => {
+router.get('/historical', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const {
       period = '1h', // 1h, 24h, 7d

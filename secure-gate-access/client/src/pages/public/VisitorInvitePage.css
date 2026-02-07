@@ -426,6 +426,124 @@
   }
 }
 
+/* Dark mode support */
+.dark .visitor-invite-page {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+}
+
+.dark .invite-container {
+  background: #1e293b;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.dark .qr-section {
+  background: #0f172a;
+  border-bottom-color: #334155;
+}
+
+.dark .qr-code-container {
+  background: white; /* Keep white for QR readability */
+}
+
+.dark .qr-instruction {
+  color: #e2e8f0;
+}
+
+.dark .qr-code-text {
+  color: #94a3b8;
+}
+
+.dark .details-section {
+  border-bottom-color: #334155;
+}
+
+.dark .details-section h2 {
+  color: #f1f5f9;
+}
+
+.dark .detail-item {
+  border-bottom-color: #1e293b;
+}
+
+.dark .detail-label {
+  color: #94a3b8;
+}
+
+.dark .detail-value {
+  color: #f1f5f9;
+}
+
+.dark .status-message-pending {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: #d97706;
+  color: #fbbf24;
+}
+
+.dark .status-message-success {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #6ee7b7;
+}
+
+.dark .status-message-error {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.dark .estate-info-section {
+  background: #0f172a;
+}
+
+.dark .estate-info-section h2 {
+  color: #f1f5f9;
+}
+
+.dark .estate-detail strong {
+  color: #e2e8f0;
+}
+
+.dark .estate-detail p,
+.dark .estate-detail ol {
+  color: #94a3b8;
+}
+
+.dark .gate-info {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.dark .invite-footer {
+  background: #0f172a;
+}
+
+.dark .footer-text {
+  color: #94a3b8;
+}
+
+.dark .loading-container,
+.dark .error-container {
+  background: #1e293b;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.dark .spinner {
+  border-color: #334155;
+  border-top-color: #667eea;
+}
+
+.dark .loading-container p {
+  color: #94a3b8;
+}
+
+.dark .error-container h2 {
+  color: #f1f5f9;
+}
+
+.dark .error-container p {
+  color: #94a3b8;
+}
+
 /* High contrast mode */
 @media (prefers-contrast: high) {
   .status-badge {

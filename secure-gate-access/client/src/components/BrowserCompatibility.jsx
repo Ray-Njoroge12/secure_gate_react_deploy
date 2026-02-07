@@ -202,7 +202,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
             <h3 className="font-medium text-gray-900 dark:text-white">Issues Found</h3>
             <div className="space-y-2">
               {issues.map((issue, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
                   {React.createElement(
                     getIssueIcon(issue.type),
                     { className: `w-5 h-5 mt-0.5 ${getIssueColor(issue.type)}` }

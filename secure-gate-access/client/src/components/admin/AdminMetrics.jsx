@@ -40,7 +40,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {users.totalUsers ?? 0}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                         {users.residents ?? 0} residents • {users.guards ?? 0} guards
                     </div>
                 </div>
@@ -53,7 +53,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {visitors.checkedInVisitors ?? 0}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                         {visitors.totalVisitors ?? 0} total • {visitors.pendingVisitors ?? 0} pending
                     </div>
                 </div>
@@ -66,7 +66,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
                     <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                         {visitors.verifiedVisitors ?? 0}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                         {visitors.checkedOutVisitors ?? 0} checked out
                     </div>
                 </div>
@@ -79,7 +79,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
                     <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                         {users.admins ?? 0}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
                         {metrics.timestamp ? new Date(metrics.timestamp).toLocaleTimeString() : 'Just now'}
                     </div>
                 </div>

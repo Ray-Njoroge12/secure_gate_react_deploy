@@ -507,7 +507,7 @@ router.get('/:guardId/performance', authenticateToken, requireEstate, requireRol
 router.post('/equipment/checkout', authenticateToken, requireEstate, requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const { guard_id, shift_id, equipment_type, equipment_id, notes } = req.body;
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
     const guardId = isAdmin ? guard_id : req.user.id;
 
     if (!equipment_type || !equipment_id) {
@@ -556,7 +556,7 @@ router.post('/equipment/:checkoutId/return', authenticateToken, requireEstate, r
   try {
     const { checkoutId } = req.params;
     const { guard_id, condition, notes } = req.body;
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
     const guardId = isAdmin ? guard_id : req.user.id;
 
     if (isAdmin && !guardId) {

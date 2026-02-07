@@ -142,7 +142,7 @@ const BrowserCompatibilityWarning = memo(({
                 href="https://browsehappy.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 bg-opacity-50 dark:bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
               >
                 <ExternalLink className="w-3 h-3" />
                 Download Modern Browser
@@ -152,7 +152,7 @@ const BrowserCompatibilityWarning = memo(({
             {isBrowserOutdated && (
               <button
                 onClick={handleRefresh}
-                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 bg-opacity-50 dark:bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
               >
                 <RefreshCw className="w-3 h-3" />
                 Refresh Page
@@ -161,14 +161,14 @@ const BrowserCompatibilityWarning = memo(({
 
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 bg-opacity-50 dark:bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
             >
               {showDetails ? 'Hide' : 'Show'} Details
             </button>
 
             <button
               onClick={handleDismiss}
-              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 bg-opacity-50 dark:bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
             >
               <X className="w-3 h-3" />
               Dismiss

@@ -41,14 +41,14 @@ const InputField = ({
         </label>
         <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Icon className={`h-5 w-5 ${error ? 'text-red-400' : 'text-gray-400'}`} />
+                <Icon className={`h-5 w-5 ${error ? 'text-red-400' : 'text-gray-400 dark:text-gray-300'}`} />
             </div>
             <input
                 type={type}
                 className={`block w-full pl-10 pr-3 py-2 border rounded-md leading-5 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 sm:text-sm transition duration-150 ease-in-out ${
                     error 
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-gray-300 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500'
+                        : 'border-gray-300 dark:border-slate-600 focus:ring-indigo-500 focus:border-indigo-500'
                 }`}
                 placeholder={placeholder}
                 value={value}
@@ -65,7 +65,7 @@ const InputField = ({
             </p>
         )}
         {hint && !error && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{hint}</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-300">{hint}</p>
         )}
     </div>
 );
@@ -84,10 +84,10 @@ const PasswordRequirements = ({ password }) => {
 
     return (
         <div className="mt-2 p-3 bg-gray-50 dark:bg-slate-800 rounded-md">
-            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Password Requirements:</p>
+            <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Password Requirements:</p>
             <ul className="space-y-1">
                 {requirementItems.map(({ key, label, met }) => (
-                    <li key={key} className={`text-xs flex items-center gap-1 ${met ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    <li key={key} className={`text-xs flex items-center gap-1 ${met ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-300'}`}>
                         {met ? <CheckCircle className="h-3 w-3" /> : <span className="h-3 w-3 rounded-full border border-gray-400" />}
                         {label}
                     </li>
@@ -236,7 +236,7 @@ export default function AddEstateModal({ isOpen, onClose, onSuccess }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estate Details</h3>
+                        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estate Details</h3>
                         <InputField
                             label="Estate Name"
                             icon={Building2}
@@ -258,7 +258,7 @@ export default function AddEstateModal({ isOpen, onClose, onSuccess }) {
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admin User</h3>
+                        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Admin User</h3>
                         <InputField
                             label="Admin Name"
                             icon={User}
@@ -296,11 +296,11 @@ export default function AddEstateModal({ isOpen, onClose, onSuccess }) {
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <div className="mt-6 flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                        className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         Cancel
                     </button>

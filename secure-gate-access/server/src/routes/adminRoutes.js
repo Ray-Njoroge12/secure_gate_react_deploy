@@ -19,6 +19,7 @@ import {
 } from '../controllers/superAdminController.js';
 import { respond, respondError } from '../utils/respond.js';
 import { authenticateToken, requireRole, requireMFA } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { requireEstateContextForAdmin } from '../middleware/estateContextMiddleware.js';
 import { requireMFAForSensitiveOps, requireRecentMFAVerification } from '../middleware/mfaSensitiveOperations.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
@@ -216,28 +217,28 @@ router.get('/estate-info', authenticateToken, requireEstateContextForAdmin, admi
  * @desc Get estate settings
  * @access Private (Admin only)
  */
-router.get('/settings', authenticateToken, requireRole(['admin']), requireEstateContextForAdmin, adminQueryLimit(), attachRequestAudit, getSettings);
+router.get('/settings', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, adminQueryLimit(), attachRequestAudit, getSettings);
 
 /**
  * @route PUT /api/admin/settings
  * @desc Update estate settings
  * @access Private (Admin only)
  */
-router.put('/settings', authenticateToken, requireRole(['admin']), requireEstateContextForAdmin, adminModificationLimit(), attachRequestAudit, updateSettings);
+router.put('/settings', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, adminModificationLimit(), attachRequestAudit, updateSettings);
 
 /**
  * @route PUT /api/admin/compliance/:section
  * @desc Update compliance settings (dpo/odpc)
  * @access Private (Admin only)
  */
-router.put('/compliance/:section', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, adminModificationLimit(), attachRequestAudit, updateCompliance);
+router.put('/compliance/:section', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, adminModificationLimit(), attachRequestAudit, updateCompliance);
 
 /**
  * @route POST /api/admin/compliance/review
  * @desc Trigger compliance review
  * @access Private (Admin only)
  */
-router.post('/compliance/review', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, attachRequestAudit, runComplianceReview);
+router.post('/compliance/review', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, attachRequestAudit, runComplianceReview);
 
 // ==================== SETTINGS & COMPLIANCE ====================
 
@@ -415,7 +416,7 @@ router.get('/audit-logs', authenticateToken, adminQueryLimit(), attachRequestAud
  *               timestamp: "2025-01-01T00:00:00.000Z"
  */
 // Backup trigger endpoint
-router.post('/backup/trigger', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, adminModificationLimit(), attachRequestAudit, async (req, res) => {
+router.post('/backup/trigger', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, adminModificationLimit(), attachRequestAudit, async (req, res) => {
   try {
     const result = await backupService.triggerBackup();
     res.json({
@@ -443,7 +444,7 @@ router.post('/backup/trigger', authenticateToken, requireRole(['admin']), requir
  * @desc Get all pending users requiring approval
  * @access Private (Admin only)
  */
-router.get('/users/pending', authenticateToken, requireRole(['admin']), requireEstateContextForAdmin, adminQueryLimit(), minimizeData('user'), attachRequestAudit, getPendingUsers);
+router.get('/users/pending', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, adminQueryLimit(), minimizeData('user'), attachRequestAudit, getPendingUsers);
 
 /**
  * @route PUT /api/admin/users/:id/status
@@ -452,7 +453,7 @@ router.get('/users/pending', authenticateToken, requireRole(['admin']), requireE
  */
 router.put('/users/:id/status', 
   authenticateToken, 
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   requireEstateContextForAdmin, 
   adminModificationLimit(), 
   validateUserStatusUpdate(), 
@@ -468,7 +469,7 @@ router.put('/users/:id/status',
  */
 router.post('/users/bulk-approve',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminModificationLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -555,7 +556,7 @@ router.post('/users/bulk-approve',
  */
 router.post('/users/bulk-reject',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminModificationLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -622,7 +623,7 @@ router.post('/users/bulk-reject',
  */
 router.get('/users', 
   authenticateToken, 
-  requireRole(['admin']), 
+  requireRolePolicy('adminOnly'), 
   adminQueryLimit(), 
   validateSearchTerm(), 
   validatePagination(), 
@@ -706,7 +707,7 @@ router.get('/users',
  */
 router.post('/users/advanced-search',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminQueryLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -830,7 +831,7 @@ router.post('/users/advanced-search',
  */
 router.put('/users/:id', 
   authenticateToken, 
-  requireRole(['admin']), 
+  requireRolePolicy('adminOnly'), 
   adminModificationLimit(), 
   validateUserUpdate(), 
   preventPrivilegeEscalation, 
@@ -914,7 +915,7 @@ router.put('/users/:id',
  */
 router.get('/users/:id/sessions',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminQueryLimit(),
   validateIdParam(),
   validate,
@@ -1000,7 +1001,7 @@ router.get('/users/:id/sessions',
  */
 router.delete('/users/:userId/sessions/:sessionId',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   requireMFAForSensitiveOps,
   adminModificationLimit(),
   attachRequestAudit,
@@ -1078,7 +1079,7 @@ router.delete('/users/:userId/sessions/:sessionId',
  */
 router.delete('/users/:id/sessions',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   requireMFAForSensitiveOps,
   adminModificationLimit(),
   validateIdParam(),
@@ -1163,7 +1164,7 @@ router.delete('/users/:id/sessions',
  */
 router.post('/users/:id/reset-password',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   requireMFAForSensitiveOps,
   adminModificationLimit(),
   validateIdParam(),
@@ -1255,7 +1256,7 @@ router.post('/users/:id/reset-password',
  */
 router.delete('/users/:id', 
   authenticateToken, 
-  requireRole(['admin']), 
+  requireRolePolicy('adminOnly'), 
   requireMFAForSensitiveOps,
   adminModificationLimit(), 
   validateIdParam(), 
@@ -1315,7 +1316,7 @@ router.delete('/users/:id',
  * @desc Get all residents
  * @access Private (Admin only)
  */
-router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData('user'), attachRequestAudit, async (req, res) => {
+router.get('/residents', authenticateToken, requireRolePolicy('adminOnly'), minimizeData('user'), attachRequestAudit, async (req, res) => {
   try {
     // SECURITY: Filter by estate_id to prevent cross-estate access
     // Fix: Use account_status as the column name
@@ -1352,7 +1353,7 @@ router.get('/residents', authenticateToken, requireRole(['admin']), minimizeData
  */
 router.post('/residents', 
   authenticateToken, 
-  requireRole(['admin']), 
+  requireRolePolicy('adminOnly'), 
   adminModificationLimit(), 
   validateResidentCreation(), 
   validate, 
@@ -1402,7 +1403,7 @@ router.post('/residents',
  * @desc Update a resident
  * @access Private (Admin only)
  */
-router.put('/residents/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.put('/residents/:id', authenticateToken, requireRolePolicy('adminOnly'), attachRequestAudit, async (req, res) => {
   try {
     const { id } = req.params;
     const { username, first_name, last_name, email, phone, unit_number, status } = req.body;
@@ -1443,7 +1444,7 @@ router.put('/residents/:id', authenticateToken, requireRole(['admin']), attachRe
  * @desc Delete a resident
  * @access Private (Admin only)
  */
-router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.delete('/residents/:id', authenticateToken, requireRolePolicy('adminOnly'), attachRequestAudit, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -1485,7 +1486,7 @@ router.delete('/residents/:id', authenticateToken, requireRole(['admin']), attac
  * @desc Get visitor logs with filtering
  * @access Private (Admin only)
  */
-router.get('/visitors', authenticateToken, requireRole(['admin']), adminQueryLimit(), minimizeData('visitor'), attachRequestAudit, async (req, res) => {
+router.get('/visitors', authenticateToken, requireRolePolicy('adminOnly'), adminQueryLimit(), minimizeData('visitor'), attachRequestAudit, async (req, res) => {
   try {
     const { status, search, page = 1, limit = 20 } = req.query;
     // Fix A-004: Pagination Input Validation
@@ -1533,7 +1534,7 @@ router.get('/visitors', authenticateToken, requireRole(['admin']), adminQueryLim
  * @desc Get access logs
  * @access Private (Admin only)
  */
-router.get('/access-logs', authenticateToken, requireRole(['admin']), minimizeData('access'), attachRequestAudit, async (req, res) => {
+router.get('/access-logs', authenticateToken, requireRolePolicy('adminOnly'), minimizeData('access'), attachRequestAudit, async (req, res) => {
   try {
     const { type, search, page = 1, limit = 50 } = req.query;
     // Fix A-004: Pagination Input Validation
@@ -1603,7 +1604,7 @@ router.get('/access-logs', authenticateToken, requireRole(['admin']), minimizeDa
  * @desc Get incidents list
  * @access Private (Admin only)
  */
-router.get('/incidents-list', authenticateToken, requireRole(['admin']), adminQueryLimit(), attachRequestAudit, async (req, res) => {
+router.get('/incidents-list', authenticateToken, requireRolePolicy('adminOnly'), adminQueryLimit(), attachRequestAudit, async (req, res) => {
   try {
     const { status, priority, page = 1, limit = 20 } = req.query;
     // Fix A-004: Pagination Input Validation
@@ -1660,7 +1661,7 @@ router.get('/incidents-list', authenticateToken, requireRole(['admin']), adminQu
  * @desc Get data retention settings
  * @access Private (Admin only)
  */
-router.get('/retention-settings', authenticateToken, requireRole(['admin']), attachRequestAudit, async (req, res) => {
+router.get('/retention-settings', authenticateToken, requireRolePolicy('adminOnly'), attachRequestAudit, async (req, res) => {
   try {
     const settings = await retentionService.getRetentionSettings();
 
@@ -1683,7 +1684,7 @@ router.get('/retention-settings', authenticateToken, requireRole(['admin']), att
  * @desc Update data retention settings
  * @access Private (Admin only)
  */
-router.put('/retention-settings', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
+router.put('/retention-settings', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
   try {
     const { id, type, duration } = req.body;
 
@@ -1709,7 +1710,7 @@ router.put('/retention-settings', authenticateToken, requireRole(['admin']), req
  * @desc Trigger data retention policy
  * @access Private (Admin only)
  */
-router.post('/retention/trigger', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
+router.post('/retention/trigger', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
   try {
     // Trigger retention policy immediately
     await retentionService.triggerRetentionPolicy();
@@ -1733,7 +1734,7 @@ router.post('/retention/trigger', authenticateToken, requireRole(['admin']), req
  * @desc Get retention logs
  * @access Private (Admin only)
  */
-router.get('/retention/logs', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, adminQueryLimit(), attachRequestAudit, async (req, res) => {
+router.get('/retention/logs', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, adminQueryLimit(), attachRequestAudit, async (req, res) => {
   try {
     const { page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
@@ -1793,7 +1794,7 @@ router.get('/retention/logs', authenticateToken, requireRole(['admin']), require
  *       200:
  *         description: Statistics retrieved successfully
  */
-router.get('/retention/stats', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/retention/stats', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const stats = await retentionService.getRetentionStats();
 
@@ -1824,7 +1825,7 @@ router.get('/retention/stats', authenticateToken, requireRole(['admin']), async 
  *       200:
  *         description: Retention job completed successfully
  */
-router.post('/retention/run', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
+router.post('/retention/run', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
   try {
     const results = await retentionService.runRetentionJob();
 
@@ -1856,7 +1857,7 @@ router.post('/retention/run', authenticateToken, requireRole(['admin']), require
  *       200:
  *         description: Scheduler status retrieved
  */
-router.get('/retention/scheduler/status', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/retention/scheduler/status', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const status = retentionScheduler.getStatus();
 
@@ -1883,7 +1884,7 @@ router.get('/retention/scheduler/status', authenticateToken, requireRole(['admin
  */
 router.get('/activity/feed',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminQueryLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -1958,7 +1959,7 @@ router.get('/activity/feed',
  */
 router.get('/activity/trends',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminQueryLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -2069,7 +2070,7 @@ router.get('/activity/trends',
  */
 router.get('/activity/anomalies',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminQueryLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -2183,7 +2184,7 @@ router.get('/activity/anomalies',
  */
 router.get('/activity/summary',
   authenticateToken,
-  requireRole(['admin']),
+  requireRolePolicy('adminOnly'),
   adminQueryLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -2273,7 +2274,7 @@ router.get('/activity/summary',
  */
 router.get('/notification-preferences',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   adminQueryLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -2363,7 +2364,7 @@ router.get('/notification-preferences',
  */
 router.put('/notification-preferences/:id',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   adminModificationLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -2452,7 +2453,7 @@ router.put('/notification-preferences/:id',
  */
 router.post('/notification-preferences/bulk-update',
   authenticateToken,
-  requireRole(['admin', 'super_admin']),
+  requireRolePolicy('adminOnly'),
   adminModificationLimit(),
   attachRequestAudit,
   async (req, res) => {
@@ -2536,7 +2537,7 @@ router.post('/notification-preferences/bulk-update',
  * @desc Get data retention statistics
  * @access Private (Admin only)
  */
-router.get('/retention/stats', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/retention/stats', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const stats = await retentionService.getRetentionStats();
 
@@ -2559,7 +2560,7 @@ router.get('/retention/stats', authenticateToken, requireRole(['admin']), async 
  * @desc Manually trigger data retention job
  * @access Private (Admin only)
  */
-router.post('/retention/run', authenticateToken, requireRole(['admin']), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
+router.post('/retention/run', authenticateToken, requireRolePolicy('adminOnly'), requireMFAForSensitiveOps, attachRequestAudit, async (req, res) => {
   try {
     const results = await retentionService.runRetentionJob();
 
@@ -2583,7 +2584,7 @@ router.post('/retention/run', authenticateToken, requireRole(['admin']), require
  * @desc Get retention scheduler status
  * @access Private (Admin only)
  */
-router.get('/retention/scheduler/status', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.get('/retention/scheduler/status', authenticateToken, requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const status = retentionScheduler.getStatus();
 

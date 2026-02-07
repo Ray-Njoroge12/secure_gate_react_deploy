@@ -143,7 +143,7 @@ const SuccessDisplay = ({
                         type="text"
                         value={success.data.inviteLink}
                         readOnly
-                        className="flex-1 text-xs bg-white border border-green-300 rounded px-2 py-1"
+                        className="flex-1 text-xs bg-white dark:bg-slate-800 border border-green-300 rounded px-2 py-1"
                         onClick={(e) => e.target.select()}
                       />
                       <button

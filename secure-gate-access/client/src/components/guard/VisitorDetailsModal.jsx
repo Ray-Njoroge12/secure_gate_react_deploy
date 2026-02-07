@@ -142,7 +142,7 @@ export default function VisitorDetailsModal({
           {/* Details Grid */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Check-in Time */}
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <Clock className="w-3.5 h-3.5" aria-hidden="true" />
                 Check-in
@@ -153,7 +153,7 @@ export default function VisitorDetailsModal({
             </div>
 
             {/* Duration / Check-out */}
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <Clock className="w-3.5 h-3.5" aria-hidden="true" />
                 {visitor.check_out_time ? 'Check-out' : 'Duration'}
@@ -167,7 +167,7 @@ export default function VisitorDetailsModal({
             </div>
 
             {/* Host */}
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <User className="w-3.5 h-3.5" aria-hidden="true" />
                 Host
@@ -178,7 +178,7 @@ export default function VisitorDetailsModal({
             </div>
 
             {/* Visit Date */}
-            <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3">
+            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
               <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                 <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                 Date
@@ -190,7 +190,7 @@ export default function VisitorDetailsModal({
 
             {/* Vehicle (if present) */}
             {(visitor.vehicleNumber || visitor.vehicle_number) && (
-              <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 col-span-2">
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3 col-span-2">
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                   <Car className="w-3.5 h-3.5" aria-hidden="true" />
                   Vehicle
@@ -203,7 +203,7 @@ export default function VisitorDetailsModal({
 
             {/* Phone (if present) */}
             {(visitor.phone || visitor.phone_number) && (
-              <div className="bg-gray-50 rounded-lg p-3">
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                   <Phone className="w-3.5 h-3.5" />
                   Phone
@@ -216,7 +216,7 @@ export default function VisitorDetailsModal({
 
             {/* Email (if present) */}
             {visitor.email && (
-              <div className="bg-gray-50 rounded-lg p-3">
+              <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
                   <Mail className="w-3.5 h-3.5" />
                   Email
@@ -251,7 +251,7 @@ export default function VisitorDetailsModal({
                 placeholder="Enter 6-digit code"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                className="bg-white"
+                className="bg-white dark:bg-slate-800"
               />
               <p className="text-xs text-blue-700 mt-2">
                 Ask the visitor for the code sent to their phone/email.
@@ -261,7 +261,7 @@ export default function VisitorDetailsModal({
         </div>
 
         {/* Actions Footer */}
-        <div className="border-t border-gray-200 p-4 bg-gray-50">
+        <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900">
           <div className="flex flex-wrap gap-2">
             {/* Pending Actions */}
             {canVerify && (

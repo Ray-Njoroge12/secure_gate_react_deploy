@@ -11,13 +11,21 @@ import { errorResponse } from '../utils/responseFormatter.js';
 const router = express.Router();
 
 /**
+ * Check if user has admin-level privileges (admin or super_admin)
+ */
+function isAdmin(user) {
+  return user.role === 'admin' || user.role === 'super_admin';
+}
+
+/**
  * Get active announcements for the current user
  * GET /api/announcements
  */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const userRole = req.user.role;
-    const announcements = await announcementsService.getActiveAnnouncements(userRole);
+    const estateId = req.user.estate_id;
+    const announcements = await announcementsService.getActiveAnnouncements(userRole, estateId);
 
     res.json({
       success: true,
@@ -39,7 +47,8 @@ router.get('/', authMiddleware, async (req, res) => {
 router.get('/unread', authMiddleware, async (req, res) => {
   try {
     const { id: userId, role: userRole } = req.user;
-    const announcements = await announcementsService.getUnreadAnnouncements(userId, userRole);
+    const estateId = req.user.estate_id;
+    const announcements = await announcementsService.getUnreadAnnouncements(userId, userRole, estateId);
 
     res.json({
       success: true,
@@ -61,7 +70,7 @@ router.get('/unread', authMiddleware, async (req, res) => {
  */
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
-    const announcement = await announcementsService.getAnnouncementById(req.params.id);
+    const announcement = await announcementsService.getAnnouncementById(req.params.id, req.user.estate_id);
 
     if (!announcement) {
       return res.status(404).json({
@@ -112,7 +121,7 @@ router.post('/:id/read', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, async (req, res) => {
   try {
     // Check admin role
-    if (req.user.role !== 'admin') {
+    if (!isAdmin(req.user)) {
       return errorResponse(res, 'Only admins can create announcements', 'FORBIDDEN', 403, null, req);
     }
 
@@ -132,7 +141,7 @@ router.post('/', authMiddleware, async (req, res) => {
       targetAudience,
       expiresAt,
       isPinned
-    });
+    }, req.user.estate_id);
 
     res.status(201).json({
       success: true,
@@ -153,14 +162,15 @@ router.post('/', authMiddleware, async (req, res) => {
  */
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!isAdmin(req.user)) {
       return errorResponse(res, 'Only admins can update announcements', 'FORBIDDEN', 403, null, req);
     }
 
     const announcement = await announcementsService.updateAnnouncement(
       req.params.id,
       req.user.id,
-      req.body
+      req.body,
+      req.user.estate_id
     );
 
     if (!announcement) {
@@ -189,11 +199,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
  */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!isAdmin(req.user)) {
       return errorResponse(res, 'Only admins can delete announcements', 'FORBIDDEN', 403, null, req);
     }
 
-    const deleted = await announcementsService.deleteAnnouncement(req.params.id, req.user.id);
+    const deleted = await announcementsService.deleteAnnouncement(req.params.id, req.user.id, req.user.estate_id);
 
     if (!deleted) {
       return res.status(404).json({
@@ -220,11 +230,11 @@ router.delete('/:id', authMiddleware, async (req, res) => {
  */
 router.get('/:id/stats', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!isAdmin(req.user)) {
       return errorResponse(res, 'Only admins can view announcement stats', 'FORBIDDEN', 403, null, req);
     }
 
-    const stats = await announcementsService.getAnnouncementStats(req.params.id);
+    const stats = await announcementsService.getAnnouncementStats(req.params.id, req.user.estate_id);
 
     if (!stats) {
       return res.status(404).json({
@@ -252,12 +262,12 @@ router.get('/:id/stats', authMiddleware, async (req, res) => {
  */
 router.get('/admin/all', authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
+    if (!isAdmin(req.user)) {
       return errorResponse(res, 'Only admins can view all announcements', 'FORBIDDEN', 403, null, req);
     }
 
     const includeExpired = req.query.includeExpired === 'true';
-    const announcements = await announcementsService.getAllAnnouncements(includeExpired);
+    const announcements = await announcementsService.getAllAnnouncements(includeExpired, req.user.estate_id);
 
     res.json({
       success: true,

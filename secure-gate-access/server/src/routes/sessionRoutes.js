@@ -20,7 +20,7 @@ const router = express.Router();
 router.get('/metrics', authenticateToken, async (req, res) => {
   try {
     // Check admin privileges
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       loggingService.logSecurity('Unauthorized session metrics access attempt', {
         userId: req.user.id,
         userRole: req.user.role,
@@ -103,7 +103,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     const { userId } = req.params;
 
     // Check admin privileges or self-access
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin' && req.user.id.toString() !== userId) {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && req.user.id.toString() !== userId) {
       loggingService.logSecurity('Unauthorized user sessions access attempt', {
         requesterId: req.user.id,
         requesterRole: req.user.role,
@@ -166,7 +166,7 @@ router.delete('/user/:userId/session/:sessionId', authenticateToken, async (req,
     const { reason } = req.body;
 
     // Check admin privileges
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       loggingService.logSecurity('Unauthorized session termination attempt', {
         requesterId: req.user.id,
         requesterRole: req.user.role,
@@ -233,7 +233,7 @@ router.delete('/user/:userId/all', authenticateToken, async (req, res) => {
     const { reason } = req.body;
 
     // Check admin privileges
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       loggingService.logSecurity('Unauthorized mass session termination attempt', {
         requesterId: req.user.id,
         requesterRole: req.user.role,
@@ -442,7 +442,7 @@ router.post('/current/extend', authenticateToken, async (req, res) => {
 router.post('/reset-metrics', authenticateToken, async (req, res) => {
   try {
     // Check admin privileges
-    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
       return errorResponse(res, 'Admin privileges required', 'FORBIDDEN', 403, null, req);
     }
 

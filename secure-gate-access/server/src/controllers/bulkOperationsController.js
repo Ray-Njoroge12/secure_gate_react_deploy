@@ -116,7 +116,7 @@ export const getOperationStatus = async (req, res) => {
     }
 
     // Check if user has access to this operation
-    if (operation.userId !== user.id && user.role !== 'admin') {
+    if (operation.userId !== user.id && user.role !== 'admin' && user.role !== 'super_admin') {
       return errorResponse(res, 'Access denied', 'ACCESS_DENIED', 403);
     }
 
@@ -143,7 +143,7 @@ export const getActiveOperations = async (req, res) => {
 
     // Filter operations based on user permissions
     const filteredOperations = operations.filter(op =>
-      op.userId === user.id || user.role === 'admin'
+      op.userId === user.id || user.role === 'admin' || user.role === 'super_admin'
     );
 
     successResponse(res, { operations: filteredOperations }, 'Active operations retrieved successfully');
@@ -343,7 +343,7 @@ export const getCompletionReport = async (req, res) => {
     }
 
     // Check if user has access to this operation
-    if (operation.userId !== user.id && user.role !== 'admin') {
+    if (operation.userId !== user.id && user.role !== 'admin' && user.role !== 'super_admin') {
       return errorResponse(res, 'Access denied', 'ACCESS_DENIED', 403);
     }
 

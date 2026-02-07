@@ -46,7 +46,7 @@ const getSnapPosition = (percentage, containerHeight) => {
  */
 const BottomSheetHandle = () => (
   <div className="flex items-center justify-center py-3">
-    <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
+    <div className="w-12 h-1.5 bg-gray-300 dark:bg-slate-600 rounded-full" />
   </div>
 );
 
@@ -292,7 +292,7 @@ const BottomSheet = ({
         aria-modal="true"
         aria-labelledby={title ? 'bottom-sheet-title' : undefined}
         className={`
-          absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 
+          absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 
           rounded-t-2xl shadow-2xl overflow-hidden
           ${isClosing ? 'translate-y-full' : ''}
           ${className}
@@ -314,7 +314,7 @@ const BottomSheet = ({
 
         {/* Header */}
         {(header || title) && (
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
             {title && (
               <div className="flex items-center justify-between">
                 <h2 
@@ -325,7 +325,7 @@ const BottomSheet = ({
                 </h2>
                 <button
                   onClick={handleClose}
-                  className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
                   aria-label="Close"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,7 +345,7 @@ const BottomSheet = ({
 
         {/* Footer */}
         {footer && (
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
             {footer}
           </div>
         )}

@@ -222,7 +222,7 @@ const Toast = ({
     >
       {/* Progress bar */}
       {progress && duration !== Infinity && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200/50 dark:bg-gray-700/50">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gray-200/50 dark:bg-slate-700/50">
           <div
             className={`h-full ${styles.progress} transition-all duration-100`}
             style={{ width: `${(remaining / duration) * 100}%` }}
@@ -270,7 +270,7 @@ const Toast = ({
           {/* Dismiss button */}
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            className="flex-shrink-0 p-1.5 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500"
             aria-label="Dismiss notification"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,7 +309,7 @@ const ToastContainer = ({ toasts, onDismiss, position = 'top-right', maxVisible 
     >
       {/* Hidden toast count indicator */}
       {hiddenCount > 0 && (
-        <div className="text-center text-sm text-gray-500 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-full px-3 py-1 shadow-sm self-center pointer-events-auto">
+        <div className="text-center text-sm text-gray-500 dark:text-gray-300 bg-white dark:bg-slate-800 rounded-full px-3 py-1 shadow-sm self-center pointer-events-auto">
           +{hiddenCount} more notification{hiddenCount > 1 ? 's' : ''}
         </div>
       )}

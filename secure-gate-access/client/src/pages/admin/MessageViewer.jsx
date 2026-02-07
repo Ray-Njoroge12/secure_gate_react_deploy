@@ -49,7 +49,7 @@ const MessageViewer = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Message Simulator</h1>
-                    <p className="text-gray-500 dark:text-gray-400">View locally captured SMS and Emails</p>
+                    <p className="text-gray-500 dark:text-gray-300">View locally captured SMS and Emails</p>
                 </div>
                 <div className="flex gap-2">
                     <Button onClick={fetchMessages} variant="outline" className="gap-2">
@@ -66,19 +66,19 @@ const MessageViewer = () => {
             <div className="flex gap-2 pb-4">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
                 >
                     All
                 </button>
                 <button
                     onClick={() => setFilter('sms')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'sms' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'sms' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
                 >
                     SMS
                 </button>
                 <button
                     onClick={() => setFilter('email')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}
                 >
                     Email
                 </button>
@@ -87,24 +87,24 @@ const MessageViewer = () => {
             <Card className="overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                        <thead className="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
                             <tr>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">To</th>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-1/2">Content</th>
-                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Time</th>
+                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">To</th>
+                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-1/2">Content</th>
+                                <th className="px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                             {filteredMessages.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                         No messages captured yet
                                     </td>
                                 </tr>
                             ) : (
                                 filteredMessages.map((msg) => (
-                                    <tr key={msg.id} className="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                                    <tr key={msg.id} className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${msg.type === 'sms'
                                                     ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
@@ -120,12 +120,12 @@ const MessageViewer = () => {
                                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 font-mono bg-gray-50/50 p-2 rounded">
                                             {msg.content}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             <div className="flex items-center gap-1">
                                                 <Clock className="w-3 h-3" />
                                                 {format(new Date(msg.timestamp), 'HH:mm:ss')}
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-0.5">
+                                            <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">
                                                 {format(new Date(msg.timestamp), 'MMM d')}
                                             </div>
                                         </td>

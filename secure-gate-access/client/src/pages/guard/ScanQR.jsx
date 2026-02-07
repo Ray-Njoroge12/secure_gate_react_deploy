@@ -295,7 +295,7 @@ const ScanQR = () => {
           <div className="flex items-center gap-2">
             {/* Offline indicator */}
             {!isOnline && (
-              <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+              <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs font-medium rounded-full">
                 <WifiOff className="w-3 h-3" />
                 Offline
               </span>
@@ -305,7 +305,7 @@ const ScanQR = () => {
               <button
                 onClick={handleSyncNow}
                 disabled={!isOnline}
-                className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full hover:bg-orange-200 disabled:opacity-50"
+                className="flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 text-xs font-medium rounded-full hover:bg-orange-200 dark:hover:bg-orange-900/40 disabled:opacity-50"
                 title={isOnline ? 'Click to sync now' : 'Go online to sync'}
               >
                 <CloudOff className="w-3 h-3" />
@@ -348,8 +348,8 @@ const ScanQR = () => {
             
             {isProcessing && (
               <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md flex items-center gap-3">
-                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                <span className="text-blue-700">Processing QR code...</span>
+                <Loader2 className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
+                <span className="text-blue-700 dark:text-blue-300">Processing QR code...</span>
               </div>
             )}
 
@@ -360,10 +360,10 @@ const ScanQR = () => {
                   data-testid="scan-result-card"
                   className={`border-2 ${
                     scannedData.status === 'success'
-                      ? 'border-green-400 bg-green-50'
+                      ? 'border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-900/20'
                       : scannedData.status === 'warning'
-                      ? 'border-yellow-400 bg-yellow-50'
-                      : 'border-red-400 bg-red-50'
+                      ? 'border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/20'
+                      : 'border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-900/20'
                   }`}>
                   <Card.Content className="p-4 md:p-6">
                     <div className="flex flex-col items-center">
@@ -386,7 +386,7 @@ const ScanQR = () => {
 
                       {/* Mode Indicator */}
                       {scannedData.mode === 'offline' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 mb-2 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 mb-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs font-medium rounded-full">
                           <WifiOff className="w-3 h-3" />
                           Offline Mode
                         </span>
@@ -394,7 +394,7 @@ const ScanQR = () => {
 
                       {/* Pending Sync Indicator */}
                       {scannedData.pendingSync && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 mb-2 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 mb-2 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 text-xs font-medium rounded-full">
                           <CloudOff className="w-3 h-3" />
                           Pending Sync
                         </span>
@@ -404,10 +404,10 @@ const ScanQR = () => {
                         data-testid="scan-result-status"
                         className={`text-xl font-bold mb-2 ${
                           scannedData.status === 'success'
-                            ? 'text-green-900'
+                            ? 'text-green-900 dark:text-green-300'
                             : scannedData.status === 'warning'
-                            ? 'text-yellow-900'
-                            : 'text-red-900'
+                            ? 'text-yellow-900 dark:text-yellow-300'
+                            : 'text-red-900 dark:text-red-300'
                         }`}>
                         {scannedData.status === 'success' 
                           ? (scannedData.pendingSync ? 'Check-In Queued' : 'Visitor Checked In')
@@ -420,17 +420,17 @@ const ScanQR = () => {
                         data-testid="scan-result-message"
                         className={`text-sm md:text-base mb-4 ${
                           scannedData.status === 'success'
-                            ? 'text-green-700'
+                            ? 'text-green-700 dark:text-green-400'
                             : scannedData.status === 'warning'
-                            ? 'text-yellow-700'
-                            : 'text-red-700'
+                            ? 'text-yellow-700 dark:text-yellow-400'
+                            : 'text-red-700 dark:text-red-400'
                         }`}>
                         {scannedData.message}
                       </p>
 
                       {/* Visitor Info Card */}
                       {scannedData.visitorInfo && (
-                        <div className="bg-white rounded-lg p-3 mb-4 w-full border border-gray-200">
+                        <div className="bg-white dark:bg-slate-800 rounded-lg p-3 mb-4 w-full border border-gray-200 dark:border-slate-700">
                           <p className="text-sm text-gray-600 dark:text-gray-200">
                             <span className="font-medium">Name:</span> {scannedData.visitorInfo.name || 'Unknown'}
                           </p>
@@ -482,7 +482,7 @@ const ScanQR = () => {
                       )}
                       
                       {scannedData.pendingSync && (
-                        <p className="text-xs text-gray-500 mt-3">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
                           This check-in will be synced automatically when you're back online
                         </p>
                       )}
@@ -520,8 +520,8 @@ const ScanQR = () => {
 
                 {!isScanning && (
                   <div className="space-y-4">
-                    <div className="w-32 h-32 mx-auto bg-gray-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-32 h-32 mx-auto bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                      <svg className="w-16 h-16 text-gray-400 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h4M4 8h4m0 0V4m0 4h12m0 0V4m0 4v4M4 16h4m0 0v4m0-4h12m0 0v4" />
                       </svg>
                     </div>

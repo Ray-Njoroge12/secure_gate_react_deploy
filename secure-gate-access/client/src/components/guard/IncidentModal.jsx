@@ -7,8 +7,10 @@
 import React, { useState } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { Button } from '../ui';
+import useModalAccessibility from '../../hooks/useModalAccessibility';
 
 const IncidentModal = ({ isOpen, onClose, visitor }) => {
+  const { modalRef } = useModalAccessibility(isOpen, onClose);
   const [formData, setFormData] = useState({
     category: '',
     severity: 'medium',
@@ -97,16 +99,16 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="incident-modal" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="incident-modal-title" role="dialog" aria-modal="true">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleClose}></div>
 
       {/* Modal */}
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <div ref={modalRef} tabIndex={-1} className="relative bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Log Incident</h2>
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+            <h2 id="incident-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">Log Incident</h2>
             <button
               onClick={handleClose}
               disabled={isSubmitting}
@@ -138,7 +140,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
 
             {/* Category Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Incident Category *
               </label>
               <div className="grid grid-cols-1 gap-2">
@@ -149,7 +151,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                       flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all
                       ${formData.category === cat.value 
                         ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
+                        : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600'
                       }
                     `}
                   >
@@ -172,7 +174,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
 
             {/* Severity Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Severity Level *
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -185,7 +187,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                       px-4 py-2 rounded-lg border-2 font-medium transition-all
                       ${formData.severity === level.value 
                         ? `${level.color} border-current` 
-                        : 'bg-gray-50 border-gray-200 text-gray-600 dark:text-gray-200 hover:border-gray-300'
+                        : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-200 hover:border-gray-300 dark:border-slate-600'
                       }
                     `}
                   >
@@ -197,7 +199,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Incident Description *
               </label>
               <textarea
@@ -205,7 +207,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe what happened in detail..."
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
               <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">

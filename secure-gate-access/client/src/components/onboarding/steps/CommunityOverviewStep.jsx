@@ -165,7 +165,7 @@ const CommunityOverviewStep = ({
           You're now part of a modern, secure community management system designed to make your life easier and safer. 
           Let's explore what you can do with your new resident account.
         </p>
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
           <span className="mr-2">👀</span>
           <span>Explore {completionThreshold} of {requiredSections} features to continue</span>
         </div>
@@ -188,7 +188,7 @@ const CommunityOverviewStep = ({
                   feature-card p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer
                   ${isViewed 
                     ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' 
-                    : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-600'
+                    : 'border-gray-200 dark:border-slate-700 bg-white dark:border-slate-700 dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600'
                   }
                 `}
                 onClick={() => handleSectionView(feature.id)}
@@ -212,7 +212,7 @@ const CommunityOverviewStep = ({
                       <h5 className="text-lg font-semibold text-gray-900 dark:text-white">
                         {feature.title}
                       </h5>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
                         {feature.description}
                       </p>
                     </div>
@@ -255,13 +255,13 @@ const CommunityOverviewStep = ({
       </div>
 
       {/* Progress Summary */}
-      <div className="progress-summary mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="progress-summary mt-8 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               Progress: {viewedSections.size} of {requiredSections} features explored
             </p>
-            <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+            <div className="w-64 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mt-2">
               <div
                 className="bg-green-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(viewedSections.size / requiredSections) * 100}%` }}

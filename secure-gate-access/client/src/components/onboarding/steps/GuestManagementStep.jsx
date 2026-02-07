@@ -180,7 +180,7 @@ const GuestManagementStep = ({
           Once you've invited guests, you'll want to track their visits, manage favorites, 
           and stay updated on their status. Let's explore the powerful guest management features.
         </p>
-        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
           <span className="mr-2">🔍</span>
           <span>Explore {completionThreshold} of {requiredFeatures} management features to continue</span>
         </div>
@@ -198,7 +198,7 @@ const GuestManagementStep = ({
                 feature-card p-6 rounded-lg border-2 transition-all duration-300
                 ${isExplored 
                   ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' 
-                  : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+                  : 'border-gray-200 dark:border-slate-700 bg-white dark:border-slate-700 dark:bg-slate-800'
                 }
               `}
             >
@@ -212,7 +212,7 @@ const GuestManagementStep = ({
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {feature.title}
                     </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       {feature.description}
                     </p>
                   </div>
@@ -237,11 +237,11 @@ const GuestManagementStep = ({
                 {feature.id === 'visitor-status' && (
                   <div className="status-demo space-y-2">
                     {feature.content.statuses.map((status, index) => (
-                      <div key={status.status} className="flex items-center p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                      <div key={status.status} className="flex items-center p-2 bg-gray-50 dark:bg-slate-900 rounded">
                         <div className={`w-3 h-3 rounded-full mr-3 bg-${status.color}-500`}></div>
                         <div className="flex-1">
                           <span className="font-medium text-gray-900 dark:text-white">{status.status}</span>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">{status.description}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">{status.description}</p>
                         </div>
                       </div>
                     ))}
@@ -252,7 +252,7 @@ const GuestManagementStep = ({
                   <div className="favorites-demo">
                     <div className="mb-3">
                       <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Benefits:</h5>
-                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                         {feature.content.benefits.map((benefit, index) => (
                           <li key={index} className="flex items-center">
                             <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
@@ -265,9 +265,9 @@ const GuestManagementStep = ({
                       <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Example Favorites:</h5>
                       <div className="space-y-2">
                         {feature.content.examples.map((example, index) => (
-                          <div key={index} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-900 rounded text-sm">
+                          <div key={index} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-slate-900 rounded text-sm">
                             <span className="font-medium text-gray-900 dark:text-white">{example.name}</span>
-                            <span className="text-gray-600 dark:text-gray-400">{example.visits} visits</span>
+                            <span className="text-gray-600 dark:text-gray-300">{example.visits} visits</span>
                           </div>
                         ))}
                       </div>
@@ -279,7 +279,7 @@ const GuestManagementStep = ({
                   <div className="history-demo">
                     <div className="mb-3">
                       <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Available Features:</h5>
-                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                         {feature.content.features.map((featureItem, index) => (
                           <li key={index} className="flex items-center">
                             <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mr-2"></span>
@@ -290,7 +290,7 @@ const GuestManagementStep = ({
                     </div>
                     <div>
                       <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Your Insights:</h5>
-                      <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                         {feature.content.insights.map((insight, index) => (
                           <div key={index} className="flex items-center">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
@@ -308,11 +308,11 @@ const GuestManagementStep = ({
                       <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Notification Types:</h5>
                       <div className="space-y-2">
                         {feature.content.options.map((option, index) => (
-                          <div key={index} className="flex items-start p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                          <div key={index} className="flex items-start p-2 bg-gray-50 dark:bg-slate-900 rounded">
                             <input type="checkbox" className="mt-1 mr-3" defaultChecked={index < 2} />
                             <div>
                               <span className="font-medium text-gray-900 dark:text-white">{option.type}</span>
-                              <p className="text-xs text-gray-600 dark:text-gray-400">{option.description}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300">{option.description}</p>
                             </div>
                           </div>
                         ))}
@@ -320,7 +320,7 @@ const GuestManagementStep = ({
                     </div>
                     <div>
                       <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Notification Events:</h5>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                         {feature.content.events.map((event, index) => (
                           <div key={index} className="flex items-center">
                             <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></span>
@@ -354,13 +354,13 @@ const GuestManagementStep = ({
       </div>
 
       {/* Progress Summary */}
-      <div className="progress-summary mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="progress-summary mt-8 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               Exploration Progress: {exploredFeatures.size} of {requiredFeatures} features explored
             </p>
-            <div className="w-64 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+            <div className="w-64 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mt-2">
               <div
                 className="bg-purple-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(exploredFeatures.size / requiredFeatures) * 100}%` }}

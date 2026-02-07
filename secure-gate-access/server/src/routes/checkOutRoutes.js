@@ -20,12 +20,12 @@ const attachRequestAudit = auditLoggerFactory();
  * Check out visitor by QR code
  * POST /api/check-out/qr
  */
-router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/qr', authenticateToken, authorize(['guard', 'admin', 'super_admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { qrCode, notes } = req.body;
   const guardId = req.user.id;
 
   // GUARD-003 FIX: Validate that user is actually a guard or admin
-  if (!['guard', 'admin'].includes(req.user.role)) {
+  if (!['guard', 'admin', 'super_admin'].includes(req.user.role)) {
     throw new AppError('Only guards and admins can perform check-out operations', 403, 'UNAUTHORIZED_ROLE');
   }
 
@@ -89,7 +89,7 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin']), attachReque
  * Check out a visitor by ID
  * POST /api/check-out/:visitorId
  */
-router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), attachRequestAudit, asyncHandler(async (req, res) => {
+router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin', 'super_admin']), attachRequestAudit, asyncHandler(async (req, res) => {
   const { visitorId } = req.params;
   const guardId = req.user.id;
   const { notes } = req.body;
@@ -143,7 +143,7 @@ router.post('/:visitorId', authenticateToken, authorize(['guard', 'admin']), att
  * Get today's check-outs
  * GET /api/check-out/today
  */
-router.get('/today', authenticateToken, authorize(['guard', 'admin']), minimizeData('check-out'), asyncHandler(async (req, res) => {
+router.get('/today', authenticateToken, authorize(['guard', 'admin', 'super_admin']), minimizeData('check-out'), asyncHandler(async (req, res) => {
   // SECURITY: Filter by estate_id
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
@@ -162,7 +162,7 @@ router.get('/today', authenticateToken, authorize(['guard', 'admin']), minimizeD
  * Get currently checked-in visitors (for check-out)
  * GET /api/check-out/active
  */
-router.get('/active', authenticateToken, authorize(['guard', 'admin']), minimizeData('check-out'), asyncHandler(async (req, res) => {
+router.get('/active', authenticateToken, authorize(['guard', 'admin', 'super_admin']), minimizeData('check-out'), asyncHandler(async (req, res) => {
   // SECURITY: Filter by estate_id
   const result = await dbManager.query(
     `SELECT v.*, u.username as resident_name
