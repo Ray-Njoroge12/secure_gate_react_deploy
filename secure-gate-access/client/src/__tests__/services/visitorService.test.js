@@ -83,12 +83,12 @@ describe('visitorService', () => {
     expect(http.get).toHaveBeenNthCalledWith(2, '/api/public/invites/code1');
   });
 
-  test('verifyOtp posts email and otp', async () => {
+  test('verifyOtp posts visitor id and otp', async () => {
     http.post.mockResolvedValueOnce({ ok: true });
 
-    const res = await visitorService.verifyOtp('a@b.com', '123456');
+    const res = await visitorService.verifyOtp('visitor-123', '123456');
 
-    expect(http.post).toHaveBeenCalledWith('/api/verify-otp', { email: 'a@b.com', otp: '123456' });
+    expect(http.post).toHaveBeenCalledWith('/api/visitors/visitor-123/verify-otp', { otp: '123456' });
     expect(res).toEqual({ ok: true });
   });
 

@@ -194,7 +194,7 @@ const ProgressiveLoading = ({
     if (currentPhase === LOADING_PHASES.COMPLETE) return null;
 
     const config = PHASE_CONFIG[currentPhase];
-    const progress = (completedPhases.size / phases.length) * 100;
+    const progress = phases.length > 0 ? (completedPhases.size / phases.length) * 100 : 0;
 
     return (
       <div className="mb-4">

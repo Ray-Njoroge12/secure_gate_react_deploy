@@ -6,7 +6,8 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import { Filter, X, Search, SortAsc, SortDesc } from '../icons';
+import Icon from './Icon';
+import Button from './Button';
 import SearchBar from './SearchBar';
 import FilterPanel from './FilterPanel';
 import { useSearch } from '../../hooks/useSearch';
@@ -138,13 +139,15 @@ const SearchFilter = memo(({
         
         {/* Clear All Button */}
         {(searchState.searchTerm || activeFiltersCount > 0) && (
-          <button
+          <Button
             onClick={handleClearAll}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-1/2 -translate-y-1/2 !p-1 !h-auto !min-h-0 text-gray-400 dark:text-slate-400"
             aria-label="Clear all search and filters"
           >
-            <X className="w-4 h-4" />
-          </button>
+            <Icon name="x" className="w-4 h-4" />
+          </Button>
         )}
       </div>
 
@@ -168,26 +171,28 @@ const SearchFilter = memo(({
           {/* Sort Button */}
           {enableSorting && sortableFields.length > 0 && (
             <div className="relative">
-              <button
+              <Button
                 onClick={() => setShowSortOptions(!showSortOptions)}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg transition-colors"
+                variant="secondary"
+                size="sm"
+                className="!h-auto !min-h-0 !px-3 !py-2 !text-sm"
               >
                 {searchState.sortField ? (
                   <>
                     {searchState.sortDirection === 'asc' ? (
-                      <SortAsc className="w-4 h-4" />
+                      <Icon name="sort-asc" className="w-4 h-4" />
                     ) : (
-                      <SortDesc className="w-4 h-4" />
+                      <Icon name="sort-desc" className="w-4 h-4" />
                     )}
                     {sortableFields.find(f => f.key === searchState.sortField)?.label || 'Sort'}
                   </>
                 ) : (
                   <>
-                    <SortAsc className="w-4 h-4" />
+                    <Icon name="sort-asc" className="w-4 h-4" />
                     Sort
                   </>
                 )}
-              </button>
+              </Button>
 
               {showSortOptions && (
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg z-50">
@@ -195,44 +200,50 @@ const SearchFilter = memo(({
                     <div className="text-xs font-medium text-gray-600 dark:text-slate-400 mb-2 px-2">Sort by</div>
                     {sortableFields.map((field) => (
                       <div key={field.key} className="space-y-1">
-                        <button
+                        <Button
                           onClick={() => handleSortChange(field.key, 'asc')}
-                          className={`w-full text-left px-2 py-1 text-sm rounded ${
+                          variant="ghost"
+                          size="sm"
+                          className={`!w-full !text-left !px-2 !py-1 !text-sm !h-auto !min-h-0 !rounded ${
                             searchState.sortField === field.key && searchState.sortDirection === 'asc'
-                              ? 'bg-brand-500 text-white'
-                              : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700'
+                              ? '!bg-brand-500 !text-white'
+                              : 'text-gray-700 dark:text-slate-200'
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <SortAsc className="w-3 h-3" />
+                            <Icon name="sort-asc" className="w-3 h-3" />
                             {field.label} (A-Z)
                           </div>
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleSortChange(field.key, 'desc')}
-                          className={`w-full text-left px-2 py-1 text-sm rounded ${
+                          variant="ghost"
+                          size="sm"
+                          className={`!w-full !text-left !px-2 !py-1 !text-sm !h-auto !min-h-0 !rounded ${
                             searchState.sortField === field.key && searchState.sortDirection === 'desc'
-                              ? 'bg-brand-500 text-white'
-                              : 'text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700'
+                              ? '!bg-brand-500 !text-white'
+                              : 'text-gray-700 dark:text-slate-200'
                           }`}
                         >
                           <div className="flex items-center gap-2">
-                            <SortDesc className="w-3 h-3" />
+                            <Icon name="sort-desc" className="w-3 h-3" />
                             {field.label} (Z-A)
                           </div>
-                        </button>
+                        </Button>
                       </div>
                     ))}
                     {searchState.sortField && (
-                      <button
+                      <Button
                         onClick={() => {
                           updateSort('', 'asc');
                           setShowSortOptions(false);
                         }}
-                        className="w-full text-left px-2 py-1 text-sm text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 mt-2 pt-2 border-t border-gray-200 dark:border-slate-600"
+                        variant="ghost"
+                        size="sm"
+                        className="!w-full !text-left !px-2 !py-1 !text-sm !h-auto !min-h-0 text-gray-600 dark:text-slate-400 mt-2 pt-2 border-t border-gray-200 dark:border-slate-600"
                       >
                         Clear Sort
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -241,22 +252,20 @@ const SearchFilter = memo(({
           )}
 
           {/* Filter Toggle Button */}
-          <button
+          <Button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-              showFilters || activeFiltersCount > 0
-                ? 'bg-brand-500 text-white'
-                : 'bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200'
-            }`}
+            variant={showFilters || activeFiltersCount > 0 ? 'primary' : 'secondary'}
+            size="sm"
+            className="!h-auto !min-h-0 !px-3 !py-2 !text-sm"
+            icon={<Icon name="filter" className="w-4 h-4" />}
           >
-            <Filter className="w-4 h-4" />
             Filters
             {activeFiltersCount > 0 && (
               <span className="px-1.5 py-0.5 text-xs bg-white bg-opacity-20 rounded-full">
                 {activeFiltersCount}
               </span>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -313,17 +322,19 @@ const SearchFilter = memo(({
               >
                 <span className="font-medium">{label}:</span>
                 <span>{displayValue}</span>
-                <button
+                <Button
                   onClick={() => {
                     const newFilters = { ...searchState.filters };
                     delete newFilters[key];
                     handleFilterChange(newFilters);
                   }}
-                  className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200"
+                  variant="ghost"
+                  size="sm"
+                  className="!p-0 !h-auto !min-h-0 text-gray-600 dark:text-slate-400"
                   aria-label={`Remove ${label} filter`}
                 >
-                  <X className="w-3 h-3" />
-                </button>
+                  <Icon name="x" className="w-3 h-3" />
+                </Button>
               </div>
             );
           })}

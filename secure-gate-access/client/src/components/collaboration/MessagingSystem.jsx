@@ -4,6 +4,7 @@ import { collaborationService } from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import './MessagingSystem.css';
+import Button from '../ui/Button';
 
 const MessagingSystem = ({ className = '' }) => {
   const { user } = useAuth();
@@ -108,12 +109,12 @@ const MessagingSystem = ({ className = '' }) => {
         <div className="error-message">
           <h3>Unable to load messages</h3>
           <p>{messagesError.message}</p>
-          <button 
+          <Button 
             onClick={() => queryClient.invalidateQueries(['messages'])}
             className="retry-button"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -123,18 +124,18 @@ const MessagingSystem = ({ className = '' }) => {
     <div className={`messaging-system ${className}`}>
       <div className="messaging-header">
         <h2>Messages</h2>
-        <button 
+        <Button 
           onClick={handleCompose}
           className="compose-button primary"
           disabled={sendMessageMutation.isPending}
         >
           <span className="icon">✉️</span>
           Compose
-        </button>
+        </Button>
       </div>
 
       <div className="messaging-tabs">
-        <button
+        <Button
           className={`tab ${activeTab === 'inbox' ? 'active' : ''}`}
           onClick={() => handleTabChange('inbox')}
         >
@@ -144,19 +145,19 @@ const MessagingSystem = ({ className = '' }) => {
               {messages.filter(m => m.recipient_id === user.id && m.status !== 'read').length}
             </span>
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'sent' ? 'active' : ''}`}
           onClick={() => handleTabChange('sent')}
         >
           Sent
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => handleTabChange('all')}
         >
           All Messages
-        </button>
+        </Button>
       </div>
 
       <div className="messaging-content">
@@ -231,10 +232,21 @@ const MessageItem = ({ message, currentUser, isSelected, onClick, onReply }) => 
   const displayName = isReceived ? message.sender_username : message.recipient_username;
   const displayRole = isReceived ? message.sender_role : message.recipient_role;
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div 
       className={`message-item ${isSelected ? 'selected' : ''} ${isUnread ? 'unread' : ''}`}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-pressed={isSelected}
     >
       <div className="message-avatar">
         <div className={`avatar ${displayRole}`}>
@@ -268,7 +280,7 @@ const MessageItem = ({ message, currentUser, isSelected, onClick, onReply }) => 
 
       <div className="message-actions">
         {isUnread && <div className="unread-indicator"></div>}
-        <button
+        <Button
           className="reply-button"
           onClick={(e) => {
             e.stopPropagation();
@@ -277,7 +289,7 @@ const MessageItem = ({ message, currentUser, isSelected, onClick, onReply }) => 
           title="Reply"
         >
           ↩️
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -309,12 +321,12 @@ const MessageDetail = ({ message, currentUser, onReply }) => {
         </div>
         
         <div className="message-actions">
-          <button
+          <Button
             onClick={onReply}
             className="reply-button primary"
           >
             Reply
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -402,7 +414,7 @@ const ComposeMessage = ({ replyTo, onSend, onCancel, isLoading }) => {
     <div className="compose-message">
       <div className="compose-header">
         <h3>{replyTo ? 'Reply to Message' : 'Compose New Message'}</h3>
-        <button onClick={onCancel} className="close-button">×</button>
+        <Button onClick={onCancel} className="close-button" aria-label="Close">×</Button>
       </div>
 
       <form onSubmit={handleSubmit} className="compose-form">
@@ -480,21 +492,21 @@ const ComposeMessage = ({ replyTo, onSend, onCancel, isLoading }) => {
         </div>
 
         <div className="form-actions">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             className="cancel-button"
             disabled={isLoading}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             className="send-button primary"
             disabled={isLoading}
           >
             {isLoading ? 'Sending...' : 'Send Message'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

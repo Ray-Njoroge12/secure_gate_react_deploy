@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import Button from '../../components/ui/Button';
+import { COLORS } from '../../utils/designTokens';
 import './IncidentDetailModal.css';
 
 const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
@@ -137,17 +139,17 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
   const getSeverityColor = (severity) => {
     const colors = {
-      critical: '#991b1b',
-      high: '#9a3412',
-      medium: '#92400e',
-      low: '#065f46'
+      critical: COLORS.errorDark,
+      high: COLORS.orange,
+      medium: COLORS.warningDark,
+      low: COLORS.success
     };
-    return colors[severity] || '#6b7280';
+    return colors[severity] || COLORS.gray500;
   };
 
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="incident-detail-title">
-      <div className="incident-detail-modal" ref={modalRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+      <div role="document" className="incident-detail-modal" ref={modalRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="modal-header">
           <div className="header-content">
@@ -162,35 +164,47 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
               <span className="status-badge">{incident.status.replace('_', ' ')}</span>
             </div>
           </div>
-          <button className="modal-close" onClick={onClose} aria-label="Close incident details">×</button>
+          <Button variant="ghost" className="modal-close" onClick={onClose} aria-label="Close incident details">×</Button>
         </div>
 
         {/* Tabs */}
-        <div className="modal-tabs">
-          <button 
+        <div className="modal-tabs" role="tablist" aria-label="Incident sections">
+          <Button 
+            variant="ghost"
             className={`tab ${activeTab === 'details' ? 'active' : ''}`}
             onClick={() => setActiveTab('details')}
+            role="tab"
+            aria-selected={activeTab === 'details'}
           >
             Details
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="ghost"
             className={`tab ${activeTab === 'comments' ? 'active' : ''}`}
             onClick={() => setActiveTab('comments')}
+            role="tab"
+            aria-selected={activeTab === 'comments'}
           >
             Comments ({comments.length})
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="ghost"
             className={`tab ${activeTab === 'history' ? 'active' : ''}`}
             onClick={() => setActiveTab('history')}
+            role="tab"
+            aria-selected={activeTab === 'history'}
           >
             History
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="ghost"
             className={`tab ${activeTab === 'sla' ? 'active' : ''}`}
             onClick={() => setActiveTab('sla')}
+            role="tab"
+            aria-selected={activeTab === 'sla'}
           >
             SLA
-          </button>
+          </Button>
         </div>
 
         {/* Modal Body */}
@@ -257,38 +271,38 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
                     )}
 
                     {incident.status === 'open' && (
-                      <button 
+                      <Button 
                         className="btn-primary"
                         onClick={() => handleStatusChange('under_review')}
                       >
                         Start Review
-                      </button>
+                      </Button>
                     )}
 
                     {incident.status === 'under_review' && (
                       <>
-                        <button 
+                        <Button 
                           className="btn-warning"
                           onClick={() => handleStatusChange('escalated')}
                         >
                           Escalate
-                        </button>
-                        <button 
+                        </Button>
+                        <Button 
                           className="btn-success"
                           onClick={() => handleStatusChange('closed')}
                         >
                           Close Incident
-                        </button>
+                        </Button>
                       </>
                     )}
 
                     {incident.status === 'escalated' && (
-                      <button 
+                      <Button 
                         className="btn-success"
                         onClick={() => handleStatusChange('closed')}
                       >
                         Resolve
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -306,13 +320,13 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
                   placeholder="Add a comment..."
                   rows="3"
                 />
-                <button 
+                <Button 
                   type="submit" 
                   className="btn-primary"
                   disabled={submittingComment || !newComment.trim()}
                 >
                   {submittingComment ? 'Adding...' : 'Add Comment'}
-                </button>
+                </Button>
               </form>
 
               <div className="comments-list">
@@ -369,7 +383,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
                       <div className="sla-bar">
                         <div 
                           className={`sla-fill ${slaInfo.response_sla_met ? 'success' : 'danger'}`}
-                          style={{ width: `${Math.min((slaInfo.response_minutes / slaInfo.response_sla_minutes) * 100, 100)}%` }}
+                          style={{ width: `${Math.min(((slaInfo.response_minutes || 0) / Math.max(1, slaInfo.response_sla_minutes)) * 100, 100)}%` }}
                         ></div>
                       </div>
                       <div className="sla-details">
@@ -388,7 +402,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
                       <div className="sla-bar">
                         <div 
                           className={`sla-fill ${slaInfo.resolution_sla_met ? 'success' : 'danger'}`}
-                          style={{ width: `${Math.min((slaInfo.resolution_minutes / slaInfo.resolution_sla_minutes) * 100, 100)}%` }}
+                          style={{ width: `${Math.min(((slaInfo.resolution_minutes || 0) / Math.max(1, slaInfo.resolution_sla_minutes)) * 100, 100)}%` }}
                         ></div>
                       </div>
                       <div className="sla-details">

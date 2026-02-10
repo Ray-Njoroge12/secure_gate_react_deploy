@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useState, useRef, useEffect, useCallback } from 'react';
-import { Search, X, Clock, Star, ChevronDown } from '../icons';
+import Icon from './Icon';
 import { useSearchSuggestions, useSavedSearches } from '../../hooks/useSearch';
 import { searchUtils } from '../../utils/searchUtils';
 
@@ -242,6 +242,9 @@ const SearchBar = memo(({
     <div
       key={`suggestion-${index}`}
       ref={el => suggestionRefs.current[index] = el}
+      role="option"
+      tabIndex={0}
+      aria-selected={highlightedIndex === index}
       className={`px-4 py-2 cursor-pointer text-sm text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 ${
         highlightedIndex === index ? 'bg-gray-100 dark:bg-slate-700' : ''
       }`}
@@ -249,9 +252,10 @@ const SearchBar = memo(({
         onChange(suggestion);
         handleSearch(suggestion);
       }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(suggestion); handleSearch(suggestion); } }}
     >
       <div className="flex items-center gap-2">
-        <Search className="w-4 h-4 text-gray-400 dark:text-slate-400" />
+        <Icon name="search" className="w-4 h-4 text-gray-400 dark:text-slate-400" />
         <span>{suggestion}</span>
       </div>
     </div>
@@ -262,6 +266,9 @@ const SearchBar = memo(({
     <div
       key={`history-${index}`}
       ref={el => suggestionRefs.current[index] = el}
+      role="option"
+      tabIndex={0}
+      aria-selected={highlightedIndex === index}
       className={`px-4 py-2 cursor-pointer text-sm text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 ${
         highlightedIndex === index ? 'bg-gray-100 dark:bg-slate-700' : ''
       }`}
@@ -269,9 +276,10 @@ const SearchBar = memo(({
         onChange(historyItem);
         handleSearch(historyItem);
       }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(historyItem); handleSearch(historyItem); } }}
     >
       <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-gray-400 dark:text-slate-400" />
+        <Icon name="clock" className="w-4 h-4 text-gray-400 dark:text-slate-400" />
         <span>{historyItem}</span>
       </div>
     </div>
@@ -282,14 +290,18 @@ const SearchBar = memo(({
     <div
       key={`saved-${savedSearch.id}`}
       ref={el => suggestionRefs.current[index] = el}
+      role="option"
+      tabIndex={0}
+      aria-selected={highlightedIndex === index}
       className={`px-4 py-2 cursor-pointer text-sm text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 ${
         highlightedIndex === index ? 'bg-gray-100 dark:bg-slate-700' : ''
       }`}
       onClick={() => loadSavedSearch(savedSearch)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadSavedSearch(savedSearch); } }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Star className="w-4 h-4 text-yellow-400" />
+          <Icon name="star" className="w-4 h-4 text-yellow-400" />
           <span>{savedSearch.name}</span>
         </div>
         <button
@@ -300,7 +312,7 @@ const SearchBar = memo(({
           className="text-gray-400 dark:text-slate-400 hover:text-red-400"
           aria-label={`Delete saved search: ${savedSearch.name}`}
         >
-          <X className="w-3 h-3" />
+          <Icon name="x" className="w-3 h-3" />
         </button>
       </div>
     </div>
@@ -318,7 +330,7 @@ const SearchBar = memo(({
     if (!hasContent) {
       return (
         <div className="px-4 py-8 text-center text-gray-500 dark:text-slate-400">
-          <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <Icon name="search" className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No {activeTab} available</p>
         </div>
       );
@@ -338,7 +350,7 @@ const SearchBar = memo(({
       {/* Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="w-4 h-4 text-gray-400 dark:text-slate-400" />
+          <Icon name="search" className="w-4 h-4 text-gray-400 dark:text-slate-400" />
         </div>
         <input
           ref={inputRef}
@@ -369,7 +381,7 @@ const SearchBar = memo(({
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200"
             aria-label="Clear search"
           >
-            <X className="w-4 h-4" />
+            <Icon name="x" className="w-4 h-4" />
           </button>
         )}
       </div>

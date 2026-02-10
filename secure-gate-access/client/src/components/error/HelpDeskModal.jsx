@@ -6,7 +6,8 @@
 
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, Mail, Phone, MessageCircle, FileText, Copy, Check } from 'lucide-react';
+import Icon from '../ui/Icon';
+import Button from '../ui/Button';
 import './HelpDeskModal.css';
 
 const HelpDeskModal = ({
@@ -103,8 +104,8 @@ const HelpDeskModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="help-desk-modal-overlay" onClick={onClose}>
-      <div 
+    <div className="help-desk-modal-overlay" onClick={onClose} role="presentation" aria-hidden="true" tabIndex={-1} onKeyDown={e => e.stopPropagation()}>
+      <div
         className={`help-desk-modal ${className}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -115,35 +116,49 @@ const HelpDeskModal = ({
           <h2 id="help-desk-title" className="help-desk-modal__title">
             Get Help & Support
           </h2>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             className="help-desk-modal__close"
             onClick={onClose}
             aria-label="Close help desk modal"
           >
-            <X className="w-5 h-5" />
-          </button>
+            <Icon name="x" className="w-5 h-5" aria-hidden="true" />
+          </Button>
         </div>
 
-        <div className="help-desk-modal__tabs">
-          <button
+        <div className="help-desk-modal__tabs" role="tablist">
+          <Button
+            variant={activeTab === 'contact' ? 'primary' : 'ghost'}
+            size="sm"
             className={`help-desk-modal__tab ${activeTab === 'contact' ? 'help-desk-modal__tab--active' : ''}`}
             onClick={() => setActiveTab('contact')}
+            role="tab"
+            aria-selected={activeTab === 'contact'}
           >
             Contact Options
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={activeTab === 'form' ? 'primary' : 'ghost'}
+            size="sm"
             className={`help-desk-modal__tab ${activeTab === 'form' ? 'help-desk-modal__tab--active' : ''}`}
             onClick={() => setActiveTab('form')}
+            role="tab"
+            aria-selected={activeTab === 'form'}
           >
             Report Issue
-          </button>
+          </Button>
           {error && (
-            <button
+            <Button
+              variant={activeTab === 'error' ? 'primary' : 'ghost'}
+              size="sm"
               className={`help-desk-modal__tab ${activeTab === 'error' ? 'help-desk-modal__tab--active' : ''}`}
               onClick={() => setActiveTab('error')}
+              role="tab"
+              aria-selected={activeTab === 'error'}
             >
               Error Details
-            </button>
+            </Button>
           )}
         </div>
 
@@ -151,9 +166,9 @@ const HelpDeskModal = ({
           {activeTab === 'contact' && (
             <div className="help-desk-modal__contact">
               <div className="help-desk-modal__contact-grid">
-                <div className="help-desk-modal__contact-option" onClick={handleEmailSupport}>
+                <div role="button" tabIndex={0} className="help-desk-modal__contact-option" onClick={handleEmailSupport} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleEmailSupport(); } }} aria-label="Contact via email support">
                   <div className="help-desk-modal__contact-icon">
-                    <Mail className="w-6 h-6" />
+                    <Icon name="mail" className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <div className="help-desk-modal__contact-info">
                     <h3>Email Support</h3>
@@ -164,9 +179,9 @@ const HelpDeskModal = ({
                   </div>
                 </div>
 
-                <div className="help-desk-modal__contact-option" onClick={handlePhoneSupport}>
+                <div role="button" tabIndex={0} className="help-desk-modal__contact-option" onClick={handlePhoneSupport} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePhoneSupport(); } }} aria-label="Contact via phone support">
                   <div className="help-desk-modal__contact-icon">
-                    <Phone className="w-6 h-6" />
+                    <Icon name="phone" className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <div className="help-desk-modal__contact-info">
                     <h3>Phone Support</h3>
@@ -177,9 +192,9 @@ const HelpDeskModal = ({
                   </div>
                 </div>
 
-                <div className="help-desk-modal__contact-option" onClick={handleChatSupport}>
+                <div role="button" tabIndex={0} className="help-desk-modal__contact-option" onClick={handleChatSupport} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChatSupport(); } }} aria-label="Contact via live chat">
                   <div className="help-desk-modal__contact-icon">
-                    <MessageCircle className="w-6 h-6" />
+                    <Icon name="message-circle" className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <div className="help-desk-modal__contact-info">
                     <h3>Live Chat</h3>
@@ -190,9 +205,9 @@ const HelpDeskModal = ({
                   </div>
                 </div>
 
-                <div className="help-desk-modal__contact-option" onClick={handleTicketSupport}>
+                <div role="button" tabIndex={0} className="help-desk-modal__contact-option" onClick={handleTicketSupport} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTicketSupport(); } }} aria-label="Create a support ticket">
                   <div className="help-desk-modal__contact-icon">
-                    <FileText className="w-6 h-6" />
+                    <Icon name="file-text" className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <div className="help-desk-modal__contact-info">
                     <h3>Support Ticket</h3>
@@ -276,12 +291,12 @@ const HelpDeskModal = ({
               </div>
 
               <div className="help-desk-modal__form-actions">
-                <button type="button" onClick={onClose} className="help-desk-modal__button--secondary">
+                <Button type="button" variant="secondary" onClick={onClose}>
                   Cancel
-                </button>
-                <button type="submit" className="help-desk-modal__button--primary">
+                </Button>
+                <Button type="submit" variant="primary">
                   Send via Email
-                </button>
+                </Button>
               </div>
             </form>
           )}
@@ -307,14 +322,16 @@ const HelpDeskModal = ({
               <div className="help-desk-modal__error-details">
                 <div className="help-desk-modal__error-header">
                   <h4>Technical Details</h4>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="help-desk-modal__copy-button"
                     onClick={handleCopyErrorDetails}
                     title="Copy error details to clipboard"
                   >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? <Icon name="check" className="w-4 h-4" aria-hidden="true" /> : <Icon name="copy" className="w-4 h-4" aria-hidden="true" />}
                     {copied ? 'Copied!' : 'Copy'}
-                  </button>
+                  </Button>
                 </div>
                 <pre className="help-desk-modal__error-code">
                   {JSON.stringify({
@@ -330,12 +347,12 @@ const HelpDeskModal = ({
 
               <div className="help-desk-modal__error-actions">
                 <p>Include these details when contacting support for faster resolution.</p>
-                <button
-                  className="help-desk-modal__button--primary"
+                <Button
+                  variant="primary"
                   onClick={handleEmailSupport}
                 >
                   Email Support with Error Details
-                </button>
+                </Button>
               </div>
             </div>
           )}

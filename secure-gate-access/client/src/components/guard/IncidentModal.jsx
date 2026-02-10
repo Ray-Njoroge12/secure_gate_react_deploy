@@ -5,8 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, AlertCircle } from 'lucide-react';
-import { Button } from '../ui';
+import { Button, Icon } from '../ui';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 
 const IncidentModal = ({ isOpen, onClose, visitor }) => {
@@ -29,10 +28,10 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
   ];
 
   const severityLevels = [
-    { value: 'low', label: 'Low', color: 'text-green-600 bg-green-50 border-green-200' },
-    { value: 'medium', label: 'Medium', color: 'text-yellow-600 bg-yellow-50 border-yellow-200' },
-    { value: 'high', label: 'High', color: 'text-orange-600 bg-orange-50 border-orange-200' },
-    { value: 'critical', label: 'Critical', color: 'text-red-600 bg-red-50 border-red-200' }
+    { value: 'low', label: 'Low', color: 'text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' },
+    { value: 'medium', label: 'Medium', color: 'text-yellow-600 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' },
+    { value: 'high', label: 'High', color: 'text-orange-600 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' },
+    { value: 'critical', label: 'Critical', color: 'text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' }
   ];
 
   const handleSubmit = async (e) => {
@@ -99,143 +98,125 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="incident-modal-title" role="dialog" aria-modal="true">
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={handleClose}></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div 
+        ref={modalRef}
+        className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700"
+        role="dialog"
+        aria-labelledby="incident-modal-title"
+        aria-modal="true"
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+          <h2 id="incident-modal-title" className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Icon name="AlertCircle" className="w-5 h-5 text-red-600" />
+            Report Incident
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <Icon name="X" className="w-5 h-5" />
+          </Button>
+        </div>
 
-      {/* Modal */}
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div ref={modalRef} tabIndex={-1} className="relative bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 id="incident-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">Log Incident</h2>
-            <button
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="text-gray-400 hover:text-gray-600 dark:text-gray-200 transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-3 rounded-lg text-sm border border-red-200 dark:border-red-800 flex items-center gap-2">
+              <Icon name="AlertCircle" className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Incident Category *
+            </label>
+            <div className="grid grid-cols-1 gap-2">
+              {categories.map(cat => (
+                <label
+                  key={cat.value}
+                  className={`
+                    flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all
+                    ${formData.category === cat.value 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500'
+                    }
+                  `}
+                >
+                  <input
+                    type="radio"
+                    name="category"
+                    value={cat.value}
+                    checked={formData.category === cat.value}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="mt-1 mr-3"
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">{cat.label}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-200 mt-0.5">{cat.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Visitor Info */}
-            {visitor && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="text-sm font-medium text-blue-900">Incident Related To:</div>
-                <div className="text-sm text-blue-700 mt-1">
-                  {visitor.name} {visitor.phone && `• ${visitor.phone}`}
-                </div>
-              </div>
-            )}
-
-            {/* Error Alert */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-800">{error}</div>
-              </div>
-            )}
-
-            {/* Category Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Incident Category *
-              </label>
-              <div className="grid grid-cols-1 gap-2">
-                {categories.map(cat => (
-                  <label
-                    key={cat.value}
-                    className={`
-                      flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all
-                      ${formData.category === cat.value 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600'
-                      }
-                    `}
-                  >
-                    <input
-                      type="radio"
-                      name="category"
-                      value={cat.value}
-                      checked={formData.category === cat.value}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="mt-1 mr-3"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-white">{cat.label}</div>
-                      <div className="text-xs text-gray-600 dark:text-gray-200 mt-0.5">{cat.description}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Severity Level *
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {severityLevels.map(level => (
+                <Button
+                  key={level.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, severity: level.value })}
+                  className={`
+                    px-4 py-2 rounded-lg border-2 font-medium transition-all
+                    ${formData.severity === level.value 
+                      ? `${level.color} border-current` 
+                      : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-200 hover:border-gray-300 dark:hover:border-slate-500'
+                    }
+                  `}
+                >
+                  {level.label}
+                </Button>
+              ))}
             </div>
+          </div>
 
-            {/* Severity Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Severity Level *
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {severityLevels.map(level => (
-                  <button
-                    key={level.value}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, severity: level.value })}
-                    className={`
-                      px-4 py-2 rounded-lg border-2 font-medium transition-all
-                      ${formData.severity === level.value 
-                        ? `${level.color} border-current` 
-                        : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-200 hover:border-gray-300 dark:border-slate-600'
-                      }
-                    `}
-                  >
-                    {level.label}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Incident Description *
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe what happened in detail..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+            <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
+              Be as specific as possible. Include time, location, and any witnesses.
             </div>
+          </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Incident Description *
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe what happened in detail..."
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-              <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                Be as specific as possible. Include time, location, and any witnesses.
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1"
-              >
-                {isSubmitting ? 'Logging Incident...' : 'Log Incident'}
-              </Button>
-            </div>
-          </form>
-        </div>
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClose}
+              disabled={isSubmitting}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1"
+            >
+              {isSubmitting ? 'Logging Incident...' : 'Log Incident'}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

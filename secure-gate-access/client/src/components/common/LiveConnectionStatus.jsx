@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import Icon from '../ui/Icon';
+import Button from '../ui/Button';
 
 /**
  * LiveConnectionStatus - Displays connection status with icon and text
@@ -48,7 +49,7 @@ export default function LiveConnectionStatus({
     <div className={`flex items-center gap-2 ${className}`}>
       {isConnected ? (
         <>
-          <Wifi className="w-4 h-4 text-green-500" />
+          <Icon name="wifi" className="w-4 h-4 text-green-500" aria-hidden="true" />
           {showLabel && (
             <span className="text-sm text-green-600 font-medium">Live</span>
           )}
@@ -56,19 +57,19 @@ export default function LiveConnectionStatus({
         </>
       ) : (
         <>
-          <WifiOff className="w-4 h-4 text-red-500" />
+          <Icon name="wifi-off" className="w-4 h-4 text-red-500" aria-hidden="true" />
           {showLabel && (
             <span className="text-sm text-red-600 font-medium">Offline</span>
           )}
           {onReconnect && (
-            <button
+            <Button
               onClick={onReconnect}
               className="p-1 text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
               aria-label="Reconnect"
               title="Click to reconnect"
             >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+              <Icon name="refresh-cw" className="w-4 h-4" aria-hidden="true" />
+            </Button>
           )}
         </>
       )}

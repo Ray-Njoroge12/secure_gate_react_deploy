@@ -42,14 +42,14 @@ const AccessibleButton = forwardRef(({
     'disabled:pointer-events-none'
   ];
 
-  // Variant classes — aligned with brand color system (#10b981 emerald)
+  // Variant classes — aligned with brand color system (brand = emerald)
   const variantClasses = {
     primary: [
-      'bg-emerald-600',
+      'bg-brand-600',
       'text-white',
-      'hover:bg-emerald-700',
-      'focus:ring-emerald-500',
-      'active:bg-emerald-800'
+      'hover:bg-brand-700',
+      'focus:ring-brand-500',
+      'active:bg-brand-800'
     ],
     secondary: [
       'bg-gray-200',
@@ -64,7 +64,7 @@ const AccessibleButton = forwardRef(({
       'bg-white dark:bg-slate-800',
       'text-gray-700 dark:text-slate-200',
       'hover:bg-gray-50 dark:hover:bg-slate-700',
-      'focus:ring-emerald-500',
+      'focus:ring-brand-500',
       'active:bg-gray-100 dark:bg-slate-700 dark:active:bg-slate-600'
     ],
     ghost: [
@@ -81,11 +81,11 @@ const AccessibleButton = forwardRef(({
       'active:bg-red-800'
     ],
     success: [
-      'bg-emerald-600',
+      'bg-brand-600',
       'text-white',
-      'hover:bg-emerald-700',
-      'focus:ring-emerald-500',
-      'active:bg-emerald-800'
+      'hover:bg-brand-700',
+      'focus:ring-brand-500',
+      'active:bg-brand-800'
     ]
   };
 

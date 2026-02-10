@@ -424,3 +424,189 @@
     max-height: 95vh;
   }
 }
+
+/* ==========================================================================
+   Dark Mode Support
+   ========================================================================== */
+
+.dark .policy-management,
+html.dark .policy-management {
+  background: #0f172a;
+}
+
+.dark .policy-header,
+html.dark .policy-header {
+  border-bottom-color: #334155;
+}
+
+.dark .policy-header h1,
+html.dark .policy-header h1 {
+  color: #f1f5f9;
+}
+
+.dark .subtitle,
+html.dark .subtitle {
+  color: #94a3b8;
+}
+
+.dark .policy-card,
+html.dark .policy-card {
+  background: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.dark .policy-card:hover,
+html.dark .policy-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dark .policy-title h3,
+html.dark .policy-title h3 {
+  color: #f1f5f9;
+}
+
+.dark .policy-description,
+html.dark .policy-description {
+  color: #94a3b8;
+}
+
+.dark .policy-meta,
+html.dark .policy-meta {
+  border-top-color: #334155;
+}
+
+.dark .policy-type,
+html.dark .policy-type {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+.dark .policy-priority,
+html.dark .policy-priority {
+  background: #422006;
+  color: #fcd34d;
+}
+
+.dark .toggle-btn,
+html.dark .toggle-btn {
+  border-color: #475569;
+  background: #1e293b;
+  color: #64748b;
+}
+
+.dark .btn-edit,
+html.dark .btn-edit {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.dark .btn-edit:hover,
+html.dark .btn-edit:hover {
+  background: #475569;
+}
+
+.dark .btn-delete,
+html.dark .btn-delete {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+.dark .btn-delete:hover,
+html.dark .btn-delete:hover {
+  background: #7f1d1d;
+}
+
+.dark .modal-content,
+html.dark .modal-content {
+  background: #1e293b;
+}
+
+.dark .modal-header,
+html.dark .modal-header {
+  border-bottom-color: #334155;
+  background: #1e293b;
+}
+
+.dark .modal-header h2,
+html.dark .modal-header h2 {
+  color: #f1f5f9;
+}
+
+.dark .modal-close,
+html.dark .modal-close {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark .modal-close:hover,
+html.dark .modal-close:hover {
+  background: #475569;
+}
+
+.dark .form-group label,
+html.dark .form-group label {
+  color: #cbd5e1;
+}
+
+.dark .form-group input[type="text"],
+.dark .form-group input[type="number"],
+.dark .form-group select,
+.dark .form-group textarea,
+html.dark .form-group input[type="text"],
+html.dark .form-group input[type="number"],
+html.dark .form-group select,
+html.dark .form-group textarea {
+  background: #0f172a;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .code-editor,
+html.dark .code-editor {
+  background: #0f172a;
+  border-color: #475569;
+}
+
+.dark .form-group small,
+html.dark .form-group small {
+  color: #94a3b8;
+}
+
+.dark .modal-footer,
+html.dark .modal-footer {
+  border-top-color: #334155;
+  background: #1e293b;
+}
+
+.dark .btn-cancel,
+html.dark .btn-cancel {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.dark .btn-cancel:hover,
+html.dark .btn-cancel:hover {
+  background: #475569;
+}
+
+.dark .empty-state,
+html.dark .empty-state {
+  background: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.dark .empty-state p,
+html.dark .empty-state p {
+  color: #94a3b8;
+}
+
+.dark .loading-state,
+html.dark .loading-state {
+  color: #cbd5e1;
+}
+
+.dark .spinner,
+html.dark .spinner {
+  border-color: #334155;
+  border-top-color: #667eea;
+}

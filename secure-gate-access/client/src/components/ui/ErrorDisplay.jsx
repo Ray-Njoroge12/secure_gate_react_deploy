@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import Icon from './Icon';
 
 const ErrorDisplay = ({ 
   error, 
@@ -35,10 +35,11 @@ const ErrorDisplay = ({
 
   const getIcon = () => {
     switch (type) {
-      case 'success': return <CheckCircle className="w-5 h-5" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5" />;
-      case 'info': return <Info className="w-5 h-5" />;
-      default: return <AlertCircle className="w-5 h-5" />;
+      case 'success': return <Icon name="CheckCircle" className="w-5 h-5" />;
+      case 'warning': return <Icon name="AlertTriangle" className="w-5 h-5" />;
+      case 'info': return <Icon name="Info" className="w-5 h-5" />;
+      case 'error':
+      default: return <Icon name="AlertCircle" className="w-5 h-5" />;
     }
   };
 
@@ -78,7 +79,7 @@ const ErrorDisplay = ({
               className="flex-shrink-0 ml-3 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
               aria-label="Close notification"
             >
-              <X className="w-4 h-4" />
+              <Icon name="X" className="w-4 h-4" />
             </button>
           )}
         </div>

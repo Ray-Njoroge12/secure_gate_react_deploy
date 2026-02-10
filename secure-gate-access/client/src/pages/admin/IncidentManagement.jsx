@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Layout from "../../components/Layout";
 import Table from "../../components/Table";
 import { getIncidents } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
@@ -27,17 +26,23 @@ export default function Incidents() {
   }, []);
 
   return (
-    <Layout title="Incidents" role="admin" showBreadcrumbs={true}>
+    <>
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
           {error}
         </div>
       )}
-      <Table 
-        headers={["ID","Title","Status","Assigned","Actions"]} 
-        rows={incidents.map(i=>[i.id,i.title,i.status,i.assignedTo || "-", "View | Close"])}
+      <Table
+        headers={["ID","Title","Status","Severity","Assigned"]}
+        rows={incidents.map(i=>[
+          i.id,
+          i.title || i.description?.substring(0, 50) || "-",
+          i.status || "-",
+          i.severity || "-",
+          i.assigned_name || "-"
+        ])}
         loading={loading}
       />
-    </Layout>
+    </>
   );
 }

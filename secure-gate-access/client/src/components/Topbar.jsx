@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import ThemeToggle from "./ui/ThemeToggle.jsx";
 import NotificationBell from "./ui/NotificationBell.jsx";
 import ChangePasswordModal from "./modals/ChangePasswordModal";
+import Button from './ui/Button';
 
 export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const { user } = useAuth(); // Get user from AuthContext instead of localStorage
@@ -24,7 +25,8 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
       resident: "Resident",
       security: "Security Guard",
       admin: "Administrator",
-      guard: "Security Guard"
+      guard: "Security Guard",
+      super_admin: "Super Admin"
     };
     return roleNames[role] || role;
   };
@@ -76,6 +78,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
     if (role === "resident") navigate("/resident/settings");
     else if (role === "guard") navigate("/dashboard/guard/settings");
     else if (role === "admin") navigate("/dashboard/admin/settings");
+    else if (role === "super_admin") navigate("/dashboard/admin/settings");
   };
 
   return (
@@ -87,7 +90,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
     >
       <div className="flex items-center gap-4">
         {/* Mobile Menu Toggle Button */}
-        <button
+        <Button
           onClick={onMenuToggle}
           className="md:hidden p-2 text-gray-500 dark:text-slate-300 hover:text-gray-700 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
@@ -107,7 +110,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
             )}
           </svg>
-        </button>
+        </Button>
 
         <h1 className="text-lg font-semibold text-gray-900 dark:text-slate-200 m-0">
           {title}
@@ -125,7 +128,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
         <NotificationBell />
 
         <div className="relative" ref={profileMenuRef}>
-          <button
+          <Button
             className="profile-btn focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label={`Open profile menu`}
@@ -156,12 +159,12 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                 )}
               </div>
             </div>
-          </button>
+          </Button>
 
           {/* Dropdown Menu */}
           {isMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50" role="menu">
-              <button
+              <Button
                 onClick={() => {
                   setIsMenuOpen(false);
                   handleProfileClick(); // Navigates to settings
@@ -170,8 +173,8 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                 role="menuitem"
               >
                 Profile Settings
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setIsMenuOpen(false);
                   setShowChangePassword(true);
@@ -180,9 +183,9 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                 role="menuitem"
               >
                 Change Password
-              </button>
+              </Button>
               {onLogout && (
-                <button
+                <Button
                   onClick={() => {
                     setIsMenuOpen(false);
                     setShowLogoutConfirm(true);
@@ -191,7 +194,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                   role="menuitem"
                 >
                   Logout
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -210,13 +213,13 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
             Are you sure you want to log out?
           </p>
           <div className="flex justify-end gap-3">
-            <button
+            <Button
               onClick={() => setShowLogoutConfirm(false)}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => {
                 setShowLogoutConfirm(false);
                 onLogout();
@@ -224,7 +227,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               Logout
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>

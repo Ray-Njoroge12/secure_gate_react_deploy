@@ -6,7 +6,8 @@
  */
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+
+import Icon from './Icon';
 import './GradientButton.css';
 
 /**
@@ -35,11 +36,23 @@ const GradientButton = ({
   fullWidth = false,
   leftIcon = null,
   rightIcon = null,
+  icon = null,
   type = 'button',
   onClick,
   className = '',
   ...rest
 }) => {
+  const normalizeIcon = (iconNode, sizeOverride = 18) => {
+    if (!iconNode) return null;
+    if (typeof iconNode === 'string') {
+      return <Icon name={iconNode} size={sizeOverride} aria-hidden="true" />;
+    }
+    return iconNode;
+  };
+
+  const resolvedLeftIcon = normalizeIcon(leftIcon);
+  const resolvedRightIcon = normalizeIcon(rightIcon || icon);
+
   // Determine button classes
   const buttonClasses = [
     'gradient-button',
@@ -48,52 +61,34 @@ const GradientButton = ({
     fullWidth && 'gradient-button--full-width',
     loading && 'gradient-button--loading',
     disabled && 'gradient-button--disabled',
-    className
   ].filter(Boolean).join(' ');
 
-  // Handle click
-  const handleClick = (e) => {
-    if (!disabled && !loading && onClick) {
-      onClick(e);
-    }
-  };
-
   return (
+    // eslint-disable-next-line react/forbid-elements
     <button
       type={type}
-      className={buttonClasses}
-      onClick={handleClick}
+      className={`${buttonClasses} ${className}`}
       disabled={disabled || loading}
+      onClick={onClick}
       aria-busy={loading}
       aria-disabled={disabled || loading}
       {...rest}
     >
-      {/* Loading Spinner */}
       {loading && (
-        <span className="gradient-button__loader">
-          <Loader2 className="gradient-button__spinner" />
+        <span className="gradient-button__loader" aria-hidden="true">
+          <Icon name="loader-2" className="gradient-button__spinner" />
         </span>
       )}
 
-      {/* Button Content */}
       <span className={`gradient-button__content ${loading ? 'gradient-button__content--hidden' : ''}`}>
-        {/* Left Icon */}
-        {leftIcon && !loading && (
-          <span className="gradient-button__icon gradient-button__icon--left">
-            {leftIcon}
-          </span>
+        {!loading && resolvedLeftIcon && (
+          <span className="gradient-button__icon gradient-button__icon--left">{resolvedLeftIcon}</span>
         )}
 
-        {/* Text */}
-        <span className="gradient-button__text">
-          {children}
-        </span>
+        <span className="gradient-button__text">{children}</span>
 
-        {/* Right Icon */}
-        {rightIcon && !loading && (
-          <span className="gradient-button__icon gradient-button__icon--right">
-            {rightIcon}
-          </span>
+        {!loading && resolvedRightIcon && (
+          <span className="gradient-button__icon gradient-button__icon--right">{resolvedRightIcon}</span>
         )}
       </span>
     </button>

@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import { AlertTriangle, X, RefreshCw, ExternalLink, CheckCircle, Info } from '../icons';
+import Icon from './Icon';
 import { useBrowserCompatibility } from '../../contexts/BrowserCompatibilityContext';
 
 /**
@@ -76,13 +76,13 @@ const BrowserCompatibilityWarning = memo(({
   const getWarningIcon = () => {
     switch (warningLevel) {
       case 'error':
-        return <AlertTriangle className="w-5 h-5 text-red-500" />;
+        return <Icon name="alert-triangle" className="w-5 h-5 text-red-500" />;
       case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+        return <Icon name="alert-triangle" className="w-5 h-5 text-yellow-500" />;
       case 'info':
-        return <Info className="w-5 h-5 text-blue-500" />;
+        return <Icon name="info" className="w-5 h-5 text-blue-500" />;
       default:
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return <Icon name="check-circle" className="w-5 h-5 text-green-500" />;
     }
   };
 
@@ -144,7 +144,7 @@ const BrowserCompatibilityWarning = memo(({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 bg-opacity-50 dark:bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
               >
-                <ExternalLink className="w-3 h-3" />
+                <Icon name="external-link" className="w-3 h-3" />
                 Download Modern Browser
               </a>
             )}
@@ -154,7 +154,7 @@ const BrowserCompatibilityWarning = memo(({
                 onClick={handleRefresh}
                 className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 bg-opacity-50 dark:bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
               >
-                <RefreshCw className="w-3 h-3" />
+                <Icon name="refresh-cw" className="w-3 h-3" />
                 Refresh Page
               </button>
             )}
@@ -170,7 +170,7 @@ const BrowserCompatibilityWarning = memo(({
               onClick={handleDismiss}
               className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 bg-opacity-50 dark:bg-opacity-50 hover:bg-opacity-75 rounded transition-colors"
             >
-              <X className="w-3 h-3" />
+              <Icon name="x" className="w-3 h-3" />
               Dismiss
             </button>
           </div>

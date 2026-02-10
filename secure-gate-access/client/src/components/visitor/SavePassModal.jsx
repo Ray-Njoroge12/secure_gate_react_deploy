@@ -17,6 +17,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { QRCodeSVG } from 'qrcode.react';
+import Button from '../ui/Button';
 
 const SavePassModal = ({ 
   isOpen, 
@@ -216,12 +217,13 @@ const SavePassModal = ({
         ref={modalRef}
         className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
+        role="document"
         tabIndex={-1}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 id="save-pass-title" className="text-xl font-bold text-gray-900 dark:text-white">Save Your Pass</h2>
-          <button
+          <Button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             aria-label="Close"
@@ -229,18 +231,18 @@ const SavePassModal = ({
             <svg className="w-5 h-5 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Pass Preview */}
         <div className="p-4">
           <div 
             ref={passRef}
-            className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl p-6 border border-green-200"
+            className="bg-gradient-to-br from-brand-50 to-blue-50 dark:from-slate-800 dark:to-slate-700 rounded-xl p-6 border border-brand-200 dark:border-slate-600"
           >
             {/* Pass Header */}
             <div className="text-center mb-4">
-              <div className="inline-block px-4 py-1 bg-green-600 text-white text-sm font-semibold rounded-full mb-2">
+              <div className="inline-block px-4 py-1 bg-brand-600 text-white text-sm font-semibold rounded-full mb-2">
                 VISITOR PASS
               </div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">{passContent.estateName}</h3>
@@ -304,7 +306,7 @@ const SavePassModal = ({
         <div className="px-4 pb-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Save Format</label>
           <div className="grid grid-cols-2 gap-3">
-            <button
+            <Button
               onClick={() => setSaveFormat('image')}
               className={`p-3 rounded-xl border-2 transition-colors flex flex-col items-center ${
                 saveFormat === 'image'
@@ -317,9 +319,9 @@ const SavePassModal = ({
               </svg>
               <span className="text-sm font-medium">Image</span>
               <span className="text-xs opacity-75">PNG format</span>
-            </button>
+            </Button>
             
-            <button
+            <Button
               onClick={() => setSaveFormat('pdf')}
               className={`p-3 rounded-xl border-2 transition-colors flex flex-col items-center ${
                 saveFormat === 'pdf'
@@ -332,13 +334,13 @@ const SavePassModal = ({
               </svg>
               <span className="text-sm font-medium">PDF</span>
               <span className="text-xs opacity-75">For printing</span>
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Privacy Notice */}
         <div className="px-4 pb-4">
-          <button
+          <Button
             onClick={() => setShowPrivacyNotice(!showPrivacyNotice)}
             className="flex items-center text-sm text-blue-600 hover:text-blue-800"
           >
@@ -346,7 +348,7 @@ const SavePassModal = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Privacy Information
-          </button>
+          </Button>
           
           {showPrivacyNotice && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
@@ -363,7 +365,7 @@ const SavePassModal = ({
 
         {/* Action Buttons */}
         <div className="p-4 border-t bg-gray-50 dark:bg-slate-900 rounded-b-2xl">
-          <button
+          <Button
             onClick={handleSave}
             disabled={saving}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
@@ -384,14 +386,14 @@ const SavePassModal = ({
                 Save {saveFormat === 'image' ? 'Image' : 'PDF'}
               </>
             )}
-          </button>
+          </Button>
           
-          <button
+          <Button
             onClick={onClose}
             className="w-full mt-2 text-gray-600 dark:text-gray-200 hover:text-gray-800 font-medium py-2 transition-colors"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>

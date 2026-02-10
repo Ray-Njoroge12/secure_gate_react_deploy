@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import jsQR from 'jsqr';
 import logger from 'utils/logger';
 import { Card, Button } from './ui';
-import { Flashlight, FlashlightOff } from 'lucide-react';
+import Icon from './ui/Icon';
 
 const QRScanner = ({ onScan, onError, onClose }) => {
   const videoRef = useRef(null);
@@ -276,7 +276,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
                 
                 {/* Flashlight Toggle Button */}
                 {flashlightSupported && (
-                  <button
+                  <Button
                     onClick={toggleFlashlight}
                     className={`absolute top-3 right-3 p-3 rounded-full transition-all shadow-lg ${
                       flashlightOn 
@@ -287,11 +287,11 @@ const QRScanner = ({ onScan, onError, onClose }) => {
                     aria-label={flashlightOn ? 'Turn off flashlight' : 'Turn on flashlight'}
                   >
                     {flashlightOn ? (
-                      <Flashlight className="w-5 h-5" />
+                      <Icon name="flashlight" className="w-5 h-5" aria-hidden="true" />
                     ) : (
-                      <FlashlightOff className="w-5 h-5" />
+                      <Icon name="flashlight-off" className="w-5 h-5" aria-hidden="true" />
                     )}
-                  </button>
+                  </Button>
                 )}
               </>
             )}

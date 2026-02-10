@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { useUserPreferences } from '../../hooks/useUserPreferences.js';
 import { usePreferences } from '../../contexts/PreferenceContext.jsx';
 import { THEME_OPTIONS, DENSITY_OPTIONS, FREQUENCY_OPTIONS } from '../../services/preferenceService.js';
+import Button from '../ui/Button';
 
 const PreferencePanel = () => {
   const {
@@ -124,7 +125,7 @@ const PreferencePanel = () => {
   ];
 
   return (
-    <div className="preference-panel bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+    <div className="preference-panel bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           User Preferences
@@ -132,13 +133,13 @@ const PreferencePanel = () => {
         {error && (
           <div className="flex items-center space-x-2">
             <span className="text-red-600 text-sm">{error}</span>
-            <button
+            <Button
               onClick={clearError}
               className="text-red-600 hover:text-red-800"
               aria-label="Clear error"
             >
               ✕
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -147,7 +148,7 @@ const PreferencePanel = () => {
       <div className="border-b border-gray-200 dark:border-slate-700 mb-6">
         <nav className="flex space-x-8">
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -158,7 +159,7 @@ const PreferencePanel = () => {
             >
               <span className="mr-2">{tab.icon}</span>
               {tab.label}
-            </button>
+            </Button>
           ))}
         </nav>
       </div>
@@ -434,13 +435,13 @@ const PreferencePanel = () => {
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white"
                   disabled={backupLoading}
                 />
-                <button
+                <Button
                   onClick={handleCreateBackup}
                   disabled={!backupName.trim() || backupLoading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {backupLoading ? 'Creating...' : 'Create'}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -463,13 +464,13 @@ const PreferencePanel = () => {
                     </option>
                   ))}
                 </select>
-                <button
+                <Button
                   onClick={handleRestoreBackup}
                   disabled={!selectedBackup || backupLoading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {backupLoading ? 'Restoring...' : 'Restore'}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -481,12 +482,12 @@ const PreferencePanel = () => {
               
               <div className="space-y-4">
                 {/* Export */}
-                <button
+                <Button
                   onClick={exportPreferences}
                   className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   Export Preferences
-                </button>
+                </Button>
 
                 {/* Import */}
                 <div>
@@ -496,25 +497,25 @@ const PreferencePanel = () => {
                     onChange={(e) => setImportFile(e.target.files[0])}
                     className="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
-                  <button
+                  <Button
                     onClick={handleImportPreferences}
                     disabled={!importFile}
                     className="mt-2 w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Import Preferences
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
 
             {/* Reset to Defaults */}
             <div className="border-t pt-6">
-              <button
+              <Button
                 onClick={handleResetToDefaults}
                 className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
               >
                 Reset to Defaults
-              </button>
+              </Button>
             </div>
           </div>
         )}

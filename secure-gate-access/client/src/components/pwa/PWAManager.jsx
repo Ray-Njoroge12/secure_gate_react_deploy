@@ -1,10 +1,14 @@
 // PWA Manager Component - Orchestrates all PWA capabilities
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
+
+import backgroundSyncService from '../../services/backgroundSyncService';
 import offlineService from '../../services/offlineService';
 import pushNotificationService from '../../services/pushNotificationService';
-import backgroundSyncService from '../../services/backgroundSyncService';
+import Button from '../ui/Button';
 
 const PWAManager = ({ children }) => {
+  const location = useLocation();
   const [pwaStatus, setPwaStatus] = useState({
     isOnline: navigator.onLine,
     isInstallable: false,
@@ -18,6 +22,17 @@ const PWAManager = ({ children }) => {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [showOfflineBanner, setShowOfflineBanner] = useState(false);
   const [showSyncStatus, setShowSyncStatus] = useState(false);
+  const [notificationPromptDismissed, setNotificationPromptDismissed] = useState(
+    () => localStorage.getItem('notification-prompt-dismissed') === 'true'
+  );
+  const isAuthEntryRoute =
+    location.pathname === '/login' ||
+    location.pathname === '/forgot-password' ||
+    location.pathname === '/register' ||
+    location.pathname.startsWith('/register/') ||
+    location.pathname.startsWith('/bulk-register/') ||
+    location.pathname.startsWith('/mfa/verify') ||
+    location.pathname.startsWith('/mfa/setup');
 
   // ==================== INITIALIZATION ====================
 
@@ -28,6 +43,8 @@ const PWAManager = ({ children }) => {
     return () => {
       cleanupEventListeners();
     };
+    // Intentionally initialize once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializePWA = async () => {
@@ -163,15 +180,11 @@ const PWAManager = ({ children }) => {
   }, []);
 
   const handleServiceWorkerMessage = useCallback((event) => {
-    const { type, data } = event.data || {};
+    const { type } = event.data || {};
     
     if (type === 'CACHE_UPDATED') {
       // Show update available notification
       showUpdateNotification();
-    }
-    
-    if (type === 'OFFLINE_DATA_AVAILABLE') {
-      console.log('Offline data available:', data);
     }
   }, []);
 
@@ -184,7 +197,7 @@ const PWAManager = ({ children }) => {
     }
   }, []);
 
-  const handlePushEvent = useCallback((event, data) => {
+  const handlePushEvent = useCallback((event, _data) => {
     if (event === 'subscribed') {
       setPwaStatus(prev => ({ ...prev, hasNotificationPermission: true }));
     } else if (event === 'unsubscribed') {
@@ -192,7 +205,7 @@ const PWAManager = ({ children }) => {
     }
   }, []);
 
-  const handleSyncEvent = useCallback((event, data) => {
+  const handleSyncEvent = useCallback((event, _data) => {
     if (event === 'sync_registered' || event === 'sync_failed') {
       setPwaStatus(prev => ({ ...prev, hasPendingSyncs: true }));
       setShowSyncStatus(true);
@@ -212,7 +225,6 @@ const PWAManager = ({ children }) => {
 
     try {
       const result = await installPrompt.prompt();
-      console.log('Install prompt result:', result.outcome);
       
       if (result.outcome === 'accepted') {
         setInstallPrompt(null);
@@ -248,8 +260,8 @@ const PWAManager = ({ children }) => {
       updateBanner.innerHTML = `
         <div class="pwa-banner-content">
           <span>New version available!</span>
-          <button onclick="window.location.reload()">Update</button>
-          <button onclick="this.parentElement.parentElement.remove()">×</button>
+          <button type="button" class="pwa-btn pwa-btn-primary" onclick="window.location.reload()">Update</button>
+          <button type="button" class="pwa-btn pwa-btn-secondary" onclick="this.parentElement.parentElement.remove()">×</button>
         </div>
       `;
       document.body.appendChild(updateBanner);
@@ -259,6 +271,7 @@ const PWAManager = ({ children }) => {
   // ==================== RENDER HELPERS ====================
 
   const renderInstallBanner = () => {
+    if (isAuthEntryRoute) return null;
     if (!showInstallBanner || !pwaStatus.isInstallable) return null;
 
     return (
@@ -270,18 +283,18 @@ const PWAManager = ({ children }) => {
             <p>Get quick access and offline features</p>
           </div>
           <div className="pwa-banner-actions">
-            <button 
+            <Button 
               className="pwa-btn pwa-btn-primary" 
               onClick={installApp}
             >
               Install
-            </button>
-            <button 
+            </Button>
+            <Button 
               className="pwa-btn pwa-btn-secondary" 
               onClick={dismissInstallBanner}
             >
               Not now
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -289,6 +302,7 @@ const PWAManager = ({ children }) => {
   };
 
   const renderOfflineBanner = () => {
+    if (isAuthEntryRoute) return null;
     if (!showOfflineBanner) return null;
 
     return (
@@ -299,18 +313,19 @@ const PWAManager = ({ children }) => {
             <strong>You're offline</strong>
             <p>Some features are still available</p>
           </div>
-          <button 
+          <Button 
             className="pwa-btn pwa-btn-outline" 
             onClick={() => setShowOfflineBanner(false)}
           >
             ×
-          </button>
+          </Button>
         </div>
       </div>
     );
   };
 
   const renderSyncStatus = () => {
+    if (isAuthEntryRoute) return null;
     if (!showSyncStatus || !pwaStatus.hasPendingSyncs) return null;
 
     return (
@@ -324,8 +339,8 @@ const PWAManager = ({ children }) => {
   };
 
   const renderNotificationPrompt = () => {
-    if (pwaStatus.hasNotificationPermission || 
-        localStorage.getItem('notification-prompt-dismissed')) {
+    if (isAuthEntryRoute) return null;
+    if (pwaStatus.hasNotificationPermission || notificationPromptDismissed) {
       return null;
     }
 
@@ -338,30 +353,26 @@ const PWAManager = ({ children }) => {
             <p>Get notified about visitor arrivals</p>
           </div>
           <div className="pwa-banner-actions">
-            <button 
+            <Button 
               className="pwa-btn pwa-btn-primary" 
               onClick={enableNotifications}
             >
               Enable
-            </button>
-            <button 
+            </Button>
+            <Button 
               className="pwa-btn pwa-btn-secondary" 
               onClick={() => {
                 localStorage.setItem('notification-prompt-dismissed', 'true');
-                forceUpdate();
+                setNotificationPromptDismissed(true);
               }}
             >
               Not now
-            </button>
+            </Button>
           </div>
         </div>
       </div>
     );
   };
-
-  // Force re-render helper
-  const [, forceUpdate] = useState({});
-  const triggerUpdate = () => forceUpdate({});
 
   // ==================== RENDER ====================
 
@@ -379,7 +390,7 @@ const PWAManager = ({ children }) => {
       {renderNotificationPrompt()}
 
       {/* PWA Styles */}
-      <style jsx>{`
+      <style>{`
         .pwa-install-banner,
         .pwa-offline-banner,
         .pwa-notification-prompt {

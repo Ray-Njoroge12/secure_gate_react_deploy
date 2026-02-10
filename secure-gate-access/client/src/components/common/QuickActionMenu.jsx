@@ -10,27 +10,30 @@
  * - Touch-optimized
  * - Keyboard accessible
  */
+/* eslint-disable react/forbid-elements */
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+
 import { navigateTo } from '../../utils/appNavigation';
+import Button from '../ui/Button';
 
 const defaultActions = {
   resident: [
 
     { id: 'quick-invite', icon: '✉️', label: 'Quick Invite', href: '/resident/quick-invite' },
     { id: 'generate-pass', icon: '🎫', label: 'Generate Pass', href: '/resident/generate-pass' },
-    { id: 'scan', icon: '📷', label: 'Scan QR', href: '/resident/scan' },
+    { id: 'visitor-history', icon: '🕒', label: 'Visitor History', href: '/resident/visitor-history' },
   ],
   guard: [
-    { id: 'scan-qr', icon: '📷', label: 'Scan QR', href: '/guard/scan-qr' },
-    { id: 'manual-check', icon: '✅', label: 'Manual Check', href: '/guard/manual-check' },
-    { id: 'search', icon: '🔍', label: 'Search Visitor', href: '/guard/search' },
+    { id: 'scan-qr', icon: '📷', label: 'Scan QR', href: '/dashboard/guard/scan-qr' },
+    { id: 'manual-check', icon: '✅', label: 'Manual Check', href: '/dashboard/guard/manual-check' },
+    { id: 'visitor-history', icon: '🔍', label: 'Visitor History', href: '/dashboard/guard/visitor-history' },
   ],
   admin: [
-    { id: 'add-user', icon: '👤', label: 'Add User', href: '/admin/add-user' },
-    { id: 'reports', icon: '📊', label: 'Reports', href: '/admin/reports' },
-    { id: 'settings', icon: '⚙️', label: 'Settings', href: '/admin/settings' },
+    { id: 'users', icon: '👤', label: 'User Approvals', href: '/dashboard/admin/approvals' },
+    { id: 'reports', icon: '📊', label: 'Reports', href: '/dashboard/admin/reports' },
+    { id: 'settings', icon: '⚙️', label: 'Settings', href: '/dashboard/admin/settings' },
   ],
 };
 
@@ -55,12 +58,12 @@ const ActionItem = ({
   };
 
   return (
-    <button
+    <Button
       onClick={handleClick}
       className={`
         flex items-center gap-3 px-4 py-3 rounded-full
-        bg-white dark:bg-slate-800 shadow-lg border border-gray-200 dark:border-slate-700
-        hover:bg-gray-50 dark:hover:bg-slate-700 hover:shadow-xl
+        bg-white dark:bg-slate-800 shadow-md border border-gray-200 dark:border-slate-700
+        hover:bg-gray-50 dark:hover:bg-slate-700 hover:shadow-lg
         active:scale-95
         transition-all duration-200 ease-out
         ${isExpanded
@@ -75,7 +78,7 @@ const ActionItem = ({
     >
       <span className="text-xl">{icon}</span>
       <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">{label}</span>
-    </button>
+    </Button>
   );
 };
 
@@ -160,6 +163,7 @@ const QuickActionMenu = ({
           className="fixed inset-0 bg-black/20 backdrop-blur-sm -z-10 animate-fade-in"
           onClick={() => setIsExpanded(false)}
           aria-hidden="true"
+          role="presentation"
         />
       )}
 
@@ -190,18 +194,18 @@ const QuickActionMenu = ({
       </div>
 
       {/* Main FAB Button */}
-      <button
+      <Button
         ref={buttonRef}
         onClick={toggleMenu}
         className={`
           w-14 h-14 rounded-full
-          bg-gradient-to-br from-green-500 to-green-600
-          hover:from-green-600 hover:to-green-700
+          bg-gradient-to-br from-brand-500 to-brand-600
+          hover:from-brand-600 hover:to-brand-700
           active:scale-95
           shadow-lg hover:shadow-xl
           flex items-center justify-center
           transition-all duration-200 ease-out
-          focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2
+          focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
         `}
         aria-expanded={isExpanded}
         aria-haspopup="menu"
@@ -216,7 +220,7 @@ const QuickActionMenu = ({
         >
           {isExpanded ? expandedIcon : primaryIcon}
         </span>
-      </button>
+      </Button>
 
       {/* Ripple effect on tap */}
       <span
@@ -243,18 +247,25 @@ const QuickActionMenu = ({
 export const SpeedDial = ({
   actions,
   label = 'Quick Actions',
-  direction = 'up',
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- group wraps interactive buttons; focus/blur needed for keyboard navigation
     <div
       className={`relative inline-flex flex-col items-center ${className}`}
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
       onFocus={() => setIsOpen(true)}
-      onBlur={() => setIsOpen(false)}
+      onBlur={(e) => {
+        // Only close if focus leaves the entire container
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+          setIsOpen(false);
+        }
+      }}
+      role="group"
+      aria-label={label}
     >
       {/* Actions */}
       <div
@@ -266,7 +277,7 @@ export const SpeedDial = ({
         `}
       >
         {actions?.map((action, index) => (
-          <button
+          <Button
             key={action.id}
             onClick={action.onClick}
             className={`
@@ -291,15 +302,15 @@ export const SpeedDial = ({
             ">
               {action.icon}
             </span>
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* Main Button */}
-      <button
+      <Button
         className="
           w-14 h-14 rounded-full
-          bg-green-500 hover:bg-green-600
+          bg-brand-500 hover:bg-brand-600
           text-white text-2xl
           shadow-lg hover:shadow-xl
           transition-all duration-200
@@ -310,7 +321,7 @@ export const SpeedDial = ({
         <span className={`transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`}>
           ➕
         </span>
-      </button>
+      </Button>
     </div>
   );
 };

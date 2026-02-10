@@ -21,6 +21,25 @@ import { maskEmail } from '../utils/redaction.js';
 
 const router = express.Router();
 
+const emitEmergencyEvent = (req, eventName, payload, estateId = null) => {
+  const io = req.app.locals.io;
+  if (!io) {
+    return;
+  }
+
+  const resolvedEstateId = estateId || req.user?.estate_id || null;
+
+  if (resolvedEstateId) {
+    io
+      .to(`estate:${resolvedEstateId}:dashboard`)
+      .to('dashboard')
+      .emit(eventName, { ...payload, estateId: resolvedEstateId });
+    return;
+  }
+
+  io.to('dashboard').emit(eventName, payload);
+};
+
 // All routes require authentication and estate context
 router.use(authenticateToken);
 router.use(requireEstateContext);
@@ -43,18 +62,15 @@ router.post('/panic', requireRole(['guard', 'resident']), async (req, res) => {
       gateId
     );
 
-    // Emit real-time event to all connected admins/guards
-    if (req.app.locals.io) {
-      const guardName = result.guard.username || '';
-      const safeGuardName = guardName.includes('@') ? maskEmail(guardName) : guardName;
-      req.app.locals.io.emit('emergency:triggered', {
-        emergencyId: result.emergency.id,
-        guardName: safeGuardName,
-        triggeredAt: result.emergency.triggered_at,
-        hasLocation: !!(latitude && longitude),
-        // Privacy: Don't broadcast exact coordinates
-      });
-    }
+    const guardName = result.guard.username || '';
+    const safeGuardName = guardName.includes('@') ? maskEmail(guardName) : guardName;
+    emitEmergencyEvent(req, 'emergency:triggered', {
+      emergencyId: result.emergency.id,
+      guardName: safeGuardName,
+      triggeredAt: result.emergency.triggered_at,
+      hasLocation: !!(latitude && longitude),
+      // Privacy: Don't broadcast exact coordinates
+    }, req.user?.estate_id);
 
     res.status(201).json({
       success: true,
@@ -96,13 +112,10 @@ router.post('/:id/cancel', requireRole(['guard', 'resident']), async (req, res) 
 
     const result = await emergencyService.cancelEmergency(emergencyId, guardId);
 
-    // Notify others that alert was cancelled
-    if (req.app.locals.io) {
-      req.app.locals.io.emit('emergency:cancelled', {
-        emergencyId,
-        cancelledAt: new Date().toISOString()
-      });
-    }
+    emitEmergencyEvent(req, 'emergency:cancelled', {
+      emergencyId,
+      cancelledAt: new Date().toISOString()
+    }, req.user?.estate_id);
 
     res.json({
       success: true,
@@ -133,18 +146,15 @@ router.post('/:id/acknowledge', requireRolePolicy('adminOrGuard'), async (req, r
 
     const result = await emergencyService.acknowledgeEmergency(emergencyId, responderId);
 
-    // Notify everyone that help is responding
-    if (req.app.locals.io) {
-      const acknowledgedBy = req.user.username || '';
-      const safeAcknowledgedBy = acknowledgedBy.includes('@')
-        ? maskEmail(acknowledgedBy)
-        : acknowledgedBy;
-      req.app.locals.io.emit('emergency:acknowledged', {
-        emergencyId,
-        acknowledgedBy: safeAcknowledgedBy,
-        acknowledgedAt: result.acknowledged_at
-      });
-    }
+    const acknowledgedBy = req.user.username || '';
+    const safeAcknowledgedBy = acknowledgedBy.includes('@')
+      ? maskEmail(acknowledgedBy)
+      : acknowledgedBy;
+    emitEmergencyEvent(req, 'emergency:acknowledged', {
+      emergencyId,
+      acknowledgedBy: safeAcknowledgedBy,
+      acknowledgedAt: result.acknowledged_at
+    }, req.user?.estate_id);
 
     res.json({
       success: true,
@@ -181,14 +191,11 @@ router.post('/:id/resolve', requireRolePolicy('adminOnly'), async (req, res) => 
       { notes, isFalseAlarm, falseAlarmReason }
     );
 
-    // Notify everyone that emergency is resolved
-    if (req.app.locals.io) {
-      req.app.locals.io.emit('emergency:resolved', {
-        emergencyId,
-        resolvedAt: result.resolved_at,
-        isFalseAlarm: result.is_false_alarm
-      });
-    }
+    emitEmergencyEvent(req, 'emergency:resolved', {
+      emergencyId,
+      resolvedAt: result.resolved_at,
+      isFalseAlarm: result.is_false_alarm
+    }, req.user?.estate_id);
 
     res.json({
       success: true,

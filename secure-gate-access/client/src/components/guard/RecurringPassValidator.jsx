@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import recurringPassService from '../../services/recurringPassService';
+import Button from '../ui/Button';
 
 const RecurringPassValidator = () => {
   const [credential, setCredential] = useState('');
@@ -57,7 +58,7 @@ const RecurringPassValidator = () => {
       <div className="p-4">
         <form onSubmit={handleValidate} className="space-y-4">
           <div className="flex gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => setMethod('pin')}
               className={`flex-1 py-2 rounded-md text-sm font-medium ${
@@ -67,8 +68,8 @@ const RecurringPassValidator = () => {
               }`}
             >
               🔢 PIN Entry
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setMethod('qr')}
               className={`flex-1 py-2 rounded-md text-sm font-medium ${
@@ -78,7 +79,7 @@ const RecurringPassValidator = () => {
               }`}
             >
               📱 QR Scan
-            </button>
+            </Button>
           </div>
 
           <div>
@@ -93,13 +94,13 @@ const RecurringPassValidator = () => {
             />
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={loading || !credential.trim()}
             className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 font-medium"
           >
             {loading ? 'Validating...' : 'Validate Pass'}
-          </button>
+          </Button>
         </form>
 
         {error && (
@@ -151,12 +152,12 @@ const RecurringPassValidator = () => {
               </div>
             )}
             
-            <button
+            <Button
               onClick={clearResult}
               className="mt-4 w-full py-2 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300"
             >
               Check Another
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -10,17 +10,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import {
-  ChartBarIcon,
-  ClockIcon,
-  DevicePhoneMobileIcon,
-  EnvelopeIcon,
-  BellIcon,
-  LightBulbIcon,
-  ArrowTrendingUpIcon as TrendingUpIcon,
-  ArrowTrendingDownIcon as TrendingDownIcon,
-  ExclamationTriangleIcon
-} from '@heroicons/react/24/outline';
+import Icon from '../ui/Icon';
 import intelligentNotificationService from '../../services/intelligentNotificationService';
 import logger from '../../utils/logger';
 
@@ -65,9 +55,7 @@ const NotificationAnalyticsDashboard = () => {
   const loadInsights = async () => {
     try {
       const response = await fetch(`/api/intelligent-notifications/insights?days=${selectedPeriod}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -88,14 +76,14 @@ const NotificationAnalyticsDashboard = () => {
   const getChannelIcon = (channel) => {
     switch (channel.toLowerCase()) {
       case 'email':
-        return <EnvelopeIcon className="h-5 w-5" />;
+        return <Icon name="Mail" className="h-5 w-5" />;
       case 'sms':
-        return <DevicePhoneMobileIcon className="h-5 w-5" />;
+        return <Icon name="Smartphone" className="h-5 w-5" />;
       case 'push':
       case 'in_app':
-        return <BellIcon className="h-5 w-5" />;
+        return <Icon name="Bell" className="h-5 w-5" />;
       default:
-        return <ChartBarIcon className="h-5 w-5" />;
+        return <Icon name="BarChart3" className="h-5 w-5" />;
     }
   };
 
@@ -121,15 +109,15 @@ const NotificationAnalyticsDashboard = () => {
   const getRecommendationIcon = (type) => {
     switch (type) {
       case 'engagement':
-        return <TrendingDownIcon className="h-5 w-5 text-red-500" />;
+        return <Icon name="TrendingDown" className="h-5 w-5 text-red-500" />;
       case 'timing':
-        return <ClockIcon className="h-5 w-5 text-blue-500" />;
+        return <Icon name="Clock" className="h-5 w-5 text-blue-500" />;
       case 'channel':
-        return <TrendingUpIcon className="h-5 w-5 text-green-500" />;
+        return <Icon name="TrendingUp" className="h-5 w-5 text-green-500" />;
       case 'volume':
-        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
+        return <Icon name="AlertTriangle" className="h-5 w-5 text-yellow-500" />;
       default:
-        return <LightBulbIcon className="h-5 w-5 text-purple-500" />;
+        return <Icon name="Lightbulb" className="h-5 w-5 text-purple-500" />;
     }
   };
 
@@ -154,7 +142,7 @@ const NotificationAnalyticsDashboard = () => {
     return (
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
         <div className="flex">
-          <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+          <Icon name="AlertTriangle" className="h-5 w-5 text-red-400" />
           <div className="ml-3">
             <h3 className="text-sm font-medium text-red-800">Error</h3>
             <p className="text-sm text-red-700 mt-1">{error}</p>
@@ -195,7 +183,7 @@ const NotificationAnalyticsDashboard = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <BellIcon className="w-5 h-5 text-blue-600" />
+                  <Icon name="Bell" className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
               <div className="ml-4">
@@ -211,7 +199,7 @@ const NotificationAnalyticsDashboard = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <TrendingUpIcon className="w-5 h-5 text-green-600" />
+                  <Icon name="TrendingUp" className="w-5 h-5 text-green-600" />
                 </div>
               </div>
               <div className="ml-4">
@@ -227,7 +215,7 @@ const NotificationAnalyticsDashboard = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <ChartBarIcon className="w-5 h-5 text-purple-600" />
+                  <Icon name="BarChart3" className="w-5 h-5 text-purple-600" />
                 </div>
               </div>
               <div className="ml-4">
@@ -245,7 +233,7 @@ const NotificationAnalyticsDashboard = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <ClockIcon className="w-5 h-5 text-yellow-600" />
+                  <Icon name="Clock" className="w-5 h-5 text-yellow-600" />
                 </div>
               </div>
               <div className="ml-4">
@@ -263,7 +251,7 @@ const NotificationAnalyticsDashboard = () => {
       {insights?.recommendations && insights.recommendations.length > 0 && (
         <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-            <LightBulbIcon className="h-5 w-5 text-yellow-500 mr-2" />
+            <Icon name="Lightbulb" className="h-5 w-5 text-yellow-500 mr-2" />
             Personalized Recommendations
           </h3>
           <div className="space-y-4">

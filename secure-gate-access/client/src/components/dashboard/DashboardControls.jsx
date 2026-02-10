@@ -10,7 +10,18 @@
  */
 
 import React, { useRef } from 'react';
+// FIX: Substituted direct Lucide icons with Icon component usage in render method
+// import { 
+//   Plus, 
+//   MoreHorizontal, 
+//   RotateCcw, 
+//   Download, 
+//   Upload,
+//   Clock 
+// } from 'lucide-react';
 import { useAccessibility } from '../../hooks/useAccessibility.js';
+import Icon from '../ui/Icon.jsx';
+import Button from '../ui/Button';
 
 /**
  * DashboardControls Component
@@ -49,112 +60,66 @@ export const DashboardControls = ({
   };
 
   return (
-    <div className={`dashboard-controls flex items-center space-x-3 ${className}`}>
-      {/* Save Status */}
-      {lastSaved && (
-        <div className="save-status text-sm text-gray-500 dark:text-gray-300">
-          <span className="hidden sm:inline">Last saved: </span>
-          <span className="font-medium">{formatLastSaved(lastSaved)}</span>
+    <div className={`flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm ${className}`}>
+      <div className="flex items-center gap-4">
+        {/* Last saved indicator */}
+        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+          <Icon name="clock" className="w-4 h-4 mr-2" />
+          <span>Saved {formatLastSaved(lastSaved)}</span>
         </div>
-      )}
+      </div>
 
-      {/* Add Widget Button */}
-      {onAddWidget && (
-        <button
-          onClick={onAddWidget}
-          className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          aria-label="Add new widget to dashboard"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          <span className="hidden sm:inline">Add Widget</span>
-          <span className="sm:hidden">Add</span>
-        </button>
-      )}
-
-      {/* Dashboard Actions Dropdown */}
-      <div className="relative inline-block text-left">
-        <div className="group">
-          <button
-            className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-slate-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            aria-label="Dashboard actions menu"
+      <div className="flex items-center gap-2">
+        {/* Add Widget Button */}
+        {!simplified && (
+          <Button
+            onClick={onAddWidget}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+            aria-label="Add widget to dashboard"
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-            </svg>
-            <span className="ml-2 hidden sm:inline">Actions</span>
-          </button>
+            <Icon name="plus" className="w-4 h-4" />
+            <span>Add Widget</span>
+          </Button>
+        )}
+
+        {/* More Actions Dropdown */}
+        <div className="relative group">
+          <Button
+            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label="More dashboard options"
+          >
+            <Icon name="more-horizontal" className="w-5 h-5" />
+          </Button>
 
           {/* Dropdown Menu */}
-          <div className="absolute right-0 z-10 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <div className="py-1" role="menu">
-              {/* Reset Layout */}
-              {onResetLayout && (
-                <button
-                  onClick={onResetLayout}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                  role="menuitem"
-                >
-                  <svg className="w-4 h-4 inline mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Reset Layout
-                </button>
-              )}
-
-              {/* Export/Import - Only for non-simplified mode */}
+          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg border border-gray-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+            <div className="py-1">
+              <Button
+                onClick={onResetLayout}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                <Icon name="rotate-ccw" className="w-4 h-4 mr-2" />
+                Reset Layout
+              </Button>
+              
               {!simplified && (
                 <>
-                  <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
-                  
-                  {onExportDashboard && (
-                    <button
-                      onClick={onExportDashboard}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                      role="menuitem"
-                    >
-                      <svg className="w-4 h-4 inline mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Export Dashboard
-                    </button>
-                  )}
-
-                  {onImportDashboard && (
-                    <>
-                      <button
-                        onClick={handleImportClick}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                        role="menuitem"
-                      >
-                        <svg className="w-4 h-4 inline mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                        </svg>
-                        Import Dashboard
-                      </button>
-                      
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".json"
-                        onChange={onImportDashboard}
-                        className="hidden"
-                        aria-label="Import dashboard configuration file"
-                      />
-                    </>
-                  )}
+                  <Button
+                    onClick={onExportDashboard}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  >
+                    <Icon name="download" className="w-4 h-4 mr-2" />
+                    Export Config
+                  </Button>
+                  <Button
+                    onClick={handleImportClick}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  >
+                    <Icon name="upload" className="w-4 h-4 mr-2" />
+                    Import Config
+                  </Button>
                 </>
               )}
-
-              {/* Help/Info */}
-              <div className="border-t border-gray-100 dark:border-slate-700 my-1" />
-              <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-300">
-                <div>Role: {role}</div>
-                {lastSaved && (
-                  <div>Saved: {formatLastSaved(lastSaved)}</div>
-                )}
-              </div>
             </div>
           </div>
         </div>

@@ -5,9 +5,8 @@
  * Allows guards to register unexpected visitors and request resident approval
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Input, PageHeader } from '../../components/ui';
-import { User, Phone, Home, FileText, AlertCircle, UserPlus, WifiOff, CloudOff, RefreshCw, Clock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Button, PageHeader, Icon } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,12 +31,45 @@ const WalkInRegistration = () => {
   const { setLoading, isLoading } = useLoading();
   const { user } = useAuth();
 
+  const safelyClearErrors = () => {
+    try {
+      clearAllErrors?.();
+    } catch (error) {
+      console.warn('Failed to clear global errors:', error);
+    }
+  };
+
+  const loadPendingWalkIns = useCallback(async () => {
+    try {
+      const pending = await offlineService.getPendingWalkIns();
+      setPendingWalkIns(pending);
+    } catch (err) {
+      console.error('Failed to load pending walk-ins:', err);
+    }
+  }, []);
+
+  const syncPendingWalkIns = useCallback(async (force = false) => {
+    if (!force && !isOnline) return;
+
+    try {
+      setLoading('syncWalkIns', true, { message: 'Syncing pending registrations...' });
+      const result = await offlineService.syncPendingOperations();
+      if (result.success) {
+        await loadPendingWalkIns();
+      }
+    } catch (err) {
+      console.error('Failed to sync pending walk-ins:', err);
+    } finally {
+      setLoading('syncWalkIns', false);
+    }
+  }, [isOnline, loadPendingWalkIns, setLoading]);
+
   // Track online/offline status
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
       // Auto-sync when back online
-      syncPendingWalkIns();
+      syncPendingWalkIns(true);
     };
     const handleOffline = () => setIsOnline(false);
 
@@ -59,34 +91,9 @@ const WalkInRegistration = () => {
       window.removeEventListener('offline', handleOffline);
       if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [loadPendingWalkIns, syncPendingWalkIns]);
 
-  const loadPendingWalkIns = async () => {
-    try {
-      const pending = await offlineService.getPendingWalkIns();
-      setPendingWalkIns(pending);
-    } catch (err) {
-      console.error('Failed to load pending walk-ins:', err);
-    }
-  };
-
-  const syncPendingWalkIns = async () => {
-    if (!isOnline) return;
-
-    try {
-      setLoading('syncWalkIns', true, { message: 'Syncing pending registrations...' });
-      const result = await offlineService.syncPendingOperations();
-      if (result.success) {
-        await loadPendingWalkIns();
-      }
-    } catch (err) {
-      console.error('Failed to sync pending walk-ins:', err);
-    } finally {
-      setLoading('syncWalkIns', false);
-    }
-  };
-
-  const handleRetrySync = async (visitor) => {
+  const handleRetrySync = async () => {
     // Retry syncing all pending items
     await syncPendingWalkIns();
   };
@@ -148,7 +155,7 @@ const WalkInRegistration = () => {
   const registerOnline = async (walkInData) => {
     try {
       setLoading('walkInReg', true, { message: 'Registering walk-in visitor...' });
-      clearAllErrors();
+      safelyClearErrors();
 
       const response = await fetch('/api/visitors/walk-in', {
         method: 'POST',
@@ -187,7 +194,7 @@ const WalkInRegistration = () => {
   const registerOffline = async (walkInData) => {
     try {
       setLoading('walkInReg', true, { message: 'Saving offline registration...' });
-      clearAllErrors();
+      safelyClearErrors();
 
       const localId = generateLocalId();
       const offlineRecord = {
@@ -216,13 +223,20 @@ const WalkInRegistration = () => {
     }
   };
 
-  const handleRequestApproval = async (visitor) => {
+  const handleRequestApproval = async (visitor, options = {}) => {
+    const targetVisitor = visitor || registeredVisitor;
+
+    if (!targetVisitor?.id) {
+      handleError('Visitor record is not ready for approval yet. Please register the visitor again.', { context: 'Approval Request' });
+      return;
+    }
+
     if (!isOnline) {
       handleError('Cannot request approval while offline. Approval will be requested when you\'re back online.', { context: 'Approval Request' });
       return;
     }
 
-    if (visitor.pendingSync) {
+    if (targetVisitor.pendingSync) {
       handleError('This registration is pending sync. Please wait for it to sync before requesting approval.', { context: 'Approval Request' });
       return;
     }
@@ -230,14 +244,14 @@ const WalkInRegistration = () => {
     try {
       setLoading('approval', true, { message: 'Requesting resident approval...' });
 
-      const response = await fetch(`/api/visitors/${visitor.id}/request-approval`, {
+      const response = await fetch(`/api/visitors/${targetVisitor.id}/request-approval`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          reason: 'Walk-in visitor at gate',
+          reason: options.forceResend ? 'Follow-up approval reminder from guard' : 'Walk-in visitor at gate',
           guardNotes: formData.purpose
         })
       });
@@ -271,7 +285,7 @@ const WalkInRegistration = () => {
     });
     setRegisteredVisitor(null);
     setShowApprovalCard(false);
-    clearAllErrors();
+    safelyClearErrors();
   };
 
   return (
@@ -279,7 +293,7 @@ const WalkInRegistration = () => {
       <PageHeader
         title="Walk-In Registration"
         subtitle="Register unexpected visitors at the gate"
-        icon={<UserPlus className="w-6 h-6 text-blue-600" />}
+        icon={<Icon name="UserPlus" className="w-6 h-6 text-blue-600" />}
         showBack={true}
         backTo="/dashboard/guard"
         actions={
@@ -287,19 +301,19 @@ const WalkInRegistration = () => {
             {/* Offline indicator */}
             {!isOnline && (
               <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
-                <WifiOff className="w-3 h-3" />
+                <Icon name="WifiOff" className="w-3 h-3" />
                 Offline
               </span>
             )}
             {/* Pending sync badge */}
             {pendingWalkIns.length > 0 && (
-              <button
+              <Button
                 onClick={() => setShowPendingList(!showPendingList)}
                 className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full hover:bg-orange-200"
               >
-                <CloudOff className="w-3 h-3" />
+                <Icon name="CloudOff" className="w-3 h-3" />
                 {pendingWalkIns.length} pending
-              </button>
+              </Button>
             )}
             {showApprovalCard && (
               <Button variant="outline" onClick={handleReset}>
@@ -314,7 +328,7 @@ const WalkInRegistration = () => {
         {/* Offline Mode Banner */}
         {!isOnline && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-            <WifiOff className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <Icon name="WifiOff" className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-yellow-800">Offline Mode Active</p>
               <p className="text-xs text-yellow-700 mt-1">
@@ -330,7 +344,7 @@ const WalkInRegistration = () => {
           <Card>
             <Card.Header className="flex items-center justify-between">
               <Card.Title className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-orange-600" />
+                <Icon name="Clock" className="w-5 h-5 text-orange-600" />
                 Pending Registrations ({pendingWalkIns.length})
               </Card.Title>
               {isOnline && (
@@ -340,7 +354,7 @@ const WalkInRegistration = () => {
                   onClick={syncPendingWalkIns}
                   disabled={isLoading('syncWalkIns')}
                 >
-                  <RefreshCw className={`w-4 h-4 mr-1 ${isLoading('syncWalkIns') ? 'animate-spin' : ''}`} />
+                  <Icon name="RefreshCw" className={`w-4 h-4 mr-1 ${isLoading('syncWalkIns') ? 'animate-spin' : ''}`} />
                   Sync Now
                 </Button>
               )}
@@ -362,7 +376,7 @@ const WalkInRegistration = () => {
                       </p>
                     </div>
                     <span className="flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
-                      <CloudOff className="w-3 h-3" />
+                      <Icon name="CloudOff" className="w-3 h-3" />
                       Pending
                     </span>
                   </div>
@@ -382,7 +396,7 @@ const WalkInRegistration = () => {
                 {/* Visitor Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <User className="w-4 h-4 inline mr-1" />
+                    <Icon name="User" className="w-4 h-4 inline mr-1" />
                     Visitor Name *
                   </label>
                   <input
@@ -400,7 +414,7 @@ const WalkInRegistration = () => {
                 {/* Phone Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <Phone className="w-4 h-4 inline mr-1" />
+                    <Icon name="Phone" className="w-4 h-4 inline mr-1" />
                     Phone Number *
                   </label>
                   <input
@@ -418,7 +432,7 @@ const WalkInRegistration = () => {
                 {/* House Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <Home className="w-4 h-4 inline mr-1" />
+                    <Icon name="Home" className="w-4 h-4 inline mr-1" />
                     House Number *
                   </label>
                   <input
@@ -437,7 +451,7 @@ const WalkInRegistration = () => {
                 {/* Purpose */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <FileText className="w-4 h-4 inline mr-1" />
+                    <Icon name="FileText" className="w-4 h-4 inline mr-1" />
                     Purpose (Optional)
                   </label>
                   <textarea
@@ -468,7 +482,7 @@ const WalkInRegistration = () => {
 
                 {/* Info Notice */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex gap-2">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <Icon name="AlertCircle" className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-800">
                     <p className="font-medium mb-1">Walk-In Approval Process</p>
                     <p>After registration, you can request approval from the resident. They'll receive a real-time notification and can approve/reject instantly.</p>
@@ -569,10 +583,10 @@ const WalkInRegistration = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleRetrySync(visitor)}
+                          onClick={handleRetrySync}
                           className="flex items-center gap-1"
                         >
-                          <RefreshCw className="w-4 h-4" />
+                          <Icon name="RefreshCw" className="w-4 h-4" />
                           Retry Sync
                         </Button>
                       </div>
@@ -607,7 +621,7 @@ const WalkInRegistration = () => {
           <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-md">
             <div className="flex gap-3">
               <div className="flex-shrink-0">
-                <WifiOff className="w-5 h-5" />
+                <Icon name="WifiOff" className="w-5 h-5" />
               </div>
               <div className="flex-1">
                 <p className="font-medium">You are currently offline</p>
@@ -622,4 +636,3 @@ const WalkInRegistration = () => {
 };
 
 export default WalkInRegistration;
-

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/apiClient';
+import Button from '../components/ui/Button';
 
 /**
  * Privacy Dashboard Component
@@ -151,7 +152,7 @@ const PrivacyDashboard = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🔒 Privacy & Data Control</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">🔒 Privacy & Data Control</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-200">
             Manage your personal data in compliance with Kenya Data Protection Act 2019
           </p>
@@ -175,7 +176,7 @@ const PrivacyDashboard = () => {
           <div className="border-b border-gray-200 dark:border-slate-700">
             <nav className="flex -mb-px">
               {['overview', 'my-data', 'consent', 'retention'].map((tab) => (
-                <button
+                <Button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`flex-1 py-4 px-6 text-center font-medium text-sm border-b-2 transition-colors ${
@@ -188,7 +189,7 @@ const PrivacyDashboard = () => {
                   {tab === 'my-data' && '📁 My Data'}
                   {tab === 'consent' && '✅ Consent'}
                   {tab === 'retention' && '⏱️ Retention'}
-                </button>
+                </Button>
               ))}
             </nav>
           </div>
@@ -213,13 +214,15 @@ const PrivacyDashboard = () => {
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-200">
                           Download all your personal data in JSON format (Kenya DPA Article 39 - Data Portability)
                         </p>
-                        <button
+                        <Button
+                          variant="primary"
+                          size="sm"
                           onClick={handleExportData}
                           disabled={loading}
-                          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors text-sm font-medium"
+                          className="mt-4"
                         >
                           📥 Export Data
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -239,12 +242,14 @@ const PrivacyDashboard = () => {
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-200">
                           Permanently delete your account and all associated data (Kenya DPA Article 33 - Right to Erasure)
                         </p>
-                        <button
+                        <Button
+                          variant="danger"
+                          size="sm"
                           onClick={() => setShowDeleteModal(true)}
-                          className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                          className="mt-4"
                         >
                           🗑️ Request Deletion
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -348,12 +353,14 @@ const PrivacyDashboard = () => {
                         </div>
                       </div>
                       {consent.granted && !consent.required && (
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleWithdrawConsent(consent.type)}
                           className="ml-4 text-sm text-red-600 hover:text-red-800"
                         >
                           Withdraw
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -425,46 +432,50 @@ const PrivacyDashboard = () => {
 
             <form onSubmit={handleRequestDeletion} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="delete-confirm-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Confirm your email:
                 </label>
                 <input
+                  id="delete-confirm-email"
                   type="email"
                   value={deleteConfirmEmail}
                   onChange={(e) => setDeleteConfirmEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="delete-reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Reason for deletion (optional):
                 </label>
                 <textarea
+                  id="delete-reason"
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
                   rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   placeholder="Help us improve by telling us why..."
                 />
               </div>
 
               <div className="flex space-x-3">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="danger"
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400"
+                  className="flex-1"
                 >
                   {loading ? 'Submitting...' : 'Request Deletion'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

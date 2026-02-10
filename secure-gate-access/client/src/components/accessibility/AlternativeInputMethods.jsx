@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAccessibilityContext } from './AccessibilityProvider.jsx';
 import './AlternativeInputMethods.css';
+import Button from '../ui/Button';
 
 /**
  * Alternative Input Methods Manager
@@ -381,19 +382,19 @@ export const AlternativeInputMethods = ({
         <h3 className="alternative-input-methods__title">
           Alternative Input Methods
         </h3>
-        <button
+        <Button
           className="alternative-input-methods__calibrate"
           onClick={calibrateInputMethod}
           disabled={isCalibrating}
           aria-label="Calibrate current input method"
         >
           {isCalibrating ? 'Calibrating...' : 'Calibrate'}
-        </button>
+        </Button>
       </div>
 
       <div className="alternative-input-methods__methods">
         {Object.entries(inputMethods).map(([key, method]) => (
-          <button
+          <Button
             key={key}
             className={`alternative-input-methods__method ${
               activeMethod === key ? 'alternative-input-methods__method--active' : ''
@@ -422,7 +423,7 @@ export const AlternativeInputMethods = ({
                 Not Available
               </span>
             )}
-          </button>
+          </Button>
         ))}
       </div>
 

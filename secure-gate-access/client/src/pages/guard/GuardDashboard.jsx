@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { navigateTo } from "../../utils/appNavigation";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import logger from 'utils/logger';
 import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 // AppShell removed - handled by Layout Route
-import { Card, Button, Badge, SearchFilter, SearchResults, Pagination } from "../../components/ui";
+import { Card, Button, SearchFilter, Pagination, Skeleton } from "../../components/ui";
 import Table from "../../components/Table";
 // Unused page imports removed
 import notificationService from "../../services/notificationService";
@@ -25,23 +24,19 @@ import { getStatusChipClass, getStatusIcon } from "../../utils/statusColors"; //
 import LiveConnectionStatus from "../../components/common/LiveConnectionStatus";
 import VisitorDetailsModal from "../../components/guard/VisitorDetailsModal";
 // Phase 3: Privacy-First Features
-import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
 import OnboardingTour from "../../components/common/OnboardingTour";
 import QuickActionMenu from "../../components/common/QuickActionMenu";
+// Phase 1: Confirmation Dialog for destructive actions
+import { useConfirmation } from "../../components/common/ConfirmationDialog";
 
 export default function GuardDashboard() {
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   const role = useCurrentRole();
-  const location = useLocation();
   const navigate = useNavigate();
-  const { handleError, handleApiError, clearAllErrors } = useError();
+  const { handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
-
-  const onLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
 
   const [active, setActive] = useState([]);
   const [toasts, setToasts] = useState([]);
@@ -50,6 +45,7 @@ export default function GuardDashboard() {
   const [activeQuickFilter, setActiveQuickFilter] = useState('all'); // Phase G3: Quick filter state
   const [isConnected, setIsConnected] = useState(true); // Live connection status
   const [selectedVisitor, setSelectedVisitor] = useState(null); // Visitor details modal
+  const [initialLoad, setInitialLoad] = useState(true); // Track first load for skeleton
   const toastRef = React.useRef(null);
 
   // Search and filter configuration
@@ -65,18 +61,58 @@ export default function GuardDashboard() {
     data: filteredActive,
     pagination,
     searchTerm,
-    filters,
     setSearchTerm,
     setFilters,
     clearFilters,
     setPage,
     isSearching,
     hasFilters,
-    hasResults
   } = useSearchData(active, searchFields, filterFields, {
     enablePagination: true,
     pageSize: 10
   });
+
+  function statusChip(s) {
+    // Phase A8: Using consistent status colors
+    return <span className={getStatusChipClass(s, 'sm')}>{getStatusIcon(s)} {s || '-'}</span>;
+  }
+
+  function normalizeStatusValue(status) {
+    return String(status || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  }
+
+  function canCheckInVisitor(visitor) {
+    const normalizedStatus = normalizeStatusValue(visitor?.status);
+    return normalizedStatus === 'CONFIRMED' || normalizedStatus === 'APPROVED';
+  }
+
+  function canCheckOutVisitor(visitor) {
+    const normalizedStatus = normalizeStatusValue(visitor?.status);
+    return normalizedStatus === 'ON_PREMISE' || normalizedStatus === 'CHECKED_IN' || (visitor?.check_in_time && !visitor?.check_out_time);
+  }
+
+  function canRevokeVisitor(visitor) {
+    return normalizeStatusValue(visitor?.status) !== 'REVOKED';
+  }
+
+  const fetchActive = useCallback(async () => {
+    try {
+      setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
+      clearAllErrors();
+      const res = await fetch('/api/visitors/active', {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Failed');
+      setActive(json.data || []);
+    } catch (e) {
+      handleApiError(e, 'Guard Dashboard');
+    } finally {
+      setLoading('guardDashboard', false);
+      setInitialLoad(false);
+    }
+  }, [clearAllErrors, handleApiError, setLoading]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -102,32 +138,9 @@ export default function GuardDashboard() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isLoading, navigate]);
+  }, [fetchActive, isLoading, navigate]);
 
-  function statusChip(s) {
-    // Phase A8: Using consistent status colors
-    return <span className={getStatusChipClass(s, 'sm')}>{getStatusIcon(s)} {s || '-'}</span>;
-  }
-
-  async function fetchActive() {
-    try {
-      setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
-      clearAllErrors();
-      const res = await fetch('/api/visitors/active', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || 'Failed');
-      setActive(json.data || []);
-    } catch (e) {
-      handleApiError(e, 'Guard Dashboard');
-    } finally {
-      setLoading('guardDashboard', false);
-    }
-  }
-
-  useEffect(() => { fetchActive(); }, []);
+  useEffect(() => { fetchActive(); }, [fetchActive]);
 
   // Subscribe to guard SSE for live updates
   useEffect(() => {
@@ -164,7 +177,7 @@ export default function GuardDashboard() {
       setIsConnected(false);
     }
     return () => { try { es && es.close(); } catch { } };
-  }, []);
+  }, [fetchActive]);
 
   // Persist toast filter and auto-scroll to newest
   useEffect(() => { try { localStorage.setItem('toastFilter', toastFilter); } catch { } }, [toastFilter]);
@@ -203,7 +216,6 @@ export default function GuardDashboard() {
         notificationService.warning('Already Checked In', 'Visitor is already checked in');
       } else {
         notificationService.success('Check-in Successful', `Visitor ${id} has been checked in`);
-        fetchActive(); // Refresh the list
       }
     } catch (e) {
       notificationService.error('Check-in Failed', e.message);
@@ -217,7 +229,6 @@ export default function GuardDashboard() {
         notificationService.warning('Already Checked Out', 'Visitor is already checked out');
       } else {
         notificationService.success('Check-out Successful', `Visitor ${id} has been checked out`);
-        fetchActive(); // Refresh the list
       }
     } catch (e) {
       notificationService.error('Check-out Failed', e.message);
@@ -225,11 +236,19 @@ export default function GuardDashboard() {
   };
 
   const onRevoke = async (id) => {
-    if (!window.confirm('Revoke this visitor?')) return;
+    const confirmed = await confirm({
+      variant: 'warning',
+      title: 'Revoke Visitor Access',
+      message: `Are you sure you want to revoke visitor #${id}? They will no longer be able to enter the premises.`,
+      confirmText: 'Revoke',
+      cancelText: 'Cancel',
+      showUndo: true,
+    });
+    if (!confirmed) return;
+
     try {
       await postAction(id, 'revoke');
       notificationService.warning('Visitor Revoked', `Visitor ${id} has been revoked`);
-      fetchActive(); // Refresh the list
     } catch (e) {
       notificationService.error('Revoke Failed', e.message);
     }
@@ -238,14 +257,7 @@ export default function GuardDashboard() {
   // Phase G3: KPI filter click handler
   const handleKPIClick = (filterId) => {
     setActiveQuickFilter(filterId);
-    // Apply filter based on KPI clicked
-    const filterMap = {
-      'on_premise': { status: 'on_premise' },
-      'arriving': { fromDate: new Date().toISOString().split('T')[0], toDate: new Date().toISOString().split('T')[0] },
-      'pending': { status: 'pending_approval' },
-      'denied': { status: 'rejected', fromDate: new Date().toISOString().split('T')[0], toDate: new Date().toISOString().split('T')[0] }
-    };
-    // This would trigger a refetch with the filter - for now just set the active filter state
+    // This only updates client-side filter state in the current implementation.
   };
 
   // Phase G3: Quick filter handler
@@ -261,7 +273,101 @@ export default function GuardDashboard() {
     clearFilters();
   };
 
-  let panel = (
+  // Skeleton Loading State for initial page load
+  const DashboardSkeleton = () => (
+    <div className="space-y-6 animate-in fade-in">
+      {/* Connection Status Header Skeleton */}
+      <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 mb-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-20 rounded-full" />
+        </div>
+        <Skeleton className="h-4 w-24" />
+      </div>
+
+      {/* Quick Action Tiles Skeleton */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 mb-6">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-gray-100 dark:bg-slate-800 rounded-xl p-4 md:p-6">
+            <div className="flex flex-col items-center text-center space-y-2">
+              <Skeleton className="w-12 h-12 md:w-14 md:h-14 rounded-xl" />
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick Actions Row Skeleton */}
+      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="w-5 h-5 rounded" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* KPI Cards Skeleton */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <Card key={i} className="p-4">
+            <div className="text-center space-y-2">
+              <Skeleton className="h-8 w-12 mx-auto" />
+              <Skeleton className="h-4 w-20 mx-auto" />
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Status Overview Skeleton */}
+      <Card>
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-8 w-24 rounded-lg" />
+        </div>
+        <div className="p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-gray-50 dark:bg-slate-900 p-3 rounded-lg text-center space-y-2">
+                <Skeleton className="h-8 w-10 mx-auto" />
+                <Skeleton className="h-4 w-16 mx-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      {/* Visitor Table Skeleton */}
+      <Card>
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-8 w-20 rounded-lg" />
+        </div>
+        <div className="p-4 space-y-3">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 flex items-center gap-4">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-56" />
+              </div>
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-20 rounded-lg" />
+                <Skeleton className="h-8 w-20 rounded-lg" />
+                <Skeleton className="h-8 w-16 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+
+  let panel = initialLoad && isLoading('guardDashboard') ? (
+    <DashboardSkeleton />
+  ) : (
     <div className="space-y-6">
       {/* Enhanced: Live Connection Status Header */}
       <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 mb-4">
@@ -294,22 +400,23 @@ export default function GuardDashboard() {
                 </p>
               </div>
               <div className="mt-4 flex gap-3">
-                <button
-                  onClick={() => navigate('/dashboard/guard/settings/security')}
-                  className="min-h-[44px] bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-4 rounded-lg shadow transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                <Button
+                  onClick={() => navigate('/dashboard/guard/settings?tab=security')}
+                  className="min-h-[44px] bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-4 rounded-lg shadow transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+                  aria-label="Enable Multi-Factor Authentication now"
                 >
                   Enable MFA Now
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => {
-                    // Dismiss banner for this session (could store in localStorage if needed)
-                    // For now, just navigate away or provide a link to docs
-                    window.open('/documentation/guides/mfa-setup.md', '_blank');
+                    navigate('/dashboard/guard/help/mfa-setup');
                   }}
-                  className="min-h-[44px] text-amber-700 hover:text-amber-900 font-medium py-2 px-4 rounded-lg border border-amber-300 hover:bg-amber-100 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                  className="min-h-[44px] text-amber-700 hover:text-amber-900 font-medium py-2 px-4 rounded-lg border border-amber-300 hover:bg-amber-100 transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+                  aria-label="Learn more about MFA setup"
                 >
                   Learn More
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -320,10 +427,12 @@ export default function GuardDashboard() {
       <div data-testid="toasts" ref={toastRef} className="fixed top-16 right-4 flex flex-col gap-2 z-50 max-w-sm max-h-80 overflow-y-auto">
         <div className="flex gap-2 justify-end mb-1">
           {['all', 'info', 'warning', 'error'].map(f => (
-            <button key={f} className="min-h-[44px] min-w-[44px] text-xs px-3 py-2 rounded opacity-70 hover:opacity-100 bg-gray-800 text-white"
-              style={{ opacity: toastFilter === f ? 1 : 0.7 }} onClick={() => setToastFilter(f)}>
+            <Button key={f} variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] text-xs px-3 py-2 rounded bg-gray-800 text-white"
+              style={{ opacity: toastFilter === f ? 1 : 0.7 }} onClick={() => setToastFilter(f)}
+              aria-label={`Filter toasts by ${f}`}
+              aria-pressed={toastFilter === f}>
               {f.toUpperCase()}
-            </button>
+            </Button>
           ))}
           <span aria-label="visible-toasts" className="ml-2 text-xs bg-gray-800 text-white rounded-full px-2 py-1">
             {toasts.filter(t => toastFilter === 'all' || t.severity === toastFilter).length}
@@ -339,8 +448,12 @@ export default function GuardDashboard() {
         {/* Primary: Scan QR */}
         <div
           data-tour="scan-qr"
+          role="button"
+          tabIndex={0}
           onClick={() => navigate('/dashboard/guard/scan-qr')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/guard/scan-qr'); } }}
           className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all shadow-lg text-white"
+          aria-label="Scan QR code for quick check-in"
         >
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-xl flex items-center justify-center mb-2">
@@ -356,8 +469,12 @@ export default function GuardDashboard() {
         {/* Secondary: Manual Check */}
         <div
           data-tour="manual-check"
+          role="button"
+          tabIndex={0}
           onClick={() => navigate('/dashboard/guard/manual-check')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/guard/manual-check'); } }}
           className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all shadow-lg text-white"
+          aria-label="Manual check - search for a visitor"
         >
           <div className="flex flex-col items-center text-center">
             <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-xl flex items-center justify-center mb-2">
@@ -372,8 +489,12 @@ export default function GuardDashboard() {
 
         {/* Tertiary: Walk-In (less emphasis) */}
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => navigate('/dashboard/guard/walk-in')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/guard/walk-in'); } }}
           className="bg-white dark:bg-slate-800 border-2 border-purple-200 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all col-span-2 md:col-span-1"
+          aria-label="Walk-in registration for new visitors"
         >
           <div className="flex md:flex-col items-center md:text-center">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-3 md:mr-0 md:mb-2">
@@ -392,8 +513,12 @@ export default function GuardDashboard() {
       {/* Quick Actions Row - Shift Management */}
       <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4">
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => navigate('/dashboard/guard/shift-handover')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/guard/shift-handover'); } }}
           className="bg-white dark:bg-slate-800 border border-indigo-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all"
+          aria-label="Shift handover"
         >
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -404,8 +529,12 @@ export default function GuardDashboard() {
           </div>
         </div>
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => navigate('/dashboard/guard/activity-log')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/guard/activity-log'); } }}
           className="bg-white dark:bg-slate-800 border border-cyan-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-cyan-300 transition-all"
+          aria-label="Activity log"
         >
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,8 +545,12 @@ export default function GuardDashboard() {
           </div>
         </div>
         <div
+          role="button"
+          tabIndex={0}
           onClick={() => navigate('/dashboard/guard/bulk-checkout')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/dashboard/guard/bulk-checkout'); } }}
           className="bg-white dark:bg-slate-800 border border-orange-200 rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-orange-300 transition-all"
+          aria-label="Bulk checkout"
         >
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -632,9 +765,9 @@ export default function GuardDashboard() {
                     statusChip(v.status),
                     ((['guard', 'admin'].includes(role)) ? (
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => onCheckIn(v.id)} disabled={v.status !== 'CONFIRMED'}>Check-in</Button>
-                        <Button size="sm" onClick={() => onCheckOut(v.id)} disabled={!(v.status === 'ON_PREMISE' || (v.check_in_time && !v.check_out_time))}>Check-out</Button>
-                        <Button size="sm" variant="destructive" onClick={() => onRevoke(v.id)} disabled={v.status === 'REVOKED'}>Revoke</Button>
+                        <Button size="sm" onClick={() => onCheckIn(v.id)} disabled={!canCheckInVisitor(v)}>Check-in</Button>
+                        <Button size="sm" onClick={() => onCheckOut(v.id)} disabled={!canCheckOutVisitor(v)}>Check-out</Button>
+                        <Button size="sm" variant="destructive" onClick={() => onRevoke(v.id)} disabled={!canRevokeVisitor(v)}>Revoke</Button>
                       </div>
                     ) : null)
                   ])}
@@ -661,13 +794,13 @@ export default function GuardDashboard() {
 
   function getStatusCount(status) {
     if (!Array.isArray(active)) return 0;
-    return active.filter(v => v.status === status).length;
+    return active.filter(v => normalizeStatusValue(v.status) === normalizeStatusValue(status)).length;
   }
 
   // Get filtered status counts
   function getFilteredStatusCount(status) {
     if (!Array.isArray(filteredActive)) return 0;
-    return filteredActive.filter(v => v.status === status).length;
+    return filteredActive.filter(v => normalizeStatusValue(v.status) === normalizeStatusValue(status)).length;
   }
   return (
     <div className="guard-dashboard-container">
@@ -729,6 +862,9 @@ export default function GuardDashboard() {
           onDeny={onRevoke}
         />
       )}
+
+      {/* Confirmation Dialog for destructive actions */}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }
@@ -738,24 +874,6 @@ function mask(value) {
   if (String(value).includes('@')) return `${value[0]}***${value.slice(-1)}`;
   const d = String(value).replace(/\D+/g, '');
   return d.length >= 4 ? `${d.slice(0, 2)}***${d.slice(-2)}` : '***';
-}
-
-// Mobile-First Components
-function QuickActionTile({ href, icon, title, subtitle, color }) {
-  return (
-    <div
-      onClick={() => navigateTo(href)}
-      className="cursor-pointer"
-    >
-      <div className={`${color} text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200 h-full`}>
-        <div className="flex flex-col items-center text-center space-y-2">
-          <div className="opacity-90">{icon}</div>
-          <div className="font-semibold text-lg">{title}</div>
-          <div className="text-sm opacity-80">{subtitle}</div>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function StatusBadge({ label, value, color }) {
@@ -768,14 +886,23 @@ function StatusBadge({ label, value, color }) {
 }
 
 function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDetails }) {
-  const canCheckIn = visitor.status === 'CONFIRMED';
-  const canCheckOut = visitor.status === 'ON_PREMISE' || (visitor.check_in_time && !visitor.check_out_time);
-  const canRevoke = visitor.status !== 'REVOKED';
+  const normalizedStatus = String(visitor?.status || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  const canCheckIn = normalizedStatus === 'CONFIRMED' || normalizedStatus === 'APPROVED';
+  const canCheckOut = normalizedStatus === 'ON_PREMISE' || normalizedStatus === 'CHECKED_IN' || (visitor.check_in_time && !visitor.check_out_time);
+  const canRevoke = normalizedStatus !== 'REVOKED';
 
   return (
     <div
       className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 space-y-3 hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
       onClick={() => onViewDetails?.()}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onViewDetails?.();
+        }
+      }}
     >
       <div className="flex justify-between items-start">
         <div>
@@ -793,14 +920,39 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
       </div>
 
       {(['guard', 'admin'].includes(role)) && (
-        <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
-          <Button size="sm" className="flex-1" onClick={() => onCheckIn(visitor.id)} disabled={!canCheckIn}>
+        <div className="flex gap-2 pt-2">
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={(event) => {
+              event.stopPropagation();
+              onCheckIn(visitor.id);
+            }}
+            disabled={!canCheckIn}
+          >
             Check-in
           </Button>
-          <Button size="sm" className="flex-1" onClick={() => onCheckOut(visitor.id)} disabled={!canCheckOut}>
+          <Button
+            size="sm"
+            className="flex-1"
+            onClick={(event) => {
+              event.stopPropagation();
+              onCheckOut(visitor.id);
+            }}
+            disabled={!canCheckOut}
+          >
             Check-out
           </Button>
-          <Button size="sm" variant="destructive" className="flex-1" onClick={() => onRevoke(visitor.id)} disabled={!canRevoke}>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="flex-1"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRevoke(visitor.id);
+            }}
+            disabled={!canRevoke}
+          >
             Revoke
           </Button>
         </div>

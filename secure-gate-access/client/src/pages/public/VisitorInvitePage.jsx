@@ -23,6 +23,7 @@ import './VisitorInvitePage.css';
 
 // Custom hook import
 import { useVisitorInvite } from '../../hooks/useVisitorInvite';
+import Button from '../../components/ui/Button';
 
 const VisitorInvitePage = () => {
   const { token } = useParams();
@@ -51,51 +52,6 @@ const VisitorInvitePage = () => {
 
   // Phase 1.2: Save Pass Modal state
   const [showSavePassModal, setShowSavePassModal] = useState(false);
-
-  // Get status badge color
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved':
-      case 'confirmed':
-      case 'verified':
-        return 'status-approved';
-      case 'pending_approval':
-      case 'pending_confirmation':
-      case 'pending':
-      case 'otp_sent':
-        return 'status-pending';
-      case 'rejected':
-      case 'revoked':
-        return 'status-rejected';
-      case 'on_premise':
-        return 'status-onpremise';
-      case 'checked_out':
-        return 'status-checkedout';
-      case 'expired':
-        return 'status-expired';
-      default:
-        return 'status-default';
-    }
-  };
-
-  // Format status text
-  const getStatusText = (status) => {
-    const statusMap = {
-      'approved': 'Approved',
-      'pending_approval': 'Pending Approval',
-      'pending_confirmation': 'Awaiting Confirmation',
-      'pending': 'Pending',
-      'confirmed': 'Confirmed',
-      'verified': 'Verified',
-      'otp_sent': 'OTP Sent',
-      'rejected': 'Denied',
-      'on_premise': 'On Premise',
-      'checked_out': 'Checked Out',
-      'expired': 'Expired',
-      'revoked': 'Revoked'
-    };
-    return statusMap[status] || status;
-  };
 
   // Format date
   const formatDate = (dateString) => {
@@ -133,9 +89,9 @@ const VisitorInvitePage = () => {
           <div className="error-icon">⚠️</div>
           <h2>Invite Not Available</h2>
           <p>{error}</p>
-          <button className="btn-primary" onClick={() => navigate('/')}>
+          <Button className="btn-primary" onClick={() => navigate('/')}>
             Go Home
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -163,19 +119,22 @@ const VisitorInvitePage = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          purpose: additionalInfo.purpose || 'Personal Visit',
-          vehiclePlate: additionalInfo.vehiclePlate,
-          // company removed
-          idNumber: additionalInfo.idNumber,
-          consent_given: true,
-          consent_timestamp: new Date().toISOString(),
-          consent_type: 'data_processing',
-          consent_version: '1.0'
+          consent: {
+            dataProcessing: true,
+            privacyPolicy: true,
+            marketing: false
+          },
+          additionalInfo: {
+            purpose: additionalInfo.purpose || 'Personal Visit',
+            vehiclePlate: additionalInfo.vehiclePlate,
+            idNumber: additionalInfo.idNumber
+          }
         })
       });
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error('Failed to confirm visit');
+        throw new Error(data?.error || data?.message || 'Failed to confirm visit');
       }
 
       // Refresh visitor details to get updated status and QR code
@@ -189,8 +148,7 @@ const VisitorInvitePage = () => {
   };
 
   // Determine if we need to show confirmation flow
-  const needsConfirmation = visitor &&
-    (visitor.status === 'pending_confirmation' || !visitor.consent_given || !visitor.idNumber);
+  const needsConfirmation = visitor?.status === 'pending_confirmation';
 
   // Determine if this is a bulk invite self-registration
   const isBulkInvite = visitor?.isBulkInvite;
@@ -251,9 +209,6 @@ const VisitorInvitePage = () => {
       // On success, redirect to the new visitor pass URL
       if (data.visitor_token) {
         navigate(`/v/${data.visitor_token}`, { replace: true });
-        // Force reload to get fresh state? navigate usually triggers re-render 
-        // but we might want to ensure clean state
-        window.location.href = `/v/${data.visitor_token}`;
       }
 
     } catch (err) {
@@ -311,10 +266,11 @@ const VisitorInvitePage = () => {
 
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  <label htmlFor="visitor-name" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="visitor-name"
                     type="text"
                     required
                     value={additionalInfo.name || ''}
@@ -326,10 +282,11 @@ const VisitorInvitePage = () => {
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  <label htmlFor="visitor-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="visitor-phone"
                     type="tel"
                     required
                     value={additionalInfo.phone || ''}
@@ -341,10 +298,11 @@ const VisitorInvitePage = () => {
 
                 {/* ID Number */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  <label htmlFor="visitor-id-number" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     ID / Passport Number <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="visitor-id-number"
                     type="text"
                     required
                     value={additionalInfo.idNumber || ''}
@@ -357,8 +315,9 @@ const VisitorInvitePage = () => {
 
                 {/* Vehicle Plate */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Vehicle License Plate</label>
+                  <label htmlFor="visitor-vehicle" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Vehicle License Plate</label>
                   <input
+                    id="visitor-vehicle"
                     type="text"
                     value={additionalInfo.vehiclePlate}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, vehiclePlate: e.target.value.toUpperCase() }))}
@@ -392,7 +351,7 @@ const VisitorInvitePage = () => {
                   )}
                 </div>
 
-                <button
+                <Button
                   type="submit"
                   disabled={confirmLoading}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
@@ -403,7 +362,7 @@ const VisitorInvitePage = () => {
                       Registering...
                     </span>
                   ) : 'Register & Get Pass ➔'}
-                </button>
+                </Button>
               </form>
             </div>
           </div>
@@ -415,13 +374,13 @@ const VisitorInvitePage = () => {
   // Render confirmation flow for new invites (Standard)
   if (needsConfirmation || showConfirmation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="min-h-screen bg-gradient-to-br from-brand-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
         <div className="max-w-lg mx-auto p-4 md:py-12 py-6">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-center">
+            <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 text-center">
               <h1 className="text-2xl font-bold text-white mb-1">You're Invited! 🎉</h1>
-              <p className="text-green-100 text-sm">
+              <p className="text-brand-100 text-sm">
                 {visitor.resident?.name || 'Your host'} has invited you
               </p>
             </div>
@@ -457,7 +416,7 @@ const VisitorInvitePage = () => {
                   <select
                     value={additionalInfo.purpose}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, purpose: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   >
                     <option value="">Select purpose...</option>
                     <option value="Personal Visit">Personal Visit</option>
@@ -470,35 +429,37 @@ const VisitorInvitePage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Vehicle License Plate</label>
+                  <label htmlFor="self-reg-vehicle" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Vehicle License Plate</label>
                   <input
+                    id="self-reg-vehicle"
                     type="text"
                     value={additionalInfo.vehiclePlate}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, vehiclePlate: e.target.value.toUpperCase() }))}
                     placeholder="KAA 123A"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for vehicle entry</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  <label htmlFor="self-reg-id" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     ID / Passport Number <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="self-reg-id"
                     type="text"
                     required
                     value={additionalInfo.idNumber || ''}
                     onChange={(e) => setAdditionalInfo(prev => ({ ...prev, idNumber: e.target.value }))}
                     placeholder="Enter your ID Number"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">Required for security verification</p>
                 </div>
               </div>
 
               {/* Privacy Consent */}
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                 <div className="flex items-start gap-3">
                   <input
                     type="checkbox"
@@ -508,24 +469,24 @@ const VisitorInvitePage = () => {
                       setConsentGiven(e.target.checked);
                       if (e.target.checked) setConfirmError(null);
                     }}
-                    className="w-5 h-5 mt-0.5 text-green-600 rounded border-gray-300 dark:border-slate-600 focus:ring-green-500"
+                    className="w-5 h-5 mt-0.5 text-brand-600 rounded border-gray-300 dark:border-slate-600 focus:ring-brand-500"
                   />
                   <label htmlFor="consent" className="text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
                     <span className="font-medium">I consent to SecureGate processing my personal data</span>
                     <span className="text-gray-600 dark:text-gray-200"> for visitor management and security purposes in accordance with the </span>
-                    <Link to="/privacy-policy" className="text-blue-600 underline" target="_blank">Privacy Policy</Link>.
+                    <Link to="/privacy-policy" className="text-blue-600 dark:text-blue-400 underline" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.
                   </label>
                 </div>
                 {confirmError && (
-                  <p className="text-red-600 text-sm mt-2">{confirmError}</p>
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-2">{confirmError}</p>
                 )}
               </div>
 
               {/* Confirm Button */}
-              <button
+              <Button
                 onClick={handleConfirmVisit}
                 disabled={confirmLoading}
-                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-semibold py-4 rounded-xl shadow-lg transition-all disabled:opacity-50"
               >
                 {confirmLoading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -538,7 +499,7 @@ const VisitorInvitePage = () => {
                 ) : (
                   '✅ Confirm & Get My Pass'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -546,13 +507,17 @@ const VisitorInvitePage = () => {
     );
   }
 
+  const qrImageSrc = visitor?.qr_code || visitor?.qrCodeDataUrl || visitor?.qrCode?.dataUrl || visitor?.qrCode?.qrCodeDataUrl;
+  const qrFallbackValue = visitor?.visitorToken || visitor?.visitor_token || visitor?.qrId || String(visitor?.id || '');
+  const visitCode = visitor?.qrId || visitor?.visitorToken || visitor?.visitor_token || visitor?.id;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       <div className="max-w-2xl mx-auto p-4 md:py-12 py-6">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 md:p-8 text-white text-center">
+          <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 md:p-8 text-white text-center">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Visitor Pass</h1>
-            <p className="text-green-100 text-sm md:text-base">Your digital access to the estate</p>
+            <p className="text-brand-100 text-sm md:text-base">Your digital access to the estate</p>
           </div>
           <div className="p-6 md:p-8">
             <div className="space-y-6">
@@ -573,7 +538,7 @@ const VisitorInvitePage = () => {
                     ? 'bg-red-50 text-red-600 border border-red-200'
                     : expiryCountdown.color === 'orange'
                       ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                      : 'bg-green-50 text-green-600 border border-green-200'
+                      : 'bg-brand-50 text-brand-600 border border-brand-200'
                   }`}>
                   {expiryCountdown.expired ? (
                     <>⚠️ This pass has expired</>
@@ -583,19 +548,19 @@ const VisitorInvitePage = () => {
                 </div>
               )}
 
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
+              <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-900/10 rounded-xl p-6">
                 <div className="qr-code-container">
                   {/* Use pre-generated QR code from server if available, otherwise generate client-side */}
-                  {visitor.qr_code || visitor.qrCodeDataUrl ? (
+                  {qrImageSrc ? (
                     <img
-                      src={visitor.qr_code || visitor.qrCodeDataUrl}
+                      src={qrImageSrc}
                       alt="Visitor QR Code"
                       className="qr-code mx-auto"
                       style={{ width: 200, height: 200 }}
                     />
                   ) : (
                     <QRCodeSVG
-                      value={visitor.id.toString()}
+                      value={qrFallbackValue}
                       size={200}
                       level="H"
                       includeMargin={true}
@@ -607,11 +572,11 @@ const VisitorInvitePage = () => {
                   📱 Show this QR code at the gate
                 </p>
                 <p className="qr-code-text">
-                  Visit Code: <strong>{visitor.qrId || visitor.id}</strong>
+                  Visit Code: <strong>{visitCode}</strong>
                 </p>
 
                 {/* Phase 1.2: Save Pass Button */}
-                <button
+                <Button
                   onClick={() => setShowSavePassModal(true)}
                   className="w-full mt-4 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-300 transition-colors shadow-sm"
                 >
@@ -619,7 +584,7 @@ const VisitorInvitePage = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   Save Pass to Device
-                </button>
+                </Button>
               </div>
               <div className="details-section">
                 <h2>Visit Details</h2>
@@ -673,7 +638,7 @@ const VisitorInvitePage = () => {
                 </div>
               )}
               {estateInfo && (
-                <div className="bg-blue-50 rounded-xl p-4 md:p-6">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 md:p-6">
                   <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-3 flex items-center">
                     <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -719,9 +684,9 @@ const VisitorInvitePage = () => {
             <p className="footer-text">
               This invite is valid until {formatDate(visitor.tokenExpiresAt)}
             </p>
-            <button className="btn-refresh" onClick={fetchVisitorDetails}>
+            <Button className="btn-refresh" onClick={fetchVisitorDetails}>
               🔄 Refresh Status
-            </button>
+            </Button>
           </div>
         </div>
       </div>

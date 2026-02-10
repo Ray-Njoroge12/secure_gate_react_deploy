@@ -4,21 +4,45 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { rest } from 'msw';
-import { setupServer } from 'msw/node';
 import WalkInRegistration from '../../pages/guard/WalkInRegistration';
 import { AuthContext } from '../../contexts/AuthContext';
 import { ErrorProvider } from '../../contexts/ErrorContext';
 import { LoadingProvider } from '../../contexts/LoadingContext';
+import offlineService from '../../services/offlineService';
+import { server } from '../../mocks/server';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+jest.mock('../../services/errorQueueService', () => ({
+  __esModule: true,
+  default: {
+    addError: jest.fn(() => 'mock-error-id'),
+    getErrors: jest.fn(() => []),
+    getErrorsByType: jest.fn(() => []),
+    clearAll: jest.fn(),
+    clearByType: jest.fn(),
+    removeError: jest.fn(),
+    getErrorCount: jest.fn(() => 0),
+    getErrorCountByType: jest.fn(() => 0),
+    subscribe: jest.fn(() => jest.fn())
+  }
+}));
+
+jest.mock('../../services/offlineService', () => ({
+  __esModule: true,
+  default: {
+    getPendingWalkIns: jest.fn(async () => []),
+    addConnectionListener: jest.fn(() => jest.fn()),
+    syncPendingOperations: jest.fn(async () => ({ success: true })),
+    queueWalkInRegistration: jest.fn(async () => undefined)
+  }
+}));
 
 // Mock handlers for WalkInRegistration tests
-const handlers = [
-  rest.post(`${API_BASE_URL}/api/visitors/walk-in`, async (req, res, ctx) => {
+const walkInHandlers = [
+  rest.post('*/api/visitors/walk-in', async (req, res, ctx) => {
     const visitorData = await req.json();
 
     // Simulate resident lookup
@@ -45,7 +69,7 @@ const handlers = [
     );
   }),
 
-  rest.post(`${API_BASE_URL}/api/visitors/:id/request-approval`, async (req, res, ctx) => {
+  rest.post('*/api/visitors/:id/request-approval', async (req, res, ctx) => {
     const { id } = req.params;
     return res(
       ctx.status(200),
@@ -58,7 +82,7 @@ const handlers = [
     );
   }),
 
-  rest.get(`${API_BASE_URL}/api/residents/search`, (req, res, ctx) => {
+  rest.get('*/api/residents/search', (req, res, ctx) => {
     const unit = req.url.searchParams.get('unit');
     if (unit === 'NOTFOUND') {
       return res(ctx.status(404), ctx.json({ success: false, message: 'Unit not found' }));
@@ -73,8 +97,6 @@ const handlers = [
   })
 ];
 
-const server = setupServer(...handlers);
-
 // Test utilities
 const mockGuardAuth = {
   user: { id: 2, email: 'guard@test.com', role: 'guard', name: 'Test Guard' },
@@ -86,36 +108,72 @@ const mockGuardAuth = {
   hasAnyRole: (roles) => roles.includes('guard'),
 };
 
-const renderWalkInRegistration = (authOverrides = {}) => {
+const renderWalkInRegistration = async (authOverrides = {}) => {
   const authValue = { ...mockGuardAuth, ...authOverrides };
-  return render(
-    <ErrorProvider>
-      <LoadingProvider>
-        <AuthContext.Provider value={authValue}>
-          <MemoryRouter>
-            <WalkInRegistration />
-          </MemoryRouter>
-        </AuthContext.Provider>
-      </LoadingProvider>
-    </ErrorProvider>
-  );
+  let view;
+
+  await act(async () => {
+    view = render(
+      <ErrorProvider>
+        <LoadingProvider>
+          <AuthContext.Provider value={authValue}>
+            <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <WalkInRegistration />
+            </MemoryRouter>
+          </AuthContext.Provider>
+        </LoadingProvider>
+      </ErrorProvider>
+    );
+  });
+
+  await waitFor(() => {
+    expect(offlineService.getPendingWalkIns).toHaveBeenCalled();
+  });
+
+  return view;
 };
 
 describe('WalkInRegistration Integration Tests', () => {
-  beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
-  afterEach(() => server.resetHandlers());
-  afterAll(() => server.close());
+  let warnSpy;
+  let errorSpy;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  beforeEach(() => {
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation((...args) => {
+      const firstArg = String(args[0] || '');
+      if (firstArg.includes('Online registration failed, falling back to offline')) return;
+      originalWarn(...args);
+    });
+
+    errorSpy = jest.spyOn(console, 'error').mockImplementation((...args) => {
+      const firstArg = String(args[0] || '');
+      if (firstArg.includes('POST /api/visitors/walk-in net::ERR_FAILED')) return;
+      originalError(...args);
+    });
+
+    server.use(...walkInHandlers);
+    offlineService.getPendingWalkIns.mockResolvedValue([]);
+    offlineService.addConnectionListener.mockImplementation(() => jest.fn());
+    offlineService.syncPendingOperations.mockResolvedValue({ success: true });
+    offlineService.queueWalkInRegistration.mockResolvedValue(undefined);
+  });
+  afterEach(() => {
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+    server.resetHandlers();
+  });
 
   describe('Form Rendering', () => {
-    it('renders the walk-in registration form', () => {
-      renderWalkInRegistration();
+    it('renders the walk-in registration form', async () => {
+      await renderWalkInRegistration();
 
       expect(screen.getByText('Walk-In Registration')).toBeInTheDocument();
       expect(screen.getByText('Visitor Information')).toBeInTheDocument();
     });
 
-    it('renders all required form fields', () => {
-      renderWalkInRegistration();
+    it('renders all required form fields', async () => {
+      await renderWalkInRegistration();
 
       expect(screen.getByTestId('walk-in-visitor-name')).toBeInTheDocument();
       expect(screen.getByTestId('walk-in-visitor-phone')).toBeInTheDocument();
@@ -123,21 +181,21 @@ describe('WalkInRegistration Integration Tests', () => {
       expect(screen.getByTestId('walk-in-purpose')).toBeInTheDocument();
     });
 
-    it('renders optional vehicle plate field', () => {
-      renderWalkInRegistration();
+    it('renders optional vehicle plate field', async () => {
+      await renderWalkInRegistration();
 
       expect(screen.getByPlaceholderText('e.g., KXX 123A')).toBeInTheDocument();
     });
 
-    it('displays approval process info notice', () => {
-      renderWalkInRegistration();
+    it('displays approval process info notice', async () => {
+      await renderWalkInRegistration();
 
       expect(screen.getByText('Walk-In Approval Process')).toBeInTheDocument();
       expect(screen.getByText(/After registration, you can request approval/)).toBeInTheDocument();
     });
 
-    it('renders submit and clear buttons', () => {
-      renderWalkInRegistration();
+    it('renders submit and clear buttons', async () => {
+      await renderWalkInRegistration();
 
       expect(screen.getByTestId('walk-in-submit')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument();
@@ -147,7 +205,7 @@ describe('WalkInRegistration Integration Tests', () => {
   describe('Form Validation', () => {
     it('requires visitor name', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       // Fill other required fields but not name
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -163,7 +221,7 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('requires phone number', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-house-number'), 'A101');
@@ -176,7 +234,7 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('requires house number', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -189,7 +247,7 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('purpose is optional', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -207,7 +265,7 @@ describe('WalkInRegistration Integration Tests', () => {
   describe('Successful Registration Flow', () => {
     it('registers walk-in visitor successfully', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -227,7 +285,7 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('shows resident info after successful registration', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -242,7 +300,7 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('includes vehicle plate when provided', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -262,7 +320,7 @@ describe('WalkInRegistration Integration Tests', () => {
   describe('Approval Request Flow', () => {
     it('shows approval status card after registration', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -282,7 +340,7 @@ describe('WalkInRegistration Integration Tests', () => {
   describe('Reset and Register Another', () => {
     it('shows Register Another button after registration', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -297,7 +355,7 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('resets form when clicking Register Another', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -322,7 +380,7 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('clears form when clicking Clear button', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -339,7 +397,7 @@ describe('WalkInRegistration Integration Tests', () => {
   describe('Error Handling', () => {
     it('handles house not found error', async () => {
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -356,13 +414,13 @@ describe('WalkInRegistration Integration Tests', () => {
 
     it('handles network error gracefully', async () => {
       server.use(
-        rest.post(`${API_BASE_URL}/api/visitors/walk-in`, (req, res) => {
+        rest.post('*/api/visitors/walk-in', (req, res) => {
           return res.networkError('Network error');
         })
       );
 
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -371,19 +429,21 @@ describe('WalkInRegistration Integration Tests', () => {
       await user.click(screen.getByTestId('walk-in-submit'));
 
       await waitFor(() => {
-        expect(screen.queryByText('Walk-In Visitor Registered')).not.toBeInTheDocument();
+        expect(screen.getByText('Walk-In Visitor Registered')).toBeInTheDocument();
       });
+
+      expect(offlineService.queueWalkInRegistration).toHaveBeenCalled();
     });
 
     it('handles server error gracefully', async () => {
       server.use(
-        rest.post(`${API_BASE_URL}/api/visitors/walk-in`, (req, res, ctx) => {
+        rest.post('*/api/visitors/walk-in', (req, res, ctx) => {
           return res(ctx.status(500), ctx.json({ message: 'Internal server error' }));
         })
       );
 
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -400,15 +460,15 @@ describe('WalkInRegistration Integration Tests', () => {
   describe('Loading States', () => {
     it('shows loading state while submitting', async () => {
       server.use(
-        rest.post(`${API_BASE_URL}/api/visitors/walk-in`, async (req, res, ctx) => {
-          await new Promise(r => setTimeout(r, 100));
+        rest.post('*/api/visitors/walk-in', async (req, res, ctx) => {
+          await new Promise(r => setTimeout(r, 350));
           const visitorData = await req.json();
           return res(ctx.status(201), ctx.json({ success: true, data: { id: 50, ...visitorData } }));
         })
       );
 
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -416,21 +476,22 @@ describe('WalkInRegistration Integration Tests', () => {
 
       await user.click(screen.getByTestId('walk-in-submit'));
 
-      // Check for loading text
-      expect(screen.getByText('Registering...')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Registering...')).toBeInTheDocument();
+      });
     });
 
     it('disables submit button while loading', async () => {
       server.use(
-        rest.post(`${API_BASE_URL}/api/visitors/walk-in`, async (req, res, ctx) => {
-          await new Promise(r => setTimeout(r, 100));
+        rest.post('*/api/visitors/walk-in', async (req, res, ctx) => {
+          await new Promise(r => setTimeout(r, 350));
           const visitorData = await req.json();
           return res(ctx.status(201), ctx.json({ success: true, data: { id: 50, ...visitorData } }));
         })
       );
 
       const user = userEvent.setup();
-      renderWalkInRegistration();
+      await renderWalkInRegistration();
 
       await user.type(screen.getByTestId('walk-in-visitor-name'), 'John Visitor');
       await user.type(screen.getByTestId('walk-in-visitor-phone'), '+254712345678');
@@ -438,13 +499,15 @@ describe('WalkInRegistration Integration Tests', () => {
 
       await user.click(screen.getByTestId('walk-in-submit'));
 
-      expect(screen.getByTestId('walk-in-submit')).toBeDisabled();
+      await waitFor(() => {
+        expect(screen.getByTestId('walk-in-submit')).toBeDisabled();
+      });
     });
   });
 
   describe('Navigation', () => {
-    it('renders back button to guard dashboard', () => {
-      renderWalkInRegistration();
+    it('renders back button to guard dashboard', async () => {
+      await renderWalkInRegistration();
 
       // PageHeader should have back navigation
       expect(screen.getByText('Walk-In Registration')).toBeInTheDocument();

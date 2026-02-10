@@ -1,8 +1,10 @@
 // client/src/components/ui/FAB.jsx
 // Floating Action Button - Industry standard pattern (Gmail, Instagram)
+/* eslint-disable react/forbid-elements */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, UserPlus, QrCode, Users, FileText, AlertTriangle } from 'lucide-react';
+
+import Icon from './Icon.jsx';
 
 /**
  * FAB - Floating Action Button
@@ -38,188 +40,132 @@ const FAB = ({
   const roleActions = {
     resident: [
       { 
-        icon: UserPlus, 
+        iconName: 'user-plus',
         label: 'Quick Invite', 
         onClick: () => navigate('/resident/quick-invite'),
         color: 'primary'
       },
       { 
-        icon: FileText, 
+        iconName: 'file-text',
         label: 'Bulk Invite', 
         onClick: () => navigate('/resident/bulk-invite'),
         color: 'secondary'
       },
+      { 
+        iconName: 'qr-code',
+        label: 'Generate Pass', 
+        onClick: () => navigate('/resident/generate-pass'),
+        color: 'primary'
+      }
     ],
     guard: [
       { 
-        icon: QrCode, 
-        label: 'Scan QR', 
-        onClick: () => navigate('/dashboard/guard/scan-qr'),
+        iconName: 'user-plus',
+        label: 'New Entry', 
+        onClick: () => navigate('/dashboard/guard/walk-in'),
         color: 'primary'
       },
       { 
-        icon: UserPlus, 
-        label: 'Walk-in', 
-        onClick: () => navigate('/dashboard/guard/walk-in'),
-        color: 'secondary'
-      },
-      { 
-        icon: AlertTriangle, 
+        iconName: 'alert-triangle',
         label: 'Report Incident', 
         onClick: () => navigate('/dashboard/guard/incidents'),
         color: 'danger'
-      },
+      }
     ],
     admin: [
       { 
-        icon: Users, 
-        label: 'Add User', 
-        onClick: () => navigate('/dashboard/admin/users'),
+        iconName: 'users',
+        label: 'User Approvals', 
+        onClick: () => navigate('/dashboard/admin/approvals'),
         color: 'primary'
-      },
-      { 
-        icon: FileText, 
-        label: 'Generate Report', 
-        onClick: () => navigate('/dashboard/admin/reports'),
-        color: 'secondary'
-      },
-    ],
+      }
+    ]
   };
 
-  const actions = customActions || (role ? roleActions[role] : null);
-  const hasMultipleActions = actions && actions.length > 1;
-  const singleAction = actions && actions.length === 1 ? actions[0] : null;
+  const actions = customActions || roleActions[role] || [];
+  const MainIcon = CustomIcon || null;
 
-  // Color configurations
-  const colorStyles = {
-    primary: {
-      bg: 'bg-green-500 hover:bg-green-600',
-      text: 'text-white',
-      shadow: 'shadow-lg shadow-green-500/30',
-      ring: 'focus:ring-green-500',
-    },
-    secondary: {
-      bg: 'bg-blue-500 hover:bg-blue-600',
-      text: 'text-white',
-      shadow: 'shadow-lg shadow-blue-500/30',
-      ring: 'focus:ring-blue-500',
-    },
-    danger: {
-      bg: 'bg-red-500 hover:bg-red-600',
-      text: 'text-white',
-      shadow: 'shadow-lg shadow-red-500/30',
-      ring: 'focus:ring-red-500',
-    },
-  };
-
-  // Position styles
-  const positionStyles = {
-    'bottom-right': 'right-4 bottom-20 md:bottom-6',
-    'bottom-center': 'left-1/2 -translate-x-1/2 bottom-20 md:bottom-6',
-  };
-
-  // Size styles
-  const sizeStyles = mini
-    ? 'w-12 h-12'
-    : 'w-14 h-14';
-
-  const iconSize = mini ? 'w-5 h-5' : 'w-6 h-6';
-
-  const styles = colorStyles[color];
-
-  // Handle single action or toggle expansion
-  const handleMainClick = () => {
-    if (onClick) {
+  // Toggle internal state
+  const handleToggle = () => {
+    if (onClick && !actions.length) {
       onClick();
-    } else if (singleAction) {
-      singleAction.onClick();
-    } else if (hasMultipleActions) {
+    } else {
       setIsExpanded(!isExpanded);
     }
   };
 
-  const Icon = CustomIcon || (singleAction?.icon) || Plus;
+  const getPositionClasses = () => {
+    switch (position) {
+      case 'bottom-center': return 'bottom-6 left-1/2 -translate-x-1/2';
+      default: return 'bottom-6 right-6';
+    }
+  };
 
   return (
-    <div 
-      className={`
-        fixed z-40
-        ${positionStyles[position]}
-        ${className}
-      `}
-    >
-      {/* Expanded actions menu */}
-      {hasMultipleActions && isExpanded && (
-        <>
-          {/* Backdrop */}
+    <div className={`fixed z-40 flex flex-col items-end ${getPositionClasses()} ${className} pointer-events-none`}>
+      {/* Action Menu */}
+      <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+        {actions.map((action, index) => (
           <div 
-            className="fixed inset-0 bg-black/20 -z-10"
-            onClick={() => setIsExpanded(false)}
-          />
-          
-          {/* Action buttons */}
-          <div className="absolute bottom-16 right-0 flex flex-col-reverse gap-3 mb-2">
-            {actions.map((action, index) => {
-              const ActionIcon = action.icon;
-              const actionStyles = colorStyles[action.color || 'secondary'];
-              
-              return (
-                <button
-                  key={index}
-                  onClick={() => {
-                    action.onClick();
-                    setIsExpanded(false);
-                  }}
-                  className={`
-                    flex items-center gap-3 pl-4 pr-2 py-2
-                    rounded-full
-                    ${actionStyles.bg} ${actionStyles.text} ${actionStyles.shadow}
-                    transform transition-all duration-200
-                    animate-fab-item
-                    min-h-[44px]
-                  `}
-                  style={{ animationDelay: `${index * 50}ms` }}
-                  aria-label={action.label}
-                >
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {action.label}
-                  </span>
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <ActionIcon className="w-5 h-5" />
-                  </div>
-                </button>
-              );
-            })}
+            key={index} 
+            className="flex items-center justify-end mb-3 mr-1"
+            style={{ transitionDelay: `${index * 50}ms` }}
+          >
+            {/* Label Tooltip */}
+            <span className="bg-white dark:bg-slate-800 text-gray-800 dark:text-white text-xs font-semibold py-1 px-3 rounded shadow-lg mr-3">
+              {action.label}
+            </span>
+            
+            {/* Action Button */}
+            <button
+              onClick={() => {
+                action.onClick();
+                setIsExpanded(false);
+              }}
+              className={`
+                w-10 h-10 rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-110 active:scale-90
+                ${action.color === 'danger' ? 'bg-red-500 hover:bg-red-600' : 
+                  action.color === 'secondary' ? 'bg-gray-600 hover:bg-gray-700' : 
+                  'bg-brand-600 hover:bg-brand-700'}
+                text-white
+              `}
+              aria-label={action.label}
+            >
+              <Icon name={action.iconName} size={20} />
+            </button>
           </div>
-        </>
-      )}
+        ))}
+      </div>
 
-      {/* Main FAB button */}
-      <button
-        onClick={handleMainClick}
-        className={`
-          ${extended ? 'px-6 rounded-full' : 'rounded-full'}
-          ${sizeStyles}
-          ${styles.bg} ${styles.text} ${styles.shadow}
-          flex items-center justify-center gap-2
-          transform transition-all duration-200
-          hover:scale-105 active:scale-95
-          focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 ${styles.ring}
-        `}
-        aria-label={label}
-        aria-expanded={hasMultipleActions ? isExpanded : undefined}
-      >
-        {hasMultipleActions && isExpanded ? (
-          <X className={iconSize} />
-        ) : (
-          <>
-            <Icon className={iconSize} />
-            {extended && extendedLabel && (
-              <span className="font-medium">{extendedLabel}</span>
+      {/* Main FAB */}
+      <div className="pointer-events-auto">
+        <button
+          onClick={handleToggle}
+          className={`
+            flex items-center justify-center shadow-lg transition-all duration-300 transform
+            ${mini ? 'w-10 h-10' : 'w-14 h-14'}
+            ${extended ? 'px-6 w-auto rounded-full' : 'rounded-full hover:rotate-90'}
+            ${isExpanded ? 'bg-gray-700 rotate-45' : `bg-${color === 'danger' ? 'red' : 'brand'}-600`}
+            hover:shadow-xl hover:scale-105 active:scale-95 text-white
+          `}
+          aria-label={label}
+          aria-expanded={isExpanded}
+        >
+          <div className={`transition-transform duration-300 ${isExpanded ? 'rotate-45' : 'rotate-0'}`}>
+            {MainIcon ? (
+              <Icon icon={MainIcon} size={mini ? 20 : 24} />
+            ) : (
+              <Icon name={isExpanded ? 'x' : 'plus'} size={mini ? 20 : 24} />
             )}
-          </>
-        )}
-      </button>
+          </div>
+          
+          {extended && !isExpanded && (
+            <span className="ml-2 font-semibold text-sm whitespace-nowrap">
+              {extendedLabel || label}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 };

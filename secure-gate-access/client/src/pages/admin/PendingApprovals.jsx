@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { AlertCircle, CheckCircle, XCircle, Mail, User, Calendar } from 'lucide-react';
+import Icon from '../../components/ui/Icon';
+import Button from '../../components/ui/Button';
 import axios from 'axios';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog';
 import './PendingApprovals.css';
@@ -245,7 +246,7 @@ const PendingApprovals = ({ siteId }) => {
             <Card className="pending-approvals-card">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-orange-500" />
+                        <Icon name="AlertCircle" className="h-5 w-5 text-orange-500" />
                         Pending User Approvals
                     </CardTitle>
                 </CardHeader>
@@ -261,7 +262,7 @@ const PendingApprovals = ({ siteId }) => {
             <Card className="pending-approvals-card">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        <Icon name="AlertCircle" className="h-5 w-5 text-red-500" />
                         Pending User Approvals
                     </CardTitle>
                 </CardHeader>
@@ -276,7 +277,7 @@ const PendingApprovals = ({ siteId }) => {
         <Card className="pending-approvals-card">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-orange-500" />
+                    <Icon name="AlertCircle" className="h-5 w-5 text-orange-500" />
                     Pending User Approvals
                     {pendingUsers.length > 0 && (
                         <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
@@ -286,31 +287,36 @@ const PendingApprovals = ({ siteId }) => {
                 </CardTitle>
                 {pendingUsers.length > 0 && (
                     <div className="flex gap-2 mt-4">
-                        <button
+                        <Button
                             onClick={toggleSelectAll}
-                            className="btn btn-secondary"
+                            variant="secondary"
+                            size="sm"
                             disabled={processingUserId === 'bulk'}
                         >
                             {selectedUsers.length === pendingUsers.length ? 'Deselect All' : 'Select All'}
-                        </button>
+                        </Button>
                         {selectedUsers.length > 0 && (
                             <>
-                                <button
+                                <Button
                                     onClick={handleBulkApprove}
-                                    className="btn btn-approve"
+                                    variant="primary"
+                                    size="sm"
+                                    className="btn-approve"
                                     disabled={processingUserId === 'bulk'}
                                 >
-                                    <CheckCircle className="h-4 w-4" />
+                                    <Icon name="CheckCircle" className="h-4 w-4" />
                                     Approve Selected ({selectedUsers.length})
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     onClick={handleBulkReject}
-                                    className="btn btn-reject"
+                                    variant="danger"
+                                    size="sm"
+                                    className="btn-reject"
                                     disabled={processingUserId === 'bulk'}
                                 >
-                                    <XCircle className="h-4 w-4" />
+                                    <Icon name="XCircle" className="h-4 w-4" />
                                     Reject Selected ({selectedUsers.length})
-                                </button>
+                                </Button>
                             </>
                         )}
                     </div>
@@ -319,7 +325,7 @@ const PendingApprovals = ({ siteId }) => {
             <CardContent>
                 {pendingUsers.length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
+                        <Icon name="CheckCircle" className="h-12 w-12 mx-auto mb-3 text-green-500" />
                         <p>No pending approvals</p>
                         <p className="text-sm mt-1">All users have been processed</p>
                     </div>
@@ -336,13 +342,13 @@ const PendingApprovals = ({ siteId }) => {
                                             className="mr-3"
                                             disabled={processingUserId === 'bulk'}
                                         />
-                                        <User className="h-5 w-5 text-gray-400 dark:text-gray-300" />
+                                        <Icon name="User" className="h-5 w-5 text-gray-400 dark:text-gray-300" />
                                         <h3 className="user-name">{user.username}</h3>
                                     </div>
 
                                     <div className="user-details">
                                         <div className="detail-row">
-                                            <Mail className="h-4 w-4 text-gray-400 dark:text-gray-300" />
+                                            <Icon name="Mail" className="h-4 w-4 text-gray-400 dark:text-gray-300" />
                                             <span className="detail-text">{user.email}</span>
                                         </div>
 
@@ -354,7 +360,7 @@ const PendingApprovals = ({ siteId }) => {
                                         )}
 
                                         <div className="detail-row">
-                                            <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-300" />
+                                            <Icon name="Calendar" className="h-4 w-4 text-gray-400 dark:text-gray-300" />
                                             <span className="detail-text">Registered: {formatDate(user.created_at)}</span>
                                         </div>
                                     </div>
@@ -386,7 +392,7 @@ const PendingApprovals = ({ siteId }) => {
                                     )}
 
                                     <div className="action-buttons">
-                                        <button
+                                        <Button
                                             onClick={() => {
                                                 const select = document.getElementById(`estate-${user.id}`);
                                                 // specific priority: pre-assigned > manual selection
@@ -394,20 +400,23 @@ const PendingApprovals = ({ siteId }) => {
                                                 handleApprove(user.id, finalEstateId);
                                             }}
                                             disabled={processingUserId === user.id}
-                                            className="btn btn-approve"
+                                            variant="primary"
+                                            size="sm"
+                                            loading={processingUserId === user.id}
                                         >
-                                            <CheckCircle className="h-4 w-4" />
+                                            <Icon name="CheckCircle" className="h-4 w-4" />
                                             {processingUserId === user.id ? 'Processing...' : 'Activate'}
-                                        </button>
+                                        </Button>
 
-                                        <button
+                                        <Button
                                             onClick={() => handleReject(user.id)}
                                             disabled={processingUserId === user.id}
-                                            className="btn btn-reject"
+                                            variant="danger"
+                                            size="sm"
                                         >
-                                            <XCircle className="h-4 w-4" />
+                                            <Icon name="XCircle" className="h-4 w-4" />
                                             Reject
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
                             </div>

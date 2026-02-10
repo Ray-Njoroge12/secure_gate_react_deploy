@@ -95,13 +95,7 @@ export async function addCustomDirections(visitorId, customInstructions, residen
   return { success: true, message: 'Custom directions added' };
 }
 
-/**
- * Get directions for visitor (used in invite page)
- * Privacy: Only returns info for specific invite
- */
-export async function getVisitorDirections(visitorId, inviteToken) {
-  // Verify invite token
-  // Accept either legacy invite_code token or public visitor_token token.
+async function getVisitorByInviteToken(visitorId, inviteToken) {
   const visitorCheck = await pool.query(
     `SELECT v.id, v.invite_code, v.visitor_token, v.status,
             v.allow_residence_location, v.unit_pin_encrypted,
@@ -115,11 +109,18 @@ export async function getVisitorDirections(visitorId, inviteToken) {
     [visitorId, inviteToken]
   );
 
-  if (visitorCheck.rows.length === 0) {
+  return visitorCheck.rows[0] || null;
+}
+
+/**
+ * Get directions for visitor (used in invite page)
+ * Privacy: Only returns info for specific invite
+ */
+export async function getVisitorDirections(visitorId, inviteToken) {
+  const visitor = await getVisitorByInviteToken(visitorId, inviteToken);
+  if (!visitor) {
     return { success: false, error: 'Invalid invite or visitor not found' };
   }
-
-  const visitor = visitorCheck.rows[0];
 
   // Get estate location
   const estateId = visitor.estate_id || visitor.host_estate_id || 1;
@@ -134,6 +135,19 @@ export async function getVisitorDirections(visitorId, inviteToken) {
   const unitPin = visitor.allow_residence_location && visitor.unit_pin_encrypted
     ? await encryptionService.decrypt(visitor.unit_pin_encrypted)
     : null;
+
+  const mapLinks = {
+    google: estate?.gate_latitude && estate?.gate_longitude
+      ? `https://www.google.com/maps/search/?api=1&query=${estate.gate_latitude},${estate.gate_longitude}`
+      : null,
+    apple: estate?.gate_latitude && estate?.gate_longitude
+      ? `https://maps.apple.com/?q=${estate.gate_latitude},${estate.gate_longitude}`
+      : null,
+    waze: estate?.gate_latitude && estate?.gate_longitude
+      ? `https://waze.com/ul?ll=${estate.gate_latitude},${estate.gate_longitude}&navigate=yes`
+      : null
+  };
+  const privacyNotice = 'Directions are to the estate gate only. Your location is handled by your maps app, not by us.';
 
   return {
     success: true,
@@ -154,33 +168,26 @@ export async function getVisitorDirections(visitorId, inviteToken) {
       // Host info (minimal)
       hostName: visitor.host_name,
       // Privacy: Don't include exact unit location
-      buildingArea: visitor.house?.split('-')[0] || 'Please ask at gate'
+      buildingArea: visitor.house?.split('-')[0] || 'Please ask at gate',
+      // Backward compatibility with older frontend consumers.
+      mapLinks,
+      privacyNotice
     },
-    // Deep links for map apps
-    mapLinks: {
-      google: estate?.gate_latitude && estate?.gate_longitude
-        ? `https://www.google.com/maps/search/?api=1&query=${estate.gate_latitude},${estate.gate_longitude}`
-        : null,
-      apple: estate?.gate_latitude && estate?.gate_longitude
-        ? `https://maps.apple.com/?q=${estate.gate_latitude},${estate.gate_longitude}`
-        : null,
-      waze: estate?.gate_latitude && estate?.gate_longitude
-        ? `https://waze.com/ul?ll=${estate.gate_latitude},${estate.gate_longitude}&navigate=yes`
-        : null
-    },
-    privacyNotice: 'Directions are to the estate gate only. Your location is handled by your maps app, not by us.'
+    mapLinks,
+    privacyNotice
   };
 }
 
 /**
  * Generate shareable directions link (for visitor to share with driver)
  */
-export async function generateShareableLink(visitorId) {
-  const visitorResult = await pool.query(
-    'SELECT estate_id FROM visitors WHERE id = $1',
-    [visitorId]
-  );
-  const estateId = visitorResult.rows[0]?.estate_id || 1;
+export async function generateShareableLink(visitorId, inviteToken) {
+  const visitor = await getVisitorByInviteToken(visitorId, inviteToken);
+  if (!visitor) {
+    return { success: false, error: 'Invalid invite or visitor not found' };
+  }
+
+  const estateId = visitor.estate_id || visitor.host_estate_id || 1;
   const estate = await getEstateLocation(estateId);
 
   if (!estate?.gate_latitude || !estate?.gate_longitude) {

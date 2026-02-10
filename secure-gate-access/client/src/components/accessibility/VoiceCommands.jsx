@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAccessibilityContext } from './AccessibilityProvider.jsx';
 import './VoiceCommands.css';
+import Button from '../ui/Button';
 
 /**
  * Voice command definitions
@@ -284,7 +285,7 @@ export const VoiceCommands = ({
 
   return (
     <div className={`voice-commands ${className}`}>
-      <button
+      <Button
         className={`voice-commands__toggle ${isListening ? 'voice-commands__toggle--active' : ''}`}
         onClick={toggleListening}
         aria-label={isListening ? 'Stop voice commands' : 'Start voice commands'}
@@ -297,7 +298,7 @@ export const VoiceCommands = ({
         <span className="voice-commands__label">
           {isListening ? 'Listening...' : 'Voice Commands'}
         </span>
-      </button>
+      </Button>
 
       {isListening && (
         <div className="voice-commands__status" role="status" aria-live="polite">

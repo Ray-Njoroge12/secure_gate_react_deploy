@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, TrendingUp, Clock, MapPin, Users, Activity } from '../icons';
+import Icon from './Icon';
 import Card from './Card';
 import { useNavigation } from '../../contexts/NavigationContext';
 
@@ -116,7 +116,7 @@ const NavigationAnalytics = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-slate-50 flex items-center">
-          <Activity className="w-5 h-5 mr-2" />
+          <Icon name="activity" className="w-5 h-5 mr-2" />
           Navigation Analytics
         </h3>
         
@@ -136,7 +136,7 @@ const NavigationAnalytics = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
           <div className="flex items-center">
-            <MapPin className="w-8 h-8 text-brand-500 mr-3" />
+            <Icon name="map-pin" className="w-8 h-8 text-brand-500 mr-3" />
             <div>
               <p className="text-sm text-slate-400">Routes Visited</p>
               <p className="text-2xl font-bold text-slate-50">
@@ -148,7 +148,7 @@ const NavigationAnalytics = ({
 
         <Card className="p-4">
           <div className="flex items-center">
-            <TrendingUp className="w-8 h-8 text-success-500 mr-3" />
+            <Icon name="trending-up" className="w-8 h-8 text-success-500 mr-3" />
             <div>
               <p className="text-sm text-slate-400">Total Navigations</p>
               <p className="text-2xl font-bold text-slate-50">
@@ -160,7 +160,7 @@ const NavigationAnalytics = ({
 
         <Card className="p-4">
           <div className="flex items-center">
-            <Clock className="w-8 h-8 text-warning-500 mr-3" />
+            <Icon name="clock" className="w-8 h-8 text-warning-500 mr-3" />
             <div>
               <p className="text-sm text-slate-400">Session Duration</p>
               <p className="text-2xl font-bold text-slate-50">
@@ -172,7 +172,7 @@ const NavigationAnalytics = ({
 
         <Card className="p-4">
           <div className="flex items-center">
-            <Users className="w-8 h-8 text-info-500 mr-3" />
+            <Icon name="users" className="w-8 h-8 text-info-500 mr-3" />
             <div>
               <p className="text-sm text-slate-400">Routes/Min</p>
               <p className="text-2xl font-bold text-slate-50">
@@ -189,7 +189,7 @@ const NavigationAnalytics = ({
           {/* Most Visited Routes */}
           <Card className="p-6">
             <h4 className="text-lg font-semibold text-slate-50 mb-4 flex items-center">
-              <BarChart3 className="w-5 h-5 mr-2" />
+              <Icon name="bar-chart-3" className="w-5 h-5 mr-2" />
               Most Visited Routes
             </h4>
             
@@ -229,7 +229,7 @@ const NavigationAnalytics = ({
           {/* Navigation Patterns */}
           <Card className="p-6">
             <h4 className="text-lg font-semibold text-slate-50 mb-4 flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2" />
+              <Icon name="trending-up" className="w-5 h-5 mr-2" />
               Common Navigation Patterns
             </h4>
             
@@ -267,7 +267,7 @@ const NavigationAnalytics = ({
       {currentRoute && (
         <Card className="p-4 mt-6">
           <h4 className="text-lg font-semibold text-slate-50 mb-3 flex items-center">
-            <MapPin className="w-5 h-5 mr-2" />
+            <Icon name="map-pin" className="w-5 h-5 mr-2" />
             Current Route
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

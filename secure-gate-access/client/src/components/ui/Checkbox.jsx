@@ -6,7 +6,7 @@
  */
 
 import React, { useId } from 'react';
-import { Check } from 'lucide-react';
+import Icon from './Icon.jsx';
 
 /**
  * Accessible Checkbox component with WCAG 2.1 AA compliant touch target
@@ -58,6 +58,7 @@ export const Checkbox = React.forwardRef(
     // Generate unique ID for accessibility
     const generatedId = useId();
     const id = customId || generatedId;
+    const inputId = id; // Define inputId for label association
     const descriptionId = description ? `${id}-description` : undefined;
     const errorId = error ? `${id}-error` : undefined;
 
@@ -77,103 +78,63 @@ export const Checkbox = React.forwardRef(
     };
 
     return (
-      <div className={`flex items-start gap-3 ${className}`}>
-        {/* Clickable area wrapper for larger touch target */}
-        <div className="relative flex items-center justify-center min-w-[32px] min-h-[32px]">
-          {/* Hidden native checkbox for accessibility */}
-          <input
-            ref={ref}
-            type="checkbox"
-            id={id}
-            name={name}
-            checked={checked}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            disabled={disabled}
-            aria-describedby={[descriptionId, errorId].filter(Boolean).join(' ') || undefined}
-            aria-invalid={!!error}
-            className="sr-only peer"
-            {...props}
-          />
-          
-          {/* Custom styled checkbox - 24x24px (WCAG 2.1 AA compliant) */}
-          <label
-            htmlFor={id}
-            className={`
-              flex items-center justify-center
-              w-6 h-6 shrink-0 rounded-md border-2 cursor-pointer
-              transition-all duration-200 ease-out
-              
-              /* Default state */
-              ${checked 
-                ? 'bg-green-600 border-green-600 text-white dark:bg-green-500 dark:border-green-500' 
-                : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600'
-              }
-              
-              /* Hover state */
-              ${!disabled && !checked ? 'hover:border-green-500 hover:bg-green-50 dark:hover:bg-slate-700' : ''}
-              ${!disabled && checked ? 'hover:bg-green-700 hover:border-green-700 dark:hover:bg-green-600' : ''}
-              
-              /* Focus state - visible ring for keyboard navigation */
-              peer-focus-visible:outline-none 
-              peer-focus-visible:ring-2 
-              peer-focus-visible:ring-green-500 
-              peer-focus-visible:ring-offset-2 
-              peer-focus-visible:ring-offset-white
-              dark:peer-focus-visible:ring-offset-slate-900
-              
-              /* Error state */
-              ${error ? 'border-red-500 dark:border-red-400' : ''}
-              
-              /* Disabled state */
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
+      <div className={`flex items-start ${className}`}>
+        <div className="flex h-6 items-center">
+          <label 
+            htmlFor={inputId}
+            className="relative flex items-center p-[2px] rounded-full cursor-pointer"
           >
-            {/* Animated checkmark */}
-            <Check 
-              className={`
-                w-4 h-4 stroke-[3]
-                transition-all duration-200
-                ${checked ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
-              `}
-              aria-hidden="true"
+            <input
+              id={inputId}
+              name={name}
+              type="checkbox"
+              className="peer sr-only"
+              checked={checked}
+              onChange={handleChange}
+              disabled={disabled}
+              aria-invalid={!!error}
+              ref={ref}
+              {...props}
             />
+            <div
+              className={`
+                h-5 w-5 rounded border bg-white dark:bg-slate-800 transition-all 
+                peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-brand-500
+                flex items-center justify-center
+                ${disabled ? 'border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-900 cursor-not-allowed' : ''}
+                ${error ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}
+                ${checked && !disabled ? 'bg-brand-600 border-brand-600 text-white' : ''}
+                ${checked && disabled ? 'bg-gray-400 border-gray-400 text-white' : ''}
+              `}
+            >
+              {checked && (
+                <Icon 
+                  name="check" 
+                  size={14} 
+                  strokeWidth={3}
+                  className="pointer-events-none"
+                  aria-hidden="true" 
+                />
+              )}
+            </div>
           </label>
         </div>
-
-        {/* Label and description */}
-        {(label || description || error) && (
-          <div className="flex flex-col gap-1 pt-0.5">
+        
+        {(label || description) && (
+          <div className="ml-3 text-sm leading-6">
             {label && (
               <label 
-                htmlFor={id}
-                className={`
-                  text-sm font-medium leading-tight cursor-pointer select-none
-                  text-gray-900 dark:text-slate-100
-                  ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                `}
+                htmlFor={id} 
+                className={`font-medium ${disabled ? 'text-gray-400' : 'text-gray-900 dark:text-gray-100'}`}
               >
                 {label}
               </label>
             )}
-            
             {description && (
-              <p 
-                id={descriptionId}
-                className="text-sm text-gray-500 dark:text-slate-300"
-              >
-                {description}
-              </p>
+              <p className="text-gray-500 dark:text-gray-400">{description}</p>
             )}
-            
             {error && (
-              <p 
-                id={errorId}
-                className="text-sm text-red-600 dark:text-red-400"
-                role="alert"
-              >
-                {error}
-              </p>
+              <p className="text-red-500 text-xs mt-1" role="alert">{error}</p>
             )}
           </div>
         )}

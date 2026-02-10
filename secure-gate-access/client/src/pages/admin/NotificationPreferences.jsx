@@ -1,20 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Bell,
-  Mail,
-  MessageSquare,
-  Smartphone,
-  Save,
-  Info,
-  CheckCircle,
-  AlertTriangle,
-  AlertCircle
-} from 'lucide-react';
 import { apiCall } from '../../services/http';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import Loading from '../../components/ui/Loading';
+import { Icon } from '../../components/ui';
 
 const NotificationPreferences = () => {
   const [preferences, setPreferences] = useState([]);
@@ -106,7 +96,7 @@ const NotificationPreferences = () => {
     try {
       setLoading(true);
       setError('');
-      const response = await apiCall('GET', '/api/admin/notification-preferences');
+      const response = await apiCall('/api/admin/notification-preferences');
 
       if (response.success) {
         setPreferences(response.data);
@@ -140,14 +130,17 @@ const NotificationPreferences = () => {
       setError('');
       setSuccess('');
 
-      const response = await apiCall('POST', '/api/admin/notification-preferences/bulk-update', {
-        preferences: preferences.map(pref => ({
-          id: pref.id,
-          notify_email: pref.notify_email,
-          notify_sms: pref.notify_sms,
-          notify_in_app: pref.notify_in_app,
-          frequency: pref.frequency
-        }))
+      const response = await apiCall('/api/admin/notification-preferences/bulk-update', {
+        method: 'POST',
+        body: {
+          preferences: preferences.map(pref => ({
+            id: pref.id,
+            notify_email: pref.notify_email,
+            notify_sms: pref.notify_sms,
+            notify_in_app: pref.notify_in_app,
+            frequency: pref.frequency
+          }))
+        }
       });
 
       if (response.success) {
@@ -189,9 +182,9 @@ const NotificationPreferences = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Bell className="w-8 h-8 text-blue-600" />
+          <Icon name="Bell" className="w-8 h-8 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
               Notification Preferences
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -205,7 +198,7 @@ const NotificationPreferences = () => {
           disabled={saving}
           className="flex items-center gap-2"
         >
-          {saving ? <Loading size="sm" /> : <Save className="w-4 h-4" />}
+          {saving ? <Loading size="sm" /> : <Icon name="Save" className="w-4 h-4" />}
           {saving ? 'Saving...' : 'Save Preferences'}
         </Button>
       </div>
@@ -229,22 +222,22 @@ const NotificationPreferences = () => {
             Notification Channels
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-              <Mail className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+              <Icon name="Mail" className="w-5 h-5 text-blue-600" />
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">Email</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Receive notifications via email</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
-              <Smartphone className="w-5 h-5 text-green-600" />
+            <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+              <Icon name="Smartphone" className="w-5 h-5 text-green-600" />
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">SMS</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Receive text message alerts</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-              <Bell className="w-5 h-5 text-yellow-600" />
+            <div className="flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-100 dark:border-yellow-800">
+              <Icon name="Bell" className="w-5 h-5 text-yellow-600" />
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">In-App</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Receive in-app notifications</p>
@@ -300,7 +293,7 @@ const NotificationPreferences = () => {
                           <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                         </div>
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 flex items-center gap-1.5">
-                          <Mail className="w-4 h-4 text-gray-400 dark:text-gray-300 group-hover:text-blue-500" />
+                          <Icon name="Mail" className="w-4 h-4 text-gray-400 dark:text-gray-300 group-hover:text-blue-500" />
                           Email
                         </span>
                       </label>
@@ -316,7 +309,7 @@ const NotificationPreferences = () => {
                           <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
                         </div>
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 flex items-center gap-1.5">
-                          <Smartphone className="w-4 h-4 text-gray-400 dark:text-gray-300 group-hover:text-green-500" />
+                          <Icon name="Smartphone" className="w-4 h-4 text-gray-400 dark:text-gray-300 group-hover:text-green-500" />
                           SMS
                         </span>
                       </label>
@@ -332,7 +325,7 @@ const NotificationPreferences = () => {
                           <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500"></div>
                         </div>
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 flex items-center gap-1.5">
-                          <Bell className="w-4 h-4 text-gray-400 dark:text-gray-300 group-hover:text-yellow-500" />
+                          <Icon name="Bell" className="w-4 h-4 text-gray-400 dark:text-gray-300 group-hover:text-yellow-500" />
                           In-App
                         </span>
                       </label>
@@ -367,7 +360,7 @@ const NotificationPreferences = () => {
           <CardContent className="py-12">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-700 mb-4">
-                <Bell className="w-6 h-6 text-gray-400 dark:text-gray-300" />
+                <Icon name="Bell" className="w-6 h-6 text-gray-400 dark:text-gray-300" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">No preferences found</h3>
               <p className="mt-1 text-gray-500 dark:text-gray-400">

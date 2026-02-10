@@ -10,7 +10,8 @@ import { Button } from '../ui/Button';
 import { Spinner } from '../ui/Spinner';
 import { Alert, AlertDescription } from '../ui/Alert';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Activity, Server, Database, Wifi, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import Icon from '../ui/Icon';
+import { COLORS } from '../../utils/designTokens';
 import { systemHealthService } from '../../services/systemHealthService';
 import './SystemHealthDashboard.css';
 
@@ -62,26 +63,25 @@ const SystemHealthDashboard = () => {
   const getStatusDisplay = (status) => {
     switch (status) {
       case 'healthy':
-        return { color: 'green', icon: CheckCircle, text: 'Healthy' };
+        return { color: 'green', iconName: 'check-circle', text: 'Healthy' };
       case 'degraded':
-        return { color: 'yellow', icon: AlertTriangle, text: 'Degraded' };
+        return { color: 'yellow', iconName: 'alert-triangle', text: 'Degraded' };
       case 'unhealthy':
-        return { color: 'red', icon: XCircle, text: 'Unhealthy' };
+        return { color: 'red', iconName: 'x-circle', text: 'Unhealthy' };
       default:
-        return { color: 'gray', icon: Clock, text: 'Unknown' };
+        return { color: 'gray', iconName: 'clock', text: 'Unknown' };
     }
   };
 
   // Component status card
   const ComponentStatusCard = ({ component, data }) => {
     const statusDisplay = getStatusDisplay(data.status);
-    const StatusIcon = statusDisplay.icon;
 
     return (
       <Card className="component-status-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <h3 className="text-sm font-medium">{data.name}</h3>
-          <StatusIcon className={`h-4 w-4 text-${statusDisplay.color}-500`} />
+          <Icon name={statusDisplay.iconName} className={`h-4 w-4 text-${statusDisplay.color}-500`} aria-hidden="true" />
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2">
@@ -136,7 +136,7 @@ const SystemHealthDashboard = () => {
       <Card className="system-metrics-card">
         <CardHeader>
           <h3 className="text-lg font-semibold flex items-center">
-            <Server className="h-5 w-5 mr-2" />
+            <Icon name="server" className="h-5 w-5 mr-2" aria-hidden="true" />
             System Resources
           </h3>
         </CardHeader>
@@ -222,7 +222,7 @@ const SystemHealthDashboard = () => {
         <Card className="alerts-panel">
           <CardHeader>
             <h3 className="text-lg font-semibold flex items-center">
-              <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+              <Icon name="check-circle" className="h-5 w-5 mr-2 text-green-500" aria-hidden="true" />
               System Alerts
             </h3>
           </CardHeader>
@@ -239,7 +239,7 @@ const SystemHealthDashboard = () => {
       <Card className="alerts-panel">
         <CardHeader>
           <h3 className="text-lg font-semibold flex items-center">
-            <AlertTriangle className="h-5 w-5 mr-2 text-yellow-500" />
+            <Icon name="alert-triangle" className="h-5 w-5 mr-2 text-yellow-500" aria-hidden="true" />
             System Alerts ({alerts.length})
           </h3>
         </CardHeader>
@@ -247,7 +247,7 @@ const SystemHealthDashboard = () => {
           <div className="space-y-2">
             {alerts.map((alert, index) => (
               <Alert key={index} variant={alert.severity === 'critical' ? 'destructive' : 'default'}>
-                <AlertTriangle className="h-4 w-4" />
+                <Icon name="alert-triangle" className="h-4 w-4" aria-hidden="true" />
                 <AlertDescription>
                   <div className="flex justify-between items-start">
                     <div>
@@ -274,7 +274,7 @@ const SystemHealthDashboard = () => {
       <Card className="performance-chart">
         <CardHeader>
           <h3 className="text-lg font-semibold flex items-center">
-            <Activity className="h-5 w-5 mr-2" />
+            <Icon name="activity" className="h-5 w-5 mr-2" aria-hidden="true" />
             Response Time Trend
           </h3>
         </CardHeader>
@@ -285,13 +285,13 @@ const SystemHealthDashboard = () => {
               <XAxis dataKey="timestamp" />
               <YAxis />
               <Tooltip />
-              {/* Chart library requires raw hex — aligned with --color-info */}
+              {/* Chart library requires raw hex — sourced from shared design tokens */}
               <Line 
                 type="monotone" 
                 dataKey="responseTime" 
-                stroke="#3b82f6" 
+                stroke={COLORS.info} 
                 strokeWidth={2}
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                dot={{ fill: COLORS.info, strokeWidth: 2, r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -312,7 +312,7 @@ const SystemHealthDashboard = () => {
   if (error && !healthData) {
     return (
       <Alert variant="destructive">
-        <AlertTriangle className="h-4 w-4" />
+        <Icon name="alert-triangle" className="h-4 w-4" aria-hidden="true" />
         <AlertDescription>
           Failed to load system health data: {error}
           <Button 
@@ -329,7 +329,6 @@ const SystemHealthDashboard = () => {
   }
 
   const overallStatus = getStatusDisplay(healthData?.status);
-  const OverallStatusIcon = overallStatus.icon;
 
   return (
     <div className="system-health-dashboard">
@@ -339,7 +338,7 @@ const SystemHealthDashboard = () => {
           <div className="flex items-center space-x-4">
             <h1 className="text-2xl font-bold">System Health Dashboard</h1>
             <div className="flex items-center space-x-2">
-              <OverallStatusIcon className={`h-6 w-6 text-${overallStatus.color}-500`} />
+              <Icon name={overallStatus.iconName} className={`h-6 w-6 text-${overallStatus.color}-500`} aria-hidden="true" />
               <Badge 
                 variant={overallStatus.color === 'green' ? 'success' : overallStatus.color === 'yellow' ? 'warning' : 'destructive'}
                 className="text-sm"

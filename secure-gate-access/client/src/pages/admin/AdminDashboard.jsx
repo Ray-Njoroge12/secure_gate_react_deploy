@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 // AppShell removed - handled by Layout Route
 import AdminMetrics from '../../components/admin/AdminMetrics.jsx';
 import AdminUserApprovals from '../../components/admin/AdminUserApprovals';
-import AuditLogs from '../../components/admin/AuditLogs.jsx';
 import {
   getMetrics,
-  getAuditLogs,
   getNotificationQueueStats,
   getNotificationFailures,
   retryNotificationFailure,
@@ -17,7 +15,6 @@ import {
   getAllEstates
 } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
-import { useSearchData } from "../../hooks/useSearch";
 import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
 import AnnouncementsAdmin from "../../components/admin/AnnouncementsAdmin";
@@ -33,11 +30,14 @@ import VisitorLog from './VisitorLog';
 import Reports from './Reports';
 import Settings from './Settings';
 import Table from '../../components/Table';
+import Button from '../../components/ui/Button';
 
 export default function AdminDashboard({ initialTab = 'overview' }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { logout } = useAuth();
   const role = useCurrentRole();
+  const selectedSiteId = searchParams.get('siteId');
 
   // Metrics state
   const [metrics, setMetrics] = useState({ invitesActive: 0, invitesExpired: 0, checkinsToday: 0, failedOtps: 0, invitesByStatus: [] });
@@ -61,23 +61,33 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   const [availableEstates, setAvailableEstates] = useState([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
+  const appendSiteId = useCallback((path, estateIdOverride = currentEstate?.id) => {
+    if (role !== 'super_admin' || !estateIdOverride) {
+      return path;
+    }
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}siteId=${encodeURIComponent(estateIdOverride)}`;
+  }, [role, currentEstate?.id]);
+
+  const withEstateParams = useCallback((params = {}) => {
+    if (!currentEstate?.id) {
+      return params;
+    }
+    return { ...params, siteId: currentEstate.id };
+  }, [currentEstate?.id]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + U to users
+      // Ctrl/Cmd + U to user approvals
       if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
         e.preventDefault();
-        navigate('/dashboard/admin/users');
-      }
-      // Ctrl/Cmd + A to audit logs
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        e.preventDefault();
-        navigate('/dashboard/admin/audit-logs');
+        navigate(appendSiteId('/dashboard/admin/approvals'));
       }
       // Ctrl/Cmd + S to settings
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        navigate('/dashboard/admin/settings');
+        navigate(appendSiteId('/dashboard/admin/settings'));
       }
       // Ctrl/Cmd + R to refresh - reload page
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
@@ -88,15 +98,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loadingMetrics, navigate]);
-
-  // Audit logs state
-  const [logs, setLogs] = useState([]);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(25);
-  const [logsLoading, setLogsLoading] = useState(false);
-  const [logsError, setLogsError] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
+  }, [appendSiteId, navigate]);
 
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -117,34 +119,47 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     { id: 'settings', label: 'Settings' }
   ];
 
-  // Search and filter configuration for audit logs
-  const searchFields = ['action', 'user_id', 'entity_type', 'entity_id', 'ip_address'];
-  const filterFields = [
-    { key: 'action', label: 'Action', type: 'select' },
-    { key: 'entity_type', label: 'Entity Type', type: 'select' },
-    { key: 'created_at', label: 'Date', type: 'date' }
-  ];
+  useEffect(() => {
+    let cancelled = false;
 
-  // Use search hook for audit logs
-  const {
-    data: filteredLogs,
-    pagination,
-    searchTerm,
-    filters,
-    setSearchTerm,
-    setFilters,
-    clearFilters,
-    setPage: setSearchPage,
-    isSearching,
-    hasFilters,
-    hasResults
-  } = useSearchData(logs, searchFields, filterFields, {
-    enablePagination: true,
-    pageSize: limit
-  });
+    async function initializeEstateContext() {
+      try {
+        if (role === 'super_admin') {
+          setIsSuperAdmin(true);
+          const estates = await getAllEstates();
+          if (cancelled) return;
 
-  const [searchParams] = useSearchParams();
-  // const siteId = searchParams.get('siteId'); // No longer directly using siteId from URL for most fetches
+          const normalizedEstates = Array.isArray(estates) ? estates : [];
+          setAvailableEstates(normalizedEstates);
+
+          const parsedSiteId = Number(selectedSiteId);
+          const selectedEstate = Number.isInteger(parsedSiteId)
+            ? normalizedEstates.find((estate) => Number(estate.id) === parsedSiteId)
+            : null;
+
+          setCurrentEstate(selectedEstate || normalizedEstates[0] || null);
+          return;
+        }
+
+        setIsSuperAdmin(false);
+        setAvailableEstates([]);
+        const estateInfo = await getEstateDetails();
+        if (!cancelled) {
+          setCurrentEstate(estateInfo || null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          logger.error('Failed to initialize estate context:', err);
+          setCurrentEstate(null);
+        }
+      }
+    }
+
+    initializeEstateContext();
+    return () => {
+      cancelled = true;
+    };
+  }, [role, selectedSiteId]);
 
   // Load Metrics (Modified to support estate context)
   useEffect(() => {
@@ -152,17 +167,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     async function loadMetrics() {
       setLoadingMetrics(true); setMetricsError(null);
       try {
-        const params = {};
-        // If super admin and selected estate, pass siteId? 
-        // Actually, authMiddleware now handles context via header if set, 
-        // but our http client needs to know to set it.
-        // For now, simpler: pass as query param if needed. 
-        if (role === 'super_admin' && currentEstate) {
-          params.siteId = currentEstate.id;
-        } else if (!isSuperAdmin && currentEstate) {
-          params.siteId = currentEstate.id; // For regular admin, ensure current estate is used
-        }
-
+        const params = withEstateParams();
         const data = await getMetrics(params);
         if (!cancelled) setMetrics(data || {});
       } catch (err) {
@@ -178,7 +183,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadMetrics();
     const id = setInterval(loadMetrics, 30000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate, role, isSuperAdmin]); // Reload metrics when estate changes
+  }, [currentEstate?.id, withEstateParams]); // Reload metrics when estate changes
 
   useEffect(() => {
     let cancelled = false;
@@ -187,7 +192,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       setQueueLoading(true);
       setQueueError(null);
       try {
-        const params = currentEstate?.id ? { siteId: currentEstate.id } : {};
+        const params = withEstateParams();
         const [stats, failures] = await Promise.all([
           getNotificationQueueStats(params),
           getNotificationFailures({ limit: 25, ...params })
@@ -209,7 +214,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadQueueData();
     const id = setInterval(loadQueueData, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id]);
+  }, [currentEstate?.id, withEstateParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -218,7 +223,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       setHealthLoading(true);
       setHealthError(null);
       try {
-        const params = currentEstate?.id ? { siteId: currentEstate.id } : {};
+        const params = withEstateParams();
         const details = await getHealthDetails(params);
         if (!cancelled) setHealthDetails(details);
       } catch (e) {
@@ -234,44 +239,12 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadHealthDetails();
     const id = setInterval(loadHealthDetails, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id]);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadLogs() {
-      setLogsLoading(true); setLogsError(null);
-      try {
-        const params = { page: String(page), limit: String(limit) };
-        if (currentEstate?.id) params.siteId = currentEstate.id;
-        const data = await getAuditLogs(params);
-        if (!cancelled) setLogs(data || []);
-      } catch (e) {
-        if (!cancelled) {
-          const errorMsg = handleApiError(e);
-          setLogsError(errorMsg);
-          logger.error('Failed to load audit logs:', e);
-        }
-      } finally {
-        if (!cancelled) setLogsLoading(false);
-      }
-    }
-    loadLogs();
-  }, [page, limit, currentEstate?.id]);
+  }, [currentEstate?.id, withEstateParams]);
 
   const onLogout = async () => {
     await logout();
     navigate("/login");
   };
-
-  const auditHeaders = ["Time", "User", "Action", "Entity", "Details", "IP"];
-  const auditRows = filteredLogs.map(l => [
-    l.created_at,
-    l.user_id || "-",
-    l.action,
-    `${l.entity_type || "-"}:${l.entity_id || "-"}`,
-    l.details ? JSON.stringify(l.details) : "",
-    l.ip_address || ""
-  ]);
 
   const queueHeaders = ["Failed At", "Type", "Recipient", "Error", "Actions"];
   const queueRows = queueFailures.map(item => [
@@ -279,14 +252,16 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     item.type || "-",
     item.recipient || "-",
     item.error || "-",
-    <button
+    <Button
       key={`retry-${item.id}`}
+      variant="ghost"
+      size="sm"
       onClick={async () => {
         if (!item.id) return;
         setRetryingJobId(item.id);
         try {
           await retryNotificationFailure(item.id);
-          const failures = await getNotificationFailures({ limit: 25 });
+          const failures = await getNotificationFailures(withEstateParams({ limit: 25 }));
           setQueueFailures(failures?.data || failures || []);
         } catch (e) {
           setQueueError(handleApiError(e));
@@ -298,7 +273,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       disabled={retryingJobId === item.id}
     >
       {retryingJobId === item.id ? 'Retrying...' : 'Retry'}
-    </button>
+    </Button>
   ]);
 
   const healthStatusColor = (status) => {
@@ -323,26 +298,24 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             Admin Dashboard
             {currentEstate && !isSuperAdmin && (
-              <span className="text-sm font-normal px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full border border-green-200 dark:border-green-700">
+              <span className="text-sm font-normal px-3 py-1 bg-brand-100 dark:bg-brand-900/30 text-brand-800 dark:text-brand-300 rounded-full border border-brand-200 dark:border-brand-700">
                 {currentEstate.name}
               </span>
             )}
             {isSuperAdmin && (
               <select
-                className="text-sm font-normal px-3 py-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="text-sm font-normal px-3 py-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500"
                 value={currentEstate?.id || ''}
                 onChange={(e) => {
                   const selectedId = Number(e.target.value);
-                  const selected = availableEstates.find(est => est.id === selectedId);
+                  const selected = availableEstates.find((est) => Number(est.id) === selectedId);
                   if (selected) {
                     setCurrentEstate(selected);
-                    // TODO: Persist or set header
-                    // For quick implementation, we rely on sending siteId param or reloading page with context?
-                    // Ideally: http client interceptor checks localStorage.
-                    // For now: Just passing params where possible.
+                    const currentPath = activeTab === 'overview' ? '/dashboard/admin' : `/dashboard/admin/${activeTab}`;
+                    navigate(appendSiteId(currentPath, selected.id), { replace: true });
                   }
                 }}
               >
@@ -359,15 +332,26 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           </h1>
         </div>
 
-        {/* Super Admin Navigation */}
-        {role === 'super_admin' && (
-          <button
-            onClick={() => navigate('/dashboard/super-admin')}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/dashboard/admin/help/security')}
+            className="flex items-center px-4 py-2 text-sm font-medium"
           >
-            ← Back to Global Dashboard
-          </button>
-        )}
+            Security Help
+          </Button>
+          {role === 'super_admin' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/dashboard/super-admin')}
+              className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+              ← Back to Global Dashboard
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Phase 3: Community Announcements */}
@@ -375,14 +359,18 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
 
       {/* Tabs for Admin Dashboard */}
       <div className="mb-6 border-b border-gray-200 dark:border-slate-700">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-6 overflow-x-auto" role="tablist" aria-label="Admin dashboard sections">
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
+              id={`admin-tab-${tab.id}`}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`admin-tabpanel-${tab.id}`}
               onClick={() => {
                 // Navigation updates URL -> App.js re-renders with new initialTab -> Effect updates activeTab
                 const path = tab.id === 'overview' ? '/dashboard/admin' : `/dashboard/admin/${tab.id}`;
-                navigate(path);
+                navigate(appendSiteId(path));
               }}
               className={`${activeTab === tab.id
                 ? 'border-brand-500 text-brand-600'
@@ -390,42 +378,55 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </nav>
       </div>
 
       {
         activeTab === 'overview' && (
-          <div className="space-y-6">
+          <div
+            id="admin-tabpanel-overview"
+            role="tabpanel"
+            aria-labelledby="admin-tab-overview"
+            className="space-y-6"
+          >
             {/* Quick Actions Panel */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm p-6 text-white">
               <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
               <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => navigate('/dashboard/admin/approvals')}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(appendSiteId('/dashboard/admin/approvals'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
                   ✓ Approve Users
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/admin/visitors')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(appendSiteId('/dashboard/admin/visitors'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
                   📋 View Today's Visitors
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/admin/residents')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(appendSiteId('/dashboard/admin/residents'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
                   🏠 Manage Residents
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/admin/reports')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(appendSiteId('/dashboard/admin/reports'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
                   📊 Generate Reports
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -483,36 +484,48 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
 
       {
         activeTab === 'approvals' && (
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div id="admin-tabpanel-approvals" role="tabpanel" aria-labelledby="admin-tab-approvals" className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">User Account Approvals</h3>
             <AdminUserApprovals siteId={currentEstate?.id} />
           </div>
         )
       }
 
-      {activeTab === 'guards' && <ManageGuards estateId={currentEstate?.id} />}
+      {activeTab === 'guards' && (
+        <div id="admin-tabpanel-guards" role="tabpanel" aria-labelledby="admin-tab-guards">
+          <ManageGuards estateId={currentEstate?.id} />
+        </div>
+      )}
 
       {
         activeTab === 'residents' && (
-          <ManageResidents />
+          <div id="admin-tabpanel-residents" role="tabpanel" aria-labelledby="admin-tab-residents">
+            <ManageResidents estateId={currentEstate?.id} />
+          </div>
         )
       }
 
       {
         activeTab === 'visitors' && (
-          <VisitorLog />
+          <div id="admin-tabpanel-visitors" role="tabpanel" aria-labelledby="admin-tab-visitors">
+            <VisitorLog estateId={currentEstate?.id} />
+          </div>
         )
       }
 
       {
         activeTab === 'reports' && (
-          <Reports />
+          <div id="admin-tabpanel-reports" role="tabpanel" aria-labelledby="admin-tab-reports">
+            <Reports estateId={currentEstate?.id} />
+          </div>
         )
       }
 
       {
         activeTab === 'settings' && (
-          <Settings />
+          <div id="admin-tabpanel-settings" role="tabpanel" aria-labelledby="admin-tab-settings">
+            <Settings estateId={currentEstate?.id} />
+          </div>
         )
       }
     </div >

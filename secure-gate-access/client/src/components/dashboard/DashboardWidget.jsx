@@ -9,6 +9,28 @@
  */
 
 import React, { useState, useCallback } from 'react';
+// FIX: Substituted direct Lucide icons with Icon component usage in render method
+// import { 
+//   RefreshCw, 
+//   Settings, 
+//   Trash2, 
+//   ChevronUp, 
+//   ChevronDown, 
+//   MoreVertical,
+//   BarChart2, 
+//   TrendingUp, 
+//   Activity, 
+//   AlertTriangle, 
+//   Home, 
+//   UserCheck, 
+//   Users, 
+//   Shield, 
+//   QrCode, 
+//   Clock, 
+//   HelpCircle, 
+//   UserPlus, 
+//   Calendar 
+// } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.js';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
 import { LayoutItem } from '../ui/LayoutManager.jsx';
@@ -16,6 +38,34 @@ import Loading from '../ui/Loading.jsx';
 import ErrorDisplay from '../ui/ErrorDisplay.jsx';
 import IconButton from '../ui/IconButton.jsx';
 import Dropdown from '../ui/Dropdown.jsx';
+import Icon from '../ui/Icon.jsx';
+import Button from '../ui/Button';
+
+/**
+ * Icon mapping for dashboard widgets
+ */
+const ICON_MAP = {
+  // Using strings to map to Icon component names
+  'bar-chart': 'bar-chart-2',
+  'trending-up': 'trending-up',
+  'activity': 'activity',
+  'alert-triangle': 'alert-triangle',
+  'home': 'home',
+  'user-check': 'user-check',
+  'users': 'users',
+  'shield': 'shield',
+  'qr-code': 'qr-code',
+  'clock': 'clock',
+  'help-circle': 'help-circle',
+  'user-plus': 'user-plus',
+  'calendar': 'calendar',
+  'refresh-cw': 'refresh-cw',
+  'settings': 'settings',
+  'trash-2': 'trash-2',
+  'chevron-up': 'chevron-up',
+  'chevron-down': 'chevron-down',
+  'more-vertical': 'more-vertical'
+};
 
 /**
  * DashboardWidget Component
@@ -23,155 +73,150 @@ import Dropdown from '../ui/Dropdown.jsx';
 export const DashboardWidget = ({
   id,
   title,
-  subtitle,
+  type,
   icon,
   children,
-  loading = false,
-  error = null,
+  onRemove,
   onRefresh,
   onSettings,
-  onRemove,
-  actions = [],
+  isDraggable = true,
+  isLoading = false,
+  error = null,
+  headerActions = [],
   className = '',
-  headerClassName = '',
-  contentClassName = '',
-  showSettings = true,
-  showRefresh = true,
+  minHeight = '200px',
   ...props
 }) => {
-  const { user } = useAuth();
-  const { isDark } = useTheme();
   const [isExpanded, setIsExpanded] = useState(true);
+  const { theme } = useTheme();
 
-  // Handle widget actions
-  const handleRefresh = useCallback(() => {
-    if (onRefresh) {
-      onRefresh(id);
-    }
-  }, [id, onRefresh]);
-
-  const handleSettings = useCallback(() => {
-    if (onSettings) {
-      onSettings(id);
-    }
-  }, [id, onSettings]);
-
-  const handleRemove = useCallback(() => {
-    if (onRemove) {
-      onRemove(id);
-    }
-  }, [id, onRemove]);
+  // Get icon component
+  // FIX: Using Icon component directly instead of looking up in ICON_MAP
+  const iconName = ICON_MAP[icon] || 'activity';
 
   const handleToggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
 
-  // Build widget actions menu
-  const widgetActions = [
-    ...(showRefresh ? [{
+  const defaultActions = [
+    {
       label: 'Refresh',
-      icon: 'refresh',
-      onClick: handleRefresh,
-      disabled: loading
-    }] : []),
-    ...(showSettings ? [{
+      icon: <Icon name="refresh-cw" size={16} />,
+      onClick: onRefresh,
+      show: !!onRefresh
+    },
+    {
       label: 'Settings',
-      icon: 'settings',
-      onClick: handleSettings
-    }] : []),
-    ...actions,
-    ...(onRemove ? [{
+      icon: <Icon name="settings" size={16} />,
+      onClick: onSettings,
+      show: !!onSettings
+    },
+    {
       label: 'Remove',
-      icon: 'trash',
-      onClick: handleRemove,
-      variant: 'danger'
-    }] : [])
+      icon: <Icon name="trash-2" size={16} className="text-red-500" />,
+      onClick: onRemove,
+      show: !!onRemove
+    }
   ];
 
+  const actions = [...defaultActions, ...headerActions].filter(action => action.show);
+
+  if (error) {
+    return (
+      <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-red-200 dark:border-red-900 ${className}`}>
+        <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <Icon name="alert-triangle" size={20} />
+            <h3 className="font-semibold">{title}</h3>
+          </div>
+          <IconButton 
+            icon={<Icon name="refresh-cw" size={16} />} 
+            onClick={onRefresh} 
+            label="Retry"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          />
+        </div>
+        <div className="p-6">
+          <ErrorDisplay 
+            message={error.message || 'Widget failed to load'} 
+            onRetry={onRefresh}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <LayoutItem 
-      className={`dashboard-widget ${className}`}
+    <div 
+      className={`
+        flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-sm 
+        border border-gray-100 dark:border-slate-700 transition-all duration-200
+        ${isExpanded ? '' : 'h-auto'}
+        ${className}
+      `}
+      style={{ minHeight: isExpanded ? minHeight : 'auto' }}
       {...props}
     >
       {/* Widget Header */}
-      <div className={`widget-header flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700 ${headerClassName}`}>
-        <div className="flex items-center space-x-3">
-          {icon && (
-            <div className="widget-icon flex-shrink-0">
-              {typeof icon === 'string' ? (
-                <div className="w-6 h-6 text-gray-500 dark:text-gray-300">
-                  {/* Icon placeholder - replace with actual icon component */}
-                  <div className="w-full h-full bg-current opacity-20 rounded" />
-                </div>
-              ) : (
-                icon
-              )}
-            </div>
-          )}
-          
-          <div className="widget-title-section">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {title}
-            </h3>
-            {subtitle && (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {subtitle}
-              </p>
-            )}
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-700">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+            <Icon name={iconName} size={20} />
+          </div>
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            {title}
+          </h3>
+          {/* Tooltip/Help Icon */}
+          <div className="group relative ml-1">
+             <Icon name="help-circle" size={14} className="text-gray-400 cursor-help" />
+             <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-100">
+               {type} Widget
+             </div>
           </div>
         </div>
 
-        <div className="widget-actions flex items-center space-x-2">
-          {/* Expand/Collapse Button */}
-          <IconButton
-            icon={isExpanded ? 'chevron-up' : 'chevron-down'}
-            onClick={handleToggleExpand}
-            size="sm"
-            variant="ghost"
-            aria-label={isExpanded ? 'Collapse widget' : 'Expand widget'}
-          />
-
-          {/* Actions Menu */}
-          {widgetActions.length > 0 && (
+        <div className="flex items-center gap-1">
+          {actions.length > 0 && (
             <Dropdown
               trigger={
-                <IconButton
-                  icon="more-vertical"
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Widget actions"
+                <IconButton 
+                  icon={<Icon name="more-vertical" size={18} />} 
+                  label="Widget options"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 />
               }
-              items={widgetActions}
-              placement="bottom-end"
+              items={actions.map((action, index) => ({
+                id: index,
+                label: action.label,
+                icon: action.icon,
+                onClick: action.onClick,
+                className: action.label === 'Remove' ? 'text-red-600 dark:text-red-400' : ''
+              }))}
             />
           )}
+
+          <IconButton
+            icon={<Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} />}
+            onClick={handleToggleExpand}
+            label={isExpanded ? 'Collapse widget' : 'Expand widget'}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          />
         </div>
       </div>
 
       {/* Widget Content */}
       {isExpanded && (
-        <div className={`widget-content ${contentClassName}`}>
-          {loading ? (
-            <div className="flex items-center justify-center p-8">
-              <Loading size="md" message="Loading widget data..." />
-            </div>
-          ) : error ? (
-            <div className="p-4">
-              <ErrorDisplay 
-                error={error}
-                onRetry={handleRefresh}
-                compact
-              />
+        <div className="flex-1 p-4 overflow-hidden relative">
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 z-10">
+              <Loading size="md" />
             </div>
           ) : (
-            <div className="p-4">
-              {children}
-            </div>
+            children
           )}
         </div>
       )}
-    </LayoutItem>
+    </div>
   );
 };
 
@@ -242,7 +287,7 @@ export const StatWidget = ({
               {trend.map((point, index) => (
                 <div
                   key={index}
-                  className="bg-blue-200 dark:bg-blue-800 rounded-sm flex-1"
+                  className="bg-blue-200 dark:bg-blue-600/60 rounded-sm flex-1"
                   style={{ 
                     height: `${Math.max(4, (point / Math.max(...trend)) * 100)}%` 
                   }}
@@ -329,12 +374,12 @@ export const ListWidget = ({
 
             {showViewAll && items.length > maxItems && (
               <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
-                <button
+                <Button
                   onClick={onViewAll}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                 >
                   View all {items.length} items
-                </button>
+                </Button>
               </div>
             )}
           </>

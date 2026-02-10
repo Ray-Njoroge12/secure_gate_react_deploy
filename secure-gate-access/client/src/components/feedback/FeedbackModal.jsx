@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Star, Send, Bug, Lightbulb, AlertTriangle, MessageSquare } from 'lucide-react';
+import Icon from '../ui/Icon';
 import { Button } from '../ui/Button';
 import { Card, CardHeader, CardContent } from '../ui/Card';
 import { Textarea } from '../ui/Textarea';
@@ -28,12 +28,12 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
   const [submitted, setSubmitted] = useState(false);
 
   const feedbackTypes = [
-    { value: 'bug_report', label: 'Bug Report', icon: Bug, color: 'red' },
-    { value: 'feature_request', label: 'Feature Request', icon: Lightbulb, color: 'blue' },
-    { value: 'usability_issue', label: 'Usability Issue', icon: AlertTriangle, color: 'yellow' },
-    { value: 'performance_issue', label: 'Performance Issue', icon: AlertTriangle, color: 'orange' },
-    { value: 'general_feedback', label: 'General Feedback', icon: MessageSquare, color: 'green' },
-    { value: 'satisfaction_rating', label: 'Rate Experience', icon: Star, color: 'purple' }
+    { value: 'bug_report', label: 'Bug Report', iconName: 'bug', color: 'red' },
+    { value: 'feature_request', label: 'Feature Request', iconName: 'lightbulb', color: 'blue' },
+    { value: 'usability_issue', label: 'Usability Issue', iconName: 'alert-triangle', color: 'yellow' },
+    { value: 'performance_issue', label: 'Performance Issue', iconName: 'alert-triangle', color: 'orange' },
+    { value: 'general_feedback', label: 'General Feedback', iconName: 'message-square', color: 'green' },
+    { value: 'satisfaction_rating', label: 'Rate Experience', iconName: 'star', color: 'purple' }
   ];
 
   const categories = [
@@ -121,15 +121,15 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
         <span className="rating-label">Rate your experience:</span>
         <div className="stars">
           {[1, 2, 3, 4, 5].map((star) => (
-            <button
+            <Button
               key={star}
               type="button"
               className={`star ${rating >= star ? 'filled' : ''}`}
               onClick={() => setRating(star)}
               aria-label={`Rate ${star} star${star !== 1 ? 's' : ''}`}
             >
-              <Star className="star-icon" />
-            </button>
+              <Icon name="star" className="star-icon" aria-hidden="true" />
+            </Button>
           ))}
         </div>
         {rating > 0 && (
@@ -148,21 +148,39 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="feedback-modal-overlay" onClick={handleClose} role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
-      <div className="feedback-modal" ref={modalRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
+    <div 
+      className="feedback-modal-overlay" 
+      onClick={handleClose} 
+      role="presentation"
+      aria-hidden="true"
+    >
+      <div role="button" tabIndex={0} 
+        className="feedback-modal" 
+        ref={modalRef} 
+        tabIndex={-1} 
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true" 
+        aria-labelledby="feedback-modal-title"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            handleClose();
+          }
+        }}
+      >
         <Card className="feedback-card">
           <CardHeader className="feedback-header">
             <div className="header-content">
               <h2 id="feedback-modal-title" className="feedback-title">
                 {submitted ? 'Thank You!' : 'Share Your Feedback'}
               </h2>
-              <button
+              <Button
                 className="close-button"
                 onClick={handleClose}
                 aria-label="Close feedback modal"
               >
-                <X className="close-icon" />
-              </button>
+                <Icon name="x" className="close-icon" aria-hidden="true" />
+              </Button>
             </div>
             {!submitted && (
               <p className="feedback-subtitle">
@@ -175,7 +193,7 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
             {submitted ? (
               <div className="success-message">
                 <div className="success-icon">
-                  <Send className="icon" />
+                  <Icon name="send" className="icon" aria-hidden="true" />
                 </div>
                 <h3>Feedback Submitted Successfully!</h3>
                 <p>Thank you for helping us improve. We'll review your feedback and get back to you if needed.</p>
@@ -187,17 +205,16 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
                   <label className="form-label">What type of feedback is this?</label>
                   <div className="feedback-types">
                     {feedbackTypes.map((type) => {
-                      const IconComponent = type.icon;
                       return (
-                        <button
+                        <Button
                           key={type.value}
                           type="button"
                           className={`feedback-type-button ${feedbackType === type.value ? 'selected' : ''}`}
                           onClick={() => setFeedbackType(type.value)}
                         >
-                          <IconComponent className="type-icon" />
+                          <Icon name={type.iconName} className="type-icon" aria-hidden="true" />
                           <span className="type-label">{type.label}</span>
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -264,14 +281,14 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
                         <label className="form-label">Priority</label>
                         <div className="priority-options">
                           {priorities.map((p) => (
-                            <button
+                            <Button
                               key={p.value}
                               type="button"
                               className={`priority-button ${priority === p.value ? 'selected' : ''}`}
                               onClick={() => setPriority(p.value)}
                             >
                               <Badge variant={p.color}>{p.label}</Badge>
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       </div>
@@ -299,7 +316,7 @@ const FeedbackModal = ({ isOpen, onClose, initialType = null, context = {} }) =>
                           </>
                         ) : (
                           <>
-                            <Send className="submit-icon" />
+                            <Icon name="send" className="submit-icon" aria-hidden="true" />
                             Submit Feedback
                           </>
                         )}

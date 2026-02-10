@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { refreshAccessTokenWithRetry } from '../../utils/apiClient';
+import Button from '../ui/Button';
 
 const OfflineRetryBanner = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -44,14 +45,14 @@ const OfflineRetryBanner = () => {
       <span>
         You&apos;re offline. We&apos;ll retry session refresh when you reconnect.
       </span>
-      <button
+      <Button
         type="button"
         onClick={handleRetry}
         disabled={isRetrying}
         className="ml-4 text-sm font-medium text-yellow-900 underline disabled:opacity-50"
       >
         {isRetrying ? 'Retrying...' : 'Retry now'}
-      </button>
+      </Button>
     </div>
   );
 };

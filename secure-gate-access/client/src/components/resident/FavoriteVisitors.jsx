@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Button from '../ui/Button';
 
 // Icons
 const StarFilledIcon = () => (
@@ -76,7 +77,7 @@ const FavoriteCard = ({
 
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-semibold text-lg">
+        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-semibold text-lg">
           {initials}
         </div>
 
@@ -106,10 +107,10 @@ const FavoriteCard = ({
 
       {/* Actions */}
       <div className={`mt-4 flex gap-2 transition-opacity ${showActions || isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-        <button
+        <Button
           onClick={() => onQuickInvite(visitor)}
           disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -119,14 +120,14 @@ const FavoriteCard = ({
               <span>Quick Invite</span>
             </>
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => onRemove(visitor.id)}
           className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:text-gray-300 dark:hover:bg-red-900/20 rounded-lg transition-colors"
           title="Remove from favorites"
         >
           <TrashIcon />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -174,8 +175,8 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Add to favorites">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} role="presentation" aria-hidden="true" />
       
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl">
@@ -184,14 +185,14 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               ⭐ Add to Favorites
             </h3>
-            <button
+            <Button
               onClick={onClose}
               className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
 
           {/* Suggestions */}
@@ -202,13 +203,13 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
               </p>
               <div className="flex flex-wrap gap-2">
                 {suggestions.slice(0, 3).map((s, i) => (
-                  <button
+                  <Button
                     key={i}
                     onClick={() => handleSuggestionClick(s)}
                     className="px-3 py-1.5 text-sm bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-700 rounded-full hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                   >
                     {s.name}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -280,19 +281,19 @@ const AddFavoriteModal = ({ isOpen, onClose, onAdd, suggestions = [] }) => {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <button
+              <Button
                 type="button"
                 onClick={onClose}
                 className="flex-1 px-4 py-2.5 text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors font-medium"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="flex-1 px-4 py-2.5 text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors font-medium"
               >
                 Add to Favorites
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -370,15 +371,15 @@ const FavoriteVisitors = ({
               </p>
             </div>
           </div>
-          <button
+          <Button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
             </svg>
             Add Favorite
-          </button>
+          </Button>
         </div>
 
         {/* Search */}
@@ -420,12 +421,12 @@ const FavoriteVisitors = ({
             <p className="text-gray-500 dark:text-gray-300 mb-6 max-w-sm mx-auto">
               Add your frequent visitors to favorites for quick one-tap invites
             </p>
-            <button
+            <Button
               onClick={() => setShowAddModal(true)}
-              className="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
+              className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors"
             >
               Add Your First Favorite
-            </button>
+            </Button>
           </div>
         ) : filteredFavorites.length === 0 ? (
           // No search results
@@ -433,12 +434,12 @@ const FavoriteVisitors = ({
             <p className="text-gray-500 dark:text-gray-300">
               No favorites match "{searchTerm}"
             </p>
-            <button
+            <Button
               onClick={() => setSearchTerm('')}
               className="mt-2 text-green-600 hover:text-green-700 text-sm font-medium"
             >
               Clear search
-            </button>
+            </Button>
           </div>
         ) : (
           // Favorites grid
@@ -459,7 +460,7 @@ const FavoriteVisitors = ({
             {/* Show more/less */}
             {filteredFavorites.length > maxVisible && (
               <div className="mt-4 text-center">
-                <button
+                <Button
                   onClick={() => setShowAll(!showAll)}
                   className="text-green-600 hover:text-green-700 text-sm font-medium"
                 >
@@ -467,7 +468,7 @@ const FavoriteVisitors = ({
                     ? 'Show less' 
                     : `Show all ${filteredFavorites.length} favorites`
                   }
-                </button>
+                </Button>
               </div>
             )}
           </>

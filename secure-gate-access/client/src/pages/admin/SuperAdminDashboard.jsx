@@ -1,23 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { Shield, Building2, Users, AlertTriangle, Activity, LayoutDashboard, LogOut, ArrowRight, Server, Plus, Search, FileText, Cpu, Database, Wifi, Trash2 } from 'lucide-react';
-import { GradientCard } from '../../components/ui';
-import GradientButton from '../../components/ui/GradientButton';
+
 import AddEstateModal from '../../components/modals/AddEstateModal';
 import DecommissionEstateModal from '../../components/modals/DecommissionEstateModal';
-import Table from '../../components/Table';
+import { GradientCard } from '../../components/ui';
+import Button from '../../components/ui/Button';
+import GradientButton from '../../components/ui/GradientButton';
+import Icon from '../../components/ui/Icon';
+import { useAuth } from '../../contexts/AuthContext';
 import { handleApiError } from '../../utils/errorMapper';
-import logger from '../../utils/logger';
+import api from '../../utils/apiClient';
 
 // Mock service for now, will implement real service calls
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export default function SuperAdminDashboard() {
     const navigate = useNavigate();
-    const { logout, user } = useAuth();
+    const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [errorMessage, setErrorMessage] = useState(null);
     const [isAddEstateOpen, setIsAddEstateOpen] = useState(false);
     
     // Decommission Modal State
@@ -37,20 +38,36 @@ export default function SuperAdminDashboard() {
     });
 
     const [estates, setEstates] = useState([]);
-    const [logs, setLogs] = useState([]);
     const [health, setHealth] = useState({ status: 'unknown', text: 'Checking...' });
 
     // System Metrics State
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'health'
     const [systemMetrics, setSystemMetrics] = useState(null);
 
+    // MFA Status Badge
+    const [mfaBadge, setMfaBadge] = useState({ enabled: null, required: false });
+
     useEffect(() => {
-        fetchDashboardData();
+        const fetchMfaBadge = async () => {
+            try {
+                const response = await api.get('/api/mfa/status');
+                if (response.data?.success) {
+                    setMfaBadge({
+                        enabled: response.data.data.mfaEnabled,
+                        required: response.data.data.mfaRequired
+                    });
+                }
+            } catch {
+                // Silently fail — badge is non-critical
+            }
+        };
+        fetchMfaBadge();
     }, []);
 
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         try {
             setLoading(true);
+            setErrorMessage(null);
             const headers = {
                 'Content-Type': 'application/json'
             };
@@ -62,8 +79,22 @@ export default function SuperAdminDashboard() {
             });
 
             if (overviewRes.status === 401 || overviewRes.status === 403) {
+                // Check if it's an MFA setup requirement
+                const errorData = await overviewRes.json().catch(() => ({}));
+                
+                if (errorData.code === 'MFA_SETUP_REQUIRED' || errorData.error?.code === 'MFA_SETUP_REQUIRED') {
+                    // Redirect to MFA setup
+                    navigate('/mfa/setup', { 
+                        state: { 
+                            message: 'Multi-Factor Authentication is required for SuperAdmin access. Please complete setup to continue.',
+                            returnUrl: '/dashboard/admin/super'
+                        } 
+                    });
+                    return;
+                }
+                
                 setHealth({ status: 'error', text: 'Auth Failed' });
-                setError('Session expired. Please login again.');
+                setErrorMessage(errorData.message || 'Session expired. Please login again.');
                 if (overviewRes.status === 401) logout(); // Auto logout on 401
                 return;
             }
@@ -71,7 +102,12 @@ export default function SuperAdminDashboard() {
             if (overviewRes.ok) {
                 const data = await overviewRes.json();
                 if (data.success && data.data) {
-                    setStats(data.data.stats || stats);
+                    setStats(data.data.stats || {
+                        totalEstates: 0,
+                        totalUsers: 0,
+                        totalVisitors: 0,
+                        totalIncidents: 0
+                    });
                     if (data.data.systemHealth) setHealth({ status: 'healthy', text: 'Operational' });
                 } else if (data.stats) {
                     setStats(data.stats);
@@ -79,6 +115,7 @@ export default function SuperAdminDashboard() {
                 }
             } else {
                 setHealth({ status: 'error', text: 'API Error' });
+                setErrorMessage('Unable to load platform overview. Please retry.');
             }
 
             // 2. Get Estates List
@@ -95,24 +132,18 @@ export default function SuperAdminDashboard() {
                 }
             }
 
-            // 3. Get Recent Logs
-            const logsRes = await fetch(`${API_BASE_URL}/api/admin/super-admin/audit-logs?limit=10`, {
-                headers,
-                credentials: 'include'
-            });
-            if (logsRes.ok) {
-                const data = await logsRes.json();
-                setLogs(data.data || data || []);
-            }
-
         } catch (err) {
             console.error('Failed to load super admin data:', err);
-            setError('Failed to load dashboard data');
+            setErrorMessage('Failed to load dashboard data');
             setHealth({ status: 'error', text: 'System Error' });
         } finally {
             setLoading(false);
         }
-    };
+    }, [logout]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
     const fetchSystemMetrics = async () => {
         try {
@@ -123,9 +154,12 @@ export default function SuperAdminDashboard() {
             if (res.ok) {
                 const data = await res.json();
                 setSystemMetrics(data.data);
+            } else {
+                setErrorMessage('Failed to refresh system metrics.');
             }
         } catch (err) {
             console.error('Failed to fetch system metrics:', err);
+            setErrorMessage('Failed to refresh system metrics.');
         }
     };
 
@@ -142,16 +176,22 @@ export default function SuperAdminDashboard() {
     const handleSearch = async () => {
         if (!searchQuery || searchQuery.length < 3) return;
         setIsSearching(true);
+        setErrorMessage(null);
         try {
-            const token = localStorage.getItem('token');
             const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/users/search?q=${encodeURIComponent(searchQuery)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Search failed');
             const data = await res.json();
-            setSearchResults(data.data || data);
+            const normalizedResults = Array.isArray(data?.data)
+                ? data.data
+                : Array.isArray(data)
+                    ? data
+                    : [];
+            setSearchResults(normalizedResults);
         } catch (err) {
-            setError(handleApiError(err));
+            setErrorMessage(handleApiError(err));
         } finally {
             setIsSearching(false);
         }
@@ -161,12 +201,7 @@ export default function SuperAdminDashboard() {
         navigate(`/dashboard/admin?siteId=${estateId}`);
     };
 
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    };
-
-    const handleEstateAdded = (newEstate) => {
+    const handleEstateAdded = (_newEstate) => {
         fetchDashboardData();
     };
 
@@ -187,9 +222,6 @@ export default function SuperAdminDashboard() {
             // Optimistic update
             setEstates(prev => prev.map(e => e.id === estateId ? { ...e, status: newStatus } : e));
 
-            console.log('Sending PATCH to:', `${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/status`);
-            console.log('Payload:', { status: newStatus });
-
             const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/status`, {
                 method: 'PATCH',
                 headers: {
@@ -199,9 +231,7 @@ export default function SuperAdminDashboard() {
                 body: JSON.stringify({ status: newStatus })
             });
 
-            console.log('Response status:', res.status);
             const resText = await res.text();
-            console.log('Response body:', resText);
 
             if (!res.ok) {
                 try {
@@ -216,62 +246,90 @@ export default function SuperAdminDashboard() {
             fetchDashboardData();
         } catch (err) {
             console.error(err);
-            setError(handleApiError(err));
+            setErrorMessage(handleApiError(err));
             // Revert on error
             fetchDashboardData();
         }
     };
 
-    const StatCard = ({ title, value, icon: Icon, color }) => (
+    const statToneClasses = {
+        blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+        green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+        purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+        orange: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+    };
+
+    const StatCard = ({ title, value, iconName, color }) => (
         <GradientCard className="p-6 flex items-center justify-between">
             <div>
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-300">{title}</p>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</h3>
             </div>
-            <div className={`p-3 rounded-xl bg-${color}-100 dark:bg-${color}-900/30 text-${color}-600 dark:text-${color}-400`}>
-                <Icon className="w-6 h-6" />
+            <div className={`p-3 rounded-xl ${statToneClasses[color] || statToneClasses.blue}`}>
+                <Icon name={iconName} className="w-6 h-6" />
             </div>
         </GradientCard>
     );
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-            {/* Top Navigation */}
-            <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg">
-                        <Shield className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-white">SecureGate <span className="text-indigo-600">Platform</span></h1>
-                        <p className="text-xs text-gray-500 dark:text-gray-300">Super Admin Control Center</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center space-x-4">
-                    <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium border ${health.status === 'healthy'
-                        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400'
-                        : 'bg-red-50 text-red-700 border-red-200'
-                        }`}>
-                        <Activity className="w-3 h-3 mr-1.5" />
-                        System: {health.text}
-                    </div>
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+        <div className="max-w-7xl mx-auto space-y-6">
+                {errorMessage && (
+                    <div
+                        role="alert"
+                        className="flex items-start justify-between gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg"
                     >
-                        <LogOut className="w-5 h-5" />
-                    </button>
-                </div>
-            </div>
-
-            <div className="p-6 max-w-7xl mx-auto space-y-6">
+                        <div className="flex items-center gap-2 text-sm">
+                            <Icon name="AlertTriangle" className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                            <span>{errorMessage}</span>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setErrorMessage(null)}
+                            className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200"
+                            aria-label="Dismiss error message"
+                        >
+                            Dismiss
+                        </Button>
+                    </div>
+                )}
 
                 {/* Welcome Section */}
                 <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Platform Overview</h2>
-                    <div className="flex space-x-3">
-                        <GradientButton onClick={() => setIsAddEstateOpen(true)} size="sm" icon={Plus}>
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Platform Overview</h2>
+                    <div className="flex items-center gap-3">
+                        <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium border ${health.status === 'healthy'
+                            ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400'
+                            : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+                            }`}>
+                            <Icon name="Activity" className="w-3 h-3 mr-1.5" />
+                            System: {health.text}
+                        </div>
+                        {/* MFA Status Badge */}
+                        {mfaBadge.enabled !== null && (
+                            <button
+                                type="button"
+                                onClick={() => navigate('/dashboard/admin/settings')}
+                                className={`flex items-center px-3 py-1 rounded-full text-xs font-medium border cursor-pointer transition-colors ${mfaBadge.enabled
+                                    ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40'
+                                    : 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-900/40'
+                                }`}
+                                aria-label={mfaBadge.enabled ? 'MFA is enabled. Click to manage.' : 'MFA is not set up. Click to set up.'}
+                                title={mfaBadge.enabled ? 'MFA Enabled' : 'MFA Not Set Up — Click to configure'}
+                            >
+                                <Icon name={mfaBadge.enabled ? "ShieldCheck" : "ShieldAlert"} className="w-3 h-3 mr-1.5" />
+                                MFA: {mfaBadge.enabled ? 'On' : 'Off'}
+                            </button>
+                        )}
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => navigate('/dashboard/admin/help/security')}
+                            className="text-xs"
+                        >
+                            Security Help
+                        </Button>
+                        <GradientButton onClick={() => setIsAddEstateOpen(true)} size="sm" icon="Plus">
                             Add Estate
                         </GradientButton>
                         <GradientButton onClick={fetchDashboardData} size="sm" variant="outline">
@@ -281,49 +339,66 @@ export default function SuperAdminDashboard() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                    <button
+                <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Dashboard sections">
+                    <Button
+                        id="super-admin-tab-overview"
+                        variant={activeTab === 'overview' ? 'primary' : 'secondary'}
                         onClick={() => setActiveTab('overview')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'overview'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+                        role="tab"
+                        aria-selected={activeTab === 'overview'}
+                        aria-controls="super-admin-panel-overview"
+                        tabIndex={activeTab === 'overview' ? 0 : -1}
+                        size="sm"
                     >
                         Platform Overview
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                        id="super-admin-tab-health"
+                        variant={activeTab === 'health' ? 'primary' : 'secondary'}
                         onClick={() => setActiveTab('health')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'health'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+                        role="tab"
+                        aria-selected={activeTab === 'health'}
+                        aria-controls="super-admin-panel-health"
+                        tabIndex={activeTab === 'health' ? 0 : -1}
+                        size="sm"
                     >
                         System Health Monitor
-                    </button>
+                    </Button>
                 </div>
 
                 {/* Overview Tab */}
                 {activeTab === 'overview' && (
-                    <div className="space-y-6">
+                    <div
+                        id="super-admin-panel-overview"
+                        role="tabpanel"
+                        aria-labelledby="super-admin-tab-overview"
+                        className="space-y-6"
+                    >
 
 
                         {/* Stats Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <StatCard title="Active Estates" value={stats.totalEstates} icon={Building2} color="blue" />
-                            <StatCard title="Total Users" value={stats.totalUsers} icon={Users} color="green" />
-                            <StatCard title="Total Visitors" value={stats.totalVisitors} icon={LayoutDashboard} color="purple" />
-                            <StatCard title="Total Incidents" value={stats.totalIncidents} icon={AlertTriangle} color="orange" />
+                            <StatCard title="Active Estates" value={stats.totalEstates} iconName="Building2" color="blue" />
+                            <StatCard title="Total Users" value={stats.totalUsers} iconName="Users" color="green" />
+                            <StatCard title="Total Visitors" value={stats.totalVisitors} iconName="LayoutDashboard" color="purple" />
+                            <StatCard title="Total Incidents" value={stats.totalIncidents} iconName="AlertTriangle" color="orange" />
                         </div>
 
                         {/* Global User Search */}
                         <GradientCard className="p-6">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                                    <Search className="w-5 h-5 mr-2 text-indigo-500" />
+                                    <Icon name="Search" className="w-5 h-5 mr-2 text-indigo-500" />
                                     Global User Search
                                 </h3>
                             </div>
 
                             <div className="mb-6 relative">
+                                <label htmlFor="super-admin-user-search" className="sr-only">
+                                    Search users by name, email, or phone
+                                </label>
                                 <input
+                                    id="super-admin-user-search"
                                     type="text"
                                     placeholder="Search users by name, email, or phone (min 3 chars to preserve privacy)..."
                                     className="w-full pl-10 pr-24 py-2 bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700/50 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all placeholder:text-gray-500 dark:placeholder:text-slate-400"
@@ -331,14 +406,16 @@ export default function SuperAdminDashboard() {
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                 />
-                                <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-300" />
-                                <button
+                                <Icon name="Search" className="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-300" />
+                                <Button
+                                    variant="primary" size="sm"
                                     onClick={handleSearch}
                                     disabled={isSearching || searchQuery.length < 3}
-                                    className="absolute right-1 top-1 px-4 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    loading={isSearching}
+                                    className="absolute right-1 top-1 px-4 py-1.5 text-xs"
                                 >
-                                    {isSearching ? 'Searching...' : 'Search'}
-                                </button>
+                                    Search
+                                </Button>
                             </div>
 
                             {searchResults && (
@@ -393,7 +470,7 @@ export default function SuperAdminDashboard() {
                         <GradientCard className="overflow-hidden">
                             <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                                    <Building2 className="w-5 h-5 mr-2 text-indigo-500" />
+                                    <Icon name="Building2" className="w-5 h-5 mr-2 text-indigo-500" />
                                     Manage Estates
                                 </h3>
                                 <span className="text-sm text-gray-500 dark:text-gray-400">{estates.length} Estates found</span>
@@ -429,7 +506,7 @@ export default function SuperAdminDashboard() {
                                             </tr>
                                         ) : (
                                             estates.map((estate) => (
-                                                <tr key={estate.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${estate.status === 'suspended' ? 'opacity-75 bg-red-50/30' : ''}`}>
+                                                <tr key={estate.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${estate.status === 'suspended' ? 'opacity-75 bg-red-50/30 dark:bg-red-900/20' : ''}`}>
                                                     <td className="px-6 py-4">
                                                         <div className="font-medium text-gray-900 dark:text-white">{estate.name}</div>
                                                         <div className="text-xs text-gray-500 dark:text-gray-400">ID: {estate.id}</div>
@@ -459,40 +536,44 @@ export default function SuperAdminDashboard() {
                                                     </td>
                                                     <td className="px-6 py-4 text-right space-x-2">
                                                         {estate.status !== 'suspended' && (
-                                                            <button
+                                                            <Button
+                                                                variant="primary" size="sm"
                                                                 onClick={() => handleImpersonate(estate.id)}
-                                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                                                                className="inline-flex items-center text-xs"
                                                             >
                                                                 Manage
-                                                                <ArrowRight className="ml-1.5 w-3 h-3" />
-                                                            </button>
+                                                                <Icon name="ArrowRight" className="ml-1.5 w-3 h-3" />
+                                                            </Button>
                                                         )}
 
                                                         {estate.status === 'suspended' ? (
-                                                            <button
+                                                            <Button
+                                                                variant="primary" size="sm"
                                                                 onClick={() => handleStatusChange(estate.id, 'active')}
-                                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none transition-colors"
+                                                                className="text-xs"
                                                             >
                                                                 Activate
-                                                            </button>
+                                                            </Button>
                                                         ) : (
-                                                            <button
+                                                            <Button
+                                                                variant="danger" size="sm"
                                                                 onClick={() => handleStatusChange(estate.id, 'suspended')}
-                                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none transition-colors"
+                                                                className="text-xs"
                                                             >
                                                                 Suspend
-                                                            </button>
+                                                            </Button>
                                                         )}
                                                         
                                                         {/* Decommission Button */}
                                                         {estate.status !== 'decommissioned' && (
-                                                            <button
+                                                            <Button
+                                                                variant="ghost" size="sm"
                                                                 onClick={() => handleDecommissionClick(estate)}
-                                                                className="inline-flex items-center px-2 py-1.5 border border-transparent text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none transition-colors"
-                                                                title="Decommission Estate"
+                                                                aria-label="Decommission Estate"
+                                                                className="text-gray-500 dark:text-gray-400 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                                                             >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </button>
+                                                                <Icon name="Trash2" className="w-4 h-4" />
+                                                            </Button>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -503,91 +584,31 @@ export default function SuperAdminDashboard() {
                             </div>
                         </GradientCard>
 
-                        {/* System Logs / Audit Preview */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <GradientCard className="lg:col-span-2 p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-                                        <FileText className="w-5 h-5 mr-2 text-indigo-500" />
-                                        Recent System Activity
-                                    </h3>
-                                    <button className="text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 font-medium">
-                                        View All Logs
-                                    </button>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
-                                        <thead className="bg-gray-50 dark:bg-slate-800/50 text-xs uppercase font-semibold text-gray-500 dark:text-gray-400">
-                                            <tr>
-                                                <th className="px-4 py-3">Time</th>
-                                                <th className="px-4 py-3">Event</th>
-                                                <th className="px-4 py-3">User</th>
-                                                <th className="px-4 py-3">Resource</th>
-                                                <th className="px-4 py-3 text-right">Details</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                                            {logs.length === 0 ? (
-                                                <tr><td colSpan="5" className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No logs found</td></tr>
-                                            ) : (
-                                                logs.map((log) => (
-                                                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                                                        <td className="px-4 py-3 whitespace-nowrap text-xs">
-                                                            {new Date(log.created_at).toLocaleString()}
-                                                        </td>
-                                                        <td className="px-4 py-3">
-                                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                                                    ${log.action?.includes('delete') || log.action?.includes('suspend') || log.action?.includes('fail') ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
-                                                                    log.action?.includes('create') || log.action?.includes('success') ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                                                                        log.action?.includes('update') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
-                                                                            'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}>
-                                                                {log.action}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-3 text-xs">
-                                                            {log.user_id ? (
-                                                                <span title={`User ID: ${log.user_id}`}>{log.user_role || 'User'} (#{log.user_id})</span>
-                                                            ) : (
-                                                                <span className="text-gray-500 dark:text-gray-300">System</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-3 font-mono text-xs truncate max-w-[200px] text-gray-500 dark:text-gray-400">
-                                                            {log.resource}
-                                                        </td>
-                                                        <td className="px-4 py-3 text-right">
-                                                            <button className="text-indigo-600 hover:text-indigo-900 dark:hover:text-indigo-400 text-xs font-medium">
-                                                                JSON
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </GradientCard>
-
-                            <GradientCard>
-                                <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 h-full flex flex-col items-center justify-center text-center">
-                                    <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">Super Admin Privileges</h3>
-                                    <p className="mt-2 text-xs text-indigo-700 dark:text-indigo-300">
-                                        You have full root access to the platform. Actions performed here affect the entire system and all estates.
-                                    </p>
-                                </div>
-                            </GradientCard>
-                        </div>
+                        <GradientCard>
+                            <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 h-full flex flex-col items-center justify-center text-center">
+                                <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">Super Admin Privileges</h3>
+                                <p className="mt-2 text-xs text-indigo-700 dark:text-indigo-300">
+                                    You have full root access to the platform. Actions performed here affect the entire system and all estates.
+                                </p>
+                            </div>
+                        </GradientCard>
                     </div>
                 )}
 
                 {/* System Health Tab */}
                 {activeTab === 'health' && (
-                    <div className="space-y-6">
+                    <div
+                        id="super-admin-panel-health"
+                        role="tabpanel"
+                        aria-labelledby="super-admin-tab-health"
+                        className="space-y-6"
+                    >
                         {/* Health Metrics Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <GradientCard className="p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
-                                        <Activity className="w-5 h-5" />
+                                        <Icon name="Activity" className="w-5 h-5" />
                                     </div>
                                     <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Latency (P95)</span>
                                 </div>
@@ -600,7 +621,7 @@ export default function SuperAdminDashboard() {
                             <GradientCard className="p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg text-red-600 dark:text-red-400">
-                                        <AlertTriangle className="w-5 h-5" />
+                                        <Icon name="AlertTriangle" className="w-5 h-5" />
                                     </div>
                                     <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Error Rate</span>
                                 </div>
@@ -613,7 +634,7 @@ export default function SuperAdminDashboard() {
                             <GradientCard className="p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
-                                        <Database className="w-5 h-5" />
+                                        <Icon name="Database" className="w-5 h-5" />
                                     </div>
                                     <span className="text-xs font-medium text-gray-500 dark:text-gray-400">DB Utilization</span>
                                 </div>
@@ -626,7 +647,7 @@ export default function SuperAdminDashboard() {
                             <GradientCard className="p-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
-                                        <Server className="w-5 h-5" />
+                                        <Icon name="Server" className="w-5 h-5" />
                                     </div>
                                     <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Queue Depth</span>
                                 </div>
@@ -641,7 +662,7 @@ export default function SuperAdminDashboard() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <GradientCard className="p-6">
                                 <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                                    <Cpu className="w-5 h-5 mr-2 text-indigo-500" />
+                                    <Icon name="Cpu" className="w-5 h-5 mr-2 text-indigo-500" />
                                     System Status Details
                                 </h3>
                                 <dl className="space-y-4 text-sm">
@@ -685,7 +706,6 @@ export default function SuperAdminDashboard() {
                     estate={estateToDecommission}
                     onSuccess={handleDecommissionSuccess}
                 />
-            </div>
         </div>
     );
 }

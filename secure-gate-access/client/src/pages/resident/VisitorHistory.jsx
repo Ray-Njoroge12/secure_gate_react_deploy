@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import logger from 'utils/logger';
-import { Button, SearchFilter, SearchResults, Pagination, ResponsiveTable, Card, PageHeader } from "../../components/ui";
-import { RefreshCw, Download, Filter, Clock } from "lucide-react";
+
+import { Button, SearchFilter, Pagination, ResponsiveTable, PageHeader, Icon } from "../../components/ui";
 import { useSearchData } from "../../hooks/useSearch";
 // import AppShell from "../../layouts/AppShell";
 // import { useCurrentRole } from "../../hooks/useCurrentRole";
@@ -54,7 +54,6 @@ export default function VisitorHistory() {
     data: filteredRows,
     pagination,
     searchTerm,
-    filters,
     setSearchTerm,
     setFilters,
     clearFilters,
@@ -230,7 +229,7 @@ export default function VisitorHistory() {
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 dark:text-white">{visitor.name}</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white">{visitor.name || 'Unknown'}</h3>
           <p className="text-sm text-gray-600 dark:text-gray-200">📱 {visitor.phone || 'No phone'}</p>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${visitor.status === 'checked_in' ? 'bg-green-100 text-green-800' :
@@ -245,7 +244,7 @@ export default function VisitorHistory() {
       <div className="space-y-1 text-sm text-gray-600 dark:text-gray-200">
         <div className="flex items-center gap-2">
           <span className="text-gray-500 dark:text-gray-300">📅</span>
-          <span>{new Date(visitor.check_in).toLocaleDateString()}</span>
+          <span>{visitor.check_in ? new Date(visitor.check_in).toLocaleDateString() : 'Not checked in'}</span>
         </div>
         {visitor.check_out && (
           <div className="flex items-center gap-2">
@@ -276,7 +275,7 @@ export default function VisitorHistory() {
         <PageHeader
           title="Visitor History"
           subtitle="View and manage visitor records"
-          icon={<Clock className="w-6 h-6 text-green-600" />}
+          icon={<Icon name="Clock" className="w-6 h-6 text-green-600" />}
           showBack={true}
           backTo="/dashboard/resident"
           actions={
@@ -286,7 +285,7 @@ export default function VisitorHistory() {
                 variant="outline"
                 size="sm"
               >
-                <Filter className="w-4 h-4 mr-1" />
+                <Icon name="Filter" className="w-4 h-4 mr-1" />
                 Filters
               </Button>
               <Button
@@ -295,7 +294,7 @@ export default function VisitorHistory() {
                 size="sm"
                 disabled={!hasResults}
               >
-                <Download className="w-4 h-4 mr-1" />
+                <Icon name="Download" className="w-4 h-4 mr-1" />
                 Export
               </Button>
               <Button
@@ -304,7 +303,7 @@ export default function VisitorHistory() {
                 variant="outline"
                 size="sm"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <Icon name="RefreshCw" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           }
@@ -325,7 +324,7 @@ export default function VisitorHistory() {
           />
 
           {/* Results Summary */}
-          <div className="flex items-center justify-between text-sm text-slate-400">
+          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-slate-400">
             <div>
               {isSearching || hasFilters ? (
                 <>
@@ -346,20 +345,22 @@ export default function VisitorHistory() {
           {/* Table */}
           {hasResults ? (
             <div className="space-y-4">
-              <ResponsiveTable
-                columns={columns}
-                data={filteredRows}
-                onRowClick={handleRowClick}
-                onSort={handleSort}
-                loading={loading}
-                enableVirtualScrolling={true}
-                virtualScrollThreshold={50}
-                emptyState={{
-                  title: 'No visitors found',
-                  description: 'No visitor records match your current search criteria.',
-                  icon: <Filter className="w-12 h-12 mx-auto opacity-50" />
-                }}
-              />
+              <div className="hidden md:block">
+                <ResponsiveTable
+                  columns={columns}
+                  data={filteredRows}
+                  onRowClick={handleRowClick}
+                  onSort={handleSort}
+                  loading={loading}
+                  enableVirtualScrolling={true}
+                  virtualScrollThreshold={50}
+                  emptyState={{
+                    title: 'No visitors found',
+                    description: 'No visitor records match your current search criteria.',
+                    icon: <Icon name="Filter" className="w-12 h-12 mx-auto opacity-50" />
+                  }}
+                />
+              </div>
 
               {/* Pagination */}
               {pagination.totalPages > 1 && (
@@ -376,13 +377,13 @@ export default function VisitorHistory() {
               <div className="text-gray-500 dark:text-slate-400 mb-4">
                 {isSearching || hasFilters ? (
                   <>
-                    <Filter className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <Icon name="Filter" className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <h3 className="text-lg font-medium mb-2">No visitors found</h3>
                     <p>Try adjusting your search terms or filters</p>
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <Icon name="RefreshCw" className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <h3 className="text-lg font-medium mb-2">No visitor records</h3>
                     <p>Visitor history will appear here once visitors are checked in</p>
                   </>
@@ -405,8 +406,8 @@ export default function VisitorHistory() {
           {/* Mobile Card View */}
           {hasResults && (
             <div className="space-y-4 md:hidden">
-              {filteredRows.map((visitor, index) => (
-                <VisitorCard key={index} visitor={visitor} />
+              {filteredRows.map((visitor) => (
+                <VisitorCard key={visitor.id || `${visitor.name}-${visitor.check_in || 'na'}`} visitor={visitor} />
               ))}
             </div>
           )}
@@ -415,4 +416,3 @@ export default function VisitorHistory() {
     // </AppShell>
   );
 }
-

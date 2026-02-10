@@ -14,7 +14,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
+import Icon from './Icon.jsx';
 
 const SuccessAnimation = ({
   type = 'checkmark',
@@ -52,215 +52,91 @@ const SuccessAnimation = ({
     }
   }, [autoClose, duration, onComplete]);
 
-  const renderCheckmark = () => (
-    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-      {/* Success Icon Circle */}
-      <div 
-        className={`
-          relative w-24 h-24 rounded-full 
-          bg-gradient-to-br from-green-500 to-green-600
-          shadow-lg shadow-green-500/50
-          flex items-center justify-center
-          transition-all duration-500 ease-out
-          ${isVisible ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
-          ${isExiting ? 'scale-95 opacity-90' : ''}
-        `}
-      >
-        {/* Animated Check Icon */}
-        <Check 
-          className={`
-            w-12 h-12 text-white stroke-[3]
-            transition-all duration-300 delay-300
-            ${isVisible ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
-          `}
-        />
+  return (
+    <div className={`flex flex-col items-center justify-center p-6 text-center ${className}`}>
+      {/* Animation Container */}
+      <div className={`relative mb-4 ${isExiting ? 'scale-95 opacity-0' : 'scale-100 opacity-100'} transition-all duration-500`}>
         
-        {/* Pulse Ring */}
-        <div 
-          className={`
-            absolute inset-0 rounded-full 
-            border-4 border-green-400 
-            ${isVisible ? 'animate-ping' : ''}
-          `}
-          style={{ animationDuration: '1s', animationIterationCount: 1 }}
-        />
-      </div>
+        {/* Checkmark Animation */}
+        {type === 'checkmark' && (
+          <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30">
+            <svg className="w-full h-full text-green-500" viewBox="0 0 100 100">
+              <circle
+                className="animate-[dash_1s_ease-in-out_forwards] origin-center rotate-[-90deg]"
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="5"
+                strokeDasharray="283"
+                strokeDashoffset="283"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center animate-[scale-up_0.5s_cubic-bezier(0.175,0.885,0.32,1.275)_0.5s_both]">
+               <Icon name="check" size={40} className="text-green-600 dark:text-green-400" strokeWidth={4} />
+            </div>
+          </div>
+        )}
 
-      {/* Success Message */}
-      {message && (
-        <div 
-          className={`
-            mt-6 text-center
-            transition-all duration-500 delay-500
-            ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-            ${isExiting ? 'translate-y--2 opacity-90' : ''}
-          `}
-        >
-          <h3 className="text-2xl font-semibold text-slate-100 mb-2">
-            {message}
-          </h3>
-          {submessage && (
-            <p className="text-lg text-slate-300">
-              {submessage}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderPulse = () => (
-    <div className={`flex flex-col items-center justify-center p-8 ${className}`}>
-      {/* Pulsing Success Icon */}
-      <div className="relative">
-        <div 
-          className={`
-            w-20 h-20 rounded-full 
-            bg-green-600
-            flex items-center justify-center
-            transition-all duration-300
-            ${isVisible ? 'scale-100 opacity-100 animate-pulse' : 'scale-0 opacity-0'}
-          `}
-        >
-          <Check className="w-10 h-10 text-white stroke-[3]" />
-        </div>
+        {/* Confetti Animation (CSS-only approximation) */}
+        {type === 'confetti' && (
+          <div className="relative flex items-center justify-center w-20 h-20">
+             <div className="absolute inset-0 flex items-center justify-center animate-bounce">
+               <span className="text-4xl text-yellow-500">🎉</span>
+             </div>
+          </div>
+        )}
       </div>
 
       {/* Message */}
-      {message && (
-        <div className={`
-          mt-4 text-center
-          transition-all duration-300 delay-200
-          ${isVisible ? 'opacity-100' : 'opacity-0'}
-        `}>
-          <p className="text-lg font-semibold text-slate-100">
-            {message}
+      <div className={`transition-all duration-500 delay-300 ${isExiting ? 'translate-y-4 opacity-0' : 'translate-y-0 opacity-100'}`}>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          {message}
+        </h3>
+        {submessage && (
+          <p className="text-gray-500 dark:text-gray-400">
+            {submessage}
           </p>
-          {submessage && (
-            <p className="text-sm text-slate-300 mt-1">
-              {submessage}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderConfetti = () => (
-    <div className={`relative flex flex-col items-center justify-center p-8 ${className}`}>
-      {/* Confetti Particles */}
-      {isVisible && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 animate-confetti"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: '-10px',
-                backgroundColor: [
-                  'var(--color-success, #10B981)', 
-                  'var(--color-info, #3B82F6)', 
-                  'var(--color-warning, #F59E0B)', 
-                  'var(--color-error, #EF4444)', 
-                  'var(--color-brand-accent, #8B5CF6)'
-                ][i % 5],
-                animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${2 + Math.random()}s`
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Success Icon */}
-      <div 
-        className={`
-          relative z-10 w-24 h-24 rounded-full 
-          bg-gradient-to-br from-green-500 to-green-600
-          shadow-2xl
-          flex items-center justify-center
-          transition-all duration-700 ease-out
-          ${isVisible ? 'scale-100 rotate-0 opacity-100' : 'scale-0 rotate-180 opacity-0'}
-        `}
-      >
-        <Check className="w-12 h-12 text-white stroke-[3]" />
+        )}
       </div>
-
-      {/* Message */}
-      {message && (
-        <div 
-          className={`
-            relative z-10 mt-6 text-center
-            transition-all duration-500 delay-300
-            ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-          `}
-        >
-          <h3 className="text-2xl font-bold text-slate-100 mb-2">
-            {message}
-          </h3>
-          {submessage && (
-            <p className="text-lg text-slate-300">
-              {submessage}
-            </p>
-          )}
-        </div>
-      )}
-
     </div>
   );
-
-  // Render appropriate animation type
-  switch (type) {
-    case 'checkmark':
-      return renderCheckmark();
-    case 'pulse':
-      return renderPulse();
-    case 'confetti':
-      return renderConfetti();
-    default:
-      return renderCheckmark();
-  }
 };
 
-// Preset Success Messages for common actions
-export const VisitorCreatedSuccess = ({ onComplete }) => (
-  <SuccessAnimation
-    type="confetti"
-    message="Visitor Created!"
-    submessage="QR code pass has been sent via SMS and email"
-    onComplete={onComplete}
-    duration={3500}
-  />
-);
+export default SuccessAnimation;
 
-export const PassGeneratedSuccess = ({ onComplete }) => (
+// Pre-configured variations
+export const VisitorCreatedSuccess = (props) => (
   <SuccessAnimation
     type="checkmark"
-    message="Pass Generated Successfully"
-    submessage="Your visitor can now access the premises"
-    onComplete={onComplete}
+    message="Visitor Added"
+    submessage="Your guest has been successfully invited."
+    {...props}
   />
 );
 
-export const BulkInviteSuccess = ({ count, onComplete }) => (
+export const PassGeneratedSuccess = (props) => (
   <SuccessAnimation
-    type="confetti"
-    message={`${count} Invitations Sent!`}
-    submessage="All guests have been notified"
-    onComplete={onComplete}
-    duration={4000}
+    type="qr"
+    message="Pass Generated"
+    {...props}
   />
 );
 
-export const DraftSavedSuccess = () => (
+export const BulkInviteSuccess = (props) => (
   <SuccessAnimation
-    type="pulse"
+    type="checkmark"
+    message="Invites Sent"
+    submessage={`${props.count} visitors have been invited.`}
+    {...props}
+  />
+);
+
+export const DraftSavedSuccess = (props) => (
+  <SuccessAnimation
+    type="save"
     message="Draft Saved"
-    submessage="You can continue later"
-    autoClose={true}
-    duration={2000}
+    {...props}
   />
 );
-
-export default SuccessAnimation;

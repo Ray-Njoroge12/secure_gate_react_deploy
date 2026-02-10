@@ -218,6 +218,31 @@
   }
 }
 
+/* Class-based Dark Mode */
+html.dark .network-error-boundary {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  border-color: #f39c12;
+}
+
+html.dark .network-error-boundary__title { color: #f39c12; }
+html.dark .network-error-boundary__message { color: #bdc3c7; }
+
+html.dark .network-error-boundary__suggestions {
+  background: rgba(52, 73, 94, 0.7);
+}
+
+html.dark .network-error-boundary__suggestions h4 { color: #f39c12; }
+html.dark .network-error-boundary__suggestions ul { color: #bdc3c7; }
+
+html.dark .network-error-boundary__retry-info {
+  background: #5c4a1a;
+  border-color: #f39c12;
+  color: #fcd34d;
+}
+
+html.dark .network-error-boundary__help { color: #bdc3c7; }
+html.dark .network-error-boundary__help a { color: #f39c12; }
+
 
 
 

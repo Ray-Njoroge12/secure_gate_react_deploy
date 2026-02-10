@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { FilterBuilder, searchService } from '../../services/searchService';
 import './AdvancedFilters.css';
+import Button from '../ui/Button';
 
 const AdvancedFilters = ({
   filters = {},
@@ -324,28 +325,28 @@ const AdvancedFilters = ({
       <div className="filters-header">
         <h3>Advanced Filters</h3>
         <div className="filters-actions">
-          <button
+          <Button
             onClick={addCondition}
             className="btn btn-sm btn-primary"
             type="button"
           >
             Add Condition
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={clearFilters}
             className="btn btn-sm btn-secondary"
             type="button"
           >
             Clear All
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setShowSaveDialog(true)}
             className="btn btn-sm btn-outline"
             disabled={filterBuilder.conditions.length === 0}
             type="button"
           >
             Save Filters
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -408,14 +409,14 @@ const AdvancedFilters = ({
               </div>
 
               {/* Remove Button */}
-              <button
+              <Button
                 onClick={() => removeCondition(condition.id)}
                 className="btn btn-sm btn-danger condition-remove"
                 type="button"
                 aria-label="Remove condition"
               >
                 ✕
-              </button>
+              </Button>
             </div>
           </div>
         ))}
@@ -434,13 +435,13 @@ const AdvancedFilters = ({
                     <div className="saved-filter-description">{filterSet.description}</div>
                   )}
                 </div>
-                <button
+                <Button
                   onClick={() => loadFilterSet(filterSet)}
                   className="btn btn-sm btn-outline"
                   type="button"
                 >
                   Load
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -475,21 +476,21 @@ const AdvancedFilters = ({
               />
             </div>
             <div className="dialog-actions">
-              <button
+              <Button
                 onClick={() => setShowSaveDialog(false)}
                 className="btn btn-secondary"
                 type="button"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={saveFilterSet}
                 className="btn btn-primary"
                 disabled={!saveFilterName.trim() || isLoading}
                 type="button"
               >
                 {isLoading ? 'Saving...' : 'Save'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

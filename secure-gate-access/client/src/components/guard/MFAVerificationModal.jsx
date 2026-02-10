@@ -272,13 +272,13 @@ export default function MFAVerificationModal({
       <div ref={modalRef} tabIndex={-1} className="outline-none">
       <Card className="max-w-md w-full p-6 relative">
         {/* Close button */}
-        <button
+        <Button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
           aria-label="Close"
         >
           <CloseIcon />
-        </button>
+        </Button>
 
         {/* Header */}
         <div className="text-center mb-6">

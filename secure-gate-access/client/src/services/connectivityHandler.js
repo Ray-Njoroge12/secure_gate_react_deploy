@@ -418,7 +418,7 @@ class ConnectivityHandler {
     }
 
     const sum = this.performanceMetrics.bandwidth.reduce((a, b) => a + b, 0);
-    return sum / this.performanceMetrics.bandwidth.length;
+    return this.performanceMetrics.bandwidth.length > 0 ? sum / this.performanceMetrics.bandwidth.length : 0;
   }
 
   /**

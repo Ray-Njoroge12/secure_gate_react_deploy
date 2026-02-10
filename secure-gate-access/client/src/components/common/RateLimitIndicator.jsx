@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { AlertTriangle, RefreshCw, Clock } from 'lucide-react';
+import Icon from '../ui/Icon';
+import Button from '../ui/Button';
 
 const RateLimitIndicator = ({ 
   threshold = 10, // Warn when this many requests remain
@@ -159,9 +160,9 @@ const RateLimitIndicator = ({
           ${isCritical ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-gray-500 dark:text-gray-300'}
         `}>
           {rateLimitInfo.isLimited ? (
-            <RefreshCw className="w-5 h-5 animate-spin" />
+            <Icon name="refresh-cw" className="w-5 h-5 animate-spin" aria-hidden="true" />
           ) : (
-            <AlertTriangle className="w-5 h-5" />
+            <Icon name="alert-triangle" className="w-5 h-5" aria-hidden="true" />
           )}
         </div>
 
@@ -173,7 +174,7 @@ const RateLimitIndicator = ({
                 Rate limited
               </p>
               <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+                <Icon name="clock" className="w-3 h-3" aria-hidden="true" />
                 Retry in {getResetTimeDisplay()}
               </p>
             </div>
@@ -188,7 +189,7 @@ const RateLimitIndicator = ({
               </p>
               {rateLimitInfo.resetTime && (
                 <p className="text-xs text-gray-500 dark:text-gray-300 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                  <Icon name="clock" className="w-3 h-3" aria-hidden="true" />
                   Resets in {getResetTimeDisplay()}
                 </p>
               )}
@@ -208,7 +209,7 @@ const RateLimitIndicator = ({
 
         {/* Close button */}
         {!showAlways && (
-          <button
+          <Button
             onClick={() => setIsVisible(false)}
             className="flex-shrink-0 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-300"
             aria-label="Dismiss rate limit indicator"
@@ -216,7 +217,7 @@ const RateLimitIndicator = ({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         )}
       </div>
     </div>

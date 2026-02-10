@@ -20,6 +20,7 @@ import {
 import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 import exportService from '../../services/exportService';
 import './DataVisualization.css';
+import Button from '../ui/Button';
 
 // Register Chart.js components
 ChartJS.register(
@@ -404,22 +405,22 @@ const DataVisualization = ({
       <div className="visualization-header">
         <h3>{title}</h3>
         <div className="export-actions">
-          <button
+          <Button
             type="button"
             onClick={() => exportChart('png')}
             disabled={!processedData || isExporting}
             className="btn btn-sm btn-secondary"
           >
             Export Chart
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => exportData('csv')}
             disabled={!processedData || isExporting}
             className="btn btn-sm btn-secondary"
           >
             Export Data
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -429,7 +430,7 @@ const DataVisualization = ({
             <label>Chart Type</label>
             <div className="chart-type-selector">
               {chartTypes.map(type => (
-                <button
+                <Button
                   key={type.value}
                   type="button"
                   onClick={() => setChartType(type.value)}
@@ -438,7 +439,7 @@ const DataVisualization = ({
                 >
                   <span className="chart-icon">{type.icon}</span>
                   <span className="chart-label">{type.label}</span>
-                </button>
+                </Button>
               ))}
             </div>
           </div>

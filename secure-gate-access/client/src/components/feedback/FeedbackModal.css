@@ -413,6 +413,60 @@
   }
 }
 
+/* Class-based Dark Mode */
+html.dark .feedback-card {
+  background: #1f2937;
+  border: 1px solid #374151;
+}
+
+html.dark .feedback-title { color: #f9fafb; }
+
+html.dark .feedback-subtitle,
+html.dark .form-label,
+html.dark .rating-text,
+html.dark .character-count {
+  color: #d1d5db;
+}
+
+html.dark .feedback-header {
+  border-bottom-color: #374151;
+}
+
+html.dark .close-button { color: #9ca3af; }
+
+html.dark .close-button:hover {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+html.dark .feedback-type-button {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+html.dark .feedback-type-button:hover {
+  border-color: #3b82f6;
+  background-color: #1e3a8a;
+}
+
+html.dark .feedback-type-button.selected {
+  background-color: #1e3a8a;
+}
+
+html.dark .form-input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+html.dark .form-input:focus {
+  border-color: #3b82f6;
+}
+
+html.dark .success-message h3 { color: #f9fafb; }
+html.dark .success-message p { color: #d1d5db; }
+
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
   .feedback-type-button {

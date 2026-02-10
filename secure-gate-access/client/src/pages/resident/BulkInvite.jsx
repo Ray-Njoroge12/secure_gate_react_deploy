@@ -2,16 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
-import { Button, Card, PageHeader } from "../../components/ui";
-import {
-  Users,
-  Calendar,
-  Clock,
-  Copy,
-  CheckCircle,
-  Link,
-  ArrowRight
-} from "lucide-react";
+import { Button, Card, PageHeader, Icon } from "../../components/ui";
 
 // Helper to format date for input
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -100,13 +91,13 @@ const BulkInvite = () => {
           <div className={`
             w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
             ${currentStep >= step
-              ? 'bg-green-500 text-white'
+              ? 'bg-brand-500 text-white'
               : 'bg-gray-200 text-gray-500 dark:text-gray-300'}
           `}>
             {currentStep > step ? '✓' : step}
           </div>
           {step < 2 && (
-            <div className={`w-16 h-1 mx-2 ${currentStep > step ? 'bg-green-500' : 'bg-gray-200'
+            <div className={`w-16 h-1 mx-2 ${currentStep > step ? 'bg-brand-500' : 'bg-gray-200'
               }`} />
           )}
         </div>
@@ -119,7 +110,7 @@ const BulkInvite = () => {
       <PageHeader
         title="Event Invite Link"
         subtitle="Create a sharable link for your guests to self-register"
-        icon={<Link className="w-6 h-6 text-green-600" />}
+        icon={<Icon name="Link" className="w-6 h-6 text-brand-600" />}
         showBack={true}
         backTo="/dashboard/resident"
       />
@@ -139,53 +130,57 @@ const BulkInvite = () => {
             <Card.Content>
               <form onSubmit={handleGenerateLink} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label htmlFor="event-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Event Name
                   </label>
                   <input
+                    id="event-name"
                     type="text"
                     value={formData.eventName}
                     onChange={(e) => handleInputChange('eventName', e.target.value)}
                     placeholder="e.g. Birthday Party, House Warming"
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      <Calendar className="w-4 h-4 inline mr-1" /> Date
+                    <label htmlFor="event-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <Icon name="Calendar" className="w-4 h-4 inline mr-1" /> Date
                     </label>
                     <input
+                      id="event-date"
                       type="date"
                       value={formData.date}
                       min={getTodayString()}
                       onChange={(e) => handleInputChange('date', e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      <Clock className="w-4 h-4 inline mr-1" /> Start Time
+                    <label htmlFor="event-time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <Icon name="Clock" className="w-4 h-4 inline mr-1" /> Start Time
                     </label>
                     <input
+                      id="event-time"
                       type="time"
                       value={formData.time}
                       onChange={(e) => handleInputChange('time', e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500"
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <Users className="w-4 h-4 inline mr-1" /> Maximum Guests
+                  <label htmlFor="max-guests" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <Icon name="Users" className="w-4 h-4 inline mr-1" /> Maximum Guests
                   </label>
                   <div className="flex items-center gap-4">
                     <input
+                      id="max-guests"
                       type="range"
                       min="1"
                       max="100"
@@ -193,7 +188,7 @@ const BulkInvite = () => {
                       onChange={(e) => handleInputChange('numGuests', parseInt(e.target.value))}
                       className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
                     />
-                    <span className="w-16 text-center font-bold text-lg text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-lg">
+                    <span className="w-16 text-center font-bold text-lg text-brand-600 bg-brand-50 dark:bg-brand-900/20 px-3 py-1 rounded-lg">
                       {formData.numGuests}
                     </span>
                   </div>
@@ -209,7 +204,7 @@ const BulkInvite = () => {
                     disabled={isLoading('bulkInvite')}
                   >
                     {isLoading('bulkInvite') ? 'Generating...' : (
-                      <>Generate Invite Link <ArrowRight className="w-4 h-4" /></>
+                      <>Generate Invite Link <Icon name="ArrowRight" className="w-4 h-4" /></>
                     )}
                   </Button>
                 </div>
@@ -221,8 +216,8 @@ const BulkInvite = () => {
         {/* Step 2: Share Link */}
         {currentStep === 2 && (
           <Card>
-            <Card.Header className="bg-gradient-to-r from-green-50 to-green-100 dark:from-slate-800 dark:to-slate-700 border-b border-green-200 dark:border-slate-600">
-              <Card.Title className="flex items-center text-green-900 dark:text-green-100">
+            <Card.Header className="bg-gradient-to-r from-brand-50 to-brand-100 dark:from-slate-800 dark:to-slate-700 border-b border-brand-200 dark:border-slate-600">
+              <Card.Title className="flex items-center text-brand-900 dark:text-brand-100">
                 <span className="text-2xl mr-3">✅</span>
                 Step 2: Share Your Link
               </Card.Title>
@@ -246,13 +241,13 @@ const BulkInvite = () => {
                   className="shrink-0 flex items-center gap-2"
                   variant="primary"
                 >
-                  <Copy className="w-4 h-4" /> Copy Link
+                  <Icon name="Copy" className="w-4 h-4" /> Copy Link
                 </Button>
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
                 <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> Event Details
+                  <Icon name="Clock" className="w-4 h-4" /> Event Details
                 </h4>
                 <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                   <li><strong>Event:</strong> {formData.eventName}</li>

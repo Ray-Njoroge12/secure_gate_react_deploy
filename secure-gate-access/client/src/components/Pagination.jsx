@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from './ui';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import Icon from './ui/Icon';
 
 const Pagination = ({
   currentPage = 1,
@@ -85,7 +85,7 @@ const Pagination = ({
           className="px-2"
           aria-label="Go to previous page"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <Icon name="chevron-left" size="sm" aria-hidden="true" />
         </Button>
       )}
 
@@ -97,7 +97,7 @@ const Pagination = ({
               key={`ellipsis-${index}`}
               className="px-2 py-1 text-gray-500 dark:text-gray-300"
             >
-              <MoreHorizontal className="h-4 w-4" />
+              <Icon name="more-horizontal" size="sm" aria-hidden="true" />
             </span>
           );
         }
@@ -126,7 +126,7 @@ const Pagination = ({
           className="px-2"
           aria-label="Go to next page"
         >
-          <ChevronRight className="h-4 w-4" />
+          <Icon name="chevron-right" size="sm" aria-hidden="true" />
         </Button>
       )}
 

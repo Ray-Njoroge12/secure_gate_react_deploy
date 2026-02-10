@@ -97,8 +97,7 @@
 .estate-select:focus {
   outline: none;
   border-color: #3b82f6;
-  ring: 2px;
-  ring-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
 }
 
 .estate-select:disabled {
@@ -168,4 +167,67 @@
     flex: initial;
     min-width: 100px;
   }
+}
+
+/* ==========================================================================
+   Dark Mode Support
+   ========================================================================== */
+
+.dark .pending-approvals-card,
+html.dark .pending-approvals-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.dark .pending-user-card,
+html.dark .pending-user-card {
+  border-color: #334155;
+  background-color: #1e293b;
+}
+
+.dark .pending-user-card:hover,
+html.dark .pending-user-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border-color: #475569;
+}
+
+.dark .user-name,
+html.dark .user-name {
+  color: #f1f5f9;
+}
+
+.dark .detail-row,
+html.dark .detail-row {
+  color: #94a3b8;
+}
+
+.dark .detail-text,
+html.dark .detail-text {
+  color: #cbd5e1;
+}
+
+.dark .user-actions,
+html.dark .user-actions {
+  border-top-color: #334155;
+}
+
+.dark .estate-label,
+html.dark .estate-label {
+  color: #cbd5e1;
+}
+
+.dark .estate-select,
+html.dark .estate-select {
+  background-color: #0f172a;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .estate-select:hover,
+html.dark .estate-select:hover {
+  border-color: #64748b;
+}
+
+.dark .estate-select:disabled,
+html.dark .estate-select:disabled {
+  background-color: #334155;
 }

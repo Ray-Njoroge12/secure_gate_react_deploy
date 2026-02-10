@@ -299,8 +299,9 @@ export const LanguageSelector = ({
 
   if (variant === 'buttons') {
     return (
-      <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''} ${className}`}>
+      <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''} ${className}`} role="radiogroup" aria-label="Language selection">
         {supportedLanguages.map((lang) => (
+          // eslint-disable-next-line react/forbid-elements -- i18n module cannot import UI Button without circular dep
           <button
             key={lang.code}
             onClick={() => setLanguage(lang.code)}
@@ -308,7 +309,7 @@ export const LanguageSelector = ({
               px-3 py-1.5 rounded-lg text-sm font-medium
               transition-colors
               ${language === lang.code
-                ? 'bg-green-500 text-white'
+                ? 'bg-brand-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }
             `}
@@ -325,8 +326,9 @@ export const LanguageSelector = ({
 
   if (variant === 'pills') {
     return (
-      <div className={`inline-flex bg-gray-100 rounded-full p-1 ${className}`}>
+      <div className={`inline-flex bg-gray-100 rounded-full p-1 ${className}`} role="radiogroup" aria-label="Language selection">
         {supportedLanguages.map((lang) => (
+          // eslint-disable-next-line react/forbid-elements -- i18n module cannot import UI Button without circular dep
           <button
             key={lang.code}
             onClick={() => setLanguage(lang.code)}
@@ -339,6 +341,7 @@ export const LanguageSelector = ({
               }
             `}
             aria-pressed={language === lang.code}
+            aria-label={`Switch to ${lang.name}`}
           >
             {showFlags && lang.flag}
           </button>

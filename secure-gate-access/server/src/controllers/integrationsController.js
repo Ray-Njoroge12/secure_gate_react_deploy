@@ -11,20 +11,49 @@ import webhookService from '../services/webhookService.js';
 
 const pool = db.pool || db;
 
+/**
+ * Resolve estate context ID with strict validation
+ * SECURITY: Always uses estate_id to ensure proper estate scoping
+ * @param {Object} req - Express request object
+ * @returns {number|null} - Valid positive integer estate ID or null
+ */
+const resolveEstateContextId = (req) => {
+  // CRITICAL: Use estate_id (normalized by withSiteAlias in auth middleware)
+  // The site_id alias is added in authMiddleware.js for backward compatibility
+  const estateId = req?.user?.estate_id ?? req?.user?.site_id ?? null;
+
+  if (estateId === null || estateId === undefined || estateId === '') {
+    return null;
+  }
+
+  const numericId = Number(estateId);
+  if (Number.isInteger(numericId) && numericId > 0) {
+    return numericId;
+  }
+
+  return null;
+};
+
 // ==================== WEBHOOKS ====================
 
 /**
  * Get all webhooks
+ * SECURITY: Estate-scoped access only
  */
 export const getWebhooks = async (req, res) => {
   try {
-    const siteId = req.user.site_id;
+    const estateId = resolveEstateContextId(req);
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `SELECT * FROM webhooks
-       WHERE site_id = $1 OR $1 IS NULL
+       WHERE site_id = $1
        ORDER BY created_at DESC`,
-      [siteId]
+      [estateId]
     );
 
     res.json({
@@ -40,19 +69,25 @@ export const getWebhooks = async (req, res) => {
 
 /**
  * Create webhook
+ * SECURITY: Estate-scoped creation
  */
 export const createWebhook = async (req, res) => {
   try {
     const { name, url, event_type, secret, headers, enabled } = req.body;
-    const siteId = req.user.site_id;
+    const estateId = resolveEstateContextId(req);
     const userId = req.user.id;
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `INSERT INTO webhooks (
         site_id, name, url, event_type, secret, headers, enabled, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
-      [siteId, name, url, event_type, secret, headers, enabled, userId]
+      [estateId, name, url, event_type, secret, headers, enabled, userId]
     );
 
     res.json({
@@ -68,11 +103,18 @@ export const createWebhook = async (req, res) => {
 
 /**
  * Update webhook
+ * SECURITY: Estate-scoped update
  */
 export const updateWebhook = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, url, event_type, secret, headers, enabled } = req.body;
+    const estateId = resolveEstateContextId(req);
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `UPDATE webhooks
@@ -80,11 +122,11 @@ export const updateWebhook = async (req, res) => {
            headers = $5, enabled = $6, updated_at = CURRENT_TIMESTAMP
        WHERE id = $7 AND site_id = $8
        RETURNING *`,
-      [name, url, event_type, secret, headers, enabled, id, req.user.site_id]
+      [name, url, event_type, secret, headers, enabled, id, estateId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Webhook not found' });
+      return res.status(404).json({ error: 'Webhook not found or access denied' });
     }
 
     res.json({
@@ -100,15 +142,22 @@ export const updateWebhook = async (req, res) => {
 
 /**
  * Delete webhook
+ * SECURITY: Estate-scoped deletion
  */
 export const deleteWebhook = async (req, res) => {
   try {
     const { id } = req.params;
+    const estateId = resolveEstateContextId(req);
 
-    const result = await pool.query('DELETE FROM webhooks WHERE id = $1 AND site_id = $2 RETURNING id', [id, req.user.site_id]);
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+
+    const result = await pool.query('DELETE FROM webhooks WHERE id = $1 AND site_id = $2 RETURNING id', [id, estateId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Webhook not found' });
+      return res.status(404).json({ error: 'Webhook not found or access denied' });
     }
 
     res.json({
@@ -124,19 +173,26 @@ export const deleteWebhook = async (req, res) => {
 
 /**
  * Test webhook
+ * SECURITY: Estate-scoped access
  */
 export const testWebhookEndpoint = async (req, res) => {
   try {
     const { id } = req.params;
+    const estateId = resolveEstateContextId(req);
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     // Verify ownership before testing
-    const siteId = req.user.site_id;
-    const verify = await pool.query('SELECT id FROM webhooks WHERE id = $1 AND site_id = $2', [id, siteId]);
+    const verify = await pool.query('SELECT id FROM webhooks WHERE id = $1 AND site_id = $2', [id, estateId]);
     if (verify.rows.length === 0) {
-      return res.status(404).json({ error: 'Webhook not found' });
+      return res.status(404).json({ error: 'Webhook not found or access denied' });
     }
 
     const result = await webhookService.testWebhook(id);
+    const success = Boolean(result?.success ?? result);
 
     res.json({
       success,
@@ -153,16 +209,22 @@ export const testWebhookEndpoint = async (req, res) => {
 
 /**
  * Get all automation rules
+ * SECURITY: Estate-scoped access only
  */
 export const getAutomationRules = async (req, res) => {
   try {
-    const siteId = req.user.site_id;
+    const estateId = resolveEstateContextId(req);
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `SELECT * FROM automation_rules
-       WHERE site_id = $1 OR $1 IS NULL
+       WHERE site_id = $1
        ORDER BY priority DESC, created_at DESC`,
-      [siteId]
+      [estateId]
     );
 
     res.json({
@@ -178,12 +240,18 @@ export const getAutomationRules = async (req, res) => {
 
 /**
  * Create automation rule
+ * SECURITY: Estate-scoped creation
  */
 export const createAutomationRule = async (req, res) => {
   try {
     const { name, description, trigger_event, conditions, actions, enabled, priority } = req.body;
-    const siteId = req.user.site_id;
+    const estateId = resolveEstateContextId(req);
     const userId = req.user.id;
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `INSERT INTO automation_rules (
@@ -191,7 +259,7 @@ export const createAutomationRule = async (req, res) => {
         actions, enabled, priority, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
-      [siteId, name, description, trigger_event, conditions, actions, enabled, priority, userId]
+      [estateId, name, description, trigger_event, conditions, actions, enabled, priority, userId]
     );
 
     res.json({
@@ -207,11 +275,18 @@ export const createAutomationRule = async (req, res) => {
 
 /**
  * Update automation rule
+ * SECURITY: Estate-scoped update
  */
 export const updateAutomationRule = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, trigger_event, conditions, actions, enabled, priority } = req.body;
+    const estateId = resolveEstateContextId(req);
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `UPDATE automation_rules
@@ -219,11 +294,11 @@ export const updateAutomationRule = async (req, res) => {
            actions = $5, enabled = $6, priority = $7, updated_at = CURRENT_TIMESTAMP
        WHERE id = $8 AND site_id = $9
        RETURNING *`,
-      [name, description, trigger_event, conditions, actions, enabled, priority, id, req.user.site_id]
+      [name, description, trigger_event, conditions, actions, enabled, priority, id, estateId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Automation rule not found' });
+      return res.status(404).json({ error: 'Automation rule not found or access denied' });
     }
 
     res.json({
@@ -239,15 +314,22 @@ export const updateAutomationRule = async (req, res) => {
 
 /**
  * Delete automation rule
+ * SECURITY: Estate-scoped deletion
  */
 export const deleteAutomationRule = async (req, res) => {
   try {
     const { id } = req.params;
+    const estateId = resolveEstateContextId(req);
 
-    const result = await pool.query('DELETE FROM automation_rules WHERE id = $1 AND site_id = $2 RETURNING id', [id, req.user.site_id]);
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+
+    const result = await pool.query('DELETE FROM automation_rules WHERE id = $1 AND site_id = $2 RETURNING id', [id, estateId]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Automation rule not found' });
+      return res.status(404).json({ error: 'Automation rule not found or access denied' });
     }
 
     res.json({
@@ -265,19 +347,25 @@ export const deleteAutomationRule = async (req, res) => {
 
 /**
  * Get all API keys
+ * SECURITY: Estate-scoped access only
  */
 export const getAPIKeys = async (req, res) => {
   try {
-    const siteId = req.user.site_id;
+    const estateId = resolveEstateContextId(req);
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `SELECT id, name, description, key_prefix, permissions, scopes,
               rate_limit_per_hour, rate_limit_per_day, last_used_at,
               usage_count, active, expires_at, created_at
        FROM api_keys
-       WHERE site_id = $1 OR $1 IS NULL
+       WHERE site_id = $1
        ORDER BY created_at DESC`,
-      [siteId]
+      [estateId]
     );
 
     res.json({
@@ -293,12 +381,18 @@ export const getAPIKeys = async (req, res) => {
 
 /**
  * Generate new API key
+ * SECURITY: Estate-scoped creation
  */
 export const generateAPIKey = async (req, res) => {
   try {
     const { name, description, permissions, scopes, rate_limit_per_hour, rate_limit_per_day, expires_at } = req.body;
-    const siteId = req.user.site_id;
+    const estateId = resolveEstateContextId(req);
     const userId = req.user.id;
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     // Generate API key
     const apiKey = `sgk_${crypto.randomBytes(32).toString('hex')}`;
@@ -311,7 +405,7 @@ export const generateAPIKey = async (req, res) => {
         scopes, rate_limit_per_hour, rate_limit_per_day, expires_at, created_by
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id, name, key_prefix, permissions, rate_limit_per_hour`,
-      [siteId, keyHash, keyPrefix, name, description, permissions, scopes,
+      [estateId, keyHash, keyPrefix, name, description, permissions, scopes,
         rate_limit_per_hour || 100, rate_limit_per_day || 1000, expires_at, userId]
     );
 
@@ -332,22 +426,29 @@ export const generateAPIKey = async (req, res) => {
 
 /**
  * Revoke API key
+ * SECURITY: Estate-scoped revocation
  */
 export const revokeAPIKey = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
+    const estateId = resolveEstateContextId(req);
+
+    // SECURITY: Require estate context
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
 
     const result = await pool.query(
       `UPDATE api_keys
        SET active = FALSE, revoked_at = CURRENT_TIMESTAMP, revoked_by = $1
        WHERE id = $2 AND site_id = $3
        RETURNING id`,
-      [userId, id, req.user.site_id]
+      [userId, id, estateId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'API key not found' });
+      return res.status(404).json({ error: 'API key not found or access denied' });
     }
 
     res.json({

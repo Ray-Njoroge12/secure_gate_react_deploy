@@ -11,27 +11,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { Button, Card, PageHeader, Icon } from "../../components/ui";
+import useContactPicker from "../../hooks/useContactPicker";
 import { createVisitor } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
 import logger from "../../utils/logger";
-import { Button, Input, Card } from "../../components/ui";
-import {
-  User,
-  Phone,
-  Calendar,
-  Clock,
-  ArrowLeft,
-  Loader2,
-  Send,
-  CheckCircle,
-  Info,
-  Smartphone,
-  Copy,
-  Share2,
-  MessageCircle,
-  Contact
-} from "lucide-react";
-import useContactPicker from "../../hooks/useContactPicker";
 
 const QuickInvite = () => {
   const navigate = useNavigate();
@@ -161,7 +146,7 @@ const QuickInvite = () => {
       // Allow spaces, dashes, + prefix
       const cleaned = formData.phone.replace(/[\s-]/g, '');
       if (cleaned.length < 9 || cleaned.length > 15) {
-        errors.phone = "Enter a valid phone number";
+        errors.phone = "Enter a valid Kenyan phone number";
       }
     }
 
@@ -350,23 +335,6 @@ const QuickInvite = () => {
     }
   };
 
-  // Share invite link
-  const shareInvite = async () => {
-    if (success?.data?.inviteLink && navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Visitor Invite',
-          text: `You're invited to visit! Use this link to get your pass:`,
-          url: success.data.inviteLink,
-        });
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          logger.error('Share failed:', err);
-        }
-      }
-    }
-  };
-
   // Reset form for new invite
   const createAnother = () => {
     setFormData({ name: "", phone: "", dateOfVisit: "", time: "", duration: 60, allowResidenceLocation: false, unitPin: "" });
@@ -380,16 +348,16 @@ const QuickInvite = () => {
   // Success state
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
-        <div className="max-w-lg mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-brand-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+        <div className="max-w-lg mx-auto px-4 py-6">
           {/* Success Card */}
           <Card className="bg-white dark:bg-slate-800 border-0 rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-center">
+            <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4" aria-hidden="true">
-                <CheckCircle className="w-10 h-10 text-white" aria-hidden="true" />
+                <Icon name="CheckCircle" className="w-10 h-10 text-white" aria-hidden="true" />
               </div>
               <h2 className="text-2xl font-bold text-white">{success.message}</h2>
-              <p className="text-green-100 mt-2">{success.subtitle}</p>
+              <p className="text-brand-100 mt-2">{success.subtitle}</p>
             </div>
 
             <div className="p-6 space-y-6">
@@ -402,17 +370,19 @@ const QuickInvite = () => {
                     <span className="text-4xl font-mono font-bold text-gray-900 dark:text-white tracking-wider">
                       {success.data.inviteCode}
                     </span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         navigator.clipboard.writeText(success.data.inviteCode);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
-                      className="p-2 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 min-w-[44px] min-h-[44px]"
+                      className="p-2 min-w-[44px] min-h-[44px]"
                       aria-label="Copy access code"
                     >
-                      {copied ? <CheckCircle className="w-5 h-5 text-green-500" aria-hidden="true" /> : <Copy className="w-5 h-5 text-gray-400 dark:text-gray-300" aria-hidden="true" />}
-                    </button>
+                      {copied ? <Icon name="CheckCircle" className="w-5 h-5 text-green-500" aria-hidden="true" /> : <Icon name="Copy" className="w-5 h-5 text-gray-400 dark:text-gray-300" aria-hidden="true" />}
+                    </Button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Share this code with your guest for entry</p>
                 </div>
@@ -424,42 +394,44 @@ const QuickInvite = () => {
 
                 {/* WhatsApp Share Buttons */}
                 <div className="space-y-2">
-                  <button
+                  <Button
                     onClick={shareViaWhatsAppDirect}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[44px]"
+                    className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl"
                     aria-label={`Send invite via WhatsApp to ${formData.name}`}
                   >
-                    <MessageCircle className="w-5 h-5" aria-hidden="true" />
+                    <Icon name="MessageCircle" className="w-5 h-5" aria-hidden="true" />
                     {whatsappSent ? '✓ Opening WhatsApp...' : `Send via WhatsApp to ${formData.name}`}
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={shareViaWhatsApp}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-50 hover:bg-green-100 text-green-700 border-2 border-green-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[44px]"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-50 hover:bg-brand-100 text-brand-700 border-2 border-brand-200 rounded-xl"
                     aria-label="Share via WhatsApp - choose contact"
                   >
-                    <MessageCircle className="w-4 h-4" aria-hidden="true" />
+                    <Icon name="MessageCircle" className="w-4 h-4" aria-hidden="true" />
                     Share via WhatsApp (choose contact)
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Link Copy */}
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={copyInviteLink}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 rounded-xl text-gray-700 dark:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 min-h-[44px]"
+                    variant="secondary"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl"
                     aria-label="Copy invite link"
                   >
-                    <Copy className="w-4 h-4" aria-hidden="true" />
+                    <Icon name="Copy" className="w-4 h-4" aria-hidden="true" />
                     {copied ? 'Copied Link!' : 'Copy Link'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* What happens next (Simplified) */}
               <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 text-xs text-blue-800 dark:text-blue-200">
                 <p className="flex items-center gap-2 mb-1 font-semibold">
-                  <Info className="w-4 h-4" aria-hidden="true" />
+                  <Icon name="Info" className="w-4 h-4" aria-hidden="true" />
                   Next Steps:
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-1">
@@ -492,56 +464,48 @@ const QuickInvite = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard/resident')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 min-w-[44px] min-h-[44px]"
-              aria-label="Back to dashboard"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-200" aria-hidden="true" />
-            </button>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Quick Invite</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-300">Invite a guest in seconds</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Quick Invite"
+        subtitle="Invite a guest in seconds"
+        showBack={true}
+        backTo="/dashboard/resident"
+        backAriaLabel="Back to dashboard"
+        sticky={true}
+      />
 
       {/* Main Content */}
       <div className="max-w-lg mx-auto px-4 py-6">
-        <Card className="bg-white dark:bg-slate-800 border-0 rounded-2xl shadow-lg">
+        <Card className="bg-white dark:bg-slate-800 border-0 rounded-2xl shadow-sm">
           <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Error display */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-xl text-sm">
                   {error}
                 </div>
               )}
 
               {/* Contact Picker - P6 */}
               {contactPickerSupported && (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={handlePickContact}
                   disabled={pickingContact || loading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-200 transition-all disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[44px]"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl"
                   aria-label="Pick contact from device"
                 >
-                  <Contact className="w-5 h-5" aria-hidden="true" />
+                  <Icon name="Contact" className="w-5 h-5" aria-hidden="true" />
                   {pickingContact ? 'Opening contacts...' : 'Pick from Contacts'}
-                </button>
+                </Button>
               )}
 
               {/* Guest Name */}
               <div className="space-y-2">
                 <label htmlFor="guest-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <User className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
+                  <Icon name="User" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   Guest Name
                 </label>
                 <input
@@ -562,7 +526,7 @@ const QuickInvite = () => {
               {/* Phone Number */}
               <div className="space-y-2">
                 <label htmlFor="guest-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Phone className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
+                  <Icon name="Phone" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   Phone Number
                 </label>
                 <div className="relative">
@@ -578,7 +542,7 @@ const QuickInvite = () => {
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-300 flex items-center gap-1">
-                  <Smartphone className="w-3 h-3" aria-hidden="true" />
+                  <Icon name="Smartphone" className="w-3 h-3" aria-hidden="true" />
                   They'll receive an SMS with the invite link
                 </p>
                 {validationErrors.phone && (
@@ -589,16 +553,20 @@ const QuickInvite = () => {
               {/* Date Selection */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Calendar className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
+                  <Icon name="Calendar" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   When are they visiting?
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Visit date">
                   {dateChips.map((chip) => (
-                    <button
+                    <Button
                       key={chip.id}
                       type="button"
+                      variant="ghost"
+                      size="sm"
+                      role="radio"
+                      aria-checked={selectedDateChip === chip.id}
                       onClick={() => handleDateChipClick(chip)}
-                      className={`p-3 rounded-xl border-2 transition-all text-center focus:outline-none focus:ring-2 focus:ring-green-500 ${selectedDateChip === chip.id
+                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all text-center ${selectedDateChip === chip.id
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                         : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 text-gray-700 dark:text-gray-200'
                         }`}
@@ -608,16 +576,17 @@ const QuickInvite = () => {
                       {chip.sublabel && (
                         <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
                       )}
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {showCustomDate && (
                   <input
                     type="date"
+                    aria-label="Custom visit date"
                     value={formData.dateOfVisit}
                     onChange={(e) => handleInputChange('dateOfVisit', e.target.value)}
                     min={formatDateForInput(today)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 )}
                 {validationErrors.dateOfVisit && (
@@ -628,16 +597,20 @@ const QuickInvite = () => {
               {/* Time Selection (Optional) */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Clock className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
+                  <Icon name="Clock" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   Approximate time <span className="text-gray-500 dark:text-gray-300 font-normal">(optional)</span>
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Visit time">
                   {timeChips.map((chip) => (
-                    <button
+                    <Button
                       key={chip.id}
                       type="button"
+                      variant="ghost"
+                      size="sm"
+                      role="radio"
+                      aria-checked={selectedTimeChip === chip.id}
                       onClick={() => handleTimeChipClick(chip)}
-                      className={`p-3 rounded-xl border-2 transition-all text-center focus:outline-none focus:ring-2 focus:ring-green-500 ${selectedTimeChip === chip.id
+                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all text-center ${selectedTimeChip === chip.id
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                         : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 text-gray-700 dark:text-gray-200'
                         }`}
@@ -645,15 +618,16 @@ const QuickInvite = () => {
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {showCustomTime && (
                   <input
                     type="time"
+                    aria-label="Custom visit time"
                     value={formData.time}
                     onChange={(e) => handleInputChange('time', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 )}
               </div>
@@ -661,23 +635,27 @@ const QuickInvite = () => {
               {/* Duration/Validity Selection */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <Clock className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" />
+                  <Icon name="Clock" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" />
                   Pass Validity
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Pass validity duration">
                   {durationChips.map((chip) => (
-                    <button
+                    <Button
                       key={chip.id}
                       type="button"
+                      variant="ghost"
+                      size="sm"
+                      role="radio"
+                      aria-checked={formData.duration === chip.value}
                       onClick={() => handleInputChange('duration', chip.value)}
-                      className={`p-3 rounded-xl border-2 transition-all text-center ${formData.duration === chip.value
-                        ? 'border-green-500 bg-green-50 text-green-700'
+                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all text-center ${formData.duration === chip.value
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                         : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-700 dark:text-gray-300'
                         }`}
                     >
                       <div className="text-sm font-medium">{chip.label}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -709,7 +687,7 @@ const QuickInvite = () => {
                       value={formData.unitPin}
                       onChange={(e) => handleInputChange('unitPin', e.target.value)}
                       placeholder="Unit PIN (e.g. A12)"
-                      className={`w-full px-4 py-3 rounded-xl border ${validationErrors.unitPin ? 'border-red-300 bg-red-50' : 'border-gray-200 dark:border-slate-700'
+                      className={`w-full px-4 py-3 rounded-xl border ${validationErrors.unitPin ? 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-700' : 'border-gray-200 dark:border-slate-700 dark:bg-slate-700 dark:text-white'
                         } focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all`}
                       disabled={loading}
                     />
@@ -723,7 +701,7 @@ const QuickInvite = () => {
               {/* Info note */}
               <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4 text-sm text-gray-600 dark:text-gray-200">
                 <p className="flex items-start gap-2">
-                  <Info className="w-4 h-4 text-gray-400 dark:text-gray-300 mt-0.5 flex-shrink-0" />
+                  <Icon name="Info" className="w-4 h-4 text-gray-400 dark:text-gray-300 mt-0.5 flex-shrink-0" />
                   <span>
                     Your guest will complete their details and accept the privacy policy when they open the invite link.
                   </span>
@@ -734,16 +712,16 @@ const QuickInvite = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+                className="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    <Icon name="Loader2" className="w-5 h-5 animate-spin mr-2" />
                     Sending Invite...
                   </>
                 ) : (
                   <>
-                    <Send className="w-5 h-5 mr-2" />
+                    <Icon name="Send" className="w-5 h-5 mr-2" />
                     Send Invite
                   </>
                 )}

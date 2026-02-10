@@ -21,36 +21,19 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import Icon from './Icon.jsx';
 
-// Icon components
+// Icon components using the unified Icon system
 const HelpIcon = ({ size = 16, className = '' }) => (
-  <svg
-    className={`inline-flex ${className}`}
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
-  </svg>
+  <Icon name="help-circle" size={size} className={`inline-flex ${className}`} />
 );
 
 const ExternalLinkIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-  </svg>
+  <Icon name="external-link" size={14} className="w-3.5 h-3.5" />
 );
 
 const PlayIcon = () => (
-  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M8 5v14l11-7z" />
-  </svg>
+  <Icon name="play" size={32} className="w-8 h-8 text-white" />
 );
 
 // Keyboard shortcut badge
@@ -303,7 +286,7 @@ const HelpTooltip = ({
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/30 transition-colors">
-                  <div className="w-12 h-12 rounded-full bg-green-500/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 rounded-full bg-brand-500/90 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <PlayIcon />
                   </div>
                 </div>
@@ -312,9 +295,9 @@ const HelpTooltip = ({
 
             {/* Pro Tip */}
             {proTip && (
-              <div className="mt-3 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
+              <div className="mt-3 p-2 bg-brand-500/10 border border-brand-500/20 rounded-md">
                 <div className="flex items-start gap-2">
-                  <span className="text-green-400">💡</span>
+                  <span className="text-brand-400">💡</span>
                   <p className="text-xs text-green-300">{proTip}</p>
                 </div>
               </div>

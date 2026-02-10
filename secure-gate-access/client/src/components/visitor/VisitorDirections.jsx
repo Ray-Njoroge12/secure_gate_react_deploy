@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import Button from '../ui/Button';
 
 const VisitorDirections = ({ visitorId, inviteToken }) => {
   const [directions, setDirections] = useState(null);
@@ -22,13 +23,19 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
   const loadDirections = async () => {
     try {
       setLoading(true);
+      setError(null);
+      const params = new URLSearchParams({ token: inviteToken });
       const response = await fetch(
-        `/api/directions/visitor/${visitorId}?token=${inviteToken}`
+        `/api/directions/visitor/${visitorId}?${params.toString()}`
       );
       const data = await response.json();
       
       if (data.success) {
-        setDirections(data.directions);
+        setDirections({
+          ...data.directions,
+          mapLinks: data.mapLinks || data.directions?.mapLinks || {},
+          privacyNotice: data.privacyNotice || data.directions?.privacyNotice
+        });
       } else {
         setError(data.error || 'Failed to load directions');
       }
@@ -47,7 +54,8 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
   const shareLink = async () => {
     try {
-      const response = await fetch(`/api/directions/visitor/${visitorId}/share`);
+      const params = new URLSearchParams({ token: inviteToken });
+      const response = await fetch(`/api/directions/visitor/${visitorId}/share?${params.toString()}`);
       const data = await response.json();
       
       if (data.success && navigator.share) {
@@ -60,6 +68,8 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
         await navigator.clipboard.writeText(data.link);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+      } else {
+        setError(data.error || 'Failed to generate share link');
       }
     } catch (err) {
       console.error('Share error:', err);
@@ -104,7 +114,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       <div className="p-4 border-b border-gray-200 dark:border-slate-700">
         <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">Open in your favorite maps app:</p>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => openInMaps('google')}
             disabled={!directions?.mapLinks?.google}
             className="flex-1 py-3 px-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -113,8 +123,8 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
               <span className="text-2xl mb-1">🗺️</span>
               <span className="text-xs text-gray-600 dark:text-gray-200">Google Maps</span>
             </div>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => openInMaps('apple')}
             disabled={!directions?.mapLinks?.apple}
             className="flex-1 py-3 px-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -123,8 +133,8 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
               <span className="text-2xl mb-1">🍎</span>
               <span className="text-xs text-gray-600 dark:text-gray-200">Apple Maps</span>
             </div>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => openInMaps('waze')}
             disabled={!directions?.mapLinks?.waze}
             className="flex-1 py-3 px-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -133,7 +143,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
               <span className="text-2xl mb-1">🚗</span>
               <span className="text-xs text-gray-600 dark:text-gray-200">Waze</span>
             </div>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -158,7 +168,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
       {/* Custom Instructions from Host */}
       {directions?.customInstructions && (
-        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-yellow-50">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-yellow-50 dark:bg-yellow-900/20">
           <h3 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             <span>💬</span> Message from {directions.hostName}
           </h3>
@@ -177,11 +187,11 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
       )}
 
       {directions?.unitPin && (
-        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-emerald-50">
+        <div className="p-4 border-b border-gray-200 dark:border-slate-700 bg-brand-50 dark:bg-brand-900/20">
           <h3 className="font-medium text-gray-900 dark:text-white mb-2">Unit PIN</h3>
-          <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-emerald-200 rounded-lg px-4 py-3">
-            <span className="font-mono text-lg text-emerald-800">{directions.unitPin}</span>
-            <span className="text-xs text-emerald-700">Show at gate if asked</span>
+          <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-brand-200 dark:border-brand-700 rounded-lg px-4 py-3">
+            <span className="font-mono text-lg text-brand-800 dark:text-brand-300">{directions.unitPin}</span>
+            <span className="text-xs text-brand-700 dark:text-brand-300">Show at gate if asked</span>
           </div>
           <p className="text-xs text-gray-600 dark:text-gray-200 mt-2">
             This PIN is only shared because your host enabled it for this invite.
@@ -191,7 +201,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
 
       {/* Share & Actions */}
       <div className="p-4 bg-gray-50 dark:bg-slate-900">
-        <button
+        <Button
           onClick={shareLink}
           className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
         >
@@ -206,7 +216,7 @@ const VisitorDirections = ({ visitorId, inviteToken }) => {
               <span>Share Directions with Driver</span>
             </>
           )}
-        </button>
+        </Button>
         <p className="text-xs text-gray-500 dark:text-gray-300 text-center mt-2">
           🔒 {directions?.privacyNotice || 'Shows gate location only, not your specific unit.'}
         </p>

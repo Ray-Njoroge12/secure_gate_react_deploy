@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAccessibilityContext } from './AccessibilityProvider.jsx';
+import Button from '../ui/Button';
 
 /**
  * High contrast color schemes
@@ -336,7 +337,7 @@ export const HighContrastToggle = ({
   return (
     <div className={containerClasses}>
       {/* Main toggle button */}
-      <button
+      <Button
         className="high-contrast-toggle__button"
         onClick={toggleHighContrast}
         onKeyDown={handleKeyDown}
@@ -350,7 +351,7 @@ export const HighContrastToggle = ({
         <span className="high-contrast-toggle__label">
           High Contrast {isEnabled ? 'On' : 'Off'}
         </span>
-      </button>
+      </Button>
 
       {/* Description */}
       <div id="high-contrast-description" className="high-contrast-toggle__description sr-only">
@@ -363,7 +364,7 @@ export const HighContrastToggle = ({
       {/* Theme selector */}
       {showThemeSelector && isEnabled && (
         <div className="high-contrast-toggle__selector">
-          <button
+          <Button
             className="high-contrast-toggle__selector-button"
             onClick={() => setShowSelector(!showSelector)}
             aria-expanded={showSelector}
@@ -374,7 +375,7 @@ export const HighContrastToggle = ({
             <span className="high-contrast-toggle__selector-arrow" aria-hidden="true">
               {showSelector ? '▲' : '▼'}
             </span>
-          </button>
+          </Button>
 
           {showSelector && (
             <div 
@@ -383,7 +384,7 @@ export const HighContrastToggle = ({
               aria-label="High contrast theme options"
             >
               {Object.values(HIGH_CONTRAST_THEMES).map(theme => (
-                <button
+                <Button
                   key={theme.id}
                   className={`high-contrast-toggle__theme-option ${
                     currentTheme.id === theme.id ? 'high-contrast-toggle__theme-option--selected' : ''
@@ -416,7 +417,7 @@ export const HighContrastToggle = ({
                       {theme.description}
                     </div>
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
           )}

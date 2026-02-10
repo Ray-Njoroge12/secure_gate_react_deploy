@@ -15,33 +15,15 @@ import { useToast } from "../../contexts/ToastContext";
 import { useConfirmation } from "../../components/common/ConfirmationDialog";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 import logger from 'utils/logger';
-import { 
-  CreditCard, 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreVertical,
-  Edit,
-  Trash2,
-  Shield,
-  MapPin,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Download,
-  UserPlus,
-  Lock,
-  Unlock,
-  AlertTriangle
-} from "lucide-react";
+import Icon from "../../components/ui/Icon";
 
 // Status badge component
 const StatusBadge = ({ status }) => {
   const statusConfig = {
-    active: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: <CheckCircle className="w-3 h-3" />, label: 'Active' },
-    inactive: { color: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200', icon: <XCircle className="w-3 h-3" />, label: 'Inactive' },
-    suspended: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: <AlertTriangle className="w-3 h-3" />, label: 'Suspended' },
-    lost: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', icon: <AlertTriangle className="w-3 h-3" />, label: 'Lost' },
+    active: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: <Icon name="check-circle" className="w-3 h-3" />, label: 'Active' },
+    inactive: { color: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200', icon: <Icon name="x-circle" className="w-3 h-3" />, label: 'Inactive' },
+    suspended: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: <Icon name="alert-triangle" className="w-3 h-3" />, label: 'Suspended' },
+    lost: { color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400', icon: <Icon name="alert-triangle" className="w-3 h-3" />, label: 'Lost' },
   };
   
   const config = statusConfig[status?.toLowerCase()] || statusConfig.inactive;
@@ -67,7 +49,7 @@ const ZoneBadge = ({ zone }) => {
   
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${zoneColors[zone] || 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}>
-      <MapPin className="w-3 h-3" />
+      <Icon name="map-pin" className="w-3 h-3" />
       {zone || 'Unknown'}
     </span>
   );
@@ -81,7 +63,7 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-brand-100 dark:bg-brand-900/30 rounded-lg flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+              <Icon name="credit-card" className="w-5 h-5 text-brand-600 dark:text-brand-400" />
             </div>
             <div>
               <h3 className="font-medium text-gray-900 dark:text-white truncate">
@@ -93,7 +75,7 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
           
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-              <Shield className="w-4 h-4" />
+              <Icon name="shield" className="w-4 h-4" />
               <span className="truncate">{card.holder || 'Unassigned'}</span>
             </div>
             <div className="flex items-center gap-2">
@@ -104,38 +86,46 @@ const AccessCardItem = ({ card, onEdit, onDisable, onAssign }) => (
         
         {/* Action buttons */}
         <div className="flex flex-col gap-2 ml-3">
-          <button 
+          <Button 
+            variant="ghost"
+            size="sm"
             onClick={() => onEdit(card)}
             className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 rounded-lg transition-colors"
             aria-label={`Edit card ${card.id}`}
           >
-            <Edit className="w-4 h-4" />
-          </button>
+            <Icon name="edit" className="w-4 h-4" />
+          </Button>
           {card.status === 'active' ? (
-            <button 
+            <Button 
+              variant="ghost"
+              size="sm"
               onClick={() => onDisable(card)}
               className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               aria-label={`Disable card ${card.id}`}
             >
-              <Lock className="w-4 h-4" />
-            </button>
+              <Icon name="lock" className="w-4 h-4" />
+            </Button>
           ) : (
-            <button 
+            <Button 
+              variant="ghost"
+              size="sm"
               onClick={() => onDisable(card)}
               className="p-2 text-gray-500 dark:text-gray-300 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
               aria-label={`Enable card ${card.id}`}
             >
-              <Unlock className="w-4 h-4" />
-            </button>
+              <Icon name="unlock" className="w-4 h-4" />
+            </Button>
           )}
           {!card.holder && (
-            <button 
+            <Button 
+              variant="ghost"
+              size="sm"
               onClick={() => onAssign(card)}
               className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
               aria-label={`Assign card ${card.id}`}
             >
-              <UserPlus className="w-4 h-4" />
-            </button>
+              <Icon name="user-plus" className="w-4 h-4" />
+            </Button>
           )}
         </div>
       </div>
@@ -262,7 +252,7 @@ const CardModal = ({ card, isOpen, onClose, onSave, mode = 'edit' }) => {
 };
 
 // Stats card component
-const StatsCard = ({ title, value, icon: Icon, color }) => (
+const StatsCard = ({ title, value, iconName, color }) => (
   <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
     <div className="flex items-center justify-between">
       <div>
@@ -270,7 +260,7 @@ const StatsCard = ({ title, value, icon: Icon, color }) => (
         <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
       </div>
       <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center`}>
-        <Icon className="w-6 h-6 text-white" />
+        <Icon name={iconName} className="w-6 h-6 text-white" />
       </div>
     </div>
   </div>
@@ -398,7 +388,7 @@ export default function AccessControl() {
       <PageHeader 
         title="Access Control"
         subtitle="Manage access cards and zone permissions"
-        icon={<CreditCard className="w-6 h-6 text-brand-600 dark:text-brand-400" />}
+        icon={<Icon name="credit-card" className="w-6 h-6 text-brand-600 dark:text-brand-400" />}
         actions={
           <div className="flex gap-2">
             <Button
@@ -407,7 +397,7 @@ export default function AccessControl() {
               disabled={refreshing}
               className="hidden sm:flex items-center gap-2"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <Icon name="refresh-cw" className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button
@@ -415,11 +405,11 @@ export default function AccessControl() {
               onClick={handleExport}
               className="hidden sm:flex items-center gap-2"
             >
-              <Download className="w-4 h-4" />
+              <Icon name="download" className="w-4 h-4" />
               Export
             </Button>
             <Button className="bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-2">
-              <Plus className="w-4 h-4" />
+              <Icon name="plus" className="w-4 h-4" />
               <span className="hidden sm:inline">Add Card</span>
             </Button>
           </div>
@@ -429,17 +419,17 @@ export default function AccessControl() {
       <div className="space-y-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatsCard title="Total Cards" value={stats.total} icon={CreditCard} color="bg-blue-500" />
-          <StatsCard title="Active" value={stats.active} icon={CheckCircle} color="bg-green-500" />
-          <StatsCard title="Assigned" value={stats.assigned} icon={Shield} color="bg-purple-500" />
-          <StatsCard title="Suspended/Lost" value={stats.suspended} icon={AlertTriangle} color="bg-amber-500" />
+          <StatsCard title="Total Cards" value={stats.total} iconName="credit-card" color="bg-blue-500" />
+          <StatsCard title="Active" value={stats.active} iconName="check-circle" color="bg-green-500" />
+          <StatsCard title="Assigned" value={stats.assigned} iconName="user-check" color="bg-purple-500" />
+          <StatsCard title="Suspended/Lost" value={stats.suspended} iconName="alert-triangle" color="bg-amber-500" />
         </div>
 
         {/* Error State */}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <Icon name="alert-triangle" className="w-5 h-5 text-red-600 dark:text-red-400" />
               <div>
                 <h3 className="font-medium text-red-800 dark:text-red-200">Error Loading Data</h3>
                 <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -456,7 +446,7 @@ export default function AccessControl() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-300" />
+                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-300" />
                 <input
                   type="text"
                   placeholder="Search by card ID, holder, or zone..."
@@ -471,7 +461,7 @@ export default function AccessControl() {
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2"
             >
-              <Filter className="w-4 h-4" />
+              <Icon name="filter" className="w-4 h-4" />
               Filters
               {hasFilters && (
                 <span className="w-2 h-2 bg-brand-500 rounded-full" />
@@ -546,7 +536,7 @@ export default function AccessControl() {
           </>
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-12 text-center">
-            <CreditCard className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-200 mb-4" />
+            <Icon name="credit-card" className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-200 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {isSearching || hasFilters ? 'No cards found' : 'No access cards'}
             </h3>
@@ -562,7 +552,7 @@ export default function AccessControl() {
               </Button>
             ) : (
               <Button className="bg-brand-600 hover:bg-brand-700 text-white">
-                <Plus className="w-4 h-4 mr-2" />
+                <Icon name="plus" className="w-4 h-4 mr-2" />
                 Add First Card
               </Button>
             )}

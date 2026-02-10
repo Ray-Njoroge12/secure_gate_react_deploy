@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import Button from '../../components/ui/Button';
 import './WatchlistManagement.css';
 
 const WatchlistManagement = () => {
@@ -194,7 +195,7 @@ const WatchlistManagement = () => {
           <h1>🛡️ Security Watchlist</h1>
           <p className="subtitle">Manage flagged individuals and vehicles</p>
         </div>
-        <button 
+        <Button 
           className="btn-create"
           onClick={() => {
             resetForm();
@@ -202,23 +203,29 @@ const WatchlistManagement = () => {
           }}
         >
           + Add to Watchlist
-        </button>
+        </Button>
       </div>
 
       {/* Tabs */}
-      <div className="watchlist-tabs">
-        <button 
+      <div className="watchlist-tabs" role="tablist" aria-label="Watchlist sections">
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'entries' ? 'active' : ''}`}
           onClick={() => setActiveTab('entries')}
+          role="tab"
+          aria-selected={activeTab === 'entries'}
         >
           Watchlist Entries ({entries.length})
-        </button>
-        <button 
+        </Button>
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'matches' ? 'active' : ''}`}
           onClick={() => setActiveTab('matches')}
+          role="tab"
+          aria-selected={activeTab === 'matches'}
         >
           Match History ({matches.length})
-        </button>
+        </Button>
       </div>
 
       {/* Entries Tab */}
@@ -227,9 +234,9 @@ const WatchlistManagement = () => {
           {entries.length === 0 ? (
             <div className="empty-state">
               <p>No watchlist entries yet.</p>
-              <button className="btn-primary" onClick={() => setShowModal(true)}>
+              <Button className="btn-primary" onClick={() => setShowModal(true)}>
                 Add First Entry
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="entries-table-container">
@@ -276,24 +283,27 @@ const WatchlistManagement = () => {
                       </td>
                       <td>
                         <div className="action-buttons">
-                          <button 
+                          <Button 
+                            variant="outlined" size="sm"
                             className="btn-sm btn-edit"
                             onClick={() => openEditModal(entry)}
                           >
                             Edit
-                          </button>
-                          <button 
+                          </Button>
+                          <Button 
+                            variant="secondary" size="sm"
                             className="btn-sm btn-toggle"
                             onClick={() => toggleEntry(entry)}
                           >
                             {entry.active ? 'Deactivate' : 'Activate'}
-                          </button>
-                          <button 
+                          </Button>
+                          <Button 
+                            variant="danger" size="sm"
                             className="btn-sm btn-delete"
                             onClick={() => deleteEntry(entry.id)}
                           >
                             Delete
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -339,7 +349,7 @@ const WatchlistManagement = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={closeModal} role="presentation" aria-hidden="true">
           <div
             className="modal-content large"
             onClick={(e) => e.stopPropagation()}
@@ -351,7 +361,7 @@ const WatchlistManagement = () => {
           >
             <div className="modal-header">
               <h2 id="watchlist-modal-title">{editingEntry ? 'Edit Watchlist Entry' : 'Add to Watchlist'}</h2>
-              <button className="modal-close" onClick={closeModal} aria-label="Close">×</button>
+              <Button variant="ghost" className="modal-close" onClick={closeModal} aria-label="Close">×</Button>
             </div>
 
             <form onSubmit={handleSubmit} className="modal-body">
@@ -487,12 +497,12 @@ const WatchlistManagement = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={closeModal}>
+                <Button variant="secondary" className="btn-cancel" onClick={closeModal}>
                   Cancel
-                </button>
-                <button type="submit" className="btn-primary">
+                </Button>
+                <Button variant="primary" type="submit" className="btn-primary">
                   {editingEntry ? 'Update Entry' : 'Add to Watchlist'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

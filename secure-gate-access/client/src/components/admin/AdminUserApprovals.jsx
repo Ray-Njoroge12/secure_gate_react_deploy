@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useError } from '../../contexts/ErrorContext';
 import { useAuth } from '../../contexts/AuthContext';
 import logger from '../../utils/logger';
+import Button from '../ui/Button';
 
 const AdminUserApprovals = ({ siteId }) => {
     const [pendingUsers, setPendingUsers] = useState([]);
@@ -75,17 +76,17 @@ const AdminUserApprovals = ({ siteId }) => {
     }
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     Pending Approvals ({pendingUsers.length})
                 </h3>
-                <button
+                <Button
                     onClick={fetchPendingUsers}
                     className="text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400"
                 >
                     Refresh
-                </button>
+                </Button>
             </div>
 
             {pendingUsers.length === 0 ? (
@@ -124,18 +125,18 @@ const AdminUserApprovals = ({ siteId }) => {
                                         {new Date(user.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                        <button
+                                        <Button
                                             onClick={() => handleStatusUpdate(user.id, 'active')}
                                             className="text-green-600 hover:text-green-900 dark:hover:text-green-400"
                                         >
                                             Approve
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button
                                             onClick={() => handleStatusUpdate(user.id, 'rejected')}
                                             className="text-red-600 hover:text-red-900 dark:hover:text-red-400"
                                         >
                                             Reject
-                                        </button>
+                                        </Button>
                                     </td>
                                 </tr>
                             ))}

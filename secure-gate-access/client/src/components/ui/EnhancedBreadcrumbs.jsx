@@ -12,7 +12,7 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronRight, Home, MoreHorizontal } from 'lucide-react';
+import Icon from './Icon.jsx';
 import { generateBreadcrumbs } from '../../utils/navigationFlow';
 import { componentTokens } from '../../design-system';
 
@@ -180,100 +180,149 @@ const EnhancedBreadcrumbs = ({
   // Early return after all hooks
   if (!currentBreadcrumbs.length) return null;
 
-  return (
-    <div className={`breadcrumbs-container ${className}`}>
-      {/* Progress bar */}
-      {showProgress && progress !== null && (
-        <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1 mb-4">
-          <div 
-            className="bg-brand-500 h-1 rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-            role="progressbar"
-            aria-valuenow={Math.round(progress)}
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-label={`Navigation progress: ${Math.round(progress)}%`}
-          />
-        </div>
-      )}
+  // Render collapsed items logic
+  const renderCollapsedItems = () => {
+    const items = displayBreadcrumbs;
 
-      {/* Breadcrumbs */}
-      <nav 
-        ref={breadcrumbsRef}
-        className={`flex items-center ${sizeStyles.container} text-slate-400 mb-6`}
-        aria-label="Breadcrumb navigation"
-        role="navigation"
-      >
-        <ol className="flex items-center space-x-1">
-          {displayBreadcrumbs.map((crumb, index) => (
-            <li key={`${crumb.path}-${index}`} className="flex items-center">
-              {/* Separator */}
-              {index > 0 && (
-                <ChevronRight 
-                  className={`${sizeStyles.icon} mx-2 text-slate-500 dark:text-slate-300 flex-shrink-0`}
-                  aria-hidden="true"
+    // If not collapsed, render all items
+    if (!isCollapsed) return items;
+
+    // If collapsed, show first item, ellipsis, and last item
+    const collapsedItems = items.slice(1, -1);
+    if (collapsedItems.length === 0) return items;
+
+    return [
+      items[0],
+      <li key="ellipsis" className="flex items-center">
+        <Icon 
+          name="chevron-right" 
+          className={`text-gray-400 mx-1 ${sizeStyles.icon}`} 
+          aria-hidden="true" 
+        />
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(false)}
+          className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400"
+          aria-label="Show intermediate pages"
+        >
+          <Icon name="more-horizontal" size={16} aria-hidden="true" />
+        </button>
+      </li>,
+      ...items.slice(-2)
+    ];
+  };
+
+  return (
+    <nav 
+      aria-label="Breadcrumb" 
+      className={`flex ${className} ${sizeStyles.container}`}
+      ref={breadcrumbsRef}
+    >
+      <ol className="flex items-center flex-wrap">
+        {/* Home Link */}
+        {showHome && (
+          <li className="flex items-center">
+            <Link
+              to={`/${userRole ? userRole.toLowerCase() : ''}/dashboard`}
+              className={`
+                flex items-center text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors
+                ${sizeStyles.item}
+                focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1 rounded
+              `}
+              aria-label="Home"
+            >
+              <Icon 
+                name="home" 
+                className={`${sizeStyles.homeIcon}`} 
+                aria-hidden="true" 
+              />
+            </Link>
+          </li>
+        )}
+
+        {/* Separator for Home */}
+        {showHome && currentBreadcrumbs.length > 0 && (
+          <li aria-hidden="true">
+            <Icon 
+              name="chevron-right" 
+              className={`text-gray-400 mx-1 ${sizeStyles.icon}`} 
+            />
+          </li>
+        )}
+
+        {/* Breadcrumb Items */}
+        {renderCollapsedItems().map((item, index, arr) => {
+          // If it's a React element (ellipsis), return it directly
+          if (React.isValidElement(item)) return item;
+
+          const isLast = index === arr.length - 1;
+          const routeTo = item.path;
+
+          return (
+            <li key={item.path} className="flex items-center">
+              {index > 0 && !showHome && (
+                <Icon 
+                  name="chevron-right" 
+                  className={`text-gray-400 mx-1 ${sizeStyles.icon}`} 
+                  aria-hidden="true" 
                 />
               )}
               
-              {/* Breadcrumb item */}
-              {crumb.isEllipsis ? (
-                <button
-                  onClick={() => setIsCollapsed(!isCollapsed)}
-                  className={`${sizeStyles.item} text-slate-500 dark:text-slate-300 hover:text-slate-300 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
-                  aria-label={isCollapsed ? "Expand breadcrumbs" : "Collapse breadcrumbs"}
-                  aria-expanded={!isCollapsed}
-                >
-                  <MoreHorizontal className={sizeStyles.icon} />
-                </button>
-              ) : crumb.isCurrent ? (
+              {index === 0 && !showHome ? null : (
+                 // Use separator if not first item (handled above)
+                 // But wait, the loop logic above `if (index > 0 && !showHome)` adds separator for items after first if home is hidden
+                 // If home is SHOWN, we need separator for ALL items.
+                 // Correct logic:
+                 // Home -> (sep) -> Item 1 -> (sep) -> Item 2
+                 // My code above added sep for Home -> Item 1. 
+                 // Code inside map needs to add sep BEFORE item if it's not the first item overall (considering Home)
+                 // But `renderCollapsedItems` returns the array of items to render.
+                 // Let's rely on standard logic: SEPARATOR before item unless it's the very first element in the nav.
+                 // If Home is shown, Home is first. All items get separator before them.
+                 // If Home is hidden, first item gets no separator.
+                 (showHome || index > 0) && (
+                    <Icon 
+                      name="chevron-right" 
+                      className={`text-gray-400 mx-1 ${sizeStyles.icon}`} 
+                      aria-hidden="true" 
+                    />
+                 )  
+               )}
+
+              {isLast ? (
                 <span 
                   className={`${sizeStyles.item} text-slate-200 font-medium rounded-md bg-slate-800`}
                   aria-current="page"
                 >
-                  {crumb.label}
+                  {item.label}
                 </span>
               ) : (
                 <Link
-                  to={crumb.path}
-                  onClick={() => handleBreadcrumbClick(crumb, index)}
+                  to={routeTo}
+                  onClick={() => handleBreadcrumbClick(item, index)}
                   className={`${sizeStyles.item} text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
-                  aria-label={`Navigate to ${crumb.label}`}
+                  aria-label={`Navigate to ${item.label}`}
                 >
-                  {index === 0 && showHome ? (
-                    <div className="flex items-center">
-                      <Home className={`${sizeStyles.homeIcon} mr-1`} aria-hidden="true" />
-                      <span>{crumb.label}</span>
-                    </div>
-                  ) : (
-                    crumb.label
-                  )}
+                  {item.label}
                 </Link>
               )}
             </li>
-          ))}
-        </ol>
+          );
+        })}
+      </ol>
 
-        {/* Collapse/Expand button for desktop */}
-        {collapsible && currentBreadcrumbs.length > maxItems && (
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`ml-4 ${sizeStyles.item} text-slate-500 dark:text-slate-300 hover:text-slate-300 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
-            aria-label={isCollapsed ? "Show all breadcrumbs" : "Hide some breadcrumbs"}
-            aria-expanded={!isCollapsed}
-          >
-            <MoreHorizontal className={sizeStyles.icon} />
-          </button>
-        )}
-      </nav>
-
-      {/* Screen reader announcement for navigation changes */}
-      <div 
-        className="sr-only" 
-        aria-live="polite" 
-        aria-atomic="true"
-        id="breadcrumb-announcement"
-      />
-    </div>
+      {/* Collapse/Expand button for desktop */}
+      {collapsible && currentBreadcrumbs.length > maxItems && (
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`ml-4 ${sizeStyles.item} text-slate-500 dark:text-slate-300 hover:text-slate-300 hover:bg-slate-800 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
+          aria-label={isCollapsed ? "Show all breadcrumbs" : "Hide some breadcrumbs"}
+          aria-expanded={!isCollapsed}
+        >
+          <Icon name="more-horizontal" className={sizeStyles.icon} />
+        </button>
+      )}
+    </nav>
   );
 };
 
