@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { Filter, X } from 'lucide-react';
+import { Icon } from '../ui';
+import Button from '../ui/Button';
 
 const QuickFilters = ({ activeFilter, onFilterChange, onClearFilter }) => {
   const filters = [
@@ -48,26 +49,26 @@ const QuickFilters = ({ activeFilter, onFilterChange, onClearFilter }) => {
   ];
 
   return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-gray-600 dark:text-gray-200" />
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Quick Filters</h3>
-        </div>
+    <div className="flex flex-col space-y-3 mb-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2">
+          <Icon name="Filter" className="w-4 h-4" />
+          Quick Filters
+        </h3>
         {activeFilter !== 'all' && (
-          <button
+          <Button
             onClick={onClearFilter}
-            className="text-xs text-gray-600 dark:text-gray-200 hover:text-gray-900 dark:text-white flex items-center gap-1"
+            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
           >
-            <X className="w-3 h-3" />
+            <Icon name="X" className="w-3 h-3" />
             Clear
-          </button>
+          </Button>
         )}
       </div>
-      
+
       <div className="flex flex-wrap gap-2">
         {filters.map(filter => (
-          <button
+          <Button
             key={filter.id}
             onClick={() => onFilterChange(filter)}
             className={`
@@ -79,7 +80,7 @@ const QuickFilters = ({ activeFilter, onFilterChange, onClearFilter }) => {
             `}
           >
             {filter.label}
-          </button>
+          </Button>
         ))}
       </div>
     </div>

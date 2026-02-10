@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import {
-  Activity,
-  TrendingUp,
-  AlertTriangle,
-  Users,
-  Clock,
-  CheckCircle,
-  XCircle,
-  RefreshCw
-} from 'lucide-react';
+import { Icon } from '../../components/ui';
+import Button from '../../components/ui/Button';
 import axios from 'axios';
+import './ActivityDashboard.css';
 
 
 const ActivityDashboard = () => {
@@ -54,19 +47,19 @@ const ActivityDashboard = () => {
 
   const getSeverityColor = (severity) => {
     switch (severity) {
-      case 'high': return 'text-red-600 bg-red-100';
-      case 'medium': return 'text-orange-600 bg-orange-100';
-      case 'low': return 'text-yellow-600 bg-yellow-100';
+      case 'high': return 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30';
+      case 'medium': return 'text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/30';
+      case 'low': return 'text-yellow-700 dark:text-yellow-300 bg-yellow-100 dark:bg-yellow-900/30';
       default: return 'text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-slate-700';
     }
   };
 
   const getOutcomeIcon = (outcome) => {
     switch (outcome) {
-      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'fail': return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      default: return <Activity className="h-4 w-4 text-blue-500" />;
+      case 'success': return <Icon name="CheckCircle" className="h-4 w-4 text-green-500" />;
+      case 'fail': return <Icon name="XCircle" className="h-4 w-4 text-red-500" />;
+      case 'warning': return <Icon name="AlertTriangle" className="h-4 w-4 text-yellow-500" />;
+      default: return <Icon name="Activity" className="h-4 w-4 text-blue-500" />;
     }
   };
 
@@ -88,7 +81,7 @@ const ActivityDashboard = () => {
     return (
       <div className="activity-dashboard">
         <div className="text-center py-8">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-500" />
+          <Icon name="RefreshCw" className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-500" />
           <p className="text-gray-500 dark:text-gray-400">Loading activity data...</p>
         </div>
       </div>
@@ -101,7 +94,7 @@ const ActivityDashboard = () => {
         <Card>
           <CardContent>
             <div className="text-center py-8 text-red-500">
-              <AlertTriangle className="h-12 w-12 mx-auto mb-3" />
+              <Icon name="AlertTriangle" className="h-12 w-12 mx-auto mb-3" />
               <p>{error}</p>
             </div>
           </CardContent>
@@ -114,28 +107,33 @@ const ActivityDashboard = () => {
     <div className="activity-dashboard">
       {/* Header */}
       <div className="dashboard-header">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Activity className="h-6 w-6" />
+        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+          <Icon name="Activity" className="h-6 w-6" />
           Activity Dashboard
         </h1>
         <div className="flex gap-2">
+          <label htmlFor="activity-period" className="sr-only">
+            Filter activity period
+          </label>
           <select
+            id="activity-period"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="px-3 py-2 border rounded-lg"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100"
           >
             <option value="7d">Last 7 Days</option>
             <option value="30d">Last 30 Days</option>
             <option value="90d">Last 90 Days</option>
           </select>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={fetchAllData}
-            className="btn btn-secondary"
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <Icon name="RefreshCw" className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -149,7 +147,7 @@ const ActivityDashboard = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Last 24 Hours</p>
                   <p className="text-3xl font-bold">{summary.last24h}</p>
                 </div>
-                <Clock className="h-10 w-10 text-blue-500" />
+                <Icon name="Clock" className="h-10 w-10 text-blue-500" />
               </div>
             </CardContent>
           </Card>
@@ -161,7 +159,7 @@ const ActivityDashboard = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Last 7 Days</p>
                   <p className="text-3xl font-bold">{summary.last7d}</p>
                 </div>
-                <TrendingUp className="h-10 w-10 text-green-500" />
+                <Icon name="TrendingUp" className="h-10 w-10 text-green-500" />
               </div>
             </CardContent>
           </Card>
@@ -173,7 +171,7 @@ const ActivityDashboard = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Pending Approvals</p>
                   <p className="text-3xl font-bold">{summary.pendingApprovals}</p>
                 </div>
-                <Users className="h-10 w-10 text-orange-500" />
+                <Icon name="Users" className="h-10 w-10 text-orange-500" />
               </div>
             </CardContent>
           </Card>
@@ -185,7 +183,7 @@ const ActivityDashboard = () => {
                   <p className="text-sm text-gray-500 dark:text-gray-400">Visitors Today</p>
                   <p className="text-3xl font-bold">{summary.visitorsToday}</p>
                 </div>
-                <CheckCircle className="h-10 w-10 text-purple-500" />
+                <Icon name="CheckCircle" className="h-10 w-10 text-purple-500" />
               </div>
             </CardContent>
           </Card>
@@ -197,7 +195,7 @@ const ActivityDashboard = () => {
         <Card className="anomalies-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              <Icon name="AlertTriangle" className="h-5 w-5 text-orange-500" />
               Detected Anomalies
               <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
                 {anomalies.length}
@@ -211,7 +209,7 @@ const ActivityDashboard = () => {
                   key={idx}
                   className={`p-3 rounded-lg flex items-start gap-3 ${getSeverityColor(anomaly.severity)}`}
                 >
-                  <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <Icon name="AlertTriangle" className="h-5 w-5 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <p className="font-medium capitalize">
                       {anomaly.type.replace(/_/g, ' ')}

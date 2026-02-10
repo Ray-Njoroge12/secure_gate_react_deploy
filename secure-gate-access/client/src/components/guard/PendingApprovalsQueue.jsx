@@ -5,8 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Clock, User, Home, AlertCircle, CheckCircle } from 'lucide-react';
-import { Card, Badge } from '../ui';
+import { Icon, Card, Badge } from '../ui';
 
 const PendingApprovalsQueue = () => {
   const [pendingVisitors, setPendingVisitors] = useState([]);
@@ -51,112 +50,75 @@ const PendingApprovalsQueue = () => {
     if (diffMins < 60) return `${diffMins} mins`;
     
     const diffHours = Math.floor(diffMins / 60);
-    return `${diffHours}h ${diffMins % 60}m`;
+    return `${diffHours} hr${diffHours > 1 ? 's' : ''}`;
   };
 
-  if (loading && pendingVisitors.length === 0) {
+  if (loading) {
     return (
-      <Card>
-        <Card.Header>
-          <Card.Title className="flex items-center gap-2 text-slate-200 dark:text-slate-100">
-            <Clock className="w-5 h-5" aria-hidden="true" />
-            Pending Approvals
-          </Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        </Card.Content>
-      </Card>
-    );
-  }
-
-  if (pendingVisitors.length === 0) {
-    return (
-      <Card>
-        <Card.Header>
-          <Card.Title className="flex items-center gap-2 text-slate-200 dark:text-slate-100">
-            <Clock className="w-5 h-5" aria-hidden="true" />
-            Pending Approvals
-            <Badge variant="default">0</Badge>
-          </Card.Title>
-        </Card.Header>
-        <Card.Content>
-          <div className="text-center py-8">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" aria-hidden="true" />
-            <p className="text-gray-600 dark:text-gray-200">No visitors waiting for approval</p>
-            <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">All walk-ins have been processed</p>
-          </div>
-        </Card.Content>
+      <Card className="h-full flex items-center justify-center p-8">
+        <div className="animate-spin text-blue-600">
+          <Icon name="Clock" className="w-8 h-8" />
+        </div>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <Card.Header>
-        <Card.Title className="flex items-center gap-2 text-slate-200 dark:text-slate-100">
-          <Clock className="w-5 h-5 animate-pulse text-yellow-500" aria-hidden="true" />
+    <Card className="h-full">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <Icon name="Clock" className="w-5 h-5 text-yellow-500" />
           Pending Approvals
-          <Badge variant="warning">{pendingVisitors.length}</Badge>
-        </Card.Title>
-      </Card.Header>
-      <Card.Content>
-        <div className="space-y-3">
-          {pendingVisitors.map(visitor => (
-            <div
+          <Badge variant="warning" className="ml-2">
+            {pendingVisitors.length}
+          </Badge>
+        </h3>
+      </div>
+
+      <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2">
+        {pendingVisitors.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+            <Icon name="CheckCircle" className="w-8 h-8 text-green-500 mx-auto mb-2" />
+            <p>No pending approvals</p>
+          </div>
+        ) : (
+          pendingVisitors.map((visitor) => (
+            <div 
               key={visitor.id}
-              className="border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
             >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <User className="w-4 h-4 text-gray-600 dark:text-gray-200" aria-hidden="true" />
-                    <span className="font-semibold text-gray-900 dark:text-white">{visitor.name}</span>
-                  </div>
-                  {visitor.phone && (
-                    <div className="text-sm text-gray-600 dark:text-gray-200 ml-6">
-                      📱 {visitor.phone}
-                    </div>
-                  )}
-                  {visitor.purpose && (
-                    <div className="text-sm text-gray-600 dark:text-gray-200 ml-6 mt-1">
-                      💼 {visitor.purpose}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="text-right">
-                  <Badge variant="warning" className="mb-1">
-                    Waiting
-                  </Badge>
-                  <div className="text-xs text-gray-600 dark:text-gray-200">
-                    {getTimeWaiting(visitor.approval_requested_at)}
-                  </div>
-                </div>
+              <div className="absolute top-0 right-0 p-2 text-xs font-semibold text-gray-400 dark:text-slate-400 bg-gray-50 dark:bg-slate-700 rounded-bl-lg border-b border-l dark:border-slate-600">
+                {getTimeWaiting(visitor.created_at)}
               </div>
 
-              {visitor.resident_id && (
-                <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 px-3 py-2 rounded mt-2">
-                  <Home className="w-4 h-4" aria-hidden="true" />
-                  <span>Requesting approval from resident</span>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Icon name="User" className="w-5 h-5 text-blue-600" />
                 </div>
-              )}
-
-              {!visitor.resident_id && (
-                <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 rounded mt-2">
-                  <AlertCircle className="w-4 h-4" aria-hidden="true" />
-                  <span>Resident not found in system</span>
+                
+                <div className="flex-1 min-w-0 pr-12">
+                  <h4 className="font-semibold text-gray-900 truncate">
+                    {visitor.name}
+                  </h4>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                    <Icon name="Home" className="w-3 h-3 text-gray-400" />
+                    <span>Unit {visitor.estate_id || 'N/A'}</span>
+                  </div>
+                  
+                  {visitor.is_suspicious && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded w-fit">
+                      <Icon name="AlertCircle" className="w-3 h-3" />
+                      <span>Security Flag</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          ))}
-        </div>
-      </Card.Content>
+          ))
+        )}
+      </div>
     </Card>
   );
 };
-
 
 export default PendingApprovalsQueue;

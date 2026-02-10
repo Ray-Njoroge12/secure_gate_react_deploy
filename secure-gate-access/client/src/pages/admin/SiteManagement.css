@@ -246,3 +246,118 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Dark Mode Support
+   ========================================================================== */
+
+.dark .site-management,
+html.dark .site-management {
+  background: #0f172a;
+}
+
+.dark .site-header,
+html.dark .site-header {
+  border-bottom-color: #334155;
+}
+
+.dark .site-header h1,
+html.dark .site-header h1 {
+  color: #f1f5f9;
+}
+
+.dark .site-card,
+html.dark .site-card {
+  background: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.dark .site-card:hover,
+html.dark .site-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dark .modal-content,
+html.dark .modal-content {
+  background: #1e293b;
+}
+
+.dark .modal-header,
+html.dark .modal-header {
+  border-bottom-color: #334155;
+  background: #1e293b;
+}
+
+.dark .modal-header h2,
+html.dark .modal-header h2 {
+  color: #f1f5f9;
+}
+
+.dark .modal-close,
+html.dark .modal-close {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark .modal-close:hover,
+html.dark .modal-close:hover {
+  background: #475569;
+}
+
+.dark .form-group label,
+html.dark .form-group label {
+  color: #cbd5e1;
+}
+
+.dark .form-group input[type="text"],
+.dark .form-group input[type="color"],
+.dark .form-group select,
+.dark .form-group textarea,
+html.dark .form-group input[type="text"],
+html.dark .form-group input[type="color"],
+html.dark .form-group select,
+html.dark .form-group textarea {
+  background: #0f172a;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .code-editor,
+html.dark .code-editor {
+  background: #0f172a;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .form-group small,
+html.dark .form-group small {
+  color: #94a3b8;
+}
+
+.dark .modal-footer,
+html.dark .modal-footer {
+  border-top-color: #334155;
+  background: #1e293b;
+}
+
+.dark .btn-cancel,
+html.dark .btn-cancel {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.dark .btn-cancel:hover,
+html.dark .btn-cancel:hover {
+  background: #475569;
+}
+
+.dark .loading-state,
+html.dark .loading-state {
+  color: #cbd5e1;
+}
+
+.dark .spinner,
+html.dark .spinner {
+  border-color: #334155;
+  border-top-color: #667eea;
+}

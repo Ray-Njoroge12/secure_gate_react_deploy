@@ -15,19 +15,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import logger from 'utils/logger';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Check, 
-  AlertCircle, 
-  Save, 
-  Eye, 
-  EyeOff,
-  RotateCcw,
-  Home,
-  Download,
-  Upload
-} from 'lucide-react';
+import Icon from './Icon';
 import { Button, Card, Badge, Modal, Progress } from './index';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -439,7 +427,7 @@ const EnhancedFormWizard = ({
                   </Badge>
                   {draftSaved && (
                     <Badge variant="success" size="sm">
-                      <Save className="w-3 h-3 mr-1" />
+                      <Icon name="Save" className="w-3 h-3 mr-1" />
                       Saved
                     </Badge>
                   )}
@@ -491,9 +479,9 @@ const EnhancedFormWizard = ({
                     >
                       {showStepNumbers ? (
                         status === 'completed' ? (
-                          <Check className="w-4 h-4" />
+                          <Icon name="Check" className="w-4 h-4" />
                         ) : hasErrors ? (
-                          <AlertCircle className="w-4 h-4" />
+                          <Icon name="AlertCircle" className="w-4 h-4" />
                         ) : (
                           index + 1
                         )
@@ -512,7 +500,7 @@ const EnhancedFormWizard = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsPreviewMode(!isPreviewMode)}
-                    icon={isPreviewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    icon={isPreviewMode ? <Icon name="EyeOff" className="w-4 h-4" /> : <Icon name="Eye" className="w-4 h-4" />}
                   >
                     {isPreviewMode ? 'Hide' : 'Preview'}
                   </Button>
@@ -524,7 +512,7 @@ const EnhancedFormWizard = ({
                     size="sm"
                     onClick={saveDraft}
                     disabled={isValidating}
-                    icon={<Save className="w-4 h-4" />}
+                    icon={<Icon name="Save" className="w-4 h-4" />}
                   >
                     Save Draft
                   </Button>
@@ -540,7 +528,7 @@ const EnhancedFormWizard = ({
         <Card className="mb-6 border-red-500/20">
           <Card.Content className="p-4">
             <div className="flex items-center space-x-2 mb-2">
-              <AlertCircle className="w-5 h-5 text-red-400" />
+              <Icon name="AlertCircle" className="w-5 h-5 text-red-400" />
               <h4 className="text-red-400 font-medium">Validation Errors</h4>
             </div>
             <div className="space-y-1">
@@ -597,7 +585,7 @@ const EnhancedFormWizard = ({
             variant="outline"
             onClick={handlePrevious}
             disabled={isFirstStep || isValidating}
-            icon={<ChevronLeft className="w-4 h-4 mr-2" />}
+            icon={<Icon name="ChevronLeft" className="w-4 h-4 mr-2" />}
           >
             Previous
           </Button>
@@ -606,7 +594,7 @@ const EnhancedFormWizard = ({
             variant="ghost"
             onClick={handleReset}
             disabled={isValidating}
-            icon={<RotateCcw className="w-4 h-4 mr-2" />}
+            icon={<Icon name="RotateCcw" className="w-4 h-4 mr-2" />}
           >
             Reset
           </Button>
@@ -616,7 +604,7 @@ const EnhancedFormWizard = ({
           <Button
             variant="ghost"
             onClick={() => navigate('/dashboard')}
-            icon={<Home className="w-4 h-4 mr-2" />}
+            icon={<Icon name="Home" className="w-4 h-4 mr-2" />}
           >
             Home
           </Button>
@@ -627,7 +615,7 @@ const EnhancedFormWizard = ({
               onClick={handleNext}
               disabled={isValidating}
               loading={isValidating}
-              icon={<ChevronRight className="w-4 h-4 ml-2" />}
+              icon={<Icon name="ChevronRight" className="w-4 h-4 ml-2" />}
             >
               Next
             </Button>
@@ -637,7 +625,7 @@ const EnhancedFormWizard = ({
               onClick={handleComplete}
               disabled={isValidating}
               loading={isValidating}
-              icon={<Check className="w-4 h-4 ml-2" />}
+              icon={<Icon name="Check" className="w-4 h-4 ml-2" />}
             >
               Complete
             </Button>

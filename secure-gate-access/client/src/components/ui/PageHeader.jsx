@@ -2,7 +2,7 @@
 // Consistent page header component with back navigation
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Home, ChevronRight } from 'lucide-react';
+import Icon from './Icon';
 
 /**
  * PageHeader - Consistent page header across all views
@@ -23,6 +23,7 @@ const PageHeader = ({
   subtitle,
   showBack = true,
   backTo,
+  backAriaLabel = 'Go back',
   onBack,
   actions,
   breadcrumbs,
@@ -66,7 +67,7 @@ const PageHeader = ({
   const variantStyles = {
     default: 'bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700',
     transparent: 'bg-transparent',
-    gradient: 'bg-gradient-to-r from-green-500 to-green-600 text-white',
+    gradient: 'bg-gradient-to-r from-brand-600 to-brand-700 text-white',
   };
 
   const textStyles = {
@@ -112,11 +113,11 @@ const PageHeader = ({
               className={`p-1 rounded ${styles.icon}`}
               aria-label="Go to dashboard"
             >
-              <Home className="w-4 h-4" />
+              <Icon name="home" className="w-4 h-4" />
             </button>
             {breadcrumbs.map((crumb, index) => (
               <React.Fragment key={index}>
-                <ChevronRight className={`w-4 h-4 ${styles.breadcrumb}`} />
+                <Icon name="chevron-right" className={`w-4 h-4 ${styles.breadcrumb}`} />
                 {index === breadcrumbs.length - 1 ? (
                   <span className={`font-medium ${styles.breadcrumbActive}`}>
                     {crumb.label}
@@ -146,9 +147,9 @@ const PageHeader = ({
                   min-w-[44px] min-h-[44px] flex items-center justify-center
                   ${styles.icon}
                 `}
-                aria-label="Go back"
+                aria-label={backAriaLabel}
               >
-                <ArrowLeft className="w-5 h-5" />
+                <Icon name="arrow-left" className="w-5 h-5" />
               </button>
             )}
             

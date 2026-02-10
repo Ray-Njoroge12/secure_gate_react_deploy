@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { keyboardShortcuts } from '../../utils/focusManagement';
 import Modal from './Modal';
 import Button from './Button';
-import { HelpCircle, Keyboard, X } from '../icons';
+import Icon from './Icon';
 
 /**
  * Keyboard shortcuts help component
@@ -68,7 +68,7 @@ const KeyboardShortcuts = ({
         className={`flex items-center gap-2 ${className}`}
         aria-label="Show keyboard shortcuts help"
       >
-        <Keyboard className="w-4 h-4" />
+        <Icon name="keyboard" className="w-4 h-4" />
         {triggerText}
       </Button>
 
@@ -86,7 +86,7 @@ const KeyboardShortcuts = ({
               Use these keyboard shortcuts to navigate the application more efficiently:
             </p>
             <div className="flex items-center gap-2 text-brand-400">
-              <HelpCircle className="w-4 h-4" />
+              <Icon name="help-circle" className="w-4 h-4" />
               <span className="text-xs">Press F1 anytime to open this help</span>
             </div>
           </div>
@@ -189,7 +189,7 @@ const KeyboardShortcuts = ({
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-2"
             >
-              <X className="w-4 h-4" />
+              <Icon name="x" className="w-4 h-4" />
               Close
             </Button>
           </div>

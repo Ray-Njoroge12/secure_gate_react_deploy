@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Modal from '../ui/Modal';
 import GradientButton from '../ui/GradientButton';
 import { handleApiError } from '../../utils/errorMapper';
+import Button from '../ui/Button';
 
 export default function ChangePasswordModal({ isOpen, onClose }) {
     const [formData, setFormData] = useState({
@@ -143,14 +144,14 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                     </div>
 
                     <div className="flex justify-end gap-3 mt-6">
-                        <button
+                        <Button
                             type="button"
                             onClick={handleClose}
                             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
                             disabled={loading}
                         >
                             Cancel
-                        </button>
+                        </Button>
                         <GradientButton
                             type="submit"
                             loading={loading}

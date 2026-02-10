@@ -8,6 +8,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import './BulkOperationsPanel.css';
+import Button from '../ui/Button';
 
 const BulkOperationsPanel = ({
   items = [],
@@ -181,7 +182,7 @@ const BulkOperationsPanel = ({
 
         <div className="bulk-toolbar-right">
           {actions.map((action) => (
-            <button
+            <Button
               key={action.key}
               className={`bulk-action-btn ${action.variant || 'default'}`}
               onClick={() => handleBulkAction(action)}
@@ -190,18 +191,18 @@ const BulkOperationsPanel = ({
             >
               {action.icon && <span className="action-icon">{action.icon}</span>}
               {action.label}
-            </button>
+            </Button>
           ))}
 
           {onImport && (
             <>
-              <button
+              <Button
                 className="bulk-action-btn import"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={activeOperation !== null}
               >
                 Import CSV
-              </button>
+              </Button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -229,9 +230,9 @@ const BulkOperationsPanel = ({
                 : 'Cancelled'}
             </span>
             {progress.status === 'running' && (
-              <button className="cancel-btn" onClick={handleCancelOperation}>
+              <Button className="cancel-btn" onClick={handleCancelOperation}>
                 Cancel
-              </button>
+              </Button>
             )}
           </div>
           <div className="progress-bar">
@@ -276,12 +277,12 @@ const BulkOperationsPanel = ({
             )}
           </div>
           <div className="import-actions">
-            <button className="cancel-btn" onClick={() => setImportPreview(null)}>
+            <Button className="cancel-btn" onClick={() => setImportPreview(null)}>
               Cancel
-            </button>
-            <button className="confirm-btn" onClick={handleConfirmImport}>
+            </Button>
+            <Button className="confirm-btn" onClick={handleConfirmImport}>
               Confirm Import ({importPreview.rows.length} rows)
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -5,8 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, CheckCircle } from 'lucide-react';
-import { Button } from '../ui';
+import { Button, Icon } from '../ui';
 import { useError } from '../../contexts/ErrorContext';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 
@@ -52,73 +51,67 @@ const ResolveIncidentModal = ({ isOpen, onClose, incident, onResolve }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="resolve-modal-title" role="dialog" aria-modal="true">
-            {/* Backdrop */}
-            <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose}></div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+                ref={modalRef}
+                className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="resolve-modal-title"
+            >
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+                    <h2 id="resolve-modal-title" className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <Icon name="CheckCircle" className="w-5 h-5 text-green-600" />
+                        Resolve Incident
+                    </h2>
+                    <Button variant="ghost" size="icon" onClick={onClose}>
+                        <Icon name="X" className="w-5 h-5" />
+                    </Button>
+                </div>
 
-            {/* Modal */}
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div ref={modalRef} tabIndex={-1} className="relative bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
-                        <h2 id="resolve-modal-title" className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                            Resolve Incident
-                        </h2>
-                        <button
-                            onClick={onClose}
-                            disabled={isSubmitting}
-                            className="text-gray-400 hover:text-gray-600 dark:text-gray-200 transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+                <form onSubmit={handleSubmit} className="p-4 space-y-4">
+                    <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                        <span className="font-semibold">Incident:</span> {incident.category.replace('_', ' ')}
+                        <div className="mt-1 text-gray-600 dark:text-gray-300">{incident.description}</div>
                     </div>
 
-                    {/* Content */}
-                    <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                        <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg text-sm text-gray-700 dark:text-gray-300">
-                            <span className="font-semibold">Incident:</span> {incident.category.replace('_', ' ')}
-                            <div className="mt-1 text-gray-600 dark:text-gray-300">{incident.description}</div>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Resolution Notes *
+                        </label>
+                        <textarea
+                            value={resolution}
+                            onChange={(e) => setResolution(e.target.value)}
+                            placeholder="Details about how the incident was resolved..."
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            These notes will be permanently recorded in the incident log.
+                        </p>
+                    </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Resolution Notes *
-                            </label>
-                            <textarea
-                                value={resolution}
-                                onChange={(e) => setResolution(e.target.value)}
-                                placeholder="Details about how the incident was resolved..."
-                                rows={4}
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                required
-                            />
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                These notes will be permanently recorded in the incident log.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3 pt-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onClose}
-                                disabled={isSubmitting}
-                                className="flex-1"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                variant="default"
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                                disabled={isSubmitting || !resolution.trim()}
-                            >
-                                {isSubmitting ? 'Resolving...' : 'Mark as Resolved'}
-                            </Button>
-                        </div>
-                    </form>
-                </div>
+                    <div className="flex gap-3 pt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            disabled={isSubmitting}
+                            className="flex-1"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="default"
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                            disabled={isSubmitting || !resolution.trim()}
+                        >
+                            {isSubmitting ? 'Resolving...' : 'Mark as Resolved'}
+                        </Button>
+                    </div>
+                </form>
             </div>
         </div>
     );

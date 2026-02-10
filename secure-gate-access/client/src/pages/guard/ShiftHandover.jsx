@@ -11,8 +11,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { Card, Button, Badge } from '../../components/ui';
+import { Card, Button, Badge, Skeleton, EmptyState } from '../../components/ui';
 import PageHeader from '../../components/PageHeader';
+import { useConfirmation } from '../../components/common/ConfirmationDialog';
+import notificationService from '../../services/notificationService';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import OfflineBanner from '../../components/common/OfflineBanner';
+import usePullToRefresh from '../../hooks/usePullToRefresh';
 import logger from '../../utils/logger';
 
 // Icons
@@ -63,13 +68,16 @@ export default function ShiftHandover() {
     equipment_status: 'good',
     to_guard_id: ''
   });
-  const [recentHandovers, setRecentHandovers] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
+  const { isOnline, wasOffline } = useOnlineStatus();
 
   // Fetch current shift and incoming handover notes
   const fetchShiftData = useCallback(async () => {
     try {
       setLoading('shiftHandover', true);
+      setFetchError(null);
 
       // Get current shift
       const today = new Date().toISOString().split('T')[0];
@@ -119,12 +127,15 @@ export default function ShiftHandover() {
       }
 
     } catch (error) {
+      setFetchError(error.message || 'Failed to load shift data. Please try again.');
       handleApiError(error, 'Shift Handover');
       logger.error('Failed to fetch shift data:', error);
     } finally {
       setLoading('shiftHandover', false);
     }
   }, [user, handleApiError, setLoading]);
+
+  const { PullToRefreshIndicator } = usePullToRefresh(fetchShiftData);
 
   useEffect(() => {
     fetchShiftData();
@@ -141,12 +152,12 @@ export default function ShiftHandover() {
     e.preventDefault();
 
     if (!currentShift) {
-      alert('No active shift found. Please start a shift first.');
+      notificationService.warning('No Active Shift', 'You need to have an active shift to create handover notes. Please start a shift first.');
       return;
     }
 
     if (!handoverForm.notes.trim()) {
-      alert('Please enter handover notes.');
+      notificationService.warning('Missing Notes', 'Please enter handover notes before submitting.');
       return;
     }
 
@@ -197,9 +208,14 @@ export default function ShiftHandover() {
   const handleEndShift = async () => {
     if (!currentShift) return;
 
-    if (!window.confirm('Are you sure you want to end your shift? Make sure you have submitted your handover notes.')) {
-      return;
-    }
+    const confirmed = await confirm({
+      variant: 'warning',
+      title: 'End Shift',
+      message: 'Are you sure you want to end your shift? Make sure you have submitted your handover notes.',
+      confirmText: 'End Shift',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) return;
 
     try {
       setLoading('endShift', true);
@@ -219,7 +235,7 @@ export default function ShiftHandover() {
         throw new Error(json.message || 'Failed to end shift');
       }
 
-      alert('Shift ended successfully!');
+      notificationService.success('Shift Ended', 'Your shift has been ended successfully.');
       navigate('/dashboard/guard');
 
     } catch (error) {
@@ -247,9 +263,83 @@ export default function ShiftHandover() {
         backTo="/dashboard/guard"
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Current Shift Status */}
-        <Card className="p-6">
+      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8 space-y-6">
+        {/* Pull to Refresh */}
+        <PullToRefreshIndicator />
+
+        {/* Offline Banner */}
+        <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} onRetry={fetchShiftData} />
+
+        {/* Skeleton Loading State */}
+        {isLoading('shiftHandover') && !currentShift && !incomingHandover ? (
+          <>
+            {/* Current Shift Status Skeleton */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i}>
+                    <Skeleton className="h-4 w-20 mb-2" />
+                    <Skeleton className="h-5 w-32" />
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Handover Form Skeleton */}
+            <Card className="p-6">
+              <Skeleton className="h-6 w-48 mb-4" />
+              <div className="space-y-4">
+                <div>
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                </div>
+                <div>
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                </div>
+                <Skeleton className="h-10 w-40 rounded-lg" />
+              </div>
+            </Card>
+
+            {/* Recent Handovers Skeleton */}
+            <Card className="p-6">
+              <Skeleton className="h-6 w-48 mb-4" />
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+                    <Skeleton className="h-5 w-32 mb-2" />
+                    <Skeleton className="h-4 w-full mb-1" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </>
+        ) : fetchError && !isLoading('shiftHandover') ? (
+          <Card className="p-6">
+            <div className="text-center py-10" role="alert">
+              <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                <AlertIcon />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Failed to Load Shift Data</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{fetchError}</p>
+              <Button onClick={fetchShiftData} variant="primary" size="sm">
+                Try Again
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <>
+            {/* Current Shift Status */}
+            <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <ClipboardIcon />
@@ -290,9 +380,19 @@ export default function ShiftHandover() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-300">
-              <p>No active shift found.</p>
-              <p className="text-sm mt-2">Start a shift to enable handover features.</p>
+            <div className="py-8">
+              <EmptyState
+                icon="clipboard"
+                title="No Active Shift"
+                message="You need to have an active shift to create or view handover notes. Please start a shift first."
+                actions={[
+                  {
+                    label: 'Go to Dashboard',
+                    onClick: () => navigate('/dashboard/guard'),
+                    variant: 'primary'
+                  }
+                ]}
+              />
             </div>
           )}
         </Card>
@@ -380,7 +480,7 @@ export default function ShiftHandover() {
                 name="to_guard_id"
                 value={handoverForm.to_guard_id}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="mobile-select"
               >
                 <option value="">-- Any incoming guard --</option>
                 {guards.map(guard => (
@@ -402,7 +502,7 @@ export default function ShiftHandover() {
                 rows={4}
                 required
                 placeholder="Summary of shift activities, ongoing issues, special instructions for the next guard..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="mobile-textarea"
               />
             </div>
 
@@ -416,7 +516,7 @@ export default function ShiftHandover() {
                 onChange={handleInputChange}
                 rows={3}
                 placeholder="List any incidents that occurred during your shift and their current status..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="mobile-textarea"
               />
             </div>
 
@@ -428,7 +528,7 @@ export default function ShiftHandover() {
                 name="equipment_status"
                 value={handoverForm.equipment_status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="mobile-select"
               >
                 <option value="good">All equipment in good condition</option>
                 <option value="issues">Some equipment has issues (describe in notes)</option>
@@ -437,11 +537,11 @@ export default function ShiftHandover() {
               </select>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 type="submit"
                 disabled={isLoading('submitHandover') || !currentShift}
-                className="flex-1"
+                className="flex-1 min-h-[44px]"
               >
                 {isLoading('submitHandover') ? 'Submitting...' : 'Submit Handover Notes'}
               </Button>
@@ -452,6 +552,7 @@ export default function ShiftHandover() {
                   variant="danger"
                   onClick={handleEndShift}
                   disabled={isLoading('endShift')}
+                  className="min-h-[44px]"
                 >
                   {isLoading('endShift') ? 'Ending...' : 'End Shift'}
                 </Button>
@@ -495,6 +596,11 @@ export default function ShiftHandover() {
             <span className="mt-2 text-sm">Dashboard</span>
           </Button>
         </div>
+        </>
+        )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog {...dialogProps} />
       </main>
     </div>
   );

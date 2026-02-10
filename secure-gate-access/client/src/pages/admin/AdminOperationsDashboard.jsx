@@ -19,6 +19,8 @@ import {
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 import './AdminOperationsDashboard.css';
+import { COLORS, CHART_PALETTE } from '../../utils/designTokens';
+import Button from '../../components/ui/Button';
 
 const AdminOperationsDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -119,14 +121,14 @@ const AdminOperationsDashboard = () => {
         <div className="error-state">
           <h2>⚠️ Error Loading Analytics</h2>
           <p>{error}</p>
-          <button onClick={fetchAllAnalytics} className="btn-primary">Retry</button>
+          <Button variant="primary" size="sm" onClick={fetchAllAnalytics}>Retry</Button>
         </div>
       </div>
     );
   }
 
-  // Chart colors
-  const COLORS = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b'];
+  // Chart colors from design tokens
+  const PIE_COLORS = CHART_PALETTE;
 
   return (
     <div className="admin-dashboard">
@@ -159,9 +161,9 @@ const AdminOperationsDashboard = () => {
               />
             </label>
           </div>
-          <button className="btn-export" onClick={exportToCSV}>
+          <Button variant="secondary" size="sm" onClick={exportToCSV}>
             📥 Export CSV
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -223,10 +225,10 @@ const AdminOperationsDashboard = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="total" stroke="#667eea" strokeWidth={2} name="Total" />
-              <Line type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={2} name="Approved" />
-              <Line type="monotone" dataKey="pending" stroke="#f59e0b" strokeWidth={2} name="Pending" />
-              <Line type="monotone" dataKey="rejected" stroke="#ef4444" strokeWidth={2} name="Rejected" />
+              <Line type="monotone" dataKey="total" stroke={COLORS.info} strokeWidth={2} name="Total" />
+              <Line type="monotone" dataKey="approved" stroke={COLORS.success} strokeWidth={2} name="Approved" />
+              <Line type="monotone" dataKey="pending" stroke={COLORS.warning} strokeWidth={2} name="Pending" />
+              <Line type="monotone" dataKey="rejected" stroke={COLORS.error} strokeWidth={2} name="Rejected" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -250,7 +252,7 @@ const AdminOperationsDashboard = () => {
                   label
                 >
                   {visitorMetrics.purposes.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -270,7 +272,7 @@ const AdminOperationsDashboard = () => {
                 <XAxis dataKey="hour" label={{ value: 'Hour of Day', position: 'insideBottom', offset: -5 }} />
                 <YAxis label={{ value: 'Visitors', angle: -90, position: 'insideLeft' }} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#667eea" />
+                <Bar dataKey="count" fill={COLORS.info} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -288,9 +290,9 @@ const AdminOperationsDashboard = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="total" stroke="#667eea" strokeWidth={2} name="Total" />
-              <Line type="monotone" dataKey="critical" stroke="#ef4444" strokeWidth={2} name="Critical" />
-              <Line type="monotone" dataKey="high" stroke="#f59e0b" strokeWidth={2} name="High" />
+              <Line type="monotone" dataKey="total" stroke={COLORS.info} strokeWidth={2} name="Total" />
+              <Line type="monotone" dataKey="critical" stroke={COLORS.error} strokeWidth={2} name="Critical" />
+              <Line type="monotone" dataKey="high" stroke={COLORS.warning} strokeWidth={2} name="High" />
             </LineChart>
           </ResponsiveContainer>
         </div>

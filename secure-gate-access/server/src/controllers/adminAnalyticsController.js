@@ -37,7 +37,7 @@ export const getAnalyticsOverview = async (req, res) => {
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
     // Build site filter
-    const siteFilter = siteId ? 'AND v.site_id = $3' : '';
+    const siteFilter = siteId ? 'AND v.estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Parallel queries for all metrics
@@ -143,7 +143,7 @@ export const getVisitorMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND site_id = $3' : '';
+    const siteFilter = siteId ? 'AND estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Group by clause based on groupBy parameter
@@ -192,7 +192,7 @@ export const getVisitorMetrics = async (req, res) => {
       FROM visitors v
       JOIN users u ON v.resident_id = u.id
       WHERE v.date_of_visit BETWEEN $1 AND $2
-        ${siteFilter.replace('site_id', 'v.site_id')}
+        ${siteFilter.replace('estate_id', 'v.estate_id')}
       GROUP BY u.id, u.username, u.email
       ORDER BY visitor_count DESC
       LIMIT 10
@@ -269,7 +269,7 @@ export const getIncidentMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND site_id = $3' : '';
+    const siteFilter = siteId ? 'AND estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Incident trends by day
@@ -321,7 +321,7 @@ export const getIncidentMetrics = async (req, res) => {
       FROM incidents i
       JOIN users u ON i.reported_by = u.id
       WHERE i.created_at BETWEEN $1 AND $2
-        ${siteFilter.replace('site_id', 'i.site_id')}
+        ${siteFilter.replace('estate_id', 'i.estate_id')}
       GROUP BY u.id, u.username
       ORDER BY incidents_reported DESC
       LIMIT 10
@@ -373,7 +373,7 @@ export const getGuardMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND v.site_id = $3' : '';
+    const siteFilter = siteId ? 'AND v.estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Check-in/check-out performance
@@ -403,7 +403,7 @@ export const getGuardMetrics = async (req, res) => {
       FROM incidents i
       JOIN users u ON i.reported_by = u.id
       WHERE i.created_at BETWEEN $1 AND $2
-        ${siteFilter.replace('v.site_id', 'i.site_id')}
+        ${siteFilter.replace('v.estate_id', 'i.estate_id')}
       GROUP BY u.id, u.username
       ORDER BY incidents_reported DESC
     `;
@@ -450,7 +450,7 @@ export const getResidentMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND v.site_id = $3' : '';
+    const siteFilter = siteId ? 'AND v.estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Most active residents

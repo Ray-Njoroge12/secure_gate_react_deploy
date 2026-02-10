@@ -4,6 +4,7 @@ import { collaborationService } from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import './ConflictResolution.css';
+import Button from '../ui/Button';
 
 const ConflictResolution = ({ className = '' }) => {
   const { user } = useAuth();
@@ -118,12 +119,12 @@ const ConflictResolution = ({ className = '' }) => {
         <div className="error-message">
           <h3>Unable to load conflicts</h3>
           <p>{conflictsError.message}</p>
-          <button 
+          <Button 
             onClick={() => queryClient.invalidateQueries(['conflicts'])}
             className="retry-button"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -133,18 +134,17 @@ const ConflictResolution = ({ className = '' }) => {
     <div className={`conflict-resolution ${className}`}>
       <div className="conflicts-header">
         <h2>Conflict Resolution</h2>
-        <button 
+        <Button 
           onClick={handleCreateConflict}
           className="create-button primary"
-          disabled={createConflictMutation.isPending}
-        >
-          <span className="icon">⚠️</span>
-          Report Conflict
-        </button>
+          isLoading={createConflictMutation.isPending}
+          label="Report Conflict"
+          icon="⚠️"
+        />
       </div>
 
       <div className="conflicts-tabs">
-        <button
+        <Button
           className={`tab ${activeTab === 'active_conflicts' ? 'active' : ''}`}
           onClick={() => handleTabChange('active_conflicts')}
         >
@@ -154,19 +154,19 @@ const ConflictResolution = ({ className = '' }) => {
               {conflicts.filter(c => c.status === 'active').length}
             </span>
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'my_conflicts' ? 'active' : ''}`}
           onClick={() => handleTabChange('my_conflicts')}
         >
           My Conflicts
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'resolved' ? 'active' : ''}`}
           onClick={() => handleTabChange('resolved')}
         >
           Resolved
-        </button>
+        </Button>
       </div>
 
       <div className="conflicts-content">
@@ -256,10 +256,21 @@ const ConflictItem = ({ conflict, currentUser, isSelected, onClick }) => {
     closed: '🔒'
   }[conflict.status] || '❓';
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div 
       className={`conflict-item ${isSelected ? 'selected' : ''} ${conflict.status}`}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-pressed={isSelected}
     >
       <div className="conflict-icon">
         <div className={`icon ${conflict.conflict_type}`}>
@@ -376,22 +387,22 @@ const ConflictDetail = ({
         
         <div className="conflict-actions">
           {canEscalate && (
-            <button
+            <Button
               onClick={() => setShowEscalationForm(true)}
               className="escalate-button warning"
               disabled={isEscalating}
             >
               {isEscalating ? 'Escalating...' : 'Escalate'}
-            </button>
+            </Button>
           )}
           {canResolve && (
-            <button
+            <Button
               onClick={() => setShowResolutionForm(true)}
               className="resolve-button success"
               disabled={isResolving}
             >
               {isResolving ? 'Resolving...' : 'Resolve'}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -483,7 +494,7 @@ const ConflictDetail = ({
             </div>
 
             <div className="form-actions">
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   setShowEscalationForm(false);
@@ -493,15 +504,15 @@ const ConflictDetail = ({
                 disabled={isEscalating}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleEscalation}
                 className="escalate-button warning"
                 disabled={isEscalating || !escalationReason.trim()}
               >
                 {isEscalating ? 'Escalating...' : 'Escalate Conflict'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -540,7 +551,7 @@ const ConflictDetail = ({
             </div>
 
             <div className="form-actions">
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   setShowResolutionForm(false);
@@ -550,15 +561,15 @@ const ConflictDetail = ({
                 disabled={isResolving}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleResolution}
                 className="resolve-button success"
                 disabled={isResolving || !resolutionNotes.trim()}
               >
                 {isResolving ? 'Resolving...' : 'Resolve Conflict'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -641,7 +652,7 @@ const CreateConflict = ({ onSend, onCancel, isLoading }) => {
     <div className="create-conflict">
       <div className="create-header">
         <h3>Report Conflict</h3>
-        <button onClick={onCancel} className="close-button">×</button>
+        <Button onClick={onCancel} className="close-button" aria-label="Close">×</Button>
       </div>
 
       <form onSubmit={handleSubmit} className="create-form">
@@ -755,21 +766,21 @@ const CreateConflict = ({ onSend, onCancel, isLoading }) => {
         </div>
 
         <div className="form-actions">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             className="cancel-button"
             disabled={isLoading}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             className="submit-button primary"
             disabled={isLoading}
           >
             {isLoading ? 'Reporting...' : 'Report Conflict'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

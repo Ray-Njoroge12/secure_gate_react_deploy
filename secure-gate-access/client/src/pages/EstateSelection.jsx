@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../utils/apiClient.js';
+import { Button } from '../components/ui';
 
 const EstateSelection = () => {
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ const EstateSelection = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center px-4">
       <div className="max-w-xl w-full bg-white dark:bg-slate-800 shadow-xl rounded-2xl p-8">
         <div className="text-4xl mb-4">🏢</div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           Select your estate
         </h1>
         <p className="text-gray-600 dark:text-gray-200 mb-6">
@@ -102,14 +103,16 @@ const EstateSelection = () => {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
+              variant="primary"
               disabled={submitting || !estateId}
-              className="w-full min-h-[44px] px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 disabled:opacity-60 disabled:cursor-not-allowed transition"
+              loading={submitting}
+              className="w-full"
               aria-busy={submitting}
             >
               {submitting ? 'Assigning estate...' : 'Confirm estate'}
-            </button>
+            </Button>
           </form>
         )}
       </div>

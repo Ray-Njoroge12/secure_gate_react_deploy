@@ -401,3 +401,45 @@
     border-color: #4b5563;
   }
 }
+
+/* Class-based Dark Mode */
+html.dark .report-builder {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+html.dark .report-builder__header h2 { color: #f9fafb; }
+html.dark .report-builder__header p { color: #9ca3af; }
+html.dark .report-builder__config { border-bottom-color: #374151; }
+
+html.dark .config-section,
+html.dark .fields-section {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+html.dark .config-section h3 { color: #f9fafb; }
+
+html.dark .form-group label { color: #d1d5db; }
+
+html.dark .form-group select,
+html.dark .form-group input {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+html.dark .field-item {
+  background: #4b5563;
+  border-color: #6b7280;
+  color: #f9fafb;
+}
+
+html.dark .field-item.selected {
+  background: #1e40af;
+  border-color: #3b82f6;
+}
+
+html.dark .preview-table table { background: #374151; }
+html.dark .preview-table th { background: #4b5563; color: #f9fafb; }
+html.dark .preview-table td { color: #e5e7eb; border-color: #4b5563; }

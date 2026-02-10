@@ -573,3 +573,177 @@
     max-height: 90vh;
   }
 }
+
+/* ==========================================================================
+   Dark Mode Support
+   ========================================================================== */
+
+.dark .role-management,
+html.dark .role-management {
+  background: #0f172a;
+}
+
+.dark .rm-header,
+html.dark .rm-header {
+  border-bottom-color: #334155;
+}
+
+.dark .rm-header h1,
+html.dark .rm-header h1 {
+  color: #f1f5f9;
+}
+
+.dark .rm-subtitle,
+html.dark .rm-subtitle {
+  color: #94a3b8;
+}
+
+.dark .rm-tabs,
+html.dark .rm-tabs {
+  border-bottom-color: #334155;
+}
+
+.dark .rm-tab,
+html.dark .rm-tab {
+  color: #94a3b8;
+}
+
+.dark .rm-tab:hover,
+html.dark .rm-tab:hover {
+  color: #cbd5e1;
+  background: #1e293b;
+}
+
+.dark .rm-tab.active,
+html.dark .rm-tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.dark .role-card,
+html.dark .role-card {
+  background: #1e293b;
+}
+
+.dark .role-card:hover,
+html.dark .role-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dark .role-name,
+html.dark .role-name {
+  color: #f1f5f9;
+}
+
+.dark .role-description,
+html.dark .role-description {
+  color: #94a3b8;
+}
+
+.dark .permission-tag,
+html.dark .permission-tag {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark .users-section,
+html.dark .users-section {
+  border-top-color: #334155;
+}
+
+.dark .user-count,
+html.dark .user-count {
+  color: #94a3b8;
+}
+
+.dark .info-box,
+html.dark .info-box {
+  background: #422006;
+  border-left-color: #f59e0b;
+  color: #fcd34d;
+}
+
+.dark .users-table-container,
+html.dark .users-table-container {
+  background: #1e293b;
+}
+
+.dark .users-table th,
+html.dark .users-table th {
+  color: #cbd5e1;
+  background: #0f172a;
+  border-bottom-color: #334155;
+}
+
+.dark .users-table td,
+html.dark .users-table td {
+  color: #e2e8f0;
+  border-bottom-color: #334155;
+}
+
+.dark .modal-content,
+html.dark .modal-content {
+  background: #1e293b;
+}
+
+.dark .modal-header,
+html.dark .modal-header {
+  border-bottom-color: #334155;
+  background: #1e293b;
+}
+
+.dark .modal-header h2,
+html.dark .modal-header h2 {
+  color: #f1f5f9;
+}
+
+.dark .modal-close,
+html.dark .modal-close {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark .modal-close:hover,
+html.dark .modal-close:hover {
+  background: #475569;
+}
+
+.dark .form-group label,
+html.dark .form-group label {
+  color: #cbd5e1;
+}
+
+.dark .form-group select,
+html.dark .form-group select {
+  background: #0f172a;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .modal-footer,
+html.dark .modal-footer {
+  border-top-color: #334155;
+  background: #1e293b;
+}
+
+.dark .btn-cancel,
+html.dark .btn-cancel {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.dark .btn-cancel:hover,
+html.dark .btn-cancel:hover {
+  background: #475569;
+}
+
+.dark .loading-state,
+html.dark .loading-state {
+  color: #cbd5e1;
+}
+
+.dark .spinner,
+html.dark .spinner {
+  border-color: #334155;
+  border-top-color: #667eea;
+}

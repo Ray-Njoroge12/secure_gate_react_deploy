@@ -171,6 +171,47 @@
   }
 }
 
+/* Class-based Dark Mode */
+html.dark .search-suggestions {
+  background: #1f2937;
+  border-color: #4b5563;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+html.dark .suggestion-item {
+  border-bottom-color: #374151;
+}
+
+html.dark .suggestion-item:hover,
+html.dark .suggestion-item.selected {
+  background-color: #374151;
+}
+
+html.dark .suggestion-icon {
+  background-color: #374151;
+}
+
+html.dark .suggestion-text {
+  color: #f3f4f6;
+}
+
+html.dark .suggestion-description,
+html.dark .suggestion-category,
+html.dark .suggestion-meta {
+  color: #9ca3af;
+}
+
+html.dark .suggestion-highlight {
+  background-color: #854d0e;
+  color: #fef3c7;
+}
+
+html.dark .suggestions-more {
+  background-color: #111827;
+  border-top-color: #4b5563;
+  color: #9ca3af;
+}
+
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
   .suggestion-item.selected {

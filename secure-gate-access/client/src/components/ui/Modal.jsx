@@ -5,9 +5,9 @@
  * @version 1.0.0
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useId, useCallback } from 'react';
 import { createFocusTrap, focusManager } from '../../utils/focusManagement';
-import { X } from 'lucide-react';
+import Icon from './Icon.jsx';
 
 /**
  * Modal component with focus trap and keyboard navigation
@@ -51,10 +51,11 @@ const Modal = ({
   ariaDescribedBy
 }) => {
   const modalRef = useRef(null);
+  const titleId = useId();
   const titleRef = useRef(null);
   const cleanupRef = useRef(null);
+  const resolvedAriaLabelledBy = ariaLabelledBy || (title ? titleId : undefined);
 
-  // Size classes
   const sizeClasses = {
     sm: 'max-w-sm',
     md: 'max-w-md',
@@ -122,57 +123,53 @@ const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto ${className}`}
       role="dialog"
       aria-modal="true"
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabelledBy}
+      aria-labelledby={resolvedAriaLabelledBy}
       aria-describedby={ariaDescribedBy}
+      aria-label={ariaLabel}
     >
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity"
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
         onClick={handleOverlayClick}
         aria-hidden="true"
+        role="presentation" // Add role for accessibility to indicate it's not interactive content but presentation
+        tabIndex={-1} // Ensure it's not focused by keyboard navigation
       />
 
-      {/* Modal */}
+      {/* Modal Content */}
       <div
         ref={modalRef}
         className={`
-          relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full
-          ${sizeClasses[size]}
-          ${className}
+          relative bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-lg transform transition-all
+          ${sizeClasses[size] || sizeClasses.md}
         `}
-        role="document"
+        tabIndex="-1"
       >
         {/* Header */}
-        {(title || onClose) && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
-            {title && (
-              <h2
-                ref={titleRef}
-                id={ariaLabelledBy}
-                className="text-xl font-semibold text-gray-900 dark:text-slate-200"
-                tabIndex={-1}
-              >
-                {title}
-              </h2>
-            )}
-            
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="p-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-800"
-                aria-label="Close modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+          {title && (
+            <h2
+              id={titleId}
+              ref={titleRef}
+              className="text-lg font-semibold text-gray-900 dark:text-white outline-none"
+              tabIndex="-1"
+            >
+              {title}
+            </h2>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+            aria-label="Close modal"
+          >
+            <Icon name="x" size={20} />
+          </button>
+        </div>
 
-        {/* Content */}
+        {/* Body */}
         <div className="p-6">
           {children}
         </div>

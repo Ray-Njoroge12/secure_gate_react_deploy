@@ -7,12 +7,19 @@
 
 import React, { useState, useEffect } from 'react';
 import deliveryService from '../../services/deliveryService';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
 
 const PendingDeliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
+  const [showCollectModal, setShowCollectModal] = useState(false);
+  const [collectingDelivery, setCollectingDelivery] = useState(null);
+  const [collectedBy, setCollectedBy] = useState('');
+  const [collectError, setCollectError] = useState(null);
+  const [collecting, setCollecting] = useState(false);
 
   useEffect(() => {
     loadPendingDeliveries();
@@ -44,13 +51,28 @@ const PendingDeliveries = () => {
     }
   };
 
-  const handleCollect = async (deliveryId, collectedBy) => {
+  const handleCollect = async (deliveryId, collectedByName) => {
     try {
-      await deliveryService.collectDelivery(deliveryId, collectedBy || 'Resident');
-      loadPendingDeliveries();
+      setCollecting(true);
+      setCollectError(null);
+      await deliveryService.collectDelivery(deliveryId, collectedByName || 'Resident');
+      await loadPendingDeliveries();
+      setShowCollectModal(false);
+      setCollectingDelivery(null);
+      setCollectedBy('');
     } catch (err) {
       console.error('Collect error:', err);
+      setCollectError('Failed to mark delivery as collected. Please try again.');
+    } finally {
+      setCollecting(false);
     }
+  };
+
+  const openCollectModal = (delivery) => {
+    setCollectingDelivery(delivery);
+    setCollectedBy(delivery?.recipientName || '');
+    setCollectError(null);
+    setShowCollectModal(true);
   };
 
   const getTimeAgo = (dateString) => {
@@ -122,12 +144,12 @@ const PendingDeliveries = () => {
               {deliveries.length} package{deliveries.length !== 1 ? 's' : ''} awaiting collection
             </p>
           </div>
-          <button
+          <Button
             onClick={() => setShowRegister(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+            className="text-sm"
           >
             + Register Delivery
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -170,21 +192,20 @@ const PendingDeliveries = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleNotify(delivery.id)}
-                    className="px-3 py-1 text-sm border border-blue-300 text-blue-600 rounded-md hover:bg-blue-50"
                   >
                     📲 Notify
-                  </button>
-                  <button
-                    onClick={() => {
-                      const name = prompt('Collected by (name):');
-                      if (name) handleCollect(delivery.id, name);
-                    }}
-                    className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                  </Button>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={() => openCollectModal(delivery)}
                   >
                     ✓ Collected
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -201,10 +222,25 @@ const PendingDeliveries = () => {
       {showRegister && (
         <RegisterDeliveryModal
           onClose={() => setShowRegister(false)}
-          onSuccess={() => {
-            setShowRegister(false);
-            loadPendingDeliveries();
+        />
+      )}
+
+      {showCollectModal && collectingDelivery && (
+        <CollectDeliveryModal
+          delivery={collectingDelivery}
+          collectedBy={collectedBy}
+          collectError={collectError}
+          collecting={collecting}
+          onCollectedByChange={setCollectedBy}
+          onClose={() => {
+            if (!collecting) {
+              setShowCollectModal(false);
+              setCollectError(null);
+              setCollectingDelivery(null);
+              setCollectedBy('');
+            }
           }}
+          onConfirm={() => handleCollect(collectingDelivery.id, collectedBy.trim())}
         />
       )}
     </div>
@@ -214,32 +250,101 @@ const PendingDeliveries = () => {
 /**
  * Simple Register Delivery Modal
  */
-const RegisterDeliveryModal = ({ onClose, onSuccess }) => {
+const RegisterDeliveryModal = ({ onClose }) => {
   // This would use the RegisterDelivery component
   // For now, a simplified inline version
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full">
         <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Register New Delivery</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-600 dark:text-gray-300">
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close modal">
             ✕
-          </button>
+          </Button>
         </div>
         <div className="p-4">
           <p className="text-gray-500 dark:text-gray-300 text-center">
             Use the full registration form for detailed entry
           </p>
-          <button
+          <Button
+            variant="secondary"
+            fullWidth
             onClick={onClose}
-            className="w-full mt-4 px-4 py-2 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300"
+            className="mt-4"
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
   );
 };
+
+const CollectDeliveryModal = ({
+  delivery,
+  collectedBy,
+  collectError,
+  collecting,
+  onCollectedByChange,
+  onClose,
+  onConfirm,
+}) => (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div
+      className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="collect-delivery-title"
+    >
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+        <h3 id="collect-delivery-title" className="text-lg font-semibold text-gray-900 dark:text-white">
+          Confirm Collection
+        </h3>
+        <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close modal" disabled={collecting}>
+          ✕
+        </Button>
+      </div>
+
+      <div className="p-4 space-y-4">
+        <div className="text-sm text-gray-600 dark:text-gray-200">
+          <p>
+            Carrier: <span className="font-medium text-gray-900 dark:text-white">{delivery.carrierName || 'Unknown'}</span>
+          </p>
+          <p>
+            Recipient: <span className="font-medium text-gray-900 dark:text-white">{delivery.recipientName || 'Unknown'}</span>
+          </p>
+          <p>
+            Unit: <span className="font-medium text-gray-900 dark:text-white">{delivery.recipientUnit || 'N/A'}</span>
+          </p>
+        </div>
+
+        <Input
+          id="collected-by"
+          label="Collected By"
+          placeholder="Enter name of person collecting"
+          value={collectedBy}
+          onChange={(event) => onCollectedByChange(event.target.value)}
+          required
+          autoFocus
+        />
+
+        {collectError && (
+          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+            {collectError}
+          </p>
+        )}
+
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" onClick={onClose} disabled={collecting}>
+            Cancel
+          </Button>
+          <Button variant="success" onClick={onConfirm} disabled={collecting || !collectedBy.trim()}>
+            {collecting ? 'Saving...' : 'Confirm Collection'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export default PendingDeliveries;

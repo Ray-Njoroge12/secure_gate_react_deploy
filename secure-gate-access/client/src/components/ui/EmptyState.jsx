@@ -19,6 +19,7 @@
 
 import React from 'react';
 import Button from './Button';
+import Icon from './Icon';
 
 const EmptyState = ({
   illustration,
@@ -117,12 +118,7 @@ const EmptyState = ({
 // PHASE A6: Predefined empty state variants for common scenarios
 export const UpcomingVisitsEmpty = ({ onCreate, onViewHistory, compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="calendar" className={className} aria-hidden="true" />}
     title="No upcoming visitors"
     description="You don't have any scheduled visitors. Invite someone to get started."
     primaryAction={{
@@ -141,12 +137,7 @@ export const UpcomingVisitsEmpty = ({ onCreate, onViewHistory, compact = false }
 
 export const RecentVisitorsEmpty = ({ onInvite, compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="users" className={className} aria-hidden="true" />}
     title="No recent visitors"
     description="Your recent visitors will appear here once they check in."
     primaryAction={onInvite && {
@@ -160,12 +151,7 @@ export const RecentVisitorsEmpty = ({ onInvite, compact = false }) => (
 
 export const SearchEmpty = ({ query, onClearSearch, compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="search" className={className} aria-hidden="true" />}
     title={query ? `No results for "${query}"` : "No matches found"}
     description="Try different search terms or clear filters to see all items"
     primaryAction={onClearSearch && {
@@ -180,12 +166,7 @@ export const SearchEmpty = ({ query, onClearSearch, compact = false }) => (
 
 export const ErrorState = ({ onRetry, errorMessage, compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="alert-circle" className={className} aria-hidden="true" />}
     title="Something went wrong"
     description={errorMessage || "We couldn't load this content. Please try again."}
     variant="error"
@@ -200,12 +181,7 @@ export const ErrorState = ({ onRetry, errorMessage, compact = false }) => (
 // New variants for Phase A6
 export const ActiveVisitorsEmpty = ({ onScanQR, onManualCheck, compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="file-text" className={className} aria-hidden="true" />}
     title="No active visitors"
     description="Visitors will appear here when they check in"
     primaryAction={onScanQR && {
@@ -223,12 +199,7 @@ export const ActiveVisitorsEmpty = ({ onScanQR, onManualCheck, compact = false }
 
 export const HistoryEmpty = ({ timeframe = "yet", onInvite, compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="clock" className={className} aria-hidden="true" />}
     title={`No visitors ${timeframe}`}
     description="Your visitor history will be displayed here"
     primaryAction={onInvite && {
@@ -242,12 +213,7 @@ export const HistoryEmpty = ({ timeframe = "yet", onInvite, compact = false }) =
 
 export const ApprovalsEmpty = ({ compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="check-circle" className={className} aria-hidden="true" />}
     title="No pending approvals"
     description="Walk-in visitors requiring your approval will appear here"
     variant="success"
@@ -257,12 +223,7 @@ export const ApprovalsEmpty = ({ compact = false }) => (
 
 export const BulkInviteEmpty = ({ onGetStarted, compact = false }) => (
   <EmptyState
-    icon={({ className }) => (
-      <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-      </svg>
-    )}
+    icon={({ className }) => <Icon name="upload" className={className} aria-hidden="true" />}
     title="Ready to bulk invite?"
     description="Upload a CSV file with visitor details to send multiple invitations at once"
     primaryAction={{

@@ -9,6 +9,7 @@ import React from 'react';
 
 import logger from 'utils/logger';
 import { navigateToLogin } from '../utils/authNavigation';
+import Button from './ui/Button';
 
 /**
  * App-level Error Boundary Component
@@ -81,7 +82,7 @@ class AppErrorBoundary extends React.Component {
       
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
-          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
             <div className="flex items-center mb-4">
               <div className="flex-shrink-0">
                 <svg className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -113,34 +114,34 @@ class AppErrorBoundary extends React.Component {
 
             <div className="flex flex-col space-y-3">
               {retryCount < 3 ? (
-                <button
+                <Button
                   onClick={this.handleRetry}
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
                 >
                   Try Again {retryCount > 0 && `(${3 - retryCount} attempts left)`}
-                </button>
+                </Button>
               ) : (
-                <button
+                <Button
                   onClick={() => window.location.reload()}
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Reload Page
-                </button>
+                </Button>
               )}
               
-              <button
+              <Button
                 onClick={this.handleReset}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
               >
                 Reset Application
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={() => navigateToLogin()}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 text-center"
               >
                 Go to Login
-              </button>
+              </Button>
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">

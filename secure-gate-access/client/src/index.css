@@ -30,6 +30,65 @@
 /* Import page transitions after Tailwind */
 @import './styles/transitions.css';
 
+/* Safe area insets for notch/rounded-corner devices */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+}
+
+/* Mobile-optimized form inputs */
+@layer components {
+  .mobile-input {
+    @apply w-full px-3 py-2.5 min-h-[44px] border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors;
+    /* Prevent iOS zoom on focus for inputs < 16px */
+    font-size: 16px;
+  }
+
+  .mobile-select {
+    @apply w-full px-3 py-2.5 min-h-[44px] border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none;
+    font-size: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.5rem;
+  }
+
+  .mobile-textarea {
+    @apply w-full px-3 py-2.5 min-h-[88px] border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y;
+    font-size: 16px;
+  }
+
+  /* Sticky mobile action bar */
+  .mobile-sticky-actions {
+    @apply fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 p-3 z-40 md:relative md:border-t-0 md:p-0 md:bg-transparent dark:md:bg-transparent;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Smooth pull-to-refresh transition */
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Active touch feedback */
+@media (hover: none) and (pointer: coarse) {
+  .touch-active:active {
+    transform: scale(0.97);
+    opacity: 0.8;
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+}
+
 @keyframes sg-fade-in {
   from {
     opacity: 0;

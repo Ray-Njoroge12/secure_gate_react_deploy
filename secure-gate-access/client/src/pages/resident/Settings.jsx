@@ -1,13 +1,12 @@
 // client/src/pages/resident/Settings.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader, ThemeRadioGroup, ErrorDisplay, SuccessDisplay, Button } from "../../components/ui";
-// import AppShell from "../../layouts/AppShell";
-// import { useCurrentRole } from "../../hooks/useCurrentRole";
 import { useTheme } from "../../contexts/ThemeContext";
 import NotificationSettings from "../../components/settings/NotificationSettings";
-import { Settings as SettingsIcon, Bell, Shield, User, Eye, Users, Accessibility } from 'lucide-react';
-import AccessibilitySettings from "../../components/accessibility/AccessibilitySettings.jsx";
+import AccessibilitySettings from "../../components/accessibility/AccessibilitySettings";
+import { Icon } from "../../components/ui/Icon";
+import api from "../../utils/apiClient";
 import "../../styles.css";
 
 export default function Settings() {
@@ -50,8 +49,34 @@ export default function Settings() {
       })
       .catch(err => console.error('Failed to load profile:', err));
   }, []);
-  const [security, setSecurity] = useState({ twoFA: false, showLoginHistory: true });
+  const [security, setSecurity] = useState({ showLoginHistory: true });
   const [visitorPrefs, setVisitorPrefs] = useState({ defaultDuration: "1 hour", maxVisitors: 5 });
+
+  // MFA state
+  const [mfaStatus, setMfaStatus] = useState({ mfaEnabled: false, mfaRequired: false, loading: true, error: null });
+
+  const fetchMfaStatus = useCallback(async () => {
+    try {
+      setMfaStatus(prev => ({ ...prev, loading: true, error: null }));
+      const response = await api.get('/api/mfa/status');
+      if (response.data?.success) {
+        setMfaStatus({
+          mfaEnabled: response.data.data.mfaEnabled,
+          mfaRequired: response.data.data.mfaRequired,
+          loading: false,
+          error: null
+        });
+      }
+    } catch (err) {
+      setMfaStatus(prev => ({ ...prev, loading: false, error: 'Failed to load MFA status' }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'security') {
+      fetchMfaStatus();
+    }
+  }, [activeTab, fetchMfaStatus]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -138,85 +163,85 @@ export default function Settings() {
 
 
   const tabs = [
-    { key: "profile", label: "Profile", icon: <User size={16} /> },
-    { key: "password", label: "Password", icon: <Shield size={16} /> },
-    { key: "notifications", label: "Notifications", icon: <Bell size={16} /> },
-    { key: "security", label: "Security", icon: <Shield size={16} /> },
-    { key: "accessibility", label: "Accessibility", icon: <Accessibility size={16} /> },
-    { key: "visitorPrefs", label: "Visitors", icon: <Users size={16} /> },
-    { key: "preferences", label: "Appearance", icon: <Eye size={16} /> },
+    { key: "profile", label: "Profile", icon: <Icon name="User" size={16} /> },
+    { key: "password", label: "Password", icon: <Icon name="Shield" size={16} /> },
+    { key: "notifications", label: "Notifications", icon: <Icon name="Bell" size={16} /> },
+    { key: "security", label: "Security", icon: <Icon name="Shield" size={16} /> },
+    { key: "accessibility", label: "Accessibility", icon: <Icon name="Accessibility" size={16} /> },
+    { key: "visitorPrefs", label: "Visitors", icon: <Icon name="Users" size={16} /> },
+    { key: "preferences", label: "Appearance", icon: <Icon name="Eye" size={16} /> },
   ];
 
   // Consistent input styling for all fields
-  const inputClass = "w-full h-11 px-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:text-white dark:placeholder-gray-400 transition-colors";
+  const inputClass = "w-full h-11 px-4 py-2 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:text-white dark:placeholder-gray-400 transition-colors";
   const btnClass = "btn btn-primary w-full md:w-auto"; // Enhanced button class
 
   return (
     // <AppShell role={role}>
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader
         title="Settings"
         subtitle="Manage your account preferences"
-        icon={<SettingsIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
+        icon={<Icon name="Settings" className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
         showBack={true}
         backTo="/dashboard/resident"
       />
 
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Messages */}
         {error && <ErrorDisplay message={error} onDismiss={() => setError("")} className="mb-4" />}
         {success && (
           <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg">
             <div className="flex items-center justify-between">
               <p className="text-green-700 dark:text-green-300 font-medium">✓ {success}</p>
-              <button onClick={() => setSuccess("")} className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100">✕</button>
+              <Button variant="ghost" size="sm" onClick={() => setSuccess("")} className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100" aria-label="Dismiss success message">✕</Button>
             </div>
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
           {/* Tabs */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6 space-x-1 overflow-x-auto tabs-scroll pb-2">
+          <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6 space-x-1 overflow-x-auto tabs-scroll pb-2">
             {tabs.map((tab) => (
-              <button
+              <Button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg font-medium cursor-pointer whitespace-nowrap text-sm transition-colors focus:outline-none ${activeTab === tab.key
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
               >
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* Tab Content */}
           {activeTab === "profile" && (
-            <form onSubmit={(e) => handleUpdate("Profile", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
+            <form onSubmit={(e) => handleUpdate("Profile", e)} className="bg-gray-50 dark:bg-slate-700/50 rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile Information</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">Update your personal details</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
-                  <input type="text" placeholder="Your name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={inputClass} />
+                  <label htmlFor="profile-name" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
+                  <input id="profile-name" type="text" placeholder="Your name" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
-                  <input type="text" placeholder="Phone number" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={inputClass} />
+                  <label htmlFor="profile-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
+                  <input id="profile-phone" type="text" placeholder="Phone number" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={inputClass} />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
-                  <input type="email" placeholder="Email address" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={inputClass} />
+                  <label htmlFor="profile-email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
+                  <input id="profile-email" type="email" placeholder="Email address" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Area</label>
-                  <input type="text" placeholder="Area/Block" value={profile.area} onChange={(e) => setProfile({ ...profile, area: e.target.value })} className={inputClass} />
+                  <label htmlFor="profile-area" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Area</label>
+                  <input id="profile-area" type="text" placeholder="Area/Block" value={profile.area} onChange={(e) => setProfile({ ...profile, area: e.target.value })} className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">House Number</label>
-                  <input type="text" placeholder="House number" value={profile.house} onChange={(e) => setProfile({ ...profile, house: e.target.value })} className={inputClass} />
+                  <label htmlFor="profile-house" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">House Number</label>
+                  <input id="profile-house" type="text" placeholder="House number" value={profile.house} onChange={(e) => setProfile({ ...profile, house: e.target.value })} className={inputClass} />
                 </div>
               </div>
               <div className="mt-4">
@@ -226,17 +251,17 @@ export default function Settings() {
           )}
 
           {activeTab === "password" && (
-            <form onSubmit={(e) => handleUpdate("Password", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
+            <form onSubmit={(e) => handleUpdate("Password", e)} className="bg-gray-50 dark:bg-slate-700/50 rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">Update your password for security</p>
               <div className="grid grid-cols-1 gap-4 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Current Password</label>
-                  <input type="password" placeholder="Enter current password" value={passwords.old} onChange={(e) => setPasswords({ ...passwords, old: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Current Password</label>
+                  <input id="current-password" type="password" placeholder="Enter current password" value={passwords.old} onChange={(e) => setPasswords({ ...passwords, old: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">New Password</label>
-                  <input type="password" placeholder="Enter new password" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`} />
+                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">New Password</label>
+                  <input id="new-password" type="password" placeholder="Enter new password" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
               </div>
               <div className="mt-4">
@@ -252,28 +277,69 @@ export default function Settings() {
           )}
 
           {activeTab === "security" && (
-            <form onSubmit={(e) => handleUpdate("Security", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Security Settings</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Configure account security options</p>
-              <div className="space-y-4 mt-4">
-                <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:border-green-500 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={security.twoFA}
-                    onChange={(e) => setSecurity({ ...security, twoFA: e.target.checked })}
-                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                  />
-                  <div>
-                    <span className="font-medium text-gray-900 dark:text-white">Two-Factor Authentication</span>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">Add an extra layer of security to your account</p>
+            <div className="bg-gray-50 dark:bg-slate-700/50 rounded-2xl p-6 space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Security Settings</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Configure account security options</p>
+              </div>
+
+              {/* MFA Status */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Two-Factor Authentication</h3>
+                {mfaStatus.loading ? (
+                  <div className="p-4 bg-white dark:bg-slate-800 rounded-lg text-sm text-gray-600 dark:text-gray-200 flex items-center gap-2 border border-gray-200 dark:border-slate-600">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-600"></div>
+                    Loading MFA status...
                   </div>
-                </label>
-                <label className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:border-green-500 transition-colors">
+                ) : mfaStatus.error ? (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800" role="alert">
+                    <p className="text-sm text-red-700 dark:text-red-300">{mfaStatus.error}</p>
+                    <Button variant="secondary" size="sm" className="mt-2" onClick={fetchMfaStatus}>Retry</Button>
+                  </div>
+                ) : (
+                  <div className={`p-4 rounded-lg border ${mfaStatus.mfaEnabled
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600'
+                  }`}>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-3">
+                        <Icon
+                          name={mfaStatus.mfaEnabled ? "ShieldCheck" : "Shield"}
+                          className={`w-5 h-5 ${mfaStatus.mfaEnabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}
+                        />
+                        <div>
+                          <p className={`font-medium text-sm ${mfaStatus.mfaEnabled ? 'text-green-800 dark:text-green-200' : 'text-gray-700 dark:text-gray-200'}`}>
+                            {mfaStatus.mfaEnabled ? 'MFA is Enabled' : 'MFA is Not Set Up'}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {mfaStatus.mfaEnabled ? 'Your account is protected with two-factor authentication.' : 'Add extra security to your account with an authenticator app.'}
+                          </p>
+                        </div>
+                      </div>
+                      {!mfaStatus.mfaEnabled && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => navigate('/mfa/setup', {
+                            state: { message: 'Set up two-factor authentication for your account.', returnUrl: '/resident/settings' }
+                          })}
+                        >
+                          Set Up MFA
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Other security options */}
+              <div className="space-y-4">
+                <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors border border-gray-200 dark:border-slate-600">
                   <input
                     type="checkbox"
                     checked={security.showLoginHistory}
                     onChange={(e) => setSecurity({ ...security, showLoginHistory: e.target.checked })}
-                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                    className="w-5 h-5 text-brand-600 rounded focus:ring-brand-500"
                   />
                   <div>
                     <span className="font-medium text-gray-900 dark:text-white">Login History</span>
@@ -282,9 +348,9 @@ export default function Settings() {
                 </label>
               </div>
               <div className="mt-4">
-                <Button type="submit" variant="primary">Save Security Settings</Button>
+                <Button type="button" variant="primary" onClick={(e) => handleUpdate("Security", e)}>Save Security Settings</Button>
               </div>
-            </form>
+            </div>
           )}
 
           {activeTab === "accessibility" && (
@@ -294,16 +360,17 @@ export default function Settings() {
           )}
 
           {activeTab === "visitorPrefs" && (
-            <form onSubmit={(e) => handleUpdate("Visitor Preferences", e)} className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-4">
+            <form onSubmit={(e) => handleUpdate("Visitor Preferences", e)} className="bg-gray-50 dark:bg-slate-700/50 rounded-2xl p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Visitor Preferences</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">Configure default visitor settings</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Default Invite Duration</label>
+                  <label htmlFor="default-duration" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Default Invite Duration</label>
                   <select
+                    id="default-duration"
                     value={visitorPrefs.defaultDuration}
                     onChange={(e) => setVisitorPrefs({ ...visitorPrefs, defaultDuration: e.target.value })}
-                    className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`}
+                    className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`}
                   >
                     <option>1 hour</option>
                     <option>3 hours</option>
@@ -312,12 +379,13 @@ export default function Settings() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Max Visitors Per Day</label>
+                  <label htmlFor="max-visitors" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Max Visitors Per Day</label>
                   <input
+                    id="max-visitors"
                     type="number"
                     value={visitorPrefs.maxVisitors}
                     onChange={(e) => setVisitorPrefs({ ...visitorPrefs, maxVisitors: e.target.value })}
-                    className={`${inputClass} dark:bg-gray-800 dark:border-gray-600 dark:text-white`}
+                    className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`}
                     min="1"
                     max="20"
                   />
@@ -330,7 +398,7 @@ export default function Settings() {
           )}
 
           {activeTab === "preferences" && (
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 space-y-6">
+            <div className="bg-gray-50 dark:bg-slate-700/50 rounded-2xl p-6 space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Appearance</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -338,7 +406,7 @@ export default function Settings() {
                 </p>
               </div>
               <ThemeRadioGroup />
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   Current theme: <span className="font-medium text-gray-900 dark:text-white capitalize">{resolvedTheme}</span>
                   {theme === 'system' && <span className="ml-1 text-gray-500 dark:text-gray-300">(following system preference)</span>}

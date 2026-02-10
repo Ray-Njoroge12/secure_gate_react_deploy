@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge } from './ui';
-import { AlertTriangle, CheckCircle, XCircle, Info, Download } from 'lucide-react';
+import Icon from './ui/Icon';
 import browserCompatibility from '../utils/browserCompatibility';
 
 const BrowserCompatibility = ({ showDetails = false, onClose }) => {
@@ -63,7 +63,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
 
   // Get status icon
   const getStatusIcon = (meetsRequirements) => {
-    return meetsRequirements ? CheckCircle : XCircle;
+    return meetsRequirements ? 'check-circle' : 'x-circle';
   };
 
   // Get issue severity color
@@ -84,13 +84,13 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
   const getIssueIcon = (type) => {
     switch (type) {
       case 'error':
-        return XCircle;
+        return 'x-circle';
       case 'warning':
-        return AlertTriangle;
+        return 'alert-triangle';
       case 'info':
-        return Info;
+        return 'info';
       default:
-        return Info;
+        return 'info';
     }
   };
 
@@ -140,7 +140,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
               variant={meetsRequirements ? "success" : "destructive"}
               className="flex items-center gap-1"
             >
-              {React.createElement(getStatusIcon(meetsRequirements), { className: "w-4 h-4" })}
+              <Icon name={getStatusIcon(meetsRequirements)} className="w-4 h-4" aria-hidden="true" />
               {meetsRequirements ? 'Compatible' : 'Incompatible'}
             </Badge>
             {onClose && (
@@ -203,10 +203,11 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
             <div className="space-y-2">
               {issues.map((issue, index) => (
                 <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
-                  {React.createElement(
-                    getIssueIcon(issue.type),
-                    { className: `w-5 h-5 mt-0.5 ${getIssueColor(issue.type)}` }
-                  )}
+                  <Icon
+                    name={getIssueIcon(issue.type)}
+                    className={`w-5 h-5 mt-0.5 ${getIssueColor(issue.type)}`}
+                    aria-hidden="true"
+                  />
                   <div className="flex-1">
                     <div className={`font-medium ${getIssueColor(issue.type)}`}>
                       {issue.message}
@@ -230,7 +231,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
             <div className="space-y-2">
               {recommendations.map((rec, index) => (
                 <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                  <Info className="w-5 h-5 mt-0.5 text-blue-600" />
+                  <Icon name="info" className="w-5 h-5 mt-0.5 text-blue-600" aria-hidden="true" />
                   <div className="flex-1">
                     <div className={`font-medium ${getRecommendationColor(rec.type)}`}>
                       {rec.message}
@@ -259,7 +260,7 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
                   className="flex items-center gap-2"
                   onClick={() => window.open(url, '_blank')}
                 >
-                  <Download className="w-4 h-4" />
+                  <Icon name="download" className="w-4 h-4" aria-hidden="true" />
                   {browserName.charAt(0).toUpperCase() + browserName.slice(1)}
                 </Button>
               ))}
@@ -288,10 +289,11 @@ const BrowserCompatibility = ({ showDetails = false, onClose }) => {
                     supported ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
                   }`}
                 >
-                  {React.createElement(
-                    supported ? CheckCircle : XCircle,
-                    { className: "w-4 h-4" }
-                  )}
+                  <Icon
+                    name={supported ? 'check-circle' : 'x-circle'}
+                    className="w-4 h-4"
+                    aria-hidden="true"
+                  />
                   <span className="text-sm font-medium">
                     {feature.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                   </span>

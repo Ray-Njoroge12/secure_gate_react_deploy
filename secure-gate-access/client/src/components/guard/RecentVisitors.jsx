@@ -14,6 +14,7 @@ import PropTypes from 'prop-types';
 import apiClient from '../../utils/apiClient';
 import notificationService from '../../services/notificationService';
 import logger from '../../utils/logger';
+import Button from '../ui/Button';
 
 const RecentVisitors = ({ 
   onSelectVisitor = () => {},
@@ -107,12 +108,12 @@ const RecentVisitors = ({
             </svg>
           </div>
           <p className="text-gray-600 dark:text-gray-200 mb-3">{error}</p>
-          <button
+          <Button
             onClick={fetchRecentVisitors}
             className="text-blue-600 hover:text-blue-800 font-medium"
           >
             Try Again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -131,7 +132,7 @@ const RecentVisitors = ({
               Last 7 days
             </span>
           </div>
-          <button
+          <Button
             onClick={() => setShowPrivacyNotice(!showPrivacyNotice)}
             className="text-gray-400 hover:text-gray-600 dark:text-gray-200 p-1"
             title="Privacy info"
@@ -139,7 +140,7 @@ const RecentVisitors = ({
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Privacy Notice */}
@@ -193,10 +194,16 @@ const RecentVisitors = ({
             const visitBadge = getVisitCountBadge(visitor.visitCount);
             
             return (
-              <div 
+              <div role="button" tabIndex={0} 
                 key={visitor.id}
                 className="p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 onClick={() => handleQuickCheckIn(visitor)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleQuickCheckIn(visitor);
+                  }
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -224,7 +231,7 @@ const RecentVisitors = ({
                   </div>
                   
                   {/* Quick Check-In Button */}
-                  <button
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleQuickCheckIn(visitor);
@@ -235,7 +242,7 @@ const RecentVisitors = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     Check In
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
@@ -246,7 +253,7 @@ const RecentVisitors = ({
       {/* Footer */}
       {filteredVisitors.length > 0 && (
         <div className="p-3 bg-gray-50 dark:bg-slate-900 border-t border-gray-100 text-center">
-          <button
+          <Button
             onClick={fetchRecentVisitors}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center gap-1 mx-auto"
           >
@@ -254,7 +261,7 @@ const RecentVisitors = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             Refresh List
-          </button>
+          </Button>
         </div>
       )}
     </div>

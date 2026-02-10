@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, X, Download, ExternalLink } from 'lucide-react';
+import Icon from './ui/Icon';
 import { Button, Card } from './ui';
 import { useBrowserCompatibility } from '../hooks/useBrowserCompatibility';
 
@@ -78,7 +78,7 @@ const BrowserCompatibilityWarning = () => {
         <Card.Content className="p-4">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
-              <AlertTriangle className={`w-5 h-5 ${hasCriticalIssues ? 'text-red-600' : 'text-yellow-600'}`} />
+              <Icon name="alert-triangle" className={`w-5 h-5 ${hasCriticalIssues ? 'text-red-600' : 'text-yellow-600'}`} aria-hidden="true" />
             </div>
             
             <div className="flex-1 min-w-0">
@@ -93,7 +93,7 @@ const BrowserCompatibilityWarning = () => {
                   onClick={dismissWarning}
                   className="ml-auto p-1 h-6 w-6"
                 >
-                  <X className="w-4 h-4" />
+                  <Icon name="x" className="w-4 h-4" aria-hidden="true" />
                 </Button>
               </div>
               
@@ -160,7 +160,7 @@ const BrowserCompatibilityWarning = () => {
                           className="text-xs px-2 py-1 h-6"
                           onClick={() => window.open(url, '_blank')}
                         >
-                          <Download className="w-3 h-3 mr-1" />
+                          <Icon name="download" className="w-3 h-3 mr-1" aria-hidden="true" />
                           {browserName.charAt(0).toUpperCase() + browserName.slice(1)}
                         </Button>
                       ))}
@@ -179,7 +179,7 @@ const BrowserCompatibilityWarning = () => {
                       window.dispatchEvent(event);
                     }}
                   >
-                    <ExternalLink className="w-3 h-3 mr-1" />
+                    <Icon name="external-link" className="w-3 h-3 mr-1" aria-hidden="true" />
                     View Details
                   </Button>
                   

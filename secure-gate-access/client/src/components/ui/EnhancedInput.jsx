@@ -20,7 +20,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Check, X, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import Icon from './Icon.jsx';
 
 const EnhancedInput = ({
   label,
@@ -168,68 +168,63 @@ const EnhancedInput = ({
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Label */}
       {label && (
-        <label className="label">
-          {label}
-          {required && <span className="text-red-400 ml-1">*</span>}
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
 
-      {/* Input Container */}
       <div className="relative">
-        {/* Left Icon */}
         {Icon && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-400">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
             <Icon className="w-5 h-5" />
           </div>
         )}
 
-        {/* Input Field */}
         <input
-          type={inputType}
+          type={showPassword ? 'text' : type}
           value={internalValue}
           onChange={handleChange}
           onBlur={handleBlur}
-          onFocus={handleFocus}
+          className={`
+            w-full rounded-md shadow-sm text-sm transition-colors min-h-[44px]
+            ${Icon ? 'pl-10' : 'pl-3'}
+            ${(success || validationState === 'valid') 
+              ? 'border-green-500 focus:border-green-500 focus:ring-green-500' 
+              : (errorMsg || validationState === 'invalid') 
+                ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                : 'border-gray-300 dark:border-slate-600 focus:border-brand-500 focus:ring-brand-500'}
+            bg-white dark:bg-slate-800 text-gray-900 dark:text-white
+            disabled:bg-gray-100 dark:disabled:bg-slate-900 disabled:cursor-not-allowed
+            ${type === 'password' || isSuccess ? 'pr-10' : ''}
+          `}
           placeholder={placeholder}
           disabled={disabled}
           maxLength={maxLength}
-          className={`
-            input
-            ${Icon ? 'pl-10' : ''}
-            ${(validationState || (type === 'password' && showPassword)) ? 'pr-10' : ''}
-            ${validationState === 'valid' ? 'border-green-500 focus:border-green-500' : ''}
-            ${validationState === 'invalid' ? 'border-red-500 focus:border-red-500' : ''}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
+          aria-invalid={!!errorMsg || validationState === 'invalid'}
+          aria-describedby={helper ? `${label}-helper` : undefined}
           {...props}
         />
 
-        {/* Right Icons (Validation or Password Toggle) */}
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-          {/* Password Toggle */}
+        {/* Validation Icons & Password Toggle */}
+        <div className="absolute inset-y-0 right-0 flex items-center pr-3 gap-2">
           {type === 'password' && (
             <button
               type="button"
               onClick={togglePassword}
-              className="text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              tabIndex={-1}
             >
-              {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-              ) : (
-                <Eye className="w-5 h-5" />
-              )}
+              <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} />
             </button>
           )}
 
-          {/* Validation Icons */}
-          {validationState === 'valid' && (
-            <Check className="w-5 h-5 text-green-500 animate-fade-in" />
+          {(validationState === 'valid' || success) && type !== 'password' && (
+            <Icon name="check" size={18} className="text-green-500" />
           )}
-          {validationState === 'invalid' && (
-            <X className="w-5 h-5 text-red-500 animate-fade-in" />
+
+          {(validationState === 'invalid' || errorMsg) && type !== 'password' && (
+            <Icon name="alert-circle" size={18} className="text-red-500" />
           )}
         </div>
       </div>
@@ -240,7 +235,7 @@ const EnhancedInput = ({
           {/* Error Message */}
           {validationState === 'invalid' && errorMsg && (
             <p className="text-sm text-red-400 flex items-center gap-1 animate-fade-in">
-              <AlertCircle className="w-4 h-4" />
+              <Icon name="alert-circle" className="w-4 h-4" />
               {errorMsg}
             </p>
           )}
@@ -248,7 +243,7 @@ const EnhancedInput = ({
           {/* Success Message */}
           {validationState === 'valid' && successMessage && (
             <p className="text-sm text-green-400 flex items-center gap-1 animate-fade-in">
-              <Check className="w-4 h-4" />
+              <Icon name="check" className="w-4 h-4" />
               {successMessage}
             </p>
           )}

@@ -4,7 +4,7 @@ import { getVisitorLogs } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
 import logger from 'utils/logger';
 
-export default function Visitors() {
+export default function Visitors({ estateId }) {
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,7 +12,7 @@ export default function Visitors() {
   useEffect(() => {
     async function loadVisitors() {
       try {
-        const data = await getVisitorLogs();
+        const data = await getVisitorLogs(estateId ? { siteId: estateId } : {});
         setVisitors(data || []);
       } catch (e) {
         const errorMsg = handleApiError(e);
@@ -23,7 +23,7 @@ export default function Visitors() {
       }
     }
     loadVisitors();
-  }, []);
+  }, [estateId]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
@@ -34,8 +34,15 @@ export default function Visitors() {
         </div>
       )}
       <Table
-        headers={["ID", "Name", "Host", "Status", "Actions"]}
-        rows={visitors.map(v => [v.id, v.name, v.host, v.status, "Approve | Reject"])}
+        headers={["ID", "Name", "Host", "Phone", "Status", "Visit Date"]}
+        rows={visitors.map(v => [
+          v.id,
+          v.name || "-",
+          v.host_name || "-",
+          v.phone || "-",
+          v.status || "-",
+          v.date_of_visit || "-"
+        ])}
         loading={loading}
       />
     </div>

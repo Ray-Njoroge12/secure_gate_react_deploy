@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import Icon from './Icon.jsx';
 
 const SelectContext = createContext();
 
@@ -34,7 +34,10 @@ export const SelectTrigger = ({ className = '', children }) => {
       aria-haspopup="listbox"
     >
       {children}
-      <ChevronDown className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      <Icon 
+        name="chevron-down" 
+        className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+      />
     </button>
   );
 };

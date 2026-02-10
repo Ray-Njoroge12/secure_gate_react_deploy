@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { navigateTo } from '../../utils/appNavigation';
-import { Card, Button, PageHeader } from '../../components/ui';
+import { Card, Button, PageHeader, Icon, Skeleton, EmptyState } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import IncidentModal from '../../components/guard/IncidentModal'; // Phase G4
 import { getStatusChipClass } from '../../utils/statusColors'; // Phase A8
-import { Search, QrCode, Key } from 'lucide-react';
 import { verifyOtp } from '../../services/visitorService';
 import notificationService from '../../services/notificationService';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import OfflineBanner from '../../components/common/OfflineBanner';
+
+import {
+  normalizeVisitorStatus,
+  formatVisitorStatus,
+  canVisitorCheckIn,
+  canVisitorCheckOut
+} from '../../utils/guardScanUtils';
 
 const ManualCheck = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +23,7 @@ const ManualCheck = () => {
   const [incidentModal, setIncidentModal] = useState({ isOpen: false, visitor: null }); // Phase G4
   const { handleError, handleApiError, clearAllErrors } = useError();
   const { setLoading, isLoading } = useLoading();
+  const { isOnline, wasOffline } = useOnlineStatus();
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -27,16 +36,11 @@ const ManualCheck = () => {
           searchInput.focus();
         }
       }
-      // Enter to search
-      if (e.key === 'Enter' && e.target.type === 'text') {
-        e.preventDefault();
-        handleSearch();
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [searchTerm]);
+  }, []);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -63,16 +67,21 @@ const ManualCheck = () => {
           const visitors = data.data || [];
 
           // Filter for visitors awaiting OTP verification
-          const otpPending = visitors.filter(v =>
-            v.status === 'otp_sent' || v.status === 'PENDING' || v.status === 'pending'
-          );
+          const otpPending = visitors.filter((visitor) => {
+            const normalized = normalizeVisitorStatus(visitor.status);
+            return normalized === 'OTP_SENT' || normalized === 'PENDING';
+          });
 
           // Try to verify OTP for each pending visitor
           const verified = [];
           for (const visitor of otpPending) {
             try {
-              await verifyOtp(visitor.id, searchTerm.trim());
-              verified.push({ ...visitor, _otpVerified: true });
+              const otpResult = await verifyOtp(visitor.id, searchTerm.trim());
+              verified.push({
+                ...visitor,
+                status: otpResult?.status || 'verified',
+                _otpVerified: true
+              });
               break; // Found the match
             } catch (e) {
               // OTP doesn't match this visitor, continue
@@ -98,10 +107,11 @@ const ManualCheck = () => {
           const data = await response.json();
           const visitors = data.data || [];
 
-          const filtered = visitors.filter(visitor =>
-            visitor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          const query = searchTerm.toLowerCase();
+          const filtered = visitors.filter((visitor) =>
+            visitor.name?.toLowerCase().includes(query) ||
             visitor.phone?.includes(searchTerm) ||
-            visitor.invite_code?.toLowerCase().includes(searchTerm.toLowerCase())
+            visitor.invite_code?.toLowerCase().includes(query)
           );
 
           setSearchResults(filtered);
@@ -133,7 +143,7 @@ const ManualCheck = () => {
         setSearchResults(prev =>
           prev.map(v =>
             v.id === visitorId
-              ? { ...v, status: 'CHECKED_IN', check_in: new Date().toISOString() }
+              ? { ...v, status: 'on_premise', check_in: new Date().toISOString() }
               : v
           )
         );
@@ -164,7 +174,7 @@ const ManualCheck = () => {
         setSearchResults(prev =>
           prev.map(v =>
             v.id === visitorId
-              ? { ...v, status: 'CHECKED_OUT', check_out: new Date().toISOString() }
+              ? { ...v, status: 'checked_out', check_out: new Date().toISOString() }
               : v
           )
         );
@@ -187,7 +197,7 @@ const ManualCheck = () => {
       <PageHeader
         title="Manual Check"
         subtitle="Search and verify visitors manually"
-        icon={<Search className="w-6 h-6 text-blue-600" />}
+        icon={<Icon name="search" className="w-6 h-6 text-blue-600" />}
         showBack={true}
         backTo="/dashboard/guard"
         actions={
@@ -195,29 +205,37 @@ const ManualCheck = () => {
             onClick={() => navigateTo('/dashboard/guard/scan-qr')}
             variant="outline"
           >
-            <QrCode className="w-4 h-4 mr-2" />
+            <Icon name="qr-code" className="w-4 h-4 mr-2" />
             QR Scanner
           </Button>
         }
       />
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8 space-y-6">
+        <OfflineBanner 
+          isOnline={isOnline} 
+          wasOffline={wasOffline} 
+          onRetry={searchTerm ? handleSearch : undefined}
+          message="You are offline. Searches require an internet connection."
+        />
+
         <Card>
           <Card.Header>
             <Card.Title>Search Visitors</Card.Title>
           </Card.Header>
           <Card.Content>
             <div className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   placeholder="Search by name, phone, invite code, or 6-digit OTP..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  aria-label="Search visitor by name, phone, invite code, or OTP"
+                  className="mobile-input flex-1"
                 />
-                <Button onClick={handleSearch} disabled={isLoading('manualCheck')}>
+                <Button onClick={handleSearch} disabled={isLoading('manualCheck')} className="w-full sm:w-auto min-h-[44px]">
                   {isLoading('manualCheck') ? 'Searching...' : 'Search'}
                 </Button>
               </div>
@@ -225,7 +243,44 @@ const ManualCheck = () => {
           </Card.Content>
         </Card>
 
-        {searchResults.length > 0 && (
+        {/* Skeleton Loading State */}
+        {isLoading('manualCheck') && (
+          <Card>
+            <Card.Header>
+              <Card.Title className="flex items-center">
+                <Skeleton className="h-6 w-32" />
+              </Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <div className="space-y-3 md:space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="border-2 border-gray-200 dark:border-slate-700 rounded-xl p-4 md:p-5">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-6 w-48" />
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-40" />
+                      </div>
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                    <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3 mb-3">
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                    <div className="grid grid-cols-2 md:flex gap-2">
+                      <Skeleton className="h-9 w-full md:w-24" />
+                      <Skeleton className="h-9 w-full md:w-24" />
+                      <Skeleton className="h-9 w-full md:w-24" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Search Results */}
+        {!isLoading('manualCheck') && searchResults.length > 0 && (
           <Card>
             <Card.Header>
               <Card.Title className="flex items-center">
@@ -248,17 +303,17 @@ const ManualCheck = () => {
                         </h3>
                         <div className="space-y-1 mt-1">
                           <p className="text-sm text-gray-600 dark:text-gray-200 flex items-center">
-                            <span className="mr-2">📱</span>
+                            <Icon name="smartphone" className="w-4 h-4 mr-2 text-gray-400" />
                             {visitor.phone || 'No phone'}
                           </p>
                           <p className="text-xs md:text-sm text-gray-500 dark:text-gray-300 flex items-center">
-                            <span className="mr-2">🎫</span>
+                            <Icon name="ticket" className="w-4 h-4 mr-2 text-gray-400" />
                             Code: <span className="font-mono ml-1">{visitor.invite_code}</span>
                           </p>
                         </div>
                       </div>
                       <span className={getStatusChipClass(visitor.status, 'sm')}>
-                        {visitor.status}
+                        {formatVisitorStatus(visitor.status)}
                       </span>
                     </div>
 
@@ -280,18 +335,18 @@ const ManualCheck = () => {
 
                     {/* Action Buttons - Mobile Optimized */}
                     <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2">
-                      {visitor.status === 'VERIFIED' && (
+                      {(canVisitorCheckIn(visitor.status) || visitor._otpVerified) && (
                         <Button
                           size="sm"
-                          className="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-bold"
+                          className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold"
                           onClick={() => handleCheckIn(visitor.id)}
                           disabled={isLoading('checkIn')}
                         >
-                          <span className="mr-1">✅</span>
+                          <Icon name="check" className="w-4 h-4 mr-1" />
                           Check In
                         </Button>
                       )}
-                      {visitor.status === 'CHECKED_IN' && (
+                      {canVisitorCheckOut(visitor.status) && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -299,7 +354,7 @@ const ManualCheck = () => {
                           onClick={() => handleCheckOut(visitor.id)}
                           disabled={isLoading('checkOut')}
                         >
-                          <span className="mr-1">🚪</span>
+                          <Icon name="door" className="w-4 h-4 mr-1" />
                           Check Out
                         </Button>
                       )}
@@ -309,7 +364,7 @@ const ManualCheck = () => {
                         className="w-full md:w-auto text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                         onClick={() => setIncidentModal({ isOpen: true, visitor })}
                       >
-                        <span className="mr-1">⚠️</span>
+                        <Icon name="exclamation-triangle" className="w-4 h-4 mr-1" />
                         Report
                       </Button>
                     </div>
@@ -320,13 +375,51 @@ const ManualCheck = () => {
           </Card>
         )}
 
-        {searchResults.length === 0 && !isLoading('manualCheck') && searchTerm && (
+        {/* Enhanced Empty State */}
+        {!isLoading('manualCheck') && searchResults.length === 0 && searchTerm && (
           <Card>
-            <Card.Content className="text-center py-8">
-              <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <p className="text-gray-500 dark:text-gray-300 mt-2">No visitors found matching "{searchTerm}"</p>
+            <Card.Content>
+              <EmptyState
+                icon="search"
+                title="No Visitors Found"
+                message={`No visitors match "${searchTerm}". Try a different search term or check for typos.`}
+                actions={[
+                  {
+                    label: 'Clear Search',
+                    onClick: () => {
+                      setSearchTerm('');
+                      setSearchResults([]);
+                    },
+                    variant: 'outline'
+                  },
+                  {
+                    label: 'Register Walk-In',
+                    onClick: () => navigateTo('/dashboard/guard/walk-in'),
+                    variant: 'primary'
+                  }
+                ]}
+              />
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Initial State - No Search Yet */}
+        {!isLoading('manualCheck') && searchResults.length === 0 && !searchTerm && (
+          <Card>
+            <Card.Content>
+              <EmptyState
+                icon="search"
+                title="Ready to Search"
+                message="Enter a name, phone number, invite code, or 6-digit OTP to find a visitor."
+                actions={[
+                  {
+                    label: 'Use QR Scanner Instead',
+                    onClick: () => navigateTo('/dashboard/guard/scan-qr'),
+                    variant: 'primary',
+                    icon: 'qr-code'
+                  }
+                ]}
+              />
             </Card.Content>
           </Card>
         )}
@@ -337,8 +430,7 @@ const ManualCheck = () => {
           visitor={incidentModal.visitor}
           onClose={(result) => {
             if (result?.success) {
-              // Show success notification
-              alert(result.message || 'Incident logged successfully');
+              notificationService.success('Incident Logged', result.message || 'Incident logged successfully');
             }
             setIncidentModal({ isOpen: false, visitor: null });
           }}
@@ -349,4 +441,3 @@ const ManualCheck = () => {
 };
 
 export default ManualCheck;
-

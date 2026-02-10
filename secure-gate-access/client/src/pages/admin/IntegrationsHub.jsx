@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import Button from '../../components/ui/Button';
 import './IntegrationsHub.css';
 
 const IntegrationsHub = () => {
@@ -324,25 +325,34 @@ const IntegrationsHub = () => {
       </div>
 
       {/* Tabs */}
-      <div className="hub-tabs">
-        <button 
+      <div className="hub-tabs" role="tablist" aria-label="Integrations sections">
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'webhooks' ? 'active' : ''}`}
           onClick={() => setActiveTab('webhooks')}
+          role="tab"
+          aria-selected={activeTab === 'webhooks'}
         >
           🔗 Webhooks ({webhooks.length})
-        </button>
-        <button 
+        </Button>
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'automation' ? 'active' : ''}`}
           onClick={() => setActiveTab('automation')}
+          role="tab"
+          aria-selected={activeTab === 'automation'}
         >
           🤖 Automation ({automationRules.length})
-        </button>
-        <button 
+        </Button>
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'apikeys' ? 'active' : ''}`}
           onClick={() => setActiveTab('apikeys')}
+          role="tab"
+          aria-selected={activeTab === 'apikeys'}
         >
           🔑 API Keys ({apiKeys.length})
-        </button>
+        </Button>
       </div>
 
       {/* Webhooks Tab */}
@@ -350,9 +360,9 @@ const IntegrationsHub = () => {
         <div className="tab-content">
           <div className="content-header">
             <h2>Webhooks</h2>
-            <button className="btn-create" onClick={() => openModal('webhook')}>
+            <Button variant="primary" className="btn-create" onClick={() => openModal('webhook')}>
               + Add Webhook
-            </button>
+            </Button>
           </div>
 
           <div className="items-grid">
@@ -373,9 +383,9 @@ const IntegrationsHub = () => {
                   </div>
                 </div>
                 <div className="card-actions">
-                  <button className="btn-sm btn-test" onClick={() => testWebhook(webhook.id)}>Test</button>
-                  <button className="btn-sm btn-edit" onClick={() => openModal('webhook', webhook)}>Edit</button>
-                  <button className="btn-sm btn-delete" onClick={() => deleteWebhook(webhook.id)}>Delete</button>
+                  <Button variant="secondary" size="sm" className="btn-sm btn-test" onClick={() => testWebhook(webhook.id)}>Test</Button>
+                  <Button variant="outlined" size="sm" className="btn-sm btn-edit" onClick={() => openModal('webhook', webhook)}>Edit</Button>
+                  <Button variant="danger" size="sm" className="btn-sm btn-delete" onClick={() => deleteWebhook(webhook.id)}>Delete</Button>
                 </div>
               </div>
             ))}
@@ -388,9 +398,9 @@ const IntegrationsHub = () => {
         <div className="tab-content">
           <div className="content-header">
             <h2>Automation Rules</h2>
-            <button className="btn-create" onClick={() => openModal('automation')}>
+            <Button variant="primary" className="btn-create" onClick={() => openModal('automation')}>
               + Add Rule
-            </button>
+            </Button>
           </div>
 
           <div className="items-grid">
@@ -411,8 +421,8 @@ const IntegrationsHub = () => {
                   </div>
                 </div>
                 <div className="card-actions">
-                  <button className="btn-sm btn-edit" onClick={() => openModal('automation', rule)}>Edit</button>
-                  <button className="btn-sm btn-delete" onClick={() => deleteAutomation(rule.id)}>Delete</button>
+                  <Button variant="outlined" size="sm" className="btn-sm btn-edit" onClick={() => openModal('automation', rule)}>Edit</Button>
+                  <Button variant="danger" size="sm" className="btn-sm btn-delete" onClick={() => deleteAutomation(rule.id)}>Delete</Button>
                 </div>
               </div>
             ))}
@@ -425,9 +435,9 @@ const IntegrationsHub = () => {
         <div className="tab-content">
           <div className="content-header">
             <h2>API Keys</h2>
-            <button className="btn-create" onClick={() => openModal('apikey')}>
+            <Button variant="primary" className="btn-create" onClick={() => openModal('apikey')}>
               + Generate API Key
-            </button>
+            </Button>
           </div>
 
           <div className="apikeys-table">
@@ -451,9 +461,9 @@ const IntegrationsHub = () => {
                     <td>{key.rate_limit_per_hour}/hr</td>
                     <td>{key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : 'Never'}</td>
                     <td>
-                      <button className="btn-sm btn-delete" onClick={() => revokeAPIKey(key.id)}>
+                      <Button variant="danger" size="sm" className="btn-sm btn-delete" onClick={() => revokeAPIKey(key.id)}>
                         Revoke
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -465,7 +475,7 @@ const IntegrationsHub = () => {
 
       {/* Modal for creating/editing */}
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={closeModal} role="presentation" aria-hidden="true">
           <div
             className="modal-content large"
             onClick={(e) => e.stopPropagation()}
@@ -481,7 +491,7 @@ const IntegrationsHub = () => {
                 {modalType === 'automation' && (editingItem ? 'Edit Automation' : 'Add Automation')}
                 {modalType === 'apikey' && 'Generate API Key'}
               </h2>
-              <button className="modal-close" onClick={closeModal} aria-label="Close">×</button>
+              <Button variant="ghost" className="modal-close" onClick={closeModal} aria-label="Close">×</Button>
             </div>
 
             <div className="modal-body">
@@ -526,8 +536,8 @@ const IntegrationsHub = () => {
                     </label>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
-                    <button type="submit" className="btn-primary">{editingItem ? 'Update' : 'Create'}</button>
+                    <Button variant="secondary" className="btn-cancel" onClick={closeModal}>Cancel</Button>
+                    <Button variant="primary" type="submit" className="btn-primary">{editingItem ? 'Update' : 'Create'}</Button>
                   </div>
                 </form>
               )}
@@ -581,8 +591,8 @@ const IntegrationsHub = () => {
                     </div>
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
-                    <button type="submit" className="btn-primary">{editingItem ? 'Update' : 'Create'}</button>
+                    <Button variant="secondary" className="btn-cancel" onClick={closeModal}>Cancel</Button>
+                    <Button variant="primary" type="submit" className="btn-primary">{editingItem ? 'Update' : 'Create'}</Button>
                   </div>
                 </form>
               )}
@@ -598,14 +608,14 @@ const IntegrationsHub = () => {
                       </div>
                       <div className="apikey-display">
                         <code>{newApiKey}</code>
-                        <button className="btn-copy" onClick={() => {
+                        <Button variant="secondary" className="btn-copy" onClick={() => {
                           navigator.clipboard.writeText(newApiKey);
                           alert('Copied to clipboard!');
-                        }}>Copy</button>
+                        }}>Copy</Button>
                       </div>
-                      <button className="btn-primary" onClick={() => { closeModal(); resetForms(); }}>
+                      <Button variant="primary" className="btn-primary" onClick={() => { closeModal(); resetForms(); }}>
                         Done
-                      </button>
+                      </Button>
                     </div>
                   ) : (
                     <form onSubmit={handleAPIKeyGenerate}>
@@ -643,8 +653,8 @@ const IntegrationsHub = () => {
                           onChange={(e) => setApiKeyForm({...apiKeyForm, rate_limit_per_hour: parseInt(e.target.value)})} />
                       </div>
                       <div className="modal-footer">
-                        <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
-                        <button type="submit" className="btn-primary">Generate Key</button>
+                        <Button variant="secondary" className="btn-cancel" onClick={closeModal}>Cancel</Button>
+                        <Button variant="primary" type="submit" className="btn-primary">Generate Key</Button>
                       </div>
                     </form>
                   )}

@@ -318,3 +318,45 @@
     margin-bottom: 1rem;
   }
 }
+
+/* Dark Mode */
+html.dark .system-health-dashboard {
+  color: #f9fafb;
+}
+
+html.dark .dashboard-header {
+  border-bottom-color: #374151;
+}
+
+html.dark .component-status-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+html.dark .component-status-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .system-metrics-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+html.dark .metric-item {
+  background: #111827;
+  border-color: #374151;
+}
+
+html.dark .metric-item:hover {
+  background: #1f2937;
+}
+
+html.dark .alerts-panel {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+html.dark .loading-skeleton {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+}

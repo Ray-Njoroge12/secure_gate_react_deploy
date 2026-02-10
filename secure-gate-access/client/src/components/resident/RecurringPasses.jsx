@@ -8,9 +8,11 @@
  * - Cached data fallback
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import recurringPassService from '../../services/recurringPassService';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+
 import offlineService from '../../services/offlineService';
+import recurringPassService from '../../services/recurringPassService';
+import Button from '../ui/Button';
 
 const PASS_TYPES = [
   { value: 'daily_worker', label: 'Daily Worker', icon: '👷' },
@@ -39,24 +41,7 @@ const RecurringPasses = () => {
   const [filter, setFilter] = useState('active');
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [usingCachedData, setUsingCachedData] = useState(false);
-
-  // Monitor online/offline status
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-      // Refresh data when coming back online
-      loadPasses();
-    };
-    const handleOffline = () => setIsOffline(true);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const loadPassesRef = useRef(null);
 
   const loadPasses = useCallback(async () => {
     try {
@@ -117,6 +102,28 @@ const RecurringPasses = () => {
   }, [filter]);
 
   useEffect(() => {
+    loadPassesRef.current = loadPasses;
+  }, [loadPasses]);
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      // Refresh data when coming back online
+      loadPassesRef.current?.();
+    };
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
     loadPasses();
   }, [loadPasses]);
 
@@ -150,13 +157,13 @@ const RecurringPasses = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      active: 'bg-green-100 text-green-800',
-      suspended: 'bg-yellow-100 text-yellow-800',
-      expired: 'bg-gray-100 text-gray-800',
-      revoked: 'bg-red-100 text-red-800'
+      active: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+      suspended: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
+      expired: 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200',
+      revoked: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
     };
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || 'bg-gray-100'}`}>
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status] || 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -187,26 +194,28 @@ const RecurringPasses = () => {
     
     return (
       <div className={`p-3 rounded-lg mb-4 flex items-center gap-2 ${
-        isOffline ? 'bg-yellow-50 border border-yellow-200' : 'bg-blue-50 border border-blue-200'
+        isOffline
+          ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700'
+          : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
       }`}>
         <span className="text-lg">{isOffline ? '📡' : '💾'}</span>
         <div className="flex-1">
-          <p className={`text-sm font-medium ${isOffline ? 'text-yellow-800' : 'text-blue-800'}`}>
+          <p className={`text-sm font-medium ${isOffline ? 'text-yellow-800 dark:text-yellow-300' : 'text-blue-800 dark:text-blue-300'}`}>
             {isOffline ? 'You are offline' : 'Showing cached data'}
           </p>
-          <p className={`text-xs ${isOffline ? 'text-yellow-600' : 'text-blue-600'}`}>
+          <p className={`text-xs ${isOffline ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
             {isOffline 
               ? 'Actions will be synced when you reconnect' 
               : 'Connect to see the latest updates'}
           </p>
         </div>
         {!isOffline && (
-          <button
+          <Button
             onClick={loadPasses}
             className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Refresh
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -230,19 +239,19 @@ const RecurringPasses = () => {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="text-sm border-gray-300 rounded-md"
+              className="text-sm border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
               disabled={isOffline}
             >
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
               <option value="all">All</option>
             </select>
-            <button
+            <Button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+              className="px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 text-sm"
             >
               + New Pass
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -283,12 +292,12 @@ const RecurringPasses = () => {
                       {pass.status === 'active' && (
                         <div className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded text-xs">
                           <span className="font-medium">PIN:</span> {pass.access_pin}
-                          <button
+                          <Button
                             onClick={() => setSelectedPass(pass)}
                             className="ml-4 text-blue-600 hover:underline"
                           >
                             View QR
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -296,27 +305,27 @@ const RecurringPasses = () => {
                   <div className="flex gap-2">
                     {pass.status === 'active' && (
                       <>
-                        <button
+                        <Button
                           onClick={() => handleSuspend(pass.id)}
                           className="px-3 py-1 text-sm border border-yellow-300 text-yellow-700 rounded-md hover:bg-yellow-50"
                         >
                           Suspend
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={() => handleRevoke(pass.id)}
                           className="px-3 py-1 text-sm border border-red-300 text-red-700 rounded-md hover:bg-red-50"
                         >
                           Revoke
-                        </button>
+                        </Button>
                       </>
                     )}
                     {pass.status === 'suspended' && (
-                      <button
+                      <Button
                         onClick={() => handleReactivate(pass.id)}
-                        className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                        className="px-3 py-1 text-sm bg-brand-600 text-white rounded-md hover:bg-brand-700"
                       >
                         Reactivate
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -406,10 +415,10 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Create Recurring Pass</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</button>
+          <Button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</Button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
@@ -424,7 +433,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
               name="visitorName"
               value={formData.visitorName}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
               placeholder="e.g., John Mwangi"
               required
             />
@@ -438,7 +447,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
                 name="visitorPhone"
                 value={formData.visitorPhone}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
                 placeholder="+254..."
               />
             </div>
@@ -449,7 +458,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
                 name="vehiclePlate"
                 value={formData.vehiclePlate}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
                 placeholder="KXX 000X"
               />
             </div>
@@ -461,7 +470,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
               name="passType"
               value={formData.passType}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
             >
               {PASS_TYPES.map(type => (
                 <option key={type.value} value={type.value}>
@@ -478,7 +487,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
               name="purpose"
               value={formData.purpose}
               onChange={handleChange}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
               placeholder="e.g., House cleaning"
             />
           </div>
@@ -491,7 +500,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
               value={formData.validUntil}
               onChange={handleChange}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full border-gray-300 rounded-md"
+              className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
               required
             />
           </div>
@@ -500,7 +509,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Allowed Days</label>
             <div className="flex flex-wrap gap-2">
               {DAYS.map(day => (
-                <button
+                <Button
                   key={day.value}
                   type="button"
                   onClick={() => toggleDay(day.value)}
@@ -511,7 +520,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
                   }`}
                 >
                   {day.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -524,7 +533,7 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
                 name="allowedTimeStart"
                 value={formData.allowedTimeStart}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
               />
             </div>
             <div>
@@ -534,26 +543,26 @@ const CreatePassModal = ({ onClose, onSuccess }) => {
                 name="allowedTimeEnd"
                 value={formData.allowedTimeEnd}
                 onChange={handleChange}
-                className="w-full border-gray-300 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
               />
             </div>
           </div>
 
           <div className="flex gap-2 pt-4">
-            <button
+            <Button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={submitting}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {submitting ? 'Creating...' : 'Create Pass'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -565,11 +574,7 @@ const PassDetailsModal = ({ pass, onClose }) => {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
-  useEffect(() => {
-    loadHistory();
-  }, [pass.id]);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       const response = await recurringPassService.getPassHistory(pass.id);
       setHistory(response.data || []);
@@ -578,31 +583,34 @@ const PassDetailsModal = ({ pass, onClose }) => {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, [pass.id]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full">
         <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
           <h3 className="text-lg font-semibold">Pass Details</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</button>
+          <Button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-200">✕</Button>
         </div>
 
         <div className="p-4">
           <div className="text-center mb-4">
-            <p className="text-lg font-medium">{pass.visitor_name}</p>
+            <p className="text-lg font-medium text-gray-900 dark:text-white">{pass.visitor_name}</p>
             <p className="text-gray-500 dark:text-gray-300">{pass.pass_type}</p>
           </div>
 
           <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg text-center mb-4">
             <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">Access PIN</p>
             <p className="text-3xl font-mono font-bold tracking-wider dark:text-white">{pass.access_pin}</p>
-            <p className="text-3xl font-mono font-bold tracking-wider">{pass.access_pin}</p>
           </div>
 
-          <div className="bg-gray-100 p-4 rounded-lg text-center mb-4">
+          <div className="bg-gray-100 dark:bg-slate-700 p-4 rounded-lg text-center mb-4">
             <p className="text-sm text-gray-600 dark:text-gray-200 mb-2">QR Token</p>
-            <p className="text-xs font-mono break-all">{pass.qr_code_token}</p>
+            <p className="text-xs font-mono break-all text-gray-900 dark:text-white">{pass.qr_code_token}</p>
             <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">Guards can scan this QR code for entry</p>
           </div>
 
@@ -626,12 +634,12 @@ const PassDetailsModal = ({ pass, onClose }) => {
         </div>
 
         <div className="p-4 border-t border-gray-200 dark:border-slate-700">
-          <button
+          <Button
             onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+            className="w-full px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-slate-600"
           >
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>

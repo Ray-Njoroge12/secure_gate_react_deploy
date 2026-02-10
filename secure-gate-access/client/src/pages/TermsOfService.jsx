@@ -6,14 +6,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-import { Scale, Shield, AlertTriangle, FileText, Users, Gavel, Clock, Mail } from 'lucide-react';
+import { Icon } from '../components/ui/Icon';
 
 const TermsOfService = () => {
   const sections = [
     {
       id: 'introduction',
       title: 'Terms of Service',
-      icon: Scale,
+      icon: "Scale",
       content: (
         <div className="space-y-4">
           <p>
@@ -37,7 +37,7 @@ const TermsOfService = () => {
     {
       id: 'acceptance',
       title: 'Acceptance of Terms',
-      icon: Gavel,
+      icon: "Gavel",
       content: (
         <div className="space-y-4">
           <p>By using our Service, you confirm that:</p>
@@ -60,7 +60,7 @@ const TermsOfService = () => {
     {
       id: 'service-description',
       title: 'Service Description',
-      icon: FileText,
+      icon: "FileText",
       content: (
         <div className="space-y-4">
           <p>Our Service provides:</p>
@@ -97,13 +97,13 @@ const TermsOfService = () => {
     {
       id: 'user-responsibilities',
       title: 'User Responsibilities',
-      icon: Users,
+      icon: "Users",
       content: (
         <div className="space-y-4">
           <p>As a user of our Service, you agree to:</p>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-green-600 mt-0.5" />
+              <Icon name="Shield" className="h-5 w-5 text-green-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Security Responsibilities</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -113,7 +113,7 @@ const TermsOfService = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
+              <Icon name="FileText" className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Accurate Information</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -123,7 +123,7 @@ const TermsOfService = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
+              <Icon name="AlertTriangle" className="h-5 w-5 text-orange-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Compliance</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -138,7 +138,7 @@ const TermsOfService = () => {
     {
       id: 'prohibited-uses',
       title: 'Prohibited Uses',
-      icon: AlertTriangle,
+      icon: "AlertTriangle",
       content: (
         <div className="space-y-4">
           <p>You may not use our Service for:</p>
@@ -174,7 +174,7 @@ const TermsOfService = () => {
     {
       id: 'privacy-data',
       title: 'Privacy and Data Protection',
-      icon: Shield,
+      icon: "Shield",
       content: (
         <div className="space-y-4">
           <p>
@@ -213,7 +213,7 @@ const TermsOfService = () => {
     {
       id: 'intellectual-property',
       title: 'Intellectual Property',
-      icon: FileText,
+      icon: "FileText",
       content: (
         <div className="space-y-4">
           <p>
@@ -223,7 +223,7 @@ const TermsOfService = () => {
           </p>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-blue-600 mt-1" />
+              <Icon name="FileText" className="h-5 w-5 text-blue-600 mt-1" />
               <div>
                 <h4 className="font-semibold">Service Content</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -232,7 +232,7 @@ const TermsOfService = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-green-600 mt-1" />
+              <Icon name="Shield" className="h-5 w-5 text-green-600 mt-1" />
               <div>
                 <h4 className="font-semibold">User Content</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -248,7 +248,7 @@ const TermsOfService = () => {
     {
       id: 'limitation-liability',
       title: 'Limitation of Liability',
-      icon: AlertTriangle,
+      icon: "AlertTriangle",
       content: (
         <div className="space-y-4">
           <p>
@@ -284,7 +284,7 @@ const TermsOfService = () => {
     {
       id: 'termination',
       title: 'Termination',
-      icon: Clock,
+      icon: "Clock",
       content: (
         <div className="space-y-4">
           <p>
@@ -323,7 +323,7 @@ const TermsOfService = () => {
     {
       id: 'governing-law',
       title: 'Governing Law',
-      icon: Gavel,
+      icon: "Gavel",
       content: (
         <div className="space-y-4">
           <p>
@@ -332,7 +332,7 @@ const TermsOfService = () => {
           </p>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Gavel className="h-5 w-5 text-blue-600 mt-1" />
+              <Icon name="Gavel" className="h-5 w-5 text-blue-600 mt-1" />
               <div>
                 <h4 className="font-semibold">Jurisdiction</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -342,7 +342,7 @@ const TermsOfService = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-green-600 mt-1" />
+              <Icon name="Shield" className="h-5 w-5 text-green-600 mt-1" />
               <div>
                 <h4 className="font-semibold">Compliance</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -358,7 +358,7 @@ const TermsOfService = () => {
     {
       id: 'contact',
       title: 'Contact Information',
-      icon: Mail,
+      icon: "Mail",
       content: (
         <div className="space-y-4">
           <p>For questions about these Terms of Service, please contact us:</p>
@@ -395,7 +395,7 @@ const TermsOfService = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Terms of Service</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Terms of Service</h1>
           <p className="text-lg text-gray-600 dark:text-gray-200 mb-4">
             Legal terms governing the use of Secure Gate Access Control System
           </p>
@@ -413,7 +413,7 @@ const TermsOfService = () => {
               <Card key={section.id} className="shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
-                    <Icon className="h-6 w-6 text-blue-600" />
+                    <Icon name={Icon} className="h-6 w-6 text-blue-600" />
                     {section.title}
                   </CardTitle>
                 </CardHeader>
@@ -439,14 +439,14 @@ const TermsOfService = () => {
                   href="mailto:legal@securegate.com"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <Mail className="h-4 w-4" />
+                  <Icon name="Mail" className="h-4 w-4" />
                   Contact Legal
                 </a>
                 <a 
                   href="/privacy-policy"
                   className="inline-flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                 >
-                  <Shield className="h-4 w-4" />
+                  <Icon name="Shield" className="h-4 w-4" />
                   Privacy Policy
                 </a>
               </div>

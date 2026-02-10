@@ -21,18 +21,22 @@ router.get('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly')
   try {
     const guards = await guardManagementService.getGuards(req.user.estate_id);
 
-    // Fix G-004: Data Minimization
+    // FIX P1-8: Include fields needed for admin management UI
+    // Map fields for frontend compatibility (account_status → status, is_active compatibility)
     const sanitizedGuards = guards.map(g => ({
       id: g.id,
       username: g.username,
-      // email: g.email, // Only include if strictly necessary
-      // phone_number: g.phone_number, // Only include if strictly necessary
+      email: g.email, // Required for admin contact
+      phone: g.phone || g.phone_number, // Required for admin contact
       role: g.role,
-      is_active: g.is_active,
+      // FIX: Provide both account_status and status for compatibility
+      account_status: g.account_status || (g.is_active ? 'active' : 'inactive'),
+      status: g.account_status || (g.is_active ? 'active' : 'inactive'),
+      last_login: g.last_login,
       metrics: {
-        total_shifts: parseInt(g.total_shifts),
-        completed_shifts: parseInt(g.completed_shifts),
-        incidents_handled: parseInt(g.incidents_handled),
+        total_shifts: parseInt(g.total_shifts || 0),
+        completed_shifts: parseInt(g.completed_shifts || 0),
+        incidents_handled: parseInt(g.incidents_handled || 0),
         avg_rating: parseFloat(g.avg_rating || 0).toFixed(1)
       }
     }));

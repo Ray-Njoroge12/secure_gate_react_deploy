@@ -4,22 +4,17 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import logger from 'utils/logger';
+
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
 import { Checkbox } from './ui/Checkbox';
+import Icon from './ui/Icon';
 import { Label } from './ui/Label';
-import { 
-  Cookie, 
-  Settings, 
-  Check, 
-  X, 
-  Info,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
 
 const CookieConsentBanner = () => {
+  const location = useLocation();
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [consent, setConsent] = useState({
@@ -29,6 +24,13 @@ const CookieConsentBanner = () => {
     preferences: false
   });
   const [loading, setLoading] = useState(false);
+  const isAuthEntryRoute =
+    location.pathname === '/login' ||
+    location.pathname === '/register' ||
+    location.pathname.startsWith('/register/') ||
+    location.pathname.startsWith('/bulk-register/') ||
+    location.pathname.startsWith('/mfa/verify') ||
+    location.pathname.startsWith('/mfa/setup');
 
   useEffect(() => {
     // Check if consent has already been given
@@ -121,7 +123,7 @@ const CookieConsentBanner = () => {
     }));
   };
 
-  if (!showBanner) {
+  if (!showBanner || isAuthEntryRoute) {
     return null;
   }
 
@@ -130,7 +132,7 @@ const CookieConsentBanner = () => {
       <Card className="max-w-4xl mx-auto">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <Cookie className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
+            <Icon name="cookie" className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" aria-hidden="true" />
             
             <div className="flex-1 space-y-4">
               <div>
@@ -152,7 +154,7 @@ const CookieConsentBanner = () => {
                     disabled={loading}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <Check className="h-4 w-4 mr-2" />
+                    <Icon name="check" className="h-4 w-4 mr-2" aria-hidden="true" />
                     Accept All
                   </Button>
                   
@@ -161,7 +163,7 @@ const CookieConsentBanner = () => {
                     disabled={loading}
                     variant="outline"
                   >
-                    <X className="h-4 w-4 mr-2" />
+                    <Icon name="x" className="h-4 w-4 mr-2" aria-hidden="true" />
                     Reject All
                   </Button>
                   
@@ -170,7 +172,7 @@ const CookieConsentBanner = () => {
                     disabled={loading}
                     variant="outline"
                   >
-                    <Settings className="h-4 w-4 mr-2" />
+                    <Icon name="settings" className="h-4 w-4 mr-2" aria-hidden="true" />
                     Customize
                   </Button>
                 </div>
@@ -237,7 +239,7 @@ const CookieConsentBanner = () => {
                       disabled={loading}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
-                      <Check className="h-4 w-4 mr-2" />
+                      <Icon name="check" className="h-4 w-4 mr-2" aria-hidden="true" />
                       Save Preferences
                     </Button>
                     
@@ -246,7 +248,7 @@ const CookieConsentBanner = () => {
                       disabled={loading}
                       variant="outline"
                     >
-                      <ChevronUp className="h-4 w-4 mr-2" />
+                      <Icon name="chevron-up" className="h-4 w-4 mr-2" aria-hidden="true" />
                       Back
                     </Button>
                   </div>

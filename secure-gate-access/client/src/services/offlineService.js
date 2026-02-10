@@ -32,10 +32,16 @@ class OfflineService {
   async init() {
     await this.initDatabase();
     this.setupEventListeners();
-    this.registerServiceWorker();
+    if (this.shouldRegisterServiceWorker()) {
+      this.registerServiceWorker();
+    }
     this.loadPurgeConfig();
     this.startScheduledPurge();
     this.startInactivityMonitor();
+  }
+
+  shouldRegisterServiceWorker() {
+    return process.env.NODE_ENV === 'production' || process.env.REACT_APP_ENABLE_SW_DEV === 'true';
   }
 
   // ==================== DATABASE MANAGEMENT ====================

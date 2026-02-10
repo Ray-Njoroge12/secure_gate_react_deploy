@@ -4,7 +4,7 @@
  * Redesigned for better UX, mobile responsiveness, and accessibility
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, Button, Badge, Input, PageHeader, Skeleton, Modal } from "../../components/ui";
 import { SearchFilter, Pagination } from "../../components/ui";
 import { getAllResidents, updateResident, deleteResident, createResident } from "../../services/adminService";
@@ -14,31 +14,15 @@ import { useToast } from "../../contexts/ToastContext";
 import { useConfirmation } from "../../components/common/ConfirmationDialog";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 import logger from 'utils/logger';
-import {
-  Users,
-  UserPlus,
-  Search,
-  Filter,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Mail,
-  Phone,
-  Home,
-  Shield,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Download
-} from "lucide-react";
+import Icon from "../../components/ui/Icon";
 
 // Status badge component
 const StatusBadge = ({ status }) => {
   const statusConfig = {
-    active: { color: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400', icon: <CheckCircle className="w-3 h-3" /> },
-    inactive: { color: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200', icon: <XCircle className="w-3 h-3" /> },
+    active: { color: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400', icon: <Icon name="check-circle" className="w-3 h-3" /> },
+    inactive: { color: 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200', icon: <Icon name="x-circle" className="w-3 h-3" /> },
     pending: { color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400', icon: null },
-    suspended: { color: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400', icon: <XCircle className="w-3 h-3" /> }
+    suspended: { color: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400', icon: <Icon name="x-circle" className="w-3 h-3" /> }
   };
 
   const config = statusConfig[status?.toLowerCase()] || statusConfig.inactive;
@@ -52,9 +36,9 @@ const StatusBadge = ({ status }) => {
 };
 
 // Mobile resident card component
-const ResidentCard = ({ resident, onEdit, onDeactivate, onEmail }) => (
-  <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:shadow-md dark:hover:shadow-slate-700 transition-shadow">
-    <Card.Content className="p-4">
+const ResidentCard = ({ resident, onEdit, onToggle, onDelete, onEmail }) => (
+  <Card className="hover:shadow-md transition-shadow dark:border-slate-700">
+    <Card.Content className="p-6">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -74,20 +58,20 @@ const ResidentCard = ({ resident, onEdit, onDeactivate, onEmail }) => (
           <div className="space-y-1 text-sm text-gray-600 dark:text-gray-200">
             {resident.email && (
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-400 dark:text-gray-300" />
+                <Icon name="mail" className="w-4 h-4 text-gray-400 dark:text-gray-300" />
                 <span className="truncate">{resident.email}</span>
               </div>
             )}
             {resident.phone && (
               <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-gray-400 dark:text-gray-300" />
+                <Icon name="phone" className="w-4 h-4 text-gray-400 dark:text-gray-300" />
                 <span>{resident.phone}</span>
               </div>
             )}
-            {(resident.area || resident.house_number) && (
+            {resident.unit_number && (
               <div className="flex items-center gap-2">
-                <Home className="w-4 h-4 text-gray-400 dark:text-gray-300" />
-                <span>{resident.area} {resident.house_number && `- ${resident.house_number}`}</span>
+                <Icon name="home" className="w-4 h-4 text-gray-400 dark:text-gray-300" />
+                <span>Unit {resident.unit_number}</span>
               </div>
             )}
           </div>
@@ -95,28 +79,49 @@ const ResidentCard = ({ resident, onEdit, onDeactivate, onEmail }) => (
 
         {/* Action buttons */}
         <div className="flex flex-col gap-2 ml-2">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onEdit(resident)}
             className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
             aria-label={`Edit ${resident.name}`}
           >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button
+            <Icon name="edit" className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onEmail(resident)}
             className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             aria-label={`Email ${resident.username}`}
           >
-            <Mail className="w-4 h-4" />
-          </button>
+            <Icon name="mail" className="w-4 h-4" />
+          </Button>
           {resident.status !== 'inactive' && (
-            <button
-              onClick={() => onDeactivate(resident)}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onToggle(resident)}
               className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              aria-label={`Deactivate ${resident.username}`}
+              title={resident.status === 'active' ? 'Deactivate' : 'Activate'}
+              aria-label={resident.status === 'active' ? 'Deactivate' : 'Activate'}
             >
-              <Trash2 className="w-4 h-4" />
-            </button>
+              <Icon name={resident.status === 'active' ? 'x-circle' : 'check-circle'} className="w-4 h-4" />
+            </Button>
+          )}
+
+          {/* Delete action - admin only */}
+          {true && (
+             <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(resident)}
+              className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Delete Resident"
+              aria-label={`Delete ${resident.username}`}
+            >
+              <Icon name="trash-2" className="w-4 h-4" />
+            </Button>
           )}
         </div>
       </div>
@@ -133,9 +138,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
     email: '',
     password: '',
     phone: '',
-    unit_number: '',
-    house_number: '',
-    area: ''
+    unit_number: ''
   });
   const [saving, setSaving] = useState(false);
 
@@ -144,9 +147,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
     setSaving(true);
     try {
       await onSave({
-        ...formData,
-        // Ensure unit_number is populated if house_number is used (legacy vs new)
-        unit_number: formData.unit_number || formData.house_number
+        ...formData
       });
       onClose();
     } finally {
@@ -221,20 +222,12 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Area</label>
-            <input
-              type="text"
-              value={formData.area}
-              onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit/House Number</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number</label>
             <input
               type="text"
               value={formData.unit_number}
               onChange={(e) => setFormData({ ...formData, unit_number: e.target.value })}
+              placeholder="e.g., A-101, B-205"
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
             />
           </div>
@@ -260,9 +253,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSave }) => {
     last_name: '',
     email: '',
     phone: '',
-    area: '',
     unit_number: '',
-    house_number: '',
     status: 'active'
   });
   const [saving, setSaving] = useState(false);
@@ -275,9 +266,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSave }) => {
         last_name: resident.last_name || '',
         email: resident.email || '',
         phone: resident.phone || '',
-        area: resident.area || '',
         unit_number: resident.unit_number || '',
-        house_number: resident.house_number || '',
         status: resident.status || 'active'
       });
     }
@@ -287,10 +276,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSave }) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await onSave(resident.id, {
-        ...formData,
-        unit_number: formData.unit_number || formData.house_number
-      });
+      await onSave(resident.id, formData);
       onClose();
     } finally {
       setSaving(false);
@@ -351,20 +337,12 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSave }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Area</label>
-            <input
-              type="text"
-              value={formData.area}
-              onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit/House Number</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number</label>
             <input
               type="text"
               value={formData.unit_number}
               onChange={(e) => setFormData({ ...formData, unit_number: e.target.value })}
+              placeholder="e.g., A-101, B-205"
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
             />
           </div>
@@ -396,7 +374,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSave }) => {
   );
 };
 
-export default function ManageResidents() {
+export default function ManageResidents({ estateId }) {
   const role = useCurrentRole();
   const toast = useToast();
   const confirm = useConfirmation();
@@ -410,10 +388,10 @@ export default function ManageResidents() {
   const [selectedUsers, setSelectedUsers] = useState([]);
 
   // Search and filter configuration
-  const searchFields = ['username', 'email', 'phone', 'area', 'house_number'];
+  const searchFields = ['username', 'email', 'phone', 'unit_number'];
   const filterFields = [
     { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive', 'pending', 'suspended'] },
-    { key: 'area', label: 'Area', type: 'text' }
+    { key: 'unit_number', label: 'Unit Number', type: 'text' }
   ];
 
   const {
@@ -432,6 +410,11 @@ export default function ManageResidents() {
     enablePagination: true,
     pageSize: 10
   });
+
+  const estateParams = useMemo(
+    () => (estateId ? { siteId: estateId } : {}),
+    [estateId]
+  );
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -461,7 +444,7 @@ export default function ManageResidents() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAllResidents();
+      const data = await getAllResidents(estateParams);
       setUsers(data || []);
     } catch (e) {
       const errorMsg = handleApiError(e);
@@ -471,7 +454,7 @@ export default function ManageResidents() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [estateParams, toast]);
 
   useEffect(() => {
     loadResidents();
@@ -479,7 +462,7 @@ export default function ManageResidents() {
 
   const handleAddResident = async (data) => {
     try {
-      await createResident(data);
+      await createResident(data, estateParams);
       toast?.success?.('Resident created successfully');
       loadResidents();
     } catch (e) {
@@ -494,7 +477,7 @@ export default function ManageResidents() {
 
   const handleSaveEdit = async (id, data) => {
     try {
-      await updateResident(id, data);
+      await updateResident(id, data, estateParams);
       toast?.success?.('Resident updated successfully');
       loadResidents();
     } catch (e) {
@@ -504,21 +487,16 @@ export default function ManageResidents() {
   };
 
   const handleDeactivate = async (resident) => {
-    const confirmed = await confirm?.({
-      title: 'Deactivate Resident',
-      message: `Are you sure you want to deactivate ${resident.username}? They will no longer be able to log in.`,
-      variant: 'danger',
-      confirmText: 'Deactivate'
-    });
-
-    if (confirmed) {
-      try {
-        await deleteResident(resident.id);
-        toast?.success?.('Resident deactivated');
-        loadResidents();
-      } catch (e) {
-        toast?.error?.('Failed to deactivate resident');
-      }
+    const confirmed = window.confirm(`Are you sure you want to deactivate ${resident.username}?`);
+    if (!confirmed) return;
+    
+    try {
+      await updateResident(resident.id, { status: 'inactive' }, estateParams);
+      toast?.success?.(`${resident.username} deactivated successfully.`);
+      await loadResidents();
+    } catch (err) {
+      const msg = handleApiError(err);
+      setError(msg);
     }
   };
 
@@ -526,10 +504,25 @@ export default function ManageResidents() {
     window.location.href = `mailto:${resident.email}`;
   };
 
+  const handleDeleteResident = async (resident) => {
+    const confirmed = window.confirm(`Are you sure you want to delete ${resident.username}? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteResident(resident.id, estateParams);
+      toast?.success?.(`${resident.username} deleted successfully.`);
+      await loadResidents();
+    } catch (err) {
+      const msg = handleApiError(err);
+      setError(msg);
+      toast?.error?.(msg || 'Failed to delete resident');
+    }
+  };
+
   const handleExport = () => {
     const csv = [
-      ['ID', 'Username', 'Email', 'Phone', 'Area', 'House Number', 'Status'],
-      ...users.map(u => [u.id, u.username, u.email, u.phone, u.area, u.house_number, u.status])
+      ['ID', 'Username', 'Email', 'Phone', 'Unit Number', 'Status'],
+      ...users.map(u => [u.id, u.username, u.email, u.phone, u.unit_number, u.status])
     ].map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -556,7 +549,7 @@ export default function ManageResidents() {
       <PageHeader
         title="Residents"
         subtitle={`${stats.total} total residents • ${stats.active} active`}
-        icon={<Users className="w-6 h-6 text-brand-600" />}
+        icon={<Icon name="users" className="w-6 h-6 text-brand-600" />}
         showBack={true}
         backTo="/dashboard/admin"
         actions={
@@ -567,7 +560,7 @@ export default function ManageResidents() {
               onClick={handleExport}
               className="hidden sm:flex"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Icon name="download" className="w-4 h-4 mr-2" />
               Export
             </Button>
             <Button
@@ -576,10 +569,10 @@ export default function ManageResidents() {
               onClick={loadResidents}
               disabled={loading}
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <Icon name="refresh-cw" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
             <Button size="sm" onClick={() => setAddModal(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
+              <Icon name="user-plus" className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Add Resident</span>
               <span className="sm:hidden">Add</span>
             </Button>
@@ -612,10 +605,10 @@ export default function ManageResidents() {
         <Card.Content className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-300" />
+              <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-300" />
               <input
                 type="search"
-                placeholder="Search residents by username, email, phone, or area..."
+                placeholder="Search residents by username, email, phone, or unit number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
@@ -626,7 +619,7 @@ export default function ManageResidents() {
               onClick={() => setShowFilters(!showFilters)}
               className={hasFilters ? 'border-brand-500 text-brand-600' : ''}
             >
-              <Filter className="w-4 h-4 mr-2" />
+              <Icon name="filter" className="w-4 h-4 mr-2" />
               Filters
               {hasFilters && <span className="ml-2 w-2 h-2 bg-brand-500 rounded-full"></span>}
             </Button>
@@ -650,12 +643,12 @@ export default function ManageResidents() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Area</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Number</label>
                 <input
                   type="text"
-                  placeholder="Filter by area"
-                  value={filters.area || ''}
-                  onChange={(e) => setFilters({ ...filters, area: e.target.value })}
+                  placeholder="Filter by unit number"
+                  value={filters.unit_number || ''}
+                  onChange={(e) => setFilters({ ...filters, unit_number: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
                 />
               </div>
@@ -672,7 +665,7 @@ export default function ManageResidents() {
       {/* Error state */}
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center gap-3">
-          <XCircle className="w-5 h-5 flex-shrink-0" />
+          <Icon name="x-circle" className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
           <Button variant="ghost" size="sm" onClick={loadResidents} className="ml-auto">
             Retry
@@ -693,7 +686,7 @@ export default function ManageResidents() {
       {!loading && !error && filteredUsers.length === 0 && (
         <Card className="bg-white dark:bg-slate-800">
           <Card.Content className="py-12 text-center">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <Icon name="users" className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {hasFilters || searchTerm ? 'No residents found' : 'No residents yet'}
             </h3>
@@ -763,36 +756,41 @@ export default function ManageResidents() {
                           <div className="text-sm text-gray-500 dark:text-gray-300">{resident.phone || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">{resident.area || '-'}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-300">{resident.house_number || '-'}</div>
+                          <div className="text-sm text-gray-900 dark:text-white">Unit {resident.unit_number || '-'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <StatusBadge status={resident.status} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEdit(resident)}
                               className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
                               aria-label={`Edit ${resident.username}`}
                             >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
+                              <Icon name="edit" className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEmail(resident)}
                               className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               aria-label={`Email ${resident.name}`}
                             >
-                              <Mail className="w-4 h-4" />
-                            </button>
+                              <Icon name="mail" className="w-4 h-4" />
+                            </Button>
                             {resident.status !== 'inactive' && (
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleDeactivate(resident)}
                                 className="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 aria-label={`Deactivate ${resident.username}`}
                               >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                                <Icon name="trash-2" className="w-4 h-4" />
+                              </Button>
                             )}
                           </div>
                         </td>
@@ -811,7 +809,8 @@ export default function ManageResidents() {
                 key={resident.id}
                 resident={resident}
                 onEdit={handleEdit}
-                onDeactivate={handleDeactivate}
+                onToggle={handleDeactivate}
+                onDelete={handleDeleteResident}
                 onEmail={handleEmail}
               />
             ))}

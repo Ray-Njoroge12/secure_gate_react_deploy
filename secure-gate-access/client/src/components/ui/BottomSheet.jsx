@@ -275,7 +275,7 @@ const BottomSheet = ({
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       {backdrop && (
-        <div
+        <div role="presentation"
           className={`absolute inset-0 transition-opacity duration-300 ${
             backdropBlur ? 'backdrop-blur-sm' : ''
           } ${isClosing ? 'opacity-0' : 'opacity-100'}`}

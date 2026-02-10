@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import Button from '../../components/ui/Button';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
@@ -136,25 +137,34 @@ const RoleManagement = () => {
       </div>
 
       {/* Tabs */}
-      <div className="rbac-tabs">
-        <button 
+      <div className="rbac-tabs" role="tablist" aria-label="Role management sections">
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'roles' ? 'active' : ''}`}
           onClick={() => setActiveTab('roles')}
+          role="tab"
+          aria-selected={activeTab === 'roles'}
         >
           Roles
-        </button>
-        <button 
+        </Button>
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'permissions' ? 'active' : ''}`}
           onClick={() => setActiveTab('permissions')}
+          role="tab"
+          aria-selected={activeTab === 'permissions'}
         >
           Permissions
-        </button>
-        <button 
+        </Button>
+        <Button 
+          variant="ghost"
           className={`tab ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
+          role="tab"
+          aria-selected={activeTab === 'users'}
         >
           User Assignments
-        </button>
+        </Button>
       </div>
 
       {/* Roles Tab */}
@@ -285,7 +295,8 @@ const RoleManagement = () => {
                       }
                     </td>
                     <td>
-                      <button 
+                      <Button 
+                        variant="outlined" size="sm"
                         className="btn-sm btn-assign"
                         onClick={() => {
                           setSelectedUser(user);
@@ -293,7 +304,7 @@ const RoleManagement = () => {
                         }}
                       >
                         Change Role
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -305,7 +316,7 @@ const RoleManagement = () => {
 
       {/* Assign Role Modal */}
       {showAssignModal && selectedUser && (
-        <div className="modal-overlay" onClick={closeAssignModal}>
+        <div className="modal-overlay" onClick={closeAssignModal} role="presentation" aria-hidden="true">
           <div
             className="modal-content"
             onClick={(e) => e.stopPropagation()}
@@ -317,13 +328,14 @@ const RoleManagement = () => {
           >
             <div className="modal-header">
               <h2 id="role-modal-title">Assign Role to {selectedUser.name}</h2>
-              <button 
+              <Button 
+                variant="ghost"
                 className="modal-close"
                 onClick={closeAssignModal}
                 aria-label="Close"
               >
                 ×
-              </button>
+              </Button>
             </div>
 
             <div className="modal-body">
@@ -333,10 +345,16 @@ const RoleManagement = () => {
 
               <div className="role-selection">
                 {roles.map(role => (
-                  <div 
+                  <div role="button" tabIndex={0} 
                     key={role.id}
                     className={`role-option ${selectedRole?.id === role.id ? 'selected' : ''}`}
                     onClick={() => setSelectedRole(role)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedRole(role);
+                      }
+                    }}
                   >
                     <span className={getRoleBadgeClass(role.level)}>
                       {role.name}
@@ -348,19 +366,21 @@ const RoleManagement = () => {
             </div>
 
             <div className="modal-footer">
-              <button 
+              <Button 
+                variant="secondary"
                 className="btn-cancel"
                 onClick={closeAssignModal}
               >
                 Cancel
-              </button>
-              <button 
+              </Button>
+              <Button 
+                variant="primary"
                 className="btn-primary"
                 onClick={() => selectedRole && assignRoleToUser(selectedUser.id, selectedRole.id)}
                 disabled={!selectedRole}
               >
                 Assign Role
-              </button>
+              </Button>
             </div>
           </div>
         </div>

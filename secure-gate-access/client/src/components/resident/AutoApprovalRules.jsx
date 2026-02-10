@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import autoApprovalService from '../../services/autoApprovalService';
+import Button from '../ui/Button';
 
 const AutoApprovalRules = () => {
   const [rules, setRules] = useState([]);
@@ -128,18 +129,18 @@ const AutoApprovalRules = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={handleExport}
               className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
             >
               📥 Export
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowCreateModal(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               + Add Rule
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -210,7 +211,7 @@ const AutoApprovalRules = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     onClick={() => handleToggle(rule.id)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       rule.isActive ? 'bg-green-500' : 'bg-gray-300'
@@ -219,19 +220,19 @@ const AutoApprovalRules = () => {
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
                       rule.isActive ? 'translate-x-6' : 'translate-x-1'
                     }`} />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setEditingRule(rule)}
                     className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-200"
                   >
                     ✏️
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleDelete(rule.id)}
                     className="p-1 text-gray-400 hover:text-red-600"
                   >
                     🗑️
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -420,7 +421,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
             
             <div className="flex flex-wrap gap-2">
               {daysOfWeek.map(day => (
-                <button
+                <Button
                   key={day.value}
                   type="button"
                   onClick={() => handleDayToggle(day.value)}
@@ -431,7 +432,7 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
                   }`}
                 >
                   {day.label}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -464,20 +465,20 @@ const RuleModal = ({ rule, categories, onClose, onSave }) => {
 
           {/* Actions */}
           <div className="flex gap-3 pt-4">
-            <button
+            <Button
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={loading}
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? 'Saving...' : (rule ? 'Update Rule' : 'Create Rule')}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

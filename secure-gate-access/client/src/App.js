@@ -79,6 +79,7 @@ const IncidentList = lazy(() => import("./pages/guard/IncidentList.jsx"));
 const ShiftHandover = lazy(() => import("./pages/guard/ShiftHandover.jsx")); // Phase 3: Shift handover management
 const ActivityLog = lazy(() => import("./pages/guard/ActivityLog.jsx")); // Phase 3: Guard activity log
 const BulkCheckout = lazy(() => import("./pages/guard/BulkCheckout.jsx")); // Phase 3: Bulk checkout & EOD operations
+const MFASetupGuide = lazy(() => import("./pages/guard/MFASetupGuide.jsx")); // Guard in-app documentation
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
@@ -86,15 +87,10 @@ const MessageViewer = lazy(() => import("./pages/admin/MessageViewer.jsx")); // 
 const SuperAdminDashboard = lazy(() => import("./pages/admin/SuperAdminDashboard.jsx"));
 const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings.jsx"));
-const AdminOperations = lazy(() => import("./pages/admin/AdminOperationsDashboard.jsx"));
-const WatchlistManagement = lazy(() => import("./pages/admin/WatchlistManagement.jsx"));
-const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
 const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
 const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
-const AccessControl = lazy(() => import("./pages/admin/AccessControl.jsx"));
 const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
 const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
-const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
 const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
 const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
 
@@ -185,8 +181,8 @@ function App() {
   return (
     <AppErrorBoundary>
       <div ref={appRef}>
-        <PWAManager>
-          <RootProvider>
+        <RootProvider>
+          <PWAManager>
             {/* Global Styles & Animations */}
             <GlobalStyles />
 
@@ -207,6 +203,7 @@ function App() {
 
                       {/* Public routes */}
                       <Route path="/login" element={<LoginPage />} />
+                      <Route path="/forgot-password" element={<LoginPage />} />
                       <Route path="/register" element={<RegistrationPage />} />
                       <Route path="/register/:inviteCode" element={<RegistrationPage />} />
                       <Route path="/bulk-register/:inviteCode" element={<RegistrationPage />} />
@@ -465,6 +462,16 @@ function App() {
                         }
                       />
                       <Route
+                        path="/dashboard/guard/help/mfa-setup"
+                        element={
+                          <ProtectedRoute allowedRoles={["guard"]}>
+                            <AppShell role="guard" title="MFA Setup Guide">
+                              <MFASetupGuide />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
                         path="/dashboard/guard/walk-in"
                         element={
                           <ProtectedRoute allowedRoles={["guard"]}>
@@ -531,7 +538,9 @@ function App() {
                         path="/dashboard/super-admin"
                         element={
                           <ProtectedRoute allowedRoles={["super_admin"]}>
-                            <SuperAdminDashboard />
+                            <AppShell role="admin" title="Super Admin Dashboard">
+                              <SuperAdminDashboard />
+                            </AppShell>
                           </ProtectedRoute>
                         }
                       />
@@ -595,9 +604,7 @@ function App() {
                         path="/dashboard/admin/users"
                         element={
                           <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="users" />
-                            </AppShell>
+                            <Navigate to="/dashboard/admin/approvals" replace />
                           </ProtectedRoute>
                         }
                       />
@@ -647,6 +654,16 @@ function App() {
                           <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
                             <AppShell role="admin" title="Activity Dashboard">
                               <ActivityDashboard />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dashboard/admin/help/security"
+                        element={
+                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                            <AppShell role="admin" title="Security Help">
+                              <MFASetupGuide />
                             </AppShell>
                           </ProtectedRoute>
                         }
@@ -794,8 +811,8 @@ function App() {
             <ErrorQueue />
             <BrowserCompatibilityWarning />
             <CookieConsentBanner />
-          </RootProvider>
-        </PWAManager>
+          </PWAManager>
+        </RootProvider>
       </div>
     </AppErrorBoundary>
   );

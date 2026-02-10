@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ERROR_SEVERITY, RECOVERY_ACTIONS } from '../../services/errorManagementService';
+import Button from '../ui/Button';
 import './ErrorDisplay.css';
 
 const ErrorDisplay = ({
@@ -85,14 +86,16 @@ const ErrorDisplay = ({
         <div className="error-display__title-section">
           <h3 className="error-display__title">{error.title}</h3>
           {onDismiss && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               className="error-display__close"
               onClick={onDismiss}
               aria-label="Dismiss error"
               title="Dismiss this error"
             >
               ×
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -109,27 +112,31 @@ const ErrorDisplay = ({
         {error.actions && error.actions.length > 0 && (
           <div className="error-display__actions">
             {error.actions.map((action, index) => (
-              <button
+              <Button
                 key={index}
+                variant={action.primary ? 'primary' : 'secondary'}
+                size="sm"
                 className={`error-display__action ${action.primary ? 'error-display__action--primary' : 'error-display__action--secondary'}`}
                 onClick={() => handleAction(action)}
                 disabled={isRetrying && action.type === RECOVERY_ACTIONS.RETRY}
               >
                 {isRetrying && action.type === RECOVERY_ACTIONS.RETRY ? 'Retrying...' : action.label}
-              </button>
+              </Button>
             ))}
           </div>
         )}
 
         {showDetails && error.details && (
           <div className="error-display__details">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               className="error-display__details-toggle"
               onClick={() => setShowFullDetails(!showFullDetails)}
               aria-expanded={showFullDetails}
             >
               {showFullDetails ? 'Hide Details' : 'Show Details'}
-            </button>
+            </Button>
             
             {showFullDetails && (
               <div className="error-display__details-content">
@@ -145,13 +152,15 @@ const ErrorDisplay = ({
 
         {onHelp && (
           <div className="error-display__help">
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               className="error-display__help-button"
               onClick={onHelp}
               title="Get help with this error"
             >
               Need help? Click here for troubleshooting steps
-            </button>
+            </Button>
           </div>
         )}
       </div>

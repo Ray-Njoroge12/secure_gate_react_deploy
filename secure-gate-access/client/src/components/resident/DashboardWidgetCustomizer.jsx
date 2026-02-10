@@ -5,29 +5,21 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Settings, 
-  GripVertical, 
-  Eye, 
-  EyeOff, 
-  RotateCcw,
-  X,
-  Check
-} from 'lucide-react';
+import Icon from '../ui/Icon';
 import { Button, Card } from '../ui';
 
 // Default widget configuration
 const DEFAULT_WIDGETS = [
-  { id: 'stats', name: 'Statistics Overview', icon: '📊', visible: true, order: 0 },
-  { id: 'quick-invite', name: 'Quick Invite', icon: '✉️', visible: true, order: 1 },
-  { id: 'upcoming-invites', name: 'Upcoming Invites', icon: '📅', visible: true, order: 2 },
-  { id: 'recent-visitors', name: 'Recent Visitors', icon: '👥', visible: true, order: 3 },
-  { id: 'quick-actions', name: 'Quick Actions', icon: '⚡', visible: true, order: 4 },
-  { id: 'favorites', name: 'Favorite Visitors', icon: '⭐', visible: true, order: 5 },
-  { id: 'deliveries', name: 'Pending Deliveries', icon: '📦', visible: true, order: 6 },
-  { id: 'auto-approval', name: 'Auto-Approval Rules', icon: '🤖', visible: false, order: 7 },
-  { id: 'insights', name: 'Visitor Insights', icon: '📈', visible: false, order: 8 },
-  { id: 'live-feed', name: 'Live Visitor Feed', icon: '🔴', visible: true, order: 9 },
+  { id: 'stats', name: 'Statistics Overview', icon: 'bar-chart-2', visible: true, order: 0 },
+  { id: 'quick-invite', name: 'Quick Invite', icon: 'mail', visible: true, order: 1 },
+  { id: 'upcoming-invites', name: 'Upcoming Invites', icon: 'calendar', visible: true, order: 2 },
+  { id: 'recent-visitors', name: 'Recent Visitors', icon: 'users', visible: true, order: 3 },
+  { id: 'quick-actions', name: 'Quick Actions', icon: 'zap', visible: true, order: 4 },
+  { id: 'favorites', name: 'Favorite Visitors', icon: 'star', visible: true, order: 5 },
+  { id: 'deliveries', name: 'Pending Deliveries', icon: 'package', visible: true, order: 6 },
+  { id: 'auto-approval', name: 'Auto-Approval Rules', icon: 'bot', visible: false, order: 7 },
+  { id: 'insights', name: 'Visitor Insights', icon: 'trending-up', visible: false, order: 8 },
+  { id: 'live-feed', name: 'Live Visitor Feed', icon: 'radio', visible: true, order: 9 },
 ];
 
 const STORAGE_KEY = 'dashboard_widget_config';
@@ -77,9 +69,9 @@ const WidgetItem = ({ widget, onToggleVisibility, onDragStart, onDragOver, onDro
         hover:shadow-sm cursor-grab active:cursor-grabbing
       `}
     >
-      <GripVertical className="w-4 h-4 text-gray-400 dark:text-gray-300 flex-shrink-0" />
+      <Icon name="grip-vertical" className="w-4 h-4 text-gray-400 dark:text-gray-300 flex-shrink-0" aria-hidden="true" />
       
-      <span className="text-lg">{widget.icon}</span>
+      <Icon name={widget.icon} className="w-5 h-5 text-gray-500 dark:text-gray-400" />
       
       <span className={`flex-1 text-sm font-medium ${
         widget.visible ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'
@@ -87,7 +79,7 @@ const WidgetItem = ({ widget, onToggleVisibility, onDragStart, onDragOver, onDro
         {widget.name}
       </span>
       
-      <button
+      <Button
         onClick={() => onToggleVisibility(widget.id)}
         className={`p-1.5 rounded-md transition-colors ${
           widget.visible 
@@ -96,8 +88,8 @@ const WidgetItem = ({ widget, onToggleVisibility, onDragStart, onDragOver, onDro
         }`}
         aria-label={widget.visible ? `Hide ${widget.name}` : `Show ${widget.name}`}
       >
-        {widget.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-      </button>
+        {widget.visible ? <Icon name="eye" className="w-4 h-4" aria-hidden="true" /> : <Icon name="eye-off" className="w-4 h-4" aria-hidden="true" />}
+      </Button>
     </div>
   );
 };
@@ -171,7 +163,7 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div role="presentation" 
         className="fixed inset-0 bg-black/50 z-40"
         onClick={onClose}
       />
@@ -182,17 +174,17 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center gap-2">
-              <Settings className="w-5 h-5 text-brand-600" />
+              <Icon name="settings" className="w-5 h-5 text-brand-600" aria-hidden="true" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Customize Dashboard
               </h2>
             </div>
-            <button
+            <Button
               onClick={onClose}
               className="p-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
             >
-              <X className="w-5 h-5" />
-            </button>
+              <Icon name="x" className="w-5 h-5" aria-hidden="true" />
+            </Button>
           </div>
           
           {/* Content */}
@@ -230,7 +222,7 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
               onClick={handleReset}
               className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300"
             >
-              <RotateCcw className="w-4 h-4 mr-2" />
+              <Icon name="rotate-ccw" className="w-4 h-4 mr-2" aria-hidden="true" />
               Reset to Default
             </Button>
             
@@ -248,7 +240,7 @@ const DashboardWidgetCustomizer = ({ isOpen, onClose, onSave }) => {
                 disabled={!hasChanges}
                 className="bg-brand-600 hover:bg-brand-700 text-white"
               >
-                <Check className="w-4 h-4 mr-2" />
+                <Icon name="check" className="w-4 h-4 mr-2" aria-hidden="true" />
                 Save Changes
               </Button>
             </div>

@@ -6,7 +6,9 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Check, AlertCircle } from 'lucide-react';
+
+import Button from './Button.jsx';
+import Icon from './Icon.jsx';
 import './FloatingLabelInput.css';
 
 /**
@@ -29,6 +31,9 @@ import './FloatingLabelInput.css';
  * @param {string} props.helperText - Helper text
  * @param {React.ReactNode} props.leftIcon - Left icon component
  * @param {React.ReactNode} props.rightIcon - Right icon component
+ * @param {React.ReactNode|string} props.icon - Alias for leftIcon (legacy support)
+ * @param {React.ReactNode|string} props.endIcon - Alias for rightIcon (legacy support)
+ * @param {boolean} props.disablePasswordToggle - Disable built-in password toggle
  * @param {string} props.className - Additional CSS classes
  * @param {Object} props.inputProps - Additional input props
  */
@@ -49,66 +54,84 @@ const FloatingLabelInput = ({
   helperText = '',
   leftIcon = null,
   rightIcon = null,
+  icon = null,
+  endIcon = null,
+  disablePasswordToggle = false,
   className = '',
   inputProps = {},
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [hasValue, setHasValue] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const inputRef = useRef(null);
 
   // Check if input has value
   useEffect(() => {
-    setHasValue(value && value.toString().length > 0);
+    setHasValue(Boolean(value && value.toString().length > 0));
   }, [value]);
 
   // Determine if label should float
-  const shouldFloat = isFocused || hasValue || placeholder;
+  const shouldFloat = isFocused || hasValue;
 
   // Handle focus
   const handleFocus = (e) => {
     setIsFocused(true);
-    if (onFocus) onFocus(e);
+    onFocus?.(e);
   };
 
   // Handle blur
   const handleBlur = (e) => {
     setIsFocused(false);
-    if (onBlur) onBlur(e);
+    onBlur?.(e);
   };
 
-  // Handle label click
   const handleLabelClick = () => {
-    if (inputRef.current && !disabled) {
-      inputRef.current.focus();
-    }
+    if (!inputRef.current || disabled) return;
+    inputRef.current.focus();
   };
+
+  const normalizeIcon = (iconNode, size = 18) => {
+    if (!iconNode) return null;
+    if (typeof iconNode === 'string') {
+      return <Icon name={iconNode} size={size} aria-hidden="true" />;
+    }
+    return iconNode;
+  };
+
+  const resolvedLeftIcon = normalizeIcon(leftIcon || icon);
+  const resolvedRightIcon = normalizeIcon(rightIcon || endIcon);
+  const hasPasswordToggle = type === 'password' && !disablePasswordToggle;
 
   // Determine input state classes
-  const getStateClasses = () => {
-    if (error) return 'floating-input--error';
-    if (success) return 'floating-input--success';
-    if (isFocused) return 'floating-input--focused';
-    return '';
-  };
+  const stateClasses = error
+    ? 'floating-input--error'
+    : success
+      ? 'floating-input--success'
+      : isFocused
+        ? 'floating-input--focused'
+        : '';
+
+  const inputType = hasPasswordToggle && showPassword ? 'text' : type;
+  const isInvalid = Boolean(error);
+  const isReadOnly = typeof onChange !== 'function';
 
   return (
-    <div className={`floating-input-wrapper ${className}`}>
-      <div className={`floating-input-container ${getStateClasses()}`}>
+    <div className={`floating-input-wrapper ${className}`.trim()}>
+      <div className={`floating-input-container ${stateClasses}`.trim()}>
         {/* Left Icon */}
-        {leftIcon && (
-          <div className="floating-input__icon floating-input__icon--left">
-            {leftIcon}
+        {resolvedLeftIcon && (
+          <div className="floating-input__icon floating-input__icon--left" aria-hidden="true">
+            {resolvedLeftIcon}
           </div>
         )}
 
-        {/* Input Field */}
         <div className="floating-input__field">
           <input
             ref={inputRef}
             id={id}
             name={name}
-            type={type}
+            type={inputType}
             value={value}
             onChange={onChange}
             onFocus={handleFocus}
@@ -116,38 +139,56 @@ const FloatingLabelInput = ({
             placeholder={isFocused ? placeholder : ''}
             required={required}
             disabled={disabled}
+            readOnly={isReadOnly}
             data-testid={id ? `input-${id}` : undefined}
-            className={`floating-input__input ${leftIcon ? 'floating-input__input--with-left-icon' : ''} ${rightIcon || success || error ? 'floating-input__input--with-right-icon' : ''}`}
+            className={`floating-input__input ${resolvedLeftIcon ? 'floating-input__input--with-left-icon' : ''} ${resolvedRightIcon || success || error || hasPasswordToggle ? 'floating-input__input--with-right-icon' : ''}`}
             aria-label={label}
-            aria-required={required}
-            aria-invalid={!!error}
+            aria-required={required || undefined}
+            aria-invalid={isInvalid || undefined}
             aria-describedby={
-              error ? `${id}-error` : helperText ? `${id}-helper` : undefined
+              [
+                error ? `${id}-error` : null,
+                helperText && !error ? `${id}-helper` : null
+              ].filter(Boolean).join(' ') || undefined
             }
             {...inputProps}
             {...rest}
           />
 
-          {/* Floating Label */}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <label
             htmlFor={id}
             className={`floating-input__label ${shouldFloat ? 'floating-input__label--float' : ''}`}
             onClick={handleLabelClick}
           >
             {label}
-            {required && <span className="floating-input__required">*</span>}
+            {required && <span className="floating-input__required" aria-hidden="true">*</span>}
           </label>
         </div>
 
         {/* Right Icon / Status Indicator */}
         <div className="floating-input__icon floating-input__icon--right">
           {error && (
-            <AlertCircle className="floating-input__status-icon floating-input__status-icon--error" />
+            <Icon name="alert-circle" className="floating-input__status-icon floating-input__status-icon--error" />
           )}
           {success && !error && (
-            <Check className="floating-input__status-icon floating-input__status-icon--success" />
+            <Icon name="check" className="floating-input__status-icon floating-input__status-icon--success" />
           )}
-          {!error && !success && rightIcon && rightIcon}
+          {!error && !success && resolvedRightIcon}
+
+          {!error && !success && !resolvedRightIcon && hasPasswordToggle && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              disabled={disabled}
+              className="h-8 w-8 min-h-0 rounded-md px-0 py-0 text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 focus-visible:ring-brand-500"
+            >
+              <Icon name={showPassword ? 'eye-off' : 'eye'} size={16} aria-hidden="true" />
+            </Button>
+          )}
         </div>
       </div>
 

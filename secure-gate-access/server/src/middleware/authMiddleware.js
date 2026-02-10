@@ -7,6 +7,11 @@ import { AppError, asyncHandler } from './standardizedErrorHandler.js';
 const DEBUG_AUTH = process.env.DEBUG_AUTH === 'true' &&
   !['production', 'staging'].includes(process.env.NODE_ENV);
 
+const withSiteAlias = (user) => ({
+  ...user,
+  site_id: user?.site_id ?? user?.estate_id ?? null
+});
+
 // Enhanced authentication middleware with secure token verification
 export const authenticateToken = asyncHandler(async (req, res, next) => {
   if (DEBUG_AUTH) {
@@ -143,13 +148,13 @@ export const authenticateToken = asyncHandler(async (req, res, next) => {
     // Security: User authenticated - no PII logged
 
     // Set req.user with database info
-    req.user = {
+    req.user = withSiteAlias({
       id: dbUser.id,
       email: dbUser.email,
       username: dbUser.username,
       role: dbUser.role,
       estate_id: dbUser.estate_id ?? payload.estate_id ?? null
-    };
+    });
 
     return next();
   } catch (err) {
@@ -229,13 +234,13 @@ export async function attachUserFromToken(req, res, next) {
 
     if (userQuery.rowCount > 0) {
       const dbUser = userQuery.rows[0];
-      req.user = {
+      req.user = withSiteAlias({
         id: dbUser.id,
         email: dbUser.email,
         username: dbUser.username,
         role: dbUser.role,
         estate_id: dbUser.estate_id ?? estateId ?? null
-      };
+      });
     }
   } catch (err) {
     // ignore invalid token in attachUserFromToken (non-fatal)
@@ -276,7 +281,7 @@ export const optionalAuth = async (req, res, next) => {
           }
           
           if (userQuery.rows.length > 0) {
-            req.user = userQuery.rows[0];
+            req.user = withSiteAlias(userQuery.rows[0]);
           }
         }
       } catch {
@@ -330,13 +335,16 @@ export const requireRole = (...allowedRoles) => {
 export const requireMFA = asyncHandler(async (req, res, next) => {
   const mfaRequiredRoles = ['super_admin', 'admin', 'guard'];
   
-  // MFA-002 FIX: Allow access to MFA setup endpoints even without MFA enabled
-  // This enables first-time MFA setup for admin/guard/super_admin roles
+  // MFA-002 FIX: Allow access to MFA management endpoints even without MFA enabled
+  // This enables first-time MFA setup and MFA management for admin/guard/super_admin roles
   const mfaSetupEndpoints = [
     '/api/mfa/setup',
+    '/api/mfa/verify-setup',
     '/api/mfa/qr-code',
     '/api/mfa/enable',
-    '/api/mfa/status'
+    '/api/mfa/status',
+    '/api/mfa/disable',
+    '/api/mfa/regenerate-backup-codes'
   ];
   
   const isMfaSetupEndpoint = mfaSetupEndpoints.some(endpoint => 
@@ -376,10 +384,11 @@ export const requireMFA = asyncHandler(async (req, res, next) => {
       throw new AppError(
         'Multi-Factor Authentication is required for your role. Please set up MFA to continue.',
         403,
-        'MFA_REQUIRED',
+        'MFA_SETUP_REQUIRED',
         {
           setupRequired: true,
-          setupUrl: '/api/mfa/setup'
+          setupUrl: '/mfa/setup',
+          role: req.user.role
         }
       );
     }
@@ -397,6 +406,7 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
       const estateId = Number(contextEstateId);
       if (Number.isInteger(estateId) && estateId > 0) {
         req.user.estate_id = estateId;
+        req.user.site_id = req.user.site_id ?? estateId;
         return next();
       }
     }
@@ -461,6 +471,7 @@ export const requireEstate = asyncHandler(async (req, res, next) => {
   }
 
   req.user.estate_id = estateId;
+  req.user.site_id = req.user.site_id ?? estateId;
   next();
 });
 

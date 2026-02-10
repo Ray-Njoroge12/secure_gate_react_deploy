@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Search, Filter, X, Calendar } from 'lucide-react';
+import Icon from '../ui/Icon';
 import { Input, Button, Badge } from '../ui';
 
 const VisitorFilters = ({ 
@@ -55,7 +55,7 @@ const VisitorFilters = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-gray-400 dark:text-slate-400" aria-hidden="true" />
+          <Icon name="filter" className="w-5 h-5 text-gray-400 dark:text-slate-400" aria-hidden="true" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200">Filters</h3>
           {hasActiveFilters && (
             <Badge variant="primary">{totalResults} results</Badge>
@@ -69,7 +69,7 @@ const VisitorFilters = ({
             className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
             aria-label="Clear all filters"
           >
-            <X className="w-4 h-4 mr-1" aria-hidden="true" />
+            <Icon name="x" className="w-4 h-4 mr-1" aria-hidden="true" />
             Clear All
           </Button>
         )}
@@ -77,7 +77,7 @@ const VisitorFilters = ({
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-400 pointer-events-none" aria-hidden="true" />
+        <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-400 pointer-events-none" aria-hidden="true" />
         <input
           type="text"
           placeholder="Search by name, phone, email, or plate..."
@@ -142,7 +142,7 @@ const VisitorFilters = ({
         {/* From Date */}
         <div>
           <label className="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">
-            <Calendar className="w-4 h-4 inline mr-1" aria-hidden="true" />
+            <Icon name="calendar" className="w-4 h-4 inline mr-1" aria-hidden="true" />
             From Date
           </label>
           <input
@@ -159,7 +159,7 @@ const VisitorFilters = ({
         {/* To Date */}
         <div>
           <label className="block text-sm font-medium text-gray-600 dark:text-slate-300 mb-2">
-            <Calendar className="w-4 h-4 inline mr-1" />
+            <Icon name="calendar" className="w-4 h-4 inline mr-1" aria-hidden="true" />
             To Date
           </label>
           <input
@@ -180,45 +180,45 @@ const VisitorFilters = ({
           {search && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Search: "{search}"
-              <button
+              <Button
                 onClick={() => onFilterChange({ ...filters, search: '' })}
                 className="ml-1 hover:text-red-400"
               >
-                <X className="w-3 h-3" />
-              </button>
+                <Icon name="x" className="w-3 h-3" aria-hidden="true" />
+              </Button>
             </Badge>
           )}
           {status && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Status: {statusOptions.find(o => o.value === status)?.label}
-              <button
+              <Button
                 onClick={() => onFilterChange({ ...filters, status: '' })}
                 className="ml-1 hover:text-red-400"
               >
-                <X className="w-3 h-3" />
-              </button>
+                <Icon name="x" className="w-3 h-3" aria-hidden="true" />
+              </Button>
             </Badge>
           )}
           {fromDate && (
             <Badge variant="secondary" className="flex items-center gap-1">
               From: {fromDate}
-              <button
+              <Button
                 onClick={() => onFilterChange({ ...filters, fromDate: '' })}
                 className="ml-1 hover:text-red-400"
               >
-                <X className="w-3 h-3" />
-              </button>
+                <Icon name="x" className="w-3 h-3" aria-hidden="true" />
+              </Button>
             </Badge>
           )}
           {toDate && (
             <Badge variant="secondary" className="flex items-center gap-1">
               To: {toDate}
-              <button
+              <Button
                 onClick={() => onFilterChange({ ...filters, toDate: '' })}
                 className="ml-1 hover:text-red-400"
               >
-                <X className="w-3 h-3" />
-              </button>
+                <Icon name="x" className="w-3 h-3" aria-hidden="true" />
+              </Button>
             </Badge>
           )}
         </div>

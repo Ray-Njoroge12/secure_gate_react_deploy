@@ -1409,14 +1409,15 @@ router.put('/residents/:id', authenticateToken, requireRolePolicy('adminOnly'), 
     const { username, first_name, last_name, email, phone, unit_number, status } = req.body;
 
     // SECURITY: Filter by estate_id to prevent cross-estate modification
-    let query = `UPDATE users SET 
+    // FIX: Use account_status column (status was renamed in migration 048)
+    let query = `UPDATE users SET
       username = COALESCE($1, username),
       first_name = COALESCE($2, first_name),
       last_name = COALESCE($3, last_name),
       email = COALESCE($4, email),
       phone = COALESCE($5, phone),
       unit_number = COALESCE($6, unit_number),
-      status = COALESCE($7, status),
+      account_status = COALESCE($7, account_status),
       updated_at = NOW()
      WHERE id = $8 AND role = 'resident'`;
     const params = [username, first_name, last_name, email, phone, unit_number, status, id];
@@ -1425,7 +1426,8 @@ router.put('/residents/:id', authenticateToken, requireRolePolicy('adminOnly'), 
       query += ` AND estate_id = $9`;
       params.push(req.user.estate_id);
     }
-    query += ` RETURNING id, username, first_name, last_name, email, phone, unit_number, status`;
+    // FIX: Alias account_status AS status for UI compatibility
+    query += ` RETURNING id, username, first_name, last_name, email, phone, unit_number, account_status AS status`;
 
     const result = await dbManager.query(query, params);
 
@@ -1449,8 +1451,9 @@ router.delete('/residents/:id', authenticateToken, requireRolePolicy('adminOnly'
     const { id } = req.params;
 
     // SECURITY: Filter by estate_id to prevent cross-estate deletion
-    let query = `UPDATE users SET status = 'deleted', updated_at = NOW() 
-       WHERE id = $1 AND role = 'resident' AND status != 'deleted'`;
+    // FIX: Use account_status column (status was renamed in migration 048)
+    let query = `UPDATE users SET account_status = 'deleted', updated_at = NOW()
+       WHERE id = $1 AND role = 'resident' AND account_status != 'deleted'`;
     const params = [id];
 
     if (req.user.estate_id) {

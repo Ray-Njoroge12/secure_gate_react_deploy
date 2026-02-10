@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, MoreHorizontal } from '../icons';
+import Icon from './Icon';
 
 /**
  * Pagination component with accessibility features
@@ -139,8 +139,8 @@ const Pagination = memo(({
           className={`${currentSize.button} flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label="Go to first page"
         >
-          <ChevronLeft className={currentSize.icon} />
-          <ChevronLeft className={currentSize.icon} />
+          <Icon name="chevron-left" className={currentSize.icon} />
+          <Icon name="chevron-left" className={currentSize.icon} />
         </button>
       )}
 
@@ -152,7 +152,7 @@ const Pagination = memo(({
           className={`${currentSize.button} flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label="Go to previous page"
         >
-          <ChevronLeft className={currentSize.icon} />
+          <Icon name="chevron-left" className={currentSize.icon} />
           <span className="hidden sm:inline">Previous</span>
         </button>
       )}
@@ -160,7 +160,7 @@ const Pagination = memo(({
       {/* Start Ellipsis */}
       {showStartEllipsis && (
         <span className={`${currentSize.button} text-gray-400 dark:text-slate-400`} aria-hidden="true">
-          <MoreHorizontal className={currentSize.icon} />
+          <Icon name="more-horizontal" className={currentSize.icon} />
         </span>
       )}
 
@@ -185,7 +185,7 @@ const Pagination = memo(({
       {/* End Ellipsis */}
       {showEndEllipsis && (
         <span className={`${currentSize.button} text-gray-400 dark:text-slate-400`} aria-hidden="true">
-          <MoreHorizontal className={currentSize.icon} />
+          <Icon name="more-horizontal" className={currentSize.icon} />
         </span>
       )}
 
@@ -198,7 +198,7 @@ const Pagination = memo(({
           aria-label="Go to next page"
         >
           <span className="hidden sm:inline">Next</span>
-          <ChevronRight className={currentSize.icon} />
+          <Icon name="chevron-right" className={currentSize.icon} />
         </button>
       )}
 
@@ -210,8 +210,8 @@ const Pagination = memo(({
           className={`${currentSize.button} flex items-center gap-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500`}
           aria-label="Go to last page"
         >
-          <ChevronRight className={currentSize.icon} />
-          <ChevronRight className={currentSize.icon} />
+          <Icon name="chevron-right" className={currentSize.icon} />
+          <Icon name="chevron-right" className={currentSize.icon} />
         </button>
       )}
     </nav>

@@ -133,7 +133,7 @@ const MobileFormInput = ({
         
         {/* Password visibility toggle */}
         {type === 'password' && (
-          <button
+          <Button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -149,7 +149,7 @@ const MobileFormInput = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             )}
-          </button>
+          </Button>
         )}
       </div>
       
@@ -227,7 +227,7 @@ const MobileFormSelect = ({
       
       {/* Select container */}
       <div className="relative">
-        <button
+        <Button
           ref={selectRef}
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
@@ -250,13 +250,13 @@ const MobileFormSelect = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </div>
-        </button>
+        </Button>
         
         {/* Options dropdown */}
         {isOpen && (
           <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-auto">
             {options.map((option) => (
-              <button
+              <Button
                 key={option.value}
                 type="button"
                 onClick={() => handleOptionSelect(option.value)}
@@ -277,7 +277,7 @@ const MobileFormSelect = ({
                 aria-selected={option.value === value}
               >
                 {option.label}
-              </button>
+              </Button>
             ))}
           </div>
         )}

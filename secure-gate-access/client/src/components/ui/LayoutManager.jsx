@@ -12,9 +12,12 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+
 import { useAuth } from '../../contexts/AuthContext.js';
-import { useResponsive } from '../../hooks/useResponsive.js';
 import { useAccessibility } from '../../hooks/useAccessibility.js';
+import { useResponsive } from '../../hooks/useResponsive.js';
+
+import Button from './Button';
 
 /**
  * Enhanced grid configuration with resize constraints
@@ -48,6 +51,24 @@ const DEFAULT_GRID_CONFIG = {
   compactType: 'vertical' // 'vertical', 'horizontal', null
 };
 
+const areLayoutsEqual = (first = [], second = []) => {
+  if (first === second) return true;
+  if (!Array.isArray(first) || !Array.isArray(second) || first.length !== second.length) {
+    return false;
+  }
+
+  return first.every((item, index) => {
+    const other = second[index];
+    return (
+      item?.i === other?.i &&
+      item?.x === other?.x &&
+      item?.y === other?.y &&
+      item?.w === other?.w &&
+      item?.h === other?.h
+    );
+  });
+};
+
 /**
  * Enhanced LayoutManager Component with resize capabilities
  */
@@ -59,13 +80,13 @@ export const LayoutManager = ({
   gridConfig = DEFAULT_GRID_CONFIG,
   isDraggable = true,
   isResizable = true,
-  widgetCatalog = [],
+  _widgetCatalog = [],
   roleRestrictions = {},
   className = '',
   ...props
 }) => {
   const { user } = useAuth();
-  const { breakpoint, isMobile, isTablet } = useResponsive();
+  const { breakpoint } = useResponsive();
   const { isScreenReaderActive, isReducedMotionMode, announce } = useAccessibility();
   
   const [currentLayout, setCurrentLayout] = useState(layout);
@@ -84,40 +105,43 @@ export const LayoutManager = ({
 
   // Memoized collision detection
   const collisionDetection = useMemo(() => {
-    return {
-      checkCollision: (item, layout) => {
-        if (!gridConfig.preventCollision) return false;
-        
-        return layout.some(layoutItem => {
-          if (layoutItem.i === item.i) return false;
-          
-          return !(
-            item.x >= layoutItem.x + layoutItem.w ||
-            layoutItem.x >= item.x + item.w ||
-            item.y >= layoutItem.y + layoutItem.h ||
-            layoutItem.y >= item.y + item.h
-          );
-        });
-      },
-      
-      findAvailablePosition: (item, layout) => {
-        const columns = getColumns();
-        let testItem = { ...item };
-        
-        // Try to find a position without collision
-        for (let y = 0; y < 50; y++) {
-          for (let x = 0; x <= columns - item.w; x++) {
-            testItem = { ...item, x, y };
-            if (!this.checkCollision(testItem, layout)) {
-              return testItem;
-            }
+    const checkCollision = (item, layoutItems) => {
+      if (!gridConfig.preventCollision) return false;
+
+      return layoutItems.some(layoutItem => {
+        if (layoutItem.i === item.i) return false;
+
+        return !(
+          item.x >= layoutItem.x + layoutItem.w ||
+          layoutItem.x >= item.x + item.w ||
+          item.y >= layoutItem.y + layoutItem.h ||
+          layoutItem.y >= item.y + item.h
+        );
+      });
+    };
+
+    const findAvailablePosition = (item, layoutItems) => {
+      const columns = gridConfig.cols[breakpoint] || gridConfig.cols.lg;
+      let testItem = { ...item };
+
+      // Try to find a position without collision
+      for (let y = 0; y < 50; y++) {
+        for (let x = 0; x <= columns - item.w; x++) {
+          testItem = { ...item, x, y };
+          if (!checkCollision(testItem, layoutItems)) {
+            return testItem;
           }
         }
-        
-        return item; // Return original if no position found
       }
+
+      return item;
     };
-  }, [gridConfig.preventCollision]);
+
+    return {
+      checkCollision,
+      findAvailablePosition
+    };
+  }, [breakpoint, gridConfig.cols, gridConfig.preventCollision]);
 
   // Update layout when prop changes
   useEffect(() => {
@@ -506,6 +530,7 @@ export const LayoutManager = ({
       style={{ height: `${containerHeight}px`, minHeight: '400px' }}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+      role="presentation"
       {...props}
     >
       {currentLayout.map((item, index) => {
@@ -521,9 +546,9 @@ export const LayoutManager = ({
             onDragStart={(e) => handleDragStart(e, item)}
             onDragEnd={handleDragEnd}
             onKeyDown={(e) => handleKeyDown(e, item)}
-            tabIndex={isScreenReaderActive ? 0 : -1}
-            role={isScreenReaderActive ? 'button' : undefined}
-            aria-label={isScreenReaderActive ? `Widget ${item.i}, position ${item.x}, ${item.y}, size ${item.w} by ${item.h}. Use arrow keys to move, Ctrl+arrow keys to resize.` : undefined}
+            tabIndex={0}
+            role="button"
+            aria-label={`Widget ${item.i}, position ${item.x}, ${item.y}, size ${item.w} by ${item.h}.${isScreenReaderActive ? ' Use arrow keys to move, Ctrl+arrow keys to resize.' : ''}`}
           >
             {child}
             {renderResizeHandles(item)}
@@ -560,9 +585,9 @@ export const LayoutManager = ({
 export const LayoutItem = ({ 
   children, 
   className = '',
-  onResize,
+  _onResize,
   onConfigure,
-  isResizable = true,
+  _isResizable = true,
   isConfigurable = true,
   widgetId,
   ...props 
@@ -585,24 +610,28 @@ export const LayoutItem = ({
       {/* Widget configuration menu */}
       {isConfigurable && !isScreenReaderActive && (
         <div className="widget-config-menu absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
+          <Button
             onClick={() => setShowConfigMenu(!showConfigMenu)}
+            variant="ghost"
+            size="sm"
             className="p-1 rounded bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-gray-300"
             aria-label="Configure widget"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
             </svg>
-          </button>
+          </Button>
           
           {showConfigMenu && (
             <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 z-50">
-              <button
+              <Button
                 onClick={handleConfigure}
-                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                variant="ghost"
+                size="sm"
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 justify-start"
               >
                 Configure
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -622,6 +651,7 @@ export const useLayoutPersistence = (layoutKey, defaultLayout = [], options = {}
   const [isLoading, setIsLoading] = useState(true);
   const [lastSaved, setLastSaved] = useState(null);
   const saveTimeoutRef = useRef(null);
+  const defaultLayoutRef = useRef(defaultLayout);
   
   const {
     autoSave = true,
@@ -629,6 +659,12 @@ export const useLayoutPersistence = (layoutKey, defaultLayout = [], options = {}
     enableConflictResolution = true,
     maxVersions = 10
   } = options;
+
+  useEffect(() => {
+    if (!areLayoutsEqual(defaultLayoutRef.current, defaultLayout)) {
+      defaultLayoutRef.current = defaultLayout;
+    }
+  }, [defaultLayout]);
 
   // Load layout from localStorage on mount
   useEffect(() => {
@@ -638,11 +674,9 @@ export const useLayoutPersistence = (layoutKey, defaultLayout = [], options = {}
     }
     
     const storageKey = `layout-${user.id}-${layoutKey}`;
-    const versionsKey = `${storageKey}-versions`;
     
     try {
       const saved = localStorage.getItem(storageKey);
-      const versions = JSON.parse(localStorage.getItem(versionsKey) || '[]');
       
       if (saved) {
         const parsedLayout = JSON.parse(saved);
@@ -652,28 +686,38 @@ export const useLayoutPersistence = (layoutKey, defaultLayout = [], options = {}
           item.i && typeof item.x === 'number' && typeof item.y === 'number' &&
           typeof item.w === 'number' && typeof item.h === 'number'
         )) {
-          setLayout(parsedLayout);
+          setLayout((previousLayout) => (
+            areLayoutsEqual(previousLayout, parsedLayout) ? previousLayout : parsedLayout
+          ));
           setLastSaved(new Date());
         } else {
           console.warn('Invalid layout structure, using default');
-          setLayout(defaultLayout);
+          setLayout((previousLayout) => (
+            areLayoutsEqual(previousLayout, defaultLayoutRef.current) ? previousLayout : defaultLayoutRef.current
+          ));
         }
       } else {
-        setLayout(defaultLayout);
+        setLayout((previousLayout) => (
+          areLayoutsEqual(previousLayout, defaultLayoutRef.current) ? previousLayout : defaultLayoutRef.current
+        ));
       }
     } catch (error) {
       console.warn('Failed to parse saved layout:', error);
-      setLayout(defaultLayout);
+      setLayout((previousLayout) => (
+        areLayoutsEqual(previousLayout, defaultLayoutRef.current) ? previousLayout : defaultLayoutRef.current
+      ));
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, layoutKey, defaultLayout]);
+  }, [user?.id, layoutKey]);
 
   // Save layout changes with debouncing
   const saveLayout = useCallback((newLayout, immediate = false) => {
     if (!user?.id || !Array.isArray(newLayout)) return;
     
-    setLayout(newLayout);
+    setLayout((previousLayout) => (
+      areLayoutsEqual(previousLayout, newLayout) ? previousLayout : newLayout
+    ));
     
     if (!autoSave && !immediate) return;
     
@@ -738,14 +782,16 @@ export const useLayoutPersistence = (layoutKey, defaultLayout = [], options = {}
   const resetLayout = useCallback(() => {
     if (!user?.id) return;
     
-    setLayout(defaultLayout);
+    setLayout((previousLayout) => (
+      areLayoutsEqual(previousLayout, defaultLayoutRef.current) ? previousLayout : defaultLayoutRef.current
+    ));
     const storageKey = `layout-${user.id}-${layoutKey}`;
     const versionsKey = `${storageKey}-versions`;
     
     localStorage.removeItem(storageKey);
     localStorage.removeItem(versionsKey);
     setLastSaved(null);
-  }, [user?.id, layoutKey, defaultLayout]);
+  }, [user?.id, layoutKey]);
 
   // Get layout versions for conflict resolution
   const getLayoutVersions = useCallback(() => {

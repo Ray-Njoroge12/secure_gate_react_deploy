@@ -1,12 +1,11 @@
 // client/src/pages/resident/GeneratePass.jsx
 import React, { useState, useEffect } from "react";
 import { navigateTo } from "../../utils/appNavigation";
-import { PageHeader, Card, Button, EmptyState } from "../../components/ui";
+import { PageHeader, Card, Button, EmptyState, Icon } from "../../components/ui";
 import { getMyVisitors, createPass } from "../../services/passService";
 // import AppShell from "../../layouts/AppShell"; // Removed to fix duplicate sidebar
 // import { useCurrentRole } from "../../hooks/useCurrentRole"; // Removed - handled by App.js
 import logger from 'utils/logger';
-import { QrCode, RefreshCw, Send, Copy, CheckCircle } from 'lucide-react';
 
 export default function GeneratePass() {
   const [visitors, setVisitors] = useState([]);
@@ -113,7 +112,7 @@ export default function GeneratePass() {
       <PageHeader
         title="Generate Pass"
         subtitle="Create QR passes for approved visitors"
-        icon={<QrCode className="w-6 h-6 text-green-600" />}
+        icon={<Icon name="QrCode" className="w-6 h-6 text-brand-600" />}
         showBack={true}
         backTo="/dashboard/resident"
       />
@@ -152,7 +151,7 @@ export default function GeneratePass() {
                   Approved Visitor
                 </label>
                 <select
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200"
                   value={selectedVisitor}
                   onChange={e => setSelectedVisitor(e.target.value)}
                   disabled={loading}
@@ -174,22 +173,22 @@ export default function GeneratePass() {
                   disabled={loading}
                   className="flex-1"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <Icon name="RefreshCw" className="w-4 h-4 mr-2" />
                   Reset
                 </Button>
                 <Button
                   type="submit"
                   disabled={loading || !selectedVisitor}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                  className="flex-1 bg-brand-500 hover:bg-brand-600 text-white"
                 >
                   {loading ? (
                     <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      <Icon name="RefreshCw" className="w-4 h-4 mr-2 animate-spin" />
                       Generating...
                     </>
                   ) : (
                     <>
-                      <QrCode className="w-4 h-4 mr-2" />
+                      <Icon name="QrCode" className="w-4 h-4 mr-2" />
                       Generate Pass
                     </>
                   )}
@@ -203,10 +202,10 @@ export default function GeneratePass() {
         {result && (
           <Card className="overflow-hidden">
             {/* Success Header */}
-            <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white text-center">
-              <CheckCircle className="w-12 h-12 mx-auto mb-2" />
+            <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 text-white text-center">
+              <Icon name="CheckCircle" className="w-12 h-12 mx-auto mb-2" />
               <h2 className="text-xl font-bold">Pass Generated!</h2>
-              <p className="text-green-100">For {result.visitorName}</p>
+              <p className="text-brand-100">For {result.visitorName}</p>
             </div>
 
             <div className="p-6">
@@ -221,7 +220,7 @@ export default function GeneratePass() {
                     />
                   ) : (
                     <div className="w-48 h-48 bg-gray-100 dark:bg-slate-700 rounded-xl flex items-center justify-center border-2 border-gray-200 dark:border-slate-700">
-                      <QrCode className="w-16 h-16 text-gray-400 dark:text-gray-300" />
+                      <Icon name="QrCode" className="w-16 h-16 text-gray-400 dark:text-gray-300" />
                     </div>
                   )}
                 </div>
@@ -236,7 +235,7 @@ export default function GeneratePass() {
                   {result.plainOtp && (
                     <div className="space-y-1 mb-4">
                       <p className="text-sm text-gray-500 dark:text-gray-300">OTP Code</p>
-                      <p className="font-mono text-2xl font-bold text-green-600">{result.plainOtp}</p>
+                      <p className="font-mono text-2xl font-bold text-brand-600">{result.plainOtp}</p>
                     </div>
                   )}
 
@@ -253,6 +252,7 @@ export default function GeneratePass() {
                           type="text"
                           value={result.inviteLink}
                           readOnly
+                          aria-label="Invite link"
                           className="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-200 rounded-lg border border-gray-200 dark:border-slate-700"
                           onClick={e => e.target.select()}
                         />
@@ -261,7 +261,7 @@ export default function GeneratePass() {
                           onClick={handleCopyLink}
                           className="flex-shrink-0"
                         >
-                          {copied ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                          {copied ? <Icon name="CheckCircle" className="w-4 h-4 text-green-600" /> : <Icon name="Copy" className="w-4 h-4" />}
                         </Button>
                       </div>
                     </div>
@@ -276,11 +276,11 @@ export default function GeneratePass() {
                   onClick={reset}
                   className="flex-1"
                 >
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <Icon name="RefreshCw" className="w-4 h-4 mr-2" />
                   Generate Another
                 </Button>
                 <Button
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                  className="flex-1 bg-brand-500 hover:bg-brand-600 text-white"
                   onClick={() => navigateTo('/dashboard/resident')}
                 >
                   Done
