@@ -11,8 +11,9 @@
  * - Double-confirm for critical actions
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
+import Button from '../ui/Button';
 
 const variants = {
   danger: {
@@ -81,6 +82,9 @@ const ConfirmationDialog = ({
   const confirmButtonRef = useRef(null);
   const cancelButtonRef = useRef(null);
   const inputRef = useRef(null);
+  const uniqueId = useId();
+  const titleId = `dialog-title-${uniqueId}`;
+  const descId = `dialog-description-${uniqueId}`;
 
   const variantStyle = variants[variant] || variants.info;
 
@@ -155,6 +159,7 @@ const ConfirmationDialog = ({
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
         onClick={onClose}
+        role="presentation" // Correct role for backdrop that is just visual but interactive for convenience
         aria-hidden="true"
       />
       
@@ -164,11 +169,11 @@ const ConfirmationDialog = ({
           ref={dialogRef}
           role="alertdialog"
           aria-modal="true"
-          aria-labelledby="dialog-title"
-          aria-describedby="dialog-description"
+          aria-labelledby={titleId}
+          aria-describedby={descId}
           className="
             relative w-full max-w-md
-            bg-white dark:bg-slate-800 rounded-xl shadow-xl
+            bg-white dark:bg-slate-800 rounded-xl shadow-2xl
             transform transition-all
             animate-scale-in
           "
@@ -188,7 +193,7 @@ const ConfirmationDialog = ({
 
             {/* Title */}
             <h3 
-              id="dialog-title"
+              id={titleId}
               className="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2"
             >
               {title || variantStyle.title}
@@ -196,7 +201,7 @@ const ConfirmationDialog = ({
 
             {/* Message */}
             <p 
-              id="dialog-description"
+              id={descId}
               className="text-gray-600 dark:text-gray-200 text-center mb-4"
             >
               {message}
@@ -255,7 +260,7 @@ const ConfirmationDialog = ({
 
             {/* Actions */}
             <div className="flex gap-3 mt-6">
-              <button
+              <Button
                 ref={cancelButtonRef}
                 onClick={onClose}
                 disabled={isLoading}
@@ -271,8 +276,8 @@ const ConfirmationDialog = ({
                 {...cancelButtonProps}
               >
                 {cancelText}
-              </button>
-              <button
+              </Button>
+              <Button
                 ref={confirmButtonRef}
                 onClick={handleConfirm}
                 disabled={!isConfirmEnabled || isLoading}
@@ -296,7 +301,7 @@ const ConfirmationDialog = ({
                 ) : (
                   confirmText
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -18,23 +18,8 @@ import {
 } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
 import logger from '../../utils/logger';
-import {
-  Users,
-  Clock,
-  TrendingUp,
-  Shield,
-  BookOpen,
-  Mail,
-  Phone,
-  Edit2,
-  Trash2,
-  Plus,
-  AlertCircle,
-  CheckCircle,
-  User,
-  Lock,
-  X
-} from 'lucide-react';
+import Icon from "../../components/ui/Icon";
+import Button from "../../components/ui/Button";
 
 const EQUIPMENT_TYPES = [
   'radio',
@@ -171,29 +156,37 @@ export default function ManageGuards({ estateId }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [estateId]);
 
   const loadShifts = useCallback(async (filters = shiftFilters) => {
     try {
-      const data = await getGuardShifts(filters);
+      const params = {
+        ...filters,
+        ...(estateId ? { siteId: estateId } : {})
+      };
+      const data = await getGuardShifts(params);
       setShifts(data || []);
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
       logger.error('Failed to load shifts:', e);
     }
-  }, [shiftFilters]);
+  }, [estateId, shiftFilters]);
 
   const loadEquipment = useCallback(async (filters = equipmentFilters) => {
     try {
-      const data = await getEquipmentCheckouts(filters);
+      const params = {
+        ...filters,
+        ...(estateId ? { siteId: estateId } : {})
+      };
+      const data = await getEquipmentCheckouts(params);
       setEquipmentCheckouts(data || []);
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
       logger.error('Failed to load equipment checkouts:', e);
     }
-  }, [equipmentFilters]);
+  }, [equipmentFilters, estateId]);
 
   useEffect(() => {
     loadGuards();
@@ -412,15 +405,14 @@ export default function ManageGuards({ estateId }) {
     setLoading(true);
     try {
       if (editingGuard) {
-        // Update existing guard
+        // Update existing guard - send account_status, not role
         const payload = {
           username: guardForm.username,
           first_name: guardForm.first_name,
           last_name: guardForm.last_name,
           email: guardForm.email,
           phone: guardForm.phone,
-          status: guardForm.status,
-          role: guardForm.role
+          account_status: guardForm.status
         };
         await updateGuard(editingGuard.id, payload);
         setNotice('Guard updated successfully.');
@@ -488,11 +480,11 @@ export default function ManageGuards({ estateId }) {
   };
 
   const tabs = [
-    { id: 'team', label: 'Team', icon: <Users size={18} /> },
-    { id: 'shifts', label: 'Shifts', icon: <Clock size={18} /> },
-    { id: 'performance', label: 'Performance', icon: <TrendingUp size={18} /> },
-    { id: 'equipment', label: 'Equipment', icon: <Shield size={18} /> },
-    { id: 'training', label: 'Training', icon: <BookOpen size={18} /> }
+    { id: 'team', label: 'Team', icon: <Icon name="users" size={18} /> },
+    { id: 'shifts', label: 'Shifts', icon: <Icon name="clock" size={18} /> },
+    { id: 'performance', label: 'Performance', icon: <Icon name="trending-up" size={18} /> },
+    { id: 'equipment', label: 'Equipment', icon: <Icon name="shield" size={18} /> },
+    { id: 'training', label: 'Training', icon: <Icon name="book-open" size={18} /> }
   ];
 
 
@@ -504,25 +496,61 @@ export default function ManageGuards({ estateId }) {
           {error}
         </div>
       )}
+      {notice && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
+          {notice}
+        </div>
+      )}
+
+      <div className="border-b border-gray-200 dark:border-slate-700">
+        <nav className="-mb-px flex flex-wrap gap-2" role="tablist" aria-label="Guard management sections">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.id}
+              id={`manage-guards-tab-${tab.id}`}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`manage-guards-panel-${tab.id}`}
+              variant="ghost"
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center gap-2 px-3 py-2 border-b-2 text-sm font-medium rounded-t-md ${
+                activeTab === tab.id
+                  ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-slate-600'
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </Button>
+          ))}
+        </nav>
+      </div>
+
       {/* Content Area */}
       {loading ? (
         <div className="flex justify-center p-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
         </div>
       ) : (
         <div className="mt-6">
           {/* Team Management Tab */}
           {activeTab === 'team' && (
-            <div className="space-y-4">
+            <div
+              id="manage-guards-panel-team"
+              role="tabpanel"
+              aria-labelledby="manage-guards-tab-team"
+              className="space-y-4"
+            >
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Security Team</h2>
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => setShowGuardModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+                  className="flex items-center gap-2 text-sm font-medium"
                 >
-                  <Plus size={16} />
+                  <Icon name="Plus" size={16} />
                   Add Guard
-                </button>
+                </Button>
               </div>
 
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
@@ -561,11 +589,11 @@ export default function ManageGuards({ estateId }) {
                             <td className="px-6 py-4">
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                  <Mail size={14} />
+                                  <Icon name="Mail" size={14} />
                                   <span>{guard.email}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                  <Phone size={14} />
+                                  <Icon name="Phone" size={14} />
                                   <span>{guard.phone || 'N/A'}</span>
                                 </div>
                               </div>
@@ -583,20 +611,22 @@ export default function ManageGuards({ estateId }) {
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-2">
-                                <button
+                                <Button
+                                  variant="ghost"
                                   onClick={() => initEditGuard(guard)}
-                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400 transition"
-                                  title="Edit Guard"
+                                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:text-gray-300 dark:hover:text-brand-400 transition"
+                                  aria-label="Edit Guard"
                                 >
-                                  <Edit2 size={16} />
-                                </button>
-                                <button
+                                  <Icon name="Edit2" size={16} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
                                   onClick={() => confirmDeleteGuard(guard.id)}
                                   className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 transition"
-                                  title="Remove Guard"
+                                  aria-label="Remove Guard"
                                 >
-                                  <Trash2 size={16} />
-                                </button>
+                                  <Icon name="Trash2" size={16} />
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -610,7 +640,12 @@ export default function ManageGuards({ estateId }) {
           )}
 
           {activeTab === 'shifts' && (
-            <div className="space-y-6">
+            <div
+              id="manage-guards-panel-shifts"
+              role="tabpanel"
+              aria-labelledby="manage-guards-tab-shifts"
+              className="space-y-6"
+            >
 
               <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -633,13 +668,13 @@ export default function ManageGuards({ estateId }) {
                       onChange={(event) => setShiftFilters((prev) => ({ ...prev, end_date: event.target.value }))}
                       className="border border-slate-200 rounded-md px-2 py-1 text-sm"
                     />
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
                       onClick={() => loadShifts(shiftFilters)}
-                      className="px-3 py-1 bg-slate-900 text-white rounded-md text-sm"
+                      className="px-3 py-1 text-sm"
                     >
                       Refresh
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -715,12 +750,12 @@ export default function ManageGuards({ estateId }) {
                         rows="3"
                       />
                     </div>
-                    <button
+                    <Button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                      variant="primary"
                     >
                       Create Shift
-                    </button>
+                    </Button>
                   </form>
 
                   <form onSubmit={handleUpdateShift} className="space-y-4">
@@ -803,8 +838,8 @@ export default function ManageGuards({ estateId }) {
                           />
                         </div>
                         <div className="flex gap-3">
-                          <button type="submit" className="px-4 py-2 bg-slate-900 text-white rounded-md">Save Changes</button>
-                          <button type="button" onClick={() => setEditingShift(null)} className="px-4 py-2 border border-slate-200 rounded-md">Cancel</button>
+                          <Button variant="primary" type="submit">Save Changes</Button>
+                          <Button variant="outlined" onClick={() => setEditingShift(null)}>Cancel</Button>
                         </div>
                       </>
                     ) : (
@@ -836,13 +871,13 @@ export default function ManageGuards({ estateId }) {
                           <td className="px-4 py-2">{shift.post_location || '—'}</td>
                           <td className="px-4 py-2 capitalize">{shift.status}</td>
                           <td className="px-4 py-2">
-                            <button
-                              type="button"
+                            <Button
+                              variant="ghost"
                               onClick={() => handleEditShift(shift)}
                               className="text-blue-600 hover:underline"
                             >
                               Edit
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -867,13 +902,13 @@ export default function ManageGuards({ estateId }) {
                       </option>
                     ))}
                   </select>
-                  <button
-                    type="button"
+                  <Button
+                    variant="secondary"
                     onClick={handleLoadHandoverNotes}
-                    className="px-3 py-2 bg-slate-900 text-white rounded-md"
+                    className="px-3 py-2"
                   >
                     Load Notes
-                  </button>
+                  </Button>
                 </div>
                 <div className="mt-4 space-y-3">
                   {handoverNotes.length === 0 ? (
@@ -901,7 +936,12 @@ export default function ManageGuards({ estateId }) {
           )}
 
           {activeTab === 'performance' && (
-            <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
+            <section
+              id="manage-guards-panel-performance"
+              role="tabpanel"
+              aria-labelledby="manage-guards-tab-performance"
+              className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6"
+            >
               <h2 className="text-lg font-semibold text-slate-900">Performance Metrics</h2>
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <form onSubmit={handleRecordPerformance} className="space-y-4">
@@ -964,7 +1004,7 @@ export default function ManageGuards({ estateId }) {
                       rows="3"
                     />
                   </div>
-                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md">Record Metric</button>
+                  <Button variant="primary" type="submit">Record Metric</Button>
                 </form>
 
                 <div className="space-y-4">
@@ -1002,9 +1042,9 @@ export default function ManageGuards({ estateId }) {
                       />
                     </div>
                   </div>
-                  <button type="button" onClick={handleFetchPerformance} className="px-4 py-2 bg-slate-900 text-white rounded-md">
+                  <Button variant="secondary" onClick={handleFetchPerformance}>
                     Load Metrics
-                  </button>
+                  </Button>
                   {performanceData && (
                     <div className="border border-slate-200 rounded-md p-4">
                       <div className="text-sm text-slate-600 dark:text-slate-200">Average rating: {performanceData.statistics?.average_rating || '—'}</div>
@@ -1024,8 +1064,12 @@ export default function ManageGuards({ estateId }) {
           )}
 
           {activeTab === 'equipment' && (
-
-            <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
+            <section
+              id="manage-guards-panel-equipment"
+              role="tabpanel"
+              aria-labelledby="manage-guards-tab-equipment"
+              className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6"
+            >
               <h2 className="text-lg font-semibold text-slate-900">Equipment Checkout & Returns</h2>
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <form onSubmit={handleCheckoutEquipment} className="space-y-4">
@@ -1086,7 +1130,7 @@ export default function ManageGuards({ estateId }) {
                       rows="2"
                     />
                   </div>
-                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md">Checkout</button>
+                  <Button variant="primary" type="submit">Checkout</Button>
                 </form>
 
                 <div className="space-y-4">
@@ -1111,9 +1155,9 @@ export default function ManageGuards({ estateId }) {
                       <option value="checked_out">Checked Out</option>
                       <option value="returned">Returned</option>
                     </select>
-                    <button type="button" onClick={() => loadEquipment(equipmentFilters)} className="px-3 py-2 bg-slate-900 text-white rounded-md">
+                    <Button variant="secondary" onClick={() => loadEquipment(equipmentFilters)}>
                       Refresh
-                    </button>
+                    </Button>
                   </div>
                   <div className="space-y-3">
                     {equipmentCheckouts.length === 0 ? (
@@ -1129,13 +1173,13 @@ export default function ManageGuards({ estateId }) {
                           <div className="mt-2 flex flex-wrap items-center gap-3">
                             <span className="text-xs text-slate-500 dark:text-slate-300">Checked out: {formatDateTime(checkout.checkout_time)}</span>
                             {checkout.status === 'checked_out' && (
-                              <button
-                                type="button"
+                              <Button
+                                variant="ghost"
                                 onClick={() => handleReturnEquipment(checkout)}
                                 className="text-blue-600 text-sm"
                               >
                                 Mark Returned
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -1148,8 +1192,12 @@ export default function ManageGuards({ estateId }) {
           )}
 
           {activeTab === 'training' && (
-
-            <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
+            <section
+              id="manage-guards-panel-training"
+              role="tabpanel"
+              aria-labelledby="manage-guards-tab-training"
+              className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6"
+            >
               <h2 className="text-lg font-semibold text-slate-900">Training & Certifications</h2>
               <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <form onSubmit={handleAddTraining} className="space-y-4">
@@ -1229,7 +1277,7 @@ export default function ManageGuards({ estateId }) {
                       rows="2"
                     />
                   </div>
-                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md">Add Training</button>
+                  <Button variant="primary" type="submit">Add Training</Button>
                 </form>
 
                 <div className="space-y-4">
@@ -1245,13 +1293,12 @@ export default function ManageGuards({ estateId }) {
                         <option key={guard.value} value={guard.value}>{guard.label}</option>
                       ))}
                     </select>
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
                       onClick={() => handleLoadTrainingRecords(trainingGuardId)}
-                      className="px-3 py-2 bg-slate-900 text-white rounded-md"
                     >
                       Load Records
-                    </button>
+                    </Button>
                   </div>
                   <div className="space-y-3">
                     {trainingRecords.length === 0 ? (
@@ -1278,17 +1325,19 @@ export default function ManageGuards({ estateId }) {
       {/* Guard Modal */}
       {showGuardModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full p-6 shadow-xl overflow-y-auto max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {editingGuard ? 'Edit Guard' : 'Add New Guard'}
               </h2>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setShowGuardModal(false)}
+                aria-label="Close"
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
               >
-                <X size={24} />
-              </button>
+                <Icon name="X" size={24} />
+              </Button>
             </div>
 
             <form onSubmit={handleGuardSubmit} className="space-y-4">
@@ -1384,20 +1433,20 @@ export default function ManageGuards({ estateId }) {
               </div>
 
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
                   onClick={() => setShowGuardModal(false)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 rounded-md transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                  loading={loading}
                 >
-                  {loading ? 'Saving...' : (editingGuard ? 'Update Guard' : 'Create Guard')}
-                </button>
+                  {editingGuard ? 'Update Guard' : 'Create Guard'}
+                </Button>
               </div>
             </form>
           </div>

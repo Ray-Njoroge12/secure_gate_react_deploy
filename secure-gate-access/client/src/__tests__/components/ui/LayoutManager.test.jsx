@@ -1,59 +1,62 @@
 /**
  * Unit Tests: LayoutManager
- * Tests the responsive layout management system
+ * Validates current LayoutManager contract (auth/responsive/accessibility hooks + interaction behavior)
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen } from '@testing-library/react';
+
 import { LayoutManager } from '../../../components/ui/LayoutManager';
 
-// Mock hooks
-jest.mock('../../../hooks/useEnhancedResponsive', () => ({
-  useEnhancedResponsive: jest.fn()
+jest.mock('../../../contexts/AuthContext', () => ({
+  useAuth: jest.fn()
+}));
+
+jest.mock('../../../hooks/useResponsive', () => ({
+  useResponsive: jest.fn()
 }));
 
 jest.mock('../../../hooks/useAccessibility', () => ({
   useAccessibility: jest.fn()
 }));
 
-jest.mock('../../../contexts/ThemeContext', () => ({
-  useTheme: jest.fn()
-}));
-
 describe('LayoutManager', () => {
-  const mockUseEnhancedResponsive = require('../../../hooks/useEnhancedResponsive').useEnhancedResponsive;
+  const mockUseAuth = require('../../../contexts/AuthContext').useAuth;
+  const mockUseResponsive = require('../../../hooks/useResponsive').useResponsive;
   const mockUseAccessibility = require('../../../hooks/useAccessibility').useAccessibility;
-  const mockUseTheme = require('../../../contexts/ThemeContext').useTheme;
+
+  const announce = jest.fn();
+
+  const oneItemLayout = [
+    { i: 'alpha', x: 0, y: 0, w: 3, h: 2 }
+  ];
+
+  const twoItemLayout = [
+    { i: 'alpha', x: 0, y: 0, w: 3, h: 2 },
+    { i: 'beta', x: 3, y: 0, w: 3, h: 2 }
+  ];
+
+  const renderLayout = (props = {}, children = null) => render(
+    <LayoutManager layout={oneItemLayout} {...props}>
+      {children || <div data-testid="widget-alpha">Alpha Widget</div>}
+    </LayoutManager>
+  );
 
   beforeEach(() => {
-    // Default mocks
-    mockUseEnhancedResponsive.mockReturnValue({
-      isMobile: false,
-      isTablet: false,
-      isDesktop: true,
-      breakpoint: 'lg',
-      effectiveBreakpoint: 'lg',
-      containerBreakpoint: null,
-      containerWidth: 1200,
-      containerRef: { current: null },
-      getResponsiveValue: jest.fn((values) => values.lg || values.desktop || values.default),
-      getResponsiveStyles: jest.fn(() => ({}))
+    announce.mockReset();
+
+    mockUseAuth.mockReturnValue({
+      user: { id: 1, role: 'resident' }
+    });
+
+    mockUseResponsive.mockReturnValue({
+      breakpoint: 'lg'
     });
 
     mockUseAccessibility.mockReturnValue({
-      accessibilityState: {
-        isHighContrast: false,
-        isReducedMotion: false,
-        isKeyboardUser: false
-      },
-      getAccessibleClasses: jest.fn(() => ''),
-      getAccessibleStyles: jest.fn(() => ({}))
-    });
-
-    mockUseTheme.mockReturnValue({
-      theme: 'light',
-      isDark: false,
-      density: 'comfortable'
+      isScreenReaderActive: false,
+      isReducedMotionMode: false,
+      announce
     });
   });
 
@@ -61,349 +64,124 @@ describe('LayoutManager', () => {
     jest.clearAllMocks();
   });
 
-  describe('Basic Layout Rendering', () => {
-    test('should render with default layout structure', () => {
-      render(
-        <LayoutManager>
-          <div data-testid="content">Test Content</div>
-        </LayoutManager>
-      );
+  test('renders layout container and widgets for each layout item', () => {
+    const { container } = render(
+      <LayoutManager layout={twoItemLayout}>
+        <div data-testid="widget-alpha">Alpha Widget</div>
+        <div data-testid="widget-beta">Beta Widget</div>
+      </LayoutManager>
+    );
 
-      expect(screen.getByTestId('content')).toBeInTheDocument();
-      expect(screen.getByRole('main')).toBeInTheDocument();
-    });
-
-    test('should apply responsive layout classes', () => {
-      const { container } = render(
-        <LayoutManager layout="grid">
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('layout-manager');
-    });
-
-    test('should render with custom layout type', () => {
-      const { container } = render(
-        <LayoutManager layout="sidebar">
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('layout-sidebar');
-    });
+    expect(container.firstChild).toHaveClass('layout-manager');
+    expect(screen.getByTestId('widget-alpha')).toBeInTheDocument();
+    expect(screen.getByTestId('widget-beta')).toBeInTheDocument();
+    expect(container.querySelectorAll('.layout-item')).toHaveLength(2);
   });
 
-  describe('Responsive Behavior', () => {
-    test('should adapt layout for mobile devices', () => {
-      mockUseEnhancedResponsive.mockReturnValue({
-        isMobile: true,
-        isTablet: false,
-        isDesktop: false,
-        breakpoint: 'sm',
-        effectiveBreakpoint: 'sm',
-        containerBreakpoint: 'sm',
-        containerWidth: 375,
-        containerRef: { current: null },
-        getResponsiveValue: jest.fn((values) => values.sm || values.mobile || values.default),
-        getResponsiveStyles: jest.fn(() => ({ padding: '8px' }))
-      });
+  test('renders only children with matching layout index positions', () => {
+    render(
+      <LayoutManager layout={oneItemLayout}>
+        <div data-testid="widget-alpha">Alpha Widget</div>
+        <div data-testid="widget-beta">Beta Widget</div>
+      </LayoutManager>
+    );
 
-      const { container } = render(
-        <LayoutManager>
-          <div>Mobile Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('layout-mobile');
-    });
-
-    test('should adapt layout for tablet devices', () => {
-      mockUseEnhancedResponsive.mockReturnValue({
-        isMobile: false,
-        isTablet: true,
-        isDesktop: false,
-        breakpoint: 'md',
-        effectiveBreakpoint: 'md',
-        containerBreakpoint: 'md',
-        containerWidth: 768,
-        containerRef: { current: null },
-        getResponsiveValue: jest.fn((values) => values.md || values.tablet || values.default),
-        getResponsiveStyles: jest.fn(() => ({ padding: '16px' }))
-      });
-
-      const { container } = render(
-        <LayoutManager>
-          <div>Tablet Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('layout-tablet');
-    });
-
-    test('should use responsive values for spacing', () => {
-      const mockGetResponsiveValue = jest.fn((values) => values.lg);
-      mockUseEnhancedResponsive.mockReturnValue({
-        isMobile: false,
-        isTablet: false,
-        isDesktop: true,
-        breakpoint: 'lg',
-        effectiveBreakpoint: 'lg',
-        getResponsiveValue: mockGetResponsiveValue,
-        getResponsiveStyles: jest.fn(() => ({}))
-      });
-
-      render(
-        <LayoutManager spacing={{ sm: 8, md: 16, lg: 24 }}>
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      expect(mockGetResponsiveValue).toHaveBeenCalledWith({ sm: 8, md: 16, lg: 24 });
-    });
+    expect(screen.getByTestId('widget-alpha')).toBeInTheDocument();
+    expect(screen.queryByTestId('widget-beta')).not.toBeInTheDocument();
   });
 
-  describe('Accessibility Features', () => {
-    test('should apply accessibility classes', () => {
-      mockUseAccessibility.mockReturnValue({
-        accessibilityState: {
-          isHighContrast: true,
-          isReducedMotion: false,
-          isKeyboardUser: true
-        },
-        getAccessibleClasses: jest.fn(() => 'high-contrast keyboard-user'),
-        getAccessibleStyles: jest.fn(() => ({}))
-      });
-
-      const { container } = render(
-        <LayoutManager>
-          <div>Accessible Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('high-contrast', 'keyboard-user');
+  test('disables dragging when reduced motion mode is active', () => {
+    mockUseAccessibility.mockReturnValue({
+      isScreenReaderActive: false,
+      isReducedMotionMode: true,
+      announce
     });
 
-    test('should apply reduced motion styles', () => {
-      mockUseAccessibility.mockReturnValue({
-        accessibilityState: {
-          isHighContrast: false,
-          isReducedMotion: true,
-          isKeyboardUser: false
-        },
-        getAccessibleClasses: jest.fn(() => 'reduced-motion'),
-        getAccessibleStyles: jest.fn(() => ({ transition: 'none' }))
-      });
+    const { container } = renderLayout();
+    const layoutItem = container.querySelector('.layout-item');
 
-      const { container } = render(
-        <LayoutManager>
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('reduced-motion');
-    });
-
-    test('should provide skip navigation links', () => {
-      render(
-        <LayoutManager showSkipLinks={true}>
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      expect(screen.getByText('Skip to main content')).toBeInTheDocument();
-    });
-
-    test('should handle skip link activation', () => {
-      const mockFocus = jest.fn();
-      const mockScrollIntoView = jest.fn();
-      
-      // Mock the main element
-      const mockMainElement = {
-        focus: mockFocus,
-        scrollIntoView: mockScrollIntoView
-      };
-      
-      jest.spyOn(document, 'querySelector').mockReturnValue(mockMainElement);
-
-      render(
-        <LayoutManager showSkipLinks={true}>
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      const skipLink = screen.getByText('Skip to main content');
-      fireEvent.click(skipLink);
-
-      expect(mockFocus).toHaveBeenCalled();
-      expect(mockScrollIntoView).toHaveBeenCalled();
-    });
+    expect(layoutItem).toHaveAttribute('draggable', 'false');
   });
 
-  describe('Theme Integration', () => {
-    test('should apply theme-specific classes', () => {
-      mockUseTheme.mockReturnValue({
-        theme: 'dark',
-        isDark: true,
-        density: 'compact'
-      });
+  test('renders resize handles when resizing is enabled and screen-reader mode is off', () => {
+    const { container } = renderLayout();
 
-      const { container } = render(
-        <LayoutManager>
-          <div>Themed Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('theme-dark', 'density-compact');
-    });
-
-    test('should handle high contrast theme', () => {
-      mockUseTheme.mockReturnValue({
-        theme: 'high-contrast',
-        isDark: false,
-        density: 'comfortable'
-      });
-
-      const { container } = render(
-        <LayoutManager>
-          <div>High Contrast Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('theme-high-contrast');
-    });
+    expect(container.querySelectorAll('.resize-handle')).toHaveLength(3);
   });
 
-  describe('Layout Variants', () => {
-    test('should render grid layout', () => {
-      const { container } = render(
-        <LayoutManager layout="grid" columns={3}>
-          <div>Item 1</div>
-          <div>Item 2</div>
-          <div>Item 3</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('layout-grid');
-      expect(layoutElement).toHaveStyle('--grid-columns: 3');
+  test('hides resize handles and adds keyboard instructions in screen-reader mode', () => {
+    mockUseAccessibility.mockReturnValue({
+      isScreenReaderActive: true,
+      isReducedMotionMode: false,
+      announce
     });
 
-    test('should render sidebar layout', () => {
-      const { container } = render(
-        <LayoutManager layout="sidebar" sidebarWidth={250}>
-          <div>Sidebar Content</div>
-          <div>Main Content</div>
-        </LayoutManager>
-      );
+    const { container } = renderLayout();
+    const layoutItem = container.querySelector('.layout-item');
 
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('layout-sidebar');
-      expect(layoutElement).toHaveStyle('--sidebar-width: 250px');
-    });
-
-    test('should render stack layout', () => {
-      const { container } = render(
-        <LayoutManager layout="stack" gap={16}>
-          <div>Item 1</div>
-          <div>Item 2</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('layout-stack');
-      expect(layoutElement).toHaveStyle('--stack-gap: 16px');
-    });
+    expect(container.querySelectorAll('.resize-handle')).toHaveLength(0);
+    expect(layoutItem).toHaveAttribute('aria-label', expect.stringContaining('Use arrow keys to move, Ctrl+arrow keys to resize.'));
   });
 
-  describe('Container Queries', () => {
-    test('should apply container-based responsive classes', () => {
-      mockUseEnhancedResponsive.mockReturnValue({
-        isMobile: false,
-        isTablet: false,
-        isDesktop: true,
-        breakpoint: 'lg',
-        effectiveBreakpoint: 'lg',
-        containerBreakpoint: 'md',
-        containerWidth: 800,
-        containerRef: { current: { offsetWidth: 800 } },
-        getResponsiveValue: jest.fn((values) => values.md),
-        getResponsiveStyles: jest.fn(() => ({}))
-      });
-
-      const { container } = render(
-        <LayoutManager useContainerQueries={true}>
-          <div>Container Query Content</div>
-        </LayoutManager>
-      );
-
-      const layoutElement = container.firstChild;
-      expect(layoutElement).toHaveClass('container-md');
+  test('calls onLayoutChange on keyboard move when screen-reader mode is enabled', () => {
+    mockUseAccessibility.mockReturnValue({
+      isScreenReaderActive: true,
+      isReducedMotionMode: false,
+      announce
     });
+
+    const onLayoutChange = jest.fn();
+    const { container } = renderLayout({ onLayoutChange });
+    const layoutItem = container.querySelector('.layout-item');
+
+    fireEvent.keyDown(layoutItem, { key: 'ArrowRight' });
+
+    expect(onLayoutChange).toHaveBeenCalledTimes(1);
+    const [newLayout, source] = onLayoutChange.mock.calls[0];
+    expect(source).toBe('keyboard');
+    expect(newLayout[0]).toMatchObject({ i: 'alpha', x: 1, y: 0, w: 3, h: 2 });
+    expect(announce).toHaveBeenCalledWith('Widget moved to position 1, 0');
   });
 
-  describe('Error Handling', () => {
-    test('should handle missing responsive hook gracefully', () => {
-      mockUseEnhancedResponsive.mockReturnValue(null);
-
-      expect(() => {
-        render(
-          <LayoutManager>
-            <div>Content</div>
-          </LayoutManager>
-        );
-      }).not.toThrow();
+  test('does not resize via keyboard shortcuts in screen-reader mode because resize is disabled', () => {
+    mockUseAccessibility.mockReturnValue({
+      isScreenReaderActive: true,
+      isReducedMotionMode: false,
+      announce
     });
 
-    test('should handle missing accessibility hook gracefully', () => {
-      mockUseAccessibility.mockReturnValue(null);
+    const onLayoutChange = jest.fn();
+    const { container } = renderLayout({ onLayoutChange });
+    const layoutItem = container.querySelector('.layout-item');
 
-      expect(() => {
-        render(
-          <LayoutManager>
-            <div>Content</div>
-          </LayoutManager>
-        );
-      }).not.toThrow();
-    });
+    fireEvent.keyDown(layoutItem, { key: 'ArrowDown', ctrlKey: true });
+
+    expect(onLayoutChange).not.toHaveBeenCalled();
+    expect(announce).not.toHaveBeenCalledWith('Widget resized to 3 by 3');
   });
 
-  describe('Performance', () => {
-    test('should memoize responsive calculations', () => {
-      const mockGetResponsiveValue = jest.fn((values) => values.lg);
-      mockUseEnhancedResponsive.mockReturnValue({
-        isMobile: false,
-        isTablet: false,
-        isDesktop: true,
-        breakpoint: 'lg',
-        effectiveBreakpoint: 'lg',
-        getResponsiveValue: mockGetResponsiveValue,
-        getResponsiveStyles: jest.fn(() => ({}))
-      });
-
-      const { rerender } = render(
-        <LayoutManager spacing={{ sm: 8, md: 16, lg: 24 }}>
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      // Re-render with same props
-      rerender(
-        <LayoutManager spacing={{ sm: 8, md: 16, lg: 24 }}>
-          <div>Content</div>
-        </LayoutManager>
-      );
-
-      // Should only call once due to memoization
-      expect(mockGetResponsiveValue).toHaveBeenCalledTimes(2); // Once per render
+  test('prevents drag for restricted roles and announces why', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 7, role: 'guard' }
     });
+
+    const { container } = renderLayout({
+      roleRestrictions: {
+        guard: { preventDrag: ['alpha'] }
+      }
+    });
+    const layoutItem = container.querySelector('.layout-item');
+
+    const dragStartEvent = createEvent.dragStart(layoutItem);
+    dragStartEvent.preventDefault = jest.fn();
+    dragStartEvent.dataTransfer = {
+      setData: jest.fn(),
+      effectAllowed: ''
+    };
+
+    fireEvent(layoutItem, dragStartEvent);
+
+    expect(dragStartEvent.preventDefault).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenCalledWith('Widget alpha cannot be moved');
   });
 });

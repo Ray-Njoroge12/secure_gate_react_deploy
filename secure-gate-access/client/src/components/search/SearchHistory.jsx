@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { searchService } from '../../services/searchService';
 import './SearchHistory.css';
+import Button from '../ui/Button';
 
 const SearchHistory = ({
   onHistorySelect,
@@ -72,28 +73,28 @@ const SearchHistory = ({
     <div className={`search-history ${className}`}>
       <div className="history-header">
         <div className="history-tabs">
-          <button
+          <Button
             className={`history-tab ${activeTab === 'recent' ? 'active' : ''}`}
             onClick={() => setActiveTab('recent')}
           >
             Recent
-          </button>
-          <button
+          </Button>
+          <Button
             className={`history-tab ${activeTab === 'popular' ? 'active' : ''}`}
             onClick={() => setActiveTab('popular')}
           >
             Popular
-          </button>
+          </Button>
         </div>
         
         {activeTab === 'recent' && recentSearches.length > 0 && (
-          <button
+          <Button
             onClick={clearHistory}
             className="clear-history-btn"
             title="Clear search history"
           >
             Clear
-          </button>
+          </Button>
         )}
       </div>
 
@@ -107,7 +108,7 @@ const SearchHistory = ({
             ) : (
               <div className="history-list">
                 {recentSearches.map((search, index) => (
-                  <div
+                  <div role="button" tabIndex={0}
                     key={`recent-${index}`}
                     className="history-item"
                     onClick={() => handleHistoryClick(search.text)}
@@ -143,7 +144,7 @@ const SearchHistory = ({
             ) : (
               <div className="history-list">
                 {popularQueries.map((query, index) => (
-                  <div
+                  <div role="button" tabIndex={0}
                     key={`popular-${index}`}
                     className="history-item"
                     onClick={() => handleHistoryClick(query.text)}

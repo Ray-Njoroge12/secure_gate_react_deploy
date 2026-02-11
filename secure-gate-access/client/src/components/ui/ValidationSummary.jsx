@@ -10,16 +10,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { 
-  CheckCircle, 
-  AlertCircle, 
-  AlertTriangle, 
-  Info, 
-  X, 
-  ChevronDown, 
-  ChevronUp,
-  RefreshCw
-} from 'lucide-react';
+import Icon from './Icon';
 import { Button, Card, Badge, Progress } from './index';
 import { componentTokens } from '../../design-system';
 
@@ -188,91 +179,97 @@ const ValidationSummary = ({
     return null;
   }
 
+  // Render status icon
+  const renderStatusIcon = (status) => {
+    switch (status) {
+      case 'error':
+        return <Icon name="AlertCircle" className="w-5 h-5 text-red-500" />;
+      case 'warning':
+        return <Icon name="AlertTriangle" className="w-5 h-5 text-yellow-500" />;
+      case 'success':
+        return <Icon name="CheckCircle" className="w-5 h-5 text-green-500" />;
+      case 'validating':
+        return <Icon name="RefreshCw" className="w-5 h-5 text-blue-500 animate-spin" />;
+      default:
+        return <Icon name="Info" className="w-5 h-5 text-gray-400 dark:text-slate-400" />;
+    }
+  };
+
   return (
-    <Card className={`validation-summary ${variantStyles.container} ${className}`}>
-      {/* Header */}
-      <div className={`${variantStyles.header} ${sizeStyles.container} rounded-t-lg`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <h3 className={`${sizeStyles.title} font-semibold text-slate-200`}>
-              Validation Summary
+    <Card 
+      variant={variant === 'minimal' ? 'flat' : 'default'}
+      className={`validation-summary ${className}`}
+      {...props}
+    >
+      <div 
+        className="flex items-center justify-between p-4 cursor-pointer" 
+        onClick={() => collapsible && setIsExpanded(!isExpanded)}
+        role={collapsible ? "button" : undefined}
+        tabIndex={collapsible ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (collapsible && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
+        aria-expanded={collapsible ? isExpanded : undefined}
+      >
+        <div className="flex items-center space-x-3">
+          {renderStatusIcon(
+            validationStats.errorFields > 0 ? 'error' : 
+            validationStats.warningFields > 0 ? 'warning' : 
+            validationStats.validatingFields > 0 ? 'validating' : 
+            'success'
+          )}
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-900 dark:text-slate-100">
+              {validationStats.errorFields > 0 ? `${validationStats.errorFields} errors found` :
+               validationStats.warningFields > 0 ? 'Validation warnings' :
+               'Validation passed'}
             </h3>
-            
-            {/* Status Badges */}
-            <div className="flex items-center space-x-2">
-              {validationStats.errorFields > 0 && (
-                <Badge variant="error" size="sm">
-                  <AlertCircle className="w-3 h-3 mr-1" />
-                  {validationStats.errorFields} Error{validationStats.errorFields > 1 ? 's' : ''}
-                </Badge>
-              )}
-              
-              {validationStats.warningFields > 0 && (
-                <Badge variant="warning" size="sm">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  {validationStats.warningFields} Warning{validationStats.warningFields > 1 ? 's' : ''}
-                </Badge>
-              )}
-              
-              {validationStats.successFields > 0 && (
-                <Badge variant="success" size="sm">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  {validationStats.successFields} Success{validationStats.successFields > 1 ? 'es' : ''}
-                </Badge>
-              )}
-              
-              {validationStats.validatingFields > 0 && (
-                <Badge variant="info" size="sm">
-                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                  {validationStats.validatingFields} Validating
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            {/* Refresh Button */}
-            {showRefreshButton && onRefresh && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                icon={<RefreshCw className="w-4 h-4" />}
-                aria-label="Refresh validation"
-              />
-            )}
-
-            {/* Collapse Toggle */}
-            {collapsible && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsExpanded(!isExpanded)}
-                icon={isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                aria-label={isExpanded ? 'Collapse validation details' : 'Expand validation details'}
-              />
-            )}
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              {validationStats.progress}% complete
+            </p>
           </div>
         </div>
 
-        {/* Progress Bar */}
-        {showProgress && (
-          <div className="mt-3">
-            <div className="flex justify-between items-center mb-2">
-              <span className={`${sizeStyles.text} text-slate-400`}>
-                Validation Progress
-              </span>
-              <span className={`${sizeStyles.text} text-slate-400`}>
-                {validationStats.validFields} of {validationStats.totalFields} fields valid
-              </span>
-            </div>
-            <Progress 
-              value={validationStats.progress} 
-              className="h-2"
-              variant={validationStats.errorFields > 0 ? 'error' : 'brand'}
+        <div className="flex items-center space-x-2">
+          {showRefreshButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRefresh?.();
+              }}
+              aria-label="Refresh validation"
+            >
+              <Icon name="RefreshCw" className="w-4 h-4" />
+            </Button>
+          )}
+          
+          {collapsible && (
+            <Icon 
+              name={isExpanded ? "ChevronUp" : "ChevronDown"} 
+              className="w-4 h-4 text-gray-400 dark:text-slate-400"
             />
-          </div>
-        )}
+          )}
+
+           {onDismiss && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDismiss?.();
+              }}
+              aria-label="Dismiss summary"
+            >
+              <Icon name="X" className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -325,7 +322,7 @@ const ValidationSummary = ({
                 if (isDismissed) return null;
 
                 return (
-                  <div
+                  <div role="button" tabIndex={0}
                     key={fieldName}
                     className={`${variantStyles.field} p-3 rounded-lg transition-colors ${
                       onFieldClick ? 'cursor-pointer' : ''
@@ -337,19 +334,19 @@ const ValidationSummary = ({
                         {/* Status Icon */}
                         <div className="flex-shrink-0">
                           {fieldStatus.isValidating && (
-                            <RefreshCw className={`${sizeStyles.icon} animate-spin text-blue-400`} />
+                            <Icon name="RefreshCw" className={`${sizeStyles.icon} animate-spin text-blue-400`} />
                           )}
                           {!fieldStatus.isValidating && fieldStatus.hasErrors && (
-                            <AlertCircle className={`${sizeStyles.icon} text-red-400`} />
+                            <Icon name="AlertCircle" className={`${sizeStyles.icon} text-red-400`} />
                           )}
                           {!fieldStatus.isValidating && fieldStatus.hasWarnings && (
-                            <AlertTriangle className={`${sizeStyles.icon} text-yellow-400`} />
+                            <Icon name="AlertTriangle" className={`${sizeStyles.icon} text-yellow-400`} />
                           )}
                           {!fieldStatus.isValidating && fieldStatus.hasSuccesses && (
-                            <CheckCircle className={`${sizeStyles.icon} text-green-400`} />
+                            <Icon name="CheckCircle" className={`${sizeStyles.icon} text-green-400`} />
                           )}
                           {!fieldStatus.isValidating && fieldStatus.isValid && (
-                            <CheckCircle className={`${sizeStyles.icon} text-green-400`} />
+                            <Icon name="CheckCircle" className={`${sizeStyles.icon} text-green-400`} />
                           )}
                         </div>
 
@@ -392,7 +389,7 @@ const ValidationSummary = ({
                           className="p-1 text-slate-400 hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded"
                           aria-label={`Dismiss ${fieldName} validation`}
                         >
-                          <X className="w-4 h-4" />
+                          <Icon name="X" className="w-4 h-4" />
                         </button>
                       )}
                     </div>

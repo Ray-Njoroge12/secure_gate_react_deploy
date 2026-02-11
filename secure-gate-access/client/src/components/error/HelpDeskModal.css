@@ -561,3 +561,153 @@
     color: #9ca3af;
   }
 }
+
+/* Class-based Dark Mode (matches ThemeContext toggle) */
+html.dark .help-desk-modal {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+html.dark .help-desk-modal__header {
+  border-bottom-color: #374151;
+}
+
+html.dark .help-desk-modal__title {
+  color: #f9fafb;
+}
+
+html.dark .help-desk-modal__close {
+  color: #9ca3af;
+}
+
+html.dark .help-desk-modal__close:hover {
+  color: #d1d5db;
+  background: #374151;
+}
+
+html.dark .help-desk-modal__tabs {
+  background: #111827;
+  border-bottom-color: #374151;
+}
+
+html.dark .help-desk-modal__tab {
+  color: #9ca3af;
+}
+
+html.dark .help-desk-modal__tab:hover {
+  color: #d1d5db;
+  background: #374151;
+}
+
+html.dark .help-desk-modal__tab--active {
+  background: #1f2937;
+}
+
+html.dark .help-desk-modal__contact-option {
+  border-color: #374151;
+  background: #111827;
+}
+
+html.dark .help-desk-modal__contact-option:hover {
+  background: #1f2937;
+  border-color: #3b82f6;
+}
+
+html.dark .help-desk-modal__contact-icon {
+  background: #1e3a8a;
+}
+
+html.dark .help-desk-modal__contact-info h3 {
+  color: #f9fafb;
+}
+
+html.dark .help-desk-modal__contact-info p {
+  color: #d1d5db;
+}
+
+html.dark .help-desk-modal__contact-meta {
+  color: #9ca3af;
+}
+
+html.dark .help-desk-modal__info {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+}
+
+html.dark .help-desk-modal__info h4 {
+  color: #93c5fd;
+}
+
+html.dark .help-desk-modal__info ul {
+  color: #93c5fd;
+}
+
+html.dark .help-desk-modal__form-group label {
+  color: #d1d5db;
+}
+
+html.dark .help-desk-modal__form-group input,
+html.dark .help-desk-modal__form-group select,
+html.dark .help-desk-modal__form-group textarea {
+  background: #111827;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+html.dark .help-desk-modal__form-group input:focus,
+html.dark .help-desk-modal__form-group select:focus,
+html.dark .help-desk-modal__form-group textarea:focus {
+  border-color: #3b82f6;
+}
+
+html.dark .help-desk-modal__button--secondary {
+  background: #111827;
+  color: #d1d5db;
+  border-color: #374151;
+}
+
+html.dark .help-desk-modal__button--secondary:hover {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+html.dark .help-desk-modal__error-summary {
+  background: #7f1d1d;
+  border-color: #dc2626;
+}
+
+html.dark .help-desk-modal__error-summary h4 {
+  color: #fca5a5;
+}
+
+html.dark .help-desk-modal__error-item {
+  color: #fecaca;
+}
+
+html.dark .help-desk-modal__error-item strong {
+  color: #fca5a5;
+}
+
+html.dark .help-desk-modal__error-details {
+  background: #111827;
+  border-color: #374151;
+}
+
+html.dark .help-desk-modal__error-header h4 {
+  color: #d1d5db;
+}
+
+html.dark .help-desk-modal__copy-button {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+html.dark .help-desk-modal__copy-button:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+html.dark .help-desk-modal__error-actions p {
+  color: #9ca3af;
+}

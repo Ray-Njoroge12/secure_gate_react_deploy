@@ -1,0 +1,54 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e6]:
+  - generic [ref=e7]:
+    - img [ref=e9]
+    - heading "Welcome Back" [level=1] [ref=e11]
+    - paragraph [ref=e12]: Sign in to your Secure Gate account
+  - generic [ref=e14]:
+    - generic [ref=e15]:
+      - generic [ref=e17]:
+        - img [ref=e19]
+        - generic [ref=e22]:
+          - textbox "Email Address" [active] [ref=e23]:
+            - /placeholder: name@example.com
+          - generic [ref=e24]: Email Address*
+      - generic [ref=e26]:
+        - img [ref=e28]
+        - generic [ref=e31]:
+          - textbox "Password" [ref=e32]:
+            - /placeholder: ""
+          - generic [ref=e33]: Password*
+        - button "Show password" [ref=e35] [cursor=pointer]:
+          - img [ref=e36]
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - checkbox "Remember me" [ref=e43]
+          - generic [ref=e46]: Remember me
+        - button "Forgot password?" [ref=e47] [cursor=pointer]
+    - button "Sign In" [disabled]:
+      - generic:
+        - generic: Sign In
+        - generic:
+          - img
+    - generic [ref=e48]:
+      - generic [ref=e49]:
+        - img [ref=e50]
+        - text: SSL Secured
+      - generic [ref=e53]:
+        - img [ref=e54]
+        - text: 2FA Available
+  - paragraph [ref=e57]:
+    - text: Don't have an account?
+    - link "Sign up" [ref=e58] [cursor=pointer]:
+      - /url: /register
+  - paragraph [ref=e59]:
+    - text: By signing in, you agree to our
+    - link "Terms of Service" [ref=e60] [cursor=pointer]:
+      - /url: /terms-of-service
+    - text: and
+    - link "Privacy Policy" [ref=e61] [cursor=pointer]:
+      - /url: /privacy-policy
+  - paragraph [ref=e62]: "Tip: Press Ctrl + Enter to sign in quickly."
+```

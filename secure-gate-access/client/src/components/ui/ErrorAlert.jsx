@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, AlertCircle, CheckCircle, Info, AlertTriangle, RefreshCw, HelpCircle, ExternalLink } from 'lucide-react';
+import Icon from './Icon.jsx';
 import Button from './Button.jsx';
 
 /**
@@ -93,124 +93,123 @@ const ErrorAlert = ({
   };
 
   const handleHelp = () => {
-    onHelp?.();
+    if (onHelp) onHelp();
   };
-
-  if (!error || !isVisible) return null;
+  
+  const getColors = () => {
+    switch (type) {
+      case 'error':
+        return 'bg-white dark:bg-slate-800 border-red-200 text-red-800 dark:text-red-200 border-l-[6px] border-l-red-500';
+      case 'warning':
+        return 'bg-white dark:bg-slate-800 border-yellow-200 text-yellow-800 dark:text-yellow-200 border-l-[6px] border-l-yellow-500';
+      case 'info':
+        return 'bg-white dark:bg-slate-800 border-blue-200 text-blue-800 dark:text-blue-200 border-l-[6px] border-l-blue-500';
+      case 'success':
+        return 'bg-white dark:bg-slate-800 border-green-200 text-green-800 dark:text-green-200 border-l-[6px] border-l-green-500';
+      default:
+        return 'bg-white dark:bg-slate-800 border-gray-200 text-gray-800 dark:text-gray-200 border-l-[6px] border-l-gray-500';
+    }
+  };
 
   const getIcon = () => {
     switch (type) {
-      case 'success': return <CheckCircle className="w-5 h-5" />;
-      case 'warning': return <AlertTriangle className="w-5 h-5" />;
-      case 'info': return <Info className="w-5 h-5" />;
-      default: return <AlertCircle className="w-5 h-5" />;
+      case 'error': return 'AlertCircle';
+      case 'warning': return 'AlertTriangle';
+      case 'success': return 'CheckCircle';
+      case 'info': return 'Info';
+      default: return 'Info';
     }
   };
-
-  const getStyles = () => {
-    const baseStyles = 'border rounded-lg p-4 shadow-lg transition-all duration-300';
-    const positionStyles = {
-      'top-right': 'fixed top-4 right-4 z-50 max-w-md',
-      'top-left': 'fixed top-4 left-4 z-50 max-w-md',
-      'top-center': 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md',
-      'bottom-right': 'fixed bottom-4 right-4 z-50 max-w-md',
-      'bottom-left': 'fixed bottom-4 left-4 z-50 max-w-md',
-      'bottom-center': 'fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md',
-      'inline': 'mb-4 max-w-full'
-    };
-
-    const typeStyles = {
-      success: 'bg-green-50 border-green-200 text-green-800',
-      warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-      info: 'bg-blue-50 border-blue-200 text-blue-800',
-      error: 'bg-red-50 border-red-200 text-red-800'
-    };
-
-    const animationStyles = isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100';
-
-    return `${baseStyles} ${positionStyles[position]} ${typeStyles[type]} ${animationStyles} ${className}`;
-  };
-
-  const getRecoveryActions = () => {
-    if (!showRecoveryActions) return null;
-
-    const actions = [];
+  
+  const renderActions = () => {
+    if (!onRetry && !onHelp) return null;
     
-    if (onRetry) {
-      actions.push(
-        <Button
-          key="retry"
-          variant="outline"
-          size="sm"
-          onClick={handleRetry}
-          className="text-xs"
-          aria-label="Retry the failed action"
-        >
-          <RefreshCw className="w-3 h-3 mr-1" />
-          Retry
-        </Button>
-      );
-    }
-
-    if (onHelp) {
-      actions.push(
-        <Button
-          key="help"
-          variant="outline"
-          size="sm"
-          onClick={handleHelp}
-          className="text-xs"
-          aria-label="Get help with this error"
-        >
-          <HelpCircle className="w-3 h-3 mr-1" />
-          Help
-        </Button>
-      );
-    }
-
-    return actions.length > 0 ? (
-      <div className="flex gap-2 mt-3">
-        {actions}
+    return (
+      <div className="mt-3 flex gap-3">
+        {onRetry && (
+          <ActionButton
+            icon="RefreshCw"
+            label="Retry"
+            onClick={handleRetry}
+            variant="outline"
+          />
+        )}
+        {onHelp && (
+          <ActionButton
+            icon="HelpCircle"
+            label="Help"
+            onClick={handleHelp}
+            variant="outline"
+          />
+        )}
       </div>
-    ) : null;
+    );
+  };
+  
+  const positionClasses = {
+      'top-right': 'top-4 right-4',
+      'top-left': 'top-4 left-4',
+      'bottom-right': 'bottom-4 right-4',
+      'bottom-left': 'bottom-4 left-4',
+      'top-center': 'top-4 left-1/2 -translate-x-1/2',
+      'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
   };
 
   return (
-    <div className={getStyles()}>
+    <div
+      ref={alertRef}
+      className={`fixed ${positionClasses[position]} z-50 w-full max-w-md p-4 transition-all duration-300 transform ${
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-[-1rem] opacity-0'
+      } ${className}`}
+      role="alert"
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
+      tabIndex={0}
+    >
       <div 
-        ref={alertRef}
-        className="flex items-start"
-        tabIndex={0}
-        role="alert"
-        aria-live="assertive"
-        aria-label={`${type} alert: ${title || error}`}
+        className={`relative flex items-start p-4 mb-4 text-sm rounded-lg border shadow-lg ${getColors()}`}
       >
-        <div className="flex-shrink-0 mr-3">
-          {getIcon()}
+        <div className="flex-shrink-0 mt-0.5">
+          <Icon name={getIcon()} size={20} className="w-5 h-5" aria-hidden="true" />
         </div>
-        <div className="flex-1 min-w-0">
+        
+        <div className="flex-1 ml-3 mr-8">
           {title && (
-            <h4 className="font-semibold text-sm mb-1">
+            <h3 className="font-semibold mb-1" id="alert-title">
               {title}
-            </h4>
+            </h3>
           )}
-          <p className="text-sm break-words">
-            {error}
-          </p>
-          {getRecoveryActions()}
+          <div className="text-sm opacity-90 break-words">
+            {error.message || error || 'An unexpected error occurred'}
+          </div>
+          
+          {renderActions()}
         </div>
-        {!persistent && onClose && (
-          <button
-            onClick={handleClose}
-            className="flex-shrink-0 ml-3 text-gray-500 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-            aria-label="Close alert"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+
+        <Button
+          onClick={handleClose}
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="absolute top-4 right-4 !p-1.5 !h-auto !min-h-0 opacity-70 hover:opacity-100"
+          aria-label="Close alert"
+        >
+          <Icon name="x" size={16} className="w-4 h-4" />
+        </Button>
       </div>
     </div>
   );
 };
+
+const ActionButton = ({ icon, label, onClick, variant = 'info' }) => (
+  <Button
+    onClick={onClick}
+    variant="ghost"
+    size="sm"
+    className="!h-auto !min-h-0 !px-3 !py-1.5 !text-xs !font-medium"
+    icon={icon ? <Icon name={icon} size={14} className="w-3.5 h-3.5" /> : undefined}
+  >
+    {label}
+  </Button>
+);
 
 export default ErrorAlert;

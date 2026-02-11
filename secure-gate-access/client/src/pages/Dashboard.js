@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { EnhancedLoading } from "../components/ui/EnhancedLoading.jsx";
 import { StatsCard } from "../components/StatsCard.jsx";
 import { PageHeader } from "../components/PageHeader.jsx";
+import Button from "../components/ui/Button";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -106,12 +107,13 @@ export default function Dashboard() {
         title={`${user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'} Dashboard`}
         subtitle={`Welcome back, ${user?.username || user?.email || 'User'}!`}
         actions={
-          <button
+          <Button
+            variant="danger"
+            size="sm"
             onClick={handleLogout}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
           >
             Sign Out
-          </button>
+          </Button>
         }
       />
       
@@ -210,14 +212,14 @@ const ResidentDashboard = ({ data, onRefresh }) => (
         Quick Actions
       </h3>
       <div className="space-y-3">
-        <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200">
-          <div className="font-medium text-blue-900">Create Visitor Pass</div>
-          <div className="text-sm text-blue-700">Generate a new pass for your visitor</div>
-        </button>
-        <button className="w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200">
-          <div className="font-medium text-green-900">View My Passes</div>
-          <div className="text-sm text-green-700">See all your active and expired passes</div>
-        </button>
+        <Button variant="ghost" className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 rounded-lg transition-colors duration-200">
+          <div className="font-medium text-blue-900 dark:text-blue-200">Create Visitor Pass</div>
+          <div className="text-sm text-blue-700 dark:text-blue-300">Generate a new pass for your visitor</div>
+        </Button>
+        <Button variant="ghost" className="w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 rounded-lg transition-colors duration-200">
+          <div className="font-medium text-green-900 dark:text-green-200">View My Passes</div>
+          <div className="text-sm text-green-700 dark:text-green-300">See all your active and expired passes</div>
+        </Button>
       </div>
     </div>
   </div>

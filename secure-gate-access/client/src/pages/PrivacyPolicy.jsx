@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-import { Shield, Eye, Lock, Database, UserCheck, FileText, Clock, Mail } from 'lucide-react';
+import { Icon } from '../components/ui/Icon';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
@@ -68,7 +68,7 @@ const PrivacyPolicy = () => {
     {
       id: 'introduction',
       title: 'Introduction',
-      icon: FileText,
+      icon: "FileText",
       content: (
         <div className="space-y-4">
           <p>
@@ -128,7 +128,7 @@ const PrivacyPolicy = () => {
     {
       id: 'data-collection',
       title: 'Data Collection',
-      icon: Database,
+      icon: "Database",
       content: (
         <div className="space-y-4">
           <p>We collect the following types of personal data:</p>
@@ -168,13 +168,13 @@ const PrivacyPolicy = () => {
     {
       id: 'data-processing',
       title: 'Data Processing',
-      icon: Lock,
+      icon: "Lock",
       content: (
         <div className="space-y-4">
           <p>We process your personal data for the following purposes:</p>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-green-600 mt-0.5" />
+              <Icon name="Shield" className="h-5 w-5 text-green-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Security and Access Control</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -183,7 +183,7 @@ const PrivacyPolicy = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <UserCheck className="h-5 w-5 text-blue-600 mt-0.5" />
+              <Icon name="UserCheck" className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">User Management</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -192,7 +192,7 @@ const PrivacyPolicy = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Eye className="h-5 w-5 text-purple-600 mt-0.5" />
+              <Icon name="Eye" className="h-5 w-5 text-purple-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Audit and Compliance</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -201,7 +201,7 @@ const PrivacyPolicy = () => {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Mail className="h-5 w-5 text-orange-600 mt-0.5" />
+              <Icon name="Mail" className="h-5 w-5 text-orange-600 mt-0.5" />
               <div>
                 <h4 className="font-semibold">Communication</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-200">
@@ -216,36 +216,36 @@ const PrivacyPolicy = () => {
     {
       id: 'data-storage',
       title: 'Data Storage and Security',
-      icon: Lock,
+      icon: "Lock",
       content: (
         <div className="space-y-4">
           <p>We implement comprehensive security measures to protect your data:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Lock className="h-4 w-4 text-green-600" />
+                <Icon name="Lock" className="h-4 w-4 text-green-600" />
                 <span className="text-sm font-medium">Encryption</span>
               </div>
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-blue-600" />
+                <Icon name="Shield" className="h-4 w-4 text-blue-600" />
                 <span className="text-sm font-medium">Access Controls</span>
               </div>
               <div className="flex items-center gap-2">
-                <Database className="h-4 w-4 text-purple-600" />
+                <Icon name="Database" className="h-4 w-4 text-purple-600" />
                 <span className="text-sm font-medium">Secure Storage</span>
               </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-orange-600" />
+                <Icon name="Eye" className="h-4 w-4 text-orange-600" />
                 <span className="text-sm font-medium">Audit Logging</span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-red-600" />
+                <Icon name="Clock" className="h-4 w-4 text-red-600" />
                 <span className="text-sm font-medium">Data Retention</span>
               </div>
               <div className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4 text-indigo-600" />
+                <Icon name="UserCheck" className="h-4 w-4 text-indigo-600" />
                 <span className="text-sm font-medium">Regular Backups</span>
               </div>
             </div>
@@ -263,7 +263,7 @@ const PrivacyPolicy = () => {
     {
       id: 'data-sharing',
       title: 'Data Sharing and Disclosure',
-      icon: UserCheck,
+      icon: "UserCheck",
       content: (
         <div className="space-y-4">
           <p>We may share your personal data in the following circumstances:</p>
@@ -299,28 +299,28 @@ const PrivacyPolicy = () => {
     {
       id: 'user-rights',
       title: 'Your Rights',
-      icon: UserCheck,
+      icon: "UserCheck",
       content: (
         <div className="space-y-4">
           <p>Under the Kenya Data Protection Act 2019, you have the following rights:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
               <div className="flex items-start gap-2">
-                <Eye className="h-4 w-4 text-blue-600 mt-1" />
+                <Icon name="Eye" className="h-4 w-4 text-blue-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Access</h4>
                   <p className="text-xs text-gray-600 dark:text-gray-200">Request copies of your personal data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <FileText className="h-4 w-4 text-green-600 mt-1" />
+                <Icon name="FileText" className="h-4 w-4 text-green-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Rectification</h4>
                   <p className="text-xs text-gray-600 dark:text-gray-200">Correct inaccurate or incomplete data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Database className="h-4 w-4 text-purple-600 mt-1" />
+                <Icon name="Database" className="h-4 w-4 text-purple-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Portability</h4>
                   <p className="text-xs text-gray-600 dark:text-gray-200">Receive your data in a portable format</p>
@@ -329,21 +329,21 @@ const PrivacyPolicy = () => {
             </div>
             <div className="space-y-3">
               <div className="flex items-start gap-2">
-                <Lock className="h-4 w-4 text-red-600 mt-1" />
+                <Icon name="Lock" className="h-4 w-4 text-red-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Erasure</h4>
                   <p className="text-xs text-gray-600 dark:text-gray-200">Request deletion of your personal data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <Shield className="h-4 w-4 text-orange-600 mt-1" />
+                <Icon name="Shield" className="h-4 w-4 text-orange-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Restrict</h4>
                   <p className="text-xs text-gray-600 dark:text-gray-200">Limit how we process your data</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <UserCheck className="h-4 w-4 text-indigo-600 mt-1" />
+                <Icon name="UserCheck" className="h-4 w-4 text-indigo-600 mt-1" />
                 <div>
                   <h4 className="font-semibold">Right to Object</h4>
                   <p className="text-xs text-gray-600 dark:text-gray-200">Object to certain data processing</p>
@@ -363,7 +363,7 @@ const PrivacyPolicy = () => {
     {
       id: 'cookies',
       title: 'Cookies and Tracking',
-      icon: Eye,
+      icon: "Eye",
       content: (
         <div className="space-y-4">
           <p>We use cookies and similar technologies to enhance your experience:</p>
@@ -407,8 +407,8 @@ const PrivacyPolicy = () => {
     },
     {
       id: 'contact',
-      title: 'Contact Information',
-      icon: Mail,
+      title: 'Contact Us',
+      icon: "Mail",
       content: (
         <div className="space-y-4">
           <p>For privacy-related inquiries, please contact us:</p>
@@ -477,7 +477,7 @@ const PrivacyPolicy = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Privacy Policy</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">Privacy Policy</h1>
           <p className="text-lg text-gray-600 dark:text-gray-200 mb-4">
             Your privacy and data protection rights under Kenya DPA 2019
           </p>
@@ -495,7 +495,7 @@ const PrivacyPolicy = () => {
               <Card key={section.id} className="shadow-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
-                    <Icon className="h-6 w-6 text-blue-600" />
+                    <Icon name={Icon} className="h-6 w-6 text-blue-600" />
                     {section.title}
                   </CardTitle>
                 </CardHeader>
@@ -521,14 +521,14 @@ const PrivacyPolicy = () => {
                   href="mailto:privacy@securegate.com"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <Mail className="h-4 w-4" />
+                  <Icon name="Mail" className="h-4 w-4" />
                   Contact Us
                 </a>
                 <a 
                   href="/consent"
                   className="inline-flex items-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                 >
-                  <UserCheck className="h-4 w-4" />
+                  <Icon name="UserCheck" className="h-4 w-4" />
                   Manage Consent
                 </a>
               </div>

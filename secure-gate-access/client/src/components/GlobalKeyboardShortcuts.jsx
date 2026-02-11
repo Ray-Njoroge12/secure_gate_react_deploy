@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrentRole } from '../hooks/useCurrentRole';
+import { getRoleBasedRedirect } from '../utils/navigationFlow';
 
 const GlobalKeyboardShortcuts = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const GlobalKeyboardShortcuts = () => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
         e.preventDefault();
         if (role) {
-          navigate(`/dashboard/${role}`);
+          navigate(getRoleBasedRedirect(role, '/login'));
         } else {
           navigate('/login');
         }

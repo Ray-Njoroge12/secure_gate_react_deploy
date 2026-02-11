@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CheckCircle, Copy, ExternalLink, QrCode, X, MessageCircle, Share2 } from 'lucide-react';
+import Icon from './Icon';
 
 const SuccessDisplay = ({ 
   success, 
@@ -113,96 +113,79 @@ const SuccessDisplay = ({
 
   return (
     <div className={`fixed top-4 right-4 z-50 max-w-md ${className}`}>
-      <div ref={successRef} className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 shadow-lg" tabIndex={0}>
+      <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 shadow-lg">
         <div className="flex items-start">
           <div className="flex-shrink-0 mr-3">
-            <CheckCircle className="w-5 h-5" />
+            <div 
+              className="w-16 h-16 bg-gradient-to-tr from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-200 animate-in zoom-in duration-300"
+            >
+              <Icon name="CheckCircle" className="w-8 h-8 text-white" />
+            </div>
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-sm mb-2">
-              {success.message || 'Success!'}
-            </h4>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-2">
+              {typeof success === 'string' ? 'Success!' : (success.title || 'Success!')}
+            </h3>
             
-            {success.data && (
-              <div className="space-y-3">
-                {success.data.visitor && (
-                  <div className="bg-green-100 rounded p-3">
-                    <p className="text-sm font-medium">Visitor Created:</p>
-                    <p className="text-sm">{success.data.visitor.name}</p>
-                    <p className="text-xs text-green-600">
-                      Invite Code: {success.data.visitor.inviteCode}
-                    </p>
-                  </div>
-                )}
+            <div 
+              ref={successRef}
+              className="text-gray-600 dark:text-slate-300 mb-6 max-w-sm mx-auto"
+              tabIndex={0}
+            >
+              {typeof success === 'string' ? success : (success.message || 'Operation completed successfully.')}
+            </div>
+
+            {/* Action Buttons */}
+            {success.data?.inviteLink && (
+              <div className="flex flex-col space-y-3">
+                <div className="flex items-center justify-center space-x-3">
+                  <button
+                    onClick={() => copyToClipboard(success.data.inviteLink)}
+                    className="flex items-center px-4 py-2 bg-gray-50 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors border border-gray-200 dark:border-slate-600"
+                  >
+                    <Icon name={copied ? "CheckCircle" : "Copy"} className="w-4 h-4 mr-2" />
+                    {copied ? 'Copied!' : 'Copy Link'}
+                  </button>
+                  
+                  <button
+                    onClick={shareViaWhatsApp}
+                    className="flex items-center px-4 py-2 bg-[#25D366] text-white rounded-lg hover:bg-[#128C7E] transition-colors shadow-sm"
+                  >
+                    <Icon name="MessageCircle" className="w-4 h-4 mr-2" />
+                    {whatsappSent ? 'Opening...' : 'WhatsApp'}
+                  </button>
+                  
+                   <button
+                    onClick={shareViaWhatsAppDirect}
+                    className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
+                    title="Share directly via WhatsApp"
+                  >
+                    <Icon name="Share2" className="w-4 h-4 mr-2" />
+                    Direct
+                  </button>
+                </div>
                 
-                {success.data.inviteLink && (
-                  <div className="bg-green-100 rounded p-3 space-y-3">
-                    <p className="text-sm font-medium">Invite Link:</p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={success.data.inviteLink}
-                        readOnly
-                        className="flex-1 text-xs bg-white dark:bg-slate-800 border border-green-300 rounded px-2 py-1"
-                        onClick={(e) => e.target.select()}
-                      />
-                      <button
-                        onClick={() => copyToClipboard(success.data.inviteLink)}
-                        className="p-1 hover:bg-green-200 rounded"
-                        title="Copy link"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                    </div>
-                    {copied && (
-                      <p className="text-xs text-green-600">✓ Copied to clipboard!</p>
-                    )}
-                    
-                    {/* WhatsApp Share Buttons */}
-                    <div className="border-t border-green-200 pt-3 mt-2 space-y-2">
-                      <p className="text-xs font-medium text-green-700">Share via WhatsApp:</p>
-                      
-                      {success.data.visitor?.phone && (
-                        <button
-                          onClick={shareViaWhatsAppDirect}
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg font-medium transition-colors"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                          {whatsappSent ? '✓ Opening WhatsApp...' : `Send to ${success.data.visitor.name}`}
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={shareViaWhatsApp}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 text-sm rounded-lg border border-green-300 transition-colors"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        Share (choose contact)
-                      </button>
-                    </div>
-                  </div>
-                )}
-                
-                {success.data.pass && (
-                  <div className="bg-green-100 rounded p-3">
-                    <p className="text-sm font-medium mb-2">QR Pass Generated:</p>
-                    <div className="flex items-center gap-2">
-                      <QrCode className="w-4 h-4" />
-                      <span className="text-xs">Pass ID: {success.data.pass.passId}</span>
-                    </div>
-                  </div>
+                {/* QR Code Option */}
+                {success.data.passCode && (
+                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
+                      <div className="flex items-center justify-center text-sm text-gray-500 dark:text-slate-400 mb-2">
+                         <Icon name="QrCode" className="w-4 h-4 mr-2" />
+                         <span>Pass Code: <span className="font-mono font-bold text-gray-900 dark:text-slate-100">{success.data.passCode}</span></span>
+                      </div>
+                   </div>
                 )}
               </div>
             )}
-          </div>
-          {onClose && (
-            <button
+
+            {/* Close Button */}
+            <button 
               onClick={onClose}
-              className="flex-shrink-0 ml-3 text-green-400 hover:text-green-600"
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Close success message"
             >
-              <X className="w-4 h-4" />
+              <Icon name="X" className="w-5 h-5" />
             </button>
-          )}
+          </div>
         </div>
       </div>
     </div>

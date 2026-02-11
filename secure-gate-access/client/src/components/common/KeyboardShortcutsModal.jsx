@@ -14,6 +14,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import Button from '../ui/Button';
 
 // Detect platform for key display
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
@@ -74,8 +75,7 @@ const shortcuts = {
     icon: '👑',
     roles: ['admin'],
     items: [
-      { keys: [`${cmdKey}`, 'U'], description: 'Manage users' },
-      { keys: [`${cmdKey}`, 'A'], description: 'View audit logs' },
+      { keys: [`${cmdKey}`, 'U'], description: 'Open user approvals' },
       { keys: [`${cmdKey}`, 'P'], description: 'Privacy dashboard' },
       { keys: [`${cmdKey}`, 'N'], description: 'Create announcement' },
       { keys: [`${cmdKey}`, 'R'], description: 'Generate reports' },
@@ -230,6 +230,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
         className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
         aria-hidden="true"
+        role="presentation"
       />
 
       {/* Modal */}
@@ -249,7 +250,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
               <span>⌨️</span>
               <span>Keyboard Shortcuts</span>
             </h2>
-            <button
+            <Button
               onClick={onClose}
               className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
               aria-label="Close shortcuts modal"
@@ -257,7 +258,7 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
 
           {/* Search */}
@@ -276,7 +277,8 @@ const KeyboardShortcutsModal = ({ isOpen, onClose }) => {
                 placeholder="Search shortcuts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                aria-label="Search keyboard shortcuts"
                 autoFocus
               />
             </div>

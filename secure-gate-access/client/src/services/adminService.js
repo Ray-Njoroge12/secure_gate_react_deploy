@@ -40,10 +40,22 @@ export const getHealthDetails = (params = {}) => {
 };
 
 // === Residents Management ===
-export const getAllResidents = () => http.get(`${API_BASE}/residents`);
-export const createResident = (data) => http.post(`${API_BASE}/residents`, data);
-export const updateResident = (id, data) => http.put(`${API_BASE}/residents/${id}`, data);
-export const deleteResident = (id) => http.delete(`${API_BASE}/residents/${id}`);
+export const getAllResidents = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/residents${queryString ? `?${queryString}` : ''}`);
+};
+export const createResident = (data, params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.post(`${API_BASE}/residents${queryString ? `?${queryString}` : ''}`, data);
+};
+export const updateResident = (id, data, params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.put(`${API_BASE}/residents/${id}${queryString ? `?${queryString}` : ''}`, data);
+};
+export const deleteResident = (id, params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.delete(`${API_BASE}/residents/${id}${queryString ? `?${queryString}` : ''}`);
+};
 
 // === Guards Management ===
 export const getAllGuards = (params = {}) => {
@@ -81,8 +93,14 @@ export const getVisitorLogs = (params = {}) => {
   const queryString = new URLSearchParams(params).toString();
   return http.get(`${API_BASE}/visitors${queryString ? `?${queryString}` : ''}`);
 };
-export const checkInVisitor = (visitorId) => http.post(`${API_BASE}/visitors/${visitorId}/check-in`);
-export const checkOutVisitor = (visitorId) => http.post(`${API_BASE}/visitors/${visitorId}/check-out`);
+const VISITOR_BASE = '/api/visitors';
+
+export const checkInVisitor = (id) => http.post(`${VISITOR_BASE}/${id}/check-in`);
+export const checkOutVisitor = (id) => http.post(`${VISITOR_BASE}/${id}/check-out`);
+
+// === Visitor Approvals ===
+export const approveVisitor = (visitorId, data = {}) => http.post(`/api/approvals/visitors/${visitorId}/approve`, data);
+export const rejectVisitor = (visitorId, data = {}) => http.post(`/api/approvals/visitors/${visitorId}/reject`, data);
 
 // === Access Control ===
 export const getAccessLogs = (params = {}) => {
@@ -91,18 +109,48 @@ export const getAccessLogs = (params = {}) => {
 };
 
 // === Incident Management ===
+// Admin incident workflow endpoints (use /api/admin/incidents/* for workflow operations)
 export const getIncidents = (params = {}) => {
   const queryString = new URLSearchParams(params).toString();
-  return http.get(`${API_BASE}/incidents${queryString ? `?${queryString}` : ''}`);
+  return http.get(`${API_BASE}/incidents/queue${queryString ? `?${queryString}` : ''}`);
 };
-export const createIncident = (data) => http.post(`${API_BASE}/incidents`, data);
-export const updateIncident = (id, data) => http.put(`${API_BASE}/incidents/${id}`, data);
-export const deleteIncident = (id) => http.delete(`${API_BASE}/incidents/${id}`);
+export const getIncidentStats = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/incidents/stats${queryString ? `?${queryString}` : ''}`);
+};
+export const updateIncidentStatus = (id, data) => http.put(`${API_BASE}/incidents/${id}/status`, data);
+export const assignIncident = (id, data) => http.post(`${API_BASE}/incidents/${id}/assign`, data);
+export const escalateIncident = (id, data) => http.post(`${API_BASE}/incidents/${id}/escalate`, data);
 
 // === Users Management (for useAdminData hook) ===
 export const getUsers = (params = {}) => {
   const queryString = new URLSearchParams(params).toString();
   return http.get(`${API_BASE}/users${queryString ? `?${queryString}` : ''}`);
 };
+export const getPendingUsers = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/users/pending${queryString ? `?${queryString}` : ''}`);
+};
 export const updateUser = (id, data) => http.put(`${API_BASE}/users/${id}`, data);
+export const updateUserStatus = (id, status, estateId) => http.put(`${API_BASE}/users/${id}/status`, { status, estate_id: estateId });
+export const bulkApproveUsers = (data) => http.post(`${API_BASE}/users/bulk-approve`, data);
+export const bulkRejectUsers = (data) => http.post(`${API_BASE}/users/bulk-reject`, data);
 export const deleteUser = (id) => http.delete(`${API_BASE}/users/${id}`);
+
+// === Activity Dashboard ===
+export const getActivitySummary = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/analytics/activity/summary${queryString ? `?${queryString}` : ''}`);
+};
+export const getActivityTrends = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/analytics/activity/trends${queryString ? `?${queryString}` : ''}`);
+};
+export const getActivityAnomalies = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/analytics/activity/anomalies${queryString ? `?${queryString}` : ''}`);
+};
+export const getActivityFeed = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${API_BASE}/analytics/activity/feed${queryString ? `?${queryString}` : ''}`);
+};

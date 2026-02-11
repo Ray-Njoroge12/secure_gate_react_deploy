@@ -3,6 +3,7 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Card, Badge } from "./ui";
+import Button from './ui/Button';
 
 /**
  * Enhanced PrivateRoute component with proper authentication and role checking
@@ -73,12 +74,12 @@ export default function PrivateRoute({
               
               <Card.Footer>
                 <div className="flex justify-center">
-                  <button
+                  <Button
                     onClick={() => window.history.back()}
                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
                   >
                     Go Back
-                  </button>
+                  </Button>
                 </div>
               </Card.Footer>
             </Card>

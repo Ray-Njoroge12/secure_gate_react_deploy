@@ -7,7 +7,7 @@
 
 import React, { memo, useState, useCallback, useEffect } from 'react';
 import logger from 'utils/logger';
-import { Filter, X, ChevronDown, ChevronUp, Calendar, Check, Star } from '../icons';
+import Icon from './Icon';
 import { searchUtils } from '../../utils/searchUtils';
 
 /**
@@ -150,9 +150,9 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-up" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-down" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
@@ -178,7 +178,7 @@ const FilterPanel = memo(({
                     className="w-4 h-4 text-brand-500 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 rounded focus:ring-brand-500"
                   />
                   <span className="text-sm text-gray-900 dark:text-slate-200">{value}</span>
-                  {isSelected && <Check className="w-4 h-4 text-brand-400" />}
+                  {isSelected && <Icon name="check" className="w-4 h-4 text-brand-400" />}
                 </label>
               );
             })}
@@ -200,7 +200,7 @@ const FilterPanel = memo(({
           className="flex items-center justify-between w-full p-3 text-left bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
         >
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="calendar" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
             <span className="font-medium text-gray-900 dark:text-slate-200">{field.label}</span>
             {(currentValue.start || currentValue.end) && (
               <span className="px-2 py-1 text-xs bg-brand-500 text-white rounded-full">
@@ -209,9 +209,9 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-up" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-down" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
@@ -265,9 +265,9 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-up" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-down" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
@@ -306,9 +306,9 @@ const FilterPanel = memo(({
             )}
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-up" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500 dark:text-slate-400" />
+            <Icon name="chevron-down" className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           )}
         </button>
 
@@ -377,7 +377,7 @@ const FilterPanel = memo(({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-slate-400" />
+          <Icon name="filter" className="w-5 h-5 text-slate-400" />
           <h3 className="text-lg font-semibold text-slate-200">Filters</h3>
           {activeFiltersCount > 0 && (
             <span className="px-2 py-1 text-xs bg-brand-500 text-white rounded-full">
@@ -400,7 +400,7 @@ const FilterPanel = memo(({
               className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
               aria-label="Close filters"
             >
-              <X className="w-5 h-5" />
+              <Icon name="x" className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -420,7 +420,7 @@ const FilterPanel = memo(({
                   onClick={() => loadSavedFilter(savedFilter)}
                   className="flex items-center gap-2 text-sm text-gray-900 dark:text-slate-200 hover:text-brand-400"
                 >
-                  <Star className="w-4 h-4 text-yellow-400" />
+                  <Icon name="star" className="w-4 h-4 text-yellow-400" />
                   {savedFilter.name}
                 </button>
                 <button
@@ -428,7 +428,7 @@ const FilterPanel = memo(({
                   className="text-gray-400 dark:text-slate-400 hover:text-red-400"
                   aria-label={`Delete saved filter: ${savedFilter.name}`}
                 >
-                  <X className="w-3 h-3" />
+                  <Icon name="x" className="w-3 h-3" />
                 </button>
               </div>
             ))}

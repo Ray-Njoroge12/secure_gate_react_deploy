@@ -15,6 +15,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext';
 import { navigateToLogin } from '../../utils/authNavigation';
 import { getSessionConfigForRole } from '../../utils/navigationFlow';
+import Button from '../ui/Button';
 
 const SessionTimeoutWarning = ({ 
   warningTime: propWarningTime,  // Optional override
@@ -254,19 +255,19 @@ const SessionTimeoutWarning = ({
 
           {/* Buttons */}
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={handleLogout}
               className="flex-1 py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Log Out Now
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleExtendSession}
               className="flex-1 py-3 px-4 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               autoFocus
             >
               Stay Logged In
-            </button>
+            </Button>
           </div>
 
           {/* Keyboard hint */}

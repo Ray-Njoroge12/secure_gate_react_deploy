@@ -7,6 +7,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import exportService from '../../services/exportService';
 import './ReportBuilder.css';
+import Button from '../ui/Button';
 
 const ReportBuilder = ({ 
   availableFields = [], 
@@ -220,13 +221,13 @@ const ReportBuilder = ({
 
         <div className="config-section">
           <h3>Filters</h3>
-          <button 
+          <Button 
             type="button" 
             onClick={addFilter}
             className="btn btn-secondary btn-sm"
           >
             Add Filter
-          </button>
+          </Button>
           {reportConfig.filters.map(filter => (
             <div key={filter.id} className="filter-row">
               <select
@@ -259,14 +260,14 @@ const ReportBuilder = ({
                 placeholder="Filter value"
                 className="form-control form-control-sm"
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => removeFilter(filter.id)}
                 className="btn btn-danger btn-sm"
                 aria-label="Remove filter"
               >
                 ×
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -323,14 +324,14 @@ const ReportBuilder = ({
                           className={`field-item selected ${snapshot.isDragging ? 'dragging' : ''}`}
                         >
                           <span className="field-label">{field.label}</span>
-                          <button
+                          <Button
                             type="button"
                             onClick={() => removeField(field.key)}
                             className="remove-field"
                             aria-label={`Remove ${field.label}`}
                           >
                             ×
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </Draggable>
@@ -380,22 +381,22 @@ const ReportBuilder = ({
       )}
 
       <div className="report-builder__actions">
-        <button
+        <Button
           type="button"
           onClick={generatePreview}
           className="btn btn-secondary"
           disabled={selectedFields.length === 0}
         >
           Generate Preview
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={generateReport}
           className="btn btn-primary"
           disabled={selectedFields.length === 0 || isGenerating}
         >
           {isGenerating ? 'Generating...' : 'Generate Report'}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -175,15 +175,15 @@ router.post('/favorites', authenticateToken, requireEstateContext, requireRolePo
 
 /**
  * Remove visitor from favorites
- * DELETE /api/resident/favorites/:visitorId
+ * DELETE /api/resident/favorites/:id
  */
-router.delete('/favorites/:visitorId', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
+router.delete('/favorites/:id', authenticateToken, requireEstateContext, requireRolePolicy('adminOrResident'), attachRequestAudit, asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { visitorId } = req.params;
+  const { id } = req.params;
 
   await dbManager.query(
-    'DELETE FROM favorite_visitors WHERE resident_id = $1 AND visitor_id = $2',
-    [userId, visitorId]
+    'DELETE FROM favorite_visitors WHERE id = $1 AND resident_id = $2',
+    [id, userId]
   );
 
   return successResponse(res, null, 'Visitor removed from favorites');

@@ -5,13 +5,18 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
-import { Button, Badge } from '../ui';
+import { Button, Icon } from '../ui';
 import io from 'socket.io-client';
 
+const normalizeApprovalStatus = (status) => String(status || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+
 const ApprovalStatusCard = ({ visitor, onRequestApproval }) => {
-  const [socket, setSocket] = useState(null);
-  const [approvalStatus, setApprovalStatus] = useState(visitor?.status || 'unknown');
+  const [approvalStatus, setApprovalStatus] = useState(() => normalizeApprovalStatus(visitor?.status) || 'UNKNOWN');
+
+  const isApproved = approvalStatus === 'APPROVED';
+  const isRejected = approvalStatus === 'REJECTED' || approvalStatus === 'DENIED';
+  const isPending = approvalStatus === 'PENDING_APPROVAL' || approvalStatus === 'PENDING' || approvalStatus === 'OTP_SENT';
+  const isUnknown = approvalStatus === 'UNKNOWN';
 
   // Initialize WebSocket for real-time approval responses
   useEffect(() => {
@@ -28,19 +33,12 @@ const ApprovalStatusCard = ({ visitor, onRequestApproval }) => {
       transports: ['websocket', 'polling']
     });
 
-    newSocket.on('connect', () => {
-      console.log('✅ Guard WebSocket connected for approvals');
-    });
-
     // Listen for approval responses
     newSocket.on('visitor:approval_response', (data) => {
-      if (data.data.visitor_id === visitor?.id) {
-        console.log('📥 Approval response received:', data);
-        setApprovalStatus(data.data.status);
+      if (data?.data?.visitor_id === visitor?.id) {
+        setApprovalStatus(normalizeApprovalStatus(data.data.status) || 'UNKNOWN');
       }
     });
-
-    setSocket(newSocket);
 
     return () => {
       newSocket.disconnect();
@@ -50,88 +48,66 @@ const ApprovalStatusCard = ({ visitor, onRequestApproval }) => {
   // Update local status when visitor prop changes
   useEffect(() => {
     if (visitor?.status) {
-      setApprovalStatus(visitor.status);
+      setApprovalStatus(normalizeApprovalStatus(visitor.status) || 'UNKNOWN');
+    } else {
+      setApprovalStatus('UNKNOWN');
     }
   }, [visitor?.status]);
 
-  const getStatusDisplay = () => {
-    switch (approvalStatus) {
-      case 'pending_approval':
-        return {
-          icon: <Clock className="w-5 h-5 text-yellow-400" />,
-          label: 'Waiting for Approval',
-          color: 'warning',
-          message: 'Resident is being notified...'
-        };
-      case 'approved':
-        return {
-          icon: <CheckCircle className="w-5 h-5 text-green-400" />,
-          label: 'Approved',
-          color: 'success',
-          message: 'Open gate - Entry allowed'
-        };
-      case 'rejected':
-        return {
-          icon: <XCircle className="w-5 h-5 text-red-400" />,
-          label: 'Rejected',
-          color: 'danger',
-          message: 'Do not admit - Denied by resident'
-        };
-      default:
-        return {
-          icon: <AlertCircle className="w-5 h-5 text-slate-400" />,
-          label: 'Not Requested',
-          color: 'default',
-          message: 'Request approval from resident'
-        };
-    }
-  };
-
-  const status = getStatusDisplay();
-
   return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {status.icon}
-          <span className="font-semibold text-gray-900 dark:text-slate-200">{status.label}</span>
-        </div>
-        <Badge variant={status.color}>{approvalStatus}</Badge>
+    <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 h-full flex flex-col items-center justify-center text-center">
+      <div className="mb-3">
+        {isApproved && (
+          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+            <Icon name="CheckCircle" className="w-6 h-6" />
+          </div>
+        )}
+        {isRejected && (
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+            <Icon name="XCircle" className="w-6 h-6" />
+          </div>
+        )}
+        {(isPending || isUnknown) && (
+          <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 animate-pulse">
+            <Icon name="Clock" className="w-6 h-6" />
+          </div>
+        )}
       </div>
 
-      <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">{status.message}</p>
+      <h3 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">
+        {isApproved && 'Access Granted'}
+        {isRejected && 'Access Denied'}
+        {isPending && 'Waiting for Resident'}
+        {isUnknown && 'Status Unknown'}
+      </h3>
 
-      {/* Request Approval Button (only show if not yet requested) */}
-      {approvalStatus !== 'pending_approval' && 
-       approvalStatus !== 'approved' && 
-       approvalStatus !== 'rejected' && (
-        <Button
-          variant="primary"
+      <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
+        {isApproved && 'Resident has approved this visit.'}
+        {isRejected && 'Resident has denied this visit.'}
+        {isPending && 'Request sent to resident device.'}
+        {isUnknown && 'No active approval request found.'}
+      </p>
+
+      {isPending && (
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="w-full text-red-600 hover:bg-red-50 border-red-200"
+          onClick={() => onRequestApproval?.(visitor, { forceResend: true })}
+        >
+          <Icon name="AlertCircle" className="w-4 h-4 mr-2" />
+          Resend Request
+        </Button>
+      )}
+
+      {isUnknown && (
+        <Button 
+          variant="default"
+          size="sm" 
+          className="w-full"
           onClick={() => onRequestApproval?.(visitor)}
-          className="w-full"
         >
-          Request Resident Approval
-        </Button>
-      )}
-
-      {/* Action Buttons for Approved */}
-      {approvalStatus === 'approved' && (
-        <Button
-          variant="success"
-          className="w-full"
-        >
-          ✅ Open Gate
-        </Button>
-      )}
-
-      {/* Info for Rejected */}
-      {approvalStatus === 'rejected' && (
-        <Button
-          variant="danger"
-          disabled
-          className="w-full"
-        >
-          ❌ Entry Denied
+          Request Approval
         </Button>
       )}
     </div>

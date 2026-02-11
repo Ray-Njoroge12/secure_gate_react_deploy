@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ErrorBoundary from './ErrorBoundary';
 import './NetworkErrorBoundary.css';
+import Button from '../ui/Button';
 
 const NetworkErrorFallback = ({ 
   error, 
@@ -47,20 +48,20 @@ const NetworkErrorFallback = ({
         )}
 
         <div className="network-error-boundary__actions">
-          <button
+          <Button
             className="network-error-boundary__button network-error-boundary__button--primary"
             onClick={onRetry}
             disabled={isRetrying || retryCount >= 3}
           >
             {isRetrying ? 'Retrying...' : 'Try Again'}
-          </button>
+          </Button>
           
-          <button
+          <Button
             className="network-error-boundary__button network-error-boundary__button--secondary"
             onClick={onReload}
           >
             Refresh Page
-          </button>
+          </Button>
         </div>
 
         <div className="network-error-boundary__help">

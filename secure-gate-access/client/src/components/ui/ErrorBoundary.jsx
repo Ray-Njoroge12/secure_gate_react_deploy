@@ -1,6 +1,7 @@
 // client/src/components/ui/ErrorBoundary.jsx
 import React from 'react';
 import { Card, Button } from './index';
+import Icon from './Icon.jsx';
 import logger from 'utils/logger';
 import { reportError, reportUserAction } from '../../utils/errorReporting';
 import { navigateTo } from '../../utils/appNavigation';
@@ -199,29 +200,13 @@ class ErrorBoundary extends React.Component {
       const getErrorIcon = () => {
         switch (errorType) {
           case ERROR_TYPES.NETWORK:
-            return (
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-16 h-16 text-orange-500">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-              </svg>
-            );
+            return <Icon name="wifi-off" size={64} className="w-16 h-16 text-orange-500" />;
           case ERROR_TYPES.AUTHENTICATION:
-            return (
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-16 h-16 text-blue-500">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            );
+            return <Icon name="lock" size={64} className="w-16 h-16 text-blue-500" />;
           case ERROR_TYPES.SERVER:
-            return (
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-16 h-16 text-red-500">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
-              </svg>
-            );
+            return <Icon name="server-crash" size={64} className="w-16 h-16 text-red-500" />;
           default:
-            return (
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-16 h-16 text-red-600">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            );
+            return <Icon name="alert-triangle" size={64} className="w-16 h-16 text-red-600" />;
         }
       };
 

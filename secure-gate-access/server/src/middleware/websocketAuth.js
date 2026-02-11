@@ -14,13 +14,44 @@ import jwt from 'jsonwebtoken';
 import logger from '../config/logger.js';
 import { maskEmail } from '../utils/redaction.js';
 
+const parseCookieHeader = (cookieHeader = '') => {
+  if (!cookieHeader || typeof cookieHeader !== 'string') {
+    return {};
+  }
+
+  return cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce((cookies, part) => {
+      const [name, ...valueParts] = part.split('=');
+      if (!name) {
+        return cookies;
+      }
+
+      const value = valueParts.join('=');
+      try {
+        cookies[name] = decodeURIComponent(value || '');
+      } catch (error) {
+        cookies[name] = value || '';
+      }
+      return cookies;
+    }, {});
+};
+
 /**
  * Authenticate WebSocket connection using JWT token
  * Extracts user info INCLUDING estate_id for proper tenant isolation
  */
 export const authenticateSocket = (socket, next) => {
   try {
-    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+    const authToken = typeof socket.handshake.auth?.token === 'string'
+      ? socket.handshake.auth.token.trim()
+      : null;
+    const headerToken = socket.handshake.headers.authorization?.replace(/^Bearer\s+/i, '')?.trim();
+    const cookies = parseCookieHeader(socket.handshake.headers.cookie);
+    const cookieToken = cookies.accessToken || cookies.token;
+    const token = authToken || headerToken || cookieToken;
 
     if (!token) {
       logger.warn('WebSocket connection attempt without token', {

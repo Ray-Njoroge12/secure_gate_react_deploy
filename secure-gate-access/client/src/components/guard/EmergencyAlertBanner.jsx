@@ -6,11 +6,15 @@
  * Guards can acknowledge to indicate they are responding.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import React, { useState, useEffect, useCallback } from 'react';
+import useWebSocket from '../../hooks/useWebSocket';
+
 import emergencyService from '../../services/emergencyService';
 import notificationService from '../../services/notificationService';
 import logger from '../../utils/logger';
+import Button from '../ui/Button';
+import { useConfirmation } from '../common/ConfirmationDialog';
 
 const EmergencyAlertBanner = ({ 
   userRole = 'guard',
@@ -21,6 +25,13 @@ const EmergencyAlertBanner = ({
   const [loading, setLoading] = useState(true);
   const [acknowledging, setAcknowledging] = useState(null);
   const [expanded, setExpanded] = useState(true);
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
+  const { addEventListener } = useWebSocket({
+    autoConnect: true,
+    subscribeDashboard: false,
+    subscribeVisitors: false,
+    subscribeAdmin: false
+  });
 
   // Fetch active emergencies
   const fetchActiveEmergencies = useCallback(async () => {
@@ -42,38 +53,29 @@ const EmergencyAlertBanner = ({
     return () => clearInterval(interval);
   }, [fetchActiveEmergencies]);
 
-  // Listen for SSE events
+  // Listen for emergency WebSocket events
   useEffect(() => {
-    let eventSource;
-    try {
-      eventSource = new EventSource('/api/ws/guards', { withCredentials: true });
-      
-      eventSource.addEventListener('emergency:triggered', (event) => {
-        const data = JSON.parse(event.data || '{}');
+    const cleanups = [
+      addEventListener('emergency:triggered', (data) => {
         notificationService.error('🆘 EMERGENCY ALERT', `Guard ${data.guardName || 'Unknown'} needs help!`);
         fetchActiveEmergencies();
-      });
-      
-      eventSource.addEventListener('emergency:acknowledged', () => {
+      }),
+      addEventListener('emergency:acknowledged', () => {
         fetchActiveEmergencies();
-      });
-      
-      eventSource.addEventListener('emergency:resolved', () => {
+      }),
+      addEventListener('emergency:resolved', () => {
         notificationService.success('Emergency Resolved', 'The emergency has been resolved.');
         fetchActiveEmergencies();
-      });
-      
-      eventSource.addEventListener('emergency:cancelled', () => {
+      }),
+      addEventListener('emergency:cancelled', () => {
         fetchActiveEmergencies();
-      });
-    } catch (err) {
-      logger.error('Failed to connect to emergency SSE:', err);
-    }
-    
+      })
+    ];
+
     return () => {
-      if (eventSource) eventSource.close();
+      cleanups.forEach((cleanup) => cleanup?.());
     };
-  }, [fetchActiveEmergencies]);
+  }, [addEventListener, fetchActiveEmergencies]);
 
   // Handle acknowledging an emergency
   const handleAcknowledge = async (emergencyId) => {
@@ -91,7 +93,14 @@ const EmergencyAlertBanner = ({
 
   // Handle resolving an emergency (admin only)
   const handleResolve = async (emergencyId) => {
-    if (!window.confirm('Are you sure you want to resolve this emergency?')) return;
+    const confirmed = await confirm({
+      variant: 'success',
+      title: 'Resolve Emergency',
+      message: 'Are you sure you want to resolve this emergency? This will notify all responding guards.',
+      confirmText: 'Resolve Emergency',
+      cancelText: 'Cancel',
+    });
+    if (!confirmed) return;
     
     try {
       await emergencyService.resolveEmergency(emergencyId, {
@@ -129,7 +138,7 @@ const EmergencyAlertBanner = ({
             🆘 ACTIVE EMERGENCY ({activeEmergencies.length})
           </span>
         </div>
-        <button
+        <Button
           onClick={() => setExpanded(!expanded)}
           className="p-2 hover:bg-red-700 rounded-lg transition-colors"
           aria-label={expanded ? 'Collapse' : 'Expand'}
@@ -142,7 +151,7 @@ const EmergencyAlertBanner = ({
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Emergency List */}
@@ -183,22 +192,22 @@ const EmergencyAlertBanner = ({
                 {/* Actions */}
                 <div className="flex gap-2">
                   {emergency.status === 'triggered' && (
-                    <button
+                    <Button
                       onClick={() => handleAcknowledge(emergency.id)}
                       disabled={acknowledging === emergency.id}
                       className="px-4 py-2 bg-white dark:bg-slate-800 text-red-600 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
                     >
                       {acknowledging === emergency.id ? 'Acknowledging...' : 'I\'m Responding'}
-                    </button>
+                    </Button>
                   )}
                   
                   {userRole === 'admin' && (
-                    <button
+                    <Button
                       onClick={() => handleResolve(emergency.id)}
                       className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
                     >
                       Resolve
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -206,6 +215,9 @@ const EmergencyAlertBanner = ({
           ))}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 };

@@ -259,7 +259,7 @@ const ResponsiveTable = memo(({
       {isMobile && (
         <div className="space-y-3 p-4">
           {(data || []).map((item, index) => (
-            <div
+            <div role="button" tabIndex={0}
               key={item.id || index}
               className={`
                 bg-gray-50 dark:bg-slate-700/30 rounded-lg p-4 border border-gray-200 dark:border-slate-600

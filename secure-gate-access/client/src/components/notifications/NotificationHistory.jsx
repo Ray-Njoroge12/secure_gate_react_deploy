@@ -10,18 +10,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { format, parseISO, subDays, startOfDay, endOfDay } from 'date-fns';
-import { 
-  MagnifyingGlassIcon, 
-  FunnelIcon, 
-  ArrowDownTrayIcon,
-  ChartBarIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ExclamationTriangleIcon
-} from '@heroicons/react/24/outline';
+import Icon from '../ui/Icon';
 import intelligentNotificationService from '../../services/intelligentNotificationService';
 import logger from '../../utils/logger';
+import Button from '../ui/Button';
 
 const NotificationHistory = () => {
   const [notifications, setNotifications] = useState([]);
@@ -67,9 +59,9 @@ const NotificationHistory = () => {
       const response = await fetch('/api/intelligent-notifications/history', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           startDate: dateRange.start,
           endDate: dateRange.end,
@@ -207,13 +199,13 @@ const NotificationHistory = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'sent':
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <Icon name="CheckCircle" className="h-5 w-5 text-green-500" />;
       case 'failed':
-        return <XCircleIcon className="h-5 w-5 text-red-500" />;
+        return <Icon name="XCircle" className="h-5 w-5 text-red-500" />;
       case 'pending':
-        return <ClockIcon className="h-5 w-5 text-yellow-500" />;
+        return <Icon name="Clock" className="h-5 w-5 text-yellow-500" />;
       default:
-        return <ExclamationTriangleIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
+        return <Icon name="AlertTriangle" className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
     }
   };
 
@@ -289,38 +281,40 @@ const NotificationHistory = () => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setViewMode(viewMode === 'list' ? 'analytics' : 'list')}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700"
           >
             {viewMode === 'list' ? (
               <>
-                <ChartBarIcon className="h-4 w-4 mr-2" />
+                <Icon name="BarChart3" className="h-4 w-4 mr-2" />
                 Analytics
               </>
             ) : (
               <>
-                <ClockIcon className="h-4 w-4 mr-2" />
+                <Icon name="Clock" className="h-4 w-4 mr-2" />
                 History
               </>
             )}
-          </button>
+          </Button>
           
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={exportToCSV}
             disabled={filteredNotifications.length === 0}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+            <Icon name="Download" className="h-4 w-4 mr-2" />
             Export CSV
-          </button>
+          </Button>
         </div>
       </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="flex">
-            <XCircleIcon className="h-5 w-5 text-red-400" />
+            <Icon name="XCircle" className="h-5 w-5 text-red-400" />
             <div className="ml-3">
               <h3 className="text-sm font-medium text-red-800">Error</h3>
               <p className="text-sm text-red-700 mt-1">{error}</p>
@@ -342,7 +336,7 @@ const NotificationHistory = () => {
                   Search
                 </label>
                 <div className="relative">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-gray-300 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                  <Icon name="Search" className="h-5 w-5 text-gray-400 dark:text-gray-300 absolute left-3 top-1/2 transform -translate-y-1/2" />
                   <input
                     type="text"
                     value={searchTerm}
@@ -419,28 +413,24 @@ const NotificationHistory = () => {
                 Channel
               </label>
               <div className="flex flex-wrap gap-2">
-                <button
+                <Button
+                  variant={channelFilter === 'all' ? 'primary' : 'secondary'}
+                  size="sm"
                   onClick={() => setChannelFilter('all')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    channelFilter === 'all'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-                  }`}
+                  className="rounded-full"
                 >
                   All Channels
-                </button>
+                </Button>
                 {channels.map(channel => (
-                  <button
+                  <Button
                     key={channel}
+                    variant={channelFilter === channel ? 'primary' : 'secondary'}
+                    size="sm"
                     onClick={() => setChannelFilter(channel)}
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      channelFilter === channel
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-                    }`}
+                    className="rounded-full"
                   >
                     {channel}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -460,7 +450,7 @@ const NotificationHistory = () => {
           <div className="bg-white dark:bg-slate-800 shadow overflow-hidden sm:rounded-md">
             {currentNotifications.length === 0 ? (
               <div className="text-center py-12">
-                <ClockIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300" />
+                <Icon name="Clock" className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-300" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No notifications found</h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   Try adjusting your filters or date range.
@@ -517,40 +507,39 @@ const NotificationHistory = () => {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
-              </button>
+              </Button>
               
               <div className="flex items-center space-x-2">
                 {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                   const page = i + 1;
                   return (
-                    <button
+                    <Button
                       key={page}
+                      variant={currentPage === page ? 'primary' : 'secondary'}
+                      size="sm"
                       onClick={() => setCurrentPage(page)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md ${
-                        currentPage === page
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700'
-                      }`}
                     >
                       {page}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
               
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </>
@@ -585,7 +574,7 @@ const NotificationAnalytics = ({ analytics }) => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <ClockIcon className="w-5 h-5 text-blue-600" />
+                <Icon name="Clock" className="w-5 h-5 text-blue-600" />
               </div>
             </div>
             <div className="ml-4">
@@ -601,7 +590,7 @@ const NotificationAnalytics = ({ analytics }) => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                <Icon name="CheckCircle" className="w-5 h-5 text-green-600" />
               </div>
             </div>
             <div className="ml-4">
@@ -617,7 +606,7 @@ const NotificationAnalytics = ({ analytics }) => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600" />
+                <Icon name="AlertTriangle" className="w-5 h-5 text-yellow-600" />
               </div>
             </div>
             <div className="ml-4">
@@ -633,7 +622,7 @@ const NotificationAnalytics = ({ analytics }) => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <ChartBarIcon className="w-5 h-5 text-purple-600" />
+                <Icon name="BarChart3" className="w-5 h-5 text-purple-600" />
               </div>
             </div>
             <div className="ml-4">

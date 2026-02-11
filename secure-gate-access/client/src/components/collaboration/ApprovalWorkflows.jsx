@@ -4,6 +4,7 @@ import { collaborationService } from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import './ApprovalWorkflows.css';
+import Button from '../ui/Button';
 
 const ApprovalWorkflows = ({ className = '' }) => {
   const { user } = useAuth();
@@ -106,12 +107,12 @@ const ApprovalWorkflows = ({ className = '' }) => {
         <div className="error-message">
           <h3>Unable to load approval workflows</h3>
           <p>{workflowsError.message}</p>
-          <button 
+          <Button 
             onClick={() => queryClient.invalidateQueries(['approval-workflows'])}
             className="retry-button"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -122,19 +123,19 @@ const ApprovalWorkflows = ({ className = '' }) => {
       <div className="workflows-header">
         <h2>Approval Workflows</h2>
         {(user.role === 'admin' || user.role === 'super_admin') && (
-          <button 
+          <Button 
             onClick={handleCreateWorkflow}
             className="create-button primary"
             disabled={createWorkflowMutation.isPending}
           >
             <span className="icon">📋</span>
             Create Workflow
-          </button>
+          </Button>
         )}
       </div>
 
       <div className="workflows-tabs">
-        <button
+        <Button
           className={`tab ${activeTab === 'pending_approval' ? 'active' : ''}`}
           onClick={() => handleTabChange('pending_approval')}
         >
@@ -144,19 +145,19 @@ const ApprovalWorkflows = ({ className = '' }) => {
               {workflows.filter(w => w.status === 'pending').length}
             </span>
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'requested' ? 'active' : ''}`}
           onClick={() => handleTabChange('requested')}
         >
           My Requests
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => handleTabChange('all')}
         >
           All Workflows
-        </button>
+        </Button>
       </div>
 
       <div className="workflows-content">
@@ -239,6 +240,15 @@ const WorkflowItem = ({ workflow, currentUser, isSelected, onClick }) => {
     <div 
       className={`workflow-item ${isSelected ? 'selected' : ''} ${isPending ? 'pending' : ''}`}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      aria-pressed={isSelected}
     >
       <div className="workflow-icon">
         <div className={`icon ${workflow.workflow_type}`}>
@@ -391,7 +401,7 @@ const WorkflowDetail = ({ workflow, currentUser, onProcessApproval, isProcessing
             </div>
 
             <div className="form-actions">
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   setShowApprovalForm(false);
@@ -402,8 +412,8 @@ const WorkflowDetail = ({ workflow, currentUser, onProcessApproval, isProcessing
                 disabled={isProcessing}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleApprovalSubmit}
                 className={`submit-button ${approvalAction === 'approve' ? 'approve' : 'reject'}`}
@@ -411,7 +421,7 @@ const WorkflowDetail = ({ workflow, currentUser, onProcessApproval, isProcessing
               >
                 {isProcessing ? 'Processing...' : 
                   approvalAction === 'approve' ? 'Approve' : 'Reject'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -483,20 +493,20 @@ const ApprovalStep = ({
 
       {canApprove && step.status === 'pending' && (
         <div className="step-actions">
-          <button
+          <Button
             onClick={onApprove}
             className="approve-button"
             disabled={isProcessing}
           >
             ✅ Approve
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onReject}
             className="reject-button"
             disabled={isProcessing}
           >
             ❌ Reject
-          </button>
+          </Button>
         </div>
       )}
 
@@ -613,7 +623,7 @@ const CreateWorkflow = ({ onSend, onCancel, isLoading }) => {
     <div className="create-workflow">
       <div className="create-header">
         <h3>Create Approval Workflow</h3>
-        <button onClick={onCancel} className="close-button">×</button>
+        <Button onClick={onCancel} className="close-button" aria-label="Close">×</Button>
       </div>
 
       <form onSubmit={handleSubmit} className="create-form">
@@ -702,13 +712,13 @@ const CreateWorkflow = ({ onSend, onCancel, isLoading }) => {
         <div className="approval-steps-section">
           <div className="section-header">
             <h4>Approval Steps</h4>
-            <button
+            <Button
               type="button"
               onClick={addApprovalStep}
               className="add-step-button"
             >
               + Add Step
-            </button>
+            </Button>
           </div>
 
           {formData.approvalSteps.map((step, index) => (
@@ -716,13 +726,13 @@ const CreateWorkflow = ({ onSend, onCancel, isLoading }) => {
               <div className="step-header">
                 <h5>Step {index + 1}</h5>
                 {formData.approvalSteps.length > 1 && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => removeApprovalStep(index)}
                     className="remove-step-button"
                   >
                     ×
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -798,21 +808,21 @@ const CreateWorkflow = ({ onSend, onCancel, isLoading }) => {
         </div>
 
         <div className="form-actions">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             className="cancel-button"
             disabled={isLoading}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             className="create-button primary"
             disabled={isLoading}
           >
             {isLoading ? 'Creating...' : 'Create Workflow'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

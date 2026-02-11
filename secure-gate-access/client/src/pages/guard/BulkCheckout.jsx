@@ -11,9 +11,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { Card, Button, Badge } from '../../components/ui';
+import { Card, Button, Badge, Skeleton, EmptyState } from '../../components/ui';
 import PageHeader from '../../components/PageHeader';
 import { useMFAVerification, SENSITIVE_OPERATIONS } from '../../components/guard/MFAVerificationModal';
+import { useConfirmation } from '../../components/common/ConfirmationDialog';
+import notificationService from '../../services/notificationService';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import OfflineBanner from '../../components/common/OfflineBanner';
+import usePullToRefresh from '../../hooks/usePullToRefresh';
 import logger from '../../utils/logger';
 
 // Icons
@@ -61,9 +66,13 @@ export default function BulkCheckout() {
   
   // MFA verification hook for sensitive operations
   const { requestVerification, MFAModal } = useMFAVerification();
+  // Confirmation dialog hook for replacing window.confirm
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
+  const { isOnline, wasOffline } = useOnlineStatus();
 
   // State
   const [activeVisitors, setActiveVisitors] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [checkoutResults, setCheckoutResults] = useState(null);
@@ -75,6 +84,7 @@ export default function BulkCheckout() {
   const fetchActiveVisitors = useCallback(async () => {
     try {
       setLoading('bulkCheckout', true);
+      setFetchError(null);
 
       const res = await fetch('/api/visitors/active', {
         credentials: 'include'
@@ -103,12 +113,15 @@ export default function BulkCheckout() {
 
       setActiveVisitors(visitors);
     } catch (error) {
+      setFetchError(error.message || 'Failed to load visitors. Please try again.');
       handleApiError(error, 'Bulk Checkout');
       logger.error('Failed to fetch active visitors:', error);
     } finally {
       setLoading('bulkCheckout', false);
     }
   }, [handleApiError, setLoading]);
+
+  const { PullToRefreshIndicator } = usePullToRefresh(fetchActiveVisitors);
 
   useEffect(() => {
     fetchActiveVisitors();
@@ -146,7 +159,7 @@ export default function BulkCheckout() {
   // Perform bulk checkout
   const handleBulkCheckout = async () => {
     if (selectedIds.size === 0) {
-      alert('Please select at least one visitor to check out.');
+      notificationService.warning('No Selection', 'Please select at least one visitor to check out.');
       return;
     }
 
@@ -160,8 +173,15 @@ export default function BulkCheckout() {
       if (!verification.verified && verification.cancelled) {
         return; // User cancelled
       }
-    } else if (!window.confirm(`Are you sure you want to check out ${selectedIds.size} visitor(s)?`)) {
-      return;
+    } else {
+      const confirmed = await confirm({
+        variant: 'warning',
+        title: 'Bulk Checkout',
+        message: `Are you sure you want to check out ${selectedIds.size} visitor(s)? This will end their visit.`,
+        confirmText: `Check Out ${selectedIds.size} Visitor${selectedIds.size !== 1 ? 's' : ''}`,
+        cancelText: 'Cancel',
+      });
+      if (!confirmed) return;
     }
 
     try {
@@ -286,7 +306,13 @@ export default function BulkCheckout() {
         backTo="/dashboard/guard"
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 py-6 pb-28 md:pb-8 space-y-6">
+        {/* Pull to Refresh Indicator */}
+        <PullToRefreshIndicator />
+
+        {/* Offline Banner */}
+        <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} onRetry={fetchActiveVisitors} />
+
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="p-4 text-center">
@@ -353,8 +379,8 @@ export default function BulkCheckout() {
 
         {/* Action Bar */}
         <Card className="p-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+          <div className="space-y-3 md:space-y-0 md:flex md:flex-wrap md:items-center md:justify-between md:gap-4">
+            <div className="flex items-center gap-3">
               <select
                 value={filterType}
                 onChange={(e) => {
@@ -362,7 +388,7 @@ export default function BulkCheckout() {
                   setSelectedIds(new Set());
                   setSelectAll(false);
                 }}
-                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                className="mobile-select flex-1 md:flex-none md:w-auto"
               >
                 <option value="all">All Visitors ({activeVisitors.length})</option>
                 <option value="overdue">Overdue Only ({activeVisitors.filter(v => v.isOverdue).length})</option>
@@ -374,12 +400,14 @@ export default function BulkCheckout() {
                 size="sm"
                 onClick={fetchActiveVisitors}
                 disabled={isLoading('bulkCheckout')}
+                className="min-h-[44px] min-w-[44px]"
               >
                 <RefreshIcon className={isLoading('bulkCheckout') ? 'animate-spin' : ''} />
               </Button>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Desktop action buttons */}
+            <div className="hidden md:flex items-center gap-2">
               <Button
                 variant="primary"
                 onClick={handleBulkCheckout}
@@ -397,6 +425,28 @@ export default function BulkCheckout() {
             </div>
           </div>
         </Card>
+
+        {/* Mobile Sticky Action Bar */}
+        <div className="mobile-sticky-actions md:hidden">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              className="flex-1 min-h-[44px]"
+              onClick={handleBulkCheckout}
+              disabled={selectedIds.size === 0 || isLoading('performCheckout')}
+            >
+              {isLoading('performCheckout') ? 'Checking out...' : `Checkout (${selectedIds.size})`}
+            </Button>
+            <Button
+              variant="danger"
+              className="min-h-[44px]"
+              onClick={() => setShowEODConfirm(true)}
+              disabled={activeVisitors.length === 0 || isLoading('eodCheckout')}
+            >
+              EOD
+            </Button>
+          </div>
+        </div>
 
         {/* Visitor List */}
         <Card>
@@ -417,83 +467,218 @@ export default function BulkCheckout() {
           </div>
 
           {/* Visitor List */}
-          {isLoading('bulkCheckout') ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-300">Loading visitors...</p>
+          {isLoading('bulkCheckout') && activeVisitors.length === 0 ? (
+            <div className="divide-y divide-gray-200 dark:divide-slate-700">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="px-4 py-3 flex items-center gap-4">
+                  <Skeleton className="w-4 h-4 rounded" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                  <div className="text-right space-y-1">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-8 w-20 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : fetchError && !isLoading('bulkCheckout') ? (
+            <div className="text-center py-10" role="alert">
+              <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                <WarningIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Failed to Load Visitors</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{fetchError}</p>
+              <Button onClick={fetchActiveVisitors} variant="primary" size="sm">
+                <RefreshIcon className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
             </div>
           ) : filteredVisitors.length === 0 ? (
-            <div className="p-8 text-center">
-              <UserGroupIcon className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-300 mb-2" />
-              <p className="text-gray-500 dark:text-gray-300">No visitors on premise.</p>
+            <div className="p-8">
+              <EmptyState
+                icon="UserGroup"
+                title={
+                  filterType === 'overdue' 
+                    ? "No Overdue Visitors" 
+                    : filterType === 'recent'
+                    ? "No Recent Visitors"
+                    : "No Active Visitors"
+                }
+                message={
+                  filterType !== 'all'
+                    ? "Try selecting a different filter to view more visitors."
+                    : "All visitors have been checked out. Great job keeping the premises secure!"
+                }
+                variant="success"
+                actions={
+                  filterType !== 'all'
+                    ? [
+                        {
+                          label: 'Show All Visitors',
+                          onClick: () => setFilterType('all'),
+                          variant: 'outline'
+                        }
+                      ]
+                    : [
+                        {
+                          label: 'Check In New Visitor',
+                          onClick: () => navigate('/dashboard/guard/scan-qr'),
+                          variant: 'primary',
+                          icon: 'qr-code'
+                        }
+                      ]
+                }
+              />
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-slate-700">
               {filteredVisitors.map((visitor) => (
                 <div
                   key={visitor.id}
-                  className={`px-4 py-3 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${
+                  className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors touch-active ${
                     selectedIds.has(visitor.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(visitor.id)}
-                    onChange={() => handleSelect(visitor.id)}
-                    className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500"
-                  />
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {visitor.name}
-                      </p>
-                      {visitor.isOverdue && (
-                        <Badge variant="warning" size="sm">Overdue</Badge>
-                      )}
-                      {visitor.is_walk_in && (
-                        <Badge variant="info" size="sm">Walk-in</Badge>
-                      )}
+                  {/* Mobile Layout */}
+                  <div className="md:hidden">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(visitor.id)}
+                        onChange={() => handleSelect(visitor.id)}
+                        aria-label={`Select ${visitor.name || 'visitor'} for checkout`}
+                        className="w-5 h-5 mt-0.5 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="font-medium text-gray-900 dark:text-white truncate">
+                            {visitor.name}
+                          </p>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {visitor.isOverdue && <Badge variant="warning" size="sm">Overdue</Badge>}
+                            {visitor.is_walk_in && <Badge variant="info" size="sm">Walk-in</Badge>}
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">
+                          Host: {visitor.host_name || 'Unknown'} • Unit: {visitor.host_unit || '-'}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            <span className="font-medium text-gray-700 dark:text-gray-200">{visitor.duration}</span>
+                            <span className="ml-2">In: {formatTime(visitor.check_in)}</span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="min-h-[36px] min-w-[36px]"
+                            onClick={async () => {
+                              const confirmed = await confirm({
+                                variant: 'info',
+                                title: 'Check Out Visitor',
+                                message: `Check out ${visitor.name}?`,
+                                confirmText: 'Check Out',
+                                cancelText: 'Cancel',
+                              });
+                              if (confirmed) {
+                                try {
+                                  const res = await fetch(`/api/visitors/${visitor.id}/check-out`, {
+                                    method: 'POST',
+                                    credentials: 'include',
+                                    headers: { 'Content-Type': 'application/json' }
+                                  });
+                                  const json = await res.json();
+                                  if (json.success) {
+                                    notificationService.success('Checked Out', `${visitor.name} has been checked out.`);
+                                    fetchActiveVisitors();
+                                  } else {
+                                    throw new Error(json.error);
+                                  }
+                                } catch (error) {
+                                  handleApiError(error, 'Checkout');
+                                }
+                              }
+                            }}
+                          >
+                            <CheckIcon />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-300">
-                      Host: {visitor.host_name || 'Unknown'} • Unit: {visitor.host_unit || '-'}
-                    </p>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {visitor.duration}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-300">
-                      In: {formatTime(visitor.check_in)}
-                    </p>
-                  </div>
+                  {/* Desktop Layout */}
+                  <div className="hidden md:flex items-center gap-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(visitor.id)}
+                      onChange={() => handleSelect(visitor.id)}
+                      aria-label={`Select ${visitor.name || 'visitor'} for checkout`}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-600 focus:ring-blue-500"
+                    />
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      if (window.confirm(`Check out ${visitor.name}?`)) {
-                        try {
-                          const res = await fetch(`/api/visitors/${visitor.id}/check-out`, {
-                            method: 'POST',
-                            credentials: 'include',
-                            headers: { 'Content-Type': 'application/json' }
-                          });
-                          const json = await res.json();
-                          if (json.success) {
-                            fetchActiveVisitors();
-                          } else {
-                            throw new Error(json.error);
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900 dark:text-white truncate">
+                          {visitor.name}
+                        </p>
+                        {visitor.isOverdue && (
+                          <Badge variant="warning" size="sm">Overdue</Badge>
+                        )}
+                        {visitor.is_walk_in && (
+                          <Badge variant="info" size="sm">Walk-in</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-300">
+                        Host: {visitor.host_name || 'Unknown'} • Unit: {visitor.host_unit || '-'}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {visitor.duration}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-300">
+                        In: {formatTime(visitor.check_in)}
+                      </p>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          variant: 'info',
+                          title: 'Check Out Visitor',
+                          message: `Check out ${visitor.name}?`,
+                          confirmText: 'Check Out',
+                          cancelText: 'Cancel',
+                        });
+                        if (confirmed) {
+                          try {
+                            const res = await fetch(`/api/visitors/${visitor.id}/check-out`, {
+                              method: 'POST',
+                              credentials: 'include',
+                              headers: { 'Content-Type': 'application/json' }
+                            });
+                            const json = await res.json();
+                            if (json.success) {
+                              notificationService.success('Checked Out', `${visitor.name} has been checked out.`);
+                              fetchActiveVisitors();
+                            } else {
+                              throw new Error(json.error);
+                            }
+                          } catch (error) {
+                            handleApiError(error, 'Checkout');
                           }
-                        } catch (error) {
-                          handleApiError(error, 'Checkout');
                         }
-                      }
-                    }}
-                  >
-                    <CheckIcon />
-                  </Button>
+                      }}
+                    >
+                      <CheckIcon />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -551,6 +736,9 @@ export default function BulkCheckout() {
             </Card>
           </div>
         )}
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog {...dialogProps} />
 
         {/* MFA Verification Modal */}
         <MFAModal />

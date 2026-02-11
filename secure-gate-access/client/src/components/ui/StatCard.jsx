@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import Icon from './Icon';
 import './StatCard.css';
 
 /**
@@ -48,11 +48,11 @@ const StatCard = ({
     
     switch (trend.direction) {
       case 'up':
-        return <TrendingUp className="stat-card__trend-icon stat-card__trend-icon--up" />;
+        return <Icon name="trending-up" className="stat-card__trend-icon stat-card__trend-icon--up" />;
       case 'down':
-        return <TrendingDown className="stat-card__trend-icon stat-card__trend-icon--down" />;
+        return <Icon name="trending-down" className="stat-card__trend-icon stat-card__trend-icon--down" />;
       default:
-        return <Minus className="stat-card__trend-icon stat-card__trend-icon--neutral" />;
+        return <Icon name="minus" className="stat-card__trend-icon stat-card__trend-icon--neutral" />;
     }
   };
 

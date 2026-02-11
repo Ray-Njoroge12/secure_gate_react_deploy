@@ -6,6 +6,7 @@
  */
 
 import React, { memo, useEffect, useRef } from 'react';
+import Icon from './Icon';
 
 /**
  * Button component with multiple variants and accessibility features
@@ -112,14 +113,36 @@ const Button = memo(({
   
   /**
    * CSS classes for different button variants — aligned with brand color #10b981
+   * Includes aliases for common naming conventions
    * @constant {Object.<string, string>}
    */
   const variantClasses = {
-    primary: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-emerald-500',
-    secondary: 'bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white shadow-md hover:shadow-lg focus-visible:ring-slate-500',
+    // Primary variants — using brand-* (maps to emerald via tailwind.config.js)
+    primary: 'bg-brand-600 hover:bg-brand-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-brand-500',
+    brand: 'bg-brand-600 hover:bg-brand-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-brand-500',
+    secondary: 'bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white shadow-sm hover:shadow-md focus-visible:ring-slate-500',
+    default: 'bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-white shadow-sm hover:shadow-md focus-visible:ring-slate-500',
+    
+    // Outline variants (both naming conventions supported)
     outlined: 'border-2 border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 bg-transparent focus-visible:ring-slate-500',
+    outline: 'border-2 border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 bg-transparent focus-visible:ring-slate-500',
+    
+    // Ghost/minimal/text variants
     ghost: 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 bg-transparent focus-visible:ring-slate-600',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg focus-visible:ring-red-500'
+    text: 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 bg-transparent focus-visible:ring-slate-600',
+    
+    // Status variants — Tier 1 shadow (below CTA)
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md focus-visible:ring-red-500',
+    destructive: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md focus-visible:ring-red-500',
+    error: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-md focus-visible:ring-red-500',
+    success: 'bg-brand-600 hover:bg-brand-700 text-white shadow-sm hover:shadow-md focus-visible:ring-brand-500',
+    warning: 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm hover:shadow-md focus-visible:ring-amber-500',
+    info: 'bg-blue-500 hover:bg-blue-600 text-white shadow-sm hover:shadow-md focus-visible:ring-blue-500',
+
+    // Layout/shape variants (preserve className for custom styling)
+    circle: 'rounded-full p-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 bg-transparent focus-visible:ring-slate-600',
+    compact: 'px-2 py-1 text-xs hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 bg-transparent focus-visible:ring-slate-600',
+    filled: 'bg-brand-600 hover:bg-brand-700 text-white shadow-lg hover:shadow-xl focus-visible:ring-brand-500'
   };
   
   /**
@@ -134,10 +157,17 @@ const Button = memo(({
   };
   
   /**
+   * Get variant classes with fallback to primary for unknown variants
+   * @constant {string}
+   */
+  const resolvedVariantClasses = variantClasses[variant] || variantClasses.primary;
+  const resolvedSizeClasses = sizeClasses[size] || sizeClasses.md;
+  
+  /**
    * Combined CSS classes for the button
    * @constant {string}
    */
-  const buttonClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  const buttonClasses = `${baseClasses} ${resolvedVariantClasses} ${resolvedSizeClasses} ${className}`;
   
   // Auto-generate aria-label for icon-only buttons
   const isIconOnly = icon && !children;
@@ -159,10 +189,7 @@ const Button = memo(({
     >
       {loading ? (
         <>
-          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
+          <Icon name="loader-2" sizeOverride={16} className="animate-spin" aria-hidden="true" />
           {children}
         </>
       ) : (

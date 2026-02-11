@@ -549,26 +549,11 @@ if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEV_ROUTES === '
   console.log('🛠️  Dev routes enabled at /api/dev');
 }
 
-// Guard SSE endpoint (stub for real-time updates)
+// Legacy alias to the canonical guard SSE endpoint
 app.get('/api/ws/guards', authenticateToken, requireRole(['guard', 'admin', 'super_admin']), requireEstate, (req, res) => {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  // Send initial heartbeat
-  res.write('event: heartbeat\ndata: {"status":"connected"}\n\n');
-
-  // Keep connection alive with periodic heartbeats
-  const heartbeat = setInterval(() => {
-    res.write('event: heartbeat\ndata: {"timestamp":"' + new Date().toISOString() + '"}\n\n');
-  }, 30000);
-
-  // Clean up on disconnect
-  req.on('close', () => {
-    clearInterval(heartbeat);
-    res.end();
-  });
+  const queryIndex = req.originalUrl.indexOf('?');
+  const query = queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : '';
+  return res.redirect(307, `/api/sse/guards${query}`);
 });
 
 // API Documentation (Swagger)

@@ -4,20 +4,19 @@
  */
 
 import React from 'react';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import Icon from './Icon.jsx';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) => {
   const { theme, setTheme, isDark, THEMES } = useTheme();
 
   const themes = [
-    { value: THEMES.LIGHT, icon: Sun, label: 'Light' },
-    { value: THEMES.DARK, icon: Moon, label: 'Dark' },
-    { value: THEMES.SYSTEM, icon: Monitor, label: 'System' }
+    { value: THEMES.LIGHT, iconName: 'sun', label: 'Light' },
+    { value: THEMES.DARK, iconName: 'moon', label: 'Dark' },
+    { value: THEMES.SYSTEM, iconName: 'monitor', label: 'System' }
   ];
 
   const currentTheme = themes.find(t => t.value === theme) || themes[0];
-  const Icon = currentTheme.icon;
 
   const handleToggle = () => {
     const currentIndex = themes.findIndex(t => t.value === theme);
@@ -57,8 +56,8 @@ const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) =>
       aria-label={`Theme: ${currentTheme.label}`}
       title={`Current theme: ${currentTheme.label}`}
     >
-      <Icon className="w-5 h-5" />
-      {showLabel && <span className="text-sm">{currentTheme.label}</span>}
+      <Icon name={currentTheme.iconName} className="w-5 h-5" />
+      {showLabel && <span className="text-sm font-medium">{currentTheme.label}</span>}
     </button>
   );
 };
@@ -70,20 +69,20 @@ export const ThemeRadioGroup = ({ className = '' }) => {
   const { theme, setTheme, THEMES } = useTheme();
 
   const themes = [
-    { value: THEMES.LIGHT, icon: Sun, label: 'Light', description: 'Light mode with bright colors' },
-    { value: THEMES.DARK, icon: Moon, label: 'Dark', description: 'Dark mode with muted colors' },
-    { value: THEMES.SYSTEM, icon: Monitor, label: 'System', description: 'Follow system preference' }
+    { value: THEMES.LIGHT, iconName: 'Sun', label: 'Light', description: 'Light mode with bright colors' },
+    { value: THEMES.DARK, iconName: 'Moon', label: 'Dark', description: 'Dark mode with muted colors' },
+    { value: THEMES.SYSTEM, iconName: 'Monitor', label: 'System', description: 'Follow system preference' }
   ];
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {themes.map(({ value, icon: Icon, label, description }) => (
+      {themes.map(({ value, iconName, label, description }) => (
         <label
           key={value}
           className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
             theme === value
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-500 dark:border-green-600'
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+              ? 'bg-brand-50 dark:bg-brand-900/20 border-brand-500 dark:border-brand-600'
+              : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
           }`}
         >
           <input
@@ -96,12 +95,12 @@ export const ThemeRadioGroup = ({ className = '' }) => {
           />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <Icon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+              <Icon name={iconName} className="w-5 h-5 text-gray-700 dark:text-gray-200" />
               <span className="font-medium text-gray-900 dark:text-white">
                 {label}
               </span>
             </div>
-            <p className="text-sm mt-1 text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {description}
             </p>
           </div>

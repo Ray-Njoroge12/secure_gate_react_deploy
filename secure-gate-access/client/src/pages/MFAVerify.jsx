@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
+import Button from '../components/ui/Button';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * MFA Verification Component
@@ -9,6 +11,7 @@ import api from '../utils/apiClient';
 const MFAVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { completeMfa } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
@@ -66,19 +69,23 @@ const MFAVerify = () => {
       });
 
       if (response.data.success) {
-        // MFA verification successful - redirect to dashboard
+        // MFA verification successful - update auth state and redirect
         sessionStorage.removeItem('mfa_session'); // Clear temp session
-        
-        // Get user info from response
+
+        // Get user info from response and update AuthContext
         const user = response.data.data?.user;
         if (user) {
+          // Update AuthContext so ProtectedRoute sees isAuthenticated=true
+          completeMfa(user);
+
           // Redirect based on role
-          if (user.role === 'admin') navigate('/dashboard/admin');
-          else if (user.role === 'guard') navigate('/dashboard/guard');
-          else if (user.role === 'resident') navigate('/dashboard/resident');
-          else navigate('/dashboard');
+          if (user.role === 'super_admin') navigate('/dashboard/super-admin', { replace: true });
+          else if (user.role === 'admin') navigate('/dashboard/admin', { replace: true });
+          else if (user.role === 'guard') navigate('/dashboard/guard', { replace: true });
+          else if (user.role === 'resident') navigate('/dashboard/resident', { replace: true });
+          else navigate('/dashboard', { replace: true });
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
       }
     } catch (err) {
@@ -188,10 +195,10 @@ const MFAVerify = () => {
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={loading || (!useBackupCode && token.length !== 6) || (useBackupCode && token.length !== 8)}
-                className="w-full min-h-[44px] bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-lg shadow-md hover:shadow-lg"
+                className="w-full min-h-[44px] bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium text-lg shadow-lg hover:shadow-xl"
                 aria-busy={loading}
               >
                 {loading ? (
@@ -205,12 +212,12 @@ const MFAVerify = () => {
                 ) : (
                   'Verify Code'
                 )}
-              </button>
+              </Button>
             </form>
 
             {/* Alternative Options */}
             <div className="mt-6 space-y-3">
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   setUseBackupCode(!useBackupCode);
@@ -225,16 +232,16 @@ const MFAVerify = () => {
                 ) : (
                   'Lost your phone? Use a backup code →'
                 )}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
                 onClick={handleCancel}
                 className="w-full min-h-[44px] text-center text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 hover:underline focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 rounded px-2 py-2 transition-colors"
                 aria-label="Back to login page"
               >
                 ← Back to login
-              </button>
+              </Button>
             </div>
 
             {/* Security Info */}

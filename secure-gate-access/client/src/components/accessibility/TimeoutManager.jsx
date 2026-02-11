@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAccessibilityContext } from './AccessibilityProvider.jsx';
 import './TimeoutManager.css';
+import Button from '../ui/Button';
 
 /**
  * Default timeout configurations
@@ -407,21 +408,21 @@ const TimeoutDisplay = ({
       </div>
       <div className="timeout-display__actions">
         {timeout.allowExtension && (
-          <button
+          <Button
             className="timeout-display__extend"
             onClick={onExtend}
             aria-label={`Extend timeout for ${timeout.description}`}
           >
             Extend
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           className="timeout-display__cancel"
           onClick={onCancel}
           aria-label={`Cancel timeout for ${timeout.description}`}
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -454,7 +455,7 @@ const TimeoutWarningDialog = ({
 
   return (
     <div className="timeout-warning-dialog" role="alertdialog" aria-labelledby="timeout-warning-title">
-      <div className="timeout-warning-dialog__backdrop" onClick={onContinue}></div>
+      <div className="timeout-warning-dialog__backdrop" onClick={onContinue} role="presentation" aria-hidden="true"></div>
       <div className="timeout-warning-dialog__content">
         <h3 id="timeout-warning-title" className="timeout-warning-dialog__title">
           ⚠️ Timeout Warning
@@ -464,25 +465,25 @@ const TimeoutWarningDialog = ({
           Would you like to extend the timeout?
         </p>
         <div className="timeout-warning-dialog__actions">
-          <button
+          <Button
             className="timeout-warning-dialog__extend"
             onClick={onExtend}
             autoFocus
           >
             Extend Time
-          </button>
-          <button
+          </Button>
+          <Button
             className="timeout-warning-dialog__continue"
             onClick={onContinue}
           >
             Continue
-          </button>
-          <button
+          </Button>
+          <Button
             className="timeout-warning-dialog__cancel"
             onClick={onCancel}
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>

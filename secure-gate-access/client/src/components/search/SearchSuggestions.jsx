@@ -97,7 +97,7 @@ const SearchSuggestions = forwardRef(({
       aria-label="Search suggestions"
     >
       {visibleSuggestions.map((suggestion, index) => (
-        <div
+        <div role="button" tabIndex={0}
           key={`${suggestion.type}-${suggestion.text}-${index}`}
           className={`suggestion-item ${index === selectedIndex ? 'selected' : ''}`}
           onClick={() => handleSuggestionClick(suggestion, index)}

@@ -8,7 +8,8 @@
 import React, { useEffect, useState } from 'react';
 import { useError } from '../../contexts/ErrorContext';
 import errorQueueService from '../../services/errorQueueService';
-import { X, AlertCircle, CheckCircle, Info, AlertTriangle, RefreshCw, HelpCircle } from 'lucide-react';
+import Icon from './Icon.jsx';
+import Button from './Button.jsx';
 
 /**
  * ErrorQueue component for displaying global errors and notifications
@@ -82,17 +83,28 @@ const ErrorQueue = ({
     }
   };
 
-  const getIcon = (type) => {
+  // Render based on error type
+  const getIconForType = (type) => {
     switch (type) {
-      case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
+      case 'success': return 'check-circle';
+      case 'warning': return 'alert-triangle';
+      case 'info': return 'info';
+      case 'system': return 'refresh-cw';
+      default: return 'alert-circle';
+    }
+  };
+
+  const getColorsForType = (type) => {
+    switch (type) {
       case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
+        return 'border-green-500 text-green-800 bg-green-50';
       case 'warning':
-        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+        return 'border-yellow-500 text-yellow-800 bg-yellow-50';
       case 'info':
+        return 'border-blue-500 text-blue-800 bg-blue-50';
+      case 'error':
       default:
-        return <Info className="w-5 h-5 text-blue-500" />;
+        return 'border-red-500 text-red-800 bg-red-50';
     }
   };
 
@@ -125,13 +137,15 @@ const ErrorQueue = ({
       {/* Dismiss All Button */}
       {errors.length > 1 && (
         <div className="flex justify-end mb-2">
-          <button
+          <Button
             onClick={handleDismissAll}
-            className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded"
+            variant="ghost"
+            size="sm"
+            className="!h-auto !min-h-0 !px-2 !py-1 !text-xs text-gray-500 dark:text-slate-400"
             aria-label="Dismiss all notifications"
           >
             Dismiss All
-          </button>
+          </Button>
         </div>
       )}
 
@@ -150,71 +164,81 @@ const ErrorQueue = ({
           role="alert"
           aria-live={item.type === 'error' ? 'assertive' : 'polite'}
         >
-          <div className="p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 mr-3">
-                {getIcon(item.type)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                {item.title && (
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-slate-200 mb-1">
-                    {item.title}
-                  </h4>
-                )}
-                
-                <p className="text-sm text-gray-600 dark:text-slate-300">
-                  {item.message}
-                </p>
-                
-                {item.details && (
-                  <details className="mt-2">
-                    <summary className="text-xs text-gray-500 dark:text-slate-400 cursor-pointer hover:text-gray-700 dark:hover:text-slate-300">
-                      Show details
-                    </summary>
-                    <div className="mt-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-900 p-2 rounded">
-                      <pre className="whitespace-pre-wrap">{item.details}</pre>
-                    </div>
-                  </details>
-                )}
-                
-                {/* Recovery Actions */}
-                {item.showRecoveryActions && (
-                  <div className="mt-3 flex space-x-2">
-                    {item.onRetry && (
-                      <button
-                        onClick={() => handleRetry(item)}
-                        className="text-xs px-3 py-1 rounded transition-colors bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-slate-600 flex items-center gap-1"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        Retry
-                      </button>
-                    )}
-                    
-                    {item.onHelp && (
-                      <button
-                        onClick={() => handleHelp(item)}
-                        className="text-xs px-3 py-1 rounded transition-colors bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-slate-600 flex items-center gap-1"
-                      >
-                        <HelpCircle className="w-3 h-3" />
-                        Help
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex-shrink-0 ml-2">
-                <button
-                  onClick={() => handleDismiss(item.id)}
-                  className="text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors"
-                  aria-label={`Dismiss ${item.type} notification`}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+          <div className="flex-shrink-0">
+            <Icon name={getIconForType(item.type)} size={20} className="w-5 h-5" aria-hidden="true" />
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">
+              {item.title || 'Error'}
+            </p>
+            <p className="text-xs opacity-90 line-clamp-2 mt-0.5">
+              {item.message}
+            </p>
+            {item.details && (
+              <details className="mt-2">
+                <summary className="text-xs text-gray-500 dark:text-slate-400 cursor-pointer hover:text-gray-700 dark:hover:text-slate-300">
+                  Show details
+                </summary>
+                <div className="mt-2 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-900 p-2 rounded">
+                  <pre className="whitespace-pre-wrap">{item.details}</pre>
+                </div>
+              </details>
+            )}
+            
+            {/* Recovery Actions */}
+            {item.showRecoveryActions && (
+              <div className="mt-3 flex space-x-2">
+                {item.onRetry && (
+                  <Button
+                    onClick={() => handleRetry(item)}
+                    variant="secondary"
+                    size="sm"
+                    className="!h-auto !min-h-0 !px-3 !py-1 !text-xs"
+                    icon={<Icon name="refresh-cw" size={12} className="w-3 h-3" />}
+                  >
+                    Retry
+                  </Button>
+                )}
+                
+                {item.onHelp && (
+                  <Button
+                    onClick={() => handleHelp(item)}
+                    variant="secondary"
+                    size="sm"
+                    className="!h-auto !min-h-0 !px-3 !py-1 !text-xs"
+                    icon={<Icon name="help-circle" size={12} className="w-3 h-3" />}
+                  >
+                    Help
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex-shrink-0 ml-2">
+            <Button
+              onClick={() => handleDismiss(item.id)}
+              variant="ghost"
+              size="sm"
+              className="!h-auto !min-h-0 !p-1 text-gray-400 dark:text-slate-400"
+              aria-label={`Dismiss ${item.type} notification`}
+            >
+              <Icon name="x" size={16} />
+            </Button>
+          </div>
+
+          {/* Progress bar for auto-dismiss */}
+          {item.createdAt && autoDismissDelay && (
+            <div 
+              className="absolute bottom-0 left-0 right-0 h-1 rounded-b-lg"
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                transition: 'width 0.3s ease-in-out',
+                width: `${((Date.now() - item.createdAt) / autoDismissDelay) * 100}%`,
+                zIndex: -1,
+              }}
+            />
+          )}
         </div>
       ))}
     </div>

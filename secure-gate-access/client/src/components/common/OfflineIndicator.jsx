@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import syncService from '../../services/syncService';
+import Button from '../ui/Button';
 
 const OfflineIndicator = ({
   showDetails = false,
@@ -184,23 +185,23 @@ const OfflineIndicator = ({
           {/* Action Buttons */}
           <div className="mt-4 space-y-2">
             {status.isOnline && status.hasPendingChanges && (
-              <button
+              <Button
                 onClick={handleSync}
                 disabled={isSyncing}
                 className="w-full px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
                 {isSyncing ? 'Syncing...' : 'Sync Now'}
-              </button>
+              </Button>
             )}
 
             {status.isOnline && !status.hasOfflineData && (
-              <button
+              <Button
                 onClick={handleDownloadOffline}
                 disabled={isDownloading}
                 className="w-full px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 disabled:opacity-50 min-h-[44px]"
               >
                 {isDownloading ? 'Downloading...' : 'Enable Offline Mode'}
-              </button>
+              </Button>
             )}
           </div>
 

@@ -62,10 +62,10 @@ const Card = ({
     lg: 'p-8'
   };
 
-  // Theme-aware variant classes
+  // Theme-aware variant classes — 3-tier shadow hierarchy
   const variantClasses = {
     outlined: 'border-gray-200 dark:border-slate-700',
-    elevated: 'shadow-lg border-gray-200 dark:border-slate-700',
+    elevated: 'shadow-md border-gray-200 dark:border-slate-700',
     flat: 'shadow-none border-gray-200 dark:border-slate-700'
   };
 
@@ -75,11 +75,11 @@ const Card = ({
     lg: 'p-8'
   };
   
-  // Theme-aware card classes
+  // Theme-aware card classes — consistent shadow hierarchy (Tier 1: shadow-sm base → hover:shadow-md)
   const cardClasses = `
-    bg-white dark:bg-slate-800 rounded-lg border ${variantClasses[variant]} shadow-sm
-    ${hover ? 'hover:border-gray-300 dark:hover:border-slate-600 hover:shadow-md dark:hover:shadow-lg transition-all duration-200' : ''}
-    ${onClick ? 'cursor-pointer hover:shadow-md dark:hover:shadow-lg' : ''}
+    bg-white dark:bg-slate-800 rounded-lg border ${variantClasses[variant]} shadow-sm transition-shadow duration-200
+    ${hover ? 'hover:border-gray-300 dark:hover:border-slate-600 hover:shadow-md transition-all duration-200' : ''}
+    ${onClick ? 'cursor-pointer hover:shadow-md' : ''}
     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
     ${paddingClasses[padding]}
     ${sizeClasses[size]}

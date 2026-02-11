@@ -1156,6 +1156,11 @@ export const completeInvite = async (req, res) => {
         return { error: { status: 410, message: 'This invitation has expired' } };
       }
 
+      // Encrypt ID number if provided
+      const idNumberPlain = idNumber?.trim() || null;
+      const idNumberEncrypted = idNumberPlain ? await encryptionService.encrypt(idNumberPlain) : null;
+      const idNumberEncryptedAt = idNumberEncrypted ? new Date() : null;
+
       const visitorToken = generateVisitorToken();
       const otp = generateOTP(6);
       const otpHash = await argon2.hash(otp);
@@ -1168,6 +1173,8 @@ export const completeInvite = async (req, res) => {
            phone = $3,
            email = $4,
            id_number = COALESCE($5, id_number),
+           id_number_encrypted = COALESCE($16, id_number_encrypted),
+           id_number_encrypted_at = COALESCE($17, id_number_encrypted_at),
            vehicle_plate = COALESCE($6, vehicle_plate),
            purpose = COALESCE($7, purpose),
            consent_given = TRUE,
@@ -1188,7 +1195,7 @@ export const completeInvite = async (req, res) => {
           name.trim(),
           hasPhone ? phone.trim() : null,
           hasEmail ? email.trim() : null,
-          idNumber?.trim() || null,
+          idNumberPlain,
           vehiclePlate?.trim()?.toUpperCase() || null,
           purpose?.trim() || null,
           consent_timestamp ? new Date(consent_timestamp) : new Date(),
@@ -1198,7 +1205,9 @@ export const completeInvite = async (req, res) => {
           tokenExpiresAt,
           otpHash,
           otpExpiresAt,
-          PASS_STATUS.OTP_SENT
+          PASS_STATUS.OTP_SENT,
+          idNumberEncrypted,    // $16
+          idNumberEncryptedAt   // $17
         ]
       );
 
@@ -1281,7 +1290,8 @@ export const completeInvite = async (req, res) => {
 
   } catch (error) {
     console.error('[completeInvite] Error:', error);
-    respondError(res, 500, 'Failed to complete registration');
+    // Return actual error in dev/debug mode or if needed for diagnosis
+    respondError(res, 500, error.message || 'Failed to complete registration');
   }
 };
 

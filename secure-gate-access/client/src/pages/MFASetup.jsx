@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
+import Button from '../components/ui/Button';
 
 /**
  * MFA Setup Component
@@ -8,10 +9,16 @@ import api from '../utils/apiClient';
  */
 const MFASetup = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [step, setStep] = useState(1); // 1: Setup, 2: Verify, 3: Complete
+  
+  // Get message and return URL from navigation state or query params
+  const searchParams = new URLSearchParams(location.search);
+  const setupMessage = location.state?.message;
+  const returnUrl = location.state?.returnUrl || searchParams.get('returnUrl') || '/dashboard';
   
   // MFA setup data
   const [mfaData, setMfaData] = useState({
@@ -104,12 +111,21 @@ const MFASetup = () => {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
             🔐 Enable Two-Factor Authentication
           </h1>
           <p className="mt-2 text-gray-600 dark:text-gray-200">
             Add an extra layer of security to your account
           </p>
+          
+          {/* Setup Requirement Message */}
+          {setupMessage && (
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-blue-800 dark:text-blue-200 text-sm">
+                ⚠️ {setupMessage}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Progress Steps */}
@@ -143,7 +159,7 @@ const MFASetup = () => {
         </div>
 
         {/* Main Content */}
-        <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-8">
+        <div className="bg-white dark:bg-slate-800 shadow-sm rounded-lg p-8">
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-300 rounded" role="alert">
@@ -164,6 +180,19 @@ const MFASetup = () => {
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               <p className="mt-4 text-gray-600 dark:text-gray-200">Setting up MFA...</p>
+            </div>
+          )}
+
+          {/* Step 1: Error with retry */}
+          {step === 1 && !loading && error && (
+            <div className="text-center py-8 space-y-4">
+              <p className="text-gray-600 dark:text-gray-200">MFA setup could not be initialized.</p>
+              <Button
+                onClick={() => { setError(''); initializeMFA(); }}
+                className="min-h-[44px] bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-colors font-medium"
+              >
+                Retry Setup
+              </Button>
             </div>
           )}
 
@@ -228,14 +257,14 @@ const MFASetup = () => {
                     />
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
                     disabled={loading || verificationToken.length !== 6}
                     className="w-full min-h-[44px] bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
                     aria-busy={loading}
                   >
                     {loading ? 'Verifying...' : 'Verify and Enable MFA'}
-                  </button>
+                  </Button>
                 </form>
               </div>
             </div>
@@ -273,13 +302,13 @@ const MFASetup = () => {
                     </div>
                   </div>
 
-                  <button
+                  <Button
                     onClick={downloadBackupCodes}
                     className="mt-4 w-full min-h-[44px] bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 focus:ring-4 focus:ring-yellow-300 dark:focus:ring-yellow-800 transition-colors font-medium"
                     aria-label="Download backup codes as text file"
                   >
                     📥 Download Backup Codes
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Next Steps */}
@@ -293,13 +322,13 @@ const MFASetup = () => {
                   </ul>
                 </div>
 
-                <button
-                  onClick={() => navigate('/dashboard')}
+                <Button
+                  onClick={() => navigate(returnUrl)}
                   className="w-full min-h-[44px] bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800 transition-colors font-medium"
-                  aria-label="Go to dashboard"
+                  aria-label="Continue to dashboard"
                 >
-                  Go to Dashboard
-                </button>
+                  Continue to Dashboard
+                </Button>
               </div>
             </div>
           )}

@@ -1,5 +1,5 @@
 // client/src/pages/GuestInvite.jsx
-import { Calendar, Download } from 'lucide-react';
+import Icon from '../components/ui/Icon';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -73,6 +73,7 @@ const generateGoogleCalendarUrl = (eventData) => {
 // Add to Calendar component
 const AddToCalendarButton = ({ inviteData, visitorName }) => {
   const [showOptions, setShowOptions] = useState(false);
+  const menuId = `calendar-options-${inviteData?.inviteCode || 'guest'}`;
 
   if (!inviteData?.date || !inviteData?.time) return null;
 
@@ -101,7 +102,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
 
   const handleGoogleCalendar = () => {
     const url = generateGoogleCalendarUrl(eventData);
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
     setShowOptions(false);
   };
 
@@ -113,7 +114,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
       `Time: ${inviteData.time}\n\n` +
       `Don't forget to bring your QR code or OTP for entry!`
     );
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+    window.open(`https://wa.me/?text=${message}`, '_blank', 'noopener,noreferrer');
     setShowOptions(false);
   };
 
@@ -123,9 +124,12 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
         variant="outline"
         size="sm"
         onClick={() => setShowOptions(!showOptions)}
+        aria-haspopup="menu"
+        aria-expanded={showOptions}
+        aria-controls={showOptions ? menuId : undefined}
         className="w-full flex items-center justify-center gap-2"
       >
-        <Calendar className="w-4 h-4" />
+        <Icon name="Calendar" className="w-4 h-4" />
         Add to Calendar
       </Button>
 
@@ -133,15 +137,24 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
         <>
           {/* Backdrop */}
           <div
+            role="presentation"
+            aria-hidden="true"
             className="fixed inset-0 z-10"
             onClick={() => setShowOptions(false)}
           />
 
           {/* Dropdown Menu */}
-          <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden z-20">
-            <button
+          <div
+            id={menuId}
+            role="menu"
+            aria-label="Add to calendar options"
+            className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden z-20"
+          >
+            <Button
+              variant="ghost"
               onClick={handleGoogleCalendar}
-              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3"
+              role="menuitem"
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 rounded-none"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -150,25 +163,29 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
               Google Calendar
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="ghost"
               onClick={handleDownloadICS}
-              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 border-t border-gray-100 dark:border-slate-700"
+              role="menuitem"
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 border-t border-gray-100 dark:border-slate-700 rounded-none"
             >
-              <Download className="w-5 h-5 text-gray-500 dark:text-gray-300" />
+              <Icon name="Download" className="w-5 h-5 text-gray-500 dark:text-gray-300" />
               Download .ics (Apple/Outlook)
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="ghost"
               onClick={handleShareViaWhatsApp}
-              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 border-t border-gray-100 dark:border-slate-700"
+              role="menuitem"
+              className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 flex items-center gap-3 border-t border-gray-100 dark:border-slate-700 rounded-none"
             >
               <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
               </svg>
               Share via WhatsApp
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -280,7 +297,8 @@ export default function GuestInvite() {
       setSuccess(mapSuccessMessage('invite_completed'));
 
       // Clear form
-      setFormData({ name: '', phone: '', email: '' });
+      setFormData({ name: '', phone: '', email: '', idNumber: '', vehiclePlate: '' });
+      setConsentGiven(false);
     } catch (err) {
       setError(handleApiError(err, 'Completing invitation'));
     } finally {
@@ -378,7 +396,7 @@ export default function GuestInvite() {
                 </Card>
 
                 <div className="text-sm text-gray-600 dark:text-gray-200 bg-blue-50 p-3 rounded-md">
-                  <p className="font-medium text-blue-800 mb-1">Entry Instructions:</p>
+                  <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Entry Instructions:</p>
                   <p>Present the QR code above at the gate, or provide the OTP to security.</p>
                 </div>
 
@@ -405,8 +423,8 @@ export default function GuestInvite() {
             {!visitor && (
               <div className="space-y-4">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                    <div className="text-sm text-red-700">{error}</div>
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                    <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
                   </div>
                 )}
 
@@ -514,8 +532,8 @@ export default function GuestInvite() {
                 </form>
 
                 {!inviteData && !loading && (error === 'Invite not found or has expired' || error.includes('expired')) && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                    <div className="text-sm text-yellow-700">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-md p-3">
+                    <div className="text-sm text-yellow-700 dark:text-yellow-300">
                       This invitation may have expired or is invalid. If you believe this is an error, please contact the host.
                     </div>
                   </div>

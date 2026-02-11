@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import Button from '../../components/ui/Button';
 import './PolicyManagement.css';
 
 const PolicyManagement = () => {
@@ -195,7 +196,7 @@ const PolicyManagement = () => {
           <h1>📋 Policy Management</h1>
           <p className="subtitle">Manage business rules and automation policies</p>
         </div>
-        <button 
+        <Button 
           className="btn-create"
           onClick={() => {
             resetForm();
@@ -203,16 +204,16 @@ const PolicyManagement = () => {
           }}
         >
           + Create Policy
-        </button>
+        </Button>
       </div>
 
       <div className="policies-list">
         {policies.length === 0 ? (
           <div className="empty-state">
             <p>No policies configured yet.</p>
-            <button className="btn-primary" onClick={() => setShowModal(true)}>
+            <Button className="btn-primary" onClick={() => setShowModal(true)}>
               Create First Policy
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="policies-grid">
@@ -224,13 +225,14 @@ const PolicyManagement = () => {
                     <h3>{policy.name}</h3>
                   </div>
                   <div className="policy-actions">
-                    <button
+                    <Button
+                      variant="ghost"
                       className={`toggle-btn ${policy.enabled ? 'active' : ''}`}
                       onClick={() => togglePolicy(policy)}
-                      title={policy.enabled ? 'Disable' : 'Enable'}
+                      aria-label={policy.enabled ? 'Disable policy' : 'Enable policy'}
                     >
                       {policy.enabled ? '✓' : '○'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -242,18 +244,18 @@ const PolicyManagement = () => {
                 </div>
 
                 <div className="policy-footer">
-                  <button 
+                  <Button 
                     className="btn-edit"
                     onClick={() => openEditModal(policy)}
                   >
                     Edit
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     className="btn-delete"
                     onClick={() => deletePolicy(policy.id)}
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -262,7 +264,7 @@ const PolicyManagement = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={closeModal} role="presentation" aria-hidden="true">
           <div
             className="modal-content large"
             onClick={(e) => e.stopPropagation()}
@@ -274,7 +276,7 @@ const PolicyManagement = () => {
           >
             <div className="modal-header">
               <h2 id="policy-modal-title">{editingPolicy ? 'Edit Policy' : 'Create Policy'}</h2>
-              <button className="modal-close" onClick={closeModal} aria-label="Close">×</button>
+              <Button variant="ghost" className="modal-close" onClick={closeModal} aria-label="Close">×</Button>
             </div>
 
             <form onSubmit={handleSubmit} className="modal-body">
@@ -366,12 +368,12 @@ const PolicyManagement = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={closeModal}>
+                <Button variant="secondary" className="btn-cancel" onClick={closeModal}>
                   Cancel
-                </button>
-                <button type="submit" className="btn-primary">
+                </Button>
+                <Button variant="primary" type="submit" className="btn-primary">
                   {editingPolicy ? 'Update Policy' : 'Create Policy'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

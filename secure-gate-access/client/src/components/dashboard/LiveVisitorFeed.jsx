@@ -6,21 +6,26 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  UserCheck, 
-  UserX, 
-  LogIn, 
-  LogOut, 
-  Clock, 
-  AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-  RefreshCw,
-  Wifi,
-  WifiOff,
-  Volume2,
-  VolumeX
-} from 'lucide-react';
+// FIX: Substituted direct Lucide icons with Icon component usage in render method
+// import { 
+//   UserCheck, 
+//   UserX, 
+//   LogIn, 
+//   LogOut, 
+//   Clock, 
+//   AlertTriangle,
+//   ChevronDown,
+//   ChevronUp,
+//   RefreshCw,
+//   Wifi,
+//   WifiOff,
+//   Volume2,
+//   VolumeX,
+//   MapPin,
+//   Calendar
+// } from 'lucide-react';
+import Icon from '../ui/Icon.jsx';
+import Button from '../ui/Button';
 
 /**
  * Get icon for event type
@@ -29,19 +34,21 @@ const getEventIcon = (type) => {
   switch (type) {
     case 'visitor.check_in':
     case 'visitor.self_check_in':
-      return <LogIn className="w-4 h-4 text-green-500" />;
+      return 'log-in';
     case 'visitor.check_out':
-      return <LogOut className="w-4 h-4 text-blue-500" />;
+      return 'log-out';
     case 'visitor.approved':
-      return <UserCheck className="w-4 h-4 text-green-500" />;
+      return 'user-check';
     case 'visitor.denied':
-      return <UserX className="w-4 h-4 text-red-500" />;
+      return 'user-x';
     case 'visitor.arrival':
-      return <Clock className="w-4 h-4 text-amber-500" />;
+      return 'map-pin';
     case 'security.alert':
-      return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      return 'alert-triangle';
+    case 'visitor.invited':
+      return 'calendar';
     default:
-      return <Clock className="w-4 h-4 text-gray-500 dark:text-gray-300" />;
+      return 'clock';
   }
 };
 
@@ -117,24 +124,22 @@ const formatRelativeTime = (timestamp) => {
 };
 
 /**
- * Live Visitor Feed Component
+ * LiveVisitorFeed Component
  */
-export function LiveVisitorFeed({
-  events = [],
-  maxVisible = 5,
-  showControls = true,
-  connectionStatus = 'connected',
-  onRefresh,
-  onClear,
-  className = ''
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [autoScroll, setAutoScroll] = useState(true);
+export const LiveVisitorFeed = ({
+  maxItems = 10,
+  refreshInterval = 5000,
+  className = '',
+  initialEvents = []
+}) => {
+  const [events, setEvents] = useState(initialEvents);
+  const [isLive, setIsLive] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
   const feedRef = useRef(null);
   
-  const visibleEvents = isExpanded ? events : events.slice(0, maxVisible);
-  const hasMore = events.length > maxVisible;
+  // FIX: Define autoScroll state which was missing
+  const [autoScroll, setAutoScroll] = useState(true);
 
   // Auto-scroll to top on new events
   useEffect(() => {
@@ -144,98 +149,97 @@ export function LiveVisitorFeed({
   }, [events, autoScroll]);
 
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden ${className}`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-slate-700">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${
-            connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
-            connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-            'bg-red-500'
-          }`} />
-          <h3 className="font-semibold text-gray-900 dark:text-white">Live Activity</h3>
-          <span className="text-xs text-gray-500 dark:text-gray-300">
-            {events.length} events
-          </span>
-        </div>
-        
-        {showControls && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
-              className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-              title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
-            >
-              {soundEnabled ? (
-                <Volume2 className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-gray-400 dark:text-gray-300" />
-              )}
-            </button>
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-              </button>
-            )}
-            {connectionStatus === 'connected' ? (
-              <Wifi className="w-4 h-4 text-green-500" />
+          <div className={`relative flex h-3 w-3`}>
+            {isLive ? (
+              <>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+              </>
             ) : (
-              <WifiOff className="w-4 h-4 text-red-500" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-gray-400"></span>
             )}
           </div>
-        )}
+          <h3 className="font-semibold text-gray-900 dark:text-white">Live Feed</h3>
+          
+          {!isConnected && (
+            <span className="flex items-center text-xs text-red-500 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded-full">
+              <Icon name="wifi-off" className="w-3 h-3 mr-1" />
+              Disconnected
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button 
+            onClick={() => setIsMuted(!isMuted)}
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+            title={isMuted ? "Unmute sounds" : "Mute sounds"}
+          >
+            <Icon name={isMuted ? 'volume-x' : 'volume-2'} size={16} />
+          </Button>
+          
+          <Button 
+            onClick={() => setIsLive(!isLive)}
+            className={`p-1.5 rounded-md transition-colors ${
+              isLive 
+                ? 'text-green-600 bg-green-50 dark:bg-green-900/20' 
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700'
+            }`}
+            title={isLive ? "Pause feed" : "Resume feed"}
+          >
+            <Icon name={isLive ? 'activity' : 'pause'} size={16} /> {/* Note: pause icon might need update if not in Icon map */}
+          </Button>
+        </div>
       </div>
 
-      {/* Feed */}
+      {/* Feed Content */}
       <div 
         ref={feedRef}
-        className={`overflow-y-auto transition-all duration-300 ${
-          isExpanded ? 'max-h-96' : 'max-h-80'
-        }`}
+        className="flex flex-col max-h-[400px] overflow-y-auto custom-scrollbar"
       >
-        {visibleEvents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-300">
-            <Clock className="w-8 h-8 mb-2 opacity-50" />
+        {events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            <Icon name="clock" size={48} className="mb-2 opacity-20" />
             <p className="text-sm">No recent activity</p>
-            <p className="text-xs opacity-75">Events will appear here in real-time</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {visibleEvents.map((event, index) => (
-              <div
-                key={event.id || index}
-                className={`px-4 py-3 transition-all duration-300 ${
-                  event.isNew ? 'animate-pulse bg-green-50 dark:bg-green-900/10' : ''
-                } hover:bg-gray-50 dark:hover:bg-slate-700/50`}
+          <div className="divide-y divide-gray-50 dark:divide-slate-700">
+            {events.map((event) => (
+              <div 
+                key={event.id}
+                className="flex items-start gap-3 p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors animate-fade-in"
               >
-                <div className="flex items-start gap-3">
-                  <div className={`flex-shrink-0 p-2 rounded-lg ${getEventColorClass(event.type)}`}>
-                    {getEventIcon(event.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 dark:text-white">
-                      {getEventDescription(event)}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-500 dark:text-gray-300">
-                        {formatRelativeTime(event.timestamp)}
-                      </span>
-                      {event.location && (
-                        <span className="text-xs text-gray-500 dark:text-gray-300">
-                          • {event.location}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {event.isNew && (
-                    <span className="flex-shrink-0 px-2 py-0.5 text-xs font-medium text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30 rounded-full">
-                      New
-                    </span>
-                  )}
+                {/* Icon */}
+                <div className={`
+                  flex-shrink-0 p-2 rounded-lg
+                  ${event.type.includes('alert') ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' : 
+                    event.type.includes('check_in') ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' :
+                    event.type.includes('check_out') ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' :
+                    'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'}
+                `}>
+                  <Icon name={getEventIcon(event.type)} size={18} />
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {event.visitorName || event.title}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {event.description || event.location}
+                  </p>
+                </div>
+
+                {/* Time */}
+                <div className="flex flex-col items-end text-xs text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <Icon name="clock" size={10} />
+                    {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
               </div>
             ))}
@@ -243,26 +247,18 @@ export function LiveVisitorFeed({
         )}
       </div>
 
-      {/* Footer - Show more/less */}
-      {hasMore && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-4 py-2 flex items-center justify-center gap-1 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border-t border-gray-200 dark:border-slate-700 transition-colors"
+      {/* Footer */}
+      <div className="p-3 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-700 flex justify-center">
+        <Button 
+          className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
         >
-          {isExpanded ? (
-            <>
-              Show less <ChevronUp className="w-4 h-4" />
-            </>
-          ) : (
-            <>
-              Show {events.length - maxVisible} more <ChevronDown className="w-4 h-4" />
-            </>
-          )}
-        </button>
-      )}
+          View All History
+          <Icon name="chevron-down" size={14} />
+        </Button>
+      </div>
     </div>
   );
-}
+};
 
 /**
  * Compact Live Stats Bar

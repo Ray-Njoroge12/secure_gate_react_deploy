@@ -670,7 +670,7 @@ describe('TutorialSystem Component', () => {
       );
 
       const tooltip = document.querySelector('.tutorial-tooltip');
-      expect(tooltip).toHaveClass('dark:bg-gray-800');
+      expect(tooltip).toHaveClass('dark:bg-slate-800');
     });
 
     test('should apply light theme classes', () => {

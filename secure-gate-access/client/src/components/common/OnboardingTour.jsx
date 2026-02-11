@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import Button from '../ui/Button';
 
 // Tour step configurations by role
 const tourSteps = {
@@ -136,16 +137,9 @@ const tourSteps = {
     {
       id: 'user-management',
       target: '[data-tour="user-management"]',
-      title: 'User Management',
-      content: 'Add, edit, or remove residents and security staff from the system.',
+      title: 'User Approvals',
+      content: 'Review and approve pending resident and security account requests.',
       position: 'right'
-    },
-    {
-      id: 'audit-logs',
-      target: '[data-tour="audit-logs"]',
-      title: 'Audit Logs',
-      content: 'Track all system activities for security and compliance purposes.',
-      position: 'bottom'
     },
     {
       id: 'reports',
@@ -186,7 +180,7 @@ const OnboardingTour = ({
   const steps = tourSteps[role] || tourSteps.resident;
   const currentStep = steps[currentStepIndex];
   const totalSteps = steps.length;
-  const progress = ((currentStepIndex + 1) / totalSteps) * 100;
+  const progress = totalSteps > 0 ? ((currentStepIndex + 1) / totalSteps) * 100 : 0;
 
   // Check if tour should start
   useEffect(() => {
@@ -419,28 +413,28 @@ const OnboardingTour = ({
 
           {/* Navigation */}
           <div className="flex items-center justify-between">
-            <button
+            <Button
               onClick={handleSkip}
               className="text-sm text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-200"
             >
               Skip tour
-            </button>
+            </Button>
 
             <div className="flex gap-2">
               {currentStepIndex > 0 && (
-                <button
+                <Button
                   onClick={handlePrevious}
                   className="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600"
                 >
                   ← Back
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 onClick={handleNext}
                 className="px-4 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
               >
                 {currentStepIndex === totalSteps - 1 ? 'Finish' : 'Next →'}
-              </button>
+              </Button>
             </div>
           </div>
 

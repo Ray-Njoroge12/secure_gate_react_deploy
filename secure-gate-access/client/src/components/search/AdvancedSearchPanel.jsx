@@ -8,6 +8,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useSearch } from '../../contexts/SearchContext.jsx';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import './AdvancedSearchPanel.css';
+import Button from '../ui/Button';
 
 const FILTER_OPERATORS = {
   text: ['contains', 'equals', 'starts_with', 'ends_with', 'not_contains'],
@@ -136,26 +137,26 @@ const AdvancedSearchPanel = ({
             role="searchbox"
           />
           {query && (
-            <button className="clear-search" onClick={() => setQuery('')} aria-label="Clear search">
+            <Button className="clear-search" onClick={() => setQuery('')} aria-label="Clear search">
               &times;
-            </button>
+            </Button>
           )}
         </div>
 
         {showAdvanced && (
-          <button
+          <Button
             className={`advanced-toggle ${isAdvancedOpen ? 'active' : ''}`}
             onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
             aria-expanded={isAdvancedOpen}
           >
             Filters {filters.length > 0 && <span className="filter-count">{filters.length}</span>}
-          </button>
+          </Button>
         )}
 
         {(query || filters.length > 0) && (
-          <button className="clear-all-btn" onClick={clearAll}>
+          <Button className="clear-all-btn" onClick={clearAll}>
             Clear All
-          </button>
+          </Button>
         )}
       </div>
 
@@ -181,18 +182,18 @@ const AdvancedSearchPanel = ({
           <div className="filter-header">
             <h4>Advanced Filters</h4>
             <div className="filter-logic-toggle">
-              <button
+              <Button
                 className={filterLogic === 'AND' ? 'active' : ''}
                 onClick={() => setFilterLogic('AND')}
               >
                 Match All (AND)
-              </button>
-              <button
+              </Button>
+              <Button
                 className={filterLogic === 'OR' ? 'active' : ''}
                 onClick={() => setFilterLogic('OR')}
               >
                 Match Any (OR)
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -258,22 +259,22 @@ const AdvancedSearchPanel = ({
                     />
                   )}
 
-                  <button
+                  <Button
                     className="remove-filter"
                     onClick={() => removeFilter(filter.id)}
                     aria-label="Remove filter"
                   >
                     &times;
-                  </button>
+                  </Button>
                 </div>
               );
             })}
           </div>
 
           <div className="filter-actions">
-            <button className="add-filter-btn" onClick={addFilter}>
+            <Button className="add-filter-btn" onClick={addFilter}>
               + Add Filter
-            </button>
+            </Button>
 
             {filters.length > 0 && (
               <div className="save-filter">
@@ -284,9 +285,9 @@ const AdvancedSearchPanel = ({
                   onChange={(e) => setFilterName(e.target.value)}
                   aria-label="Filter set name"
                 />
-                <button onClick={handleSaveFilter} disabled={!filterName.trim()}>
+                <Button onClick={handleSaveFilter} disabled={!filterName.trim()}>
                   Save
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -297,10 +298,10 @@ const AdvancedSearchPanel = ({
               <h5>Saved Filters</h5>
               <div className="saved-filter-list">
                 {savedFilters.map((sf, i) => (
-                  <button key={i} className="saved-filter-chip" onClick={() => loadSavedFilter(sf)}>
+                  <Button key={i} className="saved-filter-chip" onClick={() => loadSavedFilter(sf)}>
                     {sf.name}
                     <span className="chip-count">{sf.filters?.length || 0}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

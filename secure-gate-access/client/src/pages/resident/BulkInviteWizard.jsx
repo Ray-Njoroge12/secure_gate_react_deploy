@@ -1,31 +1,16 @@
 // BulkInvite Wizard - Multi-step form for bulk visitor invitations
 import React, { useState, useEffect, useCallback } from "react";
-import logger from 'utils/logger';
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
+import logger from 'utils/logger';
+
+import PageHeader from "../../components/PageHeader";
+import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay, Icon } from "../../components/ui";
+import FormWizard from "../../components/ui/FormWizard";
 import { bulkInvite } from "../../services/visitorService";
 import { handleApiError } from "../../utils/errorMapper";
-import { Button, Input, Card, Badge, ErrorDisplay, SuccessDisplay } from "../../components/ui";
-import FormWizard from "../../components/ui/FormWizard";
-import PageHeader from "../../components/PageHeader";
-import AppShell from "../../layouts/AppShell";
-import { 
-  Users, 
-  Calendar, 
-  Clock, 
-  Upload, 
-  FileText, 
-  Copy,
-  CheckCircle,
-  AlertCircle,
-  Loader2
-} from "lucide-react";
 
 const BulkInviteWizard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const role = useCurrentRole();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
@@ -83,7 +68,7 @@ const BulkInviteWizard = () => {
     {
       title: "Review & Generate",
       description: "Review all information and generate invitations",
-      validate: (data) => {
+      validate: (_data) => {
         // Final validation
         return true;
       }
@@ -187,7 +172,7 @@ const BulkInviteWizard = () => {
     }
   }, []);
 
-  const renderStepContent = ({ currentStep, stepData, updateStepData, allStepData, isFirstStep, isLastStep, isValidating }) => {
+  const renderStepContent = ({ currentStep, stepData, updateStepData, allStepData, isFirstStep: _isFirstStep, isLastStep: _isLastStep, isValidating: _isValidating }) => {
     switch (currentStep) {
       case 0: // Event Information
         return (
@@ -200,7 +185,7 @@ const BulkInviteWizard = () => {
                 onChange={(e) => updateStepData({ eventName: e.target.value })}
                 placeholder="e.g., Birthday Party, Dinner, Pool Party"
                 required
-                icon={<Calendar className="w-4 h-4" />}
+                icon={<Icon name="Calendar" className="w-4 h-4" />}
                 helperText="Give your event a memorable name"
               />
             </div>
@@ -213,7 +198,7 @@ const BulkInviteWizard = () => {
                 value={stepData.date || ""}
                 onChange={(e) => updateStepData({ date: e.target.value })}
                 required
-                icon={<Calendar className="w-4 h-4" />}
+                icon={<Icon name="Calendar" className="w-4 h-4" />}
                 min={new Date().toISOString().split('T')[0]}
                 helperText="When is your event?"
               />
@@ -221,40 +206,43 @@ const BulkInviteWizard = () => {
 
             {/* Time Selection with Presets */}
             <div>
-              <label className="block text-sm font-medium text-slate-200 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">
                 🕐 Event Time *
               </label>
               <div className="space-y-3">
                 {/* Quick Time Chips */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {timePresets.map((preset) => (
-                    <button
+                    <Button
                       key={preset.value}
                       type="button"
+                      variant="ghost"
                       onClick={() => {
                         updateStepData({ time: preset.value });
                         setUseCustomTime(false);
                       }}
                       className={`px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
                         stepData.time === preset.value && !useCustomTime
-                          ? 'border-green-500 bg-green-500/10 text-green-400'
+                          ? 'border-brand-500 bg-brand-500/10 text-brand-400'
                           : 'border-slate-600 bg-slate-800 text-slate-300 hover:border-slate-500'
                       }`}
                     >
                       <div className="text-xl mb-1">{preset.icon}</div>
                       {preset.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
 
                 {/* Custom Time Toggle */}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setUseCustomTime(!useCustomTime)}
                   className="text-sm text-brand-400 hover:text-brand-300 underline"
                 >
                   {useCustomTime ? '← Back to quick select' : '⏰ Choose a specific time'}
-                </button>
+                </Button>
 
                 {/* Custom Time Input */}
                 {useCustomTime && (
@@ -262,7 +250,7 @@ const BulkInviteWizard = () => {
                     type="time"
                     value={stepData.time || ""}
                     onChange={(e) => updateStepData({ time: e.target.value })}
-                    icon={<Clock className="w-4 h-4" />}
+                    icon={<Icon name="Clock" className="w-4 h-4" />}
                   />
                 )}
               </div>
@@ -279,7 +267,7 @@ const BulkInviteWizard = () => {
                 min="1"
                 max="50"
                 required
-                icon={<Users className="w-4 h-4" />}
+                icon={<Icon name="Users" className="w-4 h-4" />}
                 helperText="Maximum 50 guests per event"
               />
             </div>
@@ -290,7 +278,7 @@ const BulkInviteWizard = () => {
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
-              <Upload className="w-16 h-16 text-brand-500 mx-auto mb-4" />
+              <Icon name="Upload" className="w-16 h-16 text-brand-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
                 Add Guest Information
               </h3>
@@ -340,7 +328,7 @@ const BulkInviteWizard = () => {
                     <div className="space-y-1">
                       {stepData.csvErrors.map((error, index) => (
                         <div key={index} className="text-sm text-red-400 flex items-center">
-                          <AlertCircle className="w-4 h-4 mr-2" />
+                          <Icon name="AlertCircle" className="w-4 h-4 mr-2" />
                           {error}
                         </div>
                       ))}
@@ -385,7 +373,7 @@ const BulkInviteWizard = () => {
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
-              <CheckCircle className="w-16 h-16 text-brand-500 mx-auto mb-4" />
+              <Icon name="CheckCircle" className="w-16 h-16 text-brand-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
                 Review Bulk Invitation
               </h3>
@@ -450,13 +438,8 @@ const BulkInviteWizard = () => {
     }
   };
 
-  const onLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
   return (
-    <AppShell role={role} title="Bulk Invite" onLogout={onLogout}>
+    <div className="space-y-6">
       <PageHeader
         title="Bulk Invite"
         subtitle="Create multiple visitor invitations for events and gatherings"
@@ -479,10 +462,10 @@ const BulkInviteWizard = () => {
 
       {/* Generated Invitations Display - Enhanced */}
       {inviteData && (
-        <Card className="mb-6 border-2 border-green-500 bg-white dark:bg-slate-800">
-          <Card.Header className="bg-green-500/10">
+        <Card className="mb-6 border-2 border-brand-500 bg-white dark:bg-slate-800">
+          <Card.Header className="bg-brand-500/10">
             <Card.Title className="text-green-400 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" />
+              <Icon name="CheckCircle" className="w-5 h-5" />
               Your Event Link is Ready!
             </Card.Title>
           </Card.Header>
@@ -520,7 +503,7 @@ const BulkInviteWizard = () => {
                       setTimeout(() => setCopySuccess(false), 2000);
                     }}
                   >
-                    {copySuccess ? '✅' : <Copy className="w-4 h-4" />}
+                    {copySuccess ? '✅' : <Icon name="Copy" className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>
@@ -536,7 +519,7 @@ const BulkInviteWizard = () => {
                       const text = `Join my event! Register here: ${inviteData.inviteLink}`;
                       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                     }}
-                    className="bg-green-600/10 border-green-600 hover:bg-green-600/20 text-green-400"
+                    className="bg-brand-600/10 border-brand-600 hover:bg-brand-600/20 text-brand-400"
                   >
                     <span className="text-xl mr-2">📱</span>
                     WhatsApp
@@ -580,7 +563,7 @@ const BulkInviteWizard = () => {
                     }}
                     className="bg-gray-100/50 dark:bg-slate-700/50 border-gray-300 dark:border-slate-600 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300"
                   >
-                    <Copy className="w-4 h-4 mr-2" />
+                    <Icon name="Copy" className="w-4 h-4 mr-2" />
                     Copy
                   </Button>
                 </div>
@@ -613,7 +596,7 @@ const BulkInviteWizard = () => {
       >
         {renderStepContent}
       </FormWizard>
-    </AppShell>
+    </div>
   );
 };
 

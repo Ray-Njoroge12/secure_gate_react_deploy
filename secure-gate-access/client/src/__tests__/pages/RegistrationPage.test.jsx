@@ -79,7 +79,7 @@ const mockFetch = jest.fn().mockImplementation((url) => {
   if (url.includes('/api/estates/available')) {
     return Promise.resolve({
       ok: true,
-      json: () => Promise.resolve({ data: { estates: [] } })
+      json: () => Promise.resolve({ data: { estates: [{ id: 1, name: 'Test Estate' }] } })
     });
   }
   if (url.includes('/api/auth/register')) {
@@ -120,8 +120,9 @@ describe('RegistrationPage', () => {
     );
 
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-    // Note: Estate is optional and may be a select dropdown
     expect(screen.getByLabelText(/estate/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/house number/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/phone number/i)).toBeInTheDocument();
@@ -160,11 +161,19 @@ describe('RegistrationPage', () => {
 
     // Use fireEvent for faster input
     fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'testuser' } });
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: 'Test' } });
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: 'User' } });
     fireEvent.change(screen.getByLabelText(/email address/i), { target: { value: 'test@example.com' } });
     fireEvent.change(screen.getByLabelText(/house number/i), { target: { value: 'A1' } });
     fireEvent.change(screen.getByLabelText(/phone number/i), { target: { value: '0712345678' } });
     fireEvent.change(screen.getByLabelText(/^password$/i), { target: { value: 'Password@123' } });
     fireEvent.change(screen.getByLabelText(/confirm password/i), { target: { value: 'Password@123' } });
+
+    const estateSelect = screen.getByLabelText(/estate/i);
+    await waitFor(() => {
+      expect(estateSelect).not.toBeDisabled();
+    });
+    fireEvent.change(estateSelect, { target: { value: '1' } });
 
     // Check the privacy checkbox
     const checkbox = screen.getByRole('checkbox');

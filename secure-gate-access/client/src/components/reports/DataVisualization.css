@@ -350,3 +350,46 @@
     page-break-inside: avoid;
   }
 }
+
+/* Dark Mode */
+html.dark .data-visualization {
+  background: #1f2937;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .visualization-header {
+  border-bottom-color: #374151;
+}
+
+html.dark .visualization-header h3 {
+  color: #f9fafb;
+}
+
+html.dark .visualization-config {
+  background: #111827;
+  border-color: #374151;
+}
+
+html.dark .config-group label {
+  color: #d1d5db;
+}
+
+html.dark .config-group select,
+html.dark .config-group input {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
+}
+
+html.dark .chart-type-btn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+html.dark .chart-type-btn.active,
+html.dark .chart-type-btn:hover {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}

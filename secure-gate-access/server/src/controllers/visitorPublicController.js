@@ -126,6 +126,7 @@ export const getVisitorByToken = async (req, res) => {
       timeOfVisit: visitor.time_of_visit,
       status: visitor.status,
       vehiclePlate: visitor.vehicle_plate,
+      visitorToken: visitor.visitor_token,
       tokenExpiresAt: visitor.token_expires_at,
       createdAt: visitor.created_at,
       qrCode: qrCodeData,
@@ -382,7 +383,17 @@ export const getVisitorStatus = async (req, res) => {
 export const confirmVisitorByToken = async (req, res) => {
   try {
     const { token } = req.params;
-    const { consent, additionalInfo } = req.body;
+    const legacyConsentGiven = req.body?.consent_given ?? req.body?.consentGiven;
+    const consent = req.body?.consent || {
+      dataProcessing: Boolean(legacyConsentGiven),
+      privacyPolicy: Boolean(legacyConsentGiven),
+      marketing: false
+    };
+    const additionalInfo = req.body?.additionalInfo || {
+      idNumber: req.body?.idNumber || null,
+      vehiclePlate: req.body?.vehiclePlate || null,
+      purpose: req.body?.purpose || null
+    };
 
     // Validate token format - expects vst_ prefix + 24 alphanumeric chars = 28 total
     if (!token || !token.startsWith('vst_') || token.length !== 28) {

@@ -94,9 +94,14 @@ jest.mock('../../components/ui', () => {
   Card.Title = ({ children }) => <div>{children}</div>;
   Card.Content = ({ children }) => <div>{children}</div>;
 
+  const Skeleton = ({ children }) => <div>{children}</div>;
+  Skeleton.List = () => <div>SkeletonList</div>;
+
   return {
     __esModule: true,
     Card,
+    Skeleton,
+    Icon: ({ name }) => <span data-testid={`icon-${name}`}>{name}</span>,
     Button: ({ children, onClick, disabled }) => (
       <button onClick={onClick} disabled={disabled}>
         {children}
@@ -125,25 +130,44 @@ describe('ResidentDashboard', () => {
   });
 
   test('fetches visitors and renders dashboard shell', async () => {
-    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        data: [
-          {
-            id: 1,
-            name: 'Upcoming Visitor',
-            date_of_visit: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            time_of_visit: '10:00',
-            status: 'Confirmed'
-          },
-          {
-            id: 2,
-            name: 'Checked In Visitor',
-            check_in: new Date().toISOString(),
-            status: 'Checked In'
-          }
-        ]
-      })
+    const fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (url) => {
+      if (url === '/api/auth/me') {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: { user: { id: 'u1', role: 'resident', mfa_enabled: true } }
+          })
+        };
+      }
+
+      if (url === '/api/visitors') {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 1,
+                name: 'Upcoming Visitor',
+                date_of_visit: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                time_of_visit: '10:00',
+                status: 'Confirmed'
+              },
+              {
+                id: 2,
+                name: 'Checked In Visitor',
+                check_in: new Date().toISOString(),
+                status: 'Checked In'
+              }
+            ]
+          })
+        };
+      }
+
+      return {
+        ok: true,
+        json: async () => ({ data: [] })
+      };
     });
 
     renderWithAuth(

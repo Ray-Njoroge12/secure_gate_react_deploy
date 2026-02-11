@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import Icon from './ui/Icon';
 import { Button, Input, Card, Badge } from './ui';
 import { useDebouncedValue } from '../utils/performanceOptimization';
 
@@ -153,7 +153,7 @@ const SearchFilter = ({
             {/* Search Input */}
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300 h-4 w-4" />
+                <Icon name="search" className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-300 h-4 w-4" aria-hidden="true" />
                 <Input
                   type="text"
                   placeholder={placeholder}
@@ -170,7 +170,7 @@ const SearchFilter = ({
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2"
             >
-              <Filter className="h-4 w-4" />
+              <Icon name="filter" className="h-4 w-4" aria-hidden="true" />
               Filters
               {Object.keys(filters).length > 0 && (
                 <Badge variant="secondary" size="sm">
@@ -202,7 +202,7 @@ const SearchFilter = ({
                 onClick={clearFilters}
                 className="flex items-center gap-2"
               >
-                <X className="h-4 w-4" />
+                <Icon name="x" className="h-4 w-4" aria-hidden="true" />
                 Clear
               </Button>
             )}
@@ -278,8 +278,8 @@ const SearchFilter = ({
                     {field}
                     {sortField === field && (
                       sortDirection === 'asc' ? 
-                        <ChevronUp className="h-4 w-4" /> : 
-                        <ChevronDown className="h-4 w-4" />
+                        <Icon name="chevron-up" className="h-4 w-4" aria-hidden="true" /> : 
+                        <Icon name="chevron-down" className="h-4 w-4" aria-hidden="true" />
                     )}
                   </Button>
                 ))}

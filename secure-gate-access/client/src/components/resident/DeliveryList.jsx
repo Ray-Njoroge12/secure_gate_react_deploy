@@ -5,8 +5,10 @@
  * Privacy: Shows only user's own deliveries
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
 import deliveryService from '../../services/deliveryService';
+import Button from '../ui/Button';
 
 const DeliveryList = () => {
   const [deliveries, setDeliveries] = useState([]);
@@ -15,11 +17,7 @@ const DeliveryList = () => {
   const [filter, setFilter] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
 
-  useEffect(() => {
-    loadDeliveries();
-  }, [filter]);
-
-  const loadDeliveries = async () => {
+  const loadDeliveries = useCallback(async () => {
     try {
       setLoading(true);
       const status = filter === 'all' ? undefined : filter;
@@ -32,7 +30,11 @@ const DeliveryList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  useEffect(() => {
+    loadDeliveries();
+  }, [loadDeliveries]);
 
   const handleCollect = async (deliveryId) => {
     try {
@@ -116,7 +118,7 @@ const DeliveryList = () => {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="text-sm border-gray-300 dark:border-slate-600 rounded-md shadow-sm"
+            className="text-sm border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md shadow-sm"
           >
             <option value="all">All Deliveries</option>
             <option value="pending_collection">Pending</option>
@@ -164,12 +166,12 @@ const DeliveryList = () => {
                 </div>
                 <div className="flex gap-2">
                   {delivery.has_photo && (
-                    <button
+                    <Button
                       onClick={() => window.open(`/api/deliveries/${delivery.id}/photo`, '_blank')}
                       className="text-blue-600 hover:text-blue-800 text-sm"
                     >
                       📷 View Photo
-                    </button>
+                    </Button>
                   )}
                   {delivery.status === 'pending_collection' && (
                     <div className="flex flex-col items-end gap-2">
@@ -179,20 +181,20 @@ const DeliveryList = () => {
 
                       {!delivery.handoff_preference && (
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             onClick={() => handleSetHandoff(delivery.id, 'pickup_at_gate')}
                             disabled={updatingId === delivery.id}
                             className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50"
                           >
                             {updatingId === delivery.id ? 'Saving...' : 'Pickup at Gate'}
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleSetHandoff(delivery.id, 'deliver_to_residence')}
                             disabled={updatingId === delivery.id}
                             className="px-3 py-1 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:opacity-50"
                           >
                             {updatingId === delivery.id ? 'Saving...' : 'Deliver to Residence'}
-                          </button>
+                          </Button>
                         </div>
                       )}
 
@@ -204,12 +206,12 @@ const DeliveryList = () => {
                     </div>
                   )}
                   {delivery.status === 'pending_collection' && (
-                    <button
+                    <Button
                       onClick={() => handleCollect(delivery.id)}
                       className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700"
                     >
                       Mark Collected
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

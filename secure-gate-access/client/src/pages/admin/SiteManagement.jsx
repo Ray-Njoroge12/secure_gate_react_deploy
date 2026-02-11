@@ -6,6 +6,8 @@
 
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import Button from '../../components/ui/Button';
+import Icon from '../../components/ui/Icon';
 import './SiteManagement.css';
 
 const SiteManagement = () => {
@@ -144,15 +146,15 @@ const SiteManagement = () => {
           <h1>🏢 Site Management</h1>
           <p className="subtitle">Manage multiple estates and properties</p>
         </div>
-        <button 
-          className="btn-create"
+        <Button 
+          variant="primary"
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
         >
-          + Add New Site
-        </button>
+          <Icon name="plus" sizeOverride={16} aria-hidden="true" /> Add New Site
+        </Button>
       </div>
 
       <div className="sites-grid">
@@ -194,25 +196,27 @@ const SiteManagement = () => {
             </div>
 
             <div className="site-actions">
-              <button 
-                className="btn-switch"
+              <Button 
+                variant="primary"
+                size="sm"
                 onClick={() => switchSite(site.id)}
               >
                 Switch to Site
-              </button>
-              <button 
-                className="btn-edit"
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
                 onClick={() => openEditModal(site)}
               >
-                Edit
-              </button>
+                <Icon name="edit" sizeOverride={14} aria-hidden="true" /> Edit
+              </Button>
             </div>
           </div>
         ))}
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={closeModal} role="presentation" aria-hidden="true">
           <div
             className="modal-content large"
             onClick={(e) => e.stopPropagation()}
@@ -224,7 +228,7 @@ const SiteManagement = () => {
           >
             <div className="modal-header">
               <h2 id="site-modal-title">{editingSite ? 'Edit Site' : 'Add New Site'}</h2>
-              <button className="modal-close" onClick={closeModal} aria-label="Close">×</button>
+              <Button variant="ghost" size="sm" onClick={closeModal} aria-label="Close">×</Button>
             </div>
 
             <form onSubmit={handleSubmit} className="modal-body">
@@ -366,12 +370,12 @@ const SiteManagement = () => {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={closeModal}>
+                <Button type="button" variant="secondary" onClick={closeModal}>
                   Cancel
-                </button>
-                <button type="submit" className="btn-primary">
+                </Button>
+                <Button type="submit" variant="primary">
                   {editingSite ? 'Update Site' : 'Create Site'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

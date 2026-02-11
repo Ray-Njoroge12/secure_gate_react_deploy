@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import privacyService from '../../services/privacyService';
+import Button from '../ui/Button';
 
 const PrivacyDashboard = ({ className = '' }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -202,12 +203,13 @@ const PrivacyDashboard = ({ className = '' }) => {
               <p className="text-sm text-gray-500 dark:text-gray-300">View your data inventory</p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('data')}
             className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             View Data →
-          </button>
+          </Button>
         </div>
 
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
@@ -220,12 +222,13 @@ const PrivacyDashboard = ({ className = '' }) => {
               <p className="text-sm text-gray-500 dark:text-gray-300">Download in portable format</p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('export')}
             className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             Export Data →
-          </button>
+          </Button>
         </div>
 
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
@@ -238,12 +241,13 @@ const PrivacyDashboard = ({ className = '' }) => {
               <p className="text-sm text-gray-500 dark:text-gray-300">Control your privacy settings</p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('preferences')}
             className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             Manage →
-          </button>
+          </Button>
         </div>
 
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4">
@@ -256,12 +260,13 @@ const PrivacyDashboard = ({ className = '' }) => {
               <p className="text-sm text-gray-500 dark:text-gray-300">View your consent records</p>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setActiveTab('consents')}
             className="w-full py-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             View History →
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -305,12 +310,14 @@ const PrivacyDashboard = ({ className = '' }) => {
             <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
               Records of visitors you've invited or who have checked in.
             </p>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => handleDeleteData('visitors')}
               className="text-sm text-red-600 hover:text-red-800"
             >
               Delete visitor history
-            </button>
+            </Button>
           </div>
 
           {/* Deliveries */}
@@ -324,12 +331,14 @@ const PrivacyDashboard = ({ className = '' }) => {
             <p className="text-sm text-gray-600 dark:text-gray-200 mb-3">
               Records of packages and deliveries received.
             </p>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => handleDeleteData('deliveries')}
               className="text-sm text-red-600 hover:text-red-800"
             >
               Delete delivery history
-            </button>
+            </Button>
           </div>
 
           {/* Activity Logs */}
@@ -404,12 +413,14 @@ const PrivacyDashboard = ({ className = '' }) => {
               </p>
             )}
             {exportStatus.status === 'completed' && exportStatus.downloadAvailable !== false && (
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={handleDownloadExport}
-                className="mt-3 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+                className="mt-3 bg-green-600 hover:bg-green-700"
               >
                 Download Export
-              </button>
+              </Button>
             )}
             {exportStatus.status === 'completed' && exportStatus.downloadAvailable === false && (
               <p className="mt-3 text-xs text-gray-600 dark:text-gray-200">
@@ -419,18 +430,20 @@ const PrivacyDashboard = ({ className = '' }) => {
           </div>
         ) : (
           <div className="flex gap-3">
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => handleRequestExport('json')}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
             >
               Export as JSON
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => handleRequestExport('csv')}
-              className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
             >
               Export as CSV
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -599,18 +612,21 @@ const PrivacyDashboard = ({ className = '' }) => {
       {error && (
         <div className="mx-4 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300 text-sm">
           {error}
-          <button 
+          <Button 
+            variant="ghost"
+            size="sm"
             onClick={() => setError(null)}
             className="ml-2 text-red-800 hover:text-red-900"
+            aria-label="Dismiss error"
           >
             ×
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-slate-700">
-        <nav className="flex px-4 -mb-px space-x-4">
+        <nav className="flex px-4 -mb-px space-x-4" role="tablist" aria-label="Privacy dashboard tabs">
           {[
             { id: 'overview', label: 'Overview' },
             { id: 'data', label: 'My Data' },
@@ -618,8 +634,11 @@ const PrivacyDashboard = ({ className = '' }) => {
             { id: 'preferences', label: 'Preferences' },
             { id: 'consents', label: 'Consents' }
           ].map(tab => (
-            <button
+            <Button
               key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`tabpanel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
@@ -628,7 +647,7 @@ const PrivacyDashboard = ({ className = '' }) => {
               }`}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </nav>
       </div>

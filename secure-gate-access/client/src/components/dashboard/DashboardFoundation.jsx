@@ -21,6 +21,7 @@ import { LayoutManager, useLayoutPersistence } from '../ui/LayoutManager.jsx';
 import { DashboardWidget, StatWidget, ChartWidget, ListWidget } from './DashboardWidget.jsx';
 import { WidgetCatalog, WidgetConfigModal } from './WidgetCatalog.jsx';
 import { DashboardControls } from './DashboardControls.jsx';
+import Button from '../ui/Button';
 
 /**
  * Default dashboard layouts for each role
@@ -169,8 +170,8 @@ const WIDGET_COMPONENTS = {
             <div className="text-sm text-gray-500 dark:text-gray-400">{user.role}</div>
           </div>
           <div className="flex space-x-2">
-            <button className="text-green-600 hover:text-green-800">Approve</button>
-            <button className="text-red-600 hover:text-red-800">Reject</button>
+            <Button variant="ghost" size="sm" className="text-brand-600 hover:text-brand-800">Approve</Button>
+            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">Reject</Button>
           </div>
         </div>
       )}
@@ -206,9 +207,9 @@ const WIDGET_COMPONENTS = {
         <div className="w-32 h-32 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg flex items-center justify-center">
           <span className="text-gray-500 dark:text-gray-400">QR Scanner</span>
         </div>
-        <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <Button variant="primary" className="mt-4 px-4 py-2">
           Start Scanning
-        </button>
+        </Button>
       </div>
     </DashboardWidget>
   ),
@@ -223,7 +224,7 @@ const WIDGET_COMPONENTS = {
             <div className="text-sm text-gray-500 dark:text-gray-400">Expected: {visitor.expectedTime}</div>
           </div>
           <div className="flex space-x-2">
-            <button className="px-3 py-1 bg-green-600 text-white rounded text-sm">Check In</button>
+            <Button variant="success" size="sm">Check In</Button>
           </div>
         </div>
       )}
@@ -232,15 +233,15 @@ const WIDGET_COMPONENTS = {
   'emergency-panel': () => (
     <DashboardWidget title="Emergency" icon="alert-triangle">
       <div className="flex flex-col space-y-3">
-        <button className="w-full py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700">
+        <Button variant="danger" className="w-full py-3 font-semibold">
           EMERGENCY ALERT
-        </button>
-        <button className="w-full py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+        </Button>
+        <Button variant="warning" className="w-full py-2">
           Security Incident
-        </button>
-        <button className="w-full py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+        </Button>
+        <Button variant="warning" className="w-full py-2 bg-yellow-600 hover:bg-yellow-700">
           Maintenance Request
-        </button>
+        </Button>
       </div>
     </DashboardWidget>
   ),
@@ -259,9 +260,9 @@ const WIDGET_COMPONENTS = {
           placeholder="Phone number"
           className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500"
         />
-        <button className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <Button variant="primary" className="w-full py-2">
           Send Invitation
-        </button>
+        </Button>
       </div>
     </DashboardWidget>
   ),

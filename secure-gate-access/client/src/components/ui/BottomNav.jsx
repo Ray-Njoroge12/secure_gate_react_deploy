@@ -2,18 +2,7 @@
 // Mobile bottom navigation bar - Industry standard pattern (Glovo, Uber, Instagram)
 import React, { useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  UserPlus, 
-  Clock, 
-  Settings, 
-  QrCode, 
-  Search, 
-  ClipboardList,
-  Users,
-  BarChart3,
-  Shield
-} from 'lucide-react';
+import Icon from './Icon';
 
 /**
  * BottomNav - Mobile bottom navigation bar
@@ -32,71 +21,71 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
       { 
         path: '/dashboard/resident', 
         label: 'Home', 
-        icon: Home,
+        icon: 'Home',
         exact: true 
       },
       { 
         path: '/resident/quick-invite', 
         label: 'Invite', 
-        icon: UserPlus,
+        icon: 'UserPlus',
         highlight: true // Primary action - slightly larger
       },
       { 
         path: '/resident/visitor-history', 
         label: 'History', 
-        icon: Clock 
+        icon: 'Clock' 
       },
       { 
         path: '/resident/settings', 
         label: 'Settings', 
-        icon: Settings 
+        icon: 'Settings' 
       },
     ],
     guard: [
       { 
         path: '/dashboard/guard', 
         label: 'Home', 
-        icon: Home,
+        icon: 'Home',
         exact: true 
       },
       { 
         path: '/dashboard/guard/scan-qr', 
         label: 'Scan', 
-        icon: QrCode,
+        icon: 'QrCode',
         highlight: true // Primary action
       },
       { 
         path: '/dashboard/guard/manual-check', 
         label: 'Check', 
-        icon: Search 
+        icon: 'Search' 
       },
       { 
         path: '/dashboard/guard/visitor-history', 
         label: 'History', 
-        icon: ClipboardList 
+        icon: 'ClipboardList' 
       },
     ],
     admin: [
       { 
         path: '/dashboard/admin', 
         label: 'Home', 
-        icon: Home,
+        icon: 'Home',
         exact: true 
       },
       { 
-        path: '/dashboard/admin/users', 
-        label: 'Users', 
-        icon: Users 
+        path: '/dashboard/admin/approvals', 
+        label: 'Approvals', 
+        icon: 'Users' 
       },
       { 
         path: '/dashboard/admin/reports', 
         label: 'Reports', 
-        icon: BarChart3 
+        icon: 'BarChart3' 
       },
       { 
         path: '/dashboard/admin/settings', 
         label: 'Settings', 
-        icon: Settings 
+        icon: 'Settings' 
       },
     ],
   }), []);
@@ -126,7 +115,6 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
     >
       <div className="flex items-center justify-around h-16 px-2">
         {navigation.map((item) => {
-          const Icon = item.icon;
           const active = isActive(item.path, item.exact);
           
           return (
@@ -160,6 +148,7 @@ const BottomNav = ({ role, notificationCount = 0, className = '' }) => {
               )}
               
               <Icon 
+                name={item.icon}
                 className={`
                   ${item.highlight ? 'w-6 h-6' : 'w-5 h-5'}
                   ${active ? 'stroke-[2.5px]' : 'stroke-[2px]'}

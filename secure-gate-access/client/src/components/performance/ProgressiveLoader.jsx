@@ -10,6 +10,7 @@ import { useIntersectionObserver } from '../../utils/performanceOptimization.js'
 import performanceService from '../../services/performanceService.js';
 import logger from '../../utils/logger.js';
 import './ProgressiveLoader.css';
+import Button from '../ui/Button';
 
 /**
  * Skeleton Screen Component
@@ -199,12 +200,12 @@ const ProgressiveLoader = ({
         <div className="error-icon">⚠️</div>
         <h3>Failed to load content</h3>
         <p>{error?.message || 'An error occurred while loading data.'}</p>
-        <button 
+        <Button 
           onClick={() => window.location.reload()}
           className="retry-button"
         >
           Retry
-        </button>
+        </Button>
       </div>
     );
   };

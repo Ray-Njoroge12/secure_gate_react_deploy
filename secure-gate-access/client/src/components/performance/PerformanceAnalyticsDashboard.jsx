@@ -23,7 +23,9 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { COLORS, THRESHOLD_COLORS } from '../../utils/designTokens';
 import './PerformanceAnalyticsDashboard.css';
+import Button from '../ui/Button';
 
 /**
  * Performance Analytics Dashboard Component
@@ -39,20 +41,20 @@ const PerformanceAnalyticsDashboard = () => {
   const eventSourceRef = useRef(null);
   const refreshIntervalRef = useRef(null);
 
-  // Color schemes for charts — aligned with design-system.css tokens
+  // Color schemes for charts — sourced from shared design tokens
   const colors = {
-    primary: '#10b981',   // --color-brand-primary / --color-success
-    warning: '#f59e0b',   // --color-warning
-    danger: '#ef4444',    // --color-error
-    info: '#3b82f6',      // --color-info
-    success: '#22c55e',   // green-500
-    secondary: '#6b7280'  // --color-text-tertiary
+    primary: COLORS.brandPrimary,
+    warning: COLORS.warning,
+    danger: COLORS.error,
+    info: COLORS.info,
+    success: COLORS.success,
+    secondary: COLORS.gray500
   };
 
   const alertColors = {
-    critical: '#dc2626',  // --color-error-dark
-    warning: '#d97706',   // --color-warning-dark
-    info: '#2563eb'       // --color-info-dark
+    critical: THRESHOLD_COLORS.critical,
+    warning: THRESHOLD_COLORS.warning,
+    info: THRESHOLD_COLORS.info
   };
 
   /**
@@ -291,12 +293,12 @@ const PerformanceAnalyticsDashboard = () => {
               <option value="7d">Last 7 Days</option>
             </select>
             
-            <button 
+            <Button 
               className={`auto-refresh-toggle ${autoRefresh ? 'active' : ''}`}
               onClick={() => setAutoRefresh(!autoRefresh)}
             >
               Auto Refresh
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -549,12 +551,12 @@ const PerformanceAnalyticsDashboard = () => {
                   )}
                 </div>
                 {!alert.resolved && !alert.acknowledged && (
-                  <button 
+                  <Button 
                     className="acknowledge-btn"
                     onClick={() => acknowledgeAlert(alert.id)}
                   >
                     Acknowledge
-                  </button>
+                  </Button>
                 )}
               </div>
             ))

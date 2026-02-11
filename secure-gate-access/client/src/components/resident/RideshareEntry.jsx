@@ -4,7 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import rideshareService from '../../services/rideshareService';
+import Button from '../ui/Button';
 
 const SERVICE_PROVIDERS = [
   { value: 'uber', label: 'Uber', icon: '🚗', color: 'bg-black text-white' },
@@ -124,19 +126,19 @@ const RideshareEntry = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🚗 Rideshare Entry</h2>
             <p className="text-sm text-gray-500 dark:text-gray-300">Quick access for Uber, Bolt & Taxi</p>
           </div>
-          <button
+          <Button
             onClick={() => setShowForm(!showForm)}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
           >
             + New Entry
-          </button>
+          </Button>
         </div>
       </div>
 
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 dark:border-red-500">
           <p className="text-red-700 dark:text-red-300">{error}</p>
-          <button onClick={() => setError(null)} className="text-sm text-red-600 underline">Dismiss</button>
+          <Button onClick={() => setError(null)} className="text-sm text-red-600 underline">Dismiss</Button>
         </div>
       )}
 
@@ -151,7 +153,7 @@ const RideshareEntry = () => {
                 Valid until {new Date(success.expires_at).toLocaleTimeString()}
               </p>
             </div>
-            <button onClick={() => setSuccess(null)} className="text-gray-500 hover:text-gray-600 dark:text-gray-300">✕</button>
+            <Button onClick={() => setSuccess(null)} className="text-gray-500 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100">✕</Button>
           </div>
         </div>
       )}
@@ -167,7 +169,7 @@ const RideshareEntry = () => {
                   name="driverName"
                   value={formData.driverName}
                   onChange={handleChange}
-                  className="w-full border-gray-300 dark:border-slate-600 rounded-md"
+                  className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
                   placeholder="e.g., John"
                   required
                 />
@@ -179,7 +181,7 @@ const RideshareEntry = () => {
                   name="vehiclePlate"
                   value={formData.vehiclePlate}
                   onChange={handleChange}
-                  className="w-full border-gray-300 dark:border-slate-600 rounded-md uppercase"
+                  className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md uppercase"
                   placeholder="KXX 000X"
                   required
                 />
@@ -193,7 +195,7 @@ const RideshareEntry = () => {
                 name="vehicleDescription"
                 value={formData.vehicleDescription}
                 onChange={handleChange}
-                className="w-full border-gray-300 dark:border-slate-600 rounded-md"
+                className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
                 placeholder="e.g., White Toyota Prius"
               />
             </div>
@@ -203,7 +205,7 @@ const RideshareEntry = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service</label>
                 <div className="flex gap-2">
                   {SERVICE_PROVIDERS.map(provider => (
-                    <button
+                    <Button
                       key={provider.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, serviceProvider: provider.value }))}
@@ -214,7 +216,7 @@ const RideshareEntry = () => {
                       }`}
                     >
                       {provider.icon}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -224,7 +226,7 @@ const RideshareEntry = () => {
                   name="expiryMinutes"
                   value={formData.expiryMinutes}
                   onChange={handleChange}
-                  className="w-full border-gray-300 dark:border-slate-600 rounded-md"
+                  className="w-full border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-md"
                 >
                   <option value={15}>15 minutes</option>
                   <option value={30}>30 minutes</option>
@@ -235,20 +237,20 @@ const RideshareEntry = () => {
             </div>
 
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={submitting}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
                 {submitting ? 'Creating...' : 'Create Entry'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -277,8 +279,8 @@ const RideshareEntry = () => {
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900 dark:text-white">{entry.driver_name}</span>
                         <span className={`px-2 py-0.5 text-xs rounded-full ${
-                          entry.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          entry.status === 'arrived' ? 'bg-green-100 text-green-800' :
+                          entry.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                          entry.status === 'arrived' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
                           'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
                         }`}>
                           {entry.status}
@@ -295,12 +297,12 @@ const RideshareEntry = () => {
                     </div>
                   </div>
                   {entry.status === 'pending' && !isExpired && (
-                    <button
+                    <Button
                       onClick={() => handleCancel(entry.id)}
                       className="px-3 py-1 text-sm border border-red-300 text-red-700 rounded-md hover:bg-red-50"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

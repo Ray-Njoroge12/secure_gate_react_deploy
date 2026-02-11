@@ -16,11 +16,13 @@ import {
   getIncidentSLA
 } from '../controllers/incidentWorkflowController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import { requireRolePolicy } from '../middleware/rolePolicy.js';
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(authenticateToken);
+router.use(requireRolePolicy('adminOrGuard'));
 
 // Queue and stats
 router.get('/queue', getIncidentQueue);

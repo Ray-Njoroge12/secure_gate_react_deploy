@@ -295,7 +295,7 @@ const CommunityFeaturesStep = ({
   return (
     <div className="community-features-step">
       {/* Introduction */}
-      <div className="intro-section mb-8 p-6 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-lg border border-green-200 dark:border-green-800">
+      <div className="intro-section mb-8 p-6 bg-gradient-to-r from-brand-50 to-teal-50 dark:from-brand-900/20 dark:to-teal-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
           Discover Your Community 🌟
         </h3>
@@ -327,7 +327,7 @@ const CommunityFeaturesStep = ({
                   className={`
                     feature-card p-6 rounded-lg border-2 transition-all duration-300
                     ${isDiscovered 
-                      ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' 
+                      ? 'border-brand-300 bg-brand-50 dark:border-brand-700 dark:bg-brand-900/20' 
                       : 'border-gray-200 dark:border-slate-700 bg-white dark:border-slate-700 dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600'
                     }
                   `}
@@ -349,7 +349,7 @@ const CommunityFeaturesStep = ({
                     </div>
                     
                     {isDiscovered && (
-                      <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="flex-shrink-0 w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center">
                         <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -437,7 +437,7 @@ const CommunityFeaturesStep = ({
                             <div key={index} className="p-2 bg-gray-50 dark:bg-slate-900 rounded">
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-sm font-medium text-gray-900 dark:text-white">{amenity.name}</span>
-                                <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 px-2 py-1 rounded">
+                                <span className="text-xs bg-brand-100 text-brand-800 dark:bg-brand-900/20 dark:text-brand-300 px-2 py-1 rounded">
                                   Available
                                 </span>
                               </div>
@@ -468,20 +468,20 @@ const CommunityFeaturesStep = ({
                   </div>
 
                   {/* Action Button */}
-                  <button
+                  <Button
                     onClick={() => handleFeatureDiscover(feature.id)}
                     disabled={isDiscovered}
                     className={`
                       w-full px-4 py-2 text-sm font-medium rounded-md transition-colors
                       ${isDiscovered
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 cursor-default'
+                        ? 'bg-brand-100 text-brand-800 dark:bg-brand-900/20 dark:text-brand-300 cursor-default'
                         : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40'
                       }
                     `}
                     aria-label={`${feature.action} for ${feature.title}`}
                   >
                     {isDiscovered ? '✓ Discovered' : feature.action} →
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -498,7 +498,7 @@ const CommunityFeaturesStep = ({
             </p>
             <div className="w-64 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mt-2">
               <div
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                className="bg-brand-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(discoveredFeatures.size / requiredFeatures) * 100}%` }}
               />
             </div>
@@ -519,33 +519,33 @@ const CommunityFeaturesStep = ({
 
       {/* Completion Message */}
       {isCompleted && (
-        <div className="completion-message mt-6 p-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <div className="completion-message mt-6 p-6 bg-gradient-to-r from-brand-50 to-blue-50 dark:from-brand-900/20 dark:to-blue-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
           <div className="text-center">
             <span className="text-4xl mb-4 block" role="img" aria-label="Celebration">🎉</span>
-            <h4 className="text-xl font-bold text-green-900 dark:text-green-100 mb-2">
+            <h4 className="text-xl font-bold text-brand-900 dark:text-brand-100 mb-2">
               Welcome to Your Community!
             </h4>
-            <p className="text-green-700 dark:text-green-300 mb-4">
+            <p className="text-brand-700 dark:text-brand-300 mb-4">
               You've successfully completed the onboarding process and discovered the amazing features available to you. 
               You're now ready to make the most of your community living experience!
             </p>
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-green-200 dark:border-green-700">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-brand-200 dark:border-brand-700">
               <h5 className="font-medium text-gray-900 dark:text-white mb-2">Quick Start Checklist:</h5>
               <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 text-left">
                 <li className="flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                  <span className="w-2 h-2 bg-brand-500 rounded-full mr-3"></span>
                   Create your first visitor invitation
                 </li>
                 <li className="flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                  <span className="w-2 h-2 bg-brand-500 rounded-full mr-3"></span>
                   Set up your notification preferences
                 </li>
                 <li className="flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                  <span className="w-2 h-2 bg-brand-500 rounded-full mr-3"></span>
                   Explore community announcements
                 </li>
                 <li className="flex items-center">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                  <span className="w-2 h-2 bg-brand-500 rounded-full mr-3"></span>
                   Connect with your neighbors
                 </li>
               </ul>

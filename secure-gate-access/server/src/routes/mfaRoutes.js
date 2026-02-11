@@ -110,7 +110,7 @@ router.post('/verify-setup', authenticateToken, asyncHandler(async (req, res) =>
   }
 
   // Enable MFA for user
-  await userService.updateUser(userId, { mfaEnabled: true });
+  await userService.updateUser(userId, { mfa_enabled: true });
 
   // Generate backup codes
   const backupCodes = await mfaService.generateBackupCodes(userId);
@@ -190,6 +190,7 @@ router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
 
   // Generate tokens
   const { tokenService } = await import('../services/tokenService.js');
+  const { getCookieOptions } = await import('../utils/cookies.js');
   const { accessToken, refreshToken, refreshJti, expiresIn } = tokenService.generateTokens(user);
   const refreshInfo = tokenService.getTokenInfo(refreshToken);
   const refreshExpiresAt = refreshInfo?.exp ? new Date(refreshInfo.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -198,21 +199,20 @@ router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
     ipAddress: req.ip
   });
 
-  // Set httpOnly cookies for security (cross-site compatible for Netlify + Render)
+  // Set httpOnly cookies for security (development-compatible)
+  const cookieOptions = getCookieOptions();
+
   res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: true, // Required for sameSite: 'none'
-    sameSite: 'none', // Required for cross-site cookies
-    maxAge: 15 * 60 * 1000 // 15 minutes
+    ...cookieOptions,
+    maxAge: 15 * 60 * 1000
   });
 
   res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/api/auth/refresh'
   });
+
 
   res.json({
     success: true,
@@ -252,7 +252,7 @@ router.post('/disable', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   // Disable MFA
-  await userService.updateUser(userId, { mfaEnabled: false });
+  await userService.updateUser(userId, { mfa_enabled: false });
 
   // Delete MFA secrets and backup codes
   await mfaService.disableMFA(userId);
@@ -276,7 +276,7 @@ router.get('/status', authenticateToken, asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: {
-      mfaEnabled: user.mfaEnabled || false,
+      mfaEnabled: user.mfa_enabled || false,
       mfaRequired: ['super_admin', 'admin', 'guard'].includes(user.role) // MFA required for super_admin, admins and guards
     }
   });
@@ -334,7 +334,7 @@ router.post('/verify-operation', authenticateToken, strictRateLimit(), asyncHand
 
   // Check if user has MFA enabled
   const user = await userService.getUserById(userId);
-  if (!user.mfaEnabled) {
+  if (!user.mfa_enabled) {
     throw new AppError('MFA is not enabled for this account', 400, 'MFA_NOT_ENABLED');
   }
 
@@ -361,13 +361,13 @@ router.post('/verify-operation', authenticateToken, strictRateLimit(), asyncHand
   const { tokenService } = await import('../services/tokenService.js');
   const crypto = await import('crypto');
   const operationToken = crypto.randomBytes(32).toString('hex');
-  
+
   // Store operation token (in memory/cache - expires in 5 minutes)
   // In production, use Redis or similar
   if (!global.operationTokens) {
     global.operationTokens = new Map();
   }
-  
+
   global.operationTokens.set(operationToken, {
     userId,
     operation,

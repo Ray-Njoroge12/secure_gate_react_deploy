@@ -4,6 +4,7 @@ import { collaborationService } from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import './TeamCoordination.css';
+import Button from '../ui/Button';
 
 const TeamCoordination = ({ className = '' }) => {
   const { user } = useAuth();
@@ -163,7 +164,7 @@ const TeamCoordination = ({ className = '' }) => {
         <div className="error-message">
           <h3>Unable to load team coordination</h3>
           <p>{calendarsError?.message || eventsError?.message}</p>
-          <button 
+          <Button 
             onClick={() => {
               queryClient.invalidateQueries(['shared-calendars']);
               queryClient.invalidateQueries(['calendar-events']);
@@ -171,7 +172,7 @@ const TeamCoordination = ({ className = '' }) => {
             className="retry-button"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -182,39 +183,39 @@ const TeamCoordination = ({ className = '' }) => {
       <div className="coordination-header">
         <h2>Team Coordination</h2>
         <div className="header-actions">
-          <button 
+          <Button 
             onClick={handleEventCreate}
             className="create-button primary"
-            disabled={createEventMutation.isPending}
+            isLoading={createEventMutation.isPending}
           >
             <span className="icon">📅</span>
             Schedule Event
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="coordination-tabs">
-        <button
+        <Button
           className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
           onClick={() => handleTabChange('calendar')}
         >
           <span className="tab-icon">📅</span>
           Shared Calendar
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'availability' ? 'active' : ''}`}
           onClick={() => handleTabChange('availability')}
         >
           <span className="tab-icon">👥</span>
           Team Availability
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'scheduling' ? 'active' : ''}`}
           onClick={() => handleTabChange('scheduling')}
         >
           <span className="tab-icon">⏰</span>
           Smart Scheduling
-        </button>
+        </Button>
       </div>
 
       <div className="coordination-content">
@@ -340,30 +341,30 @@ const CalendarView = ({
     <div className="calendar-view">
       <div className="calendar-controls">
         <div className="date-navigation">
-          <button onClick={() => navigateDate(-1)} className="nav-button">
+          <Button onClick={() => navigateDate(-1)} className="nav-button">
             ‹
-          </button>
+          </Button>
           <div className="date-range">
             {getDateRangeText()}
           </div>
-          <button onClick={() => navigateDate(1)} className="nav-button">
+          <Button onClick={() => navigateDate(1)} className="nav-button">
             ›
-          </button>
-          <button onClick={goToToday} className="today-button">
+          </Button>
+          <Button onClick={goToToday} className="today-button">
             Today
-          </button>
+          </Button>
         </div>
 
         <div className="view-controls">
           <div className="view-mode-selector">
             {['day', 'week', 'month'].map(mode => (
-              <button
+              <Button
                 key={mode}
                 className={`view-mode ${viewMode === mode ? 'active' : ''}`}
                 onClick={() => onViewModeChange(mode)}
               >
                 {mode.charAt(0).toUpperCase() + mode.slice(1)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -416,7 +417,7 @@ const CalendarFilters = ({ calendars, filters, onChange }) => {
 
   return (
     <div className="calendar-filters">
-      <button 
+      <Button 
         className="filter-toggle"
         onClick={() => setShowFilters(!showFilters)}
       >
@@ -427,7 +428,7 @@ const CalendarFilters = ({ calendars, filters, onChange }) => {
             {filters.calendars.length + filters.roles.length + filters.eventTypes.length}
           </span>
         )}
-      </button>
+      </Button>
 
       {showFilters && (
         <div className="filter-panel">
@@ -499,12 +500,12 @@ const CalendarFilters = ({ calendars, filters, onChange }) => {
           </div>
 
           <div className="filter-actions">
-            <button 
+            <Button 
               onClick={() => onChange('clear', null)}
               className="clear-filters"
             >
               Clear All
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -592,7 +593,14 @@ const CalendarGrid = ({ viewMode, currentDate, events, calendars, onEventSelect 
                         event={event}
                         calendars={calendars}
                         onClick={() => onEventSelect(event)}
-                        compact
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onEventSelect(event);
+                          }
+                        }}
                       />
                     ))
                   }
@@ -659,6 +667,15 @@ const CalendarGrid = ({ viewMode, currentDate, events, calendars, onEventSelect 
                             backgroundColor: getCalendarColor(event.calendar_id, calendars) 
                           }}
                           onClick={() => onEventSelect(event)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onEventSelect(event);
+                            }
+                          }}
+                          aria-label={`Select event: ${event.title}`}
                           title={event.title}
                         />
                       ))}
@@ -688,13 +705,24 @@ const CalendarGrid = ({ viewMode, currentDate, events, calendars, onEventSelect 
   }
 };
 
-const EventBlock = ({ event, calendars, onClick, compact = false }) => {
+const EventBlock = ({ event, calendars, onClick, compact = false, role, tabIndex, onKeyDown, ...props }) => {
   const calendar = calendars.find(c => c.id === event.calendar_id);
   const startTime = new Date(event.start_time);
   const endTime = new Date(event.end_time);
   
   const fallbackColor = 'var(--color-info, #3B82F6)';
   const eventColor = calendar?.color || fallbackColor;
+
+  const handleKeyDown = (e) => {
+    if (onKeyDown) {
+        onKeyDown(e);
+        return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  };
   
   return (
     <div
@@ -704,6 +732,11 @@ const EventBlock = ({ event, calendars, onClick, compact = false }) => {
         borderLeft: `4px solid ${eventColor}`
       }}
       onClick={onClick}
+      role={role || "button"}
+      tabIndex={tabIndex !== undefined ? tabIndex : 0}
+      onKeyDown={handleKeyDown}
+      aria-label={`${event.title}, from ${startTime.toLocaleTimeString()} to ${endTime.toLocaleTimeString()}`}
+      {...props}
     >
       <div className="event-title">{event.title}</div>
       {!compact && (
@@ -945,13 +978,13 @@ const SmartSchedulingView = ({
           </div>
         </div>
 
-        <button
+        <Button
           onClick={findOptimalTimes}
           className="analyze-button primary"
           disabled={isAnalyzing || selectedAttendees.length === 0}
         >
           {isAnalyzing ? 'Analyzing...' : 'Find Optimal Times'}
-        </button>
+        </Button>
       </div>
 
       {suggestedTimes.length > 0 && (
@@ -1021,12 +1054,12 @@ const TimeSlotSuggestion = ({ suggestion, onSchedule }) => {
         )}
       </div>
 
-      <button
+      <Button
         onClick={onSchedule}
         className="schedule-button primary"
       >
         Schedule Meeting
-      </button>
+      </Button>
     </div>
   );
 };
@@ -1110,7 +1143,7 @@ const EventModal = ({
       <div className="event-modal">
         <div className="modal-header">
           <h3>{isCreating ? 'Create Event' : 'Edit Event'}</h3>
-          <button onClick={onCancel} className="close-button">×</button>
+          <Button onClick={onCancel} className="close-button" aria-label="Close">×</Button>
         </div>
 
         <form onSubmit={handleSubmit} className="event-form">
@@ -1209,32 +1242,32 @@ const EventModal = ({
           <div className="form-actions">
             <div className="left-actions">
               {!isCreating && (
-                <button
+                <Button
                   type="button"
                   onClick={() => onDelete(event.id)}
                   className="delete-button danger"
                   disabled={isLoading}
                 >
                   Delete Event
-                </button>
+                </Button>
               )}
             </div>
             <div className="right-actions">
-              <button
+              <Button
                 type="button"
                 onClick={onCancel}
                 className="cancel-button"
                 disabled={isLoading}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 className="submit-button primary"
                 disabled={isLoading}
               >
                 {isLoading ? 'Saving...' : isCreating ? 'Create Event' : 'Update Event'}
-              </button>
+              </Button>
             </div>
           </div>
         </form>
