@@ -8,10 +8,7 @@ import { Card, CardHeader, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
-import { 
-  Users, Activity, TrendingUp, Clock, Star, AlertTriangle,
-  BarChart3, PieChart, LineChart, Target, CheckCircle, XCircle
-} from 'lucide-react';
+import Icon from '../ui/Icon';
 import { 
   LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart as RechartsBarChart, Bar, PieChart as RechartsPieChart, Pie, Cell,
@@ -112,26 +109,26 @@ const AnalyticsDashboard = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'ready': return CheckCircle;
-      case 'warning': return AlertTriangle;
-      case 'not_ready': return XCircle;
-      default: return Clock;
+      case 'ready': return 'check-circle';
+      case 'warning': return 'alert-triangle';
+      case 'not_ready': return 'x-circle';
+      default: return 'clock';
     }
   };
 
-  const MetricCard = ({ title, value, change, icon: Icon, color = colors.primary }) => (
+  const MetricCard = ({ title, value, change, iconName, color = colors.primary }) => (
     <Card className="metric-card">
       <CardContent className="metric-content">
         <div className="metric-header">
           <div className="metric-icon" style={{ backgroundColor: `${color}20` }} aria-hidden="true">
-            <Icon className="icon" style={{ color }} aria-hidden="true" />
+            <Icon name={iconName} className="icon" color={color} aria-hidden="true" />
           </div>
           <div className="metric-info">
             <h3 className="metric-title">{title}</h3>
             <div className="metric-value">{value}</div>
             {change && (
               <div className={`metric-change ${change >= 0 ? 'positive' : 'negative'}`}>
-                <TrendingUp className="change-icon" aria-hidden="true" />
+                <Icon name="trending-up" className="change-icon" aria-hidden="true" />
                 {Math.abs(change)}% vs last period
               </div>
             )}
@@ -142,7 +139,7 @@ const AnalyticsDashboard = () => {
   );
 
   const LaunchReadinessCard = ({ title, indicator }) => {
-    const StatusIcon = getStatusIcon(indicator.status);
+    const statusIconName = getStatusIcon(indicator.status);
     const statusColor = getStatusColor(indicator.status);
 
     return (
@@ -151,7 +148,7 @@ const AnalyticsDashboard = () => {
           <div className="readiness-header">
             <h4 className="readiness-title">{title}</h4>
             <div className="readiness-status">
-              <StatusIcon className="status-icon" style={{ color: statusColor }} />
+              <Icon name={statusIconName} className="status-icon" color={statusColor} aria-hidden="true" />
               <Badge 
                 variant={indicator.status === 'ready' ? 'success' : indicator.status === 'warning' ? 'warning' : 'destructive'}
               >
@@ -188,7 +185,7 @@ const AnalyticsDashboard = () => {
   if (error) {
     return (
       <div className="analytics-error">
-        <AlertTriangle className="error-icon" />
+        <Icon name="alert-triangle" className="error-icon" aria-hidden="true" />
         <h3>Failed to load analytics</h3>
         <p>{error}</p>
         <Button onClick={loadAnalyticsData}>Retry</Button>
@@ -205,13 +202,13 @@ const AnalyticsDashboard = () => {
           <div className="header-controls">
             <div className="time-range-selector">
               {timeRanges.map((range) => (
-                <button
+                <Button
                   key={range.value}
                   className={`time-range-button ${selectedTimeRange === range.value ? 'active' : ''}`}
                   onClick={() => setSelectedTimeRange(range.value)}
                 >
                   {range.label}
-                </button>
+                </Button>
               ))}
             </div>
             <Button onClick={loadAnalyticsData} variant="outline">
@@ -239,27 +236,27 @@ const AnalyticsDashboard = () => {
               title="Total Users"
               value={formatNumber(analyticsData?.userAdoption?.totalUsers || 0)}
               change={12}
-              icon={Users}
+              iconName="users"
               color={colors.primary}
             />
             <MetricCard
               title="Active Users"
               value={formatNumber(analyticsData?.userAdoption?.activeUsers || 0)}
               change={8}
-              icon={Activity}
+              iconName="activity"
               color={colors.success}
             />
             <MetricCard
               title="Top Feature"
               value={analyticsData?.featureUsage?.topFeatures?.[0]?.name || 'N/A'}
-              icon={Target}
+              iconName="target"
               color={colors.purple}
             />
             <MetricCard
               title="Avg Rating"
               value={feedbackAnalytics?.overview?.avg_rating ? 
                 `${parseFloat(feedbackAnalytics.overview.avg_rating).toFixed(1)}/5` : 'N/A'}
-              icon={Star}
+              iconName="star"
               color={colors.warning}
             />
           </div>

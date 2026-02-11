@@ -1,7 +1,8 @@
 // client/src/pages/admin/Reports.jsx
 import React from 'react';
+import Button from '../../components/ui/Button';
 
-export default function Reports() {
+export default function Reports({ estateId }) {
   const params = new URLSearchParams(window.location.search);
   const [from, setFrom] = React.useState(params.get('from') || '');
   const [to, setTo] = React.useState(params.get('to') || '');
@@ -21,6 +22,7 @@ export default function Reports() {
     if (to) q.set('to', to);
     if (status) q.set('status', status);
     if (host) q.set('host', host);
+    if (estateId) q.set('siteId', estateId);
     return q.toString();
   };
 
@@ -91,7 +93,7 @@ export default function Reports() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Overview</h2>
           <div className="flex flex-wrap gap-3">
             <StatusBadge label="CONFIRMED" value={aggregates.counts?.CONFIRMED || 0} className="bg-blue-500" />
-            <StatusBadge label="ON_PREMISE" value={aggregates.counts?.ON_PREMISE || 0} className="bg-emerald-500" />
+            <StatusBadge label="ON_PREMISE" value={aggregates.counts?.ON_PREMISE || 0} className="bg-brand-500" />
             <StatusBadge label="EXITED" value={aggregates.counts?.EXITED || 0} className="bg-gray-500" />
             <StatusBadge label="REVOKED" value={aggregates.counts?.REVOKED || 0} className="bg-red-500" />
           </div>
@@ -126,9 +128,9 @@ export default function Reports() {
                 <tr className="border-b border-gray-200 dark:border-slate-700">
                   <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Host</th>
                   <th className="text-left py-2 px-2">
-                    <button data-testid="sort-host-total" className="font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => setHostSortDir(d => d === 'desc' ? 'asc' : 'desc')}>
+                    <Button data-testid="sort-host-total" className="font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors" onClick={() => setHostSortDir(d => d === 'desc' ? 'asc' : 'desc')}>
                       Invites {hostSortDir === 'desc' ? '▼' : '▲'}
-                    </button>
+                    </Button>
                   </th>
                   <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">On Premise</th>
                   <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Exited</th>
@@ -140,7 +142,7 @@ export default function Reports() {
                   <tr key={i} className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30">
                     <td className="py-2 px-2 text-gray-900 dark:text-gray-100">{h.host || '-'}</td>
                     <td className="py-2 px-2 font-medium text-gray-900 dark:text-gray-100">{h.total || 0}</td>
-                    <td className="py-2 px-2 text-emerald-600 dark:text-emerald-400">{h.on_premise || 0}</td>
+                    <td className="py-2 px-2 text-brand-600 dark:text-brand-400">{h.on_premise || 0}</td>
                     <td className="py-2 px-2 text-gray-500 dark:text-gray-300">{h.exited || 0}</td>
                     <td className="py-2 px-2 text-red-500">{h.revoked || 0}</td>
                   </tr>
@@ -156,30 +158,30 @@ export default function Reports() {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export</h2>
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <label className="sr-only" htmlFor="report-from">From date</label>
-          <input id="report-from" type="date" value={from} onChange={e => setFrom(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+          <input id="report-from" type="date" value={from} onChange={e => setFrom(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
           <label className="sr-only" htmlFor="report-to">To date</label>
-          <input id="report-to" type="date" value={to} onChange={e => setTo(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+          <input id="report-to" type="date" value={to} onChange={e => setTo(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
           {showHostFilter && (
             <>
               <label className="sr-only" htmlFor="report-host">Host email</label>
-              <input id="report-host" placeholder="Host email" value={host} onChange={e => setHost(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+              <input id="report-host" placeholder="Host email" value={host} onChange={e => setHost(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
             </>
           )}
           <label className="sr-only" htmlFor="report-status">Status filter</label>
-          <select id="report-status" value={status} onChange={e => setStatus(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+          <select id="report-status" value={status} onChange={e => setStatus(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
             <option value="">Any status</option>
             <option value="CONFIRMED">CONFIRMED</option>
             <option value="ON_PREMISE">ON_PREMISE</option>
             <option value="EXITED">EXITED</option>
             <option value="REVOKED">REVOKED</option>
           </select>
-          <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50" onClick={refreshPreview} disabled={loading}>
+          <Button variant="primary" size="sm" onClick={refreshPreview} disabled={loading}>
             {loading ? 'Refreshing…' : 'Preview'}
-          </button>
+          </Button>
         </div>
         <div className="flex gap-3 mb-4">
-          <button className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium px-4 py-2 rounded-lg text-sm transition-colors" onClick={exportCsv}>Export CSV</button>
-          <button className="bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium px-4 py-2 rounded-lg text-sm transition-colors" onClick={exportJson}>Export JSON</button>
+          <Button variant="secondary" size="sm" onClick={exportCsv}>Export CSV</Button>
+          <Button variant="secondary" size="sm" onClick={exportJson}>Export JSON</Button>
         </div>
         {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg px-4 py-2 text-sm mb-4" role="alert">{error}</div>}
         <div className="overflow-x-auto">

@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import announcementsService from '../../services/announcementsService';
+import Button from '../ui/Button';
 
 const priorityStyles = {
   critical: {
@@ -139,7 +140,7 @@ const AnnouncementsBanner = ({
             
             {/* Dismiss Button */}
             {announcement.priority !== 'critical' && (
-              <button
+              <Button
                 onClick={() => handleDismiss(announcement)}
                 className={`flex-shrink-0 p-1 rounded-full hover:bg-white/50 ${style.text}`}
                 aria-label="Dismiss announcement"
@@ -147,7 +148,7 @@ const AnnouncementsBanner = ({
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>
+              </Button>
             )}
           </div>
         );
@@ -155,14 +156,14 @@ const AnnouncementsBanner = ({
 
       {/* Show More/Less Button */}
       {hasMore && (
-        <button
+        <Button
           onClick={() => setExpanded(!expanded)}
           className="w-full py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium min-h-[44px]"
         >
           {expanded 
             ? 'Show Less' 
             : `Show ${visibleAnnouncements.length - maxVisible} More`}
-        </button>
+        </Button>
       )}
     </div>
   );

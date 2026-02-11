@@ -1,39 +1,33 @@
 import React, { useState, useEffect } from "react";
-import { navigateTo } from "../../utils/appNavigation";
 import logger from 'utils/logger';
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
-// AppShell removed - handled by Layout Route
-import { Card, Button, LoadingStates, Skeleton, UpcomingVisitsEmpty, RecentVisitorsEmpty } from "../../components/ui";
-import PageHeader from "../../components/PageHeader";
-import { useLoadingState } from "../../hooks/useLoadingState";
-import VisitorInsights from "../../components/resident/VisitorInsights"; // Phase 4.3: Analytics
-import DeliveryList from "../../components/resident/DeliveryList"; // Phase 2.1: Delivery Management
-import AutoApprovalRules from "../../components/resident/AutoApprovalRules"; // Phase 2.2: Auto-Approval Rules
-import FavoriteVisitors from "../../components/resident/FavoriteVisitors"; // Phase 4: Favorites System
-import { LiveVisitorFeed, LiveStatsBar } from "../../components/dashboard/LiveVisitorFeed";
-import { useResidentVisitorEvents } from "../../hooks/useVisitorEvents";
-import { ShieldCheck, X as CloseIcon } from 'lucide-react';
 
-// Unused page imports removed
-import QuickInvite from "./QuickInvite"; // Quick invite flow
-// Phase 3: Privacy-First Features
-import OfflineIndicator from "../../components/common/OfflineIndicator";
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
-import PrivacyDashboard from "../../components/settings/PrivacyDashboard";
-// Phase 3: UI/UX Improvements
 import OnboardingTour from "../../components/common/OnboardingTour";
 import QuickActionMenu from "../../components/common/QuickActionMenu";
-// Phase 5: Dashboard Widget Customization
+import { LiveVisitorFeed, LiveStatsBar } from "../../components/dashboard/LiveVisitorFeed";
 import DashboardWidgetCustomizer, { useWidgetConfig } from "../../components/resident/DashboardWidgetCustomizer";
-import { Settings as SettingsIcon } from 'lucide-react';
+import VisitorInsights from "../../components/resident/VisitorInsights"; // Phase 4.3: Analytics
+import { Card, Button, Skeleton, UpcomingVisitsEmpty, RecentVisitorsEmpty, Icon } from "../../components/ui";
+// AppShell removed - handled by Layout Route
+import { useLoadingState } from "../../hooks/useLoadingState";
+import { useResidentVisitorEvents } from "../../hooks/useVisitorEvents";
+// Unused page imports removed
+import { navigateTo } from "../../utils/appNavigation";
+
+// Phase 3: UI/UX Improvements
+// Phase 5: Dashboard Widget Customization
+
+const handleKeyAction = (event, action) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    action();
+  }
+};
 
 const DashboardHome = () => {
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
   const { loading, startLoading, stopLoading, setLoadingError } = useLoadingState();
-  const { user } = useAuth();
   
   // RES-007: MFA recommendation state for residents
   const [showMfaBanner, setShowMfaBanner] = useState(false);
@@ -43,7 +37,7 @@ const DashboardHome = () => {
 
   // Widget customization state
   const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
-  const { isWidgetVisible, refreshConfig, getVisibleWidgets } = useWidgetConfig();
+  const { isWidgetVisible, refreshConfig } = useWidgetConfig();
 
   // Real-time visitor events
   const {
@@ -98,10 +92,14 @@ const DashboardHome = () => {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
+    // Uses latest closure values for refresh/search shortcuts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
   useEffect(() => {
     fetchDashboardData();
+    // Intentional one-time dashboard bootstrap on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // RES-007: Check MFA status for resident and show recommendation banner
@@ -163,8 +161,19 @@ const DashboardHome = () => {
           .map(v => ({
             id: v.id,
             name: v.name,
+            date: v.date_of_visit,
             time: v.time_of_visit ? `${v.time_of_visit}` : 'TBD',
-            status: v.status || 'Pending'
+            statusKey: String(v.status || 'pending').toLowerCase(),
+            status: ({
+              approved: 'Confirmed',
+              confirmed: 'Confirmed',
+              pending_confirmation: 'Pending Confirmation',
+              pending: 'Pending',
+              checked_in: 'Checked In',
+              checked_out: 'Checked Out',
+              cancelled: 'Cancelled',
+              rejected: 'Rejected'
+            }[String(v.status || 'pending').toLowerCase()] || String(v.status || 'pending').replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()))
           }));
 
         // Process recent visitors (checked in/out today)
@@ -196,16 +205,20 @@ const DashboardHome = () => {
   };
 
   // Calculate stats
+  // FIX: Replaced emojis with Icon names for consistency
   const statsData = [
-    { label: 'Today', value: recentVisitors.length, icon: '📅' },
-    { label: 'This Week', value: upcomingInvites.length, icon: '📊' },
-    { label: 'This Month', value: upcomingInvites.length + recentVisitors.length, icon: '📈' },
-    { label: 'Active', value: upcomingInvites.filter(i => i.status === 'Confirmed').length, icon: '✅' },
+    { label: 'Today', value: recentVisitors.length, icon: 'calendar' },
+    { label: 'This Week', value: upcomingInvites.length, icon: 'bar-chart-2' },
+    { label: 'This Month', value: upcomingInvites.length + recentVisitors.length, icon: 'trending-up' },
+    { label: 'Active', value: upcomingInvites.filter(i => !['cancelled', 'rejected', 'expired'].includes(i.statusKey)).length, icon: 'check-circle' },
   ];
 
   // Calculate today's state for mobile-first summary
   const todayActive = recentVisitors.length;
   const todayExpected = upcomingInvites.filter(i => {
+    if (!i.date) {
+      return false;
+    }
     const visitDate = new Date(i.date);
     const today = new Date();
     return visitDate.toDateString() === today.toDateString();
@@ -218,7 +231,7 @@ const DashboardHome = () => {
       {showMfaBanner && !mfaDismissed && (
         <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <Icon name="shield-check" className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
                 Enhance Your Account Security
@@ -227,34 +240,38 @@ const DashboardHome = () => {
                 Enable Multi-Factor Authentication (MFA) for extra protection when managing visitors. 
                 This is especially recommended for bulk invite operations.
               </p>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => navigateTo('/resident/settings?tab=security')}
-                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 underline"
                 aria-label="Set up multi-factor authentication"
               >
                 Set up MFA now →
-              </button>
+              </Button>
             </div>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleDismissMfaBanner}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded min-w-[44px] min-h-[44px]"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Dismiss MFA reminder"
           >
-            <CloseIcon className="w-5 h-5" aria-hidden="true" />
-          </button>
+            <Icon name="x" className="w-5 h-5" />
+          </Button>
         </div>
       )}
 
       {/* PHASE A1: Mobile-First Above-the-Fold Summary Card */}
-      <div className="md:hidden bg-white dark:bg-slate-800 border-2 border-green-500 rounded-xl p-4 shadow-sm">
+      <div className="md:hidden bg-white dark:bg-slate-800 border-2 border-brand-500 rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Today's Overview</h2>
-          <span className="text-2xl">📊</span>
+          <Icon name="bar-chart-2" className="text-2xl text-gray-400" />
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{todayExpected}</div>
+          <div className="bg-brand-50 dark:bg-brand-900/20 rounded-lg p-2">
+            <div className="text-2xl font-bold text-brand-600 dark:text-brand-400">{todayExpected}</div>
             <div className="text-xs text-gray-600 dark:text-gray-200">Expected</div>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2">
@@ -267,39 +284,43 @@ const DashboardHome = () => {
           </div>
         </div>
         {/* Mobile Customize Button */}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => setShowWidgetCustomizer(true)}
           className="mt-3 flex items-center justify-center gap-2 w-full py-2 text-sm text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
         >
-          <SettingsIcon className="w-4 h-4" />
+          <Icon name="settings" className="w-4 h-4" />
           Customize Dashboard
-        </button>
+        </Button>
       </div>
 
       {/* Hero Section with Gradient Background - Desktop */}
       <div
         data-tour="dashboard-stats"
-        className="hidden md:block bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-8 mb-6"
+        className="hidden md:block bg-gradient-to-r from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-900/10 border border-brand-200 dark:border-brand-800 rounded-xl p-8 mb-6"
       >
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Welcome back! 👋
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-200">
+            <p className="text-base text-gray-600 dark:text-gray-200">
               {upcomingInvites.length > 0
                 ? `You have ${upcomingInvites.length} upcoming visitor${upcomingInvites.length > 1 ? 's' : ''} this week`
                 : 'Manage your visitor invitations and access'}
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowWidgetCustomizer(true)}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-200 hover:text-gray-800 dark:hover:text-gray-100 bg-white/60 dark:bg-slate-800/60 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-colors border border-green-200 dark:border-slate-600"
             title="Customize dashboard widgets"
           >
-            <SettingsIcon className="w-4 h-4" />
+            <Icon name="settings" className="w-4 h-4" />
             Customize
-          </button>
+          </Button>
         </div>
 
         {/* Quick Stats Grid */}
@@ -318,9 +339,11 @@ const DashboardHome = () => {
               </>
             ) : (
               statsData.map((stat, index) => (
-                <div key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-green-200 dark:border-green-800/50 rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="text-2xl mb-1">{stat.icon}</div>
-                  <div className="text-3xl font-bold text-green-600">{stat.value}</div>
+                <div key={index} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-brand-200 dark:border-brand-800/50 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="text-2xl mb-1">
+                    <Icon name={stat.icon} className="w-6 h-6 text-brand-600 dark:text-brand-400" />
+                  </div>
+                  <div className="text-3xl font-bold text-brand-600">{stat.value}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-200">{stat.label}</div>
                 </div>
               ))
@@ -330,16 +353,17 @@ const DashboardHome = () => {
       </div>
 
       {/* Primary CTA - Quick Invite (Simplified Flow) */}
-      <div
+      <div role="button" tabIndex={0}
         data-tour="add-visitor"
         data-test-id="cta-quick-invite"
-        className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:shadow-green-500/20 hover:scale-[1.01] transition-all duration-200 shadow-lg"
+        className="bg-gradient-to-r from-brand-600 to-brand-700 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:shadow-brand-500/20 hover:scale-[1.01] transition-all duration-200 shadow-lg"
         onClick={() => navigateTo('/resident/quick-invite')}
+        onKeyDown={(e) => handleKeyAction(e, () => navigateTo('/resident/quick-invite'))}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h2 className="text-xl md:text-2xl font-bold text-white mb-1">✉️ Quick Invite</h2>
-            <p className="text-sm md:text-base text-green-100">Send an invite in seconds</p>
+            <h2 className="text-lg md:text-xl font-bold text-white mb-1">✉️ Quick Invite</h2>
+            <p className="text-sm md:text-base text-brand-100">Send an invite in seconds</p>
           </div>
           <div className="w-12 h-12 md:w-16 md:h-16 bg-white/20 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,9 +380,9 @@ const DashboardHome = () => {
           <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <Card.Content className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Upcoming Invites</h2>
+                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">Upcoming Invites</h2>
                 {upcomingInvites.length > 0 && (
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm font-medium">
                     🟢 {upcomingInvites.length} active
                   </span>
                 )}
@@ -373,7 +397,7 @@ const DashboardHome = () => {
               ) : (
                 <div className="space-y-3">
                   {upcomingInvites.map(invite => (
-                    <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 border-l-4 border-green-500 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                    <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 border-l-4 border-brand-500 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white">👤 {invite.name}</div>
                         <div className="text-sm text-gray-600 dark:text-gray-200">📅 {invite.time}</div>
@@ -385,9 +409,9 @@ const DashboardHome = () => {
                           }`}>
                           {invite.status}
                         </span>
-                        <button className="text-gray-500 dark:text-gray-300 hover:text-gray-700 px-2">
+                        <Button variant="ghost" size="sm" className="text-gray-500 dark:text-gray-300 hover:text-gray-700 px-2">
                           <span className="text-sm">View</span>
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -402,8 +426,15 @@ const DashboardHome = () => {
           <Card className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
             <Card.Content className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
-                <span className="text-gray-500 dark:text-gray-300 hover:text-gray-700 cursor-pointer font-medium text-sm">📊 View All →</span>
+                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">Recent Visitors</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigateTo('/resident/visitor-history')}
+                  className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100 font-medium text-sm min-h-[44px]"
+                >
+                  📊 View All →
+                </Button>
               </div>
 
               {loading ? (
@@ -458,22 +489,22 @@ const DashboardHome = () => {
       {/* PHASE A3: Clarified Quick Actions - Mobile Optimized */}
       {isWidgetVisible('quick-actions') && (
         <div data-tour="quick-actions" className="mt-6 md:mt-8">
-          <h2 className="text-xl md:text-2xl font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Quick Actions</h2>
+          <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {/* Visitor Approvals - Highlighted */}
             <Card
-              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-900/20 border-2 border-green-200 dark:border-green-800/50 relative"
+              className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/40 dark:to-brand-900/20 border-2 border-brand-200 dark:border-brand-800/50 relative"
               onClick={() => navigateTo('/resident/approvals')}
             >
               <Card.Content className="p-4 md:p-6 text-center">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-green-500 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-brand-500 rounded-lg flex items-center justify-center mx-auto mb-2 md:mb-3">
                   <svg className="w-6 h-6 md:w-7 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white text-sm md:text-base">Approvals</h3>
                 <p className="text-xs md:text-sm text-gray-600 dark:text-gray-200 mt-1 hidden md:block">Walk-in visitors</p>
-                <span className="absolute top-2 right-2 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full font-medium">
+                <span className="absolute top-2 right-2 px-2 py-0.5 bg-brand-500 text-white text-xs rounded-full font-medium">
                   NEW
                 </span>
               </Card.Content>
@@ -619,8 +650,7 @@ const DashboardHome = () => {
 
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* Dashboard Widget Customizer Modal */}
       <DashboardWidgetCustomizer
@@ -633,19 +663,6 @@ const DashboardHome = () => {
 };
 
 export default function ResidentDashboard() {
-  const { logout } = useAuth();
-  const role = useCurrentRole();
-  const navigate = useNavigate();
-
-  const onLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
-
-
-
-  const location = useLocation();
-
   // Route handling is now managed by App.js
 
   return (
@@ -653,7 +670,7 @@ export default function ResidentDashboard() {
       {/* Phase 3: Onboarding Tour */}
       <OnboardingTour
         role="resident"
-        onComplete={() => console.log('Resident tour completed')}
+        onComplete={() => logger.debug('Resident tour completed')}
       />
 
       {/* Phase 3: Offline Indicator */}

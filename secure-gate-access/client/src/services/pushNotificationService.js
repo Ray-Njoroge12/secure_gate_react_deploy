@@ -116,7 +116,7 @@ class PushNotificationService {
 
   async getVapidKey() {
     try {
-      const response = await fetch('/api/notifications/vapid-key', {
+      const response = await fetch('/api/notifications/push/vapid-key', {
         credentials: 'include'
       });
       
@@ -134,7 +134,7 @@ class PushNotificationService {
   }
 
   async sendSubscriptionToServer(subscription) {
-    const response = await fetch('/api/notifications/subscribe', {
+    const response = await fetch('/api/notifications/push/subscribe', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -158,8 +158,8 @@ class PushNotificationService {
     if (!this.subscription) return;
 
     try {
-      await fetch('/api/notifications/unsubscribe', {
-        method: 'POST',
+      await fetch('/api/notifications/push/unsubscribe', {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -175,7 +175,7 @@ class PushNotificationService {
 
   async verifySubscription(subscription) {
     try {
-      const response = await fetch('/api/notifications/verify', {
+      const response = await fetch('/api/notifications/push/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+
 import useWebSocket from './useWebSocket';
 
 /**
@@ -49,7 +50,6 @@ export function useVisitorEvents({
   });
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [lastUpdate, setLastUpdate] = useState(null);
-  const eventQueueRef = useRef([]);
   const notificationSound = useRef(null);
 
   // Initialize notification sound
@@ -154,19 +154,54 @@ export function useVisitorEvents({
     return importantEvents.includes(eventType);
   }, []);
 
+  const normalizeIncomingEvent = useCallback((event) => {
+    if (!event || typeof event !== 'object') {
+      return null;
+    }
+
+    const baseData = event.data && typeof event.data === 'object' ? event.data : {};
+    const rawType = event.type || baseData.type;
+    const lowerType = typeof rawType === 'string' ? rawType.toLowerCase() : '';
+
+    let normalizedType = rawType;
+
+    if (lowerType === 'visitor_checkin') {
+      normalizedType = event.action === 'checkout' ? VISITOR_EVENTS.CHECK_OUT : VISITOR_EVENTS.CHECK_IN;
+    } else if (lowerType === 'visitor_update') {
+      normalizedType = event.action === 'checkout' ? VISITOR_EVENTS.CHECK_OUT : VISITOR_EVENTS.CHECK_IN;
+    } else if (lowerType === 'new_visitor') {
+      normalizedType = VISITOR_EVENTS.ARRIVAL;
+    } else if (rawType === 'VISITOR_CHECK_IN') {
+      normalizedType = VISITOR_EVENTS.CHECK_IN;
+    } else if (rawType === 'VISITOR_CHECK_OUT') {
+      normalizedType = VISITOR_EVENTS.CHECK_OUT;
+    } else if (rawType === 'VISITOR_INVITE_CREATED') {
+      normalizedType = VISITOR_EVENTS.INVITED;
+    }
+
+    return {
+      ...event,
+      ...baseData,
+      type: normalizedType,
+      timestamp: event.timestamp || baseData.timestamp || new Date().toISOString()
+    };
+  }, []);
+
   // WebSocket connection
-  const { 
-    isConnected, 
-    lastMessage, 
-    sendMessage,
-    connectionState 
+  const {
+    isConnected,
+    lastMessage,
+    emit,
+    connectionState
   } = useWebSocket({
-    url: getWebSocketUrl(role),
+    autoConnect: enabled,
     enabled,
+    subscribeDashboard: true,
+    subscribeVisitors: ['admin', 'guard', 'super_admin'].includes(role),
     reconnectAttempts: 10,
     reconnectInterval: 3000,
-    onOpen: () => setConnectionStatus('connected'),
-    onClose: () => setConnectionStatus('disconnected'),
+    onConnect: () => setConnectionStatus('connected'),
+    onDisconnect: () => setConnectionStatus('disconnected'),
     onError: () => setConnectionStatus('error')
   });
 
@@ -185,18 +220,20 @@ export function useVisitorEvents({
           ? JSON.parse(lastMessage) 
           : lastMessage;
 
-        if (data.type && data.type.startsWith('visitor.')) {
-          handleVisitorEvent(data);
-        } else if (data.type === 'security.alert') {
-          handleSecurityAlert(data);
-        } else if (data.type === 'stats.update') {
-          setLiveStats(prev => ({ ...prev, ...data.stats }));
+        const normalizedEvent = normalizeIncomingEvent(data);
+
+        if (normalizedEvent?.type && normalizedEvent.type.startsWith('visitor.')) {
+          handleVisitorEvent(normalizedEvent);
+        } else if (normalizedEvent?.type === 'security.alert') {
+          handleSecurityAlert(normalizedEvent);
+        } else if (normalizedEvent?.type === 'stats.update') {
+          setLiveStats(prev => ({ ...prev, ...(normalizedEvent.stats || {}) }));
         }
       } catch (error) {
         console.error('Error processing WebSocket message:', error);
       }
     }
-  }, [lastMessage, handleVisitorEvent, handleSecurityAlert]);
+  }, [lastMessage, handleVisitorEvent, handleSecurityAlert, normalizeIncomingEvent]);
 
   // Clear event "new" flag after a delay
   useEffect(() => {
@@ -271,29 +308,9 @@ export function useVisitorEvents({
     refreshStats: fetchInitialStats,
     
     // Send actions via WebSocket
-    sendAction: sendMessage
+    sendAction: emit,
+    connectionState
   };
-}
-
-/**
- * Get WebSocket URL based on role
- */
-function getWebSocketUrl(role) {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host;
-  
-  // Use SSE fallback URL for broader compatibility
-  const baseUrl = `${protocol}//${host}/api/ws`;
-  
-  switch (role) {
-    case 'guard':
-      return `${baseUrl}/guards`;
-    case 'admin':
-      return `${baseUrl}/admins`;
-    case 'resident':
-    default:
-      return `${baseUrl}/residents`;
-  }
 }
 
 /**

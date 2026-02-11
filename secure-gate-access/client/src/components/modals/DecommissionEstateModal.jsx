@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Modal from '../ui/Modal';
 import GradientButton from '../ui/GradientButton';
-import { AlertTriangle, Building2, Users, Eye, FileWarning, Loader2 } from 'lucide-react';
+import Icon from '../ui/Icon';
+import Button from '../ui/Button';
 
 /**
  * DecommissionEstateModal
@@ -79,7 +80,9 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
             onSuccess?.(data);
             onClose();
         } catch (err) {
-            setError(err.message || 'Failed to decommission estate');
+            // Show field-specific validation errors if available
+            const fieldError = err.errors?.[0]?.message;
+            setError(fieldError || err.message || 'Failed to decommission estate');
         } finally {
             setLoading(false);
         }
@@ -98,7 +101,7 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                 {/* Warning Header */}
                 <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
                     <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                        <Icon name="alert-triangle" className="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
                         <div>
                             <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
                                 Danger Zone
@@ -113,7 +116,7 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                 {/* Loading State */}
                 {fetchingImpact && (
                     <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                        <Icon name="loader-2" className="h-8 w-8 animate-spin text-indigo-600" aria-hidden="true" />
                         <span className="ml-3 text-gray-600 dark:text-gray-300">Loading impact summary...</span>
                     </div>
                 )}
@@ -130,7 +133,7 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                     <>
                         <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
                             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                                <Building2 className="h-4 w-4" />
+                                <Icon name="building-2" className="h-4 w-4" aria-hidden="true" />
                                 Estate Details
                             </h4>
                             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -147,42 +150,42 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
 
                         <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4">
                             <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-3 flex items-center gap-2">
-                                <FileWarning className="h-4 w-4" />
+                                <Icon name="file-warning" className="h-4 w-4" aria-hidden="true" />
                                 Impact Summary
                             </h4>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                                 <div className="flex items-center gap-2">
-                                    <Users className="h-4 w-4 text-amber-600" />
+                                    <Icon name="users" className="h-4 w-4 text-amber-600" aria-hidden="true" />
                                     <span className="text-gray-700 dark:text-gray-300">
                                         <strong>{impact.affectedCounts?.totalUsers || 0}</strong> users
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Users className="h-4 w-4 text-amber-600" />
+                                    <Icon name="users" className="h-4 w-4 text-amber-600" aria-hidden="true" />
                                     <span className="text-gray-700 dark:text-gray-300">
                                         <strong>{impact.affectedCounts?.admins || 0}</strong> admins
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Users className="h-4 w-4 text-amber-600" />
+                                    <Icon name="users" className="h-4 w-4 text-amber-600" aria-hidden="true" />
                                     <span className="text-gray-700 dark:text-gray-300">
                                         <strong>{impact.affectedCounts?.guards || 0}</strong> guards
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Users className="h-4 w-4 text-amber-600" />
+                                    <Icon name="users" className="h-4 w-4 text-amber-600" aria-hidden="true" />
                                     <span className="text-gray-700 dark:text-gray-300">
                                         <strong>{impact.affectedCounts?.residents || 0}</strong> residents
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Eye className="h-4 w-4 text-amber-600" />
+                                    <Icon name="eye" className="h-4 w-4 text-amber-600" aria-hidden="true" />
                                     <span className="text-gray-700 dark:text-gray-300">
                                         <strong>{impact.affectedCounts?.visitors || 0}</strong> visitors
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                    <Icon name="alert-triangle" className="h-4 w-4 text-amber-600" aria-hidden="true" />
                                     <span className="text-gray-700 dark:text-gray-300">
                                         <strong>{impact.affectedCounts?.incidents || 0}</strong> incidents
                                     </span>
@@ -224,11 +227,10 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                                     value={confirmationText}
                                     onChange={(e) => setConfirmationText(e.target.value)}
                                     placeholder="Type estate name to confirm"
-                                    className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 ${
-                                        isConfirmationValid() 
-                                            ? 'border-green-500 focus:ring-green-500' 
+                                    className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 ${isConfirmationValid()
+                                            ? 'border-green-500 focus:ring-green-500'
                                             : 'border-gray-300 dark:border-slate-600 focus:ring-red-500'
-                                    }`}
+                                        }`}
                                     autoComplete="off"
                                 />
                                 {confirmationText && !isConfirmationValid() && (
@@ -239,22 +241,22 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
-                                <button
+                                <Button
                                     type="button"
                                     onClick={onClose}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-md hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                                     disabled={loading}
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="submit"
                                     disabled={!isConfirmationValid() || loading}
                                     className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                                 >
-                                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    {loading && <Icon name="loader-2" className="h-4 w-4 animate-spin" aria-hidden="true" />}
                                     Decommission Estate
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </>

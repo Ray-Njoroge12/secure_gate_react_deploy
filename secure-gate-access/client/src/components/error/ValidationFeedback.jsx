@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import Button from '../ui/Button';
 import './ValidationFeedback.css';
 
 const ValidationFeedback = ({
@@ -74,13 +75,15 @@ const ValidationFeedback = ({
           ))}
         </div>
         {hasMoreSuggestions && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             className="validation-feedback__show-more"
             onClick={() => setShowAllSuggestions(true)}
             type="button"
           >
             Show {suggestions.length - 2} more suggestions
-          </button>
+          </Button>
         )}
       </div>
     );

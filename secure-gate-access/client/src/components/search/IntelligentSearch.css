@@ -146,6 +146,35 @@
   }
 }
 
+/* Class-based Dark Mode */
+html.dark .search-input-wrapper {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+html.dark .search-input {
+  color: #f3f4f6;
+}
+
+html.dark .search-input::placeholder {
+  color: #9ca3af;
+}
+
+html.dark .clear-search-btn,
+html.dark .filters-toggle-btn {
+  color: #d1d5db;
+}
+
+html.dark .clear-search-btn:hover,
+html.dark .filters-toggle-btn:hover {
+  background-color: #374151;
+  color: #f3f4f6;
+}
+
+html.dark .search-stats { color: #9ca3af; }
+html.dark .results-count { color: #e5e7eb; }
+html.dark .response-time { color: #6b7280; }
+
 /* High Contrast Mode */
 @media (prefers-contrast: high) {
   .search-input-wrapper {

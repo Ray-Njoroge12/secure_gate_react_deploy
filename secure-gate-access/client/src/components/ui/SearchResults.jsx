@@ -7,7 +7,7 @@
 
 import React, { memo, useCallback } from 'react';
 import logger from 'utils/logger';
-import { Download, FileText, FileSpreadsheet, Search, Filter } from '../icons';
+import Icon from './Icon';
 import { searchUtils } from '../../utils/searchUtils';
 
 /**
@@ -181,79 +181,52 @@ const SearchResults = memo(({
     );
   };
 
-  if (results.length === 0) {
-    return (
-      <div className={`text-center py-12 ${className}`}>
-        <div className="text-gray-500 dark:text-slate-400 mb-4">
-          <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-medium mb-2">No results found</h3>
-          <p>Try adjusting your search terms or filters</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Results Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="text-sm text-gray-500 dark:text-slate-400">
-          {searchTerm ? (
-            <>
-              Found {results.length} result{results.length === 1 ? '' : 's'} for "{searchTerm}"
-            </>
-          ) : (
-            <>
-              Showing {results.length} result{results.length === 1 ? '' : 's'}
-            </>
-          )}
-        </div>
-
-        {/* Export Options */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-slate-400">Export:</span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handleExport('csv')}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors"
-              title="Export as CSV"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              CSV
-            </button>
-            <button
-              onClick={() => handleExport('json')}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors"
-              title="Export as JSON"
-            >
-              <FileText className="w-4 h-4" />
-              JSON
-            </button>
-            <button
-              onClick={() => handleExport('pdf')}
-              className="flex items-center gap-1 px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 rounded transition-colors"
-              title="Export as PDF"
-            >
-              <FileText className="w-4 h-4" />
-              PDF
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Results List */}
-      <div className="space-y-3">
-        {results.map(renderResultItem)}
-      </div>
-
-      {/* Results Footer */}
-      <div className="text-center text-sm text-gray-500 dark:text-slate-400 pt-4 border-t border-gray-200 dark:border-slate-600">
-        {searchTerm && (
-          <p>
-            Search completed in {performance.now().toFixed(2)}ms
+  // No results found message
+  const renderNoResults = () => {
+    if (searchTerm && results.length === 0) {
+      return (
+        <div className={`text-center py-8 text-gray-500 dark:text-gray-400 ${className}`}>
+          <Icon name="search" className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
+          <p className="text-lg font-medium">No results found</p>
+          <p className="text-sm mt-1">
+            Try adjusting your search for "{searchTerm}" or checking different fields.
           </p>
+        </div>
+      );
+    } else if (results.length === 0) {
+      return null;
+    }
+    
+    return null;
+  };
+  
+  if (results.length === 0 && !searchTerm) {
+    return null;
+  }
+  
+  return (
+    <div className={`space-y-4 ${className}`} {...props}>
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Found <span className="font-bold text-gray-900 dark:text-white">{results.length}</span> results
+        </div>
+        
+        {onExport && results.length > 0 && (
+          <button
+            onClick={() => onExport(results, exportFormat)}
+            className="flex items-center text-sm text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+            data-testid="export-button"
+          >
+            {exportFormat === 'csv' && <Icon name="file-spreadsheet" className="w-4 h-4 mr-1.5" />}
+            {exportFormat === 'pdf' && <Icon name="file-text" className="w-4 h-4 mr-1.5" />}
+            {exportFormat !== 'csv' && exportFormat !== 'pdf' && <Icon name="download" className="w-4 h-4 mr-1.5" />}
+            Export results
+          </button>
         )}
       </div>
+      
+      {/* Results content (should be provided via children or handled by parent) */}
+      {/* This component mainly provides search context/controls, the parent maps the data */}
     </div>
   );
 });

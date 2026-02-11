@@ -20,6 +20,7 @@ import PropTypes from 'prop-types';
 import emergencyService from '../../services/emergencyService';
 import notificationService from '../../services/notificationService';
 import logger from '../../utils/logger';
+import Button from '../ui/Button';
 
 // States for the panic button flow
 const STATES = {
@@ -222,7 +223,7 @@ const PanicButton = ({
 
   // Render the main panic button
   const renderPanicButton = () => (
-    <button
+    <Button
       onClick={handlePanicPress}
       disabled={disabled || state !== STATES.IDLE}
       className={`
@@ -254,7 +255,7 @@ const PanicButton = ({
           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
         />
       </svg>
-    </button>
+    </Button>
   );
 
   // Render confirmation modal
@@ -292,27 +293,27 @@ const PanicButton = ({
 
         {/* Action Buttons */}
         <div className="flex gap-3">
-          <button
+          <Button
             onClick={handleCancelConfirm}
             className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-medium rounded-lg transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleConfirmPanic}
             className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors"
           >
             🆘 SEND ALERT
-          </button>
+          </Button>
         </div>
 
         {/* Learn More Link */}
-        <button
+        <Button
           onClick={() => setShowPrivacyInfo(true)}
           className="w-full mt-4 text-sm text-blue-600 hover:text-blue-800 underline"
         >
           Learn more about panic button privacy
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -335,13 +336,13 @@ const PanicButton = ({
         {cancelTimeLeft > 0 && (
           <div className="bg-white bg-opacity-20 rounded-lg p-4 mb-6">
             <p className="text-sm mb-2">Triggered by accident?</p>
-            <button
+            <Button
               onClick={handleCancelPanic}
               disabled={state === STATES.CANCELLING}
               className="px-6 py-3 bg-white dark:bg-slate-800 text-red-600 font-bold rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
             >
               {state === STATES.CANCELLING ? 'Cancelling...' : `Cancel (${cancelTimeLeft}s)`}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -350,12 +351,12 @@ const PanicButton = ({
             <p className="text-sm">
               Cancel window expired. Wait for responders or contact admin.
             </p>
-            <button
+            <Button
               onClick={handleReset}
               className="mt-4 px-6 py-2 bg-white dark:bg-slate-800 text-red-600 font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
             >
               Close
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -378,18 +379,18 @@ const PanicButton = ({
             If this is a real emergency, please call for help directly.
           </p>
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={handleRetry}
               className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg"
             >
               Try Again
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleReset}
               className="flex-1 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-800 dark:text-gray-200 rounded-lg"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -402,14 +403,14 @@ const PanicButton = ({
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">Panic Button Privacy</h2>
-          <button
+          <Button
             onClick={() => setShowPrivacyInfo(false)}
             className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:text-gray-300"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
         
         {privacyInfo ? (
@@ -431,12 +432,12 @@ const PanicButton = ({
           </div>
         )}
         
-        <button
+        <Button
           onClick={() => setShowPrivacyInfo(false)}
           className="w-full mt-6 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-medium rounded-lg"
         >
           Close
-        </button>
+        </Button>
       </div>
     </div>
   );

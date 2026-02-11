@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import logger from 'utils/logger';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, AlertCircle, Home } from 'lucide-react';
+import Icon from './Icon';
 import Button from './Button';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { NAVIGATION_FLOWS } from '../../utils/navigationFlow';
@@ -190,7 +190,7 @@ const NavigationFlow = ({
             disabled={isFirstStep || isTransitioning}
             className="flex items-center"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
+            <Icon name="chevron-left" className="w-4 h-4 mr-1" />
             Previous
           </Button>
 
@@ -223,9 +223,9 @@ const NavigationFlow = ({
                     aria-label={`Step ${index + 1}${isCurrent ? ' (current)' : ''}${isCompleted ? ' (completed)' : ''}`}
                   >
                     {isCompleted ? (
-                      <Check className="w-4 h-4" />
+                      <Icon name="check" className="w-4 h-4" />
                     ) : stepValidationState && !stepValidationState.isValid ? (
-                      <AlertCircle className="w-4 h-4" />
+                      <Icon name="alert-circle" className="w-4 h-4" />
                     ) : (
                       index + 1
                     )}
@@ -244,7 +244,7 @@ const NavigationFlow = ({
             onClick={handleHome}
             className="flex items-center"
           >
-            <Home className="w-4 h-4 mr-1" />
+            <Icon name="home" className="w-4 h-4 mr-1" />
             Home
           </Button>
 
@@ -265,7 +265,7 @@ const NavigationFlow = ({
             className="flex items-center"
           >
             {isLastStep ? 'Complete' : 'Next'}
-            <ChevronRight className="w-4 h-4 ml-1" />
+            <Icon name="chevron-right" className="w-4 h-4 ml-1" />
           </Button>
         </div>
       </div>
@@ -284,12 +284,12 @@ const NavigationFlow = ({
             >
               {validation.isValid ? (
                 <div className="flex items-center">
-                  <Check className="w-4 h-4 mr-2" />
+                  <Icon name="check" className="w-4 h-4 mr-2" />
                   Step {parseInt(stepIndex) + 1} completed successfully
                 </div>
               ) : (
                 <div className="flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-2" />
+                  <Icon name="alert-circle" className="w-4 h-4 mr-2" />
                   Step {parseInt(stepIndex) + 1} validation failed: {validation.error}
                 </div>
               )}

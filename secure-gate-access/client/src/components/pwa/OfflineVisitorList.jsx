@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { PWAContext } from './PWAManager';
 import offlineService from '../../services/offlineService';
 import backgroundSyncService from '../../services/backgroundSyncService';
+import Button from '../ui/Button';
 
 const OfflineVisitorList = ({ 
   filters = {}, 
@@ -189,9 +190,9 @@ const OfflineVisitorList = ({
         <div className="error-message">
           <div className="error-icon">⚠️</div>
           <p>{error}</p>
-          <button onClick={loadVisitors} className="retry-button">
+          <Button onClick={loadVisitors} variant="secondary" className="retry-button">
             Try Again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -261,33 +262,41 @@ const OfflineVisitorList = ({
               <div className="visitor-actions">
                 {visitor.status === 'PENDING' && (
                   <>
-                    <button
+                    <Button
+                      variant="success"
+                      size="sm"
                       className="action-btn approve-btn"
                       onClick={() => handleVisitorAction(visitor.id, 'approve')}
                       disabled={isActionPending(visitor.id, 'approve')}
+                      aria-label="Approve visitor"
                     >
                       {isActionPending(visitor.id, 'approve') ? (
                         <span className="btn-spinner"></span>
                       ) : (
                         '✓'
                       )}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
                       className="action-btn deny-btn"
                       onClick={() => handleVisitorAction(visitor.id, 'deny')}
                       disabled={isActionPending(visitor.id, 'deny')}
+                      aria-label="Deny visitor"
                     >
                       {isActionPending(visitor.id, 'deny') ? (
                         <span className="btn-spinner"></span>
                       ) : (
                         '✕'
                       )}
-                    </button>
+                    </Button>
                   </>
                 )}
 
                 {visitor.status === 'APPROVED' && (
-                  <button
+                  <Button
+                    variant="success"
+                    size="sm"
                     className="action-btn checkin-btn"
                     onClick={() => handleVisitorAction(visitor.id, 'check-in')}
                     disabled={isActionPending(visitor.id, 'check-in')}
@@ -297,11 +306,13 @@ const OfflineVisitorList = ({
                     ) : (
                       'Check In'
                     )}
-                  </button>
+                  </Button>
                 )}
 
                 {visitor.status === 'ON_PREMISE' && (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     className="action-btn checkout-btn"
                     onClick={() => handleVisitorAction(visitor.id, 'check-out')}
                     disabled={isActionPending(visitor.id, 'check-out')}
@@ -311,7 +322,7 @@ const OfflineVisitorList = ({
                     ) : (
                       'Check Out'
                     )}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

@@ -197,7 +197,7 @@ const GuestManagementStep = ({
               className={`
                 feature-card p-6 rounded-lg border-2 transition-all duration-300
                 ${isExplored 
-                  ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' 
+                  ? 'border-brand-300 bg-brand-50 dark:border-brand-700 dark:bg-brand-900/20' 
                   : 'border-gray-200 dark:border-slate-700 bg-white dark:border-slate-700 dark:bg-slate-800'
                 }
               `}
@@ -219,7 +219,7 @@ const GuestManagementStep = ({
                 </div>
                 
                 {isExplored && (
-                  <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="flex-shrink-0 w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -293,7 +293,7 @@ const GuestManagementStep = ({
                       <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                         {feature.content.insights.map((insight, index) => (
                           <div key={index} className="flex items-center">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
+                            <span className="w-1.5 h-1.5 bg-brand-500 rounded-full mr-2"></span>
                             {insight}
                           </div>
                         ))}
@@ -334,20 +334,20 @@ const GuestManagementStep = ({
               </div>
 
               {/* Action Button */}
-              <button
+              <Button
                 onClick={() => handleFeatureExplore(feature.id)}
                 disabled={isExplored}
                 className={`
                   w-full px-4 py-2 text-sm font-medium rounded-md transition-colors
                   ${isExplored
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300 cursor-default'
+                    ? 'bg-brand-100 text-brand-800 dark:bg-brand-900/20 dark:text-brand-300 cursor-default'
                     : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40'
                   }
                 `}
                 aria-label={`${feature.action} for ${feature.title}`}
               >
                 {isExplored ? '✓ Explored' : feature.action} →
-              </button>
+              </Button>
             </div>
           );
         })}
@@ -383,14 +383,14 @@ const GuestManagementStep = ({
 
       {/* Completion Message */}
       {isCompleted && (
-        <div className="completion-message mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <div className="completion-message mt-6 p-4 bg-brand-50 dark:bg-brand-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
           <div className="flex items-center">
             <span className="text-2xl mr-3" role="img" aria-label="Achievement">🏆</span>
             <div>
-              <p className="font-medium text-green-900 dark:text-green-100">
+              <p className="font-medium text-brand-900 dark:text-brand-100">
                 Outstanding! You're now a guest management expert.
               </p>
-              <p className="text-sm text-green-700 dark:text-green-300">
+              <p className="text-sm text-brand-700 dark:text-brand-300">
                 Ready to explore community features and connect with neighbors?
               </p>
             </div>

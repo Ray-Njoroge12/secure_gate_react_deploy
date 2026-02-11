@@ -10,20 +10,7 @@ import { Card, Button, Badge } from '../ui';
 import { useTheme } from '../../contexts/ThemeContext';
 import usePushNotifications from '../../hooks/usePushNotifications';
 import api from '../../utils/apiClient';
-import { 
-  Bell, 
-  BellOff, 
-  BellRing, 
-  Smartphone, 
-  Mail, 
-  MessageSquare,
-  Check,
-  X,
-  AlertTriangle,
-  Settings,
-  Volume2,
-  VolumeX
-} from 'lucide-react';
+import Icon from '../ui/Icon';
 
 /**
  * Notification channel configuration
@@ -33,28 +20,28 @@ const NOTIFICATION_CHANNELS = [
     id: 'visitor_arrival',
     label: 'Visitor Arrivals',
     description: 'Get notified when a visitor arrives at the gate',
-    icon: '👋',
+    iconName: 'user-check',
     defaultEnabled: true
   },
   {
     id: 'visitor_approved',
     label: 'Visitor Approvals',
     description: 'Notifications when your visitor is approved',
-    icon: '✅',
+    iconName: 'check-circle',
     defaultEnabled: true
   },
   {
     id: 'visitor_denied',
     label: 'Visitor Denials',
     description: 'Notifications when a visitor is denied entry',
-    icon: '❌',
+    iconName: 'x-circle',
     defaultEnabled: true
   },
   {
     id: 'security_alerts',
     label: 'Security Alerts',
     description: 'Important security notifications',
-    icon: '🚨',
+    iconName: 'alert-triangle',
     defaultEnabled: true,
     critical: true
   },
@@ -62,14 +49,14 @@ const NOTIFICATION_CHANNELS = [
     id: 'system_updates',
     label: 'System Updates',
     description: 'Maintenance and system notifications',
-    icon: '🔔',
+    iconName: 'bell',
     defaultEnabled: false
   },
   {
     id: 'reminders',
     label: 'Reminders',
     description: 'Upcoming visitor reminders',
-    icon: '⏰',
+    iconName: 'clock',
     defaultEnabled: true
   }
 ];
@@ -196,7 +183,7 @@ const NotificationSettings = ({ className = '' }) => {
         <div className="p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-lg">
           <div className="flex items-center justify-between">
             <p className="text-green-700 dark:text-green-300 font-medium">✓ {success}</p>
-            <button onClick={() => setSuccess('')} className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100">✕</button>
+            <Button onClick={() => setSuccess('')} className="text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100">✕</Button>
           </div>
         </div>
       )}
@@ -206,7 +193,7 @@ const NotificationSettings = ({ className = '' }) => {
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg">
           <div className="flex items-center justify-between">
             <p className="text-red-700 dark:text-red-300 font-medium">✕ {saveError}</p>
-            <button onClick={() => setSaveError('')} className="text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100">✕</button>
+            <Button onClick={() => setSaveError('')} className="text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100">✕</Button>
           </div>
         </div>
       )}
@@ -222,11 +209,11 @@ const NotificationSettings = ({ className = '' }) => {
           </div>
           {isSubscribed ? (
             <Badge variant="success" className="flex items-center gap-1">
-              <Check className="w-3 h-3" /> Enabled
+              <Icon name="check" className="w-3 h-3" aria-hidden="true" /> Enabled
             </Badge>
           ) : (
             <Badge variant="secondary" className="flex items-center gap-1">
-              <BellOff className="w-3 h-3" /> Disabled
+              <Icon name="bell-off" className="w-3 h-3" aria-hidden="true" /> Disabled
             </Badge>
           )}
         </div>
@@ -234,7 +221,7 @@ const NotificationSettings = ({ className = '' }) => {
         {!isSupported ? (
           <div className={`p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800`}>
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" />
+              <Icon name="alert-triangle" className="w-5 h-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <p className="text-yellow-800 dark:text-yellow-200 font-medium">Not Supported</p>
                 <p className="text-yellow-700 dark:text-yellow-300 text-sm mt-1">
@@ -246,7 +233,7 @@ const NotificationSettings = ({ className = '' }) => {
         ) : permission === 'denied' ? (
           <div className={`p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800`}>
             <div className="flex items-start gap-3">
-              <X className="w-5 h-5 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
+              <Icon name="x" className="w-5 h-5 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <p className="text-red-800 dark:text-red-200 font-medium">Permission Denied</p>
                 <p className="text-red-700 dark:text-red-300 text-sm mt-1">
@@ -267,12 +254,12 @@ const NotificationSettings = ({ className = '' }) => {
                 'Processing...'
               ) : isSubscribed ? (
                 <>
-                  <BellOff className="w-4 h-4" />
+                  <Icon name="bell-off" className="w-4 h-4" aria-hidden="true" />
                   Disable Push
                 </>
               ) : (
                 <>
-                  <BellRing className="w-4 h-4" />
+                  <Icon name="bell-ring" className="w-4 h-4" aria-hidden="true" />
                   Enable Push
                 </>
               )}
@@ -355,7 +342,7 @@ const NotificationSettings = ({ className = '' }) => {
           {/* Email */}
           <label className={`flex items-center justify-between p-3 rounded-lg border ${borderClass} cursor-pointer`}>
             <div className="flex items-center gap-3">
-              <Mail className={`w-5 h-5 ${mutedClass}`} />
+              <Icon name="mail" className={`w-5 h-5 ${mutedClass}`} aria-hidden="true" />
               <div>
                 <span className={`font-medium ${textClass}`}>Email Notifications</span>
                 <p className={`text-sm ${mutedClass}`}>Receive notifications via email</p>
@@ -372,7 +359,7 @@ const NotificationSettings = ({ className = '' }) => {
           {/* SMS */}
           <label className={`flex items-center justify-between p-3 rounded-lg border ${borderClass} cursor-pointer`}>
             <div className="flex items-center gap-3">
-              <MessageSquare className={`w-5 h-5 ${mutedClass}`} />
+              <Icon name="message-square" className={`w-5 h-5 ${mutedClass}`} aria-hidden="true" />
               <div>
                 <span className={`font-medium ${textClass}`}>SMS Notifications</span>
                 <p className={`text-sm ${mutedClass}`}>Receive notifications via SMS</p>
@@ -390,9 +377,9 @@ const NotificationSettings = ({ className = '' }) => {
           <label className={`flex items-center justify-between p-3 rounded-lg border ${borderClass} cursor-pointer`}>
             <div className="flex items-center gap-3">
               {soundEnabled ? (
-                <Volume2 className={`w-5 h-5 ${mutedClass}`} />
+                <Icon name="volume-2" className={`w-5 h-5 ${mutedClass}`} aria-hidden="true" />
               ) : (
-                <VolumeX className={`w-5 h-5 ${mutedClass}`} />
+                <Icon name="volume-x" className={`w-5 h-5 ${mutedClass}`} aria-hidden="true" />
               )}
               <div>
                 <span className={`font-medium ${textClass}`}>Notification Sounds</span>

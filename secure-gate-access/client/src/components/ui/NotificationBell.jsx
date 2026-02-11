@@ -7,9 +7,10 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNotifications, WS_EVENTS } from '../../hooks/useWebSocket';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Bell, X, Check, CheckCheck, Trash2, Volume2, VolumeX } from 'lucide-react';
+import { useNotifications } from '../../hooks/useWebSocket';
+
+import Icon from './Icon';
 import './NotificationBell.css';
 
 /**
@@ -58,9 +59,13 @@ const NotificationItem = ({ notification, onMarkRead, onDelete, isDark }) => {
   const typeConfig = NOTIFICATION_TYPES[notification.type] || NOTIFICATION_TYPES.info;
   
   return (
-    <div 
+    <div
+      role="button"
+      tabIndex={0}
       className={`notification-item ${notification.read ? 'read' : 'unread'} ${isDark ? 'dark' : ''}`}
       onClick={() => !notification.read && onMarkRead(notification.id)}
+      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !notification.read) { e.preventDefault(); onMarkRead(notification.id); } }}
+      aria-label={`${notification.read ? 'Read' : 'Unread'} notification: ${notification.title || typeConfig.label}. ${notification.message}`}
     >
       <div className={`notification-icon ${typeConfig.color}`}>
         <span>{typeConfig.icon}</span>
@@ -84,7 +89,7 @@ const NotificationItem = ({ notification, onMarkRead, onDelete, isDark }) => {
             onClick={(e) => { e.stopPropagation(); onMarkRead(notification.id); }}
             title="Mark as read"
           >
-            <Check className="w-4 h-4" />
+            <Icon name="check" className="w-4 h-4" />
           </button>
         )}
         <button 
@@ -92,7 +97,7 @@ const NotificationItem = ({ notification, onMarkRead, onDelete, isDark }) => {
           onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
           title="Delete"
         >
-          <Trash2 className="w-4 h-4" />
+          <Icon name="trash-2" className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -114,12 +119,11 @@ const NotificationBell = ({ className = '' }) => {
   // WebSocket notifications hook
   const { 
     notifications: wsNotifications, 
-    unreadCount, 
     markAsRead, 
     clearAll,
     isConnected 
   } = useNotifications({
-    onNotification: useCallback((notification) => {
+    onNotification: useCallback((_notification) => {
       // Play sound for new notifications
       if (soundEnabled && audioRef.current) {
         audioRef.current.play().catch(() => {});
@@ -205,7 +209,7 @@ const NotificationBell = ({ className = '' }) => {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <Bell className="w-5 h-5" />
+        <Icon name="bell" className="w-5 h-5" />
         {unreadLocalCount > 0 && (
           <span className="notification-badge" aria-hidden="true">
             {unreadLocalCount > 99 ? '99+' : unreadLocalCount}
@@ -238,7 +242,7 @@ const NotificationBell = ({ className = '' }) => {
                 className="notification-header-btn"
                 title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
               >
-                {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                {soundEnabled ? <Icon name="volume-2" className="w-4 h-4" /> : <Icon name="volume-x" className="w-4 h-4" />}
               </button>
               {localNotifications.length > 0 && (
                 <>
@@ -247,14 +251,14 @@ const NotificationBell = ({ className = '' }) => {
                     className="notification-header-btn"
                     title="Mark all as read"
                   >
-                    <CheckCheck className="w-4 h-4" />
+                    <Icon name="check-check" className="w-4 h-4" />
                   </button>
                   <button 
                     onClick={handleClearAll}
                     className="notification-header-btn"
                     title="Clear all"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Icon name="trash-2" className="w-4 h-4" />
                   </button>
                 </>
               )}
@@ -263,7 +267,7 @@ const NotificationBell = ({ className = '' }) => {
                 className="notification-header-btn close"
                 aria-label="Close notifications"
               >
-                <X className="w-4 h-4" />
+                <Icon name="x" className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -280,7 +284,7 @@ const NotificationBell = ({ className = '' }) => {
           <div className="notification-list">
             {localNotifications.length === 0 ? (
               <div className="notification-empty">
-                <Bell className="w-12 h-12 opacity-30" />
+                <Icon name="bell" className="w-12 h-12 opacity-30" />
                 <p>No notifications yet</p>
                 <span>You're all caught up!</span>
               </div>

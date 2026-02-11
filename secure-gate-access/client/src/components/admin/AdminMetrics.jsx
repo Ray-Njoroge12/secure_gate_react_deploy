@@ -1,6 +1,6 @@
 // AdminMetrics - Displays real metrics from API
 import React from 'react';
-import { Users, UserCheck, Shield, AlertCircle, Loader2 } from 'lucide-react';
+import Icon from '../ui/Icon';
 
 const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
     const users = metrics?.users || {};
@@ -11,7 +11,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Metrics</h2>
                 <div className="flex justify-center items-center h-24">
-                    <Loader2 className="h-8 w-8 text-blue-500 animate-spin" aria-label="Loading metrics" />
+                    <Icon name="loader-2" className="h-8 w-8 text-blue-500 animate-spin" aria-label="Loading metrics" />
                 </div>
             </div>
         );
@@ -34,7 +34,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
-                        <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+                        <Icon name="users" className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
                         <span className="text-sm text-gray-600 dark:text-gray-300">Active Users</span>
                     </div>
                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -47,7 +47,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
 
                 <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
-                        <UserCheck className="h-5 w-5 text-green-600 dark:text-green-400" aria-hidden="true" />
+                        <Icon name="user-check" className="h-5 w-5 text-green-600 dark:text-green-400" aria-hidden="true" />
                         <span className="text-sm text-gray-600 dark:text-gray-300">Today's Visitors</span>
                     </div>
                     <div className="text-2xl font-bold text-green-600 dark:text-green-400">
@@ -60,7 +60,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
 
                 <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
-                        <Shield className="h-5 w-5 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+                        <Icon name="shield" className="h-5 w-5 text-purple-600 dark:text-purple-400" aria-hidden="true" />
                         <span className="text-sm text-gray-600 dark:text-gray-300">Verified</span>
                     </div>
                     <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
@@ -73,7 +73,7 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
 
                 <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
-                        <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                        <Icon name="alert-circle" className="h-5 w-5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                         <span className="text-sm text-gray-600 dark:text-gray-300">Admins</span>
                     </div>
                     <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">

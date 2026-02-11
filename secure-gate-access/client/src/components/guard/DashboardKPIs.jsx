@@ -5,8 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Users, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { Card } from '../ui';
+import { Card, Icon } from '../ui';
+import Button from '../ui/Button';
 
 const DashboardKPIs = ({ onFilterClick }) => {
   const [kpis, setKpis] = useState({
@@ -71,100 +71,66 @@ const DashboardKPIs = ({ onFilterClick }) => {
     }
   };
 
-  const kpiCards = [
+  const stats = [
     {
-      id: 'on_premise',
-      label: 'On Premise Now',
+      id: "on_premise",
+      label: "Currently On-site",
       value: kpis.onPremise,
-      icon: Users,
-      color: 'bg-green-500',
-      bgLight: 'bg-green-50',
-      textColor: 'text-green-600',
-      borderColor: 'border-green-200'
+      icon: "Users",
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      border: "border-blue-100"
     },
     {
-      id: 'arriving',
-      label: 'Arriving Today',
+      id: "arriving",
+      label: "Arriving Today",
       value: kpis.arrivingToday,
-      icon: Clock,
-      color: 'bg-blue-500',
-      bgLight: 'bg-blue-50',
-      textColor: 'text-blue-600',
-      borderColor: 'border-blue-200'
+      icon: "Clock",
+      color: "text-purple-600",
+      bg: "bg-purple-50",
+      border: "border-purple-100"
     },
     {
-      id: 'pending',
-      label: 'Pending Approval',
+      id: "pending",
+      label: "Pending Checks",
       value: kpis.pendingApproval,
-      icon: Clock,
-      color: 'bg-yellow-500',
-      bgLight: 'bg-yellow-50',
-      textColor: 'text-yellow-600',
-      borderColor: 'border-yellow-200'
+      icon: "CheckCircle",
+      color: "text-yellow-600",
+      bg: "bg-yellow-50",
+      border: "border-yellow-100"
     },
     {
-      id: 'denied',
-      label: 'Denied Today',
+      id: "rejected",
+      label: "Denied Entry",
       value: kpis.deniedToday,
-      icon: XCircle,
-      color: 'bg-red-500',
-      bgLight: 'bg-red-50',
-      textColor: 'text-red-600',
-      borderColor: 'border-red-200'
+      icon: "XCircle",
+      color: "text-red-600",
+      bg: "bg-red-50",
+      border: "border-red-100"
     }
   ];
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="bg-gray-100 dark:bg-slate-700 rounded-lg p-6 animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-24"></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {kpiCards.map(kpi => {
-        const Icon = kpi.icon;
-        return (
-          <div
-            key={kpi.id}
-            onClick={() => onFilterClick?.(kpi.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onFilterClick?.(kpi.id);
-              }
-            }}
-            role="button"
-            tabIndex={0}
-            aria-label={`${kpi.label}: ${kpi.value}`}
-            className={`${kpi.bgLight} dark:bg-slate-800 border-2 ${kpi.borderColor} dark:border-slate-600 rounded-lg p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-500`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className={`p-2 ${kpi.color} rounded-lg`} aria-hidden="true">
-                <Icon className="w-5 h-5 text-white" aria-hidden="true" />
-              </div>
-              {kpi.value > 0 && (
-                <span className={`text-xs font-medium ${kpi.textColor} dark:text-${kpi.color.replace('bg-', '')}-400 bg-white dark:bg-slate-700 px-2 py-1 rounded-full`}>
-                  {kpi.value}
-                </span>
-              )}
-            </div>
-            <div className={`text-3xl font-bold ${kpi.textColor} dark:text-${kpi.color.replace('bg-', '')}-400 mb-1`}>
-              {kpi.value}
-            </div>
-            <div className="text-sm font-medium text-gray-600 dark:text-gray-200">
-              {kpi.label}
-            </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {stats.map((stat) => (
+        <Button
+          key={stat.id}
+          onClick={() => onFilterClick(stat.id)}
+          className={`text-left p-4 rounded-xl border transition-all duration-200 hover:shadow-md ${stat.bg} ${stat.border}`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className={`p-2 rounded-lg bg-white dark:bg-slate-700 ${stat.color}`}>
+              <Icon name={stat.icon} className="w-5 h-5" />
+            </span>
+            {loading ? (
+              <div className="w-8 h-4 bg-gray-200 dark:bg-slate-600 animate-pulse rounded"></div>
+            ) : (
+              <span className="text-2xl font-bold text-gray-900 dark:text-slate-100">{stat.value}</span>
+            )}
           </div>
-        );
-      })}
+          <p className="text-sm font-medium text-gray-600 dark:text-slate-300">{stat.label}</p>
+        </Button>
+      ))}
     </div>
   );
 };

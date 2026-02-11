@@ -2,8 +2,7 @@
 import React from 'react';
 import { useNavigation } from '../contexts/NavigationContext';
 import Breadcrumbs from './ui/Breadcrumbs';
-import { Button } from './ui';
-import { ArrowLeft } from 'lucide-react';
+import { Button, Icon } from './ui';
 
 const PageHeader = ({ 
   title = null,
@@ -45,7 +44,7 @@ const PageHeader = ({
               onClick={handleBack}
               className="mb-4 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:text-gray-200 dark:hover:text-white"
               icon={
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <Icon name="ArrowLeft" className="w-4 h-4 mr-2" />
               }
             >
               Back

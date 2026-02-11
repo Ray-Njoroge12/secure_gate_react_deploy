@@ -8,6 +8,7 @@ import React, { useState, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext.js';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import './DataExportPanel.css';
+import Button from '../ui/Button';
 
 const EXPORT_FORMATS = [
   { key: 'csv', label: 'CSV', icon: '📊', description: 'Comma-separated values, opens in Excel/Sheets' },
@@ -140,7 +141,7 @@ const DataExportPanel = ({
         <h4 id="format-heading">Format</h4>
         <div className="format-grid" role="radiogroup" aria-labelledby="format-heading">
           {EXPORT_FORMATS.map((f) => (
-            <button
+            <Button
               key={f.key}
               className={`format-card ${format === f.key ? 'active' : ''}`}
               onClick={() => setFormat(f.key)}
@@ -151,7 +152,7 @@ const DataExportPanel = ({
               <span className="format-icon">{f.icon}</span>
               <span className="format-label">{f.label}</span>
               <span className="format-desc">{f.description}</span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -161,8 +162,8 @@ const DataExportPanel = ({
         <div className="fields-header">
           <h4>Fields ({selectedFields.size}/{availableFields.length})</h4>
           <div className="fields-actions">
-            <button className="link-btn" onClick={selectAllFields}>Select All</button>
-            <button className="link-btn" onClick={deselectAllFields}>Deselect All</button>
+            <Button className="link-btn" onClick={selectAllFields}>Select All</Button>
+            <Button className="link-btn" onClick={deselectAllFields}>Deselect All</Button>
           </div>
         </div>
         <div className="fields-grid">
@@ -207,9 +208,9 @@ const DataExportPanel = ({
           <h4>Templates</h4>
           <div className="template-list">
             {templates.map((tpl, i) => (
-              <button key={i} className="template-chip" onClick={() => loadTemplate(tpl)}>
+              <Button key={i} className="template-chip" onClick={() => loadTemplate(tpl)}>
                 {tpl.name}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -224,14 +225,14 @@ const DataExportPanel = ({
           onChange={(e) => setTemplateName(e.target.value)}
           aria-label="Template name"
         />
-        <button onClick={handleSaveTemplate} disabled={!templateName.trim()}>
+        <Button onClick={handleSaveTemplate} disabled={!templateName.trim()}>
           Save Template
-        </button>
+        </Button>
       </div>
 
       {/* Actions */}
       <div className="export-actions">
-        <button
+        <Button
           className="export-btn primary"
           onClick={handleExport}
           disabled={isExporting || selectedFields.size === 0}
@@ -239,17 +240,17 @@ const DataExportPanel = ({
           aria-label={isExporting ? 'Exporting data' : `Export data as ${format.toUpperCase()}`}
         >
           {isExporting ? 'Exporting...' : `Export as ${format.toUpperCase()}`}
-        </button>
+        </Button>
 
         {onScheduleReport && (
-          <button
+          <Button
             className="export-btn schedule"
             onClick={() => setShowSchedule(!showSchedule)}
             aria-expanded={showSchedule}
             aria-label={showSchedule ? 'Hide schedule form' : 'Show schedule form'}
           >
             Schedule Report
-          </button>
+          </Button>
         )}
       </div>
 
@@ -298,8 +299,8 @@ const DataExportPanel = ({
               />
             </div>
             <div className="schedule-actions">
-              <button className="cancel-btn" onClick={() => setShowSchedule(false)}>Cancel</button>
-              <button className="confirm-btn" onClick={handleScheduleReport}>Create Schedule</button>
+              <Button className="cancel-btn" onClick={() => setShowSchedule(false)}>Cancel</Button>
+              <Button className="confirm-btn" onClick={handleScheduleReport}>Create Schedule</Button>
             </div>
           </div>
         </div>

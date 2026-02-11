@@ -126,6 +126,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Complete MFA verification by updating auth state.
+   * Called from MFAVerify after successful /api/mfa/verify.
+   * Without this, ProtectedRoute sees isAuthenticated=false and redirects to login.
+   */
+  const completeMfa = (userData) => {
+    if (!userData) {
+      logger.error('completeMfa called without user data');
+      return;
+    }
+    setUser(userData);
+    authStateMachine.transition('AUTHENTICATED');
+    logger.info('MFA completed, user authenticated', { role: userData.role });
+  };
+
   // Check if user has specific role
   const hasRole = (role) => {
     return user?.role === role;
@@ -187,6 +202,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
+    completeMfa,
     hasRole,
     hasAnyRole,
     authState

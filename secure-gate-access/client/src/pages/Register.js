@@ -5,15 +5,17 @@ import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } fro
 import { useError } from "../contexts/ErrorContext.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
 import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator.jsx';
 import phoneValidator from '../utils/phoneValidator.js';
 import passwordValidator from '../utils/passwordValidator.js';
 import logger from '../utils/logger';
 import PasswordRequirements from '../components/PasswordRequirements';
-import api from '../utils/apiClient';
+import Button from '../components/ui/Button';
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const DEFAULT_ESTATE_ID = Number.parseInt(process.env.REACT_APP_DEFAULT_ESTATE_ID || '1', 10);
+const DEFAULT_ESTATE_NAME = process.env.REACT_APP_DEFAULT_ESTATE_NAME || 'Default Estate';
+const hasDefaultEstateFallback = Number.isFinite(DEFAULT_ESTATE_ID) && DEFAULT_ESTATE_ID > 0;
 
 export default function RegistrationPage() {
   const navigate = useNavigate();
@@ -89,20 +91,33 @@ export default function RegistrationPage() {
         }
 
         const data = await response.json();
-        setEstates(data?.data?.estates || []);
-
-      } catch (err) {
-        logger.error('Failed to load estates', err);
-        setEstateError('Unable to load estates list');
-
-        // Show warning but allow registration to continue
-        handleError('Could not load estates list. You can still register - estate will be assigned by administrator.', {
-          context: 'Estate Loading',
-          title: 'Connection Issue',
-          severity: 'warning',
-          autoClose: true,
-          autoCloseDelay: 5000
+        const availableEstates = data?.data?.estates || [];
+        setEstates(availableEstates);
+        setFormData((prev) => {
+          if (!prev.estateId) return prev;
+          const hasExistingSelection = availableEstates.some((estate) => String(estate.id) === String(prev.estateId));
+          return hasExistingSelection ? prev : { ...prev, estateId: '' };
         });
+
+      } catch {
+        setEstateError('Unable to load estates list');
+        if (hasDefaultEstateFallback) {
+          setEstates([{ id: DEFAULT_ESTATE_ID, name: DEFAULT_ESTATE_NAME }]);
+          setFormData((prev) => ({
+            ...prev,
+            estateId: prev.estateId || String(DEFAULT_ESTATE_ID)
+          }));
+        } else {
+          setEstates([]);
+          setFormData((prev) => ({ ...prev, estateId: '' }));
+          handleError('Could not load estates list. Please refresh and select your estate to continue.', {
+            context: 'Estate Loading',
+            title: 'Connection Issue',
+            severity: 'warning',
+            autoClose: true,
+            autoCloseDelay: 5000
+          });
+        }
       } finally {
         setEstatesLoading(false);
       }
@@ -110,6 +125,11 @@ export default function RegistrationPage() {
 
     fetchEstates();
   }, [isBulkRegistration]);
+
+  const usingTemporaryDefaultEstate =
+    !!estateError &&
+    hasDefaultEstateFallback &&
+    String(formData.estateId) === String(DEFAULT_ESTATE_ID);
 
   // Bulk registration fields
   const [bulkFormData, setBulkFormData] = useState({
@@ -216,9 +236,11 @@ export default function RegistrationPage() {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
-    // Estate is REQUIRED for residents - they need approval from specific estate admin
+    // Estate remains required by design; temporary default applies during estate-list outages.
     if (formData.role === 'resident' && !formData.estateId) {
-      newErrors.estateId = 'Estate selection is required for residents';
+      newErrors.estateId = hasDefaultEstateFallback
+        ? 'Estate selection is required for residents'
+        : 'Estate list is temporarily unavailable. Please refresh and try again.';
     }
 
     if (!formData.phone.trim()) {
@@ -246,17 +268,15 @@ export default function RegistrationPage() {
     // Validate form - this sets inline field errors
     if (!validateForm()) {
       setLoading(false);
-      handleError("Please fix the errors highlighted in the form", {
-        context: 'User Registration',
-        title: 'Validation Failed',
-        severity: 'warning'
-      });
       return;
     }
 
     try {
       // Convert phone number to international format for backend
       const internationalPhone = phoneValidator.toInternational(formData.phone.trim(), 'KE');
+      const resolvedEstateId = formData.estateId
+        ? Number(formData.estateId)
+        : (hasDefaultEstateFallback ? DEFAULT_ESTATE_ID : null);
 
       const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
@@ -270,7 +290,7 @@ export default function RegistrationPage() {
           phone: internationalPhone,
           house: formData.role === "resident" ? formData.houseNumber : "",
           password: formData.password,
-          estate_id: formData.estateId ? Number(formData.estateId) : null
+          estate_id: Number.isFinite(resolvedEstateId) ? resolvedEstateId : null
         }),
       });
 
@@ -446,7 +466,7 @@ Redirecting to login in 10 seconds...`, {
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4">
         <div className="max-w-2xl w-full bg-white dark:bg-slate-800 rounded-lg p-8 shadow-md">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Event Registration</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Event Registration</h1>
             {inviteDetails && (
               <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                 <h3 className="text-lg font-semibold text-brand-600 dark:text-brand-400 mb-2">{inviteDetails.eventName}</h3>
@@ -546,7 +566,9 @@ Redirecting to login in 10 seconds...`, {
                 </div>
               </fieldset>
               <div className="flex flex-wrap gap-2 mb-2">
-                <button
+                <Button
+                  variant="primary"
+                  size="md"
                   onClick={async () => {
                     setOtpError("");
                     setOtpSuccess("");
@@ -568,9 +590,11 @@ Redirecting to login in 10 seconds...`, {
                       else setOtpError(e.message || 'OTP verification failed');
                     }
                   }}
-                  className="min-h-[44px] min-w-[44px] px-4 py-2 bg-brand-600 text-white border-none rounded-md cursor-pointer hover:bg-brand-700"
-                >Verify</button>
-                <button
+                  className="min-h-[44px] min-w-[44px]"
+                >Verify</Button>
+                <Button
+                  variant="secondary"
+                  size="md"
                   disabled={resendCooldown > 0}
                   onClick={async () => {
                     if (!confirmedVisitor?.id) return;
@@ -589,11 +613,8 @@ Redirecting to login in 10 seconds...`, {
                       else setOtpError(e.message || 'Failed to resend OTP');
                     }
                   }}
-                  className={`min-h-[44px] min-w-[44px] px-4 py-2 text-white border-none rounded-md ${resendCooldown > 0
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gray-600 cursor-pointer hover:bg-gray-700'
-                    }`}
-                >{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</button>
+                  className="min-h-[44px] min-w-[44px]"
+                >{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</Button>
               </div>
               {otpError && (
                 <div id="otp-error" className="text-red-600 text-sm mt-2" aria-live="polite">
@@ -608,11 +629,12 @@ Redirecting to login in 10 seconds...`, {
             </div>
           )}
 
-          <form onSubmit={handleBulkRegister} className="space-y-4">
+          <form onSubmit={handleBulkRegister} noValidate className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
+                <label htmlFor="bulk-name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Full Name *</label>
                 <input
+                  id="bulk-name"
                   type="text"
                   value={bulkFormData.name}
                   onChange={e => setBulkFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -625,8 +647,9 @@ Redirecting to login in 10 seconds...`, {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
+                <label htmlFor="bulk-phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
                 <input
+                  id="bulk-phone"
                   type="tel"
                   value={bulkFormData.visitorPhone}
                   onChange={e => setBulkFormData(prev => ({ ...prev, visitorPhone: e.target.value }))}
@@ -640,8 +663,9 @@ Redirecting to login in 10 seconds...`, {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Email Address *</label>
+              <label htmlFor="bulk-email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Email Address *</label>
               <input
+                id="bulk-email"
                 type="email"
                 value={bulkFormData.visitorEmail}
                 onChange={e => setBulkFormData(prev => ({ ...prev, visitorEmail: e.target.value }))}
@@ -655,24 +679,26 @@ Redirecting to login in 10 seconds...`, {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">ID Number</label>
+                <label htmlFor="bulk-id-number" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">ID Number</label>
                 <input
+                  id="bulk-id-number"
                   type="text"
                   value={bulkFormData.idNumber}
                   onChange={e => setBulkFormData(prev => ({ ...prev, idNumber: e.target.value }))}
-                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-brand-500 text-base disabled:bg-gray-100 dark:disabled:bg-slate-600"
                   placeholder="Optional"
                   disabled={loading}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Vehicle Plate Number</label>
+                <label htmlFor="bulk-vehicle" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Vehicle Plate Number</label>
                 <input
+                  id="bulk-vehicle"
                   type="text"
                   value={bulkFormData.vehiclePlate}
                   onChange={e => setBulkFormData(prev => ({ ...prev, vehiclePlate: e.target.value }))}
-                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                  className="w-full min-h-[44px] px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-brand-500 text-base disabled:bg-gray-100 dark:disabled:bg-slate-600"
                   placeholder="Optional"
                   disabled={loading}
                 />
@@ -684,7 +710,7 @@ Redirecting to login in 10 seconds...`, {
               <select
                 value={bulkFormData.purpose}
                 onChange={e => setBulkFormData(prev => ({ ...prev, purpose: e.target.value }))}
-                className="w-full min-h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-base disabled:bg-gray-100"
+                className="w-full min-h-[44px] px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-4 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 focus:border-brand-500 text-base disabled:bg-gray-100 dark:disabled:bg-slate-600"
                 disabled={loading}
                 required
               >
@@ -696,7 +722,7 @@ Redirecting to login in 10 seconds...`, {
                 <option value="Maintenance">Maintenance</option>
                 <option value="Other">Other</option>
               </select>
-              {errors.purpose && <p className="text-red-600 text-sm mt-1">{errors.purpose}</p>}
+              {errors.purpose && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.purpose}</p>}
             </div>
 
             {/* Privacy Policy and Terms Agreement */}
@@ -705,50 +731,40 @@ Redirecting to login in 10 seconds...`, {
                 type="checkbox"
                 id="bulkPrivacyTerms"
                 required
-                className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                className="mt-1 h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 dark:border-slate-600 rounded"
               />
               <label htmlFor="bulkPrivacyTerms" className="text-sm text-gray-600 dark:text-gray-300">
                 I agree to the{' '}
-                <Link to="/privacy-policy" target="_blank" className="text-green-600 hover:text-green-500 underline">
+                <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-500 underline">
                   Privacy Policy
                 </Link>
                 {' '}and{' '}
-                <Link to="/terms-of-service" target="_blank" className="text-green-600 hover:text-green-500 underline">
+                <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-500 underline">
                   Terms of Service
                 </Link>
                 {' '}of Secure Gate Access Control System.
               </label>
             </div>
 
-            <button
+            <Button
               type="submit"
+              variant="primary"
               disabled={loading}
-              className={`w-full mt-4 flex justify-center items-center h-12 px-4 border-none rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2'
-                }`}
+              loading={loading}
+              className="w-full mt-4 h-12 text-base font-semibold"
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Registering...
-                </>
-              ) : (
-                'Register for Event'
-              )}
-            </button>
+              {loading ? 'Registering...' : 'Register for Event'}
+            </Button>
           </form>
 
           <div className="text-center mt-6 pt-6 border-t border-gray-200">
-            <button
+            <Button
+              variant="outline"
               onClick={() => navigate('/')}
-              className="min-h-[44px] min-w-[44px] px-4 py-2 bg-transparent text-brand-600 border border-brand-600 rounded-md cursor-pointer text-sm hover:bg-brand-50"
+              className="min-h-[44px] min-w-[44px]"
             >
               Back to Home
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -764,7 +780,7 @@ Redirecting to login in 10 seconds...`, {
         </div>
       )}
 
-      <form onSubmit={handleRegister} className="space-y-6">
+      <form onSubmit={handleRegister} noValidate className="space-y-6">
         <div>
           <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Username
@@ -778,7 +794,7 @@ Redirecting to login in 10 seconds...`, {
             className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
-          {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
+          {errors.username && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.username}</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -795,7 +811,7 @@ Redirecting to login in 10 seconds...`, {
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
-            {errors.first_name && <p className="text-red-600 text-sm mt-1">{errors.first_name}</p>}
+            {errors.first_name && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.first_name}</p>}
           </div>
 
           <div>
@@ -811,7 +827,7 @@ Redirecting to login in 10 seconds...`, {
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
-            {errors.last_name && <p className="text-red-600 text-sm mt-1">{errors.last_name}</p>}
+            {errors.last_name && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.last_name}</p>}
           </div>
         </div>
 
@@ -828,7 +844,7 @@ Redirecting to login in 10 seconds...`, {
             className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
-          {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
+          {errors.email && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.email}</p>}
         </div>
 
         {/* Role selection removed for public registration - defaults to Resident */
@@ -859,10 +875,12 @@ Redirecting to login in 10 seconds...`, {
               {estatesLoading
                 ? 'Loading estates...'
                 : estateError
-                  ? 'Unable to load estates - please refresh'
+                  ? usingTemporaryDefaultEstate
+                    ? `${DEFAULT_ESTATE_NAME} selected (temporary fallback)`
+                    : 'Unable to load estates - please refresh'
                   : 'Select your estate'}
             </option>
-            {!estateError && estates.map((estate) => (
+            {estates.map((estate) => (
               <option key={estate.id} value={estate.id}>
                 {estate.name}
               </option>
@@ -882,7 +900,9 @@ Redirecting to login in 10 seconds...`, {
                 <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                {estateError}. Please try refreshing the page to load estates.
+                {usingTemporaryDefaultEstate
+                  ? `Estate list is unavailable. Using ${DEFAULT_ESTATE_NAME} temporarily so you can continue signup.`
+                  : `${estateError}. Please try refreshing the page to load estates.`}
               </span>
             ) : (
               <span className="flex items-center">
@@ -909,7 +929,7 @@ Redirecting to login in 10 seconds...`, {
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
-            {errors.houseNumber && <p className="text-red-600 text-sm mt-1">{errors.houseNumber}</p>}
+            {errors.houseNumber && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.houseNumber}</p>}
           </div>
         )}
 
@@ -926,7 +946,7 @@ Redirecting to login in 10 seconds...`, {
             className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
-          {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
+          {errors.phone && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.phone}</p>}
         </div>
 
         <div>
@@ -943,12 +963,13 @@ Redirecting to login in 10 seconds...`, {
               className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
-              tabIndex={-1}
             >
               {showPassword ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -960,10 +981,10 @@ Redirecting to login in 10 seconds...`, {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               )}
-            </button>
+            </Button>
           </div>
           <PasswordRequirements password={formData.password} />
-          {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
+          {errors.password && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.password}</p>}
         </div>
 
         <div>
@@ -999,12 +1020,13 @@ Redirecting to login in 10 seconds...`, {
                   )}
                 </div>
               )}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 rounded p-1"
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded p-1"
                 aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                tabIndex={-1}
               >
                 {showConfirmPassword ? (
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1016,11 +1038,11 @@ Redirecting to login in 10 seconds...`, {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
           {formData.confirmPassword && formData.password && formData.confirmPassword !== formData.password && (
-            <p className="text-red-600 text-sm mt-1 flex items-center">
+            <p className="text-red-600 dark:text-red-400 text-sm mt-1 flex items-center">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -1035,7 +1057,7 @@ Redirecting to login in 10 seconds...`, {
               Passwords match
             </p>
           )}
-          {errors.confirmPassword && <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>}
+          {errors.confirmPassword && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
         </div>
 
         {/* Privacy Policy and Terms Agreement */}
@@ -1046,43 +1068,32 @@ Redirecting to login in 10 seconds...`, {
             required
             className="mt-1 h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
           />
-          <label htmlFor="privacyTerms" className="text-sm text-gray-600">
+          <label htmlFor="privacyTerms" className="text-sm text-gray-600 dark:text-gray-300">
             I agree to the{' '}
-            <Link to="/privacy-policy" target="_blank" className="text-brand-600 hover:text-brand-500 underline">
+            <Link to="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-500 underline">
               Privacy Policy
             </Link>
             {' '}and{' '}
-            <Link to="/terms-of-service" target="_blank" className="text-brand-600 hover:text-brand-500 underline">
+            <Link to="/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-brand-600 hover:text-brand-500 underline">
               Terms of Service
             </Link>
             {' '}of Secure Gate Access Control System.
           </label>
         </div>
 
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={loading}
-          className={`w-full flex justify-center items-center h-12 px-4 border border-transparent rounded-lg shadow-md text-base font-semibold text-white transition-all duration-200 ${loading
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-            }`}
+          loading={loading}
+          className="w-full h-12 text-base font-semibold"
         >
-          {loading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Creating Account...
-            </>
-          ) : (
-            'Create Account'
-          )}
-        </button>
+          {loading ? 'Creating Account...' : 'Create Account'}
+        </Button>
       </form>
 
       <div className="mt-6 text-center">
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-gray-600 dark:text-gray-300">
           Already have an account?{" "}
           <Link to="/login" className="text-brand-600 hover:text-brand-500 font-medium">
             Sign in

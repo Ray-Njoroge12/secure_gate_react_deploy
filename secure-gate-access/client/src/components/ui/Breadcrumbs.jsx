@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { generateBreadcrumbs } from '../../utils/navigationFlow';
 import { componentTokens } from '../../design-system';
+import Icon from './Icon';
 
 const Breadcrumbs = ({ 
   breadcrumbs = null, 
@@ -85,20 +86,12 @@ const Breadcrumbs = ({
         {displayBreadcrumbs.map((crumb, index) => (
           <li key={`${crumb.path}-${index}`} className="flex items-center">
             {index > 0 && (
-              <svg 
-                className="w-4 h-4 mx-2 text-gray-400 dark:text-gray-300 flex-shrink-0" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
+              <Icon 
+                name="chevron-right"
+                sizeOverride={16}
+                className="mx-2 text-gray-400 dark:text-gray-300 flex-shrink-0"
                 aria-hidden="true"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth="2" 
-                  d="M9 5l7 7-7 7" 
-                />
-              </svg>
+              />
             )}
             
             {crumb.isEllipsis ? (

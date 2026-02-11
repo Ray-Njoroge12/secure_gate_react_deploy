@@ -15,17 +15,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { exportToPDF, exportToCSV } from '../../utils/exportUtils';
-
-// Color palette using semantic design tokens (SVG needs raw values)
-const CHART_COLORS = {
-  success: '#10b981',    // --color-success
-  info: '#3b82f6',       // --color-info
-  warning: '#f59e0b',    // --color-warning
-  error: '#ef4444',      // --color-error
-  accent: '#8b5cf6',     // --color-brand-accent
-  pink: '#ec4899',
-  cyan: '#06b6d4',
-};
+import { COLORS as CHART_COLORS } from '../../utils/designTokens';
+import Button from '../ui/Button';
 
 // Sparkline component for inline charts
 const Sparkline = ({ data = [], color = CHART_COLORS.success, height = 32, width = 100 }) => {
@@ -36,7 +27,7 @@ const Sparkline = ({ data = [], color = CHART_COLORS.success, height = 32, width
   const range = max - min || 1;
 
   const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * width;
+    const x = (index / (data.length - 1 || 1)) * width;
     const y = height - ((value - min) / range) * height;
     return `${x},${y}`;
   }).join(' ');
@@ -328,7 +319,7 @@ const StatCard = ({
         {sparklineData.length > 0 && (
           <Sparkline 
             data={sparklineData} 
-            color={changeType === 'positive' ? CHART_COLORS.success : changeType === 'negative' ? CHART_COLORS.error : '#6b7280'}
+            color={changeType === 'positive' ? CHART_COLORS.success : changeType === 'negative' ? CHART_COLORS.error : CHART_COLORS.gray500}
           />
         )}
       </div>
@@ -463,17 +454,17 @@ const AnalyticsDashboard = ({
         {/* Date Range Selector */}
         <div className="flex gap-2">
           {ranges.map(range => (
-            <button
+            <Button
               key={range.value}
               onClick={() => handleRangeChange(range.value)}
               className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                 selectedRange === range.value
-                  ? 'bg-green-500 text-white'
+                  ? 'bg-brand-600 text-white'
                   : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
               }`}
             >
               {range.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -559,56 +550,56 @@ const AnalyticsDashboard = ({
       <div className="flex justify-end gap-3">
         {/* CSV Export Dropdown */}
         <div className="relative export-menu-container">
-          <button
+          <Button
             onClick={() => setShowExportMenu(!showExportMenu)}
             disabled={isExporting}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isExporting ? '⏳ Exporting...' : '📊 Export CSV'}
             <span className="text-xs">▼</span>
-          </button>
+          </Button>
 
           {/* CSV Export Dropdown Menu */}
           {showExportMenu && (
             <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-10">
               <div className="py-1">
-                <button
+                <Button
                   onClick={() => handleCSVExport('visitors')}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   📋 Visitor Log (Detailed)
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => handleCSVExport('hourly')}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   ⏰ Hourly Activity
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => handleCSVExport('purpose')}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   🎯 Purpose Distribution
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => handleCSVExport('full')}
                   className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
                 >
                   📊 Full Analytics Summary
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </div>
 
         {/* PDF Export Button */}
-        <button
+        <Button
           onClick={handlePDFExport}
           disabled={isExporting}
           className="px-4 py-2 text-sm font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isExporting ? '⏳ Generating...' : '📄 Export PDF Report'}
-        </button>
+        </Button>
       </div>
     </div>
   );

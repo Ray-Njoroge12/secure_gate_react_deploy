@@ -339,7 +339,8 @@ class UserService {
       throw new Error('User ID required');
     }
 
-    const allowedFields = ['username', 'first_name', 'last_name', 'email', 'role', 'mfa_enabled', 'mfa_secret', 'backup_codes', 'mfa_methods'];
+    // FIX P1-9: Add phone and account_status for guard/resident management
+    const allowedFields = ['username', 'first_name', 'last_name', 'email', 'phone', 'account_status', 'role', 'mfa_enabled', 'mfa_secret', 'backup_codes', 'mfa_methods'];
     const updates = [];
     const values = [];
     let paramCount = 1;

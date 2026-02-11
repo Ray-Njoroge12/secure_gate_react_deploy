@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+
+import { FloatingLabelInput, GradientButton, GradientCard, Checkbox, Icon, Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
-import { handleApiError } from "../utils/errorMapper.js";
-import { FloatingLabelInput, GradientButton, GradientCard, Checkbox } from "../components/ui";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle, KeyRound } from "lucide-react";
-import passwordValidator from "../utils/passwordValidator";
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -15,18 +13,15 @@ export default function LoginPage() {
   const location = useLocation();
   const { login, isAuthenticated, user } = useAuth();
   const { handleError, handleSuccess, clearAllErrors } = useError();
+  const isForgotPasswordRoute = location.pathname === '/forgot-password';
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showForgot, setShowForgot] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const buttonRef = useRef(null);
 
   // Validation functions
   const validateEmail = (value) => {
@@ -60,7 +55,7 @@ export default function LoginPage() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         if (!loading) {
-          if (showForgot) {
+          if (isForgotPasswordRoute) {
             handleForgotPassword(e);
           } else {
             handleLogin(e);
@@ -77,13 +72,14 @@ export default function LoginPage() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loading, showForgot]);
+    // Intentionally scoped to primary interaction state for global keyboard shortcuts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, isForgotPasswordRoute]);
 
   // Handle login
   const handleLogin = async (e) => {
     e.preventDefault();
     clearAllErrors();
-    setMessage("");
 
     // Validate inputs
     const isEmailValid = validateEmail(email);
@@ -131,26 +127,26 @@ export default function LoginPage() {
       // Redirect after short delay for animation
       setTimeout(() => {
         const from = location.state?.from?.pathname;
-        
+
         // Check if MFA is required for the user's role
         const mfaRequiredRoles = ['super_admin', 'admin', 'guard'];
         const requiresMFA = mfaRequiredRoles.includes(result.user.role);
-        
+
         // If MFA is required but not enabled, redirect to MFA setup
         if (requiresMFA && !result.user.mfaEnabled) {
-          navigate('/mfa/setup', { 
-            state: { 
-              required: true, 
+          navigate('/mfa/setup', {
+            state: {
+              required: true,
               message: `Multi-Factor Authentication is required for ${result.user.role === 'super_admin' ? 'Super Admin' : result.user.role.charAt(0).toUpperCase() + result.user.role.slice(1)} accounts.`,
-              redirectTo: from || (result.user.role === "super_admin" ? "/dashboard/super-admin" : 
-                                   result.user.role === "admin" ? "/dashboard/admin" :
-                                   result.user.role === "guard" ? "/dashboard/guard" : "/")
+              redirectTo: from || (result.user.role === "super_admin" ? "/dashboard/super-admin" :
+                result.user.role === "admin" ? "/dashboard/admin" :
+                  result.user.role === "guard" ? "/dashboard/guard" : "/")
             }
           });
           return;
         }
-        
-        if (from && from !== '/login') {
+
+        if (from && from !== '/login' && from !== '/forgot-password') {
           navigate(from, { replace: true });
         } else {
           // Default redirects based on role
@@ -177,7 +173,6 @@ export default function LoginPage() {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     clearAllErrors();
-    setMessage("");
 
     if (!validateEmail(resetEmail)) {
       return;
@@ -211,8 +206,8 @@ export default function LoginPage() {
         autoClose: true,
         autoCloseDelay: 3000
       });
-      setShowForgot(false);
       setResetEmail("");
+      navigate('/login', { replace: true });
     } catch (err) {
       handleError(err, {
         context: 'Password Reset',
@@ -229,26 +224,26 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       const from = location.state?.from?.pathname;
-      
+
       // Check if MFA is required for the user's role
       const mfaRequiredRoles = ['super_admin', 'admin', 'guard'];
       const requiresMFA = mfaRequiredRoles.includes(user.role);
-      
+
       // If MFA is required but not enabled, redirect to MFA setup
       if (requiresMFA && !user.mfaEnabled) {
-        navigate('/mfa/setup', { 
-          state: { 
-            required: true, 
+        navigate('/mfa/setup', {
+          state: {
+            required: true,
             message: `Multi-Factor Authentication is required for ${user.role === 'super_admin' ? 'Super Admin' : user.role.charAt(0).toUpperCase() + user.role.slice(1)} accounts.`,
-            redirectTo: from || (user.role === "super_admin" ? "/dashboard/super-admin" : 
-                                user.role === "admin" ? "/dashboard/admin" :
-                                user.role === "guard" ? "/dashboard/guard" : "/")
+            redirectTo: from || (user.role === "super_admin" ? "/dashboard/super-admin" :
+              user.role === "admin" ? "/dashboard/admin" :
+                user.role === "guard" ? "/dashboard/guard" : "/")
           }
         });
         return;
       }
-      
-      if (from && from !== '/login') {
+
+      if (from && from !== '/login' && from !== '/forgot-password') {
         navigate(from, { replace: true });
       } else {
         // Default redirects based on role
@@ -261,203 +256,193 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, user, navigate, location]);
 
+  const renderLoginForm = () => (
+    <form onSubmit={handleLogin} noValidate className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+      <div className="space-y-4">
+        <FloatingLabelInput
+          id="email"
+          label="Email Address"
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) validateEmail(e.target.value);
+          }}
+          onBlur={(e) => validateEmail(e.target.value)}
+          error={emailError}
+          leftIcon="Mail"
+          placeholder="name@example.com"
+          required
+          autoComplete="email"
+          autoFocus
+        />
+        <FloatingLabelInput
+          id="password"
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (passwordError) validatePassword(e.target.value);
+          }}
+          onBlur={(e) => validatePassword(e.target.value)}
+          error={passwordError}
+          leftIcon="Lock"
+          placeholder="Enter your password"
+          required
+          autoComplete="current-password"
+        />
+        <div className="flex items-center justify-between">
+          <Checkbox
+            id="remember-me"
+            checked={remember}
+            onCheckedChange={setRemember}
+            label="Remember me"
+          />
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              clearAllErrors();
+              setResetEmail(email.trim());
+              setEmailError("");
+              setPasswordError("");
+              navigate('/forgot-password', { state: { prefillEmail: email.trim() } });
+            }}
+            className="h-auto min-h-0 p-0 text-sm font-medium text-brand-700 hover:bg-transparent hover:text-brand-800 dark:text-brand-400 dark:hover:bg-transparent dark:hover:text-brand-300"
+          >
+            Forgot password?
+          </Button>
+        </div>
+      </div>
+
+      <GradientButton
+        type="submit"
+        loading={loading}
+        disabled={loading || !email.trim() || !password}
+        className="w-full"
+        rightIcon={<Icon name="ArrowRight" size={18} />}
+      >
+        Sign In
+      </GradientButton>
+
+      <div className="flex items-center justify-center space-x-4 text-xs text-slate-500 dark:text-slate-300">
+        <span className="flex items-center">
+          <Icon name="CheckCircle" size={14} className="mr-1 text-brand-500" aria-hidden="true" />
+          SSL Secured
+        </span>
+        <span className="flex items-center">
+          <Icon name="KeyRound" size={14} className="mr-1 text-brand-500" aria-hidden="true" />
+          2FA Available
+        </span>
+      </div>
+    </form>
+  );
+
+  const renderForgotPasswordForm = () => (
+    <form onSubmit={handleForgotPassword} noValidate className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+      <div className="bg-brand-50 dark:bg-brand-900/20 p-4 rounded-lg flex items-start space-x-3 mb-6">
+        <Icon name="KeyRound" className="w-5 h-5 text-brand-600 mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-brand-800 dark:text-brand-200">
+          Enter your email address and we'll send you a link to reset your password.
+        </p>
+      </div>
+
+      <FloatingLabelInput
+        id="resetEmail"
+        label="Email Address"
+        type="email"
+        value={resetEmail}
+        onChange={(e) => {
+          setResetEmail(e.target.value);
+          if (emailError) validateEmail(e.target.value);
+        }}
+        onBlur={(e) => validateEmail(e.target.value)}
+        error={emailError}
+        leftIcon="Mail"
+        placeholder="name@example.com"
+        required
+        autoComplete="email"
+        autoFocus
+      />
+
+      <div className="flex flex-col space-y-3 pt-2">
+        <GradientButton
+          type="submit"
+          loading={loading}
+          disabled={loading || !resetEmail.trim()}
+          className="w-full"
+          rightIcon={<Icon name="Mail" size={18} />}
+        >
+          Send Reset Link
+        </GradientButton>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            clearAllErrors();
+            setEmailError("");
+            setResetEmail("");
+            navigate('/login');
+          }}
+          className="text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          Back to Sign In
+        </Button>
+      </div>
+    </form>
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 via-white to-sky-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md">
-        {/* Logo and Title */}
-        <div className="text-center mb-8 animate-fade-in-down">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg mb-4">
-            <Shield className="w-8 h-8 text-white" />
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-700 mb-4 shadow-lg">
+            <Icon name="Shield" className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            {showForgot ? "Reset Password" : "Welcome Back"}
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            {isForgotPasswordRoute ? "Reset Password" : "Welcome Back"}
           </h1>
-          <p className="text-gray-600 dark:text-gray-200">
-            {showForgot
-              ? "Enter your email and we'll send you a reset link"
-              : "Sign in to your SecureGate account"}
+          <p className="mt-2 text-slate-600 dark:text-slate-400">
+            {isForgotPasswordRoute ? "Enter your email and we'll send you a reset link" : "Sign in to your Secure Gate account"}
           </p>
         </div>
 
-        {/* Main Card */}
-        <GradientCard className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          {showForgot ? (
-            /* Password Reset Form */
-            <form onSubmit={handleForgotPassword} className="space-y-6">
-              <FloatingLabelInput
-                id="resetEmail"
-                type="email"
-                label="Email Address"
-                value={resetEmail}
-                onChange={(e) => {
-                  setResetEmail(e.target.value);
-                  if (e.target.value) validateEmail(e.target.value);
-                }}
-                onBlur={(e) => validateEmail(e.target.value)}
-                error={emailError}
-                icon={<Mail className="w-5 h-5" />}
-                required
-                autoFocus
-              />
-
-              <div className="space-y-3">
-                <GradientButton
-                  type="submit"
-                  variant="primary"
-                  loading={loading}
-                  disabled={loading || !resetEmail}
-                  className="w-full"
-                  icon={<ArrowRight className="w-5 h-5" />}
-                >
-                  {loading ? "Sending..." : "Send Reset Link"}
-                </GradientButton>
-
-                <button
-                  type="button"
-                  className="w-full text-center text-gray-600 dark:text-slate-200 hover:text-gray-900 dark:hover:text-slate-100 text-sm font-medium py-2 transition-colors"
-                  onClick={() => {
-                    setShowForgot(false);
-                    setEmailError("");
-                    setResetEmail("");
-                  }}
-                >
-                  Back to Sign In
-                </button>
-              </div>
-            </form>
-          ) : (
-            /* Login Form */
-            <form onSubmit={handleLogin} className="space-y-6">
-              <FloatingLabelInput
-                id="email"
-                type="email"
-                label="Email Address"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (emailError) validateEmail(e.target.value);
-                }}
-                onBlur={(e) => validateEmail(e.target.value)}
-                error={emailError}
-                icon={<Mail className="w-5 h-5" />}
-                required
-                autoComplete="email"
-                autoFocus
-                aria-invalid={!!emailError}
-                aria-describedby={emailError ? "email-error" : undefined}
-              />
-
-              <FloatingLabelInput
-                id="password"
-                type={showPassword ? "text" : "password"}
-                label="Password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (passwordError) validatePassword(e.target.value);
-                }}
-                onBlur={(e) => validatePassword(e.target.value)}
-                error={passwordError}
-                icon={<Lock className="w-5 h-5" />}
-                required
-                autoComplete="current-password"
-                aria-invalid={!!passwordError}
-                aria-describedby={passwordError ? "password-error" : undefined}
-                endIcon={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-gray-500 hover:text-gray-600 dark:text-gray-300 transition-colors p-2 -m-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                }
-              />
-
-              <div className="flex items-center justify-between">
-                <Checkbox
-                  id="remember-me"
-                  label="Remember me"
-                  checked={remember}
-                  onCheckedChange={(checked) => setRemember(checked)}
-                />
-
-                <button
-                  type="button"
-                  className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
-                  onClick={() => {
-                    setShowForgot(true);
-                    setEmailError("");
-                    setPasswordError("");
-                  }}
-                >
-                  Forgot password?
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <GradientButton
-                  ref={buttonRef}
-                  type="submit"
-                  variant="primary"
-                  loading={loading}
-                  disabled={loading || !email || !password}
-                  className="w-full"
-                  icon={loading ? null : <ArrowRight className="w-5 h-5" />}
-                >
-                  {loading ? "Signing in..." : "Sign In"}
-                </GradientButton>
-
-                {/* Security Features */}
-                <div className="flex items-center justify-center space-x-4 text-xs text-gray-500 dark:text-gray-300">
-                  <span className="flex items-center">
-                    <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
-                    SSL Secured
-                  </span>
-                  <span className="flex items-center">
-                    <KeyRound className="w-3 h-3 mr-1 text-green-500" />
-                    2FA Available
-                  </span>
-                </div>
-              </div>
-            </form>
-          )}
+        <GradientCard className="p-6 sm:p-8 shadow-xl border-t-4 border-t-brand-500">
+          {isForgotPasswordRoute ? renderForgotPasswordForm() : renderLoginForm()}
         </GradientCard>
 
-        {/* Sign Up Link */}
-        {!showForgot && (
-          <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <span className="text-sm text-gray-600 dark:text-gray-200">
-              Don't have an account?{" "}
-              <Link
-                to="/register"
-                className="text-green-600 hover:text-green-700 font-semibold transition-colors"
-              >
-                Sign up
-              </Link>
-            </span>
-          </div>
+        {!isForgotPasswordRoute && (
+          <p className="mt-5 text-center text-sm text-slate-600 dark:text-slate-300">
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="font-semibold text-brand-700 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300">
+              Sign up
+            </Link>
+          </p>
         )}
 
-        {/* Keyboard Shortcuts Hint */}
-        <div className="mt-6 text-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          <p className="text-xs text-gray-500 dark:text-gray-300">
-            💡 Press{" "}
-            <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded">
-              Ctrl
-            </kbd>{" "}
-            +{" "}
-            <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded">
-              Enter
-            </kbd>{" "}
-            to sign in
+        <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+          By signing in, you agree to our{' '}
+          <Link to="/terms-of-service" className="font-medium text-brand-700 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy-policy" className="font-medium text-brand-700 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300">
+            Privacy Policy
+          </Link>
+        </p>
+
+        {!isForgotPasswordRoute && (
+          <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
+            Tip: Press{" "}
+            <kbd className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-semibold dark:border-slate-600 dark:bg-slate-700">Ctrl</kbd>
+            {" "}+{" "}
+            <kbd className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-semibold dark:border-slate-600 dark:bg-slate-700">Enter</kbd>
+            {" "}to sign in quickly.
           </p>
-        </div>
+        )}
       </div>
     </div>
   );

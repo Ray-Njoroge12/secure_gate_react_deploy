@@ -141,6 +141,13 @@ router.get('/visitor/:visitorId', async (req, res) => {
   try {
     const visitorId = parseInt(req.params.visitorId);
     const { token } = req.query;
+
+    if (Number.isNaN(visitorId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid visitor ID'
+      });
+    }
     
     if (!token) {
       return res.status(400).json({
@@ -172,9 +179,26 @@ router.get('/visitor/:visitorId', async (req, res) => {
 router.get('/visitor/:visitorId/share', async (req, res) => {
   try {
     const visitorId = parseInt(req.params.visitorId);
-    
-    const result = await directionsService.generateShareableLink(visitorId);
-    
+    const { token } = req.query;
+
+    if (Number.isNaN(visitorId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid visitor ID'
+      });
+    }
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invite token is required'
+      });
+    }
+
+    const result = await directionsService.generateShareableLink(visitorId, token);
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
     res.json(result);
   } catch (error) {
     console.error('Generate shareable link error:', error);

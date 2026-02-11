@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
 import { navigateTo } from '../../utils/appNavigation';
 import './ErrorBoundary.css';
+import Button from '../ui/Button';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -228,7 +229,7 @@ class ErrorBoundary extends Component {
               </details>
             )}
           <div className="error-boundary__actions">
-            <button
+            <Button
               className="error-boundary__button error-boundary__button--primary"
               onClick={this.handleRetry}
               disabled={isRetrying}
@@ -236,7 +237,7 @@ class ErrorBoundary extends Component {
               title="Press Ctrl/Cmd + R to retry"
             >
               {isRetrying ? 'Retrying...' : 'Try Again'}
-            </button>
+            </Button>
           </div>
           <div className="error-boundary__help">
             <p className="error-boundary__keyboard-help">
@@ -298,7 +299,7 @@ class ErrorBoundary extends Component {
             )}
 
             <div className="error-boundary__actions">
-              <button
+              <Button
                 className="error-boundary__button error-boundary__button--primary"
                 onClick={this.handleRetry}
                 disabled={isRetrying || retryCount >= 3}
@@ -306,34 +307,34 @@ class ErrorBoundary extends Component {
                 title="Press Ctrl/Cmd + R to retry"
               >
                 {isRetrying ? 'Retrying...' : 'Try Again'}
-              </button>
+              </Button>
               
-              <button
+              <Button
                 className="error-boundary__button error-boundary__button--secondary"
                 onClick={this.handleReload}
                 aria-label="Reload the entire page"
                 title="Press Ctrl/Cmd + L to reload"
               >
                 Reload Page
-              </button>
+              </Button>
               
-              <button
+              <Button
                 className="error-boundary__button error-boundary__button--secondary"
                 onClick={this.handleGoHome}
                 aria-label="Go to the home page"
                 title="Press Ctrl/Cmd + H or Escape to go home"
               >
                 Go Home
-              </button>
+              </Button>
               
-              <button
+              <Button
                 className="error-boundary__button error-boundary__button--outline"
                 onClick={this.handleReportBug}
                 aria-label="Report this bug to support"
                 title="Press Ctrl/Cmd + B to report bug"
               >
                 Report Bug
-              </button>
+              </Button>
             </div>
 
             <div className="error-boundary__help">

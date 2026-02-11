@@ -5,6 +5,7 @@
 
 import React from 'react';
 import './SearchResults.css';
+import Button from '../ui/Button';
 
 const SearchResults = ({
   results,
@@ -172,7 +173,7 @@ const SearchResults = ({
           
           <div className="results-list">
             {items.map((result, index) => (
-              <div
+              <div role="button" tabIndex={0}
                 key={`${type}-${result.id || index}`}
                 className="result-item"
                 onClick={() => handleResultClick(result)}
@@ -243,7 +244,7 @@ const SearchResults = ({
                 </div>
                 
                 <div className="result-actions">
-                  <button
+                  <Button
                     className="result-action-btn"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -252,7 +253,7 @@ const SearchResults = ({
                     aria-label={`View details for ${result.title || result.name}`}
                   >
                     →
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -262,7 +263,7 @@ const SearchResults = ({
       
       {results.pagination && results.pagination.hasMore && (
         <div className="results-pagination">
-          <button
+          <Button
             className="btn btn-outline load-more-btn"
             onClick={() => {
               // Handle load more - this would be passed from parent
@@ -270,7 +271,7 @@ const SearchResults = ({
             }}
           >
             Load More Results
-          </button>
+          </Button>
         </div>
       )}
     </div>

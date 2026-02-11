@@ -12,7 +12,11 @@ import {
   getVisitorMetrics,
   getIncidentMetrics,
   getGuardMetrics,
-  getResidentMetrics
+  getResidentMetrics,
+  getActivitySummary,
+  getActivityFeed,
+  getActivityTrends,
+  getActivityAnomalies
 } from '../controllers/adminAnalyticsController.js';
 
 const router = express.Router();
@@ -64,5 +68,33 @@ router.get('/guards', authenticateToken, requireAdmin, analyticsLimiter, getGuar
  * @access Private (admin only)
  */
 router.get('/residents', authenticateToken, requireAdmin, analyticsLimiter, getResidentMetrics);
+
+/**
+ * @route GET /api/admin/analytics/activity/summary
+ * @desc Get activity summary
+ * @access Private (admin only)
+ */
+router.get('/activity/summary', authenticateToken, requireAdmin, analyticsLimiter, getActivitySummary);
+
+/**
+ * @route GET /api/admin/analytics/activity/feed
+ * @desc Get activity feed
+ * @access Private (admin only)
+ */
+router.get('/activity/feed', authenticateToken, requireAdmin, analyticsLimiter, getActivityFeed);
+
+/**
+ * @route GET /api/admin/analytics/activity/trends
+ * @desc Get activity trends
+ * @access Private (admin only)
+ */
+router.get('/activity/trends', authenticateToken, requireAdmin, analyticsLimiter, getActivityTrends);
+
+/**
+ * @route GET /api/admin/analytics/activity/anomalies
+ * @desc Get activity anomalies
+ * @access Private (admin only)
+ */
+router.get('/activity/anomalies', authenticateToken, requireAdmin, analyticsLimiter, getActivityAnomalies);
 
 export default router;

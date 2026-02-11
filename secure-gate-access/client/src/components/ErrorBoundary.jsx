@@ -15,6 +15,7 @@ import React from 'react';
 import * as Sentry from '@sentry/react';
 import { captureException, showReportDialog } from '../config/sentry';
 import { navigateTo } from '../utils/appNavigation';
+import Button from './ui/Button';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -136,28 +137,28 @@ class ErrorBoundary extends React.Component {
             )}
 
             <div style={styles.buttonContainer}>
-              <button
+              <Button
                 onClick={this.handleReset}
                 style={styles.primaryButton}
               >
                 Try Again
-              </button>
+              </Button>
 
               {this.state.eventId && (
-                <button
+                <Button
                   onClick={this.handleReportFeedback}
                   style={styles.secondaryButton}
                 >
                   Report Feedback
-                </button>
+                </Button>
               )}
 
-              <button
+              <Button
                 onClick={() => navigateTo('/')}
                 style={styles.secondaryButton}
               >
                 Go to Home
-              </button>
+              </Button>
             </div>
 
             {this.state.eventId && (

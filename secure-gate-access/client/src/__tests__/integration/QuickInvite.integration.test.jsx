@@ -188,7 +188,7 @@ describe('QuickInvite Integration Tests', () => {
       await user.click(screen.getByText('Pick Date'));
 
       await waitFor(() => {
-        expect(screen.getByRole('textbox', { name: '' }) || screen.getByDisplayValue('')).toBeInTheDocument();
+        expect(screen.getByLabelText('Custom visit date')).toBeInTheDocument();
       });
     });
 
@@ -234,7 +234,7 @@ describe('QuickInvite Integration Tests', () => {
 
       // Check success details
       expect(screen.getByText(/Test Visitor will receive an SMS/)).toBeInTheDocument();
-      expect(screen.getByText('What happens next?')).toBeInTheDocument();
+      expect(screen.getByText('Next Steps:')).toBeInTheDocument();
     });
 
     it('shows share options on success', async () => {

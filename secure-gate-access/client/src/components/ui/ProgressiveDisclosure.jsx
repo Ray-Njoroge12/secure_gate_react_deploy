@@ -12,16 +12,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import logger from 'utils/logger';
-import { 
-  ChevronDown, 
-  ChevronRight, 
-  Info, 
-  AlertCircle, 
-  CheckCircle,
-  Settings,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import Icon from './Icon';
 import { Button, Card, Badge } from './index';
 import { componentTokens } from '../../design-system';
 
@@ -274,13 +265,13 @@ const ProgressiveDisclosure = ({
   const getStatusIcon = (status) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-400" />;
+        return <Icon name="CheckCircle" className="w-4 h-4 text-green-400" />;
       case 'error':
-        return <AlertCircle className="w-4 h-4 text-red-400" />;
+        return <Icon name="AlertCircle" className="w-4 h-4 text-red-400" />;
       case 'warning':
-        return <AlertCircle className="w-4 h-4 text-yellow-400" />;
+        return <Icon name="AlertCircle" className="w-4 h-4 text-yellow-400" />;
       case 'required':
-        return <AlertCircle className="w-4 h-4 text-blue-400" />;
+        return <Icon name="AlertCircle" className="w-4 h-4 text-blue-400" />;
       default:
         return null;
     }
@@ -319,7 +310,7 @@ const ProgressiveDisclosure = ({
                 size="sm"
                 onClick={toggleAll}
                 disabled={isAnimating}
-                icon={allExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                icon={allExpanded ? <Icon name="ChevronDown" className="w-4 h-4" /> : <Icon name="ChevronRight" className="w-4 h-4" />}
               >
                 {allExpanded ? 'Collapse All' : 'Expand All'}
               </Button>
@@ -330,7 +321,7 @@ const ProgressiveDisclosure = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                icon={showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                icon={showAdvanced ? <Icon name="EyeOff" className="w-4 h-4" /> : <Icon name="Eye" className="w-4 h-4" />}
               >
                 {showAdvanced ? 'Hide' : 'Show'} Advanced
               </Button>
@@ -380,24 +371,16 @@ const ProgressiveDisclosure = ({
                   {/* Expand/Collapse Icon */}
                   <div className="flex-shrink-0">
                     {isExpanded ? (
-                      <ChevronDown className={`${sizeStyles.icon} text-slate-400`} />
+                      <Icon name="ChevronDown" className={`${sizeStyles.icon} text-slate-400`} />
                     ) : (
-                      <ChevronRight className={`${sizeStyles.icon} text-slate-400`} />
+                      <Icon name="ChevronRight" className={`${sizeStyles.icon} text-slate-400`} />
                     )}
                   </div>
                   
                   {/* Section Icon */}
                   {showIcons && section.icon && (
                     <div className="flex-shrink-0">
-                      {typeof section.icon === 'string' ? (
-                        <div className={`${sizeStyles.icon} text-slate-400`}>
-                          {section.icon}
-                        </div>
-                      ) : (
-                        <div className={`${sizeStyles.icon} text-slate-400`}>
-                          {section.icon}
-                        </div>
-                      )}
+                      <Icon name={section.icon} className={`${sizeStyles.icon} text-slate-400`} />
                     </div>
                   )}
                   
@@ -472,6 +455,25 @@ const ProgressiveDisclosure = ({
               })
             : children
           }
+        </div>
+      )}
+      
+      {/* Advanced Options Toggle */}
+      {showAdvancedToggle && (
+        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center text-sm text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-200 transition-colors duration-200"
+          >
+             <Icon name="Settings" className="w-4 h-4 mr-2" />
+            {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+            {showAdvanced ? (
+              <Icon name="ChevronDown" className="w-4 h-4 ml-1" />
+            ) : (
+              <Icon name="ChevronRight" className="w-4 h-4 ml-1" />
+            )}
+          </button>
         </div>
       )}
     </div>

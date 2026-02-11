@@ -583,7 +583,7 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
     // Store temporary session for MFA verification (expires in 5 minutes)
     const mfaSessionId = randomBytes(32).toString('hex');
     const mfaSessionExpiry = new Date(Date.now() + 5 * 60 * 1000);
-    
+
     await userService.db.query(
       `INSERT INTO additional_auth_sessions (session_id, user_id, operation, required_factors, expires_at, context, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -661,7 +661,7 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
       email: user.email,
       role: user.role,
       estate_id: user.estate_id,
-      mfa_enabled: user.mfa_enabled || false
+      mfaEnabled: user.mfa_enabled || false
     },
     ...(isWebClient
       ? { session: { type: 'cookie' } }

@@ -10,8 +10,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, Users, Clock, CheckCircle, RefreshCw, WifiOff, AlertCircle } from 'lucide-react';
+
 import { Card, Button } from '../ui';
+import Icon from '../ui/Icon';
 
 const VisitorInsights = () => {
   const [insights, setInsights] = useState({
@@ -123,14 +124,30 @@ const VisitorInsights = () => {
         )
       ]);
 
-      const thisWeekCount = weekData.success ? weekData.data?.pagination?.total || 0 : 0;
-      const thisMonthCount = monthData.success ? monthData.data?.pagination?.total || 0 : 0;
-      const onPremiseCount = onPremiseData.success ? onPremiseData.data?.pagination?.total || 0 : 0;
+      const getVisitors = (payload) => {
+        if (Array.isArray(payload?.data)) {
+          return payload.data;
+        }
+        return payload?.data?.visitors || payload?.data?.data || [];
+      };
+
+      const weekVisitors = getVisitors(weekData);
+      const monthVisitors = getVisitors(monthData);
+      const onPremiseVisitors = getVisitors(onPremiseData);
+
+      const thisWeekCount = weekData.success
+        ? weekData.data?.pagination?.total ?? weekVisitors.length
+        : 0;
+      const thisMonthCount = monthData.success
+        ? monthData.data?.pagination?.total ?? monthVisitors.length
+        : 0;
+      const onPremiseCount = onPremiseData.success
+        ? onPremiseData.data?.pagination?.total ?? onPremiseVisitors.length
+        : 0;
 
       // Calculate frequent visitors from month data
-      const visitors = monthData.success ? (monthData.data?.data || []) : [];
       const visitorCounts = {};
-      visitors.forEach(v => {
+      monthVisitors.forEach(v => {
         if (v.name) {
           visitorCounts[v.name] = (visitorCounts[v.name] || 0) + 1;
         }
@@ -187,7 +204,7 @@ const VisitorInsights = () => {
     return (
       <Card>
         <Card.Header>
-          <Card.Title className="text-slate-200">Visitor Insights</Card.Title>
+          <Card.Title className="text-gray-900 dark:text-slate-200">Visitor Insights</Card.Title>
         </Card.Header>
         <Card.Content>
           <div className="flex justify-center py-8">
@@ -203,23 +220,23 @@ const VisitorInsights = () => {
     return (
       <Card>
         <Card.Header>
-          <Card.Title className="text-slate-200 dark:text-slate-100 flex items-center gap-2">
-            {isOffline ? <WifiOff className="w-5 h-5 text-yellow-500" aria-hidden="true" /> : <AlertCircle className="w-5 h-5 text-red-500" aria-hidden="true" />}
+          <Card.Title className="text-gray-900 dark:text-slate-100 flex items-center gap-2">
+            {isOffline ? <Icon name="wifi-off" className="w-5 h-5 text-yellow-500" aria-hidden="true" /> : <Icon name="alert-circle" className="w-5 h-5 text-red-500" aria-hidden="true" />}
             Visitor Insights
           </Card.Title>
         </Card.Header>
         <Card.Content>
           <div className="text-center py-6">
-            <p className="text-slate-400 dark:text-slate-300 mb-4">{error}</p>
+            <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
             {!isOffline && retryCount < 3 && (
-              <button
+              <Button
                 onClick={handleRetry}
                 className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 flex items-center gap-2 mx-auto min-h-[44px]"
                 aria-label="Retry loading insights"
               >
-                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                <Icon name="refresh-cw" className="w-4 h-4" aria-hidden="true" />
                 Retry
-              </button>
+              </Button>
             )}
           </div>
         </Card.Content>
@@ -231,13 +248,13 @@ const VisitorInsights = () => {
     <Card>
       <Card.Header>
         <div className="flex items-center justify-between">
-          <Card.Title className="text-slate-200 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" aria-hidden="true" />
+          <Card.Title className="text-gray-900 dark:text-slate-200 flex items-center gap-2">
+            <Icon name="trending-up" className="w-5 h-5" aria-hidden="true" />
             Visitor Insights
-            {isOffline && <WifiOff className="w-4 h-4 text-yellow-500 ml-2" aria-label="Offline - showing cached data" />}
+            {isOffline && <Icon name="wifi-off" className="w-4 h-4 text-yellow-500 ml-2" aria-label="Offline - showing cached data" />}
           </Card.Title>
           {lastUpdated && (
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-gray-500 dark:text-slate-400">
               Updated {lastUpdated.toLocaleTimeString()}
             </span>
           )}
@@ -249,11 +266,11 @@ const VisitorInsights = () => {
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500 rounded-lg" aria-hidden="true">
-                <Clock className="w-5 h-5 text-white" aria-hidden="true" />
+                <Icon name="clock" className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-blue-400">{insights.thisWeek}</p>
-                <p className="text-sm text-slate-400">This Week</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">This Week</p>
               </div>
             </div>
           </div>
@@ -262,11 +279,11 @@ const VisitorInsights = () => {
           <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-500 rounded-lg" aria-hidden="true">
-                <Users className="w-5 h-5 text-white" aria-hidden="true" />
+                <Icon name="users" className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-purple-400">{insights.thisMonth}</p>
-                <p className="text-sm text-slate-400">This Month</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">This Month</p>
               </div>
             </div>
           </div>
@@ -275,11 +292,11 @@ const VisitorInsights = () => {
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500 rounded-lg" aria-hidden="true">
-                <CheckCircle className="w-5 h-5 text-white" aria-hidden="true" />
+                <Icon name="check-circle" className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-green-400">{insights.onPremise}</p>
-                <p className="text-sm text-slate-400">On Premise Now</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">On Premise Now</p>
               </div>
             </div>
           </div>
@@ -288,15 +305,15 @@ const VisitorInsights = () => {
         {/* Frequent Visitors */}
         {insights.frequentVisitors.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-slate-300 mb-3">Frequent Visitors (Last 30 Days)</h4>
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Frequent Visitors (Last 30 Days)</h4>
             <div className="space-y-2">
               {insights.frequentVisitors.map((visitor, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between bg-slate-800 rounded-lg p-3"
+                  className="flex items-center justify-between bg-gray-100 dark:bg-slate-800 rounded-lg p-3"
                 >
-                  <span className="text-slate-200">{visitor.name}</span>
-                  <span className="text-sm text-slate-400">{visitor.count} visits</span>
+                  <span className="text-gray-900 dark:text-slate-200">{visitor.name}</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-400">{visitor.count} visits</span>
                 </div>
               ))}
             </div>

@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import deliveryService from '../../services/deliveryService';
+import Button from '../ui/Button';
 
 const RegisterDelivery = ({ onSuccess, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -264,7 +265,7 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
                 alt="Package"
                 className="w-full h-48 object-cover rounded-md"
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => {
                   setPhoto(null);
@@ -273,17 +274,17 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
                 className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full"
               >
                 ✕
-              </button>
+              </Button>
             </div>
           ) : (
-            <button
+            <Button
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="w-full p-4 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-md text-center hover:border-gray-400"
             >
               <span className="text-3xl">📷</span>
               <p className="text-sm text-gray-600 dark:text-gray-200 mt-1">Tap to capture photo</p>
-            </button>
+            </Button>
           )}
           <p className="text-xs text-gray-500 dark:text-gray-300 mt-1">🔒 Photo auto-deletes 30 days after collection</p>
         </div>
@@ -306,21 +307,21 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
         {/* Actions */}
         <div className="flex gap-3 pt-4">
           {onCancel && (
-            <button
+            <Button
               type="button"
               onClick={onCancel}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700"
             >
               Cancel
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             type="submit"
             disabled={loading}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? 'Registering...' : 'Register & Notify Resident'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

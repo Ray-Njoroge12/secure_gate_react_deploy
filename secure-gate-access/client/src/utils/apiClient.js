@@ -175,8 +175,21 @@ apiClient.interceptors.response.use(
       });
     }
 
-    // Handle 403 - Forbidden (estate required or CSRF)
+    // Handle 403 - Forbidden (estate required or CSRF or MFA setup required)
     if (error.response.status === 403) {
+      const errorCode = error.response.data?.error?.code || error.response.data?.code;
+      
+      // Handle MFA setup requirement
+      if (errorCode === 'MFA_SETUP_REQUIRED') {
+        logger.warn('🔐 MFA setup required');
+        const returnUrl = window.location.pathname;
+        window.location.href = `/mfa/setup?returnUrl=${encodeURIComponent(returnUrl)}`;
+        return Promise.reject({
+          message: error.response.data?.message || 'Multi-Factor Authentication setup required.',
+          code: 'MFA_SETUP_REQUIRED'
+        });
+      }
+      
       const estateCode = error.response.data?.error?.code;
       if (estateCode === 'ESTATE_REQUIRED' || estateCode === 'ESTATE_INVALID') {
         if (!window.location.pathname.includes('/estate-required')) {
@@ -272,7 +285,6 @@ async function refreshCSRFToken() {
       return csrfToken;
     }
   } catch (error) {
-    logger.error('Failed to refresh CSRF token:', error);
     throw error;
   }
 }

@@ -58,8 +58,8 @@ const checkInVisitor = async (req, res) => {
     );
 
     // Broadcast SSE update
-    broadcastVisitorCheckIn(id, 'checkin');
-    broadcastVisitorUpdate(id, PASS_STATUS.ON_PREMISE, 'checkin');
+    broadcastVisitorCheckIn(id, 'checkin', req.user.estate_id);
+    broadcastVisitorUpdate(id, PASS_STATUS.ON_PREMISE, 'checkin', req.user.estate_id);
 
     // Emit real-time WebSocket event for dashboard updates (Phase 2.3)
     try {
@@ -164,8 +164,8 @@ const checkOutVisitor = async (req, res) => {
     );
 
     // Broadcast SSE update
-    broadcastVisitorCheckIn(id, 'checkout');
-    broadcastVisitorUpdate(id, PASS_STATUS.CHECKED_OUT, 'checkout');
+    broadcastVisitorCheckIn(id, 'checkout', req.user.estate_id);
+    broadcastVisitorUpdate(id, PASS_STATUS.CHECKED_OUT, 'checkout', req.user.estate_id);
 
     // Emit real-time WebSocket event for dashboard updates (Phase 2.3)
     try {

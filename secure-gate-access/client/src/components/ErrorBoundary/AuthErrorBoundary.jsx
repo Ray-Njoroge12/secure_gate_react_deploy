@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import ErrorBoundary from './ErrorBoundary';
 import { navigateToLogin } from '../../utils/authNavigation';
 import './AuthErrorBoundary.css';
+import Button from '../ui/Button';
 
 const AuthErrorFallback = ({ 
   error, 
@@ -54,27 +55,27 @@ const AuthErrorFallback = ({
         )}
 
         <div className="auth-error-boundary__actions">
-          <button
+          <Button
             className="auth-error-boundary__button auth-error-boundary__button--primary"
             onClick={handleLogin}
           >
             Log In Again
-          </button>
+          </Button>
           
-          <button
+          <Button
             className="auth-error-boundary__button auth-error-boundary__button--secondary"
             onClick={onRetry}
             disabled={isRetrying || retryCount >= 2}
           >
             {isRetrying ? 'Retrying...' : 'Try Again'}
-          </button>
+          </Button>
           
-          <button
+          <Button
             className="auth-error-boundary__button auth-error-boundary__button--outline"
             onClick={onGoHome}
           >
             Go Home
-          </button>
+          </Button>
         </div>
 
         <div className="auth-error-boundary__help">

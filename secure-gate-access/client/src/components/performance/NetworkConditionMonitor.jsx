@@ -9,6 +9,7 @@ import React, { useState, useEffect, useContext, createContext } from 'react';
 import performanceService from '../../services/performanceService.js';
 import logger from '../../utils/logger.js';
 import './NetworkConditionMonitor.css';
+import Button from '../ui/Button';
 
 // Network Context
 const NetworkContext = createContext({
@@ -339,13 +340,13 @@ const NetworkBanner = ({ networkState, onDismiss }) => {
           <div className="network-banner__message">{config.message}</div>
         </div>
       </div>
-      <button 
+      <Button 
         className="network-banner__dismiss"
         onClick={onDismiss}
         aria-label="Dismiss notification"
       >
         ×
-      </button>
+      </Button>
     </div>
   );
 };

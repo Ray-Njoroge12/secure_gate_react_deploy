@@ -433,7 +433,7 @@ const WelcomeFlow = ({
         {/* Step Content */}
         <main className="welcome-flow__content">
           {currentStepData && (
-            <div className="step-container bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 mb-6">
+            <div className="step-container bg-white dark:bg-slate-800 rounded-lg shadow-sm p-8 mb-6">
               <div className="step-header mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -491,22 +491,22 @@ const WelcomeFlow = ({
         {/* Navigation Controls */}
         <footer className="welcome-flow__navigation flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button
+            <Button
               onClick={handlePrevious}
               disabled={currentStep === 0}
               className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               aria-label="Go to previous step"
             >
               ← Previous
-            </button>
+            </Button>
             
-            <button
+            <Button
               onClick={handleSkip}
               className="px-4 py-2 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
               aria-label="Skip welcome flow"
             >
               Skip for now
-            </button>
+            </Button>
           </div>
 
           <div className="flex items-center space-x-4">

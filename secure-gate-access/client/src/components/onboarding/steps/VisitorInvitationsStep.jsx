@@ -152,7 +152,7 @@ const VisitorInvitationsStep = ({
             const isCompleted = demoProgress.has(stage.id);
             
             return (
-              <button
+              <Button
                 key={stage.id}
                 onClick={() => setCurrentDemo(stage.id)}
                 className={`
@@ -160,7 +160,7 @@ const VisitorInvitationsStep = ({
                   ${isActive 
                     ? 'bg-blue-500 text-white shadow-md' 
                     : isCompleted
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                      ? 'bg-brand-100 text-brand-800 dark:bg-brand-900/20 dark:text-brand-300'
                       : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
                   }
                 `}
@@ -170,7 +170,7 @@ const VisitorInvitationsStep = ({
                   {isCompleted ? '✓' : index + 1}
                 </span>
                 {stage.title}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -178,7 +178,7 @@ const VisitorInvitationsStep = ({
 
       {/* Current Stage Content */}
       {currentStage && (
-        <div className="demo-stage bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-6">
+        <div className="demo-stage bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-6">
           <div className="stage-header mb-6">
             <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               {currentStage.title}
@@ -296,12 +296,12 @@ const VisitorInvitationsStep = ({
                       <span className="text-gray-900 dark:text-white">Social Visit</span>
                     </div>
                   </div>
-                  <button
+                  <Button
                     onClick={() => !isStageCompleted && handleStageComplete('preview')}
-                    className="w-full mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                    className="w-full mt-4 px-4 py-2 bg-brand-600 text-white rounded-md hover:bg-brand-700 transition-colors"
                   >
                     Send Invitation
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -320,12 +320,12 @@ const VisitorInvitationsStep = ({
                     <div>Valid until: Today 11:59 PM</div>
                     <div>Security Level: Encrypted</div>
                   </div>
-                  <button
+                  <Button
                     onClick={() => !isStageCompleted && handleStageComplete('qr-code')}
                     className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
                   >
                     Understand QR System
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -363,14 +363,14 @@ const VisitorInvitationsStep = ({
 
       {/* Completion Message */}
       {isCompleted && (
-        <div className="completion-message mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <div className="completion-message mt-6 p-4 bg-brand-50 dark:bg-brand-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
           <div className="flex items-center">
             <span className="text-2xl mr-3" role="img" aria-label="Success">🎉</span>
             <div>
-              <p className="font-medium text-green-900 dark:text-green-100">
+              <p className="font-medium text-brand-900 dark:text-brand-100">
                 Excellent! You've mastered the invitation process.
               </p>
-              <p className="text-sm text-green-700 dark:text-green-300">
+              <p className="text-sm text-brand-700 dark:text-brand-300">
                 Ready to learn about managing your guests?
               </p>
             </div>

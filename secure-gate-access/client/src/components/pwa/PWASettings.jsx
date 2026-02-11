@@ -4,6 +4,7 @@ import { PWAContext } from './PWAManager';
 import pushNotificationService from '../../services/pushNotificationService';
 import backgroundSyncService from '../../services/backgroundSyncService';
 import offlineService from '../../services/offlineService';
+import Button from '../ui/Button';
 
 const PWASettings = () => {
   const { pwaStatus, installApp, enableNotifications } = useContext(PWAContext);
@@ -249,9 +250,9 @@ const PWASettings = () => {
             {pwaStatus.isInstalled ? (
               <span className="status-badge installed">✓ Installed</span>
             ) : pwaStatus.isInstallable ? (
-              <button className="install-btn" onClick={installApp}>
+              <Button className="install-btn" onClick={installApp}>
                 Install App
-              </button>
+              </Button>
             ) : (
               <span className="status-badge unavailable">Not Available</span>
             )}
@@ -392,9 +393,9 @@ const PWASettings = () => {
             )}
 
             <div className="setting-actions">
-              <button className="test-btn" onClick={testNotification}>
+              <Button className="test-btn" onClick={testNotification}>
                 Send Test Notification
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -422,9 +423,9 @@ const PWASettings = () => {
             <p>{settings.offline.cache_size} items cached for offline use</p>
           </div>
           <div className="setting-control">
-            <button className="clear-btn" onClick={clearCache}>
+            <Button className="clear-btn" onClick={clearCache}>
               Clear Cache
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -439,13 +440,13 @@ const PWASettings = () => {
             </p>
           </div>
           <div className="setting-control">
-            <button 
+            <Button 
               className="sync-btn" 
               onClick={forcSync}
               disabled={saving || !pwaStatus.isOnline}
             >
               {saving ? 'Syncing...' : 'Force Sync'}
-            </button>
+            </Button>
           </div>
         </div>
 

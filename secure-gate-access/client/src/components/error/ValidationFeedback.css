@@ -324,3 +324,48 @@
     color: #fde68a;
   }
 }
+
+/* Class-based Dark Mode */
+html.dark .validation-feedback--error { color: #f87171; }
+html.dark .validation-feedback--warning { color: #fbbf24; }
+html.dark .validation-feedback--valid { color: #34d399; }
+html.dark .validation-feedback--validating { color: #60a5fa; }
+html.dark .validation-feedback--neutral { color: #9ca3af; }
+
+html.dark .validation-feedback__messages--error .validation-feedback__message { color: #f87171; }
+html.dark .validation-feedback__messages--warning .validation-feedback__message { color: #fbbf24; }
+html.dark .validation-feedback__validating { color: #60a5fa; }
+html.dark .validation-feedback__valid-message { color: #34d399; }
+
+html.dark .validation-feedback__suggestions {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+}
+
+html.dark .validation-feedback__suggestions-title { color: #93c5fd; }
+html.dark .validation-feedback__suggestion { color: #93c5fd; }
+html.dark .validation-feedback__suggestion:before { color: #93c5fd; }
+html.dark .validation-feedback__show-more { color: #93c5fd; }
+html.dark .validation-feedback__show-more:hover { color: #bfdbfe; }
+
+html.dark .validation-feedback--error .validation-feedback__suggestions {
+  background: #7f1d1d;
+  border-color: #dc2626;
+}
+
+html.dark .validation-feedback--error .validation-feedback__suggestions-title { color: #fca5a5; }
+html.dark .validation-feedback--error .validation-feedback__suggestion { color: #fca5a5; }
+html.dark .validation-feedback--error .validation-feedback__suggestion:before { color: #fca5a5; }
+html.dark .validation-feedback--error .validation-feedback__show-more { color: #fca5a5; }
+html.dark .validation-feedback--error .validation-feedback__show-more:hover { color: #fecaca; }
+
+html.dark .validation-feedback--warning .validation-feedback__suggestions {
+  background: #92400e;
+  border-color: #d97706;
+}
+
+html.dark .validation-feedback--warning .validation-feedback__suggestions-title { color: #fcd34d; }
+html.dark .validation-feedback--warning .validation-feedback__suggestion { color: #fcd34d; }
+html.dark .validation-feedback--warning .validation-feedback__suggestion:before { color: #fcd34d; }
+html.dark .validation-feedback--warning .validation-feedback__show-more { color: #fcd34d; }
+html.dark .validation-feedback--warning .validation-feedback__show-more:hover { color: #fde68a; }

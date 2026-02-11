@@ -10,6 +10,7 @@ import privacyService from '../../services/privacyService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import './PrivacySettings.css';
+import Button from '../ui/Button';
 
 const PrivacySettings = () => {
   const { user } = useAuth();
@@ -128,30 +129,30 @@ const PrivacySettings = () => {
       </div>
 
       <div className="privacy-tabs">
-        <button
+        <Button
           className={`tab-button ${activeTab === 'privacy-controls' ? 'active' : ''}`}
           onClick={() => setActiveTab('privacy-controls')}
         >
           Privacy Controls
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab-button ${activeTab === 'consent-management' ? 'active' : ''}`}
           onClick={() => setActiveTab('consent-management')}
         >
           Consent Management
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab-button ${activeTab === 'data-rights' ? 'active' : ''}`}
           onClick={() => setActiveTab('data-rights')}
         >
           Your Data Rights
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab-button ${activeTab === 'audit-trail' ? 'active' : ''}`}
           onClick={() => setActiveTab('audit-trail')}
         >
           Privacy Audit Trail
-        </button>
+        </Button>
       </div>
 
       <div className="privacy-content">
@@ -323,13 +324,13 @@ const ConsentManagementTab = ({ consentStatus, onConsentClick, saving }) => {
               </div>
 
               <div className="consent-actions">
-                <button
+                <Button
                   className={`consent-button ${consent.granted ? 'withdraw' : 'grant'}`}
                   onClick={() => onConsentClick(consentType)}
                   disabled={saving}
                 >
                   {consent.granted ? 'Withdraw Consent' : 'Grant Consent'}
-                </button>
+                </Button>
               </div>
             </div>
           ))}
@@ -446,13 +447,13 @@ const DataRightsTab = ({ user }) => {
             />
           </div>
 
-          <button
+          <Button
             type="submit"
             className="submit-request-button"
             disabled={submitting}
           >
             {submitting ? 'Submitting...' : 'Submit Request'}
-          </button>
+          </Button>
         </form>
 
         <div className="request-info">
@@ -550,18 +551,18 @@ const ConsentModal = ({ consentType, currentStatus, onConfirm, onCancel }) => {
         </div>
 
         <div className="modal-actions">
-          <button
+          <Button
             className="cancel-button"
             onClick={onCancel}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             className={`confirm-button ${isGranting ? 'grant' : 'withdraw'}`}
             onClick={() => onConfirm(isGranting)}
           >
             {isGranting ? 'Grant Consent' : 'Withdraw Consent'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

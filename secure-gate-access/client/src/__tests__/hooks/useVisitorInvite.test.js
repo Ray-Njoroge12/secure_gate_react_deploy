@@ -28,6 +28,12 @@ describe('useVisitorInvite', () => {
                     json: () => Promise.resolve({ success: true, data: mockVisitor })
                 });
             }
+            if (url.includes('/api/public/visitors/valid-token/status')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve({ success: true, data: { status: 'pending_approval' } })
+                });
+            }
             if (url.includes('/api/public/estate-info')) {
                 return Promise.resolve({
                     ok: true,
@@ -63,7 +69,7 @@ describe('useVisitorInvite', () => {
             expect(result.current.loading).toBe(false);
         });
 
-        expect(result.current.error).toBe('Invite not found or has expired');
+        expect(result.current.error).toBe('This invitation could not be found. It may have been cancelled or the link is incorrect.');
         expect(result.current.visitor).toBe(null);
     });
 });

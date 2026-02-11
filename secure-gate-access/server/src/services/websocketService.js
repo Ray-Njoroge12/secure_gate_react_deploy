@@ -23,6 +23,35 @@ import {
 } from '../middleware/websocketAuth.js';
 import DashboardEvents from '../events/dashboardEvents.js';
 
+const parseOriginList = (raw = '') => (
+  String(raw || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
+const buildAllowedSocketOrigins = () => {
+  const configuredOrigins = new Set([
+    process.env.FRONTEND_URL,
+    process.env.CLIENT_ORIGIN,
+    process.env.STAGING_CLIENT_ORIGIN,
+    ...parseOriginList(process.env.ADDITIONAL_ORIGINS),
+    ...parseOriginList(process.env.STAGING_ADDITIONAL_ORIGINS)
+  ].filter(Boolean));
+
+  if (configuredOrigins.size === 0) {
+    configuredOrigins.add('http://localhost:3000');
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    configuredOrigins.add('http://localhost:3000');
+    configuredOrigins.add('http://localhost:3001');
+    configuredOrigins.add('http://127.0.0.1:3000');
+  }
+
+  return Array.from(configuredOrigins);
+};
+
 class WebSocketService {
   constructor() {
     this.io = null;
@@ -79,10 +108,19 @@ class WebSocketService {
       }
     }
 
+    const allowedOrigins = buildAllowedSocketOrigins();
+
     this.io = new Server(server, {
       ...(adapter ? { adapter } : {}),
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: (origin, callback) => {
+          if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+
+          logger.warn('WebSocket CORS blocked origin', { origin });
+          return callback(new Error('CORS policy violation: Origin not allowed'));
+        },
         methods: ["GET", "POST"],
         credentials: true
       },

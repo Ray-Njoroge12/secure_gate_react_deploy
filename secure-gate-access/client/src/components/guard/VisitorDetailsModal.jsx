@@ -6,11 +6,7 @@
  */
 
 import React, { useEffect } from 'react';
-import {
-  X, Phone, Mail, Clock, Calendar, MapPin, Car,
-  UserCheck, UserX, Shield, AlertTriangle, User
-} from 'lucide-react';
-import { Button, Input } from '../ui';
+import { Button, Input, Icon } from '../ui';
 import { getStatusChipClass, getStatusIcon } from '../../utils/statusColors';
 
 /**
@@ -32,7 +28,6 @@ export default function VisitorDetailsModal({
   onCheckOut,
   onVerify,
   onDeny,
-  onContact,
   isLoading = false
 }) {
   const [otp, setOtp] = React.useState('');
@@ -58,294 +53,264 @@ export default function VisitorDetailsModal({
 
   if (!visitor) return null;
 
-  // Determine available actions based on status
-  const isPending = visitor.status === 'PENDING' || visitor.status === 'pending_approval' || visitor.status === 'pending-verification';
-  const isConfirmed = visitor.status === 'CONFIRMED';
-  const isOnPremise = visitor.status === 'ON_PREMISE' || visitor.status === 'on-premise';
-  const isRevoked = visitor.status === 'REVOKED';
-
-  const canCheckIn = isConfirmed;
-  const canCheckOut = isOnPremise || (visitor.check_in_time && !visitor.check_out_time);
-  const canVerify = isPending;
-  const canDeny = isPending || isConfirmed;
-
-  // Format time helper
-  const formatTime = (time) => {
-    if (!time) return 'N/A';
-    if (typeof time === 'string' && time.includes(':')) return time;
-    try {
-      return new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return time;
-    }
-  };
-
-  // Format date helper
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    try {
-      return new Date(date).toLocaleDateString([], {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch {
-      return date;
-    }
-  };
+  const normalizeStatus = (status) => String(status || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  const normalizedStatus = normalizeStatus(visitor.status);
+  const canCheckIn = normalizedStatus === 'APPROVED' || normalizedStatus === 'CONFIRMED';
+  const canCheckOut = normalizedStatus === 'ON_PREMISE' || normalizedStatus === 'CHECKED_IN';
+  const visitorName = visitor.name || `Visitor #${visitor.id || 'N/A'}`;
+  const StatusIcon = getStatusIcon(visitor.status) || 'HelpCircle';
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="visitor-modal-title"
-    >
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div
+        className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 min-w-[44px] min-h-[44px]"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" aria-hidden="true" />
-          </button>
-
-          <div className="flex items-center gap-4">
-            {/* Avatar */}
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold" aria-hidden="true">
-              {visitor.name ? visitor.name.charAt(0).toUpperCase() : <User className="w-8 h-8" aria-hidden="true" />}
-            </div>
-
-            <div>
-              <h2 id="visitor-modal-title" className="text-xl font-bold">
-                {visitor.name || `Visitor #${visitor.id}`}
-              </h2>
-              <p className="text-green-100">{visitor.purpose || 'General Visit'}</p>
-            </div>
-          </div>
-
-          {/* Status Badge */}
-          <div className="mt-4">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-white/20 text-white`}>
-              {getStatusIcon(visitor.status)} {visitor.status || 'Unknown'}
+        <div className="px-6 py-4 border-b dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800 sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <h2 id="modal-title" className="text-xl font-bold text-gray-900 dark:text-slate-100">
+              Visitor Details
+            </h2>
+            <span className={`px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1.5 ${getStatusChipClass(visitor.status)}`}>
+               {/* Use dynamic component rendering for status icon, or fallback to Icon if getStatusIcon returns name string */}
+                {typeof StatusIcon === 'string' ? (
+                   <Icon name={StatusIcon} className="w-4 h-4" />
+                ) : (
+                   <StatusIcon className="w-4 h-4" />
+                )}
+              {normalizedStatus.replace(/_/g, ' ') || 'UNKNOWN'}
             </span>
           </div>
+          <Button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-full transition-colors text-gray-500 dark:text-gray-300"
+            aria-label="Close modal"
+          >
+            <Icon name="X" className="w-6 h-6" />
+          </Button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[50vh]">
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            {/* Check-in Time */}
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-                Check-in
-              </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {formatTime(visitor.check_in_time || visitor.checkInTime)}
-              </p>
-            </div>
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          
+          {/* Main Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* Left Column: Personal & Visit Details */}
+            <div className="space-y-6">
+              <section>
+                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider mb-3">
+                  Visitor Information
+                </h3>
+                <div className="bg-gray-50 dark:bg-slate-700/70 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
+                      {visitorName.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-gray-900 dark:text-white">{visitorName}</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-300 flex items-center gap-1">
+                        <Icon name="Phone" className="w-3 h-3" /> 
+                        {visitor.phone || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {visitor.email && (
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-200">
+                      <Icon name="Mail" className="w-4 h-4" />
+                      <span>{visitor.email}</span>
+                    </div>
+                  )}
 
-            {/* Duration / Check-out */}
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-                {visitor.check_out_time ? 'Check-out' : 'Duration'}
-              </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {visitor.check_out_time
-                  ? formatTime(visitor.check_out_time)
-                  : visitor.duration || 'In progress'
-                }
-              </p>
-            </div>
-
-            {/* Host */}
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <User className="w-3.5 h-3.5" aria-hidden="true" />
-                Host
-              </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {visitor.host || visitor.resident_name || 'N/A'}
-              </p>
-            </div>
-
-            {/* Visit Date */}
-            <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
-                Date
-              </div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {formatDate(visitor.date_of_visit || visitor.created_at)}
-              </p>
-            </div>
-
-            {/* Vehicle (if present) */}
-            {(visitor.vehicleNumber || visitor.vehicle_number) && (
-              <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-3 col-span-2">
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                  <Car className="w-3.5 h-3.5" aria-hidden="true" />
-                  Vehicle
+                  {visitor.company && (
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-200">
+                      <Icon name="Building2" className="w-4 h-4" />
+                      <span>{visitor.company}</span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {visitor.vehicleNumber || visitor.vehicle_number}
-                </p>
-              </div>
-            )}
+              </section>
 
-            {/* Phone (if present) */}
-            {(visitor.phone || visitor.phone_number) && (
-              <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                  <Phone className="w-3.5 h-3.5" />
-                  Phone
-                </div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {visitor.phone || visitor.phone_number}
-                </p>
-              </div>
-            )}
+              <section>
+                <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                  Visit Details
+                </h3>
+                <div className="bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-xl p-4 space-y-3 shadow-sm">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <Icon name="Clock" className="w-4 h-4" />
+                        <span>Expected Arrival</span>
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {visitor.arrival_time ? new Date(visitor.arrival_time).toLocaleTimeString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-gray-500 text-sm">
+                         <Icon name="Calendar" className="w-4 h-4" />
+                        <span>Date</span>
+                      </div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {visitor.arrival_date ? new Date(visitor.arrival_date).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Email (if present) */}
-            {visitor.email && (
-              <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-300 text-xs mb-1">
-                  <Mail className="w-3.5 h-3.5" />
-                  Email
+                  <hr className="border-dashed border-gray-300 dark:border-slate-600" />
+
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                      <Icon name="MapPin" className="w-4 h-4" />
+                      <span>Destination</span>
+                    </div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Unit {visitor.estate_id || 'N/A'} • {visitor.resident_name || 'Unknown Resident'}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {visitor.email}
-                </p>
-              </div>
-            )}
+              </section>
+            </div>
+
+            {/* Right Column: Vehicle & Security */}
+            <div className="space-y-6">
+              <section>
+                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider mb-3">
+                  Vehicle Information
+                </h3>
+                {visitor.license_plate ? (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-medium mb-1">
+                        <Icon name="Car" className="w-4 h-4" />
+                        <span>{visitor.vehicle_model || 'Vehicle'}</span>
+                      </div>
+                      <div className="text-2xl font-mono font-bold text-gray-900 dark:text-slate-100 tracking-wider bg-white dark:bg-slate-700 px-2 py-1 rounded border dark:border-slate-600 inline-block">
+                        {visitor.license_plate}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                       <span className="text-xs text-blue-600 dark:text-blue-300 font-semibold uppercase bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded">
+                         Registered
+                       </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 dark:bg-slate-700/50 border border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-6 text-center text-gray-500 dark:text-gray-300">
+                    <Icon name="Car" className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No vehicle registered</p>
+                  </div>
+                )}
+              </section>
+
+              <section>
+                 <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider mb-3">
+                  Security Actions
+                 </h3>
+                 <div className="mb-3">
+                   <label htmlFor="visitor-otp" className="block text-xs font-medium text-gray-500 dark:text-gray-300 mb-1">
+                     OTP (required for identity verification)
+                   </label>
+                   <Input
+                     id="visitor-otp"
+                     value={otp}
+                     onChange={(event) => setOtp(event.target.value)}
+                     placeholder="Enter OTP"
+                     inputMode="numeric"
+                     maxLength={6}
+                     className="w-full"
+                   />
+                 </div>
+                 <div className="grid grid-cols-2 gap-3">
+                    <Button 
+                      variant="outline" 
+                      className="h-auto py-3 flex flex-col gap-2 items-center justify-center border-gray-200 dark:border-slate-600 hover:border-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-700"
+                      onClick={() => onVerify(visitor.id, otp.trim())}
+                      disabled={!otp.trim() || isLoading}
+                    >
+                      <Icon name="UserCheck" className="w-6 h-6 mb-1" />
+                      <span>Verify Identity</span>
+                    </Button>
+                    <Button 
+                       variant="outline"
+                       className="h-auto py-3 flex flex-col gap-2 items-center justify-center border-gray-200 dark:border-slate-600 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-300"
+                       onClick={() => onDeny(visitor.id)}
+                       disabled={isLoading}
+                    >
+                      <Icon name="UserX" className="w-6 h-6 mb-1" />
+                      <span>Report Issue</span>
+                    </Button>
+                 </div>
+              </section>
+
+              {visitor.notes && (
+                <section className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-xl p-4">
+                  <h4 className="text-yellow-800 dark:text-yellow-200 font-semibold mb-2 flex items-center gap-2">
+                    <Icon name="AlertTriangle" className="w-4 h-4" />
+                    Guard Notes
+                  </h4>
+                  <p className="text-sm text-yellow-900 dark:text-yellow-100 leading-relaxed">
+                    {visitor.notes}
+                  </p>
+                </section>
+              )}
+            </div>
           </div>
-
-          {/* Notes (if present) */}
-          {visitor.notes && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
-              <div className="flex items-center gap-2 text-amber-700 text-xs mb-1 font-medium">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                Notes
-              </div>
-              <p className="text-sm text-amber-800">{visitor.notes}</p>
-            </div>
-          )}
-          {/* OTP Input for Verification */}
-          {canVerify && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <label htmlFor="otp-input" className="block text-sm font-medium text-blue-900 mb-2">
-                Verification Code (OTP)
-              </label>
-              <Input
-                id="otp-input"
-                type="text"
-                maxLength={6}
-                placeholder="Enter 6-digit code"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="bg-white dark:bg-slate-800"
-              />
-              <p className="text-xs text-blue-700 mt-2">
-                Ask the visitor for the code sent to their phone/email.
-              </p>
-            </div>
-          )}
         </div>
 
-        {/* Actions Footer */}
-        <div className="border-t border-gray-200 dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900">
-          <div className="flex flex-wrap gap-2">
-            {/* Pending Actions */}
-            {canVerify && (
-              <>
-                <Button
-                  onClick={() => {
-                    onVerify?.(visitor.id, otp);
-                    onClose();
-                  }}
-                  disabled={isLoading || !otp || otp.length < 6}
-                  className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                >
-                  <UserCheck className="w-4 h-4 mr-2" />
-                  Verify
-                </Button>
-                <Button
-                  onClick={() => {
-                    onDeny?.(visitor.id);
-                    onClose();
-                  }}
-                  disabled={isLoading}
-                  variant="destructive"
-                  className="flex-1"
-                >
-                  <UserX className="w-4 h-4 mr-2" />
-                  Deny
-                </Button>
-              </>
-            )}
+        {/* Footer Actions */}
+        <div className="p-4 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
+           {normalizedStatus === 'PENDING_APPROVAL' && (
+             <div className="flex-1 w-full sm:w-auto">
+                <p className="text-sm text-gray-500 dark:text-gray-300 mb-2 sm:mb-0">
+                  <span className="font-semibold text-orange-600 animate-pulse">Waiting for approval</span>
+                  <span className="mx-2">•</span>
+                  Sent to {visitor.resident_name}
+                </p>
+             </div>
+           )}
 
-            {/* Confirmed Actions */}
-            {canCheckIn && !canVerify && (
-              <Button
-                onClick={() => {
-                  onCheckIn?.(visitor.id);
-                  onClose();
-                }}
-                disabled={isLoading}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                <UserCheck className="w-4 h-4 mr-2" />
-                Check In
+           <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+              <Button variant="ghost" onClick={onClose} disabled={isLoading}>
+                Cancel
               </Button>
-            )}
+              
+              {canCheckIn && (
+                 <Button 
+                   onClick={() => onCheckIn(visitor.id)}
+                   disabled={isLoading}
+                   className="bg-brand-600 hover:bg-brand-700 min-w-[140px]"
+                 >
+                   {isLoading ? 'Processing...' : (
+                      <>
+                        <Icon name="UserCheck" className="w-4 h-4 mr-2" />
+                        Check In
+                      </>
+                   )}
+                 </Button>
+              )}
 
-            {/* On Premise Actions */}
-            {canCheckOut && !canVerify && (
-              <Button
-                onClick={() => {
-                  onCheckOut?.(visitor.id);
-                  onClose();
-                }}
-                disabled={isLoading}
-                variant="outline"
-                className="flex-1"
-              >
-                <UserX className="w-4 h-4 mr-2" />
-                Check Out
-              </Button>
-            )}
-
-            {/* Contact Action */}
-            {(visitor.phone || visitor.phone_number) && onContact && (
-              <Button
-                onClick={() => onContact(visitor)}
-                variant="outline"
-                className="flex-1"
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                Contact
-              </Button>
-            )}
-
-            {/* Close Button (always shown) */}
-            <Button
-              onClick={onClose}
-              variant="ghost"
-              className="flex-1 min-w-[100px]"
-            >
-              Close
-            </Button>
-          </div>
+              {canCheckOut && (
+                 <Button 
+                   onClick={() => onCheckOut(visitor.id)}
+                   disabled={isLoading}
+                   className="bg-gray-800 hover:bg-gray-900 min-w-[140px]"
+                 >
+                   {isLoading ? 'Processing...' : (
+                      <>
+                        <Icon name="LogOut" className="w-4 h-4 mr-2" />
+                        Check Out
+                      </>
+                   )}
+                 </Button>
+              )}
+           </div>
         </div>
       </div>
     </div>
   );
-}
+};

@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import emergencyService from '../../services/emergencyService';
 import logger from '../../utils/logger';
+import Button from '../ui/Button';
 
 const PanicHistory = ({ limit = 10, className = '' }) => {
   const [history, setHistory] = useState([]);
@@ -106,7 +107,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             My Emergency History
           </h3>
-          <button
+          <Button
             onClick={() => setShowPrivacy(!showPrivacy)}
             className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
           >
@@ -114,7 +115,7 @@ const PanicHistory = ({ limit = 10, className = '' }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             Privacy Info
-          </button>
+          </Button>
         </div>
         
         {/* Privacy Notice */}

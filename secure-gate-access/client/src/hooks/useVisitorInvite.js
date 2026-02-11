@@ -15,21 +15,24 @@ export const useVisitorInvite = (token) => {
     const [error, setError] = useState(null);
     const [visitor, setVisitor] = useState(null);
     const [estateInfo, setEstateInfo] = useState(null);
-    const [statusPolling, setStatusPolling] = useState(false);
     const [expiryCountdown, setExpiryCountdown] = useState(null);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const [retryCount, setRetryCount] = useState(0);
 
     const pollingIntervalRef = useRef(null);
     const countdownIntervalRef = useRef(null);
-    const retryTimeoutRef = useRef(null);
+    const hasErrorRef = useRef(false);
+
+    useEffect(() => {
+        hasErrorRef.current = Boolean(error);
+    }, [error]);
 
     // Monitor online/offline status
     useEffect(() => {
         const handleOnline = () => {
             setIsOffline(false);
             // Retry fetching when coming back online
-            if (error && token) {
+            if (hasErrorRef.current && token) {
                 fetchVisitorDetails();
             }
         };
@@ -42,7 +45,7 @@ export const useVisitorInvite = (token) => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [error, token]);
+    }, [token]);
 
     // Fetch with retry logic
     const fetchWithRetry = useCallback(async (url, options = {}, maxRetries = 3) => {
@@ -127,7 +130,7 @@ export const useVisitorInvite = (token) => {
             setError(null);
 
             // Determine if this is a specific visitor token (vst_) or a generic invite code (inv_)
-            const isBulkInvite = token.startsWith('inv_');
+            const isBulkInvite = token?.startsWith('inv_');
             const endpoint = isBulkInvite
                 ? `/api/public/invites/${token}`
                 : `/api/public/visitors/by-token/${token}`;
@@ -175,8 +178,9 @@ export const useVisitorInvite = (token) => {
                         // Ignore storage errors
                     }
                     
-                    if (payload.estateId) {
-                        await fetchEstateInfo(payload.estateId);
+                    const estateId = payload.estateId ?? payload.estate_id;
+                    if (estateId) {
+                        await fetchEstateInfo(estateId);
                     }
                 }
                 setRetryCount(0);
@@ -206,19 +210,20 @@ export const useVisitorInvite = (token) => {
 
     // Poll for status updates
     const pollStatus = useCallback(async () => {
-        if (!token || !visitor || !navigator.onLine) return;
+        const currentStatus = visitor?.status;
+        if (!token || !currentStatus || !navigator.onLine) return;
 
         try {
             const response = await fetch(`/api/public/visitors/${token}/status`);
             const data = await response.json();
 
-            if (data.success && data.data.status !== visitor.status) {
+            if (data.success && data.data.status !== currentStatus) {
                 await fetchVisitorDetails();
             }
         } catch (err) {
             console.error('Status poll failed:', err);
         }
-    }, [token, visitor, fetchVisitorDetails]);
+    }, [token, visitor?.status, fetchVisitorDetails]);
 
     // Calculate expiry countdown
     const calculateCountdown = useCallback(() => {
@@ -282,25 +287,26 @@ export const useVisitorInvite = (token) => {
 
     // Polling effect
     useEffect(() => {
-        if (visitor && visitor.status === 'pending_approval' && !statusPolling && navigator.onLine) {
-            setStatusPolling(true);
-            pollingIntervalRef.current = setInterval(pollStatus, 10000);
+        const shouldPoll = visitor?.status === 'pending_approval' && !isOffline;
 
-            return () => {
-                if (pollingIntervalRef.current) {
-                    clearInterval(pollingIntervalRef.current);
-                    pollingIntervalRef.current = null;
-                }
-                setStatusPolling(false);
-            };
-        } else if (visitor && visitor.status !== 'pending_approval' && statusPolling) {
+        if (!shouldPoll) {
             if (pollingIntervalRef.current) {
                 clearInterval(pollingIntervalRef.current);
                 pollingIntervalRef.current = null;
             }
-            setStatusPolling(false);
+            return;
         }
-    }, [visitor?.status, statusPolling, pollStatus]);
+
+        pollStatus();
+        pollingIntervalRef.current = setInterval(pollStatus, 10000);
+
+        return () => {
+            if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+                pollingIntervalRef.current = null;
+            }
+        };
+    }, [visitor?.status, isOffline, pollStatus]);
 
     // Countdown effect
     useEffect(() => {
@@ -314,6 +320,7 @@ export const useVisitorInvite = (token) => {
         return () => {
             if (countdownIntervalRef.current) {
                 clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
             }
         };
     }, [visitor, calculateCountdown]);
@@ -323,7 +330,6 @@ export const useVisitorInvite = (token) => {
         return () => {
             if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
             if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
         };
     }, []);
 

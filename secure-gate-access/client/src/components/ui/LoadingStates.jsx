@@ -1,6 +1,8 @@
 // Enhanced loading states and progress indicators
 import React, { useEffect, useRef, useState } from 'react';
 import Skeleton from './Skeleton';
+import Icon from './Icon';
+import Button from './Button';
 
 // Enhanced loading component with multiple variants
 const Loading = ({ 
@@ -39,25 +41,12 @@ const Loading = ({
   };
 
   const renderSpinner = () => (
-    <svg 
-      className={`animate-spin ${sizeClasses[size]} text-brand-500`} 
-      fill="none" 
-      viewBox="0 0 24 24"
-    >
-      <circle 
-        className="opacity-25" 
-        cx="12" 
-        cy="12" 
-        r="10" 
-        stroke="currentColor" 
-        strokeWidth="4" 
-      />
-      <path 
-        className="opacity-75" 
-        fill="currentColor" 
-        d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" 
-      />
-    </svg>
+    <Icon 
+      name="loader-2" 
+      className={`animate-spin text-brand-500 ${sizeClasses[size]}`} 
+      sizeOverride={size === 'sm' ? 16 : size === 'md' ? 32 : size === 'lg' ? 48 : 64}
+      aria-hidden="true"
+    />
   );
 
   const renderDots = () => (
@@ -136,14 +125,13 @@ const LoadingButton = ({
   disabled,
   ...props 
 }) => (
-  <button 
+  <Button 
     disabled={disabled || loading}
-    className={`inline-flex items-center gap-2 ${props.className || ''}`}
+    loading={loading}
     {...props}
   >
-    {loading && <Loading size="sm" />}
     {loading ? loadingText : children}
-  </button>
+  </Button>
 );
 
 // Loading card component

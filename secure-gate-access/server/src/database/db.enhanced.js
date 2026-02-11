@@ -254,6 +254,25 @@ class DatabaseManager extends EventEmitter {
     // or are absolutely critical for boot (though migrations should handle this)
     const tables = [
       {
+        name: 'users',
+        sql: `CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(100) UNIQUE NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          password VARCHAR(255),
+          password_hash VARCHAR(255) NOT NULL,
+          role VARCHAR(50) NOT NULL,
+          phone VARCHAR(20),
+          area VARCHAR(100),
+          house VARCHAR(100),
+          notify_email BOOLEAN DEFAULT true,
+          notify_sms BOOLEAN DEFAULT false,
+          verified BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )`
+      },
+      {
         name: 'estates',
         sql: `CREATE TABLE IF NOT EXISTS estates (
           id SERIAL PRIMARY KEY,

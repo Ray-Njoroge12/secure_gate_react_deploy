@@ -8,6 +8,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useEnhancedResponsive } from '../../hooks/useEnhancedResponsive.js';
 import GestureHandler from './GestureHandler.jsx';
+import Button from '../ui/Button';
 
 const MobileLayoutManager = ({
   children,
@@ -130,7 +131,7 @@ const MobileLayoutManager = ({
             <div
               key={index}
               className="flex-shrink-0"
-              style={{ width: `${100 / childrenArray.length}%` }}
+              style={{ width: `${100 / (childrenArray.length || 1)}%` }}
             >
               {child}
             </div>
@@ -185,7 +186,7 @@ const MobileLayoutManager = ({
       {currentLayout === 'carousel' && React.Children.count(children) > 1 && (
         <div className="flex justify-center mt-4 space-x-2">
           {React.Children.map(children, (_, index) => (
-            <button
+            <Button
               key={index}
               onClick={() => setActiveIndex(index)}
               className={[
@@ -198,7 +199,7 @@ const MobileLayoutManager = ({
               aria-label={`Go to slide ${index + 1}`}
             >
               <span className="sr-only">Slide {index + 1}</span>
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -208,7 +209,7 @@ const MobileLayoutManager = ({
         <div className="fixed bottom-4 right-4 bg-white dark:bg-slate-800 rounded-lg shadow-lg p-2 z-50">
           <div className="flex space-x-1">
             {['stack', 'grid', 'masonry', 'carousel'].map((layoutType) => (
-              <button
+              <Button
                 key={layoutType}
                 onClick={() => setCurrentLayout(layoutType)}
                 className={[
@@ -220,7 +221,7 @@ const MobileLayoutManager = ({
                 ].join(' ')}
               >
                 {layoutType}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import Icon from './Icon';
 
 const alertVariants = {
   default: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-100',
@@ -8,16 +8,16 @@ const alertVariants = {
   warning: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700 text-yellow-900 dark:text-yellow-100',
 };
 
-const alertIcons = {
-  default: Info,
-  destructive: AlertCircle,
-  success: CheckCircle,
-  warning: AlertTriangle,
+const alertIconNames = {
+  default: 'Info',
+  destructive: 'AlertCircle',
+  success: 'CheckCircle',
+  warning: 'AlertTriangle',
 };
 
 export const Alert = React.forwardRef(
   ({ className = '', variant = 'default', children, ...props }, ref) => {
-    const Icon = alertIcons[variant];
+    const iconName = alertIconNames[variant];
     
     return (
       <div
@@ -26,7 +26,7 @@ export const Alert = React.forwardRef(
         className={`relative w-full rounded-lg border p-4 flex items-start gap-3 ${alertVariants[variant]} ${className}`}
         {...props}
       >
-        {Icon && <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />}
+        {iconName && <Icon name={iconName} className="h-5 w-5 flex-shrink-0 mt-0.5" />}
         <div className="flex-1">{children}</div>
       </div>
     );

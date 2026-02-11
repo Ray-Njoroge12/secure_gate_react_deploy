@@ -310,8 +310,8 @@ export function NavigationProvider({ children, userRole = null }) {
     } else if (userRole === 'guard') {
       if (currentPath.includes('/dashboard/guard')) {
         suggestions.push(
-          { path: '/guard/scan-qr', label: 'Scan QR Code', description: 'Verify visitor QR codes' },
-          { path: '/guard/manual-check', label: 'Manual Check', description: 'Manual visitor verification' }
+          { path: '/dashboard/guard/scan-qr', label: 'Scan QR Code', description: 'Verify visitor QR codes' },
+          { path: '/dashboard/guard/manual-check', label: 'Manual Check', description: 'Manual visitor verification' }
         );
       }
     }

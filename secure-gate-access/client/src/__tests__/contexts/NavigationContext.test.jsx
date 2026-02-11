@@ -114,4 +114,22 @@ describe('Navigation Context Tests', () => {
 
         expect(screen.getByTestId('history-count')).toHaveTextContent('2');
     });
+
+    it('should suggest routed guard links under dashboard namespace', () => {
+        const wrapper = ({ children }) => (
+            <MemoryRouter initialEntries={['/dashboard/guard']}>
+                <NavigationProvider userRole="guard">
+                    {children}
+                </NavigationProvider>
+            </MemoryRouter>
+        );
+
+        const { result } = renderHook(() => useNavigation(), { wrapper });
+        const suggestions = result.current.getSuggestedRoutes();
+
+        expect(suggestions).toEqual(expect.arrayContaining([
+            expect.objectContaining({ path: '/dashboard/guard/scan-qr' }),
+            expect.objectContaining({ path: '/dashboard/guard/manual-check' })
+        ]));
+    });
 });

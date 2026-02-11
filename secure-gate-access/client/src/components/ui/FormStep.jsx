@@ -10,15 +10,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  CheckCircle, 
-  AlertCircle, 
-  Info, 
-  Eye, 
-  EyeOff,
-  HelpCircle,
-  ExternalLink
-} from 'lucide-react';
+import Icon from './Icon';
 import { Card, Button, Badge, Tooltip } from './index';
 import ValidatedInput from './ValidatedInput';
 import { useFormValidation } from '../../hooks/useFormValidation';
@@ -241,7 +233,7 @@ const FormStep = ({
         {/* Field help tooltip */}
         {showFieldHelp && help && (
           <Tooltip content={help} position="top">
-            <HelpCircle className="w-4 h-4 text-gray-400 dark:text-slate-400 ml-2 inline" />
+            <Icon name="HelpCircle" className="w-4 h-4 text-gray-400 dark:text-slate-400 ml-2 inline" />
           </Tooltip>
         )}
       </div>
@@ -316,13 +308,13 @@ const FormStep = ({
             <div className="flex items-center space-x-2">
               {isStepComplete && (
                 <Badge variant="success" size="sm">
-                  <CheckCircle className="w-3 h-3 mr-1" />
+                  <Icon name="CheckCircle" className="w-3 h-3 mr-1" />
                   Complete
                 </Badge>
               )}
               {Object.keys(errors).length > 0 && (
                 <Badge variant="error" size="sm">
-                  <AlertCircle className="w-3 h-3 mr-1" />
+                  <Icon name="AlertCircle" className="w-3 h-3 mr-1" />
                   {Object.keys(errors).length} Error{Object.keys(errors).length > 1 ? 's' : ''}
                 </Badge>
               )}
@@ -345,7 +337,7 @@ const FormStep = ({
       {showValidationSummary && Object.keys(errors).length > 0 && (
         <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
-            <AlertCircle className="w-5 h-5 text-red-400" />
+            <Icon name="AlertCircle" className="w-5 h-5 text-red-400" />
             <h4 className="text-red-400 font-medium">Validation Errors</h4>
           </div>
           <div className="space-y-1">
@@ -378,7 +370,7 @@ const FormStep = ({
             variant="ghost"
             size="sm"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            icon={showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            icon={showAdvanced ? <Icon name="EyeOff" className="w-4 h-4" /> : <Icon name="Eye" className="w-4 h-4" />}
           >
             {showAdvanced ? 'Hide' : 'Show'} Advanced Fields
           </Button>
@@ -392,7 +384,7 @@ const FormStep = ({
             <Button
               variant="ghost"
               onClick={() => onStepSkip?.(stepId)}
-              icon={<ExternalLink className="w-4 h-4" />}
+              icon={<Icon name="ExternalLink" className="w-4 h-4" />}
             >
               Skip Step
             </Button>
@@ -403,7 +395,7 @@ const FormStep = ({
           <Button
             variant="outline"
             onClick={validateAll}
-            icon={<CheckCircle className="w-4 h-4" />}
+            icon={<Icon name="CheckCircle" className="w-4 h-4" />}
           >
             Validate All
           </Button>
@@ -412,7 +404,7 @@ const FormStep = ({
             <Button
               variant="primary"
               onClick={() => onStepComplete?.(stepId, data)}
-              icon={<CheckCircle className="w-4 h-4" />}
+              icon={<Icon name="CheckCircle" className="w-4 h-4" />}
             >
               Complete Step
             </Button>

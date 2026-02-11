@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge, Button } from './ui';
-import { Search, Filter, SortAsc, SortDesc, X } from 'lucide-react';
+import Icon from './ui/Icon';
 
 const SearchResults = ({
   data = [],
@@ -33,43 +33,43 @@ const SearchResults = ({
                 
                 {hasSearchTerm && (
                   <Badge variant="secondary" className="flex items-center gap-1">
-                    <Search className="h-3 w-3" />
+                    <Icon name="search" className="h-3 w-3" aria-hidden="true" />
                     "{searchTerm}"
-                    <button
+                    <Button
                       onClick={() => onClearSearch?.()}
                       className="ml-1 hover:text-red-600"
                       aria-label="Clear search"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
+                      <Icon name="x" className="h-3 w-3" aria-hidden="true" />
+                    </Button>
                   </Badge>
                 )}
                 
                 {hasFilters && (
                   <Badge variant="secondary" className="flex items-center gap-1">
-                    <Filter className="h-3 w-3" />
+                    <Icon name="filter" className="h-3 w-3" aria-hidden="true" />
                     {Object.keys(filters).length} filter{Object.keys(filters).length > 1 ? 's' : ''}
-                    <button
+                    <Button
                       onClick={() => onClearFilters?.()}
                       className="ml-1 hover:text-red-600"
                       aria-label="Clear filters"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
+                      <Icon name="x" className="h-3 w-3" aria-hidden="true" />
+                    </Button>
                   </Badge>
                 )}
                 
                 {sortField && (
                   <Badge variant="outline" className="flex items-center gap-1">
-                    {sortDirection === 'asc' ? <SortAsc className="h-3 w-3" /> : <SortDesc className="h-3 w-3" />}
+                    {sortDirection === 'asc' ? <Icon name="sort-asc" className="h-3 w-3" aria-hidden="true" /> : <Icon name="sort-desc" className="h-3 w-3" aria-hidden="true" />}
                     {sortField}
-                    <button
+                    <Button
                       onClick={() => onSortChange?.(sortField, sortDirection === 'asc' ? 'desc' : 'asc')}
                       className="ml-1 hover:text-blue-600"
                       aria-label="Change sort direction"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
+                      <Icon name="x" className="h-3 w-3" aria-hidden="true" />
+                    </Button>
                   </Badge>
                 )}
               </div>
@@ -84,7 +84,7 @@ const SearchResults = ({
                   }}
                   className="flex items-center gap-2"
                 >
-                  <X className="h-4 w-4" />
+                  <Icon name="x" className="h-4 w-4" aria-hidden="true" />
                   Clear all
                 </Button>
               )}
@@ -127,7 +127,7 @@ const SearchResults = ({
       ) : (
         <Card>
           <Card.Content className="p-8 text-center">
-            <Search className="h-12 w-12 text-gray-400 dark:text-gray-300 mx-auto mb-4" />
+            <Icon name="search" className="h-12 w-12 text-gray-400 dark:text-gray-300 mx-auto mb-4" aria-hidden="true" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               {emptyMessage}
             </h3>

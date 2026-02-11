@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Info, RefreshCw, Download } from '../icons';
+import Icon from './Icon';
 import { useBrowserCompatibility } from '../../contexts/BrowserCompatibilityContext';
 
 /**
@@ -49,9 +49,9 @@ const BrowserCompatibility = memo(({
   // Get feature support status
   const getFeatureStatus = (feature) => {
     if (featureSupport && featureSupport[feature]) {
-      return { supported: true, icon: CheckCircle, color: 'text-green-500' };
+      return { supported: true, icon: 'check-circle', color: 'text-green-500' };
     }
-    return { supported: false, icon: XCircle, color: 'text-red-500' };
+    return { supported: false, icon: 'x-circle', color: 'text-red-500' };
   };
 
   // Get warning level
@@ -94,10 +94,10 @@ const BrowserCompatibility = memo(({
       <div className="bg-slate-800 rounded-lg p-4">
         <h3 className="text-lg font-semibold text-slate-200 mb-3">Compatibility Status</h3>
         <div className="flex items-center gap-3">
-          {warningLevel === 'error' && <XCircle className="w-6 h-6 text-red-500" />}
-          {warningLevel === 'warning' && <AlertTriangle className="w-6 h-6 text-yellow-500" />}
-          {warningLevel === 'info' && <Info className="w-6 h-6 text-blue-500" />}
-          {warningLevel === 'success' && <CheckCircle className="w-6 h-6 text-green-500" />}
+          {warningLevel === 'error' && <Icon name="x-circle" className="w-6 h-6 text-red-500" />}
+          {warningLevel === 'warning' && <Icon name="alert-triangle" className="w-6 h-6 text-yellow-500" />}
+          {warningLevel === 'info' && <Icon name="info" className="w-6 h-6 text-blue-500" />}
+          {warningLevel === 'success' && <Icon name="check-circle" className="w-6 h-6 text-green-500" />}
           <div>
             <p className={`text-lg font-medium ${
               warningLevel === 'error' ? 'text-red-400' :
@@ -121,7 +121,7 @@ const BrowserCompatibility = memo(({
           <div className="space-y-2">
             {warnings.map((warning, index) => (
               <div key={index} className="flex items-start gap-2 p-2 bg-slate-700 rounded">
-                <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <Icon name="alert-triangle" className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm text-slate-200">{warning.message}</p>
                   <p className="text-xs text-slate-400 capitalize">{warning.type} • {warning.severity}</p>
@@ -142,10 +142,9 @@ const BrowserCompatibility = memo(({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {featureSupport && Object.entries(featureSupport).map(([feature, supported]) => {
             const status = getFeatureStatus(feature);
-            const Icon = status.icon;
             return (
               <div key={feature} className="flex items-center gap-3 p-2 bg-slate-700 rounded">
-                <Icon className={`w-4 h-4 ${status.color} flex-shrink-0`} />
+                <Icon name={status.icon} className={`w-4 h-4 ${status.color} flex-shrink-0`} />
                 <span className="text-sm text-slate-200 capitalize">{feature.replace(/([A-Z])/g, ' $1').trim()}</span>
                 <span className={`text-xs px-2 py-1 rounded ${
                   supported ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'
@@ -224,14 +223,14 @@ const BrowserCompatibility = memo(({
             className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
             title="Refresh detection"
           >
-            <RefreshCw className="w-4 h-4" />
+            <Icon name="refresh-cw" className="w-4 h-4" />
           </button>
           <button
             onClick={() => window.open('https://browsehappy.com/', '_blank')}
             className="p-1 text-slate-400 hover:text-slate-200 transition-colors"
             title="Download modern browser"
           >
-            <Download className="w-4 h-4" />
+            <Icon name="download" className="w-4 h-4" />
           </button>
         </div>
       </div>

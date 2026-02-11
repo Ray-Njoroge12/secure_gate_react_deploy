@@ -7,7 +7,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createRovingTabindex, focusManager } from '../../utils/focusManagement';
-import { ChevronDown, Check } from 'lucide-react';
+import Icon from './Icon.jsx';
 
 /**
  * Dropdown option type
@@ -199,6 +199,8 @@ const Dropdown = ({
       }
     }
   }, [focusedIndex, isOpen]);
+  
+  const buttonId = `dropdown-button-${Math.random().toString(36).substr(2, 9)}`;
 
   // Handle button click
   const handleButtonClick = () => {
@@ -210,89 +212,86 @@ const Dropdown = ({
   };
 
   return (
-    <div ref={dropdownRef} className={`relative ${className}`}>
+    <div
+      ref={dropdownRef}
+      className={`relative inline-block text-left w-full ${className}`}
+    >
       {/* Button */}
       <button
-        ref={buttonRef}
         type="button"
+        ref={buttonRef}
+        className={`
+          flex items-center justify-between w-full rounded-md border shadow-sm px-4 py-2 
+          text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2
+          disabled:opacity-50 disabled:cursor-not-allowed transition-colors
+          ${variantClasses[variant]}
+          ${isOpen ? 'ring-2 ring-brand-500 border-brand-500' : ''}
+          ${sizeClasses[size]}
+        `}
+        id={buttonId}
         onClick={handleButtonClick}
         onKeyDown={handleKeyDown}
-        disabled={disabled}
-        className={`
-          w-full flex items-center justify-between rounded-lg border
-          ${sizeClasses[size]}
-          ${variantClasses[variant]}
-          ${disabled 
-            ? 'opacity-50 cursor-not-allowed' 
-            : 'hover:border-gray-400 dark:hover:border-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900'
-          }
-          transition-colors duration-200
-        `}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={ariaDescribedBy}
+        disabled={disabled}
       >
-        <span className="truncate">
+        <span className="block truncate">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown 
-          className={`w-4 h-4 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`}
+        <Icon 
+          name="chevron-down" 
+          size={16} 
+          className={`ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          aria-hidden="true"
         />
       </button>
 
       {/* Dropdown List */}
       {isOpen && (
-        <div
-          ref={listRef}
-          className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-auto"
+        <ul
+          className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
           role="listbox"
-          aria-label={ariaLabel || 'Options'}
+          aria-labelledby={buttonId}
+          aria-activedescendant={focusedIndex >= 0 ? `option-${focusedIndex}` : undefined}
         >
-          {options.map((option, index) => (
-            <div
-              key={option.value}
-              role="option"
-              tabIndex={index === focusedIndex ? 0 : -1}
-              aria-selected={option.value === value}
-              className={`
-                flex items-center justify-between px-4 py-2 cursor-pointer min-h-[44px]
-                ${option.disabled 
-                  ? 'opacity-50 cursor-not-allowed' 
-                  : 'hover:bg-gray-100 dark:hover:bg-slate-700 focus:bg-gray-100 dark:focus:bg-slate-700'
-                }
-                ${option.value === value ? 'bg-gray-100 dark:bg-slate-700' : ''}
-                transition-colors duration-150
-              `}
-              onClick={() => handleSelect(option)}
-              onMouseEnter={() => setFocusedIndex(index)}
-            >
-              <div className="flex items-center space-x-3">
-                {option.icon && (
-                  <span className="flex-shrink-0 text-gray-500 dark:text-slate-400">
-                    {option.icon}
+          {options.map((option, index) => {
+            const isSelected = value === option.value;
+            const isFocused = focusedIndex === index;
+
+            return (
+              <li
+                key={option.value}
+                id={`option-${index}`}
+                className={`
+                  cursor-default select-none relative py-2 pl-3 pr-9 transition-colors
+                  ${isFocused ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-900 dark:text-brand-100' : 'text-gray-900 dark:text-gray-100'}
+                  ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                `}
+                role="option"
+                aria-selected={isSelected}
+                aria-disabled={option.disabled}
+                onClick={() => handleSelect(option)}
+                onMouseEnter={() => setFocusedIndex(index)}
+              >
+                <div className="flex items-center">
+                  {option.icon && <span className="mr-2 flex-shrink-0">{option.icon}</span>}
+                  <span className={`block truncate ${isSelected ? 'font-semibold' : 'font-normal'}`}>
+                    {option.label}
+                  </span>
+                </div>
+
+                {isSelected && (
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-brand-600 dark:text-brand-400">
+                    <Icon name="check" size={16} aria-hidden="true" />
                   </span>
                 )}
-                <span className="text-gray-900 dark:text-slate-200 truncate">
-                  {option.label}
-                </span>
-              </div>
-              
-              {option.value === value && (
-                <Check className="w-4 h-4 text-brand-500 flex-shrink-0" />
-              )}
-            </div>
-          ))}
-          
-          {options.length === 0 && (
-            <div className="px-4 py-2 text-gray-500 dark:text-slate-400 text-center">
-              No options available
-            </div>
-          )}
-        </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

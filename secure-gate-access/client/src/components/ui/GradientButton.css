@@ -118,25 +118,25 @@
 /* Primary Variant (Green Gradient) */
 .gradient-button--primary {
   background: linear-gradient(135deg, 
-    var(--color-brand-500, #10b981), 
-    var(--color-brand-600, #059669)
+    var(--color-brand-700, #047857), 
+    var(--color-brand-800, #065f46)
   );
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 4px 12px rgba(6, 95, 70, 0.3);
 }
 
 .gradient-button--primary:hover:not(:disabled) {
   background: linear-gradient(135deg, 
-    var(--color-brand-600, #059669), 
-    var(--color-brand-700, #047857)
+    var(--color-brand-800, #065f46), 
+    var(--color-brand-900, #064e3b)
   );
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 6px 16px rgba(6, 95, 70, 0.4);
   transform: translateY(-1px);
 }
 
 .gradient-button--primary:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 8px rgba(6, 95, 70, 0.35);
 }
 
 /* Secondary Variant (Blue Gradient) */
@@ -166,19 +166,19 @@
 /* Success Variant */
 .gradient-button--success {
   background: linear-gradient(135deg, 
-    var(--color-success-500, #10b981), 
-    var(--color-success-600, #059669)
+    var(--color-success-700, #047857), 
+    var(--color-success-800, #065f46)
   );
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 4px 12px rgba(6, 95, 70, 0.3);
 }
 
 .gradient-button--success:hover:not(:disabled) {
   background: linear-gradient(135deg, 
-    var(--color-success-600, #059669), 
-    var(--color-success-700, #047857)
+    var(--color-success-800, #065f46), 
+    var(--color-success-900, #064e3b)
   );
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 6px 16px rgba(6, 95, 70, 0.4);
   transform: translateY(-1px);
 }
 

@@ -37,7 +37,7 @@ export const getAnalyticsOverview = async (req, res) => {
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
     // Build site filter
-    const siteFilter = siteId ? 'AND v.site_id = $3' : '';
+    const siteFilter = siteId ? 'AND v.estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Parallel queries for all metrics
@@ -143,7 +143,7 @@ export const getVisitorMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND site_id = $3' : '';
+    const siteFilter = siteId ? 'AND estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Group by clause based on groupBy parameter
@@ -192,7 +192,7 @@ export const getVisitorMetrics = async (req, res) => {
       FROM visitors v
       JOIN users u ON v.resident_id = u.id
       WHERE v.date_of_visit BETWEEN $1 AND $2
-        ${siteFilter.replace('site_id', 'v.site_id')}
+        ${siteFilter.replace('estate_id', 'v.estate_id')}
       GROUP BY u.id, u.username, u.email
       ORDER BY visitor_count DESC
       LIMIT 10
@@ -269,7 +269,7 @@ export const getIncidentMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND site_id = $3' : '';
+    const siteFilter = siteId ? 'AND estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Incident trends by day
@@ -321,7 +321,7 @@ export const getIncidentMetrics = async (req, res) => {
       FROM incidents i
       JOIN users u ON i.reported_by = u.id
       WHERE i.created_at BETWEEN $1 AND $2
-        ${siteFilter.replace('site_id', 'i.site_id')}
+        ${siteFilter.replace('estate_id', 'i.estate_id')}
       GROUP BY u.id, u.username
       ORDER BY incidents_reported DESC
       LIMIT 10
@@ -373,7 +373,7 @@ export const getGuardMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND v.site_id = $3' : '';
+    const siteFilter = siteId ? 'AND v.estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Check-in/check-out performance
@@ -403,7 +403,7 @@ export const getGuardMetrics = async (req, res) => {
       FROM incidents i
       JOIN users u ON i.reported_by = u.id
       WHERE i.created_at BETWEEN $1 AND $2
-        ${siteFilter.replace('v.site_id', 'i.site_id')}
+        ${siteFilter.replace('v.estate_id', 'i.estate_id')}
       GROUP BY u.id, u.username
       ORDER BY incidents_reported DESC
     `;
@@ -450,7 +450,7 @@ export const getResidentMetrics = async (req, res) => {
     const fromDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const toDate = dateTo || new Date().toISOString().split('T')[0];
 
-    const siteFilter = siteId ? 'AND v.site_id = $3' : '';
+    const siteFilter = siteId ? 'AND v.estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
 
     // Most active residents
@@ -490,10 +490,217 @@ export const getResidentMetrics = async (req, res) => {
   }
 };
 
+
+/**
+ * Get activity summary stats
+ * 
+ * @route GET /api/admin/analytics/activity/summary
+ * @access Private (admin only)
+ */
+export const getActivitySummary = async (req, res) => {
+  try {
+    let siteId = req.query.siteId;
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
+    const siteFilter = siteId ? 'AND estate_id = $1' : '';
+    const params = siteId ? [siteId] : [];
+
+    // Parallel queries for summary cards
+    const [stats] = await Promise.all([
+      dbManager.query(`
+        SELECT
+          (SELECT COUNT(*) FROM audit_logs WHERE created_at >= NOW() - INTERVAL '24 hours' ${siteFilter}) as last_24h,
+          (SELECT COUNT(*) FROM audit_logs WHERE created_at >= NOW() - INTERVAL '7 days' ${siteFilter}) as last_7d,
+          (SELECT COUNT(*) FROM visitors WHERE status = 'pending_approval' ${siteFilter}) as pending_approvals,
+          (SELECT COUNT(*) FROM visitors WHERE date_of_visit = CURRENT_DATE ${siteFilter}) as visitors_today
+      `, params)
+    ]);
+
+    const result = stats.rows[0];
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        last24h: parseInt(result.last_24h, 10),
+        last7d: parseInt(result.last_7d, 10),
+        pendingApprovals: parseInt(result.pending_approvals, 10),
+        visitorsToday: parseInt(result.visitors_today, 10)
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get activity summary', { error: error.message });
+    return res.status(500).json({ success: false, error: 'Failed to fetch activity summary' });
+  }
+};
+
+/**
+ * Get activity feed (recent actions)
+ * 
+ * @route GET /api/admin/analytics/activity/feed
+ * @access Private (admin only)
+ */
+export const getActivityFeed = async (req, res) => {
+  try {
+    const { limit = 20 } = req.query;
+    let siteId = req.query.siteId;
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
+    let query = `
+      SELECT 
+        a.id, 
+        a.action, 
+        a.details as message, 
+        a.resource, 
+        a.outcome, 
+        a.ip_address, 
+        a.created_at as timestamp,
+        u.username
+      FROM audit_logs a
+      LEFT JOIN users u ON a.user_id = u.id
+      WHERE 1=1
+    `;
+
+    const params = [];
+    let paramIndex = 1;
+
+    if (siteId) {
+      query += ` AND a.estate_id = $${paramIndex++}`;
+      params.push(siteId);
+    }
+
+    query += ` ORDER BY a.created_at DESC LIMIT $${paramIndex}`;
+    params.push(parseInt(limit, 10));
+
+    const result = await dbManager.query(query, params);
+
+    return res.status(200).json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    logger.error('Failed to get activity feed', { error: error.message });
+    return res.status(500).json({ success: false, error: 'Failed to fetch activity feed' });
+  }
+};
+
+/**
+ * Get activity trends
+ * 
+ * @route GET /api/admin/analytics/activity/trends
+ * @access Private (admin only)
+ */
+export const getActivityTrends = async (req, res) => {
+  try {
+    const { period = '7d' } = req.query;
+    let siteId = req.query.siteId;
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
+    let interval = '7 days';
+    if (period === '30d') interval = '30 days';
+    if (period === '90d') interval = '90 days';
+
+    const params = siteId ? [interval, siteId] : [interval];
+    const siteFilter = siteId ? 'AND a.estate_id = $2' : '';
+
+    // Action Breakdown
+    const actionQuery = `
+      SELECT action, COUNT(*) as count
+      FROM audit_logs a
+      WHERE created_at >= NOW() - $1::INTERVAL
+      ${siteFilter}
+      GROUP BY action
+      ORDER BY count DESC
+      LIMIT 10
+    `;
+
+    // Active Users
+    const userQuery = `
+      SELECT u.username, COUNT(*) as activity_count
+      FROM audit_logs a
+      JOIN users u ON a.user_id = u.id
+      WHERE a.created_at >= NOW() - $1::INTERVAL
+      ${siteFilter.replace('a.estate_id', 'a.estate_id')}
+      GROUP BY u.username
+      ORDER BY activity_count DESC
+      LIMIT 10
+    `;
+
+    const [actions, users] = await Promise.all([
+      dbManager.query(actionQuery, params),
+      dbManager.query(userQuery, params)
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        actionBreakdown: actions.rows,
+        activeUsers: users.rows
+      }
+    });
+
+  } catch (error) {
+    logger.error('Failed to get activity trends', { error: error.message });
+    return res.status(500).json({ success: false, error: 'Failed to fetch activity trends' });
+  }
+};
+
+/**
+ * Get activity anomalies
+ * 
+ * @route GET /api/admin/analytics/activity/anomalies
+ * @access Private (admin only)
+ */
+export const getActivityAnomalies = async (req, res) => {
+  try {
+    let siteId = req.query.siteId;
+    if (req.user.estate_id) {
+      siteId = req.user.estate_id;
+    }
+
+    const params = siteId ? [siteId] : [];
+    const siteFilter = siteId ? 'AND estate_id = $1' : '';
+
+    const query = `
+      SELECT 
+        'security_alert' as type,
+        details as message,
+        created_at as timestamp
+      FROM audit_logs
+      WHERE outcome = 'fail' 
+      AND created_at >= NOW() - INTERVAL '24 hours'
+      ${siteFilter}
+      ORDER BY created_at DESC
+      LIMIT 5
+    `;
+
+    const result = await dbManager.query(query, params);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        anomalies: result.rows
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to get activity anomalies', { error: error.message });
+    return res.status(500).json({ success: false, error: 'Failed to fetch anomalies' });
+  }
+};
+
 export default {
   getAnalyticsOverview,
   getVisitorMetrics,
   getIncidentMetrics,
   getGuardMetrics,
-  getResidentMetrics
+  getResidentMetrics,
+  getActivitySummary,
+  getActivityFeed,
+  getActivityTrends,
+  getActivityAnomalies
 };

@@ -10,6 +10,7 @@ import SearchResults from './SearchResults';
 import AdvancedFilters from './AdvancedFilters';
 import SearchHistory from './SearchHistory';
 import './IntelligentSearch.css';
+import Button from '../ui/Button';
 
 const IntelligentSearch = ({
   placeholder = "Search visitors, users, incidents...",
@@ -256,25 +257,25 @@ const IntelligentSearch = ({
             )}
             
             {query && !isLoading && (
-              <button
+              <Button
                 onClick={clearSearch}
                 className="clear-search-btn"
                 aria-label="Clear search"
                 type="button"
               >
                 ✕
-              </button>
+              </Button>
             )}
             
             {showAdvancedFilters && (
-              <button
+              <Button
                 onClick={() => setShowFilters(!showFilters)}
                 className={`filters-toggle-btn ${showFilters ? 'active' : ''}`}
                 aria-label="Toggle advanced filters"
                 type="button"
               >
                 🔍
-              </button>
+              </Button>
             )}
           </div>
         </div>

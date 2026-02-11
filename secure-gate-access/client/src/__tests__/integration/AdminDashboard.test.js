@@ -13,15 +13,22 @@ jest.mock('../../hooks/useSearch', () => ({
 // Mock API service to prevent actual calls
 jest.mock('../../services/adminService', () => ({
     getMetrics: jest.fn().mockResolvedValue({}),
-    getSystemHealth: jest.fn().mockResolvedValue({})
+    getNotificationQueueStats: jest.fn().mockResolvedValue({ active: 0, completed: 0, failed: 0 }),
+    getNotificationFailures: jest.fn().mockResolvedValue([]),
+    retryNotificationFailure: jest.fn().mockResolvedValue({}),
+    getHealthDetails: jest.fn().mockResolvedValue({ status: 'healthy', components: {} }),
+    getEstateDetails: jest.fn().mockResolvedValue(null),
+    getAllEstates: jest.fn().mockResolvedValue([])
 }));
 
 // Mock child components to verify tab rendering logic
 jest.mock('../../components/admin/AdminMetrics', () => () => <div data-testid="admin-metrics">Metrics</div>);
 jest.mock('../../components/admin/AdminUserApprovals', () => () => <div data-testid="user-approvals">Approvals</div>);
 jest.mock('../../components/admin/AuditLogs', () => () => <div data-testid="audit-logs">Audit Logs</div>);
+jest.mock('../../components/common/AnnouncementsBanner', () => () => null);
+jest.mock('../../components/admin/AnnouncementsAdmin', () => () => null);
 jest.mock('../../components/common/OfflineIndicator', () => () => null);
-jest.mock('../../pages/admin/PendingApprovals', () => () => <div data-testid="pending-approvals">Pending Approvals</div>);
+
 jest.mock('../../components/admin/AnalyticsDashboard', () => () => <div data-testid="analytics-dashboard">Analytics Dashboard</div>);
 
 // Mock useNavigate

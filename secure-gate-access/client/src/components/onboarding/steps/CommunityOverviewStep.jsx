@@ -157,7 +157,7 @@ const CommunityOverviewStep = ({
   return (
     <div className="community-overview-step">
       {/* Welcome Message */}
-      <div className="welcome-message mb-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-lg border border-green-200 dark:border-green-800">
+      <div className="welcome-message mb-8 p-6 bg-gradient-to-r from-brand-50 to-blue-50 dark:from-brand-900/20 dark:to-blue-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
           Welcome to Your Secure Community! 🏡
         </h3>
@@ -182,12 +182,12 @@ const CommunityOverviewStep = ({
             const isViewed = viewedSections.has(feature.id);
             
             return (
-              <div
+              <div role="button" tabIndex={0}
                 key={feature.id}
                 className={`
                   feature-card p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer
                   ${isViewed 
-                    ? 'border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/20' 
+                    ? 'border-brand-300 bg-brand-50 dark:border-brand-700 dark:bg-brand-900/20' 
                     : 'border-gray-200 dark:border-slate-700 bg-white dark:border-slate-700 dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600'
                   }
                 `}
@@ -219,7 +219,7 @@ const CommunityOverviewStep = ({
                   </div>
                   
                   {isViewed && (
-                    <div className="flex-shrink-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                    <div className="flex-shrink-0 w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center">
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -238,7 +238,7 @@ const CommunityOverviewStep = ({
                 </ul>
 
                 {/* Demo Action */}
-                <button
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleFeatureDemo(feature.id);
@@ -247,7 +247,7 @@ const CommunityOverviewStep = ({
                   aria-label={`${feature.demoAction} for ${feature.title}`}
                 >
                   {feature.demoAction} →
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -263,7 +263,7 @@ const CommunityOverviewStep = ({
             </p>
             <div className="w-64 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mt-2">
               <div
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                className="bg-brand-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(viewedSections.size / requiredSections) * 100}%` }}
               />
             </div>
@@ -284,14 +284,14 @@ const CommunityOverviewStep = ({
 
       {/* Completion Message */}
       {isCompleted && (
-        <div className="completion-message mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <div className="completion-message mt-6 p-4 bg-brand-50 dark:bg-brand-900/20 rounded-lg border border-brand-200 dark:border-brand-800">
           <div className="flex items-center">
             <span className="text-2xl mr-3" role="img" aria-label="Celebration">🎉</span>
             <div>
-              <p className="font-medium text-green-900 dark:text-green-100">
+              <p className="font-medium text-brand-900 dark:text-brand-100">
                 Great job! You've explored the key community features.
               </p>
-              <p className="text-sm text-green-700 dark:text-green-300">
+              <p className="text-sm text-brand-700 dark:text-brand-300">
                 Ready to learn how to invite your first guest?
               </p>
             </div>

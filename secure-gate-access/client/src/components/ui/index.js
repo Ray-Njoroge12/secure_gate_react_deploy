@@ -36,6 +36,7 @@ export { default as LiveRegion, StatusAnnouncement, AlertAnnouncement, LoadingAn
 export { default as ErrorDisplay } from './ErrorDisplay.jsx';
 export { default as SuccessDisplay } from './SuccessDisplay.jsx';
 export { default as ErrorQueue } from './ErrorQueue.jsx';
+// export { default as Icon } from './Icon.jsx';
 // Lazy load heavy form components
 export const FormWizard = React.lazy(() => import('./FormWizard.jsx'));
 export const EnhancedFormWizard = React.lazy(() => import('./EnhancedFormWizard.jsx'));

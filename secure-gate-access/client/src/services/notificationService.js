@@ -163,7 +163,7 @@ class NotificationService {
   // Connect to Server-Sent Events (when available)
   connectToSSE() {
     try {
-      const eventSource = new EventSource('/api/ws/guards');
+      const eventSource = new EventSource('/api/sse/guards', { withCredentials: true });
       
       eventSource.onopen = () => {
         logger.info('Connected to SSE for notifications');

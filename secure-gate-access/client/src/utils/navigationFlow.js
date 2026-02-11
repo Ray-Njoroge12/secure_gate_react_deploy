@@ -110,7 +110,8 @@ export const ROLE_REDIRECTS = {
   resident: '/dashboard/resident',
   guard: '/dashboard/guard',
   security: '/dashboard/guard',
-  admin: '/admin/dashboard',
+  admin: '/dashboard/admin',
+  super_admin: '/dashboard/super-admin',
   default: '/dashboard'
 };
 
@@ -323,7 +324,6 @@ function formatBreadcrumbLabel(segment) {
     'settings': 'Settings',
     'reports': 'Reports',
     'users': 'Users',
-    'audit-logs': 'Audit Logs',
     'pages': 'Pages'
   };
 

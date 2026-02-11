@@ -4,6 +4,7 @@ import { collaborationService } from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import './WorkflowHandoffs.css';
+import Button from '../ui/Button';
 
 const WorkflowHandoffs = ({ className = '' }) => {
   const { user } = useAuth();
@@ -102,12 +103,12 @@ const WorkflowHandoffs = ({ className = '' }) => {
         <div className="error-message">
           <h3>Unable to load workflow handoffs</h3>
           <p>{handoffsError.message}</p>
-          <button 
+          <Button 
             onClick={() => queryClient.invalidateQueries(['workflow-handoffs'])}
             className="retry-button"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -117,18 +118,18 @@ const WorkflowHandoffs = ({ className = '' }) => {
     <div className={`workflow-handoffs ${className}`}>
       <div className="handoffs-header">
         <h2>Workflow Handoffs</h2>
-        <button 
+        <Button 
           onClick={handleCreateHandoff}
           className="create-button primary"
-          disabled={createHandoffMutation.isPending}
+          isLoading={createHandoffMutation.isPending}
         >
           <span className="icon">🔄</span>
           Create Handoff
-        </button>
+        </Button>
       </div>
 
       <div className="handoffs-tabs">
-        <button
+        <Button
           className={`tab ${activeTab === 'received' ? 'active' : ''}`}
           onClick={() => handleTabChange('received')}
         >
@@ -138,19 +139,19 @@ const WorkflowHandoffs = ({ className = '' }) => {
               {handoffs.filter(h => h.to_user_id === user.id && h.status === 'pending').length}
             </span>
           )}
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'sent' ? 'active' : ''}`}
           onClick={() => handleTabChange('sent')}
         >
           Sent
-        </button>
-        <button
+        </Button>
+        <Button
           className={`tab ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => handleTabChange('all')}
         >
           All Handoffs
-        </button>
+        </Button>
       </div>
 
       <div className="handoffs-content">
@@ -225,10 +226,21 @@ const HandoffItem = ({ handoff, currentUser, isSelected, onClick, onAccept }) =>
   const displayName = isReceived ? handoff.from_username : handoff.to_username;
   const displayRole = isReceived ? handoff.from_role : handoff.to_role;
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div 
       className={`handoff-item ${isSelected ? 'selected' : ''} ${isPending ? 'pending' : ''}`}
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-pressed={isSelected}
     >
       <div className="handoff-avatar">
         <div className={`avatar ${displayRole}`}>
@@ -264,7 +276,7 @@ const HandoffItem = ({ handoff, currentUser, isSelected, onClick, onAccept }) =>
           {handoff.status}
         </span>
         {isReceived && isPending && (
-          <button
+          <Button
             className="accept-button"
             onClick={(e) => {
               e.stopPropagation();
@@ -273,7 +285,7 @@ const HandoffItem = ({ handoff, currentUser, isSelected, onClick, onAccept }) =>
             title="Accept Handoff"
           >
             ✓
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -311,13 +323,13 @@ const HandoffDetail = ({ handoff, currentUser, onAccept, isAccepting }) => {
         
         {isReceived && isPending && (
           <div className="handoff-actions">
-            <button
+            <Button
               onClick={onAccept}
               className="accept-button primary"
               disabled={isAccepting}
             >
               {isAccepting ? 'Accepting...' : 'Accept Handoff'}
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -432,7 +444,7 @@ const CreateHandoff = ({ onSend, onCancel, isLoading }) => {
     <div className="create-handoff">
       <div className="create-header">
         <h3>Create Workflow Handoff</h3>
-        <button onClick={onCancel} className="close-button">×</button>
+        <Button onClick={onCancel} className="close-button" aria-label="Close">×</Button>
       </div>
 
       <form onSubmit={handleSubmit} className="create-form">
@@ -536,21 +548,21 @@ const CreateHandoff = ({ onSend, onCancel, isLoading }) => {
         </div>
 
         <div className="form-actions">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             className="cancel-button"
             disabled={isLoading}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             className="send-button primary"
             disabled={isLoading}
           >
             {isLoading ? 'Creating...' : 'Create Handoff'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

@@ -10,15 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Checkbox } from './ui/Checkbox';
 import { Label } from './ui/Label';
 import { Alert, AlertDescription } from './ui/Alert';
-import { 
-  Shield, 
-  FileText, 
-  CheckCircle, 
-  AlertTriangle,
-  ExternalLink,
-  Clock,
-  Info
-} from 'lucide-react';
+import Icon from './ui/Icon';
 
 const ConsentForm = ({ 
   onConsentChange, 
@@ -109,7 +101,7 @@ const ConsentForm = ({
       <Card className="border-l-4 border-l-blue-500">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Shield className="h-5 w-5 text-blue-600" />
+            <Icon name="shield" className="h-5 w-5 text-blue-600" aria-hidden="true" />
             {currentConsent.title}
           </CardTitle>
         </CardHeader>
@@ -134,7 +126,7 @@ const ConsentForm = ({
                 
                 {/* Privacy Policy Link */}
                 <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-200">
-                  <FileText className="h-3 w-3" />
+                  <Icon name="file-text" className="h-3 w-3" aria-hidden="true" />
                   <span>I have read and agree to the</span>
                   <Link 
                     to="/privacy-policy" 
@@ -143,14 +135,14 @@ const ConsentForm = ({
                     rel="noopener noreferrer"
                   >
                     Privacy Policy
-                    <ExternalLink className="h-3 w-3" />
+                    <Icon name="external-link" className="h-3 w-3" aria-hidden="true" />
                   </Link>
                 </div>
 
                 {/* Consent Timestamp */}
                 {consentGiven && consentTimestamp && (
                   <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 p-2 rounded">
-                    <CheckCircle className="h-3 w-3" />
+                    <Icon name="check-circle" className="h-3 w-3" aria-hidden="true" />
                     <span>Consent given on {new Date(consentTimestamp).toLocaleString()}</span>
                   </div>
                 )}
@@ -160,7 +152,7 @@ const ConsentForm = ({
             {/* Error Display */}
             {errors.consent && (
               <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
+                <Icon name="alert-triangle" className="h-4 w-4" aria-hidden="true" />
                 <AlertDescription>{errors.consent}</AlertDescription>
               </Alert>
             )}
@@ -170,7 +162,8 @@ const ConsentForm = ({
           {showDetails && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <Icon name="info" className="h-4 w-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+
                 <span className="text-sm font-medium text-gray-900 dark:text-slate-200">What this means:</span>
               </div>
               
@@ -188,7 +181,8 @@ const ConsentForm = ({
               {/* Data Retention Notice */}
               <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                  <Icon name="clock" className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" aria-hidden="true" />
+
                   <div className="text-xs text-blue-800 dark:text-blue-300">
                     <p className="font-medium">Data Retention:</p>
                     <p>Your data will be retained for 5 years (visitors) or 7 years (users) as required by law and business needs.</p>
@@ -199,7 +193,8 @@ const ConsentForm = ({
               {/* Rights Information */}
               <div className="bg-green-50 dark:bg-green-900/30 p-3 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <Shield className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" />
+                  <Icon name="shield" className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5" aria-hidden="true" />
+
                   <div className="text-xs text-green-800 dark:text-green-300">
                     <p className="font-medium">Your Rights:</p>
                     <p>You have the right to access, rectify, delete, or restrict processing of your data. Contact us at privacy@securegate.com to exercise your rights.</p>

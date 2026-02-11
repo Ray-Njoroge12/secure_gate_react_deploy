@@ -8,6 +8,7 @@
 import React, { useState } from 'react';
 import { useAccessibilityContext } from './AccessibilityProvider.jsx';
 import './AccessibilitySettings.css';
+import Button from '../ui/Button';
 
 /**
  * Accessibility Settings Panel
@@ -68,19 +69,19 @@ export const AccessibilitySettings = ({
           Accessibility Settings
         </h2>
         {onClose && (
-          <button
+          <Button
             className="accessibility-settings__close"
             onClick={onClose}
             aria-label="Close accessibility settings"
           >
             ✕
-          </button>
+          </Button>
         )}
       </div>
 
       <div className="accessibility-settings__tabs" role="tablist">
         {tabs.map((tab) => (
-          <button
+          <Button
             key={tab.id}
             className={`accessibility-settings__tab ${activeTab === tab.id ? 'accessibility-settings__tab--active' : ''}`}
             role="tab"
@@ -92,7 +93,7 @@ export const AccessibilitySettings = ({
               {tab.icon}
             </span>
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -178,9 +179,9 @@ export const AccessibilitySettings = ({
                       />
                     </label>
                   </div>
-                  <button onClick={testColorContrast} className="accessibility-settings__test-button">
+                  <Button onClick={testColorContrast} className="accessibility-settings__test-button">
                     Test Contrast
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

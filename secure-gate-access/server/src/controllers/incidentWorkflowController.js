@@ -11,6 +11,38 @@ import webhookService from '../services/webhookService.js';
 
 const pool = db.pool || db;
 
+const getEstateId = (req) => {
+  const estateId = Number(req?.user?.estate_id);
+  return Number.isInteger(estateId) && estateId > 0 ? estateId : null;
+};
+
+const parsePositiveInt = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
+const ensureIncidentInEstate = async (incidentId, estateId) => {
+  const incident = await pool.query(
+    `SELECT id
+     FROM incidents
+     WHERE id = $1 AND estate_id = $2`,
+    [incidentId, estateId]
+  );
+
+  return incident.rows.length > 0;
+};
+
+const ensureUserInEstate = async (userId, estateId) => {
+  const user = await pool.query(
+    `SELECT id
+     FROM users
+     WHERE id = $1 AND estate_id = $2 AND account_status != 'deleted'`,
+    [userId, estateId]
+  );
+
+  return user.rows.length > 0;
+};
+
 /**
  * Get incident queue with filtering
  */
@@ -18,7 +50,7 @@ export const getIncidentQueue = async (req, res) => {
   try {
     const { severity, assignedToMe, unassigned, slaBreached } = req.query;
     const userId = req.user.id;
-    const estateId = req.user.estate_id;
+    const estateId = getEstateId(req);
 
     // SECURITY: Require estate context
     if (!estateId) {
@@ -86,7 +118,7 @@ export const getIncidentQueue = async (req, res) => {
  */
 export const getIncidentStats = async (req, res) => {
   try {
-    const estateId = req.user.estate_id;
+    const estateId = getEstateId(req);
 
     // SECURITY: Require estate context
     if (!estateId) {
@@ -126,7 +158,7 @@ export const updateIncidentStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     const userId = req.user.id;
-    const estateId = req.user.estate_id;
+    const estateId = getEstateId(req);
 
     // SECURITY: Require estate context
     if (!estateId) {
@@ -178,11 +210,22 @@ export const assignIncident = async (req, res) => {
     const { id } = req.params;
     const { assignedTo } = req.body;
     const userId = req.user.id;
-    const estateId = req.user.estate_id;
+    const estateId = getEstateId(req);
 
     // SECURITY: Require estate context
     if (!estateId) {
       return res.status(400).json({ error: 'Estate context required' });
+    }
+
+    const incidentId = parsePositiveInt(id);
+    const assigneeId = parsePositiveInt(assignedTo);
+    if (!incidentId || !assigneeId) {
+      return res.status(400).json({ error: 'Invalid incident id or assignedTo user id' });
+    }
+
+    const assigneeInEstate = await ensureUserInEstate(assigneeId, estateId);
+    if (!assigneeInEstate) {
+      return res.status(400).json({ error: 'Assigned user must belong to the same estate' });
     }
 
     // SECURITY: Filter by estate_id
@@ -194,7 +237,7 @@ export const assignIncident = async (req, res) => {
            status = CASE WHEN status = 'open' THEN 'under_review' ELSE status END
        WHERE id = $3 AND estate_id = $4
        RETURNING *`,
-      [assignedTo, userId, id, estateId]
+      [assigneeId, userId, incidentId, estateId]
     );
 
     if (result.rows.length === 0) {
@@ -205,11 +248,11 @@ export const assignIncident = async (req, res) => {
     await pool.query(
       `INSERT INTO incident_assignments (incident_id, assigned_to, assigned_by, assignment_type)
        VALUES ($1, $2, $3, 'assigned')`,
-      [id, assignedTo, userId]
+      [incidentId, assigneeId, userId]
     );
 
     // Calculate SLA
-    await pool.query('SELECT calculate_incident_sla($1)', [id]);
+    await pool.query('SELECT calculate_incident_sla($1)', [incidentId]);
 
     res.json({
       success: true,
@@ -230,11 +273,22 @@ export const escalateIncident = async (req, res) => {
     const { id } = req.params;
     const { escalateTo } = req.body;
     const userId = req.user.id;
-    const estateId = req.user.estate_id;
+    const estateId = getEstateId(req);
 
     // SECURITY: Require estate context
     if (!estateId) {
       return res.status(400).json({ error: 'Estate context required' });
+    }
+
+    const incidentId = parsePositiveInt(id);
+    const escalationTargetId = parsePositiveInt(escalateTo);
+    if (!incidentId || !escalationTargetId) {
+      return res.status(400).json({ error: 'Invalid incident id or escalateTo user id' });
+    }
+
+    const escalationTargetInEstate = await ensureUserInEstate(escalationTargetId, estateId);
+    if (!escalationTargetInEstate) {
+      return res.status(400).json({ error: 'Escalation target must belong to the same estate' });
     }
 
     // SECURITY: Filter by estate_id
@@ -246,7 +300,7 @@ export const escalateIncident = async (req, res) => {
            escalated_by = $2
        WHERE id = $3 AND estate_id = $4
        RETURNING *`,
-      [escalateTo, userId, id, estateId]
+      [escalationTargetId, userId, incidentId, estateId]
     );
 
     if (result.rows.length === 0) {
@@ -257,7 +311,7 @@ export const escalateIncident = async (req, res) => {
     await pool.query(
       `INSERT INTO incident_assignments (incident_id, assigned_to, assigned_by, assignment_type)
        VALUES ($1, $2, $3, 'escalated')`,
-      [id, escalateTo, userId]
+      [incidentId, escalationTargetId, userId]
     );
 
     // Trigger automation
@@ -280,6 +334,20 @@ export const escalateIncident = async (req, res) => {
 export const getIncidentComments = async (req, res) => {
   try {
     const { id } = req.params;
+    const estateId = getEstateId(req);
+    const incidentId = parsePositiveInt(id);
+
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+    if (!incidentId) {
+      return res.status(400).json({ error: 'Invalid incident id' });
+    }
+
+    const incidentExists = await ensureIncidentInEstate(incidentId, estateId);
+    if (!incidentExists) {
+      return res.status(404).json({ error: 'Incident not found or access denied' });
+    }
 
     const result = await pool.query(
       `SELECT c.*, u.username as user_name
@@ -287,7 +355,7 @@ export const getIncidentComments = async (req, res) => {
        LEFT JOIN users u ON c.user_id = u.id
        WHERE c.incident_id = $1
        ORDER BY c.created_at DESC`,
-      [id]
+      [incidentId]
     );
 
     res.json({
@@ -309,12 +377,29 @@ export const addIncidentComment = async (req, res) => {
     const { id } = req.params;
     const { comment, internal = true } = req.body;
     const userId = req.user.id;
+    const estateId = getEstateId(req);
+    const incidentId = parsePositiveInt(id);
+
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+    if (!incidentId) {
+      return res.status(400).json({ error: 'Invalid incident id' });
+    }
+    if (!comment || typeof comment !== 'string' || comment.trim().length === 0) {
+      return res.status(400).json({ error: 'Comment is required' });
+    }
+
+    const incidentExists = await ensureIncidentInEstate(incidentId, estateId);
+    if (!incidentExists) {
+      return res.status(404).json({ error: 'Incident not found or access denied' });
+    }
 
     const result = await pool.query(
       `INSERT INTO incident_comments (incident_id, user_id, comment, internal)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [id, userId, comment, internal]
+      [incidentId, userId, comment.trim(), internal]
     );
 
     res.json({
@@ -334,6 +419,20 @@ export const addIncidentComment = async (req, res) => {
 export const getIncidentHistory = async (req, res) => {
   try {
     const { id } = req.params;
+    const estateId = getEstateId(req);
+    const incidentId = parsePositiveInt(id);
+
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+    if (!incidentId) {
+      return res.status(400).json({ error: 'Invalid incident id' });
+    }
+
+    const incidentExists = await ensureIncidentInEstate(incidentId, estateId);
+    if (!incidentExists) {
+      return res.status(404).json({ error: 'Incident not found or access denied' });
+    }
 
     const result = await pool.query(
       `SELECT 
@@ -350,7 +449,7 @@ export const getIncidentHistory = async (req, res) => {
        FROM incident_assignments
        WHERE incident_id = $1
        ORDER BY created_at DESC`,
-      [id]
+      [incidentId]
     );
 
     res.json({
@@ -370,20 +469,34 @@ export const getIncidentHistory = async (req, res) => {
 export const getIncidentSLA = async (req, res) => {
   try {
     const { id } = req.params;
+    const estateId = getEstateId(req);
+    const incidentId = parsePositiveInt(id);
+
+    if (!estateId) {
+      return res.status(400).json({ error: 'Estate context required' });
+    }
+    if (!incidentId) {
+      return res.status(400).json({ error: 'Invalid incident id' });
+    }
+
+    const incidentExists = await ensureIncidentInEstate(incidentId, estateId);
+    if (!incidentExists) {
+      return res.status(404).json({ error: 'Incident not found or access denied' });
+    }
 
     const result = await pool.query(
       `SELECT 
         response_sla_minutes,
         resolution_sla_minutes,
         EXTRACT(EPOCH FROM (first_response_at - 
-          (SELECT created_at FROM incidents WHERE id = $1)))/60 as response_minutes,
+          (SELECT created_at FROM incidents WHERE id = $1 AND estate_id = $2)))/60 as response_minutes,
         EXTRACT(EPOCH FROM (resolved_at - 
-          (SELECT created_at FROM incidents WHERE id = $1)))/60 as resolution_minutes,
+          (SELECT created_at FROM incidents WHERE id = $1 AND estate_id = $2)))/60 as resolution_minutes,
         response_sla_met,
         resolution_sla_met
        FROM incident_sla_tracking
        WHERE incident_id = $1`,
-      [id]
+      [incidentId, estateId]
     );
 
     res.json({

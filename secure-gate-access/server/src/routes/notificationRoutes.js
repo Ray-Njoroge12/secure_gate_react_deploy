@@ -13,6 +13,7 @@ import {
 import { dbManager as db } from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
 import { renderPushTemplate, pushTemplateNames } from '../templates/push-templates.js';
+import pushNotificationService from '../services/pushNotificationService.js';
 
 const router = express.Router();
 
@@ -433,6 +434,28 @@ router.post('/push/test', authenticateToken, async (req, res) => {
 });
 
 /**
+ * @route GET /api/notifications/push/vapid-key
+ * @desc Return web push VAPID public key
+ * @access Private (authenticated)
+ */
+router.get('/push/vapid-key', authenticateToken, async (req, res) => {
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+
+  if (!publicKey) {
+    return res.status(503).json({
+      success: false,
+      error: 'Push notifications are not configured'
+    });
+  }
+
+  return res.json({
+    success: true,
+    publicKey,
+    configured: pushNotificationService.isConfigured()
+  });
+});
+
+/**
  * @route POST /api/notifications/push/subscribe
  * @desc Register push notification subscription
  * @access Private (authenticated)
@@ -479,6 +502,52 @@ router.post('/push/subscribe', authenticateToken, async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to register subscription'
+    });
+  }
+});
+
+/**
+ * @route POST /api/notifications/push/verify
+ * @desc Verify that a push subscription exists for the current user
+ * @access Private (authenticated)
+ */
+router.post('/push/verify', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { endpoint } = req.body;
+
+    if (!endpoint) {
+      return res.status(400).json({
+        success: false,
+        error: 'Endpoint is required'
+      });
+    }
+
+    const query = `
+      SELECT id
+      FROM push_subscriptions
+      WHERE user_id = $1 AND endpoint = $2
+      LIMIT 1
+    `;
+
+    const result = await db.query(query, [userId, endpoint]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Subscription not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      valid: true
+    });
+  } catch (error) {
+    logger.error('Failed to verify push subscription:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to verify subscription'
     });
   }
 });

@@ -7,6 +7,7 @@
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useAccessibilityContext } from './AccessibilityProvider.jsx';
+import Button from '../ui/Button';
 
 /**
  * Keyboard shortcuts configuration
@@ -520,13 +521,13 @@ export const KeyboardShortcutsHelp = ({ shortcuts = DEFAULT_SHORTCUTS, onClose }
       <div className="keyboard-shortcuts-help__header">
         <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
         {onClose && (
-          <button
+          <Button
             className="keyboard-shortcuts-help__close"
             onClick={onClose}
             aria-label="Close keyboard shortcuts help"
           >
             ✕
-          </button>
+          </Button>
         )}
       </div>
       

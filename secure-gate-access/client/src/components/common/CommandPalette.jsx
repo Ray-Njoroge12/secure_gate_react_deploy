@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import Button from '../ui/Button';
 
 // Icons
 const SearchIcon = () => (
@@ -30,6 +31,7 @@ const CommandIcon = () => (
 
 // Command definitions by role
 const getCommands = (role) => {
+  const isAdminLike = role === 'admin' || role === 'super_admin';
   const commonCommands = [
     {
       id: 'settings',
@@ -39,7 +41,7 @@ const getCommands = (role) => {
       category: 'Navigation',
       icon: '⚙️',
       action: 'navigate',
-      path: `/${role === 'admin' ? 'dashboard/admin' : role === 'guard' ? 'dashboard/guard' : 'resident'}/settings`
+      path: `/${isAdminLike ? 'dashboard/admin' : role === 'guard' ? 'dashboard/guard' : 'resident'}/settings`
     },
     {
       id: 'privacy',
@@ -57,7 +59,7 @@ const getCommands = (role) => {
       category: 'Help',
       icon: '❓',
       action: 'navigate',
-      path: '/help'
+      path: isAdminLike ? '/dashboard/admin/help/security' : role === 'guard' ? '/dashboard/guard/help/mfa-setup' : '/resident/settings'
     },
     {
       id: 'keyboard-shortcuts',
@@ -239,7 +241,7 @@ const getCommands = (role) => {
       category: 'Management',
       icon: '👥',
       action: 'navigate',
-      path: '/dashboard/admin/users'
+      path: '/dashboard/admin/approvals'
     },
     {
       id: 'staff',
@@ -248,7 +250,7 @@ const getCommands = (role) => {
       category: 'Management',
       icon: '🛡️',
       action: 'navigate',
-      path: '/dashboard/admin/manage-staff'
+      path: '/dashboard/admin/guards'
     },
     {
       id: 'visitors',
@@ -270,22 +272,31 @@ const getCommands = (role) => {
       path: '/dashboard/admin/reports'
     },
     {
-      id: 'incidents',
-      label: 'Incident Management',
-      description: 'Manage security incidents',
+      id: 'residents',
+      label: 'Manage Residents',
+      description: 'View and manage resident accounts',
       category: 'Management',
-      icon: '⚠️',
+      icon: '🏠',
       action: 'navigate',
-      path: '/dashboard/admin/incidents'
+      path: '/dashboard/admin/residents'
     },
     {
-      id: 'integrations',
-      label: 'Integrations',
-      description: 'Manage third-party integrations',
-      category: 'Settings',
-      icon: '🔌',
+      id: 'activity-dashboard',
+      label: 'Activity Dashboard',
+      description: 'Review security and access activity',
+      category: 'Analytics',
+      icon: '📈',
       action: 'navigate',
-      path: '/dashboard/admin/integrations'
+      path: '/dashboard/admin/activity'
+    },
+    {
+      id: 'notification-preferences',
+      label: 'Notification Preferences',
+      description: 'Configure admin notification channels',
+      category: 'Settings',
+      icon: '🔔',
+      action: 'navigate',
+      path: '/dashboard/admin/notifications'
     },
     {
       id: 'announcements',
@@ -298,10 +309,35 @@ const getCommands = (role) => {
     }
   ];
 
+  const superAdminCommands = [
+    {
+      id: 'platform-dashboard',
+      label: 'Platform Dashboard',
+      description: 'Go to super admin global overview',
+      shortcut: '⌘H',
+      category: 'Navigation',
+      icon: '🌐',
+      action: 'navigate',
+      path: '/dashboard/super-admin'
+    },
+    {
+      id: 'estate-dashboard',
+      label: 'Estate Dashboard',
+      description: 'Open estate-level admin workspace',
+      shortcut: '⌘E',
+      category: 'Navigation',
+      icon: '🏘️',
+      action: 'navigate',
+      path: '/dashboard/admin'
+    },
+    ...adminCommands.filter((command) => command.id !== 'dashboard')
+  ];
+
   const roleCommands = {
     resident: residentCommands,
     guard: guardCommands,
-    admin: adminCommands
+    admin: adminCommands,
+    super_admin: superAdminCommands
   };
 
   return [...(roleCommands[role] || []), ...commonCommands];
@@ -439,7 +475,14 @@ const CommandPalette = ({ isOpen, onClose }) => {
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
         onClick={onClose}
-        aria-hidden="true"
+        role="button"
+        tabIndex={0}
+        aria-label="Close command palette"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' || e.key === 'Enter') {
+            onClose();
+          }
+        }}
       />
 
       {/* Command Palette */}
@@ -489,7 +532,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
                     const isSelected = index === selectedIndex;
                     
                     return (
-                      <button
+                      <Button
                         key={command.id}
                         data-index={index}
                         onClick={() => executeCommand(command)}
@@ -512,7 +555,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
                             {command.shortcut}
                           </kbd>
                         )}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>

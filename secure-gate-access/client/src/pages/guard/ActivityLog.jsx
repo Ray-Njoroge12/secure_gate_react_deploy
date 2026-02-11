@@ -11,8 +11,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
-import { Card, Button, Badge, SearchFilter } from '../../components/ui';
+import { Card, Button, Badge, Skeleton, EmptyState } from '../../components/ui';
 import PageHeader from '../../components/PageHeader';
+import useOnlineStatus from '../../hooks/useOnlineStatus';
+import OfflineBanner from '../../components/common/OfflineBanner';
+import usePullToRefresh from '../../hooks/usePullToRefresh';
 import logger from '../../utils/logger';
 
 // Icons
@@ -82,15 +85,48 @@ const ACTIVITY_TYPES = {
   shift_end: { icon: CheckOutIcon, label: 'Shift Ended', color: 'red' },
 };
 
+const ACTIVITY_COLOR_STYLES = {
+  green: {
+    iconContainer: 'bg-green-100 dark:bg-green-900/20',
+    badge: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+  },
+  red: {
+    iconContainer: 'bg-red-100 dark:bg-red-900/20',
+    badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+  },
+  blue: {
+    iconContainer: 'bg-blue-100 dark:bg-blue-900/20',
+    badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+  },
+  purple: {
+    iconContainer: 'bg-purple-100 dark:bg-purple-900/20',
+    badge: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+  },
+  yellow: {
+    iconContainer: 'bg-yellow-100 dark:bg-yellow-900/20',
+    badge: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+  },
+  indigo: {
+    iconContainer: 'bg-indigo-100 dark:bg-indigo-900/20',
+    badge: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+  },
+  gray: {
+    iconContainer: 'bg-gray-100 dark:bg-slate-700',
+    badge: 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300'
+  }
+};
+
 export default function ActivityLog() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { handleApiError } = useError();
   const { setLoading, isLoading } = useLoading();
+  const { isOnline, wasOffline } = useOnlineStatus();
 
   // State
   const [activities, setActivities] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
   const [filters, setFilters] = useState({
     type: 'all',
     dateFrom: '',
@@ -115,6 +151,7 @@ export default function ActivityLog() {
   const fetchActivities = useCallback(async () => {
     try {
       setLoading('activityLog', true);
+      setFetchError(null);
 
       // In a real implementation, this would call a dedicated activity log endpoint
       // For now, we'll aggregate from multiple sources
@@ -229,12 +266,15 @@ export default function ActivityLog() {
       setPagination(prev => ({ ...prev, total: allActivities.length }));
 
     } catch (error) {
+      setFetchError(error.message || 'Failed to load activity log. Please try again.');
       handleApiError(error, 'Activity Log');
       logger.error('Failed to fetch activity log:', error);
     } finally {
       setLoading('activityLog', false);
     }
   }, [user, handleApiError, setLoading]);
+
+  const { PullToRefreshIndicator } = usePullToRefresh(fetchActivities);
 
   useEffect(() => {
     fetchActivities();
@@ -334,7 +374,17 @@ export default function ActivityLog() {
         backTo="/dashboard/guard"
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8 space-y-6">
+        {/* Pull to Refresh */}
+        <PullToRefreshIndicator />
+
+        <OfflineBanner 
+          isOnline={isOnline} 
+          wasOffline={wasOffline} 
+          onRetry={fetchActivities}
+          message="You are offline. Activity log data may be stale."
+        />
+
         {/* Stats Overview */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="p-4 text-center">
@@ -361,31 +411,33 @@ export default function ActivityLog() {
 
         {/* Filters */}
         <Card className="p-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 placeholder="Search activities..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-label="Search activities"
+                className="mobile-input flex-1 sm:flex-none sm:w-64"
               />
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
+                className="min-h-[44px] min-w-[44px]"
               >
                 <FilterIcon />
               </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button variant="outline" size="sm" onClick={handleExport} className="min-h-[44px]">
               <DownloadIcon className="mr-2" />
               Export
             </Button>
           </div>
 
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Activity Type
@@ -393,7 +445,7 @@ export default function ActivityLog() {
                 <select
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                  className="mobile-select"
                 >
                   <option value="all">All Types</option>
                   {Object.entries(ACTIVITY_TYPES).map(([key, { label }]) => (
@@ -402,31 +454,34 @@ export default function ActivityLog() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="activity-date-from" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   From Date
                 </label>
                 <input
+                  id="activity-date-from"
                   type="date"
                   value={filters.dateFrom}
                   onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                  className="mobile-input"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="activity-date-to" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   To Date
                 </label>
                 <input
+                  id="activity-date-to"
                   type="date"
                   value={filters.dateTo}
                   onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                  className="mobile-input"
                 />
               </div>
               <div className="flex items-end">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="min-h-[44px] w-full sm:w-auto"
                   onClick={() => setFilters({ type: 'all', dateFrom: '', dateTo: '', search: '' })}
                 >
                   Clear Filters
@@ -438,25 +493,76 @@ export default function ActivityLog() {
 
         {/* Activity List */}
         <Card className="divide-y divide-gray-200 dark:divide-slate-700">
-          {isLoading('activityLog') ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-300">Loading activities...</p>
+          {isLoading('activityLog') && activities.length === 0 ? (
+            <div className="divide-y divide-gray-200 dark:divide-slate-700">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="p-4">
+                  <div className="flex items-start gap-4">
+                    <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Skeleton className="h-5 w-64" />
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      </div>
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-48" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : fetchError && !isLoading('activityLog') ? (
+            <div className="text-center py-10" role="alert">
+              <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Failed to Load Activity Log</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{fetchError}</p>
+              <Button onClick={fetchActivities} variant="primary" size="sm">
+                Try Again
+              </Button>
             </div>
           ) : paginatedActivities.length === 0 ? (
-            <div className="p-8 text-center">
-              <ActivityIcon className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-300" />
-              <p className="mt-2 text-gray-500 dark:text-gray-300">No activities found.</p>
+            <div className="p-8">
+              <EmptyState
+                icon="activity"
+                title="No Activity Logged"
+                message={
+                  filters.type !== 'all' || filters.search || filters.dateFrom || filters.dateTo
+                    ? "No activities match your filters. Try adjusting the criteria."
+                    : "No activity has been logged yet. Activities will appear here as you perform actions."
+                }
+                actions={
+                  filters.type !== 'all' || filters.search || filters.dateFrom || filters.dateTo
+                    ? [
+                        {
+                          label: 'Clear Filters',
+                          onClick: () => setFilters({ type: 'all', dateFrom: '', dateTo: '', search: '' }),
+                          variant: 'outline'
+                        }
+                      ]
+                    : [
+                        {
+                          label: 'Go to Dashboard',
+                          onClick: () => navigate('/dashboard/guard'),
+                          variant: 'primary'
+                        }
+                      ]
+                }
+              />
             </div>
           ) : (
             paginatedActivities.map((activity) => {
               const config = ACTIVITY_TYPES[activity.type] || { icon: ActivityIcon, label: activity.type, color: 'gray' };
               const IconComponent = config.icon;
+              const colorStyles = ACTIVITY_COLOR_STYLES[config.color] || ACTIVITY_COLOR_STYLES.gray;
 
               return (
                 <div key={activity.id} className="p-4 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                   <div className="flex items-start gap-4">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-${config.color}-100 dark:bg-${config.color}-900/20 flex items-center justify-center`}>
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full ${colorStyles.iconContainer} flex items-center justify-center`}>
                       <IconComponent />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -464,7 +570,7 @@ export default function ActivityLog() {
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
                           {activity.description}
                         </p>
-                        <Badge variant={config.color} size="sm">
+                        <Badge variant="default" size="sm" className={colorStyles.badge}>
                           {config.label}
                         </Badge>
                       </div>

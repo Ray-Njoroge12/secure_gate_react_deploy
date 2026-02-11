@@ -15,36 +15,18 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { navigateTo } from '../../utils/appNavigation';
+
 import {
   Card,
   Button,
-  Input,
   Modal,
-  EmptyState,
   Loading,
   Badge,
-  SearchBar
+  Icon
 } from '../../components/ui';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
-import AppShell from '../../layouts/AppShell';
-import { useCurrentRole } from '../../hooks/useCurrentRole';
-import {
-  Star,
-  Plus,
-  Search,
-  Phone,
-  Mail,
-  User,
-  Edit2,
-  Trash2,
-  UserPlus,
-  Clock,
-  ChevronRight,
-  Heart,
-  Users
-} from 'lucide-react';
+import { navigateTo } from '../../utils/appNavigation';
 
 // Relationship type options
 const RELATIONSHIP_TYPES = [
@@ -63,7 +45,6 @@ const RELATIONSHIP_TYPES = [
 const FavoriteVisitors = () => {
   const { isDark } = useTheme();
   const { toast } = useToast();
-  const role = useCurrentRole();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,6 +65,7 @@ const FavoriteVisitors = () => {
   const [activeTab, setActiveTab] = useState('new');
   const [historyVisitors, setHistoryVisitors] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
 
   // Fetch favorites on mount
   useEffect(() => {
@@ -161,6 +143,19 @@ const FavoriteVisitors = () => {
     return Array.from(unique.values()).slice(0, 50);
   }, [historyVisitors]);
 
+  const filteredHistoryVisitors = useMemo(() => {
+    const query = historySearchQuery.trim().toLowerCase();
+    if (!query) {
+      return uniqueHistoryVisitors;
+    }
+
+    return uniqueHistoryVisitors.filter((visitor) => (
+      visitor.name?.toLowerCase().includes(query) ||
+      String(visitor.phone || '').toLowerCase().includes(query) ||
+      visitor.email?.toLowerCase().includes(query)
+    ));
+  }, [uniqueHistoryVisitors, historySearchQuery]);
+
   // Filter favorites based on search
   const filteredFavorites = useMemo(() => {
     if (!searchQuery.trim()) return favorites;
@@ -177,6 +172,8 @@ const FavoriteVisitors = () => {
   // Open modal for adding new favorite
   const handleAdd = useCallback(() => {
     setEditingFavorite(null);
+    setActiveTab('new');
+    setHistorySearchQuery('');
     setFormData({
       visitor_name: '',
       visitor_phone: '',
@@ -255,14 +252,14 @@ const FavoriteVisitors = () => {
 
   // Quick invite from favorite
   const handleQuickInvite = useCallback((favorite) => {
-    // Navigate to add visitor page with pre-filled data
+    // Navigate to resident quick-invite page with pre-filled data
     const params = new URLSearchParams({
       name: favorite.visitor_name,
       phone: favorite.visitor_phone || '',
       email: favorite.visitor_email || '',
       from_favorite: favorite.id
     });
-    navigateTo(`/resident/add-visitor?${params.toString()}`);
+    navigateTo(`/resident/quick-invite?${params.toString()}`);
   }, []);
 
   // Format date for display
@@ -289,7 +286,7 @@ const FavoriteVisitors = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+          <h1 className={`text-2xl md:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
             Favorite Visitors
           </h1>
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'}`}>
@@ -301,7 +298,7 @@ const FavoriteVisitors = () => {
           onClick={handleAdd}
           className="flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" />
+          <Icon name="Plus" className="w-4 h-4" />
           Add Favorite
         </Button>
       </div>
@@ -318,13 +315,14 @@ const FavoriteVisitors = () => {
           {/* Search Bar */}
           {favorites.length > 0 && (
             <div className="relative">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'
+              <Icon name="Search" className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'
                 }`} />
               <input
                 type="text"
                 placeholder="Search by name, phone, or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search favorite visitors"
                 className={`w-full pl-10 pr-4 py-3 rounded-lg border ${isDark
                   ? 'bg-slate-800 border-slate-600 text-white placeholder-gray-400'
                   : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder-gray-500'
@@ -354,7 +352,7 @@ const FavoriteVisitors = () => {
               <div className="flex flex-col items-center">
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-slate-700' : 'bg-gray-100 dark:bg-slate-700'
                   }`}>
-                  <Heart className={`w-8 h-8 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'}`} />
+                  <Icon name="Heart" className={`w-8 h-8 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'}`} />
                 </div>
                 <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                   No Favorite Visitors Yet
@@ -364,7 +362,7 @@ const FavoriteVisitors = () => {
                   Save time by not entering their details every time!
                 </p>
                 <Button onClick={handleAdd} className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
+                  <Icon name="Plus" className="w-4 h-4" />
                   Add Your First Favorite
                 </Button>
               </div>
@@ -374,7 +372,7 @@ const FavoriteVisitors = () => {
           {/* No Search Results */}
           {!error && favorites.length > 0 && filteredFavorites.length === 0 && (
             <Card className={`p-8 text-center ${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
-              <Search className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-400 dark:text-gray-300'}`} />
+              <Icon name="Search" className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-400 dark:text-gray-300'}`} />
               <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                 No Results Found
               </h3>
@@ -390,7 +388,7 @@ const FavoriteVisitors = () => {
               {filteredFavorites.map((favorite) => (
                 <Card
                   key={favorite.id}
-                  className={`p-4 hover:shadow-lg transition-shadow ${isDark ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'hover:border-gray-300 dark:border-slate-600'
+                  className={`p-4 hover:shadow-md transition-shadow ${isDark ? 'bg-slate-800 border-slate-700 hover:border-slate-600' : 'hover:border-gray-300 dark:border-slate-600'
                     }`}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -410,7 +408,8 @@ const FavoriteVisitors = () => {
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button
+                      <Button
+                        variant="ghost"
                         onClick={() => handleEdit(favorite)}
                         className={`p-2 rounded-lg transition-colors ${isDark
                           ? 'hover:bg-slate-700 text-gray-300 hover:text-white'
@@ -418,9 +417,10 @@ const FavoriteVisitors = () => {
                           }`}
                         aria-label="Edit favorite"
                       >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
+                        <Icon name="Edit2" className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
                         onClick={() => setDeleteConfirm(favorite.id)}
                         className={`p-2 rounded-lg transition-colors ${isDark
                           ? 'hover:bg-red-900/30 text-gray-300 hover:text-red-400'
@@ -428,8 +428,8 @@ const FavoriteVisitors = () => {
                           }`}
                         aria-label="Delete favorite"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <Icon name="Trash2" className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
 
@@ -438,14 +438,14 @@ const FavoriteVisitors = () => {
                     {favorite.visitor_phone && (
                       <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'
                         }`}>
-                        <Phone className="w-4 h-4" />
+                        <Icon name="Phone" className="w-4 h-4" />
                         <span>{favorite.visitor_phone}</span>
                       </div>
                     )}
                     {favorite.visitor_email && (
                       <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600 dark:text-gray-200'
                         }`}>
-                        <Mail className="w-4 h-4" />
+                        <Icon name="Mail" className="w-4 h-4" />
                         <span className="truncate">{favorite.visitor_email}</span>
                       </div>
                     )}
@@ -457,11 +457,11 @@ const FavoriteVisitors = () => {
                     <div className={`flex items-center gap-4 text-xs ${isDark ? 'text-gray-500 dark:text-gray-300' : 'text-gray-500 dark:text-gray-300'
                       }`}>
                       <span className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
+                        <Icon name="Users" className="w-3 h-3" />
                         {favorite.visit_count || 0} visits
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                        <Icon name="Clock" className="w-3 h-3" />
                         {formatDate(favorite.last_visit)}
                       </span>
                     </div>
@@ -473,7 +473,7 @@ const FavoriteVisitors = () => {
                     className="w-full mt-3 flex items-center justify-center gap-2"
                     onClick={() => handleQuickInvite(favorite)}
                   >
-                    <UserPlus className="w-4 h-4" />
+                    <Icon name="UserPlus" className="w-4 h-4" />
                     Quick Invite
                   </Button>
                 </Card>
@@ -489,17 +489,22 @@ const FavoriteVisitors = () => {
           >
             {/* Tabs for Add Mode */}
             {!editingFavorite && (
-              <div className="flex border-b border-gray-200 dark:border-slate-700 mb-4">
-                <button
+              <div className="flex border-b border-gray-200 dark:border-slate-700 mb-4" role="tablist" aria-label="Favorite visitor source">
+                <Button
+                  variant="ghost"
                   className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'new'
                       ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                       : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
                     }`}
                   onClick={() => setActiveTab('new')}
+                  role="tab"
+                  aria-selected={activeTab === 'new'}
+                  aria-controls="favorite-tab-new"
                 >
                   New Contact
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
                   className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'history'
                       ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                       : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-300'
@@ -508,20 +513,26 @@ const FavoriteVisitors = () => {
                     setActiveTab('history');
                     if (historyVisitors.length === 0) fetchHistory();
                   }}
+                  role="tab"
+                  aria-selected={activeTab === 'history'}
+                  aria-controls="favorite-tab-history"
                 >
                   From History
-                </button>
+                </Button>
               </div>
             )}
 
             {activeTab === 'history' && !editingFavorite ? (
-              <div className="space-y-4">
+              <div className="space-y-4" id="favorite-tab-history" role="tabpanel">
                 <div className="relative">
-                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
+                  <Icon name="Search" className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
                     }`} />
                   <input
                     type="text"
                     placeholder="Search history..."
+                    value={historySearchQuery}
+                    onChange={(event) => setHistorySearchQuery(event.target.value)}
+                    aria-label="Search visitor history"
                     className={`w-full pl-9 pr-4 py-2 text-sm rounded-lg border ${isDark
                         ? 'bg-slate-700 border-slate-600 text-white'
                         : 'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white'
@@ -535,26 +546,40 @@ const FavoriteVisitors = () => {
                   </div>
                 ) : (
                   <div className="max-h-60 overflow-y-auto space-y-2 custom-scrollbar">
-                    {uniqueHistoryVisitors.length === 0 ? (
+                    {filteredHistoryVisitors.length === 0 ? (
                       <div className="text-center py-8 text-gray-500 dark:text-gray-300 text-sm">
                         No recent visitors found.
                       </div>
                     ) : (
-                      uniqueHistoryVisitors.map((visitor) => (
-                        <div
-                          key={visitor.id || Math.random()}
+                      filteredHistoryVisitors.map((visitor) => (
+                        <div role="button" tabIndex={0}
+                          key={visitor.id || visitor.phone || visitor.email || visitor.name}
                           className={`p-3 rounded-lg border cursor-pointer hover:border-brand-500 transition-colors ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700'
                             }`}
                           onClick={() => {
-                            setFormData({
-                              ...formData,
+                            setFormData((prev) => ({
+                              ...prev,
                               visitor_name: visitor.name || '',
                               visitor_phone: visitor.phone || '',
                               visitor_email: visitor.email || '',
                               visitor_id: visitor.id,
                               relationship: 'Guest'
-                            });
+                            }));
                             setActiveTab('new');
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              setFormData((prev) => ({
+                                ...prev,
+                                visitor_name: visitor.name || '',
+                                visitor_phone: visitor.phone || '',
+                                visitor_email: visitor.email || '',
+                                visitor_id: visitor.id,
+                                relationship: 'Guest'
+                              }));
+                              setActiveTab('new');
+                            }
                           }}
                         >
                           <div className="flex justify-between items-start">
@@ -577,22 +602,25 @@ const FavoriteVisitors = () => {
                   </div>
                 )}
                 <div className="text-center border-t pt-3 mt-2 border-gray-200 dark:border-slate-700">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setActiveTab('new')}
                     className="text-sm text-brand-600 hover:underline"
                   >
                     Enter details manually
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" id="favorite-tab-new" role="tabpanel">
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
+                  <label htmlFor="fav-visitor-name" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                     }`}>
                     Visitor Name *
                   </label>
                   <input
+                    id="fav-visitor-name"
                     type="text"
                     required
                     value={formData.visitor_name}
@@ -607,11 +635,12 @@ const FavoriteVisitors = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
+                    <label htmlFor="fav-visitor-phone" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                       }`}>
                       Phone Number
                     </label>
                     <input
+                      id="fav-visitor-phone"
                       type="tel"
                       value={formData.visitor_phone}
                       onChange={(e) => setFormData({ ...formData, visitor_phone: e.target.value })}
@@ -623,11 +652,12 @@ const FavoriteVisitors = () => {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
+                    <label htmlFor="fav-visitor-email" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'
                       }`}>
                       Email Address
                     </label>
                     <input
+                      id="fav-visitor-email"
                       type="email"
                       value={formData.visitor_email}
                       onChange={(e) => setFormData({ ...formData, visitor_email: e.target.value })}
@@ -703,7 +733,7 @@ const FavoriteVisitors = () => {
                       </>
                     ) : (
                       <>
-                        <Star className="w-4 h-4" />
+                        <Icon name="Star" className="w-4 h-4 text-yellow-500" />
                         {editingFavorite ? 'Update' : 'Add'} Favorite
                       </>
                     )}
@@ -736,7 +766,7 @@ const FavoriteVisitors = () => {
                   onClick={() => handleDelete(deleteConfirm)}
                   className="flex items-center gap-2"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Icon name="Trash2" className="w-4 h-4" />
                   Delete
                 </Button>
               </div>
