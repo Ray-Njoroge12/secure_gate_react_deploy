@@ -570,7 +570,9 @@ export default function GuardDashboard() {
       </div>
 
       {/* Phase G3: Dashboard KPIs */}
-      <DashboardKPIs onFilterClick={handleKPIClick} />
+      <div data-tour="guard-dashboard-kpis">
+        <DashboardKPIs onFilterClick={handleKPIClick} />
+      </div>
 
       {/* Phase G3: Quick Filters */}
       <QuickFilters

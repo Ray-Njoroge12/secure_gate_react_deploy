@@ -5,6 +5,7 @@ import PanicHistory from "../../components/guard/PanicHistory"; // Phase 1.1: Em
 import NotificationSettings from "../../components/settings/NotificationSettings";
 import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useOnboardingTour } from "../../components/common/OnboardingTour";
 import api from "../../utils/apiClient";
 import notificationService from "../../services/notificationService";
 
@@ -13,6 +14,7 @@ const GUARD_SETTINGS_TABS = ["profile", "notifications", "emergency", "security"
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, resolvedTheme } = useTheme();
+  const { restartTour } = useOnboardingTour('guard');
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
   const [profilePic, setProfilePic] = useState(null);
   const [security, setSecurity] = useState({ showLoginHistory: true });
@@ -376,6 +378,19 @@ export default function Settings() {
             )}
           </div>
         </div>
+
+          {/* Guided Tour */}
+          <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Guided Tour</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Retake the feature walkthrough to discover what you can do.</p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={restartTour}>
+                Restart Tour
+              </Button>
+            </div>
+          </div>
       </div>
     </div>
   );

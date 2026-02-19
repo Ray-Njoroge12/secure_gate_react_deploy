@@ -1,0 +1,118 @@
+/**
+ * Driver.js theme overrides for Secure Gate
+ * Matches the app's dark mode design system (slate palette + brand green)
+ */
+
+/* Popover container */
+.driver-popover.securegate-tour-popover {
+  background: #1e293b; /* slate.800 */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #f8fafc; /* slate.50 */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  max-width: 360px;
+}
+
+/* Title */
+.driver-popover.securegate-tour-popover .driver-popover-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.4;
+}
+
+/* Description */
+.driver-popover.securegate-tour-popover .driver-popover-description {
+  font-size: 0.875rem;
+  color: #94a3b8; /* slate.400 */
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+/* Progress text */
+.driver-popover.securegate-tour-popover .driver-popover-progress-text {
+  font-size: 0.75rem;
+  color: #64748b; /* slate.500 */
+}
+
+/* Navigation buttons container */
+.driver-popover.securegate-tour-popover .driver-popover-navigation-btns {
+  gap: 8px;
+}
+
+/* Next / Finish button — brand green */
+.driver-popover.securegate-tour-popover .driver-popover-next-btn {
+  background: #059669; /* brand.600 */
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.driver-popover.securegate-tour-popover .driver-popover-next-btn:hover {
+  background: #047857; /* brand.700 */
+}
+
+/* Previous button — ghost style */
+.driver-popover.securegate-tour-popover .driver-popover-prev-btn {
+  background: transparent;
+  color: #94a3b8; /* slate.400 */
+  border: 1px solid #334155; /* slate.700 */
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.driver-popover.securegate-tour-popover .driver-popover-prev-btn:hover {
+  background: #334155; /* slate.700 */
+  color: #f8fafc;
+}
+
+/* Close button */
+.driver-popover.securegate-tour-popover .driver-popover-close-btn {
+  color: #64748b; /* slate.500 */
+  transition: color 0.15s ease;
+}
+
+.driver-popover.securegate-tour-popover .driver-popover-close-btn:hover {
+  color: #f8fafc;
+}
+
+/* Arrow */
+.driver-popover.securegate-tour-popover .driver-popover-arrow {
+  border-color: #1e293b; /* match popover background */
+}
+
+.driver-popover.securegate-tour-popover .driver-popover-arrow-side-left {
+  border-left-color: #1e293b;
+}
+
+.driver-popover.securegate-tour-popover .driver-popover-arrow-side-right {
+  border-right-color: #1e293b;
+}
+
+.driver-popover.securegate-tour-popover .driver-popover-arrow-side-top {
+  border-top-color: #1e293b;
+}
+
+.driver-popover.securegate-tour-popover .driver-popover-arrow-side-bottom {
+  border-bottom-color: #1e293b;
+}
+
+/* Stage / highlight ring */
+.driver-active-element {
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.5) !important; /* brand.600 glow */
+  border-radius: 8px;
+}
+
+/* Overlay */
+.driver-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}

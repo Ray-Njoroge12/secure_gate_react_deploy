@@ -118,7 +118,7 @@ const IncidentList = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900" data-tour="incident-report">
       <PageHeader
         title="Incident Reports"
         subtitle="View and manage guard incident reports"
