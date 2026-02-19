@@ -406,7 +406,7 @@ const WalkInRegistration = () => {
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Enter visitor's full name"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="mobile-input w-full"
                     required
                   />
                 </div>
@@ -424,7 +424,7 @@ const WalkInRegistration = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     placeholder="e.g., +254712345678"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="mobile-input w-full"
                     required
                   />
                 </div>
@@ -442,7 +442,7 @@ const WalkInRegistration = () => {
                     value={formData.houseNumber}
                     onChange={handleInputChange}
                     placeholder="e.g., A-14, B-23, Villa 101"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="mobile-input w-full"
                     required
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter the resident's house/unit number for accurate lookup</p>
@@ -461,7 +461,7 @@ const WalkInRegistration = () => {
                     onChange={handleInputChange}
                     placeholder="Reason for visit"
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="mobile-textarea w-full"
                   />
                 </div>
 
@@ -476,7 +476,7 @@ const WalkInRegistration = () => {
                     value={formData.vehiclePlate}
                     onChange={handleInputChange}
                     placeholder="e.g., KXX 123A"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="mobile-input w-full"
                   />
                 </div>
 

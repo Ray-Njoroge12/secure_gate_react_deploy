@@ -34,12 +34,13 @@ const STATES = {
   ERROR: 'error'
 };
 
-const PanicButton = ({ 
+const PanicButton = ({
   gateId = null,
   className = '',
   size = 'default', // 'small', 'default', 'large'
   floating = true,  // Show as floating button
-  onStateChange = () => {},
+  position = 'bottom-right', // 'bottom-right', 'bottom-left', 'bottom-center'
+  onStateChange = () => { },
   disabled = false
 }) => {
   const [state, setState] = useState(STATES.IDLE);
@@ -48,7 +49,7 @@ const PanicButton = ({
   const [showPrivacyInfo, setShowPrivacyInfo] = useState(false);
   const [privacyInfo, setPrivacyInfo] = useState(null);
   const [error, setError] = useState(null);
-  
+
   const cancelTimerRef = useRef(null);
   const confirmTimeoutRef = useRef(null);
 
@@ -95,10 +96,10 @@ const PanicButton = ({
    */
   const handlePanicPress = useCallback(() => {
     if (disabled || state !== STATES.IDLE) return;
-    
+
     setState(STATES.CONFIRMING);
     setError(null);
-    
+
     // Auto-cancel confirmation after 10 seconds
     confirmTimeoutRef.current = setTimeout(() => {
       if (state === STATES.CONFIRMING) {
@@ -112,30 +113,30 @@ const PanicButton = ({
    */
   const handleConfirmPanic = useCallback(async () => {
     if (state !== STATES.CONFIRMING) return;
-    
+
     if (confirmTimeoutRef.current) {
       clearTimeout(confirmTimeoutRef.current);
     }
-    
+
     setState(STATES.TRIGGERING);
-    
+
     try {
       // Get location (optional - works without it)
       const location = await emergencyService.getCurrentLocation();
-      
+
       // Trigger the panic alert
       const result = await emergencyService.triggerPanicButton(location, gateId);
-      
+
       if (result.success) {
         setEmergencyId(result.data.emergencyId);
         setCancelTimeLeft(result.data.cancelWindow || 30);
         setState(STATES.TRIGGERED);
-        
+
         notificationService.warning(
           '🆘 Emergency Alert Sent',
           'Help is on the way. You can cancel within 30 seconds if this was accidental.'
         );
-        
+
         logger.info('Panic button triggered', { emergencyId: result.data.emergencyId });
       } else {
         throw new Error(result.message || 'Failed to trigger alert');
@@ -143,12 +144,12 @@ const PanicButton = ({
     } catch (err) {
       setError(err.message || 'Failed to send emergency alert');
       setState(STATES.ERROR);
-      
+
       notificationService.error(
         'Alert Failed',
         err.message || 'Could not send emergency alert. Please try again or call for help.'
       );
-      
+
       logger.error('Panic button failed:', err);
     }
   }, [state, gateId]);
@@ -158,17 +159,17 @@ const PanicButton = ({
    */
   const handleCancelPanic = useCallback(async () => {
     if (!emergencyId || cancelTimeLeft <= 0) return;
-    
+
     setState(STATES.CANCELLING);
-    
+
     try {
       const result = await emergencyService.cancelPanicAlert(emergencyId);
-      
+
       if (result.success) {
         setState(STATES.IDLE);
         setEmergencyId(null);
         setCancelTimeLeft(0);
-        
+
         notificationService.success(
           'Alert Cancelled',
           'Emergency alert has been cancelled. No action needed.'
@@ -234,7 +235,10 @@ const PanicButton = ({
         transition-all duration-200
         flex items-center justify-center
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        ${floating ? 'fixed bottom-6 right-6 z-50' : ''}
+        ${floating ? `fixed bottom-6 z-50 ${position === 'bottom-left' ? 'left-6' :
+          position === 'bottom-center' ? 'left-1/2 -translate-x-1/2' :
+            'right-6'
+          }` : ''}
         ${className}
         focus:outline-none focus:ring-4 focus:ring-red-300
         animate-pulse hover:animate-none
@@ -242,16 +246,16 @@ const PanicButton = ({
       aria-label="Emergency Panic Button"
       title="Press for emergency assistance"
     >
-      <svg 
-        className="w-8 h-8" 
-        fill="none" 
-        stroke="currentColor" 
+      <svg
+        className="w-8 h-8"
+        fill="none"
+        stroke="currentColor"
         viewBox="0 0 24 24"
       >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth={2.5} 
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2.5}
           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
         />
       </svg>
@@ -284,7 +288,7 @@ const PanicButton = ({
             <div className="text-sm text-blue-800">
               <p className="font-medium">Privacy Notice</p>
               <p className="mt-1">
-                Your current location will be captured <strong>once</strong> to help responders find you. 
+                Your current location will be captured <strong>once</strong> to help responders find you.
                 We do not continuously track your location.
               </p>
             </div>
@@ -325,13 +329,13 @@ const PanicButton = ({
         {/* Animated Alert Icon */}
         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 animate-ping">
           <svg className="w-16 h-16 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
           </svg>
         </div>
 
         <h1 className="text-3xl font-bold mb-2">ALERT SENT!</h1>
         <p className="text-xl mb-6">Help is on the way</p>
-        
+
         {/* Cancel Option */}
         {cancelTimeLeft > 0 && (
           <div className="bg-white bg-opacity-20 rounded-lg p-4 mb-6">
@@ -412,7 +416,7 @@ const PanicButton = ({
             </svg>
           </Button>
         </div>
-        
+
         {privacyInfo ? (
           <div className="space-y-4">
             <p className="text-sm text-gray-500 dark:text-gray-300">
@@ -431,7 +435,7 @@ const PanicButton = ({
             <p className="text-gray-500 dark:text-gray-300">Loading privacy information...</p>
           </div>
         )}
-        
+
         <Button
           onClick={() => setShowPrivacyInfo(false)}
           className="w-full mt-6 px-4 py-3 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-800 dark:text-gray-200 font-medium rounded-lg"
@@ -446,10 +450,10 @@ const PanicButton = ({
     <>
       {/* Main Button (always visible in idle state) */}
       {state === STATES.IDLE && renderPanicButton()}
-      
+
       {/* Confirmation Modal */}
       {state === STATES.CONFIRMING && renderConfirmationModal()}
-      
+
       {/* Triggering Overlay */}
       {state === STATES.TRIGGERING && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
@@ -459,13 +463,13 @@ const PanicButton = ({
           </div>
         </div>
       )}
-      
+
       {/* Triggered State */}
       {(state === STATES.TRIGGERED || state === STATES.CANCELLING) && renderTriggeredState()}
-      
+
       {/* Error State */}
       {state === STATES.ERROR && renderErrorState()}
-      
+
       {/* Privacy Info Modal */}
       {showPrivacyInfo && renderPrivacyModal()}
     </>
@@ -477,6 +481,7 @@ PanicButton.propTypes = {
   className: PropTypes.string,
   size: PropTypes.oneOf(['small', 'default', 'large']),
   floating: PropTypes.bool,
+  position: PropTypes.oneOf(['bottom-right', 'bottom-left', 'bottom-center']),
   onStateChange: PropTypes.func,
   disabled: PropTypes.bool
 };

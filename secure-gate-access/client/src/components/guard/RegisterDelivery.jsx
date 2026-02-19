@@ -55,7 +55,9 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
     try {
       // This would be an API call to get resident list
       // For now, using placeholder
-      const response = await fetch('/api/admin/residents');
+
+      // Use guard-specific endpoint for fetching residents
+      const response = await fetch('/api/guard/residents');
       if (response.ok) {
         const data = await response.json();
         setResidents(data.data || []);
@@ -192,11 +194,10 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
             {packageSizes.map(size => (
               <label
                 key={size.value}
-                className={`flex items-center p-3 border rounded-md cursor-pointer transition ${
-                  formData.packageSize === size.value
+                className={`flex items-center p-3 border rounded-md cursor-pointer transition ${formData.packageSize === size.value
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:border-slate-600'
-                }`}
+                  }`}
               >
                 <input
                   type="radio"

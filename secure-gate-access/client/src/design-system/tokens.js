@@ -21,7 +21,7 @@ export const colors = {
     800: '#065f46',  // Very dark green
     900: '#064e3b',  // Darkest green
   },
-  
+
   // Neutral Colors (Slate - Professional/Modern)
   slate: {
     50: '#f8fafc',   // Lightest slate
@@ -35,7 +35,7 @@ export const colors = {
     800: '#1e293b',  // Very dark slate
     900: '#0f172a',  // Darkest slate
   },
-  
+
   // Semantic Colors
   success: {
     50: '#ecfdf5',
@@ -44,7 +44,7 @@ export const colors = {
     600: '#059669',
     700: '#047857',
   },
-  
+
   warning: {
     50: '#fffbeb',
     100: '#fef3c7',
@@ -52,7 +52,7 @@ export const colors = {
     600: '#d97706',
     700: '#b45309',
   },
-  
+
   error: {
     50: '#fef2f2',
     100: '#fee2e2',
@@ -60,7 +60,7 @@ export const colors = {
     600: '#dc2626',
     700: '#b91c1c',
   },
-  
+
   info: {
     50: '#eff6ff',
     100: '#dbeafe',
@@ -68,7 +68,7 @@ export const colors = {
     600: '#2563eb',
     700: '#1d4ed8',
   },
-  
+
   // Alias for compatibility
   primary: {
     50: '#ecfdf5',
@@ -82,7 +82,7 @@ export const colors = {
     800: '#065f46',
     900: '#064e3b',
   },
-  
+
   secondary: {
     50: '#f8fafc',
     100: '#f1f5f9',
@@ -95,7 +95,7 @@ export const colors = {
     800: '#1e293b',
     900: '#0f172a',
   },
-  
+
   accent: {
     50: '#eff6ff',
     100: '#dbeafe',
@@ -116,7 +116,7 @@ export const typography = {
     sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
     mono: ['"Fira Code"', '"JetBrains Mono"', '"SF Mono"', 'Consolas', 'monospace'],
   },
-  
+
   fontSize: {
     xs: ['0.75rem', { lineHeight: '1rem' }],      // 12px
     sm: ['0.875rem', { lineHeight: '1.25rem' }],  // 14px
@@ -129,7 +129,7 @@ export const typography = {
     '5xl': ['3rem', { lineHeight: '1' }],         // 48px
     '6xl': ['3.75rem', { lineHeight: '1' }],      // 60px
   },
-  
+
   fontWeight: {
     light: '300',
     normal: '400',
@@ -138,7 +138,7 @@ export const typography = {
     bold: '700',
     extrabold: '800',
   },
-  
+
   lineHeight: {
     none: '1',
     tight: '1.25',
@@ -147,7 +147,7 @@ export const typography = {
     relaxed: '1.625',
     loose: '2',
   },
-  
+
   letterSpacing: {
     tighter: '-0.05em',
     tight: '-0.025em',
@@ -257,7 +257,7 @@ export const transitions = {
     slow: '300ms',
     slower: '500ms',
   },
-  
+
   easing: {
     linear: 'linear',
     'ease-in': 'cubic-bezier(0.4, 0, 1, 1)',
@@ -266,13 +266,88 @@ export const transitions = {
     'bounce-in': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
     'bounce-out': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   },
-  
+
   properties: {
     all: 'all',
     colors: 'color, background-color, border-color, text-decoration-color, fill, stroke',
     opacity: 'opacity',
     shadow: 'box-shadow',
     transform: 'transform',
+  },
+};
+
+// Component Tokens
+export const componentTokens = {
+  button: {
+    height: {
+      sm: '44px',
+      md: '48px',
+      lg: '52px',
+      xl: '56px',
+    },
+    padding: {
+      sm: '8px 12px',
+      md: '12px 16px',
+      lg: '12px 20px',
+      xl: '16px 24px',
+    },
+    borderRadius: '8px',
+    fontWeight: '500',
+    transition: 'all 200ms ease-in-out',
+  },
+
+  input: {
+    height: {
+      sm: '44px',
+      md: '48px',
+      lg: '52px',
+    },
+    padding: {
+      sm: '8px 12px',
+      md: '12px 12px',
+      lg: '12px 16px',
+    },
+    borderRadius: '8px',
+    borderWidth: '1px',
+    focusRingWidth: '2px',
+  },
+
+  card: {
+    padding: {
+      sm: '16px',
+      md: '20px',
+      lg: '24px',
+    },
+    borderRadius: '12px',
+    shadow: 'md',
+  },
+
+  modal: {
+    maxWidth: {
+      sm: '400px',
+      md: '500px',
+      lg: '700px',
+      xl: '900px',
+    },
+    borderRadius: '16px',
+    shadow: 'xl',
+    backdrop: 'rgba(0, 0, 0, 0.5)',
+  },
+
+  sidebar: {
+    width: {
+      sm: '240px',
+      md: '256px',
+      lg: '280px',
+    },
+    borderRadius: '0px',
+    shadow: 'lg',
+  },
+
+  topbar: {
+    height: '64px',
+    padding: '0 16px',
+    shadow: 'sm',
   },
 };
 
@@ -284,28 +359,83 @@ export const accessibility = {
     ui: 3.0,        // WCAG AA for UI components
     enhanced: 7.0,  // WCAG AAA
   },
-  
+
   touchTargets: {
     minSize: '44px',     // iOS/Android minimum
     recommended: '48px', // Recommended size
     spacing: '8px',      // Minimum spacing between targets
   },
-  
+
   focusRing: {
     width: '2px',
     offset: '2px',
     color: 'brand.500',
     style: 'solid',
   },
-  
+
   motion: {
     reduce: 'prefers-reduced-motion: reduce',
     respect: 'prefers-reduced-motion: no-preference',
   },
 };
 
-// Export all tokens as a single object
-export const tokens = {
+// CSS Variables for dynamic theming
+export const cssVariables = {
+  '--color-brand-50': colors.brand[50],
+  '--color-brand-100': colors.brand[100],
+  '--color-brand-200': colors.brand[200],
+  '--color-brand-300': colors.brand[300],
+  '--color-brand-400': colors.brand[400],
+  '--color-brand-500': colors.brand[500],
+  '--color-brand-600': colors.brand[600],
+  '--color-brand-700': colors.brand[700],
+  '--color-brand-800': colors.brand[800],
+  '--color-brand-900': colors.brand[900],
+
+  '--color-slate-50': colors.slate[50],
+  '--color-slate-100': colors.slate[100],
+  '--color-slate-200': colors.slate[200],
+  '--color-slate-300': colors.slate[300],
+  '--color-slate-400': colors.slate[400],
+  '--color-slate-500': colors.slate[500],
+  '--color-slate-600': colors.slate[600],
+  '--color-slate-700': colors.slate[700],
+  '--color-slate-800': colors.slate[800],
+  '--color-slate-900': colors.slate[900],
+
+  '--spacing-1': spacing[1],
+  '--spacing-2': spacing[2],
+  '--spacing-3': spacing[3],
+  '--spacing-4': spacing[4],
+  '--spacing-5': spacing[5],
+  '--spacing-6': spacing[6],
+  '--spacing-8': spacing[8],
+  '--spacing-10': spacing[10],
+  '--spacing-12': spacing[12],
+  '--spacing-16': spacing[16],
+  '--spacing-20': spacing[20],
+
+  '--radius-sm': borderRadius.sm,
+  '--radius-md': borderRadius.md,
+  '--radius-lg': borderRadius.lg,
+  '--radius-xl': borderRadius.xl,
+
+  '--shadow-sm': shadows.sm,
+  '--shadow-md': shadows.md,
+  '--shadow-lg': shadows.lg,
+  '--shadow-xl': shadows.xl,
+
+  '--transition-fast': transitions.duration.fast,
+  '--transition-normal': transitions.duration.normal,
+  '--transition-slow': transitions.duration.slow,
+
+  '--ease-in': transitions.easing['ease-in'],
+  '--ease-out': transitions.easing['ease-out'],
+  '--ease-in-out': transitions.easing['ease-in-out'],
+};
+
+// Unified theme object
+export const theme = {
   colors,
   typography,
   spacing,
@@ -314,11 +444,12 @@ export const tokens = {
   breakpoints,
   zIndex,
   transitions,
+  componentTokens,
   accessibility,
+  cssVariables,
 };
 
-export default tokens;
+// Export all tokens as a single object
+export const tokens = theme;
 
-
-
-
+export default theme;

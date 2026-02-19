@@ -10,8 +10,8 @@ const verifyOtp = async (req, res) => {
     const { id } = req.params;
     const { otp } = req.body;
 
-    if (!otp) return respondError(res, 400, 'OTP is required');
-    if (!validateOTPFormat(otp)) return respondError(res, 400, 'Invalid OTP format');
+    if (!otp) return respondError(res, 400, 'Pass Code is required');
+    if (!validateOTPFormat(otp)) return respondError(res, 400, 'Invalid Pass Code format');
 
     let query = 'SELECT id, otp_hash, otp_expires_at, otp_attempts, status, name, phone, email FROM visitors WHERE id = $1';
     const params = [id];
@@ -36,29 +36,29 @@ const verifyOtp = async (req, res) => {
     const maxAttempts = Number(process.env.OTP_MAX_ATTEMPTS || 5);
     const attempts = Number(visitor.otp_attempts || 0);
     if (attempts >= maxAttempts) {
-      await req.audit?.('visitor.otp.verify', 'visitor', String(id), {
+      await req.audit?.('visitor.pass_code.verify', 'visitor', String(id), {
         outcome: 'fail',
-        message: 'OTP verification blocked (max attempts reached)',
+        message: 'Pass Code verification blocked (max attempts reached)',
         otpAttempts: attempts
       });
-      return respondError(res, 429, 'Too many OTP attempts. Please request a new OTP.');
+      return respondError(res, 429, 'Too many Pass Code attempts. Please request a new code.');
     }
 
     if (!visitor.otp_hash || !visitor.otp_expires_at) {
-      await req.audit?.('visitor.otp.verify', 'visitor', String(id), {
+      await req.audit?.('visitor.pass_code.verify', 'visitor', String(id), {
         outcome: 'fail',
-        message: 'OTP not issued for visitor'
+        message: 'Pass Code not issued for visitor'
       });
-      return respondError(res, 400, 'OTP not issued. Please request a new OTP.');
+      return respondError(res, 400, 'Pass Code not issued. Please request a new code.');
     }
 
     const expiresAt = new Date(visitor.otp_expires_at);
     if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
-      await req.audit?.('visitor.otp.verify', 'visitor', String(id), {
+      await req.audit?.('visitor.pass_code.verify', 'visitor', String(id), {
         outcome: 'fail',
-        message: 'OTP expired'
+        message: 'Pass Code expired'
       });
-      return respondError(res, 400, 'OTP expired. Please request a new OTP.');
+      return respondError(res, 400, 'Pass Code expired. Please request a new code.');
     }
 
     const isValid = await argon2.verify(visitor.otp_hash, otp);
@@ -67,20 +67,20 @@ const verifyOtp = async (req, res) => {
         'UPDATE visitors SET otp_attempts = COALESCE(otp_attempts, 0) + 1 WHERE id = $1',
         [id]
       );
-      await req.audit?.('visitor.otp.verify', 'visitor', String(id), { outcome: 'fail', message: 'Invalid OTP provided' });
-      return respondError(res, 400, 'Invalid OTP');
+      await req.audit?.('visitor.pass_code.verify', 'visitor', String(id), { outcome: 'fail', message: 'Invalid Pass Code provided' });
+      return respondError(res, 400, 'Invalid Pass Code');
     }
 
     await dbManager.query(
-      'UPDATE visitors SET status = $1, otp_hash = NULL, otp_expires_at = NULL, otp_attempts = 0, otp = NULL WHERE id = $2',
+      'UPDATE visitors SET status = $1, otp_hash = NULL, otp_expires_at = NULL, otp_attempts = 0 WHERE id = $2',
       [PASS_STATUS.VERIFIED, id]
     );
 
-    await req.audit?.('visitor.otp.verify', 'visitor', String(id), { outcome: 'success', message: 'OTP verified successfully', visitorName: visitor.name });
-    respond(res, { message: 'OTP verified successfully', status: PASS_STATUS.VERIFIED });
+    await req.audit?.('visitor.pass_code.verify', 'visitor', String(id), { outcome: 'success', message: 'Pass Code verified successfully', visitorName: visitor.name });
+    respond(res, { message: 'Pass Code verified successfully', status: PASS_STATUS.VERIFIED });
   } catch (error) {
-    await req.audit?.('visitor.otp.verify', 'visitor', null, { outcome: 'fail', message: 'Failed to verify OTP', error: String(error?.message) });
-    respondError(res, 500, 'Failed to verify OTP');
+    await req.audit?.('visitor.pass_code.verify', 'visitor', null, { outcome: 'fail', message: 'Failed to verify Pass Code', error: String(error?.message) });
+    respondError(res, 500, 'Failed to verify Pass Code');
   }
 };
 
@@ -113,19 +113,25 @@ const resendOtp = async (req, res) => {
       if (!Number.isNaN(lastResendAt.getTime())) {
         const secondsSinceLast = Math.floor((Date.now() - lastResendAt.getTime()) / 1000);
         if (secondsSinceLast >= 0 && secondsSinceLast < resendCooldownSeconds) {
-          return respondError(res, 429, `Please wait ${resendCooldownSeconds - secondsSinceLast}s before requesting a new OTP`);
+          return respondError(res, 429, `Please wait ${resendCooldownSeconds - secondsSinceLast}s before requesting a new Pass Code`);
         }
       }
     }
 
-    // Generate new OTP
+    // Generate new Pass Code (Entry Code)
     const otp = generateOTP(6);
     const otpHash = await argon2.hash(otp);
-    const expiryMinutes = Number(process.env.OTP_EXPIRY_MINUTES || 15);
-    const otpExpiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+
+    // Get expiry from config for notification helpers
+    const { getOtpExpiryMinutes } = await import('../utils/configHelper.js').catch(() => ({ getOtpExpiryMinutes: () => 10 }));
+    const expiryMinutes = getOtpExpiryMinutes && typeof getOtpExpiryMinutes === 'function' ? getOtpExpiryMinutes() : 10;
+
+    // Align with Digital Pass expiry - fetch from visitor record
+    const expiryRes = await dbManager.query('SELECT token_expires_at FROM visitors WHERE id = $1', [id]);
+    const otpExpiresAt = expiryRes.rows[0]?.token_expires_at || new Date(Date.now() + (24 * 60 * 60 * 1000));
     const shouldEchoOtp = process.env.OTP_DEBUG_ECHO === 'true' && process.env.NODE_ENV !== 'production';
 
-    // SEC-001: Never store plaintext OTP in database
+    // SEC-001: Never store plaintext Pass Code in database
     await dbManager.query(
       `UPDATE visitors SET 
          otp_hash = $1,
@@ -150,9 +156,9 @@ const resendOtp = async (req, res) => {
       ? await notificationService.sendOtpVerificationEmail(visitorData, otp, expiryMinutes)
       : false;
 
-    await req.audit?.('visitor.otp.resend', 'visitor', String(id), { outcome: 'success', message: 'OTP resent successfully', visitorName: visitor.name });
+    await req.audit?.('visitor.pass_code.resend', 'visitor', String(id), { outcome: 'success', message: 'Pass Code resent successfully', visitorName: visitor.name });
     respond(res, {
-      message: 'OTP resent successfully',
+      message: 'Pass Code resent successfully',
       delivery: {
         sms: smsSent,
         email: emailSent
@@ -160,8 +166,8 @@ const resendOtp = async (req, res) => {
       ...(shouldEchoOtp ? { otp } : {})
     });
   } catch (error) {
-    await req.audit?.('visitor.otp.resend', 'visitor', null, { outcome: 'fail', message: 'Failed to resend OTP', error: String(error?.message) });
-    respondError(res, 500, 'Failed to resend OTP');
+    await req.audit?.('visitor.pass_code.resend', 'visitor', null, { outcome: 'fail', message: 'Failed to resend Pass Code', error: String(error?.message) });
+    respondError(res, 500, 'Failed to resend Pass Code');
   }
 };
 

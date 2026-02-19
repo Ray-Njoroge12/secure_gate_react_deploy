@@ -141,16 +141,7 @@ const getCommands = (role) => {
       action: 'navigate',
       path: '/resident/favorite-visitors'
     },
-    {
-      id: 'generate-pass',
-      label: 'Generate Pass',
-      description: 'Create a visitor pass',
-      shortcut: '⌘G',
-      category: 'Actions',
-      icon: '🎫',
-      action: 'navigate',
-      path: '/resident/generate-pass'
-    },
+
     {
       id: 'deliveries',
       label: 'My Deliveries',
@@ -346,20 +337,20 @@ const getCommands = (role) => {
 // Fuzzy search function
 const fuzzySearch = (items, query) => {
   if (!query) return items;
-  
+
   const lowerQuery = query.toLowerCase();
   return items
     .map(item => {
       const labelMatch = item.label.toLowerCase().includes(lowerQuery);
       const descMatch = item.description.toLowerCase().includes(lowerQuery);
       const categoryMatch = item.category.toLowerCase().includes(lowerQuery);
-      
+
       let score = 0;
       if (item.label.toLowerCase().startsWith(lowerQuery)) score += 100;
       if (labelMatch) score += 50;
       if (descMatch) score += 25;
       if (categoryMatch) score += 10;
-      
+
       return { ...item, score };
     })
     .filter(item => item.score > 0)
@@ -404,13 +395,13 @@ const CommandPalette = ({ isOpen, onClose }) => {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev < filteredCommands.length - 1 ? prev + 1 : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prev => 
+        setSelectedIndex(prev =>
           prev > 0 ? prev - 1 : filteredCommands.length - 1
         );
         break;
@@ -432,7 +423,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
   // Execute command
   const executeCommand = useCallback((command) => {
     onClose();
-    
+
     switch (command.action) {
       case 'navigate':
         navigate(command.path);
@@ -443,8 +434,8 @@ const CommandPalette = ({ isOpen, onClose }) => {
         break;
       case 'modal':
         // Emit custom event for modal opening
-        window.dispatchEvent(new CustomEvent('openModal', { 
-          detail: { modal: command.modal } 
+        window.dispatchEvent(new CustomEvent('openModal', {
+          detail: { modal: command.modal }
         }));
         break;
       default:
@@ -472,7 +463,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100]"
         onClick={onClose}
         role="button"
@@ -486,7 +477,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
       />
 
       {/* Command Palette */}
-      <div 
+      <div
         className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-xl z-[101]"
         role="dialog"
         aria-modal="true"
@@ -512,7 +503,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
           </div>
 
           {/* Results */}
-          <div 
+          <div
             ref={listRef}
             className="max-h-[400px] overflow-y-auto p-2"
           >
@@ -530,18 +521,17 @@ const CommandPalette = ({ isOpen, onClose }) => {
                   {items.map((command) => {
                     const index = filteredCommands.findIndex(c => c.id === command.id);
                     const isSelected = index === selectedIndex;
-                    
+
                     return (
                       <Button
                         key={command.id}
                         data-index={index}
                         onClick={() => executeCommand(command)}
                         onMouseEnter={() => setSelectedIndex(index)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                          isSelected 
-                            ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' 
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${isSelected
+                            ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                             : 'hover:bg-gray-50 dark:hover:bg-slate-700/50 text-gray-700 dark:text-gray-200'
-                        }`}
+                          }`}
                       >
                         <span className="text-xl">{command.icon}</span>
                         <div className="flex-1 min-w-0">

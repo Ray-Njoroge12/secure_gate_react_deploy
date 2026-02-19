@@ -671,6 +671,61 @@ router.post('/login', authLimiter, validateLogin, attachRequestAudit(), asyncHan
 
 /**
  * @swagger
+ * /api/auth/verify-password:
+ *   post:
+ *     summary: Verify password for sensitive operations
+ *     description: Confirm user identity by verifying current password
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password verified successfully
+ *       401:
+ *         description: Invalid password
+ */
+router.post('/verify-password', authenticateToken, rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: 'Too many password verification attempts'
+}), asyncHandler(async (req, res) => {
+  const { password } = req.body;
+  if (!password) {
+    throw new AppError('Password is required', 400, 'VALIDATION_ERROR');
+  }
+
+  // Verify password using the new service method
+  const isValid = await userService.verifyPassword(req.user.id, password);
+
+  if (!isValid) {
+    loggingService.warn('Password verification failed', {
+      event: 'auth.verify_password.failed',
+      user_id: req.user.id,
+      request_id: req.requestId
+    });
+    throw new AppError('Invalid password', 401, 'INVALID_CREDENTIALS');
+  }
+
+  loggingService.info('Password verified successfully', {
+    event: 'auth.verify_password.success',
+    user_id: req.user.id,
+    request_id: req.requestId
+  });
+
+  successResponse(res, { verified: true }, 'Password verified successfully');
+}));
+
+/**
+ * @swagger
  * /api/auth/refresh:
  *   post:
  *     summary: Refresh access token

@@ -1,6 +1,11 @@
 // client/src/pages/admin/Reports.jsx
 import React from 'react';
 import Button from '../../components/ui/Button';
+import { getVisitorReports } from '../../services/adminService';
+import { useToast } from '../../contexts/ToastContext';
+import { ErrorState } from '../../components/ui/EmptyState';
+import { handleApiError } from '../../utils/errorMapper';
+import { maskPhoneNumber, maskEmail } from '../../utils/formatters';
 
 export default function Reports({ estateId }) {
   const params = new URLSearchParams(window.location.search);
@@ -12,6 +17,8 @@ export default function Reports({ estateId }) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [aggregates, setAggregates] = React.useState({ counts: {}, dailyTotals: [], hostSummary: [], config: { hostFilterEnabled: true } });
+
+  const { toast } = useToast();
   const [hostSortDir, setHostSortDir] = React.useState('desc'); // asc|desc
   const hostFilterEnabled = Boolean(aggregates?.config?.hostFilterEnabled ?? true);
   const showHostFilter = React.useMemo(() => hostFilterEnabled && (Boolean(host) || ((aggregates.hostSummary || []).length > 0)), [host, aggregates, hostFilterEnabled]);
@@ -45,37 +52,32 @@ export default function Reports({ estateId }) {
   const refreshPreview = async () => {
     try {
       setLoading(true); setError('');
-      const q = buildQuery();
-      const headers = { 'Content-Type': 'application/json' };
-      const [resRows, resAgg] = await Promise.all([
-        fetch(`/api/visitors/reports?${q}&format=json`, { credentials: 'include', headers }),
-        fetch(`/api/visitors/reports?${q}&mode=aggregates`, { credentials: 'include', headers })
+      const params = {
+        from, to, status, host,
+        siteId: estateId
+      };
+
+      const [jsonRows, jsonAgg] = await Promise.all([
+        getVisitorReports({ ...params, format: 'json' }),
+        getVisitorReports({ ...params, mode: 'aggregates' })
       ]);
-      const [jsonRows, jsonAgg] = await Promise.all([resRows.json(), resAgg.json()]);
 
       // Robust array extraction for rows
       let rowsData = [];
-      if (jsonRows.success !== false) {
-        if (Array.isArray(jsonRows)) {
-          rowsData = jsonRows;
-        } else if (Array.isArray(jsonRows.data)) {
-          rowsData = jsonRows.data;
-        } else if (Array.isArray(jsonRows.rows)) {
-          rowsData = jsonRows.rows;
-        }
-      } else {
-        throw new Error(jsonRows.error || 'Failed');
+      const rowPayload = jsonRows.data || jsonRows.rows || jsonRows;
+      if (Array.isArray(rowPayload)) {
+        rowsData = rowPayload;
+      } else if (rowPayload && Array.isArray(rowPayload.data)) {
+        rowsData = rowPayload.data;
       }
       setRows(rowsData);
 
       // Robust extraction for aggregates
-      let aggData = { counts: {}, dailyTotals: [], hostSummary: [], config: { hostFilterEnabled: true } };
-      if (jsonAgg.success !== false) {
-        aggData = jsonAgg.data || jsonAgg || aggData;
-      }
+      let aggData = jsonAgg.data || jsonAgg || { counts: {}, dailyTotals: [], hostSummary: [], config: { hostFilterEnabled: true } };
       setAggregates(aggData);
+      setError(null);
     } catch (e) {
-      setError(e.message);
+      setError(handleApiError(e) || 'Failed to generate report preview');
       setRows([]); // Reset to empty array on error
     } finally {
       setLoading(false);
@@ -183,43 +185,52 @@ export default function Reports({ estateId }) {
           <Button variant="secondary" size="sm" onClick={exportCsv}>Export CSV</Button>
           <Button variant="secondary" size="sm" onClick={exportJson}>Export JSON</Button>
         </div>
-        {error && <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg px-4 py-2 text-sm mb-4" role="alert">{error}</div>}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-slate-700">
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">ID</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Name</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Phone</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Email</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Host</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Date</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Time</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">In</th>
-                <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Out</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr><td colSpan={10} className="text-center py-8 text-gray-500 dark:text-gray-300 italic">{loading ? 'Loading…' : 'No records found'}</td></tr>
-              ) : rows.map(r => (
-                <tr key={r.id} className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                  <td className="py-2 px-2">{r.id}</td>
-                  <td className="py-2 px-2">{r.name || ''}</td>
-                  <td className="py-2 px-2">{r.phone || ''}</td>
-                  <td className="py-2 px-2">{r.email || ''}</td>
-                  <td className="py-2 px-2">{r.host || ''}</td>
-                  <td className="py-2 px-2">{r.status || ''}</td>
-                  <td className="py-2 px-2">{r.date_of_visit || ''}</td>
-                  <td className="py-2 px-2">{r.time_of_visit || ''}</td>
-                  <td className="py-2 px-2">{r.check_in_time || ''}</td>
-                  <td className="py-2 px-2">{r.check_out_time || ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      </div>
+
+      {error && (
+        <div className="mb-6 p-6 bg-white dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700">
+          <ErrorState
+            errorMessage={error}
+            onRetry={refreshPreview}
+            compact={true}
+          />
         </div>
+      )}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 dark:border-slate-700">
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">ID</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Name</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Phone</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Email</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Host</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Status</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Date</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Time</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">In</th>
+              <th className="text-left py-2 px-2 font-medium text-gray-600 dark:text-gray-300">Out</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr><td colSpan={10} className="text-center py-8 text-gray-500 dark:text-gray-300 italic">{loading ? 'Loading…' : 'No records found'}</td></tr>
+            ) : rows.map(r => (
+              <tr key={r.id} className="border-b border-gray-100 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                <td className="py-2 px-2">{r.id}</td>
+                <td className="py-2 px-2">{r.name || ''}</td>
+                <td className="py-2 px-2">{maskPhoneNumber(r.phone) || ''}</td>
+                <td className="py-2 px-2">{maskEmail(r.email) || ''}</td>
+                <td className="py-2 px-2">{r.host || ''}</td>
+                <td className="py-2 px-2">{r.status || ''}</td>
+                <td className="py-2 px-2">{r.date_of_visit || ''}</td>
+                <td className="py-2 px-2">{r.time_of_visit || ''}</td>
+                <td className="py-2 px-2">{r.check_in_time || ''}</td>
+                <td className="py-2 px-2">{r.check_out_time || ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );

@@ -20,18 +20,18 @@ const dataSchemas = {
   // Visitor data access by role
   visitor: {
     resident: [
-      'id', 'name', 'phone', 'vehicle_plate', 'purpose',
-      'date_of_visit', 'time_of_visit', 'status',
+      'id', 'name', 'phone', 'email', 'vehicle_plate', 'purpose',
+      'date_of_visit', 'time_of_visit', 'status', 'invite_code',
       'check_in', 'check_out', 'qr_code', 'created_at',
       'host_id', 'resident_id'
       // EXCLUDED: id_number (unless own visitor), otp_hash, consent details
     ],
     guard: [
-      'id', 'name', 'phone', 'vehicle_plate', 'purpose',
-      'date_of_visit', 'time_of_visit', 'status',
+      'id', 'name', 'phone', 'email', 'vehicle_plate', 'purpose',
+      'date_of_visit', 'time_of_visit', 'status', 'invite_code',
       'check_in', 'check_out', 'qr_code',
       'unit_number', 'resident_name' // Need to know which unit
-      // EXCLUDED: id_number, phone (beyond basic), otp details
+      // EXCLUDED: id_number, otp details
     ],
     admin: '*' // All fields
   },
@@ -80,7 +80,7 @@ const dataSchemas = {
  */
 function filterFields(data, allowedFields, sensitiveFields = []) {
   if (!data) return data;
-  
+
   // Always allow all fields for admins (except sensitive ones)
   if (allowedFields === '*') {
     const filtered = { ...data };
@@ -119,7 +119,7 @@ function filterFields(data, allowedFields, sensitiveFields = []) {
  */
 function filterArray(dataArray, allowedFields, sensitiveFields = []) {
   if (!Array.isArray(dataArray)) return dataArray;
-  
+
   return dataArray
     .map(item => filterFields(item, allowedFields, sensitiveFields))
     .filter(item => item !== null);
@@ -144,11 +144,11 @@ export function minimizeData(entityType, options = {}) {
     const originalSend = res.send.bind(res);
 
     // Override send to filter data
-    res.send = function(data) {
+    res.send = function (data) {
       try {
         // Get user role from request
         const userRole = req.user?.role || 'guest';
-        
+
         // Skip filtering for admins (they see everything except truly sensitive fields)
         if (userRole === 'admin' && !customSchema) {
           // Still filter out sensitive fields
@@ -274,7 +274,7 @@ export function customFilter(filterFunction) {
   return (req, res, next) => {
     const originalSend = res.send.bind(res);
 
-    res.send = function(data) {
+    res.send = function (data) {
       try {
         let parsedData = data;
         if (typeof data === 'string') {

@@ -178,14 +178,14 @@ const bulkInviteTemplate = Handlebars.compile(`
 </html>
 `);
 
-// OTP Verification Email Template
+// Pass Code (Entry Code) Email Template
 const otpVerificationTemplate = Handlebars.compile(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verification Code - {{siteName}}</title>
+    <title>Pass Code - {{siteName}}</title>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -199,20 +199,20 @@ const otpVerificationTemplate = Handlebars.compile(`
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 Verification Code</h1>
-            <p>Complete your visitor registration</p>
+            <h1>🔐 Pass Code</h1>
+            <p>Your entry access for {{siteName}}</p>
         </div>
         
         <div class="content">
             <h2>Hello {{visitorName}}!</h2>
-            <p>Please use the following verification code to complete your visitor registration:</p>
+            <p>Your Pass Code for gate entry is:</p>
             
             <div class="otp-code">{{otpCode}}</div>
             
             <div class="info-box">
                 <h4>⚠️ Important:</h4>
                 <ul>
-                    <li>This code expires in {{expiryMinutes}} minutes</li>
+                    <li>This code is valid for the duration of your visitor pass</li>
                     <li>Do not share this code with anyone</li>
                     <li>Enter the code exactly as shown above</li>
                 </ul>

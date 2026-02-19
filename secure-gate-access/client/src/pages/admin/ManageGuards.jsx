@@ -17,9 +17,11 @@ import {
   updateGuardShift
 } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
+import { useToast } from "../../contexts/ToastContext";
 import logger from '../../utils/logger';
 import Icon from "../../components/ui/Icon";
 import Button from "../../components/ui/Button";
+import { ErrorState } from "../../components/ui/EmptyState";
 
 const EQUIPMENT_TYPES = [
   'radio',
@@ -62,6 +64,7 @@ const getDefaultShiftDates = () => {
 };
 
 export default function ManageGuards({ estateId }) {
+  const { toast } = useToast();
   const [guards, setGuards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -204,7 +207,7 @@ export default function ManageGuards({ estateId }) {
         ...shiftForm,
         guard_id: Number(shiftForm.guard_id)
       });
-      setNotice('Shift created successfully.');
+      toast?.success?.('Shift created successfully.');
       setShiftForm({
         guard_id: '',
         shift_type: 'morning',
@@ -217,6 +220,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to create shift');
       logger.error('Failed to create shift:', e);
     }
   };
@@ -242,12 +246,13 @@ export default function ManageGuards({ estateId }) {
         notes: editingShift.notes,
         status: editingShift.status
       });
-      setNotice('Shift updated successfully.');
+      toast?.success?.('Shift updated successfully.');
       setEditingShift(null);
       await loadShifts();
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to update shift');
       logger.error('Failed to update shift:', e);
     }
   };
@@ -261,6 +266,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to load handover notes');
       logger.error('Failed to load handover notes:', e);
     }
   };
@@ -277,7 +283,7 @@ export default function ManageGuards({ estateId }) {
         shift_id: performanceForm.shift_id ? Number(performanceForm.shift_id) : null,
         rating: Number(performanceForm.rating)
       });
-      setNotice('Performance metric recorded.');
+      toast?.success?.('Performance metric recorded.');
       setPerformanceForm({
         guard_id: '',
         shift_id: '',
@@ -288,6 +294,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to record performance');
       logger.error('Failed to record performance:', e);
     }
   };
@@ -304,6 +311,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to fetch performance');
       logger.error('Failed to fetch performance:', e);
     }
   };
@@ -319,7 +327,7 @@ export default function ManageGuards({ estateId }) {
         guard_id: Number(equipmentForm.guard_id),
         shift_id: equipmentForm.shift_id ? Number(equipmentForm.shift_id) : null
       });
-      setNotice('Equipment checked out successfully.');
+      toast?.success?.('Equipment checked out successfully.');
       setEquipmentForm({
         guard_id: '',
         shift_id: '',
@@ -331,6 +339,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to checkout equipment');
       logger.error('Failed to checkout equipment:', e);
     }
   };
@@ -344,11 +353,12 @@ export default function ManageGuards({ estateId }) {
         guard_id: checkout.guard_id,
         condition: 'good'
       });
-      setNotice('Equipment returned successfully.');
+      toast?.success?.('Equipment returned successfully.');
       await loadEquipment();
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to return equipment');
       logger.error('Failed to return equipment:', e);
     }
   };
@@ -367,7 +377,7 @@ export default function ManageGuards({ estateId }) {
         certificate_number: trainingForm.certificate_number || null,
         notes: trainingForm.notes || null
       });
-      setNotice('Training record added.');
+      toast?.success?.('Training record added.');
       setTrainingForm({
         guard_id: '',
         training_type: 'security_basics',
@@ -383,6 +393,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to add training record');
       logger.error('Failed to add training record:', e);
     }
   };
@@ -396,6 +407,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast?.error?.(errorMsg || 'Failed to load training records');
       logger.error('Failed to load training records:', e);
     }
   };
@@ -415,7 +427,7 @@ export default function ManageGuards({ estateId }) {
           account_status: guardForm.status
         };
         await updateGuard(editingGuard.id, payload);
-        setNotice('Guard updated successfully.');
+        toast?.success?.('Guard updated successfully.');
       } else {
         // Create new guard
         await addGuard({
@@ -423,7 +435,7 @@ export default function ManageGuards({ estateId }) {
           first_name: guardForm.first_name,
           last_name: guardForm.last_name
         });
-        setNotice('Guard created successfully.');
+        toast?.success?.('Guard created successfully.');
       }
 
       setShowGuardModal(false);
@@ -443,6 +455,7 @@ export default function ManageGuards({ estateId }) {
     } catch (err) {
       const msg = handleApiError(err);
       setError(msg);
+      toast?.error?.(msg || 'Failed to save guard');
     } finally {
       setLoading(false);
     }
@@ -469,11 +482,12 @@ export default function ManageGuards({ estateId }) {
     setLoading(true);
     try {
       await deleteGuard(guardId);
-      setNotice('Guard removed successfully.');
+      toast?.success?.('Guard removed successfully.');
       await loadGuards();
     } catch (err) {
       const msg = handleApiError(err);
       setError(msg);
+      toast?.error?.(msg || 'Failed to remove guard');
     } finally {
       setLoading(false);
     }
@@ -492,8 +506,17 @@ export default function ManageGuards({ estateId }) {
   return (
     <div className="space-y-8">
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
-          {error}
+        <div className="mb-4">
+          <ErrorState
+            errorMessage={error}
+            onRetry={() => {
+              setError(null);
+              loadGuards();
+              loadShifts();
+              loadEquipment();
+            }}
+            compact={true}
+          />
         </div>
       )}
       {notice && (
@@ -513,11 +536,10 @@ export default function ManageGuards({ estateId }) {
               aria-controls={`manage-guards-panel-${tab.id}`}
               variant="ghost"
               onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex items-center gap-2 px-3 py-2 border-b-2 text-sm font-medium rounded-t-md ${
-                activeTab === tab.id
-                  ? 'border-brand-500 text-brand-600 dark:text-brand-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-slate-600'
-              }`}
+              className={`inline-flex items-center gap-2 px-3 py-2 border-b-2 text-sm font-medium rounded-t-md ${activeTab === tab.id
+                ? 'border-brand-500 text-brand-600 dark:text-brand-400'
+                : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-slate-600'
+                }`}
             >
               {tab.icon}
               <span>{tab.label}</span>
@@ -804,129 +826,145 @@ export default function ManageGuards({ estateId }) {
                             <label className="block text-sm text-slate-600 dark:text-slate-200">Start Time</label>
                             <input
                               type="datetime-local"
-                              value={editingShift.start_time ? editingShift.start_time.slice(0, 16) : ''}
+                              value={editingShift.start_time}
                               onChange={(event) => setEditingShift((prev) => ({ ...prev, start_time: event.target.value }))}
                               className="w-full border border-slate-200 rounded-md px-3 py-2"
+                              required
                             />
                           </div>
                           <div>
                             <label className="block text-sm text-slate-600 dark:text-slate-200">End Time</label>
                             <input
                               type="datetime-local"
-                              value={editingShift.end_time ? editingShift.end_time.slice(0, 16) : ''}
+                              value={editingShift.end_time}
                               onChange={(event) => setEditingShift((prev) => ({ ...prev, end_time: event.target.value }))}
                               className="w-full border border-slate-200 rounded-md px-3 py-2"
+                              required
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm text-slate-600 dark:text-slate-200">Post</label>
-                          <input
-                            type="text"
-                            value={editingShift.post_location || ''}
-                            onChange={(event) => setEditingShift((prev) => ({ ...prev, post_location: event.target.value }))}
-                            className="w-full border border-slate-200 rounded-md px-3 py-2"
-                          />
-                        </div>
-                        <div>
                           <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
                           <textarea
-                            value={editingShift.notes || ''}
+                            value={editingShift.notes}
                             onChange={(event) => setEditingShift((prev) => ({ ...prev, notes: event.target.value }))}
                             className="w-full border border-slate-200 rounded-md px-3 py-2"
-                            rows="3"
+                            rows="2"
                           />
                         </div>
-                        <div className="flex gap-3">
-                          <Button variant="primary" type="submit">Save Changes</Button>
-                          <Button variant="outlined" onClick={() => setEditingShift(null)}>Cancel</Button>
+                        <div className="flex gap-2">
+                          <Button
+                            type="submit"
+                            variant="primary"
+                          >
+                            Update Shift
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={() => setEditingShift(null)}
+                          >
+                            Cancel
+                          </Button>
                         </div>
                       </>
                     ) : (
-                      <p className="text-sm text-slate-500 dark:text-slate-300">Select a shift from the table below to edit scheduling details.</p>
+                      <p className="text-sm text-slate-500 py-12 text-center border-2 border-dashed border-slate-100 rounded-lg">
+                        Select a shift from the list to update its details.
+                      </p>
                     )}
                   </form>
                 </div>
 
-                <div className="mt-6 overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-slate-50 text-slate-600 dark:text-slate-200">
+                <div className="mt-8 overflow-x-auto">
+                  <table className="w-full text-left text-sm border-t border-slate-100">
+                    <thead className="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold tracking-wider">
                       <tr>
-                        <th className="text-left px-4 py-2">Guard</th>
-                        <th className="text-left px-4 py-2">Type</th>
-                        <th className="text-left px-4 py-2">Start</th>
-                        <th className="text-left px-4 py-2">End</th>
-                        <th className="text-left px-4 py-2">Post</th>
-                        <th className="text-left px-4 py-2">Status</th>
-                        <th className="text-left px-4 py-2">Action</th>
+                        <th className="px-6 py-3">Guard</th>
+                        <th className="px-6 py-3">Type</th>
+                        <th className="px-6 py-3">Start</th>
+                        <th className="px-6 py-3">End</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {shifts.map((shift) => (
-                        <tr key={shift.id}>
-                          <td className="px-4 py-2 font-medium">{shift.guard_name || shift.guard_id}</td>
-                          <td className="px-4 py-2 capitalize">{shift.shift_type}</td>
-                          <td className="px-4 py-2">{formatDateTime(shift.start_time)}</td>
-                          <td className="px-4 py-2">{formatDateTime(shift.end_time)}</td>
-                          <td className="px-4 py-2">{shift.post_location || '—'}</td>
-                          <td className="px-4 py-2 capitalize">{shift.status}</td>
-                          <td className="px-4 py-2">
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleEditShift(shift)}
-                              className="text-blue-600 hover:underline"
-                            >
-                              Edit
-                            </Button>
-                          </td>
+                      {shifts.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="px-6 py-8 text-center text-slate-400">No shifts scheduled for this period.</td>
                         </tr>
-                      ))}
+                      ) : (
+                        shifts.map((shift) => (
+                          <tr key={shift.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-medium text-slate-700">{shift.guard_name}</td>
+                            <td className="px-6 py-4 capitalize">{shift.shift_type}</td>
+                            <td className="px-6 py-4">{formatDateTime(shift.start_time)}</td>
+                            <td className="px-6 py-4">{formatDateTime(shift.end_time)}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${shift.status === 'scheduled' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                                shift.status === 'in_progress' ? 'bg-green-50 text-green-600 border border-green-100' :
+                                  shift.status === 'completed' ? 'bg-slate-100 text-slate-600 border border-slate-100' :
+                                    'bg-red-50 text-red-600 border border-red-100'
+                                }`}>
+                                {shift.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                onClick={() => handleEditShift(shift)}
+                                className="text-brand-600 hover:text-brand-700 font-semibold"
+                                disabled={shift.status !== 'scheduled'}
+                              >
+                                Edit
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
               </section>
 
+              {/* Handover Section */}
               <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
-                <h2 className="text-lg font-semibold text-slate-900">Handover Notes</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-300">Review guard-to-guard shift handovers.</p>
-                <div className="mt-4 flex flex-wrap gap-3">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4">Handover History</h2>
+                <div className="flex gap-3 mb-6">
                   <select
+                    className="border border-slate-200 rounded-md px-3 py-1.5 text-sm"
                     value={handoverShiftId}
-                    onChange={(event) => setHandoverShiftId(event.target.value)}
-                    className="border border-slate-200 rounded-md px-3 py-2"
+                    onChange={(e) => setHandoverShiftId(e.target.value)}
                   >
                     <option value="">Select shift</option>
-                    {shifts.map((shift) => (
-                      <option key={shift.id} value={shift.id}>
-                        {shift.guard_name || shift.guard_id} • {formatDateTime(shift.start_time)}
-                      </option>
+                    {shifts.map(s => (
+                      <option key={s.id} value={s.id}>{s.guard_name} - {formatDate(s.start_time)}</option>
                     ))}
                   </select>
                   <Button
-                    variant="secondary"
                     onClick={handleLoadHandoverNotes}
-                    className="px-3 py-2"
+                    className="px-4 py-1.5 text-sm"
+                    disabled={!handoverShiftId}
                   >
-                    Load Notes
+                    View Notes
                   </Button>
                 </div>
-                <div className="mt-4 space-y-3">
+
+                <div className="space-y-4">
                   {handoverNotes.length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-300">No handover notes loaded.</p>
+                    <p className="text-sm text-slate-400 italic">Select a shift and click 'View Notes' to see handover logs.</p>
                   ) : (
-                    handoverNotes.map((note) => (
-                      <div key={note.id} className="border border-slate-200 rounded-md p-4">
-                        <div className="flex flex-wrap justify-between text-sm text-slate-500 dark:text-slate-300">
-                          <span>From: {note.from_guard_name || note.from_guard_id}</span>
-                          <span>{note.created_at ? formatDateTime(note.created_at) : ''}</span>
+                    handoverNotes.map(note => (
+                      <div key={note.id} className="border-l-4 border-brand-500 bg-slate-50 dark:bg-slate-800 p-4 rounded-r-md">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-sm font-bold text-slate-700">From: {note.from_guard_name} → To: {note.to_guard_name || 'N/A'}</span>
+                          <span className="text-[11px] text-slate-400">{formatDateTime(note.created_at)}</span>
                         </div>
-                        <p className="mt-2 text-slate-700">{note.notes}</p>
-                        {(note.incidents_summary || note.equipment_status) && (
-                          <div className="mt-2 text-sm text-slate-600 dark:text-slate-200">
-                            {note.incidents_summary && <p>Incidents: {note.incidents_summary}</p>}
-                            {note.equipment_status && <p>Equipment: {note.equipment_status}</p>}
-                          </div>
-                        )}
+                        <p className="text-sm text-slate-600 mb-2">{note.notes}</p>
+                        <div className="grid grid-cols-2 gap-4 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                          <div>Equipment: <span className="text-slate-600">{note.equipment_status}</span></div>
+                          <div>Incidents: <span className="text-slate-600">{note.incidents_summary}</span></div>
+                        </div>
                       </div>
                     ))
                   )}
@@ -936,259 +974,225 @@ export default function ManageGuards({ estateId }) {
           )}
 
           {activeTab === 'performance' && (
-            <section
+            <div
               id="manage-guards-panel-performance"
               role="tabpanel"
               aria-labelledby="manage-guards-tab-performance"
-              className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6"
+              className="space-y-6"
             >
-              <h2 className="text-lg font-semibold text-slate-900">Performance Metrics</h2>
-              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <form onSubmit={handleRecordPerformance} className="space-y-4">
-                  <h3 className="text-md font-semibold text-slate-800">Record Metric</h3>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
-                    <select
-                      value={performanceForm.guard_id}
-                      onChange={(event) => setPerformanceForm((prev) => ({ ...prev, guard_id: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      required
-                    >
-                      <option value="">Select guard</option>
-                      {guardOptions.map((guard) => (
-                        <option key={guard.value} value={guard.value}>{guard.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Record Performance */}
+                <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">Record Assessment</h2>
+                  <form onSubmit={handleRecordPerformance} className="space-y-4">
                     <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">Metric</label>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                       <select
-                        value={performanceForm.metric_type}
-                        onChange={(event) => setPerformanceForm((prev) => ({ ...prev, metric_type: event.target.value }))}
+                        value={performanceForm.guard_id}
+                        onChange={(e) => setPerformanceForm(prev => ({ ...prev, guard_id: e.target.value }))}
                         className="w-full border border-slate-200 rounded-md px-3 py-2"
+                        required
                       >
-                        {METRIC_TYPES.map((type) => (
-                          <option key={type} value={type}>{type.replace('_', ' ')}</option>
+                        <option value="">Select guard</option>
+                        {guardOptions.map(g => (
+                          <option key={g.value} value={g.value}>{g.label}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">Rating (0-5)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="5"
-                        step="0.5"
-                        value={performanceForm.rating}
-                        onChange={(event) => setPerformanceForm((prev) => ({ ...prev, rating: event.target.value }))}
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Metric Category</label>
+                      <select
+                        value={performanceForm.metric_type}
+                        onChange={(e) => setPerformanceForm(prev => ({ ...prev, metric_type: e.target.value }))}
                         className="w-full border border-slate-200 rounded-md px-3 py-2"
+                      >
+                        {METRIC_TYPES.map(m => (
+                          <option key={m} value={m}>{m.replace('_', ' ')}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Rating (1-5)</label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="5"
+                        value={performanceForm.rating}
+                        onChange={(e) => setPerformanceForm(prev => ({ ...prev, rating: e.target.value }))}
+                        className="w-full"
+                      />
+                      <div className="flex justify-between text-xs text-slate-400 px-1">
+                        <span>Poor</span>
+                        <span>Excellent</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Assessment Notes</label>
+                      <textarea
+                        value={performanceForm.notes}
+                        onChange={(e) => setPerformanceForm(prev => ({ ...prev, notes: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-md px-3 py-2"
+                        rows="3"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Shift ID (optional)</label>
-                    <input
-                      type="text"
-                      value={performanceForm.shift_id}
-                      onChange={(event) => setPerformanceForm((prev) => ({ ...prev, shift_id: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
-                    <textarea
-                      value={performanceForm.notes}
-                      onChange={(event) => setPerformanceForm((prev) => ({ ...prev, notes: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      rows="3"
-                    />
-                  </div>
-                  <Button variant="primary" type="submit">Record Metric</Button>
-                </form>
+                    <Button type="submit" variant="primary">Submit Rating</Button>
+                  </form>
+                </section>
 
-                <div className="space-y-4">
-                  <h3 className="text-md font-semibold text-slate-800">View Metrics</h3>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
+                {/* View Performance */}
+                <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">Performance Insights</h2>
+                  <div className="flex gap-2 mb-6">
                     <select
+                      className="border border-slate-200 rounded-md px-3 py-1.5 text-sm"
                       value={performanceQuery.guard_id}
-                      onChange={(event) => setPerformanceQuery((prev) => ({ ...prev, guard_id: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
+                      onChange={(e) => setPerformanceQuery(prev => ({ ...prev, guard_id: e.target.value }))}
                     >
                       <option value="">Select guard</option>
-                      {guardOptions.map((guard) => (
-                        <option key={guard.value} value={guard.value}>{guard.label}</option>
+                      {guardOptions.map(g => (
+                        <option key={g.value} value={g.value}>{g.label}</option>
                       ))}
                     </select>
+                    <Button onClick={handleFetchPerformance} disabled={!performanceQuery.guard_id}>Analyze</Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">Start Date</label>
-                      <input
-                        type="date"
-                        value={performanceQuery.start_date}
-                        onChange={(event) => setPerformanceQuery((prev) => ({ ...prev, start_date: event.target.value }))}
-                        className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">End Date</label>
-                      <input
-                        type="date"
-                        value={performanceQuery.end_date}
-                        onChange={(event) => setPerformanceQuery((prev) => ({ ...prev, end_date: event.target.value }))}
-                        className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      />
-                    </div>
-                  </div>
-                  <Button variant="secondary" onClick={handleFetchPerformance}>
-                    Load Metrics
-                  </Button>
-                  {performanceData && (
-                    <div className="border border-slate-200 rounded-md p-4">
-                      <div className="text-sm text-slate-600 dark:text-slate-200">Average rating: {performanceData.statistics?.average_rating || '—'}</div>
-                      <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                        {performanceData.metrics?.map((metric) => (
-                          <li key={metric.id} className="flex justify-between">
-                            <span>{metric.metric_type.replace('_', ' ')}</span>
-                            <span>{metric.rating}</span>
-                          </li>
+
+                  {performanceData ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-brand-50 p-4 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-brand-700">{performanceData.statistics.average_rating || 'N/A'}</div>
+                          <div className="text-[10px] uppercase font-bold text-brand-500">Avg Rating</div>
+                        </div>
+                        <div className="bg-slate-50 p-4 rounded-lg text-center">
+                          <div className="text-2xl font-bold text-slate-700">{performanceData.statistics.total_ratings}</div>
+                          <div className="text-[10px] uppercase font-bold text-slate-500">Assessments</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {performanceData.metrics.slice(0, 3).map(m => (
+                          <div key={m.id} className="text-sm p-3 border border-slate-100 rounded-md">
+                            <div className="flex justify-between mb-1">
+                              <span className="font-medium capitalize">{m.metric_type.replace('_', ' ')}</span>
+                              <span className="font-bold text-brand-600">{m.rating}/5</span>
+                            </div>
+                            <p className="text-slate-500 text-xs italic">{m.notes}</p>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
+                  ) : (
+                    <p className="text-sm text-slate-400 text-center py-20">Select a guard to view performance data.</p>
                   )}
-                </div>
+                </section>
               </div>
-            </section>
+            </div>
           )}
 
           {activeTab === 'equipment' && (
-            <section
+            <div
               id="manage-guards-panel-equipment"
               role="tabpanel"
               aria-labelledby="manage-guards-tab-equipment"
-              className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6"
+              className="space-y-6"
             >
-              <h2 className="text-lg font-semibold text-slate-900">Equipment Checkout & Returns</h2>
-              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <form onSubmit={handleCheckoutEquipment} className="space-y-4">
-                  <h3 className="text-md font-semibold text-slate-800">Checkout Equipment</h3>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
-                    <select
-                      value={equipmentForm.guard_id}
-                      onChange={(event) => setEquipmentForm((prev) => ({ ...prev, guard_id: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      required
-                    >
-                      <option value="">Select guard</option>
-                      {guardOptions.map((guard) => (
-                        <option key={guard.value} value={guard.value}>{guard.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Checkout Equipment */}
+                <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6 lg:col-span-1">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">Equipment Checkout</h2>
+                  <form onSubmit={handleCheckoutEquipment} className="space-y-4">
                     <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">Equipment Type</label>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
                       <select
-                        value={equipmentForm.equipment_type}
-                        onChange={(event) => setEquipmentForm((prev) => ({ ...prev, equipment_type: event.target.value }))}
+                        value={equipmentForm.guard_id}
+                        onChange={(e) => setEquipmentForm(prev => ({ ...prev, guard_id: e.target.value }))}
                         className="w-full border border-slate-200 rounded-md px-3 py-2"
+                        required
                       >
-                        {EQUIPMENT_TYPES.map((type) => (
-                          <option key={type} value={type}>{type}</option>
+                        <option value="">Select guard</option>
+                        {guardOptions.map(g => (
+                          <option key={g.value} value={g.value}>{g.label}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">Equipment ID</label>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Item Type</label>
+                      <select
+                        value={equipmentForm.equipment_type}
+                        onChange={(e) => setEquipmentForm(prev => ({ ...prev, equipment_type: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-md px-3 py-2"
+                      >
+                        {EQUIPMENT_TYPES.map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Item S/N or ID</label>
                       <input
                         type="text"
                         value={equipmentForm.equipment_id}
-                        onChange={(event) => setEquipmentForm((prev) => ({ ...prev, equipment_id: event.target.value }))}
+                        onChange={(e) => setEquipmentForm(prev => ({ ...prev, equipment_id: e.target.value }))}
                         className="w-full border border-slate-200 rounded-md px-3 py-2"
+                        placeholder="RADIO-042"
                         required
                       />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Shift ID (optional)</label>
-                    <input
-                      type="text"
-                      value={equipmentForm.shift_id}
-                      onChange={(event) => setEquipmentForm((prev) => ({ ...prev, shift_id: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
-                    <textarea
-                      value={equipmentForm.notes}
-                      onChange={(event) => setEquipmentForm((prev) => ({ ...prev, notes: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      rows="2"
-                    />
-                  </div>
-                  <Button variant="primary" type="submit">Checkout</Button>
-                </form>
+                    <div>
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Condition Notes</label>
+                      <textarea
+                        value={equipmentForm.notes}
+                        onChange={(e) => setEquipmentForm(prev => ({ ...prev, notes: e.target.value }))}
+                        className="w-full border border-slate-200 rounded-md px-3 py-2"
+                        rows="2"
+                      />
+                    </div>
+                    <Button type="submit" variant="primary" className="w-full">Authorize Checkout</Button>
+                  </form>
+                </section>
 
-                <div className="space-y-4">
-                  <h3 className="text-md font-semibold text-slate-800">Current Checkouts</h3>
-                  <div className="flex flex-wrap gap-3">
-                    <select
-                      value={equipmentFilters.guard_id}
-                      onChange={(event) => setEquipmentFilters((prev) => ({ ...prev, guard_id: event.target.value }))}
-                      className="border border-slate-200 rounded-md px-3 py-2"
-                    >
-                      <option value="">All guards</option>
-                      {guardOptions.map((guard) => (
-                        <option key={guard.value} value={guard.value}>{guard.label}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={equipmentFilters.status}
-                      onChange={(event) => setEquipmentFilters((prev) => ({ ...prev, status: event.target.value }))}
-                      className="border border-slate-200 rounded-md px-3 py-2"
-                    >
-                      <option value="">All status</option>
-                      <option value="checked_out">Checked Out</option>
-                      <option value="returned">Returned</option>
-                    </select>
-                    <Button variant="secondary" onClick={() => loadEquipment(equipmentFilters)}>
-                      Refresh
-                    </Button>
+                {/* Equipment Status */}
+                <section className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6 lg:col-span-2">
+                  <h2 className="text-lg font-semibold text-slate-900 mb-4">Active Checkouts</h2>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                          <th className="px-4 py-3">Guard</th>
+                          <th className="px-4 py-3">Item</th>
+                          <th className="px-4 py-3">Checkout Time</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {equipmentCheckouts.length === 0 ? (
+                          <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-400">No active checkouts.</td></tr>
+                        ) : (
+                          equipmentCheckouts.map(c => (
+                            <tr key={c.id}>
+                              <td className="px-4 py-4">{c.guard_name}</td>
+                              <td className="px-4 py-4 capitalize">{c.equipment_type} ({c.equipment_id})</td>
+                              <td className="px-4 py-4">{formatDateTime(c.checkout_time)}</td>
+                              <td className="px-4 py-4">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${c.status === 'checked_out' ? 'bg-brand-50 text-brand-600' : 'bg-slate-100 text-slate-600'}`}>
+                                  {c.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4">
+                                {c.status === 'checked_out' && (
+                                  <Button size="xs" variant="secondary" onClick={() => handleReturnEquipment(c)}>Mark Returned</Button>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="space-y-3">
-                    {equipmentCheckouts.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-slate-300">No equipment records available.</p>
-                    ) : (
-                      equipmentCheckouts.map((checkout) => (
-                        <div key={checkout.id} className="border border-slate-200 rounded-md p-4">
-                          <div className="flex flex-wrap justify-between text-sm text-slate-600 dark:text-slate-200">
-                            <span>{checkout.equipment_type} • {checkout.equipment_id}</span>
-                            <span className="capitalize">{checkout.status}</span>
-                          </div>
-                          <div className="mt-1 text-sm text-slate-500 dark:text-slate-300">Guard: {checkout.guard_name || checkout.guard_id}</div>
-                          <div className="mt-2 flex flex-wrap items-center gap-3">
-                            <span className="text-xs text-slate-500 dark:text-slate-300">Checked out: {formatDateTime(checkout.checkout_time)}</span>
-                            {checkout.status === 'checked_out' && (
-                              <Button
-                                variant="ghost"
-                                onClick={() => handleReturnEquipment(checkout)}
-                                className="text-blue-600 text-sm"
-                              >
-                                Mark Returned
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                </section>
               </div>
-            </section>
+            </div>
           )}
 
           {activeTab === 'training' && (
@@ -1198,111 +1202,99 @@ export default function ManageGuards({ estateId }) {
               aria-labelledby="manage-guards-tab-training"
               className="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 rounded-lg p-6"
             >
-              <h2 className="text-lg font-semibold text-slate-900">Training & Certifications</h2>
-              <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <form onSubmit={handleAddTraining} className="space-y-4">
-                  <h3 className="text-md font-semibold text-slate-800">Add Training Record</h3>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
-                    <select
-                      value={trainingForm.guard_id}
-                      onChange={(event) => setTrainingForm((prev) => ({ ...prev, guard_id: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      required
-                    >
-                      <option value="">Select guard</option>
-                      {guardOptions.map((guard) => (
-                        <option key={guard.value} value={guard.value}>{guard.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Training Type</label>
-                    <select
-                      value={trainingForm.training_type}
-                      onChange={(event) => setTrainingForm((prev) => ({ ...prev, training_type: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                    >
-                      {TRAINING_TYPES.map((type) => (
-                        <option key={type} value={type}>{type.replace('_', ' ')}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Training Name</label>
-                    <input
-                      type="text"
-                      value={trainingForm.training_name}
-                      onChange={(event) => setTrainingForm((prev) => ({ ...prev, training_name: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+              <h2 className="text-lg font-semibold text-slate-900 mb-6">Training & Certifications</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-md font-semibold text-slate-800 mb-4">Add Training Record</h3>
+                  <form onSubmit={handleAddTraining} className="space-y-4">
                     <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">Completion Date</label>
-                      <input
-                        type="date"
-                        value={trainingForm.completion_date}
-                        onChange={(event) => setTrainingForm((prev) => ({ ...prev, completion_date: event.target.value }))}
+                      <label className="block text-sm text-slate-600 dark:text-slate-200">Guard</label>
+                      <select
+                        value={trainingForm.guard_id}
+                        onChange={(e) => setTrainingForm(prev => ({ ...prev, guard_id: e.target.value }))}
                         className="w-full border border-slate-200 rounded-md px-3 py-2"
                         required
-                      />
+                      >
+                        <option value="">Select guard</option>
+                        {guardOptions.map(g => (
+                          <option key={g.value} value={g.value}>{g.label}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div>
-                      <label className="block text-sm text-slate-600 dark:text-slate-200">Expiry Date</label>
-                      <input
-                        type="date"
-                        value={trainingForm.expiry_date}
-                        onChange={(event) => setTrainingForm((prev) => ({ ...prev, expiry_date: event.target.value }))}
-                        className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-slate-600 dark:text-slate-200">Category</label>
+                        <select
+                          value={trainingForm.training_type}
+                          onChange={(e) => setTrainingForm(prev => ({ ...prev, training_type: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-md px-3 py-2"
+                        >
+                          {TRAINING_TYPES.map(t => (
+                            <option key={t} value={t}>{t.replace('_', ' ')}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-slate-600 dark:text-slate-200">Certification Name</label>
+                        <input
+                          type="text"
+                          value={trainingForm.training_name}
+                          onChange={(e) => setTrainingForm(prev => ({ ...prev, training_name: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-md px-3 py-2"
+                          placeholder="Fire Marshal Level 1"
+                          required
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Certificate Number</label>
-                    <input
-                      type="text"
-                      value={trainingForm.certificate_number}
-                      onChange={(event) => setTrainingForm((prev) => ({ ...prev, certificate_number: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-slate-600 dark:text-slate-200">Notes</label>
-                    <textarea
-                      value={trainingForm.notes}
-                      onChange={(event) => setTrainingForm((prev) => ({ ...prev, notes: event.target.value }))}
-                      className="w-full border border-slate-200 rounded-md px-3 py-2"
-                      rows="2"
-                    />
-                  </div>
-                  <Button variant="primary" type="submit">Add Training</Button>
-                </form>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm text-slate-600 dark:text-slate-200">Completion Date</label>
+                        <input
+                          type="date"
+                          value={trainingForm.completion_date}
+                          onChange={(e) => setTrainingForm(prev => ({ ...prev, completion_date: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-md px-3 py-2"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-slate-600 dark:text-slate-200">Expiry Date (Optional)</label>
+                        <input
+                          type="date"
+                          value={trainingForm.expiry_date}
+                          onChange={(e) => setTrainingForm(prev => ({ ...prev, expiry_date: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-md px-3 py-2"
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" variant="primary">Add Certificate</Button>
+                  </form>
+                </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-md font-semibold text-slate-800">Training Records</h3>
-                  <div className="flex flex-wrap gap-3">
+                <div>
+                  <h3 className="text-md font-semibold text-slate-800 mb-4">Verification Logs</h3>
+                  <div className="flex gap-2 mb-4">
                     <select
+                      className="border border-slate-200 rounded-md px-3 py-1.5 text-sm"
                       value={trainingGuardId}
-                      onChange={(event) => setTrainingGuardId(event.target.value)}
-                      className="border border-slate-200 rounded-md px-3 py-2"
+                      onChange={(e) => setTrainingGuardId(e.target.value)}
                     >
                       <option value="">Select guard</option>
-                      {guardOptions.map((guard) => (
-                        <option key={guard.value} value={guard.value}>{guard.label}</option>
+                      {guardOptions.map(g => (
+                        <option key={g.value} value={g.value}>{g.label}</option>
                       ))}
                     </select>
                     <Button
                       variant="secondary"
                       onClick={() => handleLoadTrainingRecords(trainingGuardId)}
+                      disabled={!trainingGuardId}
                     >
                       Load Records
                     </Button>
                   </div>
                   <div className="space-y-3">
                     {trainingRecords.length === 0 ? (
-                      <p className="text-sm text-slate-500 dark:text-slate-300">No training records loaded.</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-300" id="no-training-records">No training records loaded.</p>
                     ) : (
                       trainingRecords.map((record) => (
                         <div key={record.id} className="border border-slate-200 rounded-md p-4">
@@ -1360,7 +1352,6 @@ export default function ManageGuards({ estateId }) {
                   </label>
                   <input
                     type="email"
-                    required
                     value={guardForm.email}
                     onChange={(e) => setGuardForm({ ...guardForm, email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
@@ -1372,7 +1363,6 @@ export default function ManageGuards({ estateId }) {
                   </label>
                   <input
                     type="text"
-                    required
                     value={guardForm.first_name}
                     onChange={(e) => setGuardForm({ ...guardForm, first_name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
@@ -1384,7 +1374,6 @@ export default function ManageGuards({ estateId }) {
                   </label>
                   <input
                     type="text"
-                    required
                     value={guardForm.last_name}
                     onChange={(e) => setGuardForm({ ...guardForm, last_name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"

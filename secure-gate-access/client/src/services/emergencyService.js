@@ -20,10 +20,11 @@ import logger from '../utils/logger';
  */
 export const triggerPanicButton = async (locationData = {}, gateId = null) => {
   try {
+    const safeLocation = locationData || {};
     const response = await apiClient.post('/api/emergency/panic', {
-      latitude: locationData.latitude || null,
-      longitude: locationData.longitude || null,
-      accuracy: locationData.accuracy || null,
+      latitude: safeLocation.latitude || null,
+      longitude: safeLocation.longitude || null,
+      accuracy: safeLocation.accuracy || null,
       gateId
     });
     logger.info('Panic button triggered successfully');

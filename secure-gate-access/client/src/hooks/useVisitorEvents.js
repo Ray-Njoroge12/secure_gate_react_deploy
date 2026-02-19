@@ -68,7 +68,7 @@ export function useVisitorEvents({
     }
   }, []);
 
-  // Handle incoming visitor event
+  // Handle incoming visitor event (with deduplication)
   const handleVisitorEvent = useCallback((event) => {
     const eventData = {
       ...event,
@@ -77,8 +77,18 @@ export function useVisitorEvents({
       isNew: true
     };
 
-    // Add to recent events
+    // Deduplicate: build a fingerprint from type + visitor ID + timestamp
+    const fingerprint = `${eventData.type}:${eventData.visitorId || eventData.visitor_id || ''}:${eventData.timestamp}`;
+
+    // Add to recent events (with deduplication)
     setRecentEvents(prev => {
+      // Check for duplicate by fingerprint or original event ID
+      const isDuplicate = prev.some(existing => {
+        const existingFingerprint = `${existing.type}:${existing.visitorId || existing.visitor_id || ''}:${existing.timestamp}`;
+        return existingFingerprint === fingerprint || (event.id && existing.id === event.id);
+      });
+      if (isDuplicate) return prev;
+
       const updated = [eventData, ...prev].slice(0, 50); // Keep last 50 events
       return updated;
     });

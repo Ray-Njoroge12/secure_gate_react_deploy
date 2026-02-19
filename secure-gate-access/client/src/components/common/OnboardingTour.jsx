@@ -36,7 +36,7 @@ const tourSteps = {
       id: 'quick-actions',
       target: '[data-tour="quick-actions"]',
       title: 'Quick Actions',
-      content: 'Use these tiles to quickly invite visitors, generate passes, or view your history.',
+      content: 'Use these tiles to quickly invite visitors, manage your visitor history, and more.',
       position: 'bottom'
     },
     {
@@ -165,11 +165,11 @@ const tourSteps = {
   ]
 };
 
-const OnboardingTour = ({ 
+const OnboardingTour = ({
   role = 'resident',
   onComplete,
   onSkip,
-  className = '' 
+  className = ''
 }) => {
   const { user } = useAuth();
   const [isActive, setIsActive] = useState(false);
@@ -186,7 +186,7 @@ const OnboardingTour = ({
   useEffect(() => {
     const tourKey = `securegate-tour-completed-${role}`;
     const hasCompletedTour = localStorage.getItem(tourKey);
-    
+
     if (!hasCompletedTour && user) {
       // Delay tour start to allow page to render
       const timer = setTimeout(() => {
@@ -213,7 +213,7 @@ const OnboardingTour = ({
           width: rect.width + 16,
           height: rect.height + 16
         });
-        
+
         // Scroll element into view
         targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
@@ -345,10 +345,10 @@ const OnboardingTour = ({
   return (
     <>
       {/* Overlay */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 z-[9998]"
         style={{
-          clipPath: highlightRect 
+          clipPath: highlightRect
             ? `polygon(
                 0 0, 100% 0, 100% 100%, 0 100%, 0 0,
                 ${highlightRect.left}px ${highlightRect.top}px,
@@ -364,7 +364,7 @@ const OnboardingTour = ({
 
       {/* Highlight ring */}
       {highlightRect && (
-        <div 
+        <div
           className="fixed border-2 border-green-500 rounded-lg z-[9998] pointer-events-none animate-pulse"
           style={{
             top: highlightRect.top,
@@ -386,7 +386,7 @@ const OnboardingTour = ({
       >
         {/* Progress bar */}
         <div className="h-1 bg-gray-200 dark:bg-slate-700 rounded-t-xl overflow-hidden">
-          <div 
+          <div
             className="h-full bg-green-500 transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
@@ -399,7 +399,7 @@ const OnboardingTour = ({
           </div>
 
           {/* Title */}
-          <h3 
+          <h3
             id="tour-step-title"
             className="text-lg font-bold text-gray-900 dark:text-white mb-2"
           >

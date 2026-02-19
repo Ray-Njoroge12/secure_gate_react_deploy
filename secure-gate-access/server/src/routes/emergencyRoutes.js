@@ -86,7 +86,7 @@ router.post('/panic', requireRole(['guard', 'resident']), async (req, res) => {
     });
 
   } catch (error) {
-    loggingService.logError('PANIC_ROUTE_ERROR', { error: error.message });
+    loggingService.logError('PANIC_ROUTE_ERROR', error);
 
     if (error.message.includes('cooldown')) {
       return errorResponse(res, error.message, 'RATE_LIMITED', 429, null, req);
@@ -105,7 +105,7 @@ router.post('/panic', requireRole(['guard', 'resident']), async (req, res) => {
  * @desc Cancel panic alert within 30 seconds (guard who triggered only)
  * @access Guards only
  */
-router.post('/:id/cancel', requireRole(['guard', 'resident']), async (req, res) => {
+router.post('/:id(\\d+)/cancel', requireRole(['guard', 'resident']), async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const guardId = req.user.id;
@@ -139,7 +139,7 @@ router.post('/:id/cancel', requireRole(['guard', 'resident']), async (req, res) 
  * @desc Acknowledge an emergency (admin or guard responding)
  * @access Admins, Guards, and Super Admins
  */
-router.post('/:id/acknowledge', requireRolePolicy('adminOrGuard'), async (req, res) => {
+router.post('/:id(\\d+)/acknowledge', requireRolePolicy('adminOrGuard'), async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const responderId = req.user.id;
@@ -179,7 +179,7 @@ router.post('/:id/acknowledge', requireRolePolicy('adminOrGuard'), async (req, r
  * @desc Resolve an emergency (admin only)
  * @access Admins only
  */
-router.post('/:id/resolve', requireRolePolicy('adminOnly'), async (req, res) => {
+router.post('/:id(\\d+)/resolve', requireRolePolicy('adminOnly'), async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const resolverId = req.user.id;
@@ -285,7 +285,7 @@ router.get('/my-history', requireRole(['guard']), async (req, res) => {
  * @desc Get emergency details
  * @access Admins or the guard who triggered
  */
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id(\\d+)', authenticateToken, async (req, res) => {
   try {
     const emergencyId = parseInt(req.params.id);
     const requesterId = req.user.id;

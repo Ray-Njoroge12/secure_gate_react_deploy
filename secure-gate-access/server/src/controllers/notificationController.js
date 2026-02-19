@@ -183,11 +183,12 @@ export async function sendTemplatedNotification(options) {
       await updateNotificationLog(logEntry.id, {
         status: sendResult.success ? 'sent' : 'failed',
         sentAt: sendResult.success ? new Date() : null,
-        failedAt: sendResult.success ? null : new Date(),
-        errorMessage: sendResult.error || null,
         provider: providerInfo.provider,
         providerMessageId: sendResult.messageId || null,
-        providerResponse: sendResult.response || null
+        metadata: {
+          errorMessage: sendResult.error || null,
+          providerResponse: sendResult.response || null
+        }
       });
 
       await recordOutboundNotificationTracking({
@@ -336,19 +337,18 @@ async function getNotificationPreferences(recipientType, recipientId) {
 /**
  * Load template from database
  */
-async function loadTemplate(templateName, templateType, language) {
+async function loadTemplate(name, channel, language) {
   try {
     const query = `
       SELECT * FROM notification_templates
-      WHERE template_name = $1
-        AND template_type = $2
+      WHERE name = $1
+        AND channel = $2
         AND language = $3
         AND is_active = true
-      ORDER BY version DESC
       LIMIT 1
     `;
 
-    const result = await dbManager.query(query, [templateName, templateType, language]);
+    const result = await dbManager.query(query, [name, channel, language]);
 
     if (result.rows.length === 0) {
       // Fallback to English if requested language not found
@@ -639,7 +639,7 @@ export async function updateNotificationPreferences(req, res) {
     // Use authenticated user's ID from token instead of body
     const userId = req.user.id;
     const preferences = req.body.preferences || req.body; // Support both formats
-    
+
     // Upsert preferences
     const query = `
       INSERT INTO notification_preferences (

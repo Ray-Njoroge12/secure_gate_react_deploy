@@ -5,6 +5,7 @@
   "proxy": "http://localhost:3001",
   "scripts": {
     "start": "react-scripts start",
+    "dev:network": "cross-env HOST=0.0.0.0 DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
     "build": "react-scripts build",
     "build:fast": "cross-env GENERATE_SOURCEMAP=false CI=true INLINE_RUNTIME_CHUNK=false IMAGE_INLINE_SIZE_LIMIT=0 TSC_COMPILE_ON_ERROR=true react-scripts build",
     "build:production": "cross-env GENERATE_SOURCEMAP=false CI=true INLINE_RUNTIME_CHUNK=false IMAGE_INLINE_SIZE_LIMIT=0 DISABLE_ESLINT_PLUGIN=true TSC_COMPILE_ON_ERROR=true react-scripts build",

@@ -7,12 +7,15 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, Button, Badge, Input, PageHeader, Skeleton, Modal } from "../../components/ui";
 import { SearchFilter, Pagination } from "../../components/ui";
-import { getAllResidents, updateResident, deleteResident, createResident } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
 import { useSearchData } from "../../hooks/useSearch";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirmation } from "../../components/common/ConfirmationDialog";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
+import { useAuth } from "../../contexts/AuthContext";
+import PasswordConfirmationModal from "../../components/common/PasswordConfirmationModal";
+import ResidentDetailsModal from "../../components/admin/ResidentDetailsModal";
+import { getAllResidents, updateResident, deleteResident, createResident, getUserDetails } from "../../services/adminService";
 import logger from 'utils/logger';
 import Icon from "../../components/ui/Icon";
 
@@ -387,6 +390,35 @@ export default function ManageResidents({ estateId }) {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
 
+  // Secure Reveal State
+  const [passwordModal, setPasswordModal] = useState({ open: false, type: null, targetId: null });
+  const [detailsModal, setDetailsModal] = useState({ open: false, resident: null });
+  const { verifyPassword } = useAuth(); // We'll just use the modal's verify logic, but good to have if needed
+
+  // ... existing code ...
+
+  const handleViewDetails = (resident) => {
+    // Open password confirmation first
+    setPasswordModal({ open: true, type: 'view_details', targetId: resident.id });
+  };
+
+  const handlePasswordConfirmed = async () => {
+    // Password verified by the modal, now fetch details
+    try {
+      const { targetId } = passwordModal;
+      // Fetch full details (unmasked)
+      // Note: getUserDetails calls the new /api/admin/users/:id endpoint which returns unmasked data
+      const response = await getUserDetails(targetId);
+      const residentDetails = response.data || response;
+
+      setDetailsModal({ open: true, resident: residentDetails });
+      setPasswordModal({ open: false, type: null, targetId: null });
+    } catch (err) {
+      toast?.error?.('Failed to fetch resident details');
+      logger.error('Failed to fetch resident details', err);
+    }
+  };
+
   // Search and filter configuration
   const searchFields = ['username', 'email', 'phone', 'unit_number'];
   const filterFields = [
@@ -405,7 +437,8 @@ export default function ManageResidents({ estateId }) {
     setPage,
     isSearching,
     hasFilters,
-    hasResults
+    hasResults,
+    clearSearch
   } = useSearchData(users, searchFields, filterFields, {
     enablePagination: true,
     pageSize: 10
@@ -464,9 +497,14 @@ export default function ManageResidents({ estateId }) {
     try {
       await createResident(data, estateParams);
       toast?.success?.('Resident created successfully');
+
+      // Clear search and filters after adding to ensure the new resident is visible
+      clearSearch();
+
       loadResidents();
     } catch (e) {
-      toast?.error?.(e.message || 'Failed to create resident');
+      const errorMsg = handleApiError(e, 'Create resident');
+      toast?.error?.(errorMsg || 'Failed to create resident');
       throw e;
     }
   };
@@ -775,6 +813,16 @@ export default function ManageResidents({ estateId }) {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleViewDetails(resident)}
+                              className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
+                              title="View Details (Unmask)"
+                              aria-label={`View details for ${resident.username}`}
+                            >
+                              <Icon name="eye" className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleEmail(resident)}
                               className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               aria-label={`Email ${resident.name}`}
@@ -829,19 +877,32 @@ export default function ManageResidents({ estateId }) {
         </>
       )}
 
-      {/* Edit Modal */}
-      <EditResidentModal
-        resident={editModal.resident}
-        isOpen={editModal.open}
-        onClose={() => setEditModal({ open: false, resident: null })}
-        onSave={handleSaveEdit}
-      />
-
-      {/* Add Modal */}
+      {/* Modals */}
       <AddResidentModal
         isOpen={addModal}
         onClose={() => setAddModal(false)}
         onSave={handleAddResident}
+      />
+
+      <EditResidentModal
+        isOpen={editModal.open}
+        resident={editModal.resident}
+        onClose={() => setEditModal({ open: false, resident: null })}
+        onSave={handleSaveEdit}
+      />
+
+      <PasswordConfirmationModal
+        isOpen={passwordModal.open}
+        onClose={() => setPasswordModal({ open: false, type: null, targetId: null })}
+        onConfirm={handlePasswordConfirmed}
+        title="Confirm Identity to View Details"
+        message="Please enter your password to view unmasked resident information."
+      />
+
+      <ResidentDetailsModal
+        isOpen={detailsModal.open}
+        onClose={() => setDetailsModal({ open: false, resident: null })}
+        resident={detailsModal.resident}
       />
     </div>
   );

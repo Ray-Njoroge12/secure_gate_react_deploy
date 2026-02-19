@@ -79,7 +79,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
 
   const eventData = {
     title: `Visit: ${inviteData.eventName || inviteData.event_name || 'Scheduled Visit'}`,
-    description: `Visitor: ${visitorName}\n\nRemember to bring your QR code or OTP for entry.\n\nPowered by SecureGate Access System`,
+    description: `Visitor: ${visitorName}\n\nRemember to bring your QR code or Pass Code for entry.\n\nPowered by SecureGate Access System`,
     location: inviteData.location || 'Gate Entry',
     startDate: inviteData.date,
     startTime: inviteData.time,
@@ -112,7 +112,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
       `Event: ${eventData.title}\n` +
       `Date: ${inviteData.date}\n` +
       `Time: ${inviteData.time}\n\n` +
-      `Don't forget to bring your QR code or OTP for entry!`
+      `Don't forget to bring your QR code or Pass Code for entry!`
     );
     window.open(`https://wa.me/?text=${message}`, '_blank', 'noopener,noreferrer');
     setShowOptions(false);
@@ -193,6 +193,51 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
   );
 };
 
+// Date formatting helper
+const formatDisplayDate = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (e) {
+    return dateStr;
+  }
+};
+
+const formatDisplayTime = (timeStr) => {
+  if (!timeStr) return '';
+  // Support HH:mm:ss or ISO strings
+  try {
+    if (timeStr.includes('T')) {
+      const date = new Date(timeStr);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+      }
+    }
+    // Handle HH:mm:ss
+    const [hours, minutes] = timeStr.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (e) {
+    return timeStr;
+  }
+};
+
 export default function GuestInvite() {
   const { inviteCode } = useParams();
 
@@ -223,6 +268,22 @@ export default function GuestInvite() {
       setLoading(true);
       const data = await getPublicInvite(inviteCode);
       setInviteData(data);
+      if (data?.name) {
+        setFormData(prev => ({
+          ...prev,
+          name: data.name,
+          phone: data.phone || prev.phone,
+          email: data.email || prev.email,
+          idNumber: data.idNumber || prev.idNumber,
+          vehiclePlate: data.vehiclePlate || prev.vehiclePlate
+        }));
+      }
+      // If already confirmed or registered, show the pass directly
+      const isRegistered = ['confirmed', 'approved', 'verified', 'otp_sent', 'otp_verified', 'active', 'on_premise'].includes(data?.status);
+      if (isRegistered && data.qrCode) {
+        setVisitor(data);
+        setSuccess('Your visit is confirmed. You can see your pass below.');
+      }
       setError('');
     } catch (err) {
       setError(handleApiError(err, 'Loading invitation'));
@@ -334,8 +395,14 @@ export default function GuestInvite() {
                 </Badge>
                 <div className="text-xs xs:text-sm text-gray-600 dark:text-gray-200 space-y-1">
                   {(inviteDate || inviteTime) && (
-                    <p>
-                      {inviteDate || 'Date TBD'}{inviteTime ? ` at ${inviteTime}` : ''}
+                    <p className="flex flex-wrap justify-center items-center gap-1">
+                      <span className="font-semibold">{formatDisplayDate(inviteDate)}</span>
+                      {inviteTime && (
+                        <>
+                          <span className="text-gray-400">at</span>
+                          <span className="font-semibold">{formatDisplayTime(inviteTime)}</span>
+                        </>
+                      )}
                     </p>
                   )}
                   {typeof inviteRemainingSlots === 'number' && (
@@ -361,8 +428,8 @@ export default function GuestInvite() {
                 {(visitor.qrCode || visitor.qr_code) && (
                   <div className="flex justify-center w-full">
                     <QRCodeDisplay
-                      value={visitor.qrCode || visitor.qr_code}
-                      otp={visitor.debugOtp || visitor.debug_otp || visitor.otp}
+                      value={visitor.qrCode?.dataUrl || visitor.qrCode || visitor.qr_code}
+                      otp={visitor.otp || visitor.debugOtp || visitor.debug_otp}
                       showCopyButton={true}
                     />
                   </div>
@@ -397,7 +464,7 @@ export default function GuestInvite() {
 
                 <div className="text-sm text-gray-600 dark:text-gray-200 bg-blue-50 p-3 rounded-md">
                   <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Entry Instructions:</p>
-                  <p>Present the QR code above at the gate, or provide the OTP to security.</p>
+                  <p>Present the QR code above at the gate, or provide the Pass Code to security.</p>
                 </div>
 
                 {/* Add to Calendar Button */}

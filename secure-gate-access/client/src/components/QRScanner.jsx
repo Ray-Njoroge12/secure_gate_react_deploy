@@ -57,7 +57,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
 
       // Use the first available camera or selected device
       const deviceId = selectedDevice || videoDevices[0].deviceId;
-      
+
       const constraints = {
         video: {
           deviceId: { exact: deviceId },
@@ -69,7 +69,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
@@ -113,7 +113,7 @@ const QRScanner = ({ onScan, onError, onClose }) => {
 
     // Try to detect QR code
     const qrCode = detectQRCode(canvas);
-    
+
     if (qrCode) {
       onScan?.(qrCode.data);
       stopScanning();
@@ -136,10 +136,10 @@ const QRScanner = ({ onScan, onError, onClose }) => {
   // Toggle flashlight/torch
   const toggleFlashlight = async () => {
     if (!streamRef.current) return;
-    
+
     const track = streamRef.current.getVideoTracks()[0];
     if (!track) return;
-    
+
     try {
       const newState = !flashlightOn;
       await track.applyConstraints({
@@ -161,12 +161,12 @@ const QRScanner = ({ onScan, onError, onClose }) => {
   useEffect(() => {
     // Store the previously focused element
     previousActiveElement.current = document.activeElement;
-    
+
     // Focus the modal when it opens
     setTimeout(() => {
       modalRef.current?.focus();
     }, 100);
-    
+
     return () => {
       stopScanning();
       // Restore focus to the previously focused element
@@ -175,6 +175,12 @@ const QRScanner = ({ onScan, onError, onClose }) => {
       }
     };
   }, []);
+
+  // Auto-start camera scanning when modal opens
+  useEffect(() => {
+    // Automatically start scanning when component mounts
+    startScanning();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -209,13 +215,13 @@ const QRScanner = ({ onScan, onError, onClose }) => {
   // in the single useEffect above (lines 180-206) to avoid duplicate handlers
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="qr-scanner-title"
     >
-      <Card 
+      <Card
         ref={modalRef}
         tabIndex={-1}
         className="w-full max-w-md mx-4 focus:outline-none"
@@ -255,16 +261,15 @@ const QRScanner = ({ onScan, onError, onClose }) => {
                 <div className="absolute inset-0 border-2 border-blue-500 rounded-lg">
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-white rounded"></div>
                 </div>
-                
+
                 {/* Flashlight Toggle Button */}
                 {flashlightSupported && (
                   <Button
                     onClick={toggleFlashlight}
-                    className={`absolute top-3 right-3 p-3 rounded-full transition-all shadow-lg ${
-                      flashlightOn 
-                        ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500' 
+                    className={`absolute top-3 right-3 p-3 rounded-full transition-all shadow-lg ${flashlightOn
+                        ? 'bg-yellow-400 text-yellow-900 hover:bg-yellow-500'
                         : 'bg-gray-800 bg-opacity-70 text-white hover:bg-opacity-90'
-                    }`}
+                      }`}
                     title={flashlightOn ? 'Turn off flashlight' : 'Turn on flashlight'}
                     aria-label={flashlightOn ? 'Turn off flashlight' : 'Turn on flashlight'}
                   >

@@ -54,6 +54,7 @@ class GuardManagementService {
           u.email,
           u.phone as phone_number,
           u.role,
+          u.account_status,
           COALESCE(u.verified, false) as is_active,
           u.created_at,
           u.estate_id,

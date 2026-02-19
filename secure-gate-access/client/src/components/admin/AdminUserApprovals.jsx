@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useError } from '../../contexts/ErrorContext';
+import { useToast } from '../../contexts/ToastContext';
+import { handleApiError } from '../../utils/errorMapper';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     getPendingUsers,
@@ -28,7 +29,7 @@ const AdminUserApprovals = ({ siteId }) => {
     // Manual estate selection state
     const [selectedEstates, setSelectedEstates] = useState({});
 
-    const { handleError, handleSuccess } = useError();
+    const { toast } = useToast();
     const { user } = useAuth(); // To check role if needed
 
     const fetchData = async () => {
@@ -53,7 +54,8 @@ const AdminUserApprovals = ({ siteId }) => {
             }
         } catch (err) {
             setPendingUsers([]);
-            handleError(err, { context: 'Fetching Pending Users' });
+            const errMsg = handleApiError(err);
+            toast?.error?.(errMsg || 'Failed to fetch pending users');
         } finally {
             setLoading(false);
         }
@@ -90,7 +92,7 @@ const AdminUserApprovals = ({ siteId }) => {
             const assignedEstate = user?.estate_id || selectedEstates[data];
 
             if (!assignedEstate) {
-                handleError(new Error('Please assign an estate to this user before approving.'));
+                toast?.error?.('Please assign an estate to this user before approving.');
                 return;
             }
         }
@@ -140,11 +142,11 @@ const AdminUserApprovals = ({ siteId }) => {
                 setSelectedUsers([]);
             }
 
-            handleSuccess(message);
+            toast?.success?.(message);
             setDialog({ isOpen: false, type: null, data: null });
             fetchData(); // Refresh list
         } catch (err) {
-            handleError(err, { context: 'Processing Action' });
+            toast?.error?.(handleApiError(err) || 'Failed to process user action');
         } finally {
             setProcessingId(null);
         }
@@ -254,6 +256,7 @@ const AdminUserApprovals = ({ siteId }) => {
                                     />
                                 </th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User Details</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">House No.</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Role & Date</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estate Assignment</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
@@ -281,6 +284,9 @@ const AdminUserApprovals = ({ siteId }) => {
                                                 {user.phone && <div className="text-xs text-gray-400 mt-0.5">{user.phone}</div>}
                                             </div>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.house || '-'}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex flex-col gap-1">

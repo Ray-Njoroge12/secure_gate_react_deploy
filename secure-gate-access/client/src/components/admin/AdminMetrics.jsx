@@ -1,16 +1,15 @@
-// AdminMetrics - Displays real metrics from API
-import React from 'react';
 import Icon from '../ui/Icon';
+import { ErrorState } from '../ui/EmptyState.jsx';
 
-const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
+const AdminMetrics = ({ metrics = {}, loading = false, error = null, onRetry }) => {
     const users = metrics?.users || {};
     const visitors = metrics?.visitors || {};
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 h-[200px] flex flex-col">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Metrics</h2>
-                <div className="flex justify-center items-center h-24">
+                <div className="flex-1 flex justify-center items-center">
                     <Icon name="loader-2" className="h-8 w-8 text-blue-500 animate-spin" aria-label="Loading metrics" />
                 </div>
             </div>
@@ -19,11 +18,13 @@ const AdminMetrics = ({ metrics = {}, loading = false, error = null }) => {
 
     if (error) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 min-h-[200px]">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">System Metrics</h2>
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
-                    {error}
-                </div>
+                <ErrorState
+                    errorMessage={error}
+                    onRetry={onRetry}
+                    compact={true}
+                />
             </div>
         );
     }

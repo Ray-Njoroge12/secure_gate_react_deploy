@@ -93,6 +93,11 @@ export const getVisitorLogs = (params = {}) => {
   const queryString = new URLSearchParams(params).toString();
   return http.get(`${API_BASE}/visitors${queryString ? `?${queryString}` : ''}`);
 };
+export const getVisitorDetails = (id) => http.get(`${API_BASE}/visitors/${id}/details`);
+export const getVisitorReports = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return http.get(`${VISITOR_BASE}/reports${queryString ? `?${queryString}` : ''}`);
+};
 const VISITOR_BASE = '/api/visitors';
 
 export const checkInVisitor = (id) => http.post(`${VISITOR_BASE}/${id}/check-in`);
@@ -136,6 +141,7 @@ export const updateUserStatus = (id, status, estateId) => http.put(`${API_BASE}/
 export const bulkApproveUsers = (data) => http.post(`${API_BASE}/users/bulk-approve`, data);
 export const bulkRejectUsers = (data) => http.post(`${API_BASE}/users/bulk-reject`, data);
 export const deleteUser = (id) => http.delete(`${API_BASE}/users/${id}`);
+export const getUserDetails = (id) => http.get(`${API_BASE}/users/${id}`);
 
 // === Activity Dashboard ===
 export const getActivitySummary = (params = {}) => {

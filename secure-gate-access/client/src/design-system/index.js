@@ -1,3 +1,2 @@
 export * from './tokens.js';
-
-export { componentTokens, theme } from '../styles/tokens.js';
+export { theme as default } from './tokens.js';

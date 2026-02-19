@@ -83,7 +83,7 @@ export class EnhancedErrorHandler {
   async handleWithRetry(operation, errorContext = {}, retryOptions = {}) {
     const errorType = this.categorizeError(errorContext.error);
     const config = { ...this.defaultRetryConfig[errorType], ...retryOptions };
-    
+
     let lastError = errorContext.error;
     let attempt = 0;
 
@@ -92,7 +92,7 @@ export class EnhancedErrorHandler {
         if (attempt > 0) {
           const delay = this.calculateDelay(attempt, config);
           await this.delay(delay);
-          
+
           if (this.onRetry) {
             this.onRetry(attempt, lastError, errorContext);
           }
@@ -130,17 +130,17 @@ export class EnhancedErrorHandler {
     if (!error) return ERROR_TYPES.UNKNOWN;
 
     // Network errors
-    if (error.name === 'NetworkError' || 
-        error.message?.includes('network') ||
-        error.message?.includes('fetch') ||
-        error.code === 'NETWORK_ERROR') {
+    if (error.name === 'NetworkError' ||
+      error.message?.includes('network') ||
+      error.message?.includes('fetch') ||
+      error.code === 'NETWORK_ERROR') {
       return ERROR_TYPES.NETWORK;
     }
 
     // HTTP status based categorization
     if (error.response?.status) {
       const status = error.response.status;
-      
+
       if (status === 401) return ERROR_TYPES.AUTHENTICATION;
       if (status === 403) return ERROR_TYPES.AUTHORIZATION;
       if (status === 404) return ERROR_TYPES.NOT_FOUND;
@@ -150,10 +150,15 @@ export class EnhancedErrorHandler {
 
     // Validation errors
     if (error.name === 'ValidationError' ||
-        error.message?.includes('validation') ||
-        error.message?.includes('invalid') ||
-        error.message?.includes('required')) {
+      error.message?.includes('validation') ||
+      error.message?.includes('invalid') ||
+      error.message?.includes('required')) {
       return ERROR_TYPES.VALIDATION;
+    }
+
+    // JSON Parsing errors (usually due to non-JSON response from server)
+    if (error.name === 'SyntaxError' || error.message?.includes('JSON')) {
+      return ERROR_TYPES.SERVER;
     }
 
     return ERROR_TYPES.UNKNOWN;
@@ -220,7 +225,7 @@ export class EnhancedErrorHandler {
 export function createStandardError(error, context = {}, options = {}) {
   const errorType = categorizeErrorType(error);
   const severity = determineErrorSeverity(error, errorType);
-  
+
   return {
     id: options.id || generateErrorId(),
     message: extractErrorMessage(error),
@@ -279,21 +284,21 @@ function categorizeErrorType(error) {
  */
 function determineErrorSeverity(error, errorType) {
   // Critical errors
-  if (errorType === ERROR_TYPES.AUTHENTICATION || 
-      errorType === ERROR_TYPES.SERVER ||
-      error?.response?.status >= 500) {
+  if (errorType === ERROR_TYPES.AUTHENTICATION ||
+    errorType === ERROR_TYPES.SERVER ||
+    error?.response?.status >= 500) {
     return ERROR_SEVERITY.CRITICAL;
   }
 
   // High severity errors
   if (errorType === ERROR_TYPES.AUTHORIZATION ||
-      error?.response?.status === 404) {
+    error?.response?.status === 404) {
     return ERROR_SEVERITY.HIGH;
   }
 
   // Medium severity errors
   if (errorType === ERROR_TYPES.CLIENT ||
-      errorType === ERROR_TYPES.VALIDATION) {
+    errorType === ERROR_TYPES.VALIDATION) {
     return ERROR_SEVERITY.MEDIUM;
   }
 
@@ -485,12 +490,12 @@ function shouldNotRetry(error) {
   if (error.name === 'ValidationError' || error.message?.includes('validation')) {
     return true;
   }
-  
+
   // Don't retry authentication errors (401)
   if (error.response?.status === 401) {
     return true;
   }
-  
+
   // Don't retry client errors (400-499) except for 408, 429, 500-599
   if (error.response?.status >= 400 && error.response?.status < 500) {
     const retryableClientErrors = [408, 429]; // Request timeout, Too many requests
@@ -498,7 +503,7 @@ function shouldNotRetry(error) {
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -518,18 +523,18 @@ export async function retryOperation(operation, options = {}) {
   };
 
   let lastError;
-  
+
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      
+
       // Check if error should not be retried
       if (shouldNotRetry(error)) {
         throw error;
       }
-      
+
       if (attempt === config.maxRetries) {
         throw error;
       }
@@ -538,7 +543,7 @@ export async function retryOperation(operation, options = {}) {
         config.baseDelay * Math.pow(config.backoffMultiplier, attempt),
         config.maxDelay
       );
-      
+
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }

@@ -39,14 +39,13 @@ export default function GuardDashboard() {
   const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
 
   const [active, setActive] = useState([]);
-  const [toasts, setToasts] = useState([]);
-  const [toastFilter, setToastFilter] = useState(() => localStorage.getItem('toastFilter') || 'all'); // all|info|warning|error
+
   const [showFilters, setShowFilters] = useState(false);
   const [activeQuickFilter, setActiveQuickFilter] = useState('all'); // Phase G3: Quick filter state
   const [isConnected, setIsConnected] = useState(true); // Live connection status
   const [selectedVisitor, setSelectedVisitor] = useState(null); // Visitor details modal
   const [initialLoad, setInitialLoad] = useState(true); // Track first load for skeleton
-  const toastRef = React.useRef(null);
+
 
   // Search and filter configuration
   const searchFields = ['name', 'host', 'status'];
@@ -95,11 +94,15 @@ export default function GuardDashboard() {
     return normalizeStatusValue(visitor?.status) !== 'REVOKED';
   }
 
-  const fetchActive = useCallback(async () => {
+  const fetchActive = useCallback(async (query = '') => {
     try {
-      setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
+      setLoading('guardDashboard', true, { message: 'Loading visitors...' });
       clearAllErrors();
-      const res = await fetch('/api/visitors/active', {
+
+      const params = new URLSearchParams();
+      if (query) params.append('q', query);
+
+      const res = await fetch(`/api/visitors/active?${params.toString()}`, {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -131,7 +134,7 @@ export default function GuardDashboard() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
         if (!isLoading('guardDashboard')) {
-          fetchActive();
+          fetchActive(searchTerm);
         }
       }
     };
@@ -140,7 +143,13 @@ export default function GuardDashboard() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [fetchActive, isLoading, navigate]);
 
-  useEffect(() => { fetchActive(); }, [fetchActive]);
+  // Fetch active visitors on mount and when search term changes (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchActive(searchTerm);
+    }, 500); // Debounce search
+    return () => clearTimeout(timer);
+  }, [fetchActive, searchTerm]);
 
   // Subscribe to guard SSE for live updates
   useEffect(() => {
@@ -165,7 +174,12 @@ export default function GuardDashboard() {
           };
           const msg = map[evt.type] || 'Event';
           const sev = (data && data.severity) || 'info';
-          pushToast({ message: msg, severity: sev });
+          // Use global notification service instead of local debug toasts
+          if (notificationService[sev]) {
+            notificationService[sev](msg);
+          } else {
+            notificationService.info(msg);
+          }
         } catch { /* ignore */ }
         fetchActive();
       };
@@ -179,21 +193,7 @@ export default function GuardDashboard() {
     return () => { try { es && es.close(); } catch { } };
   }, [fetchActive]);
 
-  // Persist toast filter and auto-scroll to newest
-  useEffect(() => { try { localStorage.setItem('toastFilter', toastFilter); } catch { } }, [toastFilter]);
-  useEffect(() => {
-    try { toastRef.current?.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { }
-  }, [toasts]);
 
-  function pushToast(t) {
-    const id = Math.random().toString(36).slice(2);
-    const item = { id, ...t };
-    setToasts((prev) => [item, ...prev].slice(0, 5));
-    // Auto-remove after 4s
-    setTimeout(() => {
-      setToasts((prev) => prev.filter(x => x.id !== id));
-    }, 4000);
-  }
 
   async function postAction(id, action) {
     const url = `/api/visitors/${id}/${action}`;
@@ -395,7 +395,7 @@ export default function GuardDashboard() {
               </h3>
               <div className="mt-2 text-sm text-amber-700">
                 <p>
-                  <strong>Security Notice:</strong> MFA is required for all guards to perform sensitive operations 
+                  <strong>Security Notice:</strong> MFA is required for all guards to perform sensitive operations
                   (check-ins, check-outs, incident reports). Please enable MFA now to ensure uninterrupted access.
                 </p>
               </div>
@@ -423,25 +423,6 @@ export default function GuardDashboard() {
         </div>
       )}
 
-      {/* Live toasts (severity-based) */}
-      <div data-testid="toasts" ref={toastRef} className="fixed top-16 right-4 flex flex-col gap-2 z-50 max-w-sm max-h-80 overflow-y-auto">
-        <div className="flex gap-2 justify-end mb-1">
-          {['all', 'info', 'warning', 'error'].map(f => (
-            <Button key={f} variant="ghost" size="sm" className="min-h-[44px] min-w-[44px] text-xs px-3 py-2 rounded bg-gray-800 text-white"
-              style={{ opacity: toastFilter === f ? 1 : 0.7 }} onClick={() => setToastFilter(f)}
-              aria-label={`Filter toasts by ${f}`}
-              aria-pressed={toastFilter === f}>
-              {f.toUpperCase()}
-            </Button>
-          ))}
-          <span aria-label="visible-toasts" className="ml-2 text-xs bg-gray-800 text-white rounded-full px-2 py-1">
-            {toasts.filter(t => toastFilter === 'all' || t.severity === toastFilter).length}
-          </span>
-        </div>
-        {toasts.filter(t => toastFilter === 'all' || t.severity === toastFilter).map(t => (
-          <Toast key={t.id} severity={t.severity} message={t.message} />
-        ))}
-      </div>
 
       {/* PHASE A4: Emphasize Scan QR and Manual Check - Mobile First */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 mb-6">
@@ -584,7 +565,7 @@ export default function GuardDashboard() {
         <PendingApprovalsQueue />
       </div>
 
-      {/* Phase 1.3: Recent Visitors Quick Lookup */}
+      {/* Phase 1.3: Recent Visitors Quick Lookup - REMOVED: Redundant with Active Visitors list 
       <RecentVisitors
         onSelectVisitor={(visitor) => {
           // Navigate to check-in with visitor pre-selected
@@ -594,6 +575,7 @@ export default function GuardDashboard() {
         }}
         className="mb-6"
       />
+      */ }
 
       {/* Phase 2.1: Pending Deliveries */}
       <div className="mb-6">
@@ -607,7 +589,7 @@ export default function GuardDashboard() {
         filterFields={filterFields}
         onSearch={setSearchTerm}
         onFilter={setFilters}
-        placeholder="Search visitors by name, host, or status..."
+        placeholder="Search visitors by name or invite code..."
         showAdvanced={showFilters}
         enableSorting={true}
         enablePagination={false}
@@ -759,15 +741,17 @@ export default function GuardDashboard() {
                   headers={["Visitor", "Host", "In", "Out", "Status", "Actions"]}
                   rows={filteredActive.map(v => [
                     (v.name || `#${v.id}`),
-                    (v.host ? mask(v.host) : '-'),
-                    '' + (v.check_in_time || ''),
-                    '' + (v.check_out_time || ''),
+                    (v.residentName && v.residentName !== 'Unknown' ? mask(v.residentName) : (v.host ? mask(v.host) : '-')),
+                    '' + (v.checkIn || v.check_in_time || ''),
+                    '' + (v.checkOut || v.check_out_time || ''),
                     statusChip(v.status),
                     ((['guard', 'admin'].includes(role)) ? (
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => onCheckIn(v.id)} disabled={!canCheckInVisitor(v)}>Check-in</Button>
                         <Button size="sm" onClick={() => onCheckOut(v.id)} disabled={!canCheckOutVisitor(v)}>Check-out</Button>
-                        <Button size="sm" variant="destructive" onClick={() => onRevoke(v.id)} disabled={!canRevokeVisitor(v)}>Revoke</Button>
+                        {role === 'admin' && (
+                          <Button size="sm" variant="destructive" onClick={() => onRevoke(v.id)} disabled={!canRevokeVisitor(v)}>Revoke</Button>
+                        )}
                       </div>
                     ) : null)
                   ])}
@@ -824,20 +808,16 @@ export default function GuardDashboard() {
         {panel}
       </main>
 
-      {/* Phase 4: Mobile Quick Action Menu */}
-      <QuickActionMenu
+      {/* Phase 4: Mobile Quick Action Menu - Hidden for guards to avoid overlap with panic button */}
+      {/* All QAM features accessible via sidebar navigation */}
+      {/* <QuickActionMenu
         role="guard"
         showOnlyMobile={true}
-      />
+      /> */}
 
-      {/* Phase 1.1: Floating Panic Button - Always visible for quick access */}
-      <div data-tour="panic-button">
-        <PanicButton
-          floating={true}
-          size="large"
-          onStateChange={(state) => logger.debug('Panic button state:', state)}
-        />
-      </div>
+      {/* Panic Button - Now rendered globally in AppShell.jsx for consistency across all pages */}
+      {/* See AppShell.jsx lines 118-126 for the shared panic button implementation */}
+      {/* The button appears at bottom-left for both guards and residents on all pages */}
 
       {/* Enhanced: Visitor Details Modal */}
       {selectedVisitor && (
@@ -888,7 +868,7 @@ function StatusBadge({ label, value, color }) {
 function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDetails }) {
   const normalizedStatus = String(visitor?.status || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
   const canCheckIn = normalizedStatus === 'CONFIRMED' || normalizedStatus === 'APPROVED';
-  const canCheckOut = normalizedStatus === 'ON_PREMISE' || normalizedStatus === 'CHECKED_IN' || (visitor.check_in_time && !visitor.check_out_time);
+  const canCheckOut = normalizedStatus === 'ON_PREMISE' || normalizedStatus === 'CHECKED_IN' || ((visitor.checkIn || visitor.check_in_time) && !(visitor.checkOut || visitor.check_out_time));
   const canRevoke = normalizedStatus !== 'REVOKED';
 
   return (
@@ -907,7 +887,7 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
       <div className="flex justify-between items-start">
         <div>
           <div className="font-medium text-gray-900 dark:text-white">{visitor.name || `#${visitor.id}`}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-300">Host: {visitor.host ? mask(visitor.host) : '-'}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-300">Host: {visitor.residentName && visitor.residentName !== 'Unknown' ? mask(visitor.residentName) : (visitor.host ? mask(visitor.host) : '-')}</div>
         </div>
         <div className="flex-shrink-0">
           <span className={getStatusChipClass(visitor.status, 'sm')}>{getStatusIcon(visitor.status)} {visitor.status || '-'}</span>
@@ -915,8 +895,8 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-200">
-        <div>In: {visitor.check_in_time || '-'}</div>
-        <div>Out: {visitor.check_out_time || '-'}</div>
+        <div>In: {visitor.checkIn || visitor.check_in_time || '-'}</div>
+        <div>Out: {visitor.checkOut || visitor.check_out_time || '-'}</div>
       </div>
 
       {(['guard', 'admin'].includes(role)) && (
@@ -943,33 +923,22 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
           >
             Check-out
           </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="flex-1"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRevoke(visitor.id);
-            }}
-            disabled={!canRevoke}
-          >
-            Revoke
-          </Button>
+          {role === 'admin' && (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="flex-1"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRevoke(visitor.id);
+              }}
+              disabled={!canRevoke}
+            >
+              Revoke
+            </Button>
+          )}
         </div>
       )}
-    </div>
-  );
-}
-
-function Toast({ severity, message }) {
-  const colors = { info: 'bg-blue-600', warning: 'bg-yellow-600', error: 'bg-red-600' };
-  const bg = colors[severity] || 'bg-gray-600';
-  return (
-    <div data-testid="toast" className={`${bg} text-white p-3 rounded-lg shadow-lg min-w-64`}>
-      <div data-testid="toast-title" className="font-bold text-sm opacity-95 mb-1 tracking-wide">
-        {severity?.toUpperCase?.() || 'INFO'}
-      </div>
-      <div className="text-sm">{message}</div>
     </div>
   );
 }

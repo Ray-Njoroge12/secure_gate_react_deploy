@@ -22,7 +22,7 @@ const defaultActions = {
   resident: [
 
     { id: 'quick-invite', icon: '✉️', label: 'Quick Invite', href: '/resident/quick-invite' },
-    { id: 'generate-pass', icon: '🎫', label: 'Generate Pass', href: '/resident/generate-pass' },
+
     { id: 'visitor-history', icon: '🕒', label: 'Visitor History', href: '/resident/visitor-history' },
   ],
   guard: [

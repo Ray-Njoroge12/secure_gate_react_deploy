@@ -44,6 +44,7 @@ if (!envValidation.isValid && process.env.NODE_ENV === 'production') {
 console.log('🔐 Environment validation passed - starting secure server...');
 
 import app from './src/app.js';
+// Force restart
 import { dbManager } from './src/database/db.enhanced.js';
 // Don't extract pool here - it's null until initializeAsync() is called
 // Access dbManager.pool dynamically when needed

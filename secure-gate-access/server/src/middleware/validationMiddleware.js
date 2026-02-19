@@ -76,30 +76,27 @@ export const ValidationSchemas = {
 
   // Visitor-related schemas
   visitorCreation: Joi.object({
-    name: Joi.string().min(1).max(100).required().trim().messages({
-      'string.min': 'Visitor name is required',
-      'string.max': 'Visitor name must not exceed 100 characters',
-      'any.required': 'Visitor name is required'
-    }),
-    phone: Joi.string().pattern(/^(\+?[1-9]\d{1,14}|0[0-9]{9,10})$/).optional().allow('').messages({
-      'string.pattern.base': 'Phone number must be in valid format (e.g., +1234567890 or 0712345678)'
-    }),
-    email: Joi.string().email().optional().allow('').trim().lowercase().messages({
-      'string.email': 'Please provide a valid email address'
-    }),
-    dateOfVisit: Joi.date().min('now').required().messages({
-      'date.min': 'Visit date cannot be in the past',
-      'any.required': 'Visit date is required'
-    }),
-    time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required().messages({
-      'string.pattern.base': 'Time must be in HH:MM format (24-hour)',
-      'any.required': 'Visit time is required'
-    }),
-    purpose: Joi.string().max(500).required().trim().messages({
-      'string.max': 'Purpose must not exceed 500 characters',
-      'any.required': 'Purpose of visit is required'
-    })
-  }),
+    name: Joi.string().min(1).max(100).required().trim(),
+    phone: Joi.string().pattern(/^(\+?[1-9]\d{1,14}|0[0-9]{9,10})$/).required(),
+    email: Joi.string().email().optional().allow('').trim().lowercase(),
+    dateOfVisit: Joi.date().optional(),
+    date_of_visit: Joi.date().optional(),
+    time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().allow(null, ''),
+    purpose: Joi.string().max(500).optional().allow('', null).default('Visit').trim(),
+    duration: Joi.number().integer().min(1).optional(),
+    isPrivate: Joi.boolean().optional(),
+    is_private: Joi.boolean().optional(),
+    unit_pin: Joi.string().max(20).optional().allow('').trim(),
+    unitPin: Joi.string().max(20).optional().allow('').trim(),
+    allowResidenceLocation: Joi.boolean().optional(),
+    allow_residence_location: Joi.boolean().optional(),
+    vehiclePlate: Joi.string().max(20).optional().allow('').trim(),
+    vehicle_plate: Joi.string().max(20).optional().allow('').trim(),
+    idNumber: Joi.string().max(50).optional().allow('').trim(),
+    id_number: Joi.string().max(50).optional().allow('').trim(),
+    status: Joi.string().optional().allow('').trim(),
+    consent_given: Joi.boolean().optional()
+  }).or('dateOfVisit', 'date_of_visit').unknown(true),
 
   // Bulk invite creation schema
   bulkInviteCreation: Joi.object({
@@ -116,11 +113,16 @@ export const ValidationSchemas = {
       'string.pattern.base': 'Time must be in HH:MM format (24-hour)',
       'any.required': 'Event time is required'
     }),
-    numGuests: Joi.number().integer().min(1).max(50).required().messages({
+    numGuests: Joi.number().integer().min(1).max(100).required().messages({
       'number.min': 'Number of guests must be at least 1',
-      'number.max': 'Number of guests cannot exceed 50',
+      'number.max': 'Number of guests cannot exceed 100',
       'any.required': 'Number of guests is required'
-    })
+    }),
+    guests: Joi.array().items(Joi.object({
+      name: Joi.string().required().trim(),
+      email: Joi.string().email().required().trim().lowercase(),
+      phone: Joi.string().optional().allow('')
+    })).optional()
   }),
 
   // Pagination and query schemas
@@ -174,9 +176,16 @@ export const ValidationSchemas = {
   }),
 
   inviteCodeParam: Joi.object({
-    inviteCode: Joi.string().pattern(/^inv_[a-z0-9]{24}$/i).required().messages({
-      'string.pattern.base': 'Invalid invite code format',
+    inviteCode: Joi.string().pattern(/^(inv_[a-z0-9]{24}|[a-z0-9]{16,32})$/i).required().messages({
+      'string.pattern.base': 'Invalid invite code format. Single invites start with inv_ and bulk invites are 16-32 characters.',
       'any.required': 'Invite code is required'
+    })
+  }),
+
+  tokenParam: Joi.object({
+    token: Joi.string().pattern(/^(vst_[a-z0-9]{24}|[a-z0-9]{16,64})$/i).required().messages({
+      'string.pattern.base': 'Invalid visitor token format',
+      'any.required': 'Visitor token is required'
     })
   }),
 
@@ -186,29 +195,33 @@ export const ValidationSchemas = {
       'any.required': 'OTP is required'
     })
   }),
-
   inviteCompletion: Joi.object({
-    name: Joi.string().min(1).max(100).required().trim().messages({
-      'string.min': 'Name is required',
-      'string.max': 'Name must not exceed 100 characters',
-      'any.required': 'Name is required'
-    }),
-    phone: Joi.string().pattern(/^(\+?[1-9]\d{1,14}|0[0-9]{9,10})$/).optional().allow('').messages({
-      'string.pattern.base': 'Phone number must be in valid format (e.g., +1234567890 or 0712345678)'
-    }),
-    email: Joi.string().email().optional().allow('').trim().lowercase().messages({
-      'string.email': 'Please provide a valid email address'
-    }),
+    name: Joi.string().min(1).max(100).optional().trim(),
+    phone: Joi.string().pattern(/^(\+?[1-9]\d{1,14}|0[0-9]{9,10})$/).optional().allow(''),
+    email: Joi.string().email().optional().allow('').trim().lowercase(),
     idNumber: Joi.string().max(50).optional().allow('').trim(),
+    id_number: Joi.string().max(50).optional().allow('').trim(),
     vehiclePlate: Joi.string().max(20).optional().allow('').trim(),
+    vehicle_plate: Joi.string().max(20).optional().allow('').trim(),
     purpose: Joi.string().max(500).optional().allow('').trim(),
     consent_given: Joi.boolean().optional(),
     consentGiven: Joi.boolean().optional(),
-    consent_timestamp: Joi.date().optional(),
-    consent_type: Joi.string().max(50).optional().allow('').trim(),
-    consent_version: Joi.string().max(20).optional().allow('').trim()
-  })
-    .or('phone', 'email')
+
+    // Support nested structures from VisitorInvitePage
+    consent: Joi.object({
+      dataProcessing: Joi.boolean().optional(),
+      privacyPolicy: Joi.boolean().optional(),
+      marketing: Joi.boolean().optional()
+    }).optional(),
+    additionalInfo: Joi.object({
+      name: Joi.string().min(1).max(100).optional().trim(),
+      phone: Joi.string().optional().allow(''),
+      email: Joi.string().optional().allow(''),
+      idNumber: Joi.string().max(50).optional().allow('').trim(),
+      vehiclePlate: Joi.string().max(20).optional().allow('').trim(),
+      purpose: Joi.string().max(500).optional().allow('').trim()
+    }).optional()
+  }).unknown(true)
 };
 
 /**

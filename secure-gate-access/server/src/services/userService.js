@@ -37,22 +37,51 @@ class UserService {
    * Create a new user with email verification
    */
   async createUser(userData, client = null) {
-    const { username, email, password, role, estate_id: estateId, account_status: accountStatus } = userData;
+    const {
+      username,
+      email,
+      password,
+      role,
+      estate_id,
+      estateId,
+      account_status,
+      accountStatus,
+      first_name,
+      lastName,
+      last_name,
+      phone,
+      unit_number
+    } = userData;
     const db = client || this.db;
 
+    // Resolve ambiguous fields (support both camelCase and snake_case)
+    const finalEstateId = estate_id !== undefined ? estate_id : estateId;
+    const finalAccountStatus = account_status || accountStatus || 'pending';
+
+    // Support optional email/names for guards
+    let finalEmail = email;
+    if (!finalEmail && role === 'guard') {
+      finalEmail = `${username}@guards.local`;
+    }
+
+    const firstName = first_name || userData.first_name || (role === 'guard' ? 'Guard' : '');
+    const lastNameVal = last_name || lastName || userData.last_name || (role === 'guard' ? 'User' : '');
+
     // Input validation
-    if (!username || !email || !password || !role) {
+    if (!username || !finalEmail || !password || !role) {
       throw new Error('Missing required fields');
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Invalid email format');
+    // Validate email format if provided (or if generated)
+    if (finalEmail && !finalEmail.endsWith('@guards.local')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(finalEmail)) {
+        throw new Error('Invalid email format');
+      }
     }
 
     // Validate role
-    const validRoles = ['resident', 'guard', 'admin'];
+    const validRoles = ['resident', 'guard', 'admin', 'super_admin'];
     if (!validRoles.includes(role)) {
       throw new Error('Invalid role');
     }
@@ -71,9 +100,10 @@ class UserService {
 
     try {
       // Check if user already exists using parameterized queries
+      // We check globally because email and username must be unique across the platform
       const existingUser = await db.query(
-        'SELECT id FROM users WHERE estate_id = COALESCE($3, estate_id) AND (username = $1 OR email = $2)',
-        [username, email, estateId]
+        'SELECT id FROM users WHERE username = $1 OR email = $2',
+        [username, finalEmail]
       );
 
       if (existingUser.rows.length > 0) {
@@ -87,17 +117,44 @@ class UserService {
       const verificationToken = this.generateEmailVerificationToken();
       const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-      // Default account_status to 'pending' for new registrations
-      const finalAccountStatus = accountStatus || 'pending';
+      // Create user with email verification fields and account_status
 
       // Create user with email verification fields and account_status
-      // Uses column names matching render_init.sql schema: verification_token, verification_expires
-      // Insert into both password and password_hash for backward compatibility
       const result = await db.query(
-        `INSERT INTO users (username, first_name, last_name, email, password, password_hash, role, estate_id, account_status, verification_token, verification_expires, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()) 
-         RETURNING id, username, first_name, last_name, email, role, estate_id, account_status, verification_token, created_at`,
-        [username, userData.first_name || '', userData.last_name || '', email, hashedPassword, hashedPassword, role, estateId, finalAccountStatus, verificationToken, verificationExpires]
+        `INSERT INTO users (
+          username, 
+          first_name, 
+          last_name, 
+          email, 
+          password, 
+          password_hash, 
+          role, 
+          estate_id, 
+          account_status, 
+          phone,
+          unit_number,
+          verification_token, 
+          verification_expires, 
+          created_at, 
+          updated_at
+        ) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW()) 
+        RETURNING id, username, first_name, last_name, email, role, estate_id, account_status, phone, unit_number, created_at`,
+        [
+          username,
+          firstName,
+          lastNameVal,
+          finalEmail,
+          hashedPassword,
+          hashedPassword,
+          role,
+          finalEstateId,
+          finalAccountStatus,
+          phone || null,
+          unit_number || null,
+          verificationToken,
+          verificationExpires
+        ]
       );
 
       const user = result.rows[0];
@@ -244,9 +301,9 @@ class UserService {
       const user = result.rows[0];
 
       // Verify password
-      const isValidPassword = await passwordService.verifyPassword(password, user.password_hash);
+      const isValid = await passwordService.verifyPassword(password, user.password_hash);
 
-      if (!isValidPassword) {
+      if (!isValid) {
         // Record failed attempt
         accountSecurity.recordFailedAttempt(username, 'unknown');
         throw new Error('Invalid credentials');
@@ -277,6 +334,45 @@ class UserService {
         throw error; // Re-throw authentication errors
       }
       throw new Error(`Authentication failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Verify password for an existing user (for sensitive operations)
+   */
+  async verifyPassword(userId, password) {
+    if (!userId || !password) {
+      throw new Error('User ID and password required');
+    }
+
+    try {
+      // Get password hash
+      const result = await this.db.query(
+        'SELECT password_hash FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error('User not found');
+      }
+
+      const { password_hash } = result.rows[0];
+
+      if (!password_hash) {
+        return false;
+      }
+
+      // Verify password using passwordService
+      if (passwordService && typeof passwordService.verifyPassword === 'function') {
+        return await passwordService.verifyPassword(password, password_hash);
+      }
+
+      // Fallback if service is somehow missing (should not happen)
+      const argon2 = await import('argon2');
+      return await argon2.verify(password_hash, password);
+
+    } catch (error) {
+      throw new Error(`Password verification failed: ${error.message}`);
     }
   }
 

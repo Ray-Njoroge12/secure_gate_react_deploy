@@ -59,14 +59,15 @@ router.get('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly')
  * @desc Create a new guard
  * @access Admin only
  */
-router.post('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res) => {
+router.post('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly'), async (req, res, next) => {
   try {
     const { username, first_name, last_name, email, password, phone } = req.body;
 
-    if (!username || !email || !password || !first_name || !last_name) {
+    // Email is now optional for guards in userService, but we still need basic validation here
+    if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: username, first_name, last_name, email, password'
+        message: 'Missing required fields: username, password'
       });
     }
 
@@ -82,17 +83,24 @@ router.post('/', authenticateToken, requireEstate, requireRolePolicy('adminOnly'
       account_status: 'active' // Guards created by admin are active by default
     });
 
+    // Send Welcome Email if email was provided
+    if (email) {
+      try {
+        const { default: emailService } = await import('../services/emailService.js');
+        await emailService.sendWelcomeEmail(email, username, password);
+      } catch (emailError) {
+        console.error('Failed to send welcome email to guard:', emailError);
+        // Don't fail the whole request if email fails
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Guard created successfully',
       data: newGuard
     });
   } catch (error) {
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'Failed to create guard',
-      error: error.code
-    });
+    next(error);
   }
 });
 
@@ -715,11 +723,11 @@ router.get('/offline-policy', authenticateToken, requireEstate, requireRolePolic
       offlineCheckInEnabled: true,    // Allow offline check-ins
       offlineWalkInEnabled: true      // Allow offline walk-in registration
     };
-    
+
     // TODO: Fetch from estate_settings table when implemented
     // const estateSettings = await getEstateSettings(req.user.estate_id);
     // const policy = { ...defaultPolicy, ...estateSettings.offlinePolicy };
-    
+
     res.json({
       success: true,
       data: defaultPolicy
@@ -741,7 +749,7 @@ router.get('/offline-policy', authenticateToken, requireEstate, requireRolePolic
 router.get('/qr-cache', authenticateToken, requireEstate, requireRolePolicy('guardOnly'), async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    
+
     // Get today's expected visitors with minimal data for offline QR validation
     const query = `
       SELECT 
@@ -762,17 +770,17 @@ router.get('/qr-cache', authenticateToken, requireEstate, requireRolePolicy('gua
       ORDER BY v.time_of_visit ASC
       LIMIT 500
     `;
-    
+
     const { dbManager } = await import('../database/db.enhanced.js');
     const result = await dbManager.query(query, [req.user.estate_id, today]);
-    
+
     // Transform for offline cache with valid_until timestamp
     const qrCacheData = result.rows.map(row => {
       // Calculate valid_until as end of visit date + 2 hours buffer
       const visitDate = new Date(row.valid_date);
       visitDate.setHours(23, 59, 59, 999);
       visitDate.setHours(visitDate.getHours() + 2); // 2 hour buffer after midnight
-      
+
       return {
         qr_code: row.qr_code,
         visitor_id: row.visitor_id,
@@ -784,7 +792,7 @@ router.get('/qr-cache', authenticateToken, requireEstate, requireRolePolicy('gua
         valid_until: visitDate.toISOString()
       };
     });
-    
+
     res.json({
       success: true,
       data: {
@@ -815,9 +823,9 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
       checkIns: { synced: 0, failed: 0, errors: [] },
       walkIns: { synced: 0, failed: 0, errors: [] }
     };
-    
+
     const { dbManager } = await import('../database/db.enhanced.js');
-    
+
     // Process offline check-ins
     for (const checkIn of checkIns) {
       try {
@@ -826,7 +834,7 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
           'SELECT id, status FROM visitors WHERE id = $1 AND estate_id = $2',
           [checkIn.visitor_id, req.user.estate_id]
         );
-        
+
         if (visitorCheck.rows.length === 0) {
           results.checkIns.errors.push({
             localId: checkIn.localId,
@@ -835,21 +843,21 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
           results.checkIns.failed++;
           continue;
         }
-        
+
         const action = checkIn.action || 'check-in';
         const newStatus = action === 'check-in' ? 'ON_PREMISE' : 'CHECKED_OUT';
         const timeField = action === 'check-in' ? 'check_in' : 'check_out';
-        
+
         // Use the offline timestamp if provided
-        const actionTime = checkIn.timestamp 
+        const actionTime = checkIn.timestamp
           ? new Date(checkIn.timestamp).toISOString()
           : new Date().toISOString();
-        
+
         await dbManager.query(
           `UPDATE visitors SET status = $1, ${timeField} = $2, updated_at = NOW() WHERE id = $3`,
           [newStatus, actionTime, checkIn.visitor_id]
         );
-        
+
         results.checkIns.synced++;
       } catch (error) {
         results.checkIns.errors.push({
@@ -859,7 +867,7 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
         results.checkIns.failed++;
       }
     }
-    
+
     // Process offline walk-ins
     for (const walkIn of walkIns) {
       try {
@@ -869,7 +877,7 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
            WHERE phone = $1 AND date_of_visit = $2 AND estate_id = $3`,
           [walkIn.phone, walkIn.dateOfVisit, req.user.estate_id]
         );
-        
+
         if (duplicateCheck.rows.length > 0) {
           results.walkIns.errors.push({
             localId: walkIn.localId,
@@ -879,16 +887,16 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
           results.walkIns.failed++;
           continue;
         }
-        
+
         // Find the resident by house number
         const residentQuery = await dbManager.query(
           `SELECT id FROM users 
            WHERE unit_number = $1 AND estate_id = $2 AND role = 'resident'`,
           [walkIn.houseNumber, req.user.estate_id]
         );
-        
+
         const residentId = residentQuery.rows[0]?.id || null;
-        
+
         // Insert the walk-in visitor
         const insertResult = await dbManager.query(
           `INSERT INTO visitors (
@@ -910,7 +918,7 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
             walkIn.vehiclePlate || null
           ]
         );
-        
+
         results.walkIns.synced++;
       } catch (error) {
         results.walkIns.errors.push({
@@ -920,7 +928,7 @@ router.post('/sync-offline-actions', authenticateToken, requireEstate, requireRo
         results.walkIns.failed++;
       }
     }
-    
+
     res.json({
       success: true,
       message: 'Offline actions synced',

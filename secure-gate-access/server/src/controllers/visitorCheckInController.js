@@ -53,7 +53,14 @@ const checkInVisitor = async (req, res) => {
 
     const now = new Date();
     await dbManager.query(
-      'UPDATE visitors SET status = $1, check_in_time = $2 WHERE id = $3 AND estate_id = $4',
+      `UPDATE visitors 
+       SET 
+         status = $1, 
+         check_in_time = $2,
+         otp_hash = NULL,
+         otp_expires_at = NULL,
+         otp_attempts = 0
+       WHERE id = $3 AND estate_id = $4`,
       [PASS_STATUS.ON_PREMISE, now, id, req.user.estate_id]
     );
 
@@ -80,10 +87,10 @@ const checkInVisitor = async (req, res) => {
     // RES-001 FIX: Notify resident when their visitor checks in
     if (visitor.resident_phone) {
       try {
-        const checkInTimeFormatted = now.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        const checkInTimeFormatted = now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
+          hour12: true
         });
         await sendCheckInNotification(visitor.resident_phone, visitor.name, checkInTimeFormatted);
         logger.info('Resident notified of visitor check-in', {
@@ -197,10 +204,10 @@ const checkOutVisitor = async (req, res) => {
     // RES-002 FIX: Notify resident when their visitor checks out
     if (visitor.resident_phone) {
       try {
-        const checkOutTimeFormatted = now.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        const checkOutTimeFormatted = now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
+          hour12: true
         });
         await sendCheckOutNotification(visitor.resident_phone, visitor.name, checkOutTimeFormatted);
         logger.info('Resident notified of visitor check-out', {
@@ -254,17 +261,24 @@ const selfCheckIn = async (req, res) => {
     const now = new Date();
     // Include estate_id in UPDATE for defense-in-depth
     await dbManager.query(
-      'UPDATE visitors SET status = $1, check_in_time = $2 WHERE id = $3 AND estate_id = $4',
+      `UPDATE visitors 
+       SET 
+         status = $1, 
+         check_in_time = $2,
+         otp_hash = NULL,
+         otp_expires_at = NULL,
+         otp_attempts = 0
+       WHERE id = $3 AND estate_id = $4`,
       [PASS_STATUS.ON_PREMISE, now, visitor.id, visitor.estate_id]
     );
 
     // RES-003 FIX: Notify resident when their visitor self-checks in
     if (visitor.resident_phone) {
       try {
-        const checkInTimeFormatted = now.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        const checkInTimeFormatted = now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
+          hour12: true
         });
         await sendCheckInNotification(visitor.resident_phone, visitor.name, checkInTimeFormatted);
         logger.info('Resident notified of visitor self-check-in', {

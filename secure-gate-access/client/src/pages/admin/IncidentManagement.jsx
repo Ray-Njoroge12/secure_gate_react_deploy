@@ -8,7 +8,7 @@ import {
 } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
-import Table from '../../components/Table';
+import Table from '../../components/ui/ResponsiveTable';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 export default function IncidentManagement({ estateId }) {
   const { user } = useAuth();
   const { showError, showSuccess } = useError();
-  const [activeTab, setActiveTab] = useState('open'); // open, assigned, resolved, all
+  const [activeTab, setActiveTab] = useState('open'); // open, under_review, resolved, all
   const [incidents, setIncidents] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function IncidentManagement({ estateId }) {
   const [dialogConfig, setDialogConfig] = useState({
     title: '',
     message: '',
-    confirmLabel: 'Confirm',
+    confirmText: 'Confirm',
     variant: 'danger',
     onConfirm: () => { }
   });
@@ -63,7 +63,7 @@ export default function IncidentManagement({ estateId }) {
     setDialogConfig({
       title: `${action.charAt(0).toUpperCase() + action.slice(1)} Incident`,
       message: `Are you sure you want to ${action} incident #${incident.id}?`,
-      confirmLabel: action.charAt(0).toUpperCase() + action.slice(1),
+      confirmText: action.charAt(0).toUpperCase() + action.slice(1),
       variant: action === 'resolve' ? 'success' : 'primary',
       onConfirm: async () => {
         setActionLoading(incident.id);
@@ -90,40 +90,47 @@ export default function IncidentManagement({ estateId }) {
     setDialogOpen(true);
   };
 
-  const getStatusBadge = (status) => {
-    const map = {
-      open: 'warning',
-      assigned: 'info',
-      in_progress: 'info',
-      resolved: 'success',
-      closed: 'neutral',
-      escalated: 'danger'
-    };
-    return <Badge variant={map[status] || 'neutral'}>{status.toUpperCase()}</Badge>;
-  };
-
-  const getPriorityBadge = (priority) => {
-    const map = {
-      low: 'neutral',
-      medium: 'info',
-      high: 'warning',
-      critical: 'danger'
-    };
-    return <Badge variant={map[priority] || 'neutral'}>{priority.toUpperCase()}</Badge>;
-  };
-
   const headers = [
-    { key: 'id', label: 'ID' },
-    { key: 'type', label: 'Type' },
-    { key: 'status', label: 'Status' },
-    { key: 'priority', label: 'Priority' },
-    { key: 'reported_by', label: 'Reported By' },
-    { key: 'assigned_to', label: 'Assigned To' },
-    { key: 'created_at', label: 'Date', render: (row) => format(new Date(row.created_at), 'MMM d, HH:mm') },
+    { key: 'id', label: 'ID', priority: 1 },
+    { key: 'type', label: 'Type', priority: 2 },
+    {
+      key: 'status',
+      label: 'Status',
+      priority: 1,
+      render: (value) => {
+        const map = {
+          open: 'warning',
+          assigned: 'info',
+          in_progress: 'info',
+          resolved: 'success',
+          closed: 'neutral',
+          escalated: 'danger'
+        };
+        return <Badge variant={map[value] || 'neutral'}>{value?.toUpperCase?.() || 'N/A'}</Badge>;
+      }
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      priority: 1,
+      render: (value) => {
+        const map = {
+          low: 'neutral',
+          medium: 'info',
+          high: 'warning',
+          critical: 'danger'
+        };
+        return <Badge variant={map[value] || 'neutral'}>{value?.toUpperCase?.() || 'N/A'}</Badge>;
+      }
+    },
+    { key: 'reported_by', label: 'Reported By', priority: 3 },
+    { key: 'assigned_to', label: 'Assigned To', priority: 3 },
+    { key: 'created_at', label: 'Date', priority: 2, render: (value) => value ? format(new Date(value), 'MMM d, HH:mm') : 'N/A' },
     {
       key: 'actions',
       label: 'Actions',
-      render: (row) => (
+      priority: 1,
+      render: (_, row) => (
         <div className="flex gap-2">
           {row.status === 'open' && (
             <Button
@@ -145,16 +152,17 @@ export default function IncidentManagement({ estateId }) {
               Resolve
             </Button>
           )}
-          {row.status !== 'escalated' && row.status !== 'resolved' && (
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => handleAction(row, 'escalate', { reason: 'Admin escalation' })}
-              loading={actionLoading === row.id}
-            >
-              Escalate
-            </Button>
-          )}
+          {row.status !== 'escalated' && row.status !== 'resolved' &&
+            ['system', 'downtime', 'security_breach', 'infrastructure'].includes(row.category?.toLowerCase()) && (
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => handleAction(row, 'escalate', { reason: 'System escalation' })}
+                loading={actionLoading === row.id}
+              >
+                Escalate
+              </Button>
+            )}
         </div>
       )
     }
@@ -171,31 +179,31 @@ export default function IncidentManagement({ estateId }) {
           <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats?.open || 0}</div>
         </Card>
         <Card className="p-4 bg-white dark:bg-slate-800">
-          <div className="text-sm text-gray-500">In Progress</div>
-          <div className="text-2xl font-bold text-blue-600">{stats?.in_progress || 0}</div>
+          <div className="text-sm text-gray-500">Under Review</div>
+          <div className="text-2xl font-bold text-blue-600">{stats?.under_review || 0}</div>
         </Card>
         <Card className="p-4 bg-white dark:bg-slate-800">
           <div className="text-sm text-gray-500">Critical</div>
           <div className="text-2xl font-bold text-red-600">{stats?.critical || 0}</div>
         </Card>
         <Card className="p-4 bg-white dark:bg-slate-800">
-          <div className="text-sm text-gray-500">Resolved Today</div>
-          <div className="text-2xl font-bold text-green-600">{stats?.resolved_today || 0}</div>
+          <div className="text-sm text-gray-500">SLA Breached</div>
+          <div className="text-2xl font-bold text-orange-600">{stats?.sla_breached || 0}</div>
         </Card>
       </div>
 
       {/* Tabs */}
       <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700 pb-2">
-        {['open', 'assigned', 'resolved', 'all'].map(tab => (
+        {['open', 'under_review', 'resolved', 'all'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab
-                ? 'bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700'
+              ? 'bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300'
+              : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700'
               }`}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'under_review' ? 'Under Review' : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -203,16 +211,13 @@ export default function IncidentManagement({ estateId }) {
       {/* Table */}
       <Card className="overflow-hidden">
         <Table
-          headers={headers}
-          rows={incidents.map(i => ({
+          columns={headers}
+          data={incidents.map(i => ({
             ...i,
-            status: getStatusBadge(i.status),
-            priority: getPriorityBadge(i.priority),
             reported_by: i.reported_by_name || 'Unknown',
-            assigned_to: i.assigned_to_name || 'Unassigned'
+            assigned_to: i.assigned_name || 'Unassigned'
           }))}
           loading={loading}
-          emptyMessage="No incidents found."
         />
       </Card>
 
@@ -221,7 +226,7 @@ export default function IncidentManagement({ estateId }) {
         onClose={() => setDialogOpen(false)}
         title={dialogConfig.title}
         message={dialogConfig.message}
-        confirmLabel={dialogConfig.confirmLabel}
+        confirmText={dialogConfig.confirmText}
         variant={dialogConfig.variant}
         onConfirm={dialogConfig.onConfirm}
       />
