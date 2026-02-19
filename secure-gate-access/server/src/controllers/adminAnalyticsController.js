@@ -553,12 +553,13 @@ export const getActivityFeed = async (req, res) => {
       SELECT 
         a.id, 
         a.action, 
-        a.details as message, 
+        a.message, 
         a.resource, 
         a.outcome, 
         a.ip_address, 
         a.created_at as timestamp,
-        u.username
+        u.username,
+        u.role
       FROM audit_logs a
       LEFT JOIN users u ON a.user_id = u.id
       WHERE 1=1
@@ -577,9 +578,35 @@ export const getActivityFeed = async (req, res) => {
 
     const result = await dbManager.query(query, params);
 
+    // Post-process for privacy
+    const sanitizedRows = result.rows.map(row => {
+      // Mask IP address (keep first 2 octets)
+      let maskedIp = row.ip_address;
+      if (row.ip_address && row.ip_address.includes('.')) {
+        const parts = row.ip_address.split('.');
+        if (parts.length === 4) {
+          maskedIp = `${parts[0]}.${parts[1]}.***.***`;
+        }
+      }
+
+      // Anonymize Resident names
+      let displayName = row.username;
+      if (row.role === 'resident') {
+        displayName = 'Resident';
+      }
+
+      return {
+        ...row,
+        ip_address: maskedIp,
+        username: displayName,
+        // Remove role from output if not needed by frontend, or keep it
+        role: undefined
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      data: result.rows
+      data: sanitizedRows
     });
   } catch (error) {
     logger.error('Failed to get activity feed', { error: error.message });
@@ -619,12 +646,13 @@ export const getActivityTrends = async (req, res) => {
       LIMIT 10
     `;
 
-    // Active Users
+    // Active Users (Exclude Residents for Privacy)
     const userQuery = `
       SELECT u.username, COUNT(*) as activity_count
       FROM audit_logs a
       JOIN users u ON a.user_id = u.id
       WHERE a.created_at >= NOW() - $1::INTERVAL
+      AND u.role != 'resident'
       ${siteFilter.replace('a.estate_id', 'a.estate_id')}
       GROUP BY u.username
       ORDER BY activity_count DESC

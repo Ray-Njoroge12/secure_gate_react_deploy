@@ -1,4 +1,5 @@
 import express from 'express';
+import { maskPhoneNumber, maskEmail } from '../utils/masking.js';
 import {
   getSettings,
   updateSettings,
@@ -18,16 +19,17 @@ import {
   getSystemMetrics
 } from '../controllers/superAdminController.js';
 import { respond, respondError } from '../utils/respond.js';
+import { asyncHandler, ErrorHelper, ERROR_CODES } from '../middleware/standardizedErrorHandler.js';
 import { authenticateToken, requireRole, requireMFA } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { requireEstateContextForAdmin } from '../middleware/estateContextMiddleware.js';
 import { requireMFAForSensitiveOps, requireRecentMFAVerification } from '../middleware/mfaSensitiveOperations.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
-import { 
-  superAdminSensitiveLimit, 
-  estateModificationLimit, 
-  adminQueryLimit, 
-  adminModificationLimit 
+import {
+  superAdminSensitiveLimit,
+  estateModificationLimit,
+  adminQueryLimit,
+  adminModificationLimit
 } from '../middleware/rateLimitMiddleware.js';
 import {
   validate,
@@ -49,6 +51,15 @@ import { dbManager } from '../database/db.enhanced.js';
 import retentionService from '../services/retentionService.js';
 import retentionScheduler from '../jobs/retentionScheduler.js';
 import { minimizeData } from '../middleware/dataMinimization.js';
+import adminAnalyticsController from '../controllers/adminAnalyticsController.js';
+
+import {
+  getActiveVisitors,
+  getVisitorReport,
+  revokeVisitor,
+  getRecentVisitors,
+  getVisitorDetails
+} from '../controllers/visitorAdminController.js';
 
 const router = express.Router();
 
@@ -209,6 +220,31 @@ router.get('/metrics', authenticateToken, requireEstateContextForAdmin, adminQue
  *         description: Estate info retrieved
  */
 router.get('/estate-info', authenticateToken, requireEstateContextForAdmin, adminQueryLimit(), attachRequestAudit, getEstateInfo);
+
+// ==================== ACTIVITY & ANALYTICS ====================
+
+/**
+ * @route GET /api/admin/analytics/activity/summary
+ * @desc Get activity summary
+ * @access Private (Super Admin only)
+ */
+router.get('/analytics/activity/summary', authenticateToken, requireRole(['super_admin']), attachRequestAudit, adminAnalyticsController.getActivitySummary);
+
+/**
+ * @route GET /api/admin/analytics/activity/trends
+ * @desc Get activity trends
+ * @access Private (Super Admin only)
+ */
+router.get('/analytics/activity/trends', authenticateToken, requireRole(['super_admin']), attachRequestAudit, adminAnalyticsController.getActivityTrends);
+
+/**
+ * @route GET /api/admin/analytics/activity/feed
+ * @desc Get activity feed
+ * @access Private (Super Admin only)
+ */
+router.get('/analytics/activity/feed', authenticateToken, requireRole(['super_admin']), attachRequestAudit, adminAnalyticsController.getActivityFeed);
+
+
 
 // ==================== SETTINGS & COMPLIANCE ====================
 
@@ -451,14 +487,14 @@ router.get('/users/pending', authenticateToken, requireRolePolicy('adminOnly'), 
  * @desc Update user account status (approve/reject/suspend)
  * @access Private (Admin only)
  */
-router.put('/users/:id/status', 
-  authenticateToken, 
+router.put('/users/:id/status',
+  authenticateToken,
   requireRolePolicy('adminOnly'),
-  requireEstateContextForAdmin, 
-  adminModificationLimit(), 
-  validateUserStatusUpdate(), 
-  validate, 
-  attachRequestAudit, 
+  requireEstateContextForAdmin,
+  adminModificationLimit(),
+  validateUserStatusUpdate(),
+  validate,
+  attachRequestAudit,
   updateUserStatus
 );
 
@@ -621,84 +657,128 @@ router.post('/users/bulk-reject',
  * @desc Get all users with optional filtering
  * @access Private (Admin only)
  */
-router.get('/users', 
-  authenticateToken, 
-  requireRolePolicy('adminOnly'), 
-  adminQueryLimit(), 
-  validateSearchTerm(), 
-  validatePagination(), 
-  validate, 
-  minimizeData('user'), 
-  attachRequestAudit, 
+router.get('/users',
+  authenticateToken,
+  requireRolePolicy('adminOnly'),
+  adminQueryLimit(),
+  validateSearchTerm(),
+  validatePagination(),
+  validate,
+  minimizeData('user'),
+  attachRequestAudit,
   async (req, res) => {
-  try {
-    const { role, status, search, page = 1, limit = 20 } = req.query;
+    try {
+      const { role, status, search, page = 1, limit = 20 } = req.query;
 
-    // Fix A-004: Pagination Input Validation
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20)); // Cap limit at 100
-    const offset = (pageNum - 1) * limitNum;
+      // Fix A-004: Pagination Input Validation
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20)); // Cap limit at 100
+      const offset = (pageNum - 1) * limitNum;
 
-    // Fix A-003: Input Validation (Search Sanity)
-    if (search && search.length > 100) {
-      return respondError(res, 400, 'Search term too long');
-    }
-
-    let query = 'SELECT id, username, email, role, account_status AS status, created_at, updated_at FROM users WHERE 1=1';
-    const params = [];
-    let paramIndex = 1;
-
-    if (role) {
-      query += ` AND role = $${paramIndex++}`;
-      params.push(role);
-    }
-    if (status) {
-      query += ` AND account_status = $${paramIndex++}`;
-      params.push(status);
-    }
-    if (search) {
-      query += ` AND (username ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    // Fix: Admin User Isolation - Add to WHERE clause BEFORE ordering/pagination
-    // Only allow super admins (null estate_id) to see all users
-    // Admin with estate_id can only see users in their estate
-    if (req.user.estate_id) {
-      query += ` AND estate_id = $${paramIndex++}`;
-      params.push(req.user.estate_id);
-    }
-
-    // Get total count
-    const countQuery = query.replace('SELECT id, username, email, role, account_status AS status, created_at, updated_at', 'SELECT COUNT(*)');
-    const countResult = await dbManager.query(countQuery, params);
-    const total = parseInt(countResult.rows[0].count);
-
-    // Add pagination
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
-    params.push(limitNum, offset);
-
-
-
-    const result = await dbManager.query(query, params);
-
-    res.json({
-      success: true,
-      data: result.rows,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
+      // Fix A-003: Input Validation (Search Sanity)
+      if (search && search.length > 100) {
+        return respondError(res, 400, 'Search term too long');
       }
-    });
-    // Fix A-002: Safe Error Handling
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    respondError(res, 500, 'Failed to fetch users', error);
-  }
-});
+
+      let query = 'SELECT id, username, email, role, account_status AS status, created_at, updated_at FROM users WHERE 1=1';
+      const params = [];
+      let paramIndex = 1;
+
+      if (role) {
+        query += ` AND role = $${paramIndex++}`;
+        params.push(role);
+      }
+      if (status) {
+        query += ` AND account_status = $${paramIndex++}`;
+        params.push(status);
+      }
+      if (search) {
+        query += ` AND (username ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`;
+        params.push(`%${search}%`);
+        paramIndex++;
+      }
+
+      // Fix: Admin User Isolation - Add to WHERE clause BEFORE ordering/pagination
+      // Only allow super admins (null estate_id) to see all users
+      // Admin with estate_id can only see users in their estate
+      if (req.user.estate_id) {
+        query += ` AND estate_id = $${paramIndex++}`;
+        params.push(req.user.estate_id);
+      }
+
+      // Get total count
+      const countQuery = query.replace('SELECT id, username, email, role, account_status AS status, created_at, updated_at', 'SELECT COUNT(*)');
+      const countResult = await dbManager.query(countQuery, params);
+      const total = parseInt(countResult.rows[0].count);
+
+      // Add pagination
+      query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+      params.push(limitNum, offset);
+
+
+
+      const result = await dbManager.query(query, params);
+
+      // Mask sensitive data for all users in list view
+      const maskedUsers = result.rows.map(user => ({
+        ...user,
+        email: maskEmail(user.email),
+        phone: user.phone ? maskPhoneNumber(user.phone) : null
+      }));
+
+      res.json({
+        success: true,
+        data: maskedUsers,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      });
+      // Fix A-002: Safe Error Handling
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      respondError(res, 500, 'Failed to fetch users', error);
+    }
+  });
+
+/**
+ * @route GET /api/admin/users/:id
+ * @desc Get single user details (unmasked for authorized admins)
+ * @access Private (Admin only)
+ */
+router.get('/users/:id',
+  authenticateToken,
+  requireRolePolicy('adminOnly'),
+  validateIdParam(),
+  attachRequestAudit,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Ensure admin can only view users in their estate (unless super_admin)
+      let query = 'SELECT id, username, email, phone, role, house, account_status, created_at, updated_at, estate_id FROM users WHERE id = $1';
+      const params = [id];
+
+      if (req.user.estate_id) {
+        query += ' AND estate_id = $2';
+        params.push(req.user.estate_id);
+      }
+
+      const result = await dbManager.query(query, params);
+
+      if (result.rowCount === 0) {
+        return respondError(res, 404, 'User not found');
+      }
+
+      // Return full unmasked details
+      respond(res, result.rows[0]);
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      respondError(res, 500, 'Failed to fetch user details');
+    }
+  });
 
 /**
  * @route POST /api/admin/users/advanced-search
@@ -829,84 +909,84 @@ router.post('/users/advanced-search',
  * @desc Update a user
  * @access Private (Admin only)
  */
-router.put('/users/:id', 
-  authenticateToken, 
-  requireRolePolicy('adminOnly'), 
-  adminModificationLimit(), 
-  validateUserUpdate(), 
-  preventPrivilegeEscalation, 
-  validate, 
-  attachRequestAudit, 
+router.put('/users/:id',
+  authenticateToken,
+  requireRolePolicy('adminOnly'),
+  adminModificationLimit(),
+  validateUserUpdate(),
+  preventPrivilegeEscalation,
+  validate,
+  attachRequestAudit,
   async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { username, email, role, status } = req.body;
+    try {
+      const { id } = req.params;
+      const { username, email, role, status } = req.body;
 
-    const updates = [];
-    const params = [];
-    let paramIndex = 1;
+      const updates = [];
+      const params = [];
+      let paramIndex = 1;
 
-    if (username) {
-      updates.push(`username = $${paramIndex++}`);
-      params.push(username);
-    }
-    if (email) {
-      updates.push(`email = $${paramIndex++}`);
-      params.push(email);
-    }
-    if (role) {
-      updates.push(`role = $${paramIndex++}`);
-      params.push(role);
-    }
-    if (status) {
-      updates.push(`account_status = $${paramIndex++}`);
-      params.push(status);
-    }
+      if (username) {
+        updates.push(`username = $${paramIndex++}`);
+        params.push(username);
+      }
+      if (email) {
+        updates.push(`email = $${paramIndex++}`);
+        params.push(email);
+      }
+      if (role) {
+        updates.push(`role = $${paramIndex++}`);
+        params.push(role);
+      }
+      if (status) {
+        updates.push(`account_status = $${paramIndex++}`);
+        params.push(status);
+      }
 
-    if (updates.length === 0) {
-      return res.status(400).json({
+      if (updates.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No fields to update'
+        });
+      }
+
+      updates.push(`updated_at = NOW()`);
+      params.push(id);
+
+      updates.push(`updated_at = NOW()`);
+      params.push(id);
+
+      // Fix: Admin Update Isolation
+      let whereClause = `WHERE id = $${paramIndex++}`;
+      if (req.user.estate_id) {
+        whereClause += ` AND estate_id = $${paramIndex++}`;
+        params.push(req.user.estate_id);
+      }
+
+      const query = `UPDATE users SET ${updates.join(', ')} ${whereClause} RETURNING id, username, email, role, account_status AS status, updated_at`;
+      const result = await dbManager.query(query, params);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'User updated successfully',
+        data: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(500).json({
         success: false,
-        message: 'No fields to update'
+        message: 'Failed to update user',
+        error: error.message
       });
     }
-
-    updates.push(`updated_at = NOW()`);
-    params.push(id);
-
-    updates.push(`updated_at = NOW()`);
-    params.push(id);
-
-    // Fix: Admin Update Isolation
-    let whereClause = `WHERE id = $${paramIndex++}`;
-    if (req.user.estate_id) {
-      whereClause += ` AND estate_id = $${paramIndex++}`;
-      params.push(req.user.estate_id);
-    }
-
-    const query = `UPDATE users SET ${updates.join(', ')} ${whereClause} RETURNING id, username, email, role, account_status AS status, updated_at`;
-    const result = await dbManager.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'User updated successfully',
-      data: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update user',
-      error: error.message
-    });
-  }
-});
+  });
 
 /**
  * @route GET /api/admin/users/:id/sessions
@@ -1233,8 +1313,8 @@ router.post('/users/:id/reset-password',
           username: user.username,
           email: user.email,
           temporaryPassword: sendEmail ? undefined : tempPassword, // Only return if email not sent
-          note: sendEmail 
-            ? 'Temporary password sent to user email' 
+          note: sendEmail
+            ? 'Temporary password sent to user email'
             : 'Temporary password returned (email service not configured)'
         }
       });
@@ -1254,60 +1334,60 @@ router.post('/users/:id/reset-password',
  * @desc Delete a user (soft delete by setting status to 'deleted')
  * @access Private (Admin only)
  */
-router.delete('/users/:id', 
-  authenticateToken, 
-  requireRolePolicy('adminOnly'), 
+router.delete('/users/:id',
+  authenticateToken,
+  requireRolePolicy('adminOnly'),
   requireMFAForSensitiveOps,
-  adminModificationLimit(), 
-  validateIdParam(), 
-  preventSelfDeletion, 
-  validate, 
-  attachRequestAudit, 
+  adminModificationLimit(),
+  validateIdParam(),
+  preventSelfDeletion,
+  validate,
+  attachRequestAudit,
   async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+      const { id } = req.params;
 
-    // Prevent deleting own account
-    if (parseInt(id) === req.user.id) {
-      return res.status(400).json({
+      // Prevent deleting own account
+      if (parseInt(id) === req.user.id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot delete your own account'
+        });
+      }
+
+      // Soft delete - set status to 'deleted'
+      // SECURITY: Filter by estate_id to prevent cross-estate deletion
+      let query = `UPDATE users SET account_status = 'deleted', updated_at = NOW() WHERE id = $1 AND account_status != 'deleted'`;
+      const params = [id];
+
+      if (req.user.estate_id) {
+        query += ` AND estate_id = $2`;
+        params.push(req.user.estate_id);
+      }
+      query += ` RETURNING id`;
+
+      const result = await dbManager.query(query, params);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found or already deleted'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'User deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      res.status(500).json({
         success: false,
-        message: 'Cannot delete your own account'
+        message: 'Failed to delete user',
+        error: error.message
       });
     }
-
-    // Soft delete - set status to 'deleted'
-    // SECURITY: Filter by estate_id to prevent cross-estate deletion
-    let query = `UPDATE users SET account_status = 'deleted', updated_at = NOW() WHERE id = $1 AND account_status != 'deleted'`;
-    const params = [id];
-
-    if (req.user.estate_id) {
-      query += ` AND estate_id = $2`;
-      params.push(req.user.estate_id);
-    }
-    query += ` RETURNING id`;
-
-    const result = await dbManager.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found or already deleted'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'User deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete user',
-      error: error.message
-    });
-  }
-});
+  });
 
 // ==================== RESIDENTS MANAGEMENT ====================
 
@@ -1332,9 +1412,15 @@ router.get('/residents', authenticateToken, requireRolePolicy('adminOnly'), mini
 
     const result = await dbManager.query(query, params);
 
+    const maskedResidents = result.rows.map(resident => ({
+      ...resident,
+      email: maskEmail(resident.email),
+      phone: resident.phone ? maskPhoneNumber(resident.phone) : null
+    }));
+
     res.json({
       success: true,
-      data: result.rows
+      data: maskedResidents
     });
   } catch (error) {
     console.error('Error fetching residents:', error);
@@ -1351,19 +1437,18 @@ router.get('/residents', authenticateToken, requireRolePolicy('adminOnly'), mini
  * @desc Create a new resident
  * @access Private (Admin only)
  */
-router.post('/residents', 
-  authenticateToken, 
-  requireRolePolicy('adminOnly'), 
-  adminModificationLimit(), 
-  validateResidentCreation(), 
-  validate, 
-  attachRequestAudit, 
-  async (req, res) => {
-  try {
+router.post('/residents',
+  authenticateToken,
+  requireRolePolicy('adminOnly'),
+  adminModificationLimit(),
+  validateResidentCreation(),
+  validate,
+  attachRequestAudit,
+  asyncHandler(async (req, res) => {
     const { username, first_name, last_name, email, password, phone, unit_number } = req.body;
 
     if (!username || !email || !password || !first_name || !last_name) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+      throw ErrorHelper.badRequest(ERROR_CODES.VALIDATION_REQUIRED_FIELD, 'Missing required fields');
     }
 
     const newUser = await userService.createUser({
@@ -1375,7 +1460,6 @@ router.post('/residents',
       phone,
       role: 'resident',
       unit_number,
-      status: 'active',
       estate_id: req.user.estate_id,
       account_status: 'active' // Admin created residents are immediately active
     });
@@ -1388,15 +1472,8 @@ router.post('/residents',
       console.error('Failed to send welcome email to resident:', emailErr);
     }
 
-    res.status(201).json({ success: true, data: newUser });
-  } catch (error) {
-    // Check for duplicate
-    if (error.code === 'DUPLICATE_ENTRY') {
-      return res.status(409).json({ success: false, message: 'User already exists' });
-    }
-    res.status(500).json({ success: false, message: 'Failed to create resident', error: error.message });
-  }
-});
+    respond(res, newUser, 201);
+  }));
 
 /**
  * @route PUT /api/admin/residents/:id
@@ -1520,15 +1597,35 @@ router.get('/visitors', authenticateToken, requireRolePolicy('adminOnly'), admin
 
     const result = await dbManager.query(query, params);
 
+    const maskedVisitors = result.rows.map(visitor => ({
+      ...visitor,
+      email: maskEmail(visitor.email),
+      phone: visitor.phone ? maskPhoneNumber(visitor.phone) : null
+    }));
+
     res.json({
       success: true,
-      data: result.rows
+      data: maskedVisitors
     });
   } catch (error) {
     console.error('Error fetching visitor logs:', error);
     respondError(res, 500, 'Failed to fetch visitor logs', error);
   }
 });
+
+
+
+/**
+ * @route GET /api/admin/visitors/:id/details
+ * @desc Get unmasked visitor details (protected)
+ * @access Private (Admin only)
+ */
+router.get('/visitors/:id/details',
+  authenticateToken,
+  requireRolePolicy('adminOnly'),
+  attachRequestAudit,
+  getVisitorDetails
+);
 
 // ==================== ACCESS LOGS ====================
 
@@ -1968,12 +2065,12 @@ router.get('/activity/trends',
   async (req, res) => {
     try {
       const { period = '7d' } = req.query; // 7d, 30d, 90d
-      
+
       // Calculate date range
       let days = 7;
       if (period === '30d') days = 30;
       if (period === '90d') days = 90;
-      
+
       const dateFrom = new Date();
       dateFrom.setDate(dateFrom.getDate() - days);
 
@@ -2027,7 +2124,7 @@ router.get('/activity/trends',
       // Get visitor trends (if visitors table exists)
       let visitorTrends = [];
       try {
-        const visitorQuery = req.user.estate_id 
+        const visitorQuery = req.user.estate_id
           ? `SELECT DATE(created_at) as date, COUNT(*) as count
              FROM visitors
              WHERE created_at >= $1 AND estate_id = $2
@@ -2038,7 +2135,7 @@ router.get('/activity/trends',
              WHERE created_at >= $1
              GROUP BY DATE(created_at)
              ORDER BY date ASC`;
-        
+
         const visitorResult = await dbManager.query(visitorQuery, params);
         visitorTrends = visitorResult.rows;
       } catch (err) {

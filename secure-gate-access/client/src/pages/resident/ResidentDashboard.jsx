@@ -28,7 +28,7 @@ const DashboardHome = () => {
   const [upcomingInvites, setUpcomingInvites] = useState([]);
   const [recentVisitors, setRecentVisitors] = useState([]);
   const { loading, startLoading, stopLoading, setLoadingError } = useLoadingState();
-  
+
   // RES-007: MFA recommendation state for residents
   const [showMfaBanner, setShowMfaBanner] = useState(false);
   const [mfaDismissed, setMfaDismissed] = useState(
@@ -66,11 +66,7 @@ const DashboardHome = () => {
         e.preventDefault();
         navigateTo('/resident/quick-invite');
       }
-      // Ctrl/Cmd + G to generate pass
-      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
-        e.preventDefault();
-        navigateTo('/resident/generate-pass');
-      }
+
       // Ctrl/Cmd + B to bulk invite
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
@@ -106,13 +102,13 @@ const DashboardHome = () => {
   useEffect(() => {
     const checkMfaStatus = async () => {
       if (mfaDismissed) return;
-      
+
       try {
         const response = await fetch('/api/auth/me', {
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' }
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           const userData = data.data || data.user || data;
@@ -237,7 +233,7 @@ const DashboardHome = () => {
                 Enhance Your Account Security
               </h3>
               <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Enable Multi-Factor Authentication (MFA) for extra protection when managing visitors. 
+                Enable Multi-Factor Authentication (MFA) for extra protection when managing visitors.
                 This is especially recommended for bulk invite operations.
               </p>
               <Button

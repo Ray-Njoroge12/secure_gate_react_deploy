@@ -46,8 +46,8 @@ export default function VisitorHistory() {
   }, [searchTerm]);
 
   const filteredVisitors = visitors.filter(v =>
-    v.visitor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.resident_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.visitorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    v.residentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     v.status?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -89,9 +89,9 @@ export default function VisitorHistory() {
 
       <div className="max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-8 space-y-6">
         <PullToRefreshIndicator />
-        <OfflineBanner 
-          isOnline={isOnline} 
-          wasOffline={wasOffline} 
+        <OfflineBanner
+          isOnline={isOnline}
+          wasOffline={wasOffline}
           onRetry={loadVisitorHistory}
           message="You are offline. Visitor history may be stale."
         />
@@ -177,16 +177,16 @@ export default function VisitorHistory() {
                 {/* Mobile Card View */}
                 <div className="block md:hidden space-y-3">
                   {paginatedVisitors.map((v) => (
-                    <Card key={v.id || `${v.visitor_name}-${v.check_in_time}`} className="overflow-hidden">
+                    <Card key={v.id || `${v.visitorName}-${v.checkInTime}`} className="overflow-hidden">
                       <Card.Content className="p-4">
                         <div className="flex justify-between items-start mb-3">
                           <div className="min-w-0 flex-1">
                             <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                              {v.visitor_name || "Unknown"}
+                              {v.visitorName || "Unknown"}
                             </h3>
                             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
                               <Icon name="Home" className="w-3.5 h-3.5" />
-                              {v.resident_name || "Unknown"}
+                              {v.residentName || "Unknown"}
                             </p>
                           </div>
                           <span className={getStatusChipClass(v.status, 'sm')}>
@@ -196,11 +196,11 @@ export default function VisitorHistory() {
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
                             <span className="text-gray-500 dark:text-gray-400 text-xs">Check In</span>
-                            <p className="font-medium text-gray-800 dark:text-gray-200">{formatTime(v.check_in_time)}</p>
+                            <p className="font-medium text-gray-800 dark:text-gray-200">{formatTime(v.checkInTime)}</p>
                           </div>
                           <div>
                             <span className="text-gray-500 dark:text-gray-400 text-xs">Check Out</span>
-                            <p className="font-medium text-gray-800 dark:text-gray-200">{formatTime(v.check_out_time)}</p>
+                            <p className="font-medium text-gray-800 dark:text-gray-200">{formatTime(v.checkOutTime)}</p>
                           </div>
                         </div>
                       </Card.Content>
@@ -214,10 +214,10 @@ export default function VisitorHistory() {
                     <Table
                       headers={["Visitor", "Resident", "Check In", "Check Out", "Status"]}
                       rows={paginatedVisitors.map(v => [
-                        v.visitor_name || "Unknown",
-                        v.resident_name || "Unknown",
-                        formatTime(v.check_in_time),
-                        formatTime(v.check_out_time),
+                        v.visitorName || "Unknown",
+                        v.residentName || "Unknown",
+                        formatTime(v.checkInTime),
+                        formatTime(v.checkOutTime),
                         <span className={getStatusChipClass(v.status, 'sm')} key="status">
                           {v.status || "Pending"}
                         </span>,

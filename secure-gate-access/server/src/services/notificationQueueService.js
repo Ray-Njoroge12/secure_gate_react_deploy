@@ -17,6 +17,7 @@ import AfricasTalking from 'africastalking';
 import Mailgun from 'mailgun.js';
 import FormData from 'form-data';
 import loggingService from './loggingService.js';
+import { dbManager } from '../database/db.enhanced.js';
 
 class NotificationQueueService {
   constructor() {
@@ -414,13 +415,58 @@ class NotificationQueueService {
   }
 
   /**
-   * Get queue statistics
+   * Get queue statistics (enhanced with DB logs)
    */
   async getStatistics() {
+    let dbStats = {
+      email: { sent: 0, failed: 0 },
+      sms: { sent: 0, failed: 0 }
+    };
+
+    try {
+      // Fetch today's stats from DB
+      const result = await dbManager.query(`
+        SELECT 
+          channel, 
+          status,
+          COUNT(*) as count 
+        FROM notification_log 
+        WHERE created_at >= CURRENT_DATE
+        GROUP BY channel, status
+      `);
+
+      result.rows.forEach(row => {
+        if (row.channel === 'email') {
+          if (row.status === 'sent') dbStats.email.sent += parseInt(row.count);
+          if (row.status === 'failed') dbStats.email.failed += parseInt(row.count);
+        } else if (row.channel === 'sms') {
+          if (row.status === 'sent') dbStats.sms.sent += parseInt(row.count);
+          if (row.status === 'failed') dbStats.sms.failed += parseInt(row.count);
+        }
+      });
+    } catch (dbError) {
+      loggingService.logError('Failed to fetch DB notification stats', dbError);
+    }
+
     if (!this.isInitialized) {
       return {
         initialized: false,
-        stats: this.stats
+        stats: {
+          email: {
+            ...this.stats.email,
+            sent: this.stats.email.sent + dbStats.email.sent,
+            failed: this.stats.email.failed + dbStats.email.failed
+          },
+          sms: {
+            ...this.stats.sms,
+            sent: this.stats.sms.sent + dbStats.sms.sent,
+            failed: this.stats.sms.failed + dbStats.sms.failed
+          }
+        },
+        // Flattened structure for AdminDashboard
+        active: 0,
+        completed: (this.stats.email.sent + dbStats.email.sent) + (this.stats.sms.sent + dbStats.sms.sent),
+        failed: (this.stats.email.failed + dbStats.email.failed) + (this.stats.sms.failed + dbStats.sms.failed)
       };
     }
 
@@ -431,28 +477,36 @@ class NotificationQueueService {
         this.deadLetterQueue.getJobCounts()
       ]);
 
+      const totalCompleted = emailCounts.completed + smsCounts.completed + dbStats.email.sent + dbStats.sms.sent;
+      const totalFailed = emailCounts.failed + smsCounts.failed + dbStats.email.failed + dbStats.sms.failed;
+      const totalActive = emailCounts.active + smsCounts.active + emailCounts.waiting + smsCounts.waiting;
+
       return {
         initialized: true,
         email: {
           ...this.stats.email,
           waiting: emailCounts.waiting,
           active: emailCounts.active,
-          completed: emailCounts.completed,
-          failed: emailCounts.failed,
+          completed: emailCounts.completed + dbStats.email.sent,
+          failed: emailCounts.failed + dbStats.email.failed,
           delayed: emailCounts.delayed
         },
         sms: {
           ...this.stats.sms,
           waiting: smsCounts.waiting,
           active: smsCounts.active,
-          completed: smsCounts.completed,
-          failed: smsCounts.failed,
+          completed: smsCounts.completed + dbStats.sms.sent,
+          failed: smsCounts.failed + dbStats.sms.failed,
           delayed: smsCounts.delayed
         },
         deadLetter: {
           total: dlqCounts.completed,
           waiting: dlqCounts.waiting
-        }
+        },
+        // Flattened structure for AdminDashboard
+        active: totalActive,
+        completed: totalCompleted,
+        failed: totalFailed
       };
     } catch (error) {
       loggingService.logError('Failed to get queue statistics', error);

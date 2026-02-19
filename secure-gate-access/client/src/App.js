@@ -9,6 +9,10 @@
 import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./layouts/AppShell"; // Import AppShell for route wrapping
+import ResidentLayout from "./layouts/ResidentLayout";
+import GuardLayout from "./layouts/GuardLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import PageTitle from "./components/common/PageTitle";
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles/accessibility.css"; // WCAG 2.1 AA compliance styles
@@ -61,7 +65,7 @@ const BulkInviteWizard = lazy(() => import("./pages/resident/BulkInviteWizard.js
 const Settings = lazy(() => import("./pages/resident/Settings.jsx"));
 const ResidentDashboard = lazy(() => import("./pages/resident/ResidentDashboard.jsx"));
 
-const GeneratePass = lazy(() => import("./pages/resident/GeneratePass.jsx"));
+
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
 const FavoriteVisitors = lazy(() => import("./pages/resident/FavoriteVisitors.jsx")); // Added for Task 2.3
 const DeliveryList = lazy(() => import("./components/resident/DeliveryList.jsx"));
@@ -83,7 +87,7 @@ const MFASetupGuide = lazy(() => import("./pages/guard/MFASetupGuide.jsx")); // 
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
-const MessageViewer = lazy(() => import("./pages/admin/MessageViewer.jsx")); // Dev Tool
+
 const SuperAdminDashboard = lazy(() => import("./pages/admin/SuperAdminDashboard.jsx"));
 const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings.jsx"));
@@ -91,8 +95,7 @@ const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
 const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
 const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
 
-const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
-const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
+
 
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
@@ -133,7 +136,7 @@ const AdvancedSearchPanel = lazy(() => import("./components/search/AdvancedSearc
 const DataExportPanel = lazy(() => import("./components/export/DataExportPanel.jsx"));
 
 // Guard additional pages
-const GuardAnalytics = lazy(() => import("./pages/guard/GuardAnalytics.jsx"));
+
 
 /**
  * Main App component that renders the entire application
@@ -233,165 +236,352 @@ function App() {
                       <Route path="/v/:token" element={<VisitorInvitePage />} />
 
                       {/* RESIDENT ROUTES */}
-                      <Route
-                        path="/dashboard/resident"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Resident Dashboard">
+                      <Route element={<ResidentLayout />}>
+                        <Route
+                          path="/dashboard/resident"
+                          element={
+                            <>
+                              <PageTitle title="Resident Dashboard" />
                               <ResidentDashboard />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      {/* Resident Sub-routes - Wrapped in AppShell individually for now (Plan: Refactor to Layout Route in future cleanup) */}
-                      <Route
-                        path="/resident/generate-pass"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Generate Pass">
-                              <GeneratePass />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/visitor-history"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Visitor History">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/visitor-history"
+                          element={
+                            <>
+                              <PageTitle title="Visitor History" />
                               <VisitorHistory />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/bulk-invite"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Bulk Invite">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/bulk-invite"
+                          element={
+                            <>
+                              <PageTitle title="Bulk Invite" />
                               <BulkInvite />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/settings"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Settings">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/settings"
+                          element={
+                            <>
+                              <PageTitle title="Settings" />
                               <Settings />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/bulk-invite-wizard"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Bulk Invite">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/bulk-invite-wizard"
+                          element={
+                            <>
+                              <PageTitle title="Bulk Invite" />
                               <BulkInviteWizard />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/favorite-visitors"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Favorite Visitors">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/favorite-visitors"
+                          element={
+                            <>
+                              <PageTitle title="Favorite Visitors" />
                               <FavoriteVisitors />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/deliveries"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="My Deliveries">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/deliveries"
+                          element={
+                            <>
+                              <PageTitle title="My Deliveries" />
                               <DeliveryList />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/quick-invite"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Quick Invite">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/quick-invite"
+                          element={
+                            <>
+                              <PageTitle title="Quick Invite" />
                               <QuickInvite />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/recurring-passes"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Recurring Passes">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/recurring-passes"
+                          element={
+                            <>
+                              <PageTitle title="Recurring Passes" />
                               <RecurringPasses />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/resident/rideshare"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Rideshare">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/rideshare"
+                          element={
+                            <>
+                              <PageTitle title="Rideshare" />
                               <RideshareEntry />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      {/* Phase 3: Resident Approvals for Walk-in Visitors */}
-                      <Route
-                        path="/resident/approvals"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Visitor Approvals">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/approvals"
+                          element={
+                            <>
+                              <PageTitle title="Visitor Approvals" />
                               <ResidentApprovalsPanel />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      {/* Phase 2.2: Auto-Approval Rules Management */}
-                      <Route
-                        path="/resident/auto-approval"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Auto-Approval Rules">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/auto-approval"
+                          element={
+                            <>
+                              <PageTitle title="Auto-Approval Rules" />
                               <AutoApprovalRules />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      {/* Phase 3: Resident Privacy Dashboard */}
-                      <Route
-                        path="/resident/privacy"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Privacy Dashboard">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/privacy"
+                          element={
+                            <>
+                              <PageTitle title="Privacy Dashboard" />
                               <PrivacyDashboard />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      {/* Phase 4: Favorites shortcut (alias for /resident/favorite-visitors) */}
-                      <Route
-                        path="/resident/favorites"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Favorite Visitors">
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/resident/favorites"
+                          element={
+                            <>
+                              <PageTitle title="Favorite Visitors" />
                               <FavoriteVisitors />
-                            </AppShell>
+                            </>
+                          }
+                        />
+                      </Route>
+
+
+                      {/* GUARD ROUTES */}
+                      <Route element={<GuardLayout />}>
+                        <Route
+                          path="/dashboard/guard"
+                          element={
+                            <>
+                              <PageTitle title="Guard Station" />
+                              <GuardDashboard />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/manual-check"
+                          element={
+                            <>
+                              <PageTitle title="Manual Check" />
+                              <ManualCheck />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/scan-qr"
+                          element={
+                            <>
+                              <PageTitle title="Scan QR" />
+                              <ScanQR />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/visitor-history"
+                          element={
+                            <>
+                              <PageTitle title="Visitor History" />
+                              <GuardVisitorHistory />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/settings"
+                          element={
+                            <>
+                              <PageTitle title="Settings" />
+                              <GuardSettings />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/help/mfa-setup"
+                          element={
+                            <>
+                              <PageTitle title="MFA Setup Guide" />
+                              <MFASetupGuide />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/walk-in"
+                          element={
+                            <>
+                              <PageTitle title="Walk-In Registration" />
+                              <WalkInRegistration />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/incidents"
+                          element={
+                            <>
+                              <PageTitle title="Incidents" />
+                              <IncidentList />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/shift-handover"
+                          element={
+                            <>
+                              <PageTitle title="Shift Handover" />
+                              <ShiftHandover />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/activity-log"
+                          element={
+                            <>
+                              <PageTitle title="Activity Log" />
+                              <ActivityLog />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/guard/bulk-checkout"
+                          element={
+                            <>
+                              <PageTitle title="Bulk Checkout" />
+                              <BulkCheckout />
+                            </>
+                          }
+                        />
+                      </Route>
+
+
+                      {/* ADMIN & SUPER_ADMIN ROUTES */}
+                      <Route element={<AdminLayout />}>
+                        <Route
+                          path="/dashboard/super-admin"
+                          element={
+                            <>
+                              <PageTitle title="Super Admin Dashboard" />
+                              <SuperAdminDashboard />
+                            </>
+                          }
+                        />
+
+                        {/* Main Dashboard with Nested Route Parameter for Tabs */}
+                        <Route
+                          path="/dashboard/admin/:tab?"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard />
+                            </>
+                          }
+                        />
+
+                        {/* Specific admin sub-routes mapped to dashboard with tab selection */}
+                        <Route
+                          path="/dashboard/admin/approvals"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard initialTab="approvals" />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/admin/guards"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard initialTab="guards" />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/admin/residents"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard initialTab="residents" />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/admin/visitors"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard initialTab="visitors" />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/admin/incidents"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard initialTab="incidents" />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/admin/reports"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard initialTab="reports" />
+                            </>
+                          }
+                        />
+                        <Route
+                          path="/dashboard/admin/settings"
+                          element={
+                            <>
+                              <PageTitle title="Admin Dashboard" />
+                              <AdminDashboard initialTab="settings" />
+                            </>
+                          }
+                        />
+
+                        <Route
+                          path="/dashboard/admin/help/security"
+                          element={
+                            <>
+                              <PageTitle title="Security Help" />
+                              <MFASetupGuide />
+                            </>
+                          }
+                        />
+                      </Route>
+
+                      <Route
+                        path="/dashboard/admin/users"
+                        element={
+                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                            <Navigate to="/dashboard/admin/approvals" replace />
                           </ProtectedRoute>
                         }
                       />
+                      {/* GENERAL USER ROUTES (PRIVACY, PWA, NOTIFICATIONS, ETC.) */}
                       <Route
                         path="/privacy"
                         element={
-                          <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <ProtectedRoute allowedRoles={["resident", "guard", "admin", "super_admin"]}>
                             <AppShell role="user" title="Privacy Dashboard">
                               <PrivacyDashboard />
                             </AppShell>
@@ -401,7 +591,7 @@ function App() {
                       <Route
                         path="/privacy/settings"
                         element={
-                          <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <ProtectedRoute allowedRoles={["resident", "guard", "admin", "super_admin"]}>
                             <AppShell role="user" title="Privacy Settings">
                               <PrivacySettings />
                             </AppShell>
@@ -409,282 +599,11 @@ function App() {
                         }
                       />
 
-
-                      {/* GUARD ROUTES */}
-                      <Route
-                        path="/dashboard/guard"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Guard Station">
-                              <GuardDashboard />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/manual-check"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Manual Check">
-                              <ManualCheck />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/scan-qr"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Scan QR">
-                              <ScanQR />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/visitor-history"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Visitor History">
-                              <GuardVisitorHistory />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/settings"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Settings">
-                              <GuardSettings />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/help/mfa-setup"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="MFA Setup Guide">
-                              <MFASetupGuide />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/walk-in"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Walk-In Registration">
-                              <WalkInRegistration />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/incidents"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Incidents">
-                              <IncidentList />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/analytics"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard", "admin"]}>
-                            <AppShell role="guard" title="Analytics">
-                              <GuardAnalytics />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/shift-handover"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Shift Handover">
-                              <ShiftHandover />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/activity-log"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Activity Log">
-                              <ActivityLog />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/guard/bulk-checkout"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="Bulk Checkout">
-                              <BulkCheckout />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-
-
-                      {/* ADMIN ROUTES */}
-                      <Route
-                        path="/dashboard/super-admin"
-                        element={
-                          <ProtectedRoute allowedRoles={["super_admin"]}>
-                            <AppShell role="admin" title="Super Admin Dashboard">
-                              <SuperAdminDashboard />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Dev Tools - Message Viewer */}
-                      <Route
-                        path="/admin/messages"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Message Simulator">
-                              <MessageViewer />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Main Dashboard with Nested Route Parameter for Tabs */}
-                      <Route
-                        path="/dashboard/admin/:tab?"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      {/* Specific admin sub-routes mapped to dashboard with tab selection */}
-                      <Route
-                        path="/dashboard/admin/approvals"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="approvals" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/guards"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="guards" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/residents"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="residents" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/users"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <Navigate to="/dashboard/admin/approvals" replace />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/visitors"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="visitors" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/incidents"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="incidents" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/reports"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="reports" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/settings"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Admin Dashboard">
-                              <AdminDashboard initialTab="settings" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/notifications"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Notification Preferences">
-                              <NotificationPreferences />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/activity"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Activity Dashboard">
-                              <AdminDashboard initialTab="activity" />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/help/security"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Security Help">
-                              <MFASetupGuide />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      {/* Other admin routes that might be separate pages eventually, mapping to dashboard for now if they exist as tabs */}
-
-                      {/* PWA Routes - Added for Task 4.4 */}
+                      {/* PWA & OFFLINE ROUTES */}
                       <Route
                         path="/pwa/settings"
                         element={
-                          <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <ProtectedRoute allowedRoles={["resident", "guard", "admin", "super_admin"]}>
                             <AppShell role="user" title="PWA Settings">
                               <PWASettings />
                             </AppShell>
@@ -694,7 +613,7 @@ function App() {
                       <Route
                         path="/offline/visitors"
                         element={
-                          <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <ProtectedRoute allowedRoles={["resident", "guard", "admin", "super_admin"]}>
                             <AppShell role="user" title="Offline Visitors">
                               <OfflineVisitorList />
                             </AppShell>
@@ -702,11 +621,11 @@ function App() {
                         }
                       />
 
-                      {/* Notification Routes - Added for Task 7.3 */}
+                      {/* NOTIFICATION ROUTES */}
                       <Route
                         path="/notifications/analytics"
                         element={
-                          <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <ProtectedRoute allowedRoles={["resident", "guard", "admin", "super_admin"]}>
                             <AppShell role="user" title="Notification Analytics">
                               <NotificationAnalyticsDashboard />
                             </AppShell>
@@ -716,7 +635,7 @@ function App() {
                       <Route
                         path="/notifications/history"
                         element={
-                          <ProtectedRoute allowedRoles={["resident", "guard", "admin"]}>
+                          <ProtectedRoute allowedRoles={["resident", "guard", "admin", "super_admin"]}>
                             <AppShell role="user" title="Notification History">
                               <NotificationHistory />
                             </AppShell>
@@ -724,7 +643,7 @@ function App() {
                         }
                       />
 
-                      {/* Dashboard Customization Routes - Added for Task 3 */}
+                      {/* COLLABORATION & CUSTOMIZATION ROUTES */}
                       <Route
                         path="/dashboard/customize"
                         element={
@@ -745,8 +664,6 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-
-                      {/* Collaboration Routes - Added for Task 11 */}
                       <Route
                         path="/collaboration/messaging"
                         element={

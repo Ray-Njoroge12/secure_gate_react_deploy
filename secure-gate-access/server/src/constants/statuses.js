@@ -11,6 +11,9 @@ export const PASS_STATUS = {
   EXPIRED: 'expired',
   REVOKED: 'revoked',
   
+  // QR code generation states
+  QR_PENDING: 'qr_pending',             // QR generation failed; visitor can regenerate or guard can process manually
+
   // Phase 3: Walk-in approval flow statuses
   PENDING_APPROVAL: 'pending_approval', // Walk-in visitor waiting for resident approval
   APPROVED: 'approved',                 // Resident approved entry

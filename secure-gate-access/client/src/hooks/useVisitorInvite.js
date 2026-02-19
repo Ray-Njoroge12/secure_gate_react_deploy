@@ -23,6 +23,37 @@ export const useVisitorInvite = (token) => {
     const countdownIntervalRef = useRef(null);
     const hasErrorRef = useRef(false);
 
+    // Cache TTL: 30 minutes
+    const CACHE_TTL_MS = 30 * 60 * 1000;
+
+    const setCacheItem = (key, data) => {
+        try {
+            sessionStorage.setItem(key, JSON.stringify({ data, cachedAt: Date.now() }));
+        } catch (e) {
+            // Ignore storage errors
+        }
+    };
+
+    const getCacheItem = (key) => {
+        try {
+            const raw = sessionStorage.getItem(key);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            // Support both new format (with cachedAt) and legacy format (raw data)
+            if (parsed && parsed.cachedAt) {
+                if (Date.now() - parsed.cachedAt > CACHE_TTL_MS) {
+                    sessionStorage.removeItem(key);
+                    return null;
+                }
+                return parsed.data;
+            }
+            // Legacy cache entry without TTL — treat as valid but migrate on next write
+            return parsed;
+        } catch (e) {
+            return null;
+        }
+    };
+
     useEffect(() => {
         hasErrorRef.current = Boolean(error);
     }, [error]);
@@ -37,10 +68,10 @@ export const useVisitorInvite = (token) => {
             }
         };
         const handleOffline = () => setIsOffline(true);
-        
+
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-        
+
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
@@ -50,15 +81,15 @@ export const useVisitorInvite = (token) => {
     // Fetch with retry logic
     const fetchWithRetry = useCallback(async (url, options = {}, maxRetries = 3) => {
         let lastError;
-        
+
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 if (!navigator.onLine) {
                     throw new Error('You are offline. Please check your internet connection.');
                 }
-                
+
                 const response = await fetch(url, options);
-                
+
                 // Handle rate limiting
                 if (response.status === 429) {
                     const retryAfter = response.headers.get('Retry-After') || 5;
@@ -68,25 +99,25 @@ export const useVisitorInvite = (token) => {
                     }
                     throw new Error('Too many requests. Please wait a moment and try again.');
                 }
-                
+
                 return response;
             } catch (err) {
                 lastError = err;
-                
+
                 // Don't retry on certain errors
                 if (err.message.includes('offline')) {
                     throw err;
                 }
-                
+
                 // Exponential backoff
                 if (attempt < maxRetries) {
-                    await new Promise(resolve => 
+                    await new Promise(resolve =>
                         setTimeout(resolve, Math.pow(2, attempt) * 1000)
                     );
                 }
             }
         }
-        
+
         throw lastError;
     }, []);
 
@@ -100,25 +131,17 @@ export const useVisitorInvite = (token) => {
 
             if (data.success) {
                 setEstateInfo(data.data);
-                // Cache estate info in sessionStorage
-                try {
-                    sessionStorage.setItem(`estate_${estateId}`, JSON.stringify(data.data));
-                } catch (e) {
-                    // Ignore storage errors
-                }
+                // Cache estate info in sessionStorage (with TTL)
+                setCacheItem(`estate_${estateId}`, data.data);
             } else {
                 console.warn('Failed to load estate info:', data.error);
             }
         } catch (err) {
             console.error('Failed to load estate info:', err);
             // Try to load from cache
-            try {
-                const cached = sessionStorage.getItem(`estate_${estateId}`);
-                if (cached) {
-                    setEstateInfo(JSON.parse(cached));
-                }
-            } catch (e) {
-                // Ignore
+            const cached = getCacheItem(`estate_${estateId}`);
+            if (cached) {
+                setEstateInfo(cached);
             }
         }
     }, [fetchWithRetry]);
@@ -159,25 +182,27 @@ export const useVisitorInvite = (token) => {
             if (data.success || isBulkInvite) {
                 const payload = data.data || data;
 
-                if (isBulkInvite) {
+                // A bulk invite is one where the backend explicitly says so, 
+                // or if we're still loading the initial generic invite data
+                const actuallyBulk = payload.type === 'bulk_event' || (isBulkInvite && !payload.id);
+
+                if (actuallyBulk) {
                     setVisitor({
                         isBulkInvite: true,
+                        type: 'bulk_event',
                         eventName: payload.eventName || payload.event_name,
-                        dateOfVisit: payload.date,
-                        timeOfVisit: payload.time,
+                        dateOfVisit: payload.date || payload.dateOfVisit,
+                        timeOfVisit: payload.time || payload.timeOfVisit,
                         inviteCode: token,
                         remainingSlots: payload.remainingSlots,
                         expiresAt: payload.expiresAt
                     });
                 } else {
+                    // It's a specific visitor (either vst_ or identified inv_)
                     setVisitor(payload);
-                    // Cache visitor data for offline viewing
-                    try {
-                        sessionStorage.setItem(`visitor_${token}`, JSON.stringify(payload));
-                    } catch (e) {
-                        // Ignore storage errors
-                    }
-                    
+                    // Cache visitor data for offline viewing (with TTL)
+                    setCacheItem(`visitor_${token}`, payload);
+
                     const estateId = payload.estateId ?? payload.estate_id;
                     if (estateId) {
                         await fetchEstateInfo(estateId);
@@ -190,15 +215,11 @@ export const useVisitorInvite = (token) => {
         } catch (err) {
             // Try to load from cache if offline
             if (!navigator.onLine) {
-                try {
-                    const cached = sessionStorage.getItem(`visitor_${token}`);
-                    if (cached) {
-                        setVisitor(JSON.parse(cached));
-                        setError('You are offline. Showing cached data.');
-                        return;
-                    }
-                } catch (e) {
-                    // Ignore
+                const cached = getCacheItem(`visitor_${token}`);
+                if (cached) {
+                    setVisitor(cached);
+                    setError('You are offline. Showing cached data.');
+                    return;
                 }
             }
             setError(err.message);

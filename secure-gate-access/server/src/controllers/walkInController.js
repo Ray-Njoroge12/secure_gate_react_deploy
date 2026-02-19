@@ -9,7 +9,6 @@ import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 import logger from '../config/logger.js';
 import { canPerformGuardOperations } from '../utils/roleHelper.js';
-import websocketService from '../services/websocketService.js';
 
 /**
  * Register a walk-in visitor (guard only)
@@ -49,16 +48,30 @@ export const registerWalkIn = async (req, res) => {
     const sanitizedHouseNumber = houseNumber.trim().toUpperCase();
     const sanitizedVehiclePlate = vehiclePlate ? vehiclePlate.trim() : null;
 
-    // Look up resident by house number (exact match - more reliable than name)
-    const residentQuery = await dbManager.query(
-      `SELECT id, email, username, house 
-       FROM users 
-       WHERE role = 'resident' 
+    // Look up resident by house number
+    // Try exact match first, then fall back to normalized match (strips non-alphanumeric chars)
+    let residentQuery = await dbManager.query(
+      `SELECT id, email, username, house
+       FROM users
+       WHERE role = 'resident'
        AND estate_id = $1
        AND UPPER(house) = $2
        LIMIT 1`,
       [req.user.estate_id, sanitizedHouseNumber]
     );
+
+    // Fallback: normalized comparison (e.g., "Block A-12" matches "Block A 12" or "BLOCKA12")
+    if (residentQuery.rows.length === 0) {
+      residentQuery = await dbManager.query(
+        `SELECT id, email, username, house
+         FROM users
+         WHERE role = 'resident'
+         AND estate_id = $1
+         AND UPPER(REGEXP_REPLACE(house, '[^A-Za-z0-9]', '', 'g')) = UPPER(REGEXP_REPLACE($2, '[^A-Za-z0-9]', '', 'g'))
+         LIMIT 1`,
+        [req.user.estate_id, sanitizedHouseNumber]
+      );
+    }
 
     let residentId = null;
     let residentEmail = null;
@@ -88,7 +101,7 @@ export const registerWalkIn = async (req, res) => {
         date_of_visit, 
         time_of_visit, 
         status,
-        resident_id,
+        host_id,
         created_by,
         vehicle_plate,
         estate_id,
@@ -104,8 +117,8 @@ export const registerWalkIn = async (req, res) => {
       sanitizedPurpose,
       visitDate,
       visitTime,
-      PASS_STATUS.PENDING_APPROVAL, // Initial status
-      residentId,
+      PASS_STATUS.PENDING, // Initial status - guard must explicitly request approval
+      residentId, // host_id for the assigned resident
       req.user.email, // Guard who created it
       sanitizedVehiclePlate,
       estateId,
@@ -122,24 +135,6 @@ export const registerWalkIn = async (req, res) => {
       houseNumber: sanitizedHouseNumber,
       residentFound: residentId ? 'yes' : 'no'
     });
-
-    // Emit real-time approval request if resident was found
-    if (residentId && websocketService) {
-      try {
-        websocketService.emitApprovalRequest(residentId, {
-          ...visitor,
-          name: visitor.name,
-          phone: visitor.phone,
-          vehicle_plate: visitor.vehicle_plate,
-          purpose: visitor.purpose,
-          approval_requested_at: visitor.created_at,
-          guard_name: req.user.username || 'Guard',
-          estate_id: estateId  // Estate context for room scoping
-        });
-      } catch (wsError) {
-        logger.warn('Failed to emit walk-in approval request:', wsError);
-      }
-    }
 
     // Return visitor data
     respond(res, {

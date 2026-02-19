@@ -1,8 +1,7 @@
-// client/src/components/Topbar.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "./ui";
-import Modal from "./ui/Modal";
+// Removed unused Modal import
 import { useAuth } from "../contexts/AuthContext";
 import ThemeToggle from "./ui/ThemeToggle.jsx";
 import NotificationBell from "./ui/NotificationBell.jsx";
@@ -17,7 +16,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
   const topbarRef = useRef(null);
   const profileMenuRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  // Removed unused showLogoutConfirm state
   const [showChangePassword, setShowChangePassword] = useState(false);
 
   const getRoleDisplayName = (role) => {
@@ -121,8 +120,9 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Theme Toggle */}
-        <ThemeToggle size="small" />
+
+        {/* Theme Toggle - Hidden for guards to prevent accidental switching */}
+        {role !== 'guard' && <ThemeToggle size="small" />}
 
         {/* Notifications */}
         <NotificationBell />
@@ -188,7 +188,7 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
                 <Button
                   onClick={() => {
                     setIsMenuOpen(false);
-                    setShowLogoutConfirm(true);
+                    onLogout();
                   }}
                   className="block w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 min-h-[44px] focus:outline-none focus:bg-gray-100 dark:bg-slate-700 dark:focus:bg-slate-700"
                   role="menuitem"
@@ -200,37 +200,6 @@ export default function Topbar({ title, onLogout, onMenuToggle, sidebarOpen }) {
           )}
         </div>
       </div>
-
-      {/* Logout Confirmation Modal */}
-      <Modal
-        isOpen={showLogoutConfirm}
-        onClose={() => setShowLogoutConfirm(false)}
-        title="Confirm Logout"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-gray-600 dark:text-slate-200">
-            Are you sure you want to log out?
-          </p>
-          <div className="flex justify-end gap-3">
-            <Button
-              onClick={() => setShowLogoutConfirm(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-md hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                setShowLogoutConfirm(false);
-                onLogout();
-              }}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-      </Modal>
 
       <ChangePasswordModal
         isOpen={showChangePassword}

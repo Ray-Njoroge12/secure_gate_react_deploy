@@ -34,7 +34,7 @@ jest.mock('../../contexts/ErrorContext.jsx', () => {
     logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() },
     errorQueueService: { addError: jest.fn(), clearErrors: jest.fn() }
   };
-  
+
   const handlers = {
     handleError: jest.fn(),
     handleSuccess: jest.fn(),
@@ -153,7 +153,7 @@ jest.mock('../../components/settings/PrivacyDashboard', () => () => <div />);
 // AddVisitor page doesn't exist - removed from mocks
 jest.mock('../../pages/resident/BulkInvite', () => () => <div />);
 jest.mock('../../pages/resident/VisitorHistory', () => () => <div />);
-jest.mock('../../pages/resident/GeneratePass', () => () => <div />);
+
 jest.mock('../../pages/resident/Settings', () => () => <div />);
 jest.mock('../../pages/resident/QuickInvite', () => () => <div />);
 jest.mock('../../pages/resident/ResidentApprovalsPanel', () => () => <div />);
@@ -204,8 +204,8 @@ class MockEventSource {
     this.onopen = null;
     this.onerror = null;
   }
-  addEventListener() {}
-  close() {}
+  addEventListener() { }
+  close() { }
 }
 
 describe('Accessibility (jest-axe)', () => {

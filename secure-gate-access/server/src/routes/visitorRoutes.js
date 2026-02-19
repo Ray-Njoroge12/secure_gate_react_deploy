@@ -10,12 +10,12 @@ import {
 } from '../controllers/visitorInviteController.js';
 import { verifyOtp, resendOtp } from '../controllers/visitorOtpController.js';
 import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/visitorCheckInController.js';
-import { revokeVisitor, getActiveVisitors, getVisitorReport } from '../controllers/visitorAdminController.js';
+import { revokeVisitor, getActiveVisitors, getVisitorReport, getRecentVisitors, getVisitorDetails, getVisitorHistory } from '../controllers/visitorAdminController.js';
 import { attachUserFromToken, authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import attachRequestAudit from '../middleware/auditLogger.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
-import { validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
+import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
 import { minimizeData } from '../middleware/dataMinimization.js';
 import { buildErrorPayload } from '../utils/responseFormatter.js';
@@ -258,6 +258,7 @@ const dailyBulkInviteLimit = rateLimit({
 router.post('/',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
+  validateRequest(ValidationSchemas.visitorCreation),
   attachRequestAudit,
   createVisitor
 );
@@ -274,6 +275,7 @@ router.post('/bulk-invite',
   authenticateToken,  // Must authenticate first to get user ID for rate limiting
   bulkInviteLimit,    // Hourly limit: 5 bulk invites per hour
   dailyBulkInviteLimit, // Daily limit: 20 bulk invites per day
+  validateRequest(ValidationSchemas.bulkInviteCreation),
   attachRequestAudit,
   bulkInvite
 );
@@ -282,6 +284,8 @@ router.post('/bulk-invite',
 // SEC-010: Rate-limited to prevent abuse of visitor registration
 router.post('/complete/:inviteCode',
   completeInviteLimiter,
+  validateParams(ValidationSchemas.inviteCodeParam),
+  validateRequest(ValidationSchemas.inviteCompletion),
   attachRequestAudit,
   completeInvite
 );
@@ -595,23 +599,23 @@ router.post('/:id/regenerate-qr', rateLimit({
   const { id } = req.params;
   const { QRCodeService } = await import('../services/qrCodeService.js');
   const { dbManager } = await import('../config/database.js');
-  
+
   // Get visitor details
   const visitorResult = await dbManager.query(
     `SELECT id, name, phone, email, purpose, date_of_visit, estate_id, status, visitor_token
      FROM visitors WHERE id = $1`,
     [id]
   );
-  
+
   if (visitorResult.rows.length === 0) {
     return res.status(404).json({
       success: false,
       error: { code: 'NOT_FOUND', message: 'Visitor not found' }
     });
   }
-  
+
   const visitor = visitorResult.rows[0];
-  
+
   // Only allow regeneration if status indicates QR issue
   if (!['qr_pending', 'otp_verified', 'pending'].includes(visitor.status)) {
     return res.status(400).json({
@@ -619,7 +623,7 @@ router.post('/:id/regenerate-qr', rateLimit({
       error: { code: 'INVALID_STATUS', message: 'QR regeneration not available for this visitor status' }
     });
   }
-  
+
   try {
     const qrResult = await QRCodeService.generateVisitorQR({
       id: visitor.id,
@@ -629,11 +633,11 @@ router.post('/:id/regenerate-qr', rateLimit({
       date_of_visit: visitor.date_of_visit,
       estate_id: visitor.estate_id
     }, { generateOtp: false });
-    
+
     if (qrResult?.success) {
       const qrCodeDataUrl = qrResult.data.qrCodeDataUrl;
       const qrId = qrResult.data.qrId;
-      
+
       // Update visitor with QR code
       if (qrId) {
         await dbManager.query(
@@ -641,7 +645,7 @@ router.post('/:id/regenerate-qr', rateLimit({
           [qrId, 'otp_verified', visitor.id]
         );
       }
-      
+
       res.json({
         success: true,
         message: 'QR code regenerated successfully',
@@ -668,10 +672,28 @@ router.post('/:id/regenerate-qr', rateLimit({
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
 router.delete('/:id', authenticateToken, attachRequestAudit, cancelVisitor);
 
+// Visitor History for Guards/Admins
+router.get('/history',
+  authenticateToken,
+  requireRolePolicy('adminOrGuard'),
+  attachRequestAudit,
+  getVisitorHistory
+);
+
+// Recent visitors for guards (last 7 days, privacy-protected)
+router.get('/recent',
+  authenticateToken,
+  requireRolePolicy('adminOrGuard'),
+  attachRequestAudit,
+  getRecentVisitors
+);
+
 // Admin Operations (admin role required)
 router.get('/active', authenticateToken, requireRolePolicy('adminOrGuard'), minimizeData('visitor'), attachRequestAudit, getActiveVisitors);
 router.get('/report', authenticateToken, requireRolePolicy('adminOnly'), minimizeData('visitor'), attachRequestAudit, getVisitorReport);
+router.get('/:id/details', authenticateToken, requireRolePolicy('adminOnly'), attachRequestAudit, getVisitorDetails);
 router.delete('/:visitorId/revoke', authenticateToken, requireRolePolicy('adminOnly'), attachRequestAudit, revokeVisitor);
+router.post('/:visitorId/revoke', authenticateToken, requireRolePolicy('adminOnly'), attachRequestAudit, revokeVisitor);
 
 // Route aliases to match frontend expectations
 router.get('/reports', authenticateToken, requireRolePolicy('adminOnly'), minimizeData('visitor'), attachRequestAudit, getVisitorReport); // Alias for /report (plural)
@@ -687,20 +709,20 @@ router.post('/verify-otp',
   otpGlobalIpRateLimiter,
   otpVerifyRateLimiter,
   (req, res) => {
-  const { id, otp } = req.body;
-  if (!id || !otp) {
-    return res.status(400).json({
-      success: false,
-      error: {
-        code: 400,
-        message: 'Visitor ID and OTP are required. Use { id: visitorId, otp: "123456" } format.',
-        type: 'Validation Error'
-      }
-    });
-  }
-  // Forward to existing verifyOtp controller
-  req.params.id = id;
-  verifyOtp(req, res);
-});
+    const { id, otp } = req.body;
+    if (!id || !otp) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 400,
+          message: 'Visitor ID and OTP are required. Use { id: visitorId, otp: "123456" } format.',
+          type: 'Validation Error'
+        }
+      });
+    }
+    // Forward to existing verifyOtp controller
+    req.params.id = id;
+    verifyOtp(req, res);
+  });
 
 export default router;

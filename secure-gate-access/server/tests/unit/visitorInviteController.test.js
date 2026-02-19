@@ -89,7 +89,7 @@ const {
   bulkInvite,
   getBulkInvite,
   completeInvite
-} = await import('../../src/controllers/visitorInviteController-optimized.js');
+} = await import('../../src/controllers/visitorInviteController.js');
 
 describe('visitorInviteController', () => {
   let mockReq, mockRes;

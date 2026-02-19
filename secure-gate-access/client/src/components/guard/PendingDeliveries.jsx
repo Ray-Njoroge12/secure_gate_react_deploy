@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import deliveryService from '../../services/deliveryService';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import RegisterDelivery from './RegisterDelivery';
 
 const PendingDeliveries = () => {
   const [deliveries, setDeliveries] = useState([]);
@@ -23,7 +24,7 @@ const PendingDeliveries = () => {
 
   useEffect(() => {
     loadPendingDeliveries();
-    
+
     // Refresh every 30 seconds
     const interval = setInterval(loadPendingDeliveries, 30000);
     return () => clearInterval(interval);
@@ -79,7 +80,7 @@ const PendingDeliveries = () => {
     const received = new Date(dateString);
     const now = new Date();
     const diffHours = Math.floor((now - received) / (1000 * 60 * 60));
-    
+
     if (diffHours < 1) return 'Just now';
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.floor(diffHours / 24);
@@ -222,6 +223,7 @@ const PendingDeliveries = () => {
       {showRegister && (
         <RegisterDeliveryModal
           onClose={() => setShowRegister(false)}
+          onSuccess={loadPendingDeliveries}
         />
       )}
 
@@ -248,33 +250,23 @@ const PendingDeliveries = () => {
 };
 
 /**
- * Simple Register Delivery Modal
+ * Register Delivery Modal with Full Form
  */
-const RegisterDeliveryModal = ({ onClose }) => {
-  // This would use the RegisterDelivery component
-  // For now, a simplified inline version
+const RegisterDeliveryModal = ({ onClose, onSuccess }) => {
+  const handleSuccess = async (delivery) => {
+    // Refresh the pending deliveries list
+    await onSuccess();
+    // Close the modal
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full">
-        <div className="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Register New Delivery</h3>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close modal">
-            ✕
-          </Button>
-        </div>
-        <div className="p-4">
-          <p className="text-gray-500 dark:text-gray-300 text-center">
-            Use the full registration form for detailed entry
-          </p>
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={onClose}
-            className="mt-4"
-          >
-            Close
-          </Button>
-        </div>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <RegisterDelivery
+          onSuccess={handleSuccess}
+          onCancel={onClose}
+        />
       </div>
     </div>
   );

@@ -152,7 +152,9 @@ export const createVisitor = async (req, res) => {
       consent_type,
       consent_version,
       status: requestedStatus,
-      duration // NEW: Duration in minutes
+      duration, // NEW: Duration in minutes
+      isPrivate,
+      is_private
     } = req.body;
 
     if (!req.user.estate_id) {
@@ -255,6 +257,8 @@ export const createVisitor = async (req, res) => {
     // Vehicle plate sanitization
     const vehiclePlateFinal = vehiclePlate || vehicle_plate;
 
+    const isPrivateFinal = isPrivate === true || is_private === true || String(isPrivate || is_private).toLowerCase() === 'true';
+
     const result = await dbManager.query(
       `INSERT INTO visitors (
         name, phone, email, purpose, date_of_visit, time_of_visit,
@@ -263,19 +267,19 @@ export const createVisitor = async (req, res) => {
         invite_code, visitor_token, token_expires_at,
         allow_residence_location, unit_pin_encrypted, unit_pin_encrypted_at,
         consent_given, consent_timestamp, consent_type, consent_version,
-        status, created_by, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())
+        status, created_by, is_private, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, NOW())
        RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit,
-                 invite_code, visitor_token, token_expires_at, status, created_at`,
+                 invite_code, visitor_token, token_expires_at, status, is_private, created_at`,
       [
         sanitizeString(name.trim()),
         normalizedPhone,
         email ? sanitizeString(email.trim().toLowerCase()) : null,
         sanitizeString(purpose || 'Visit'),
-        sanitizeString(finalDateOfVisit.trim()),
-        time ? sanitizeString(time.trim()) : null,
-        vehiclePlateFinal ? sanitizeString(vehiclePlateFinal.trim()) : null,
-        idNumberPlain ? sanitizeString(idNumberPlain.trim()) : null, // Store plaintext (sanitized) during transition period
+        typeof finalDateOfVisit === 'string' ? finalDateOfVisit.trim() : finalDateOfVisit,
+        time ? sanitizeString(String(time).trim()) : null,
+        vehiclePlateFinal ? sanitizeString(String(vehiclePlateFinal).trim()) : null,
+        idNumberPlain ? sanitizeString(String(idNumberPlain).trim()) : null, // Store plaintext (sanitized) during transition period
         idNumberEncrypted, // NEW: Encrypted version
         idNumberEncryptedAt, // NEW: Encryption timestamp
         residentId,
@@ -292,7 +296,8 @@ export const createVisitor = async (req, res) => {
         consent_type || 'data_processing',
         consent_version || '1.0',
         initialStatus,
-        req.user.email
+        req.user.email,
+        isPrivateFinal
       ]
     );
 
@@ -386,6 +391,7 @@ export const getMyVisitors = async (req, res) => {
     }
 
     const role = req.user.role;
+    const isGuard = role === 'guard' || role === 'admin' || role === 'super_admin';
 
     // Get pagination params
     const pageRaw = parseInt(req.query.page, 10);
@@ -397,12 +403,14 @@ export const getMyVisitors = async (req, res) => {
     const searchRaw = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const searchTerm = searchRaw ? `%${searchRaw}%` : null;
 
+    // Added is_private to selection
     let query = `SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
                         vehicle_plate, id_number, id_number_encrypted, id_number_encrypted_at,
                         status, check_in_time AS check_in, check_out_time AS check_out, visitor_token, token_expires_at, 
-                        invite_code, created_at, host_id, resident_id
+                        invite_code, created_at, host_id, resident_id, is_private
                  FROM visitors`;
     const params = [];
+    const conditions = [];
 
     if (role === 'resident') {
       const residentResult = await dbManager.query(
@@ -415,68 +423,195 @@ export const getMyVisitors = async (req, res) => {
       }
 
       const residentId = residentResult.rows[0].id;
-      query += ' WHERE (host_id = $1 OR resident_id = $1)';
+      conditions.push(`(host_id = $${params.length + 1} OR resident_id = $${params.length + 1})`);
       params.push(residentId);
+
       if (req.user.estate_id) {
-        query += ` AND estate_id = $2`;
+        conditions.push(`estate_id = $${params.length + 1}`);
         params.push(req.user.estate_id);
       }
-    } else if (role === 'guard' || role === 'admin' || role === 'super_admin') {
+    } else if (isGuard) {
       if (!req.user.estate_id) {
         return respondError(res, 403, 'Estate context required');
       }
-      query += ` WHERE estate_id = $1`;
+      conditions.push(`estate_id = $${params.length + 1}`);
       params.push(req.user.estate_id);
+
+      // PRIVACY & SCOPE: Guards see specific relevant info only
+
+      // 1. Status Filtering: Hide irrelevant statuses
+      if (!status) {
+        conditions.push(`status NOT IN ('${PASS_STATUS.PENDING_CONFIRMATION}', '${PASS_STATUS.CANCELLED}', '${PASS_STATUS.REJECTED}', '${PASS_STATUS.REVOKED}')`);
+      }
+
+      // 2. Time Scoping: Future, Today, or Recent Past (24h)
+      // Logic: date_of_visit >= CURRENT_DATE - 1 day OR status is active/on_premise
+      conditions.push(`(
+          date_of_visit >= CURRENT_DATE - INTERVAL '1 day'
+          OR status IN ('${PASS_STATUS.CHECKED_IN}', '${PASS_STATUS.ON_PREMISE}')
+      )`);
+
     } else {
       return respondError(res, 403, 'Forbidden');
     }
 
     if (status) {
-      query += ` AND status = $${params.length + 1}`;
+      conditions.push(`status = $${params.length + 1}`);
       params.push(String(status).toLowerCase());
     }
+
     if (searchTerm) {
       const searchIndex = params.length + 1;
-      query += ` AND (name ILIKE $${searchIndex} OR phone ILIKE $${searchIndex} OR email ILIKE $${searchIndex})`;
+      // Note: If is_private, name search might still match but result will be masked "Private Guest". 
+      // This is acceptable as long as PII is hidden.
+      conditions.push(`(name ILIKE $${searchIndex} OR phone ILIKE $${searchIndex} OR email ILIKE $${searchIndex} OR invite_code ILIKE $${searchIndex})`);
       params.push(searchTerm);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
     }
 
     query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(limit, offset);
 
     const result = await dbManager.query(query, params);
+    let rows = result.rows;
 
-    // Get total count
-    let countQuery = 'SELECT COUNT(*) FROM visitors';
-    const countParams = [];
-    if (role === 'resident') {
-      countQuery += ' WHERE (host_id = $1 OR resident_id = $1)';
-      countParams.push(params[0]);
-      if (req.user.estate_id) {
-        countQuery += ` AND estate_id = $2`;
-        countParams.push(req.user.estate_id);
+    // --- ENHANCEMENT: Search by OTP ---
+    if (searchRaw && /^\d{6}$/.test(searchRaw)) {
+      try {
+        const otpQuery = `
+          SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
+                 vehicle_plate, status, otp_hash, invite_code, created_at, is_private
+          FROM visitors 
+          WHERE estate_id = $1 AND status IN ($2, $3) AND otp_hash IS NOT NULL
+        `;
+        const otpCandidates = await dbManager.query(otpQuery, [req.user.estate_id, PASS_STATUS.OTP_SENT, PASS_STATUS.PENDING]);
+
+        const matchedVisitors = [];
+        for (const visitor of otpCandidates.rows) {
+          try {
+            if (await argon2.verify(visitor.otp_hash, searchRaw)) {
+              delete visitor.otp_hash;
+              matchedVisitors.push(visitor);
+            }
+          } catch (err) { }
+        }
+
+        if (matchedVisitors.length > 0) {
+          const existingIds = new Set(rows.map(v => v.id));
+          matchedVisitors.forEach(v => {
+            if (!existingIds.has(v.id)) {
+              rows.push(v);
+            }
+          });
+          rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+      } catch (otpErr) {
+        console.error('OTP Search enhancement error:', otpErr);
       }
-    } else {
-      countQuery += ' WHERE estate_id = $1';
-      countParams.push(req.user.estate_id);
     }
-    if (status) {
-      countQuery += ` AND status = $${countParams.length + 1}`;
-      countParams.push(String(status).toLowerCase());
+
+    // --- ENHANCEMENT: Search by Rideshare Access Code or Plate ---
+    if (isGuard && searchRaw) {
+      try {
+        const rideshareQuery = `
+          SELECT re.id, re.driver_name as name, 'Rideshare' as phone, 'Rideshare' as purpose, 
+                 re.vehicle_plate, re.access_code as invite_code, re.status, 
+                 re.expires_at as token_expires_at, re.created_at,
+                 u.username as resident_name, u.house as resident_unit
+          FROM rideshare_entries re
+          JOIN users u ON re.resident_id = u.id
+          WHERE u.estate_id = $1 
+            AND (re.access_code ILIKE $2 OR re.vehicle_plate ILIKE $2 OR re.driver_name ILIKE $2)
+            AND re.status = 'pending' 
+            AND re.expires_at > NOW()
+          LIMIT 5
+        `;
+        const rideshareResults = await dbManager.query(rideshareQuery, [req.user.estate_id, `%${searchRaw}%`]);
+
+        if (rideshareResults.rows.length > 0) {
+          const existingIds = new Set(rows.map(v => v.id)); // Note: IDs might overlap with visitors, but for display it's usually fine or we could prefix them
+          rideshareResults.rows.forEach(r => {
+            // Map rideshare specific fields to visitor-like structure for frontend
+            const rideshareVisitor = {
+              ...r,
+              is_rideshare: true,
+              type: 'rideshare'
+            };
+            // Add if not already in rows (unlikely given different tables, but safe)
+            rows.push(rideshareVisitor);
+          });
+          // Sort again if needed
+          rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+      } catch (rsErr) {
+        console.error('Rideshare Search enhancement error:', rsErr);
+      }
     }
-    if (searchTerm) {
-      const searchIndex = countParams.length + 1;
-      countQuery += ` AND (name ILIKE $${searchIndex} OR phone ILIKE $${searchIndex} OR email ILIKE $${searchIndex})`;
-      countParams.push(searchTerm);
+
+    // Get total count (simplified for brevity, main logic matches)
+    let countQuery = 'SELECT COUNT(*) FROM visitors';
+    if (conditions.length > 0) {
+      // Reconstruct WHERE clause for count (remove LIMIT/OFFSET params)
+      // This is tricky with param indices. 
+      // Simpler: Just run the count query without limit/offset params but reusing correct conditions/params?
+      // Actually, standard way is to rebuild.
+      // For this optimized replacement, let's just do a separate count construction or reuse logic if extracted.
+      // We will stick to the previous pattern but respecting the new filters.
+      // To save complexity in this tool call, we'll do a slightly less efficient but correct string rebuild if possible,
+      // or just copy the logic.
+
+      let countConditions = [...conditions];
+      // Start fresh params for count to avoid index mismatches
+      // Actually, we can reuse the `conditions` string logic but we need to match params.
+      // Let's just re-run the logic blocks for countQuery:
+      countQuery += ` WHERE ` + conditions.join(' AND ');
+      // NOTE: `params` has limit/offset at the end. We validly rely on the fact that 
+      // conditions only use params up to length-2.
     }
-    const countResult = await dbManager.query(countQuery, countParams);
+
+    // params for count are all except the last two
+    const countResult = await dbManager.query(countQuery, params.slice(0, params.length - 2));
     const total = parseInt(countResult.rows[0].count);
 
-    // Decrypt ID numbers for all visitors
-    const visitorsDecrypted = await decryptVisitorList(result.rows);
+    // Decrypt ID numbers
+    const visitorsDecrypted = await decryptVisitorList(rows);
+
+    // PRIVACY MASKING LOOP
+    const safeVisitors = visitorsDecrypted.map(v => {
+      const safeV = { ...v };
+
+      // Apply masking for Guards/Admins (Residents see their own data unmasked)
+      if (role === 'guard' || (role === 'admin' && req.user.role !== 'super_admin')) {
+        if (safeV.is_private) {
+          safeV.name = "Private Guest";
+        }
+
+        // Mask Phone: +254...789
+        if (safeV.phone && safeV.phone.length > 7) {
+          const p = safeV.phone;
+          safeV.phone = `${p.substring(0, 4)}****${p.substring(p.length - 3)}`;
+        } else {
+          safeV.phone = '******';
+        }
+
+        // Mask Email: r***@domain.com
+        if (safeV.email) {
+          const [local, domain] = safeV.email.split('@');
+          if (local) {
+            safeV.email = `${local.charAt(0)}***@${domain}`;
+          } else {
+            safeV.email = '***@***';
+          }
+        }
+      }
+      return safeV;
+    });
 
     respond(res, {
-      visitors: visitorsDecrypted,
+      visitors: safeVisitors,
       pagination: {
         page,
         limit,
@@ -752,12 +887,12 @@ export const bulkInvite = async (req, res) => {
               continue;
             }
 
-            // Generate visitor token and OTP for pre-registered guests
+            // Generate visitor token and Pass Code for pre-registered guests
             const visitorToken = generateVisitorToken();
             const tokenExpiresAt = calculateTokenExpiry(date);
             const otp = generateOTP(6);
             const otpHash = await argon2.hash(otp);
-            const otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+            const otpExpiresAt = tokenExpiresAt; // Align Pass Code expiry with Digital Pass expiry
 
             const result = await client.query(
               `INSERT INTO visitors (
@@ -782,7 +917,7 @@ export const bulkInvite = async (req, res) => {
                 tokenExpiresAt,
                 otpHash,
                 otpExpiresAt,
-                PASS_STATUS.PENDING
+                PASS_STATUS.OTP_SENT
               ]
             );
 
@@ -908,7 +1043,9 @@ export const completeInvite = async (req, res) => {
       phone,
       email,
       idNumber,
+      id_number,
       vehiclePlate,
+      vehicle_plate,
       purpose,
       consent_given,
       consentGiven,
@@ -994,11 +1131,15 @@ export const completeInvite = async (req, res) => {
           residentId = residentRes.rows[0]?.id || null;
         }
 
+        const idNumberPlain = (idNumber || id_number)?.trim() || null;
+        const idNumberEncrypted = idNumberPlain ? await encryptionService.encrypt(idNumberPlain) : null;
+        const idNumberEncryptedAt = idNumberEncrypted ? new Date() : null;
+
         const visitorToken = generateVisitorToken();
         const tokenExpiresAt = calculateTokenExpiry(bulkInvite.date);
         const otp = generateOTP(6);
         const otpHash = await argon2.hash(otp);
-        const otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+        const otpExpiresAt = tokenExpiresAt; // Align Pass Code expiry with Digital Pass expiry
 
         const visitorInsert = await client.query(
           `INSERT INTO visitors (
@@ -1007,8 +1148,8 @@ export const completeInvite = async (req, res) => {
             visitor_token, token_expires_at,
             otp_hash, otp_expires_at, otp_attempts,
             consent_given, consent_timestamp, consent_type, consent_version,
-            status, id_number, vehicle_plate, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, true, $14, $15, $16, $17, $18, $19, NOW())
+            status, id_number, id_number_encrypted, id_number_encrypted_at, vehicle_plate, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 0, true, $14, $15, $16, $17, NULL, $18, $19, $20, NOW())
            RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status`,
           [
             name.trim(),
@@ -1019,7 +1160,7 @@ export const completeInvite = async (req, res) => {
             bulkInvite.time,
             residentId,
             bulkInvite.id,
-            bulkInvite.estate_id, // Fix: Propagate estate_id
+            bulkInvite.estate_id,
             visitorToken,
             tokenExpiresAt,
             otpHash,
@@ -1028,8 +1169,9 @@ export const completeInvite = async (req, res) => {
             consent_type || 'data_processing',
             consent_version || '1.0',
             PASS_STATUS.OTP_SENT,
-            idNumber?.trim() || null,
-            vehiclePlate?.trim()?.toUpperCase() || null
+            idNumberEncrypted,
+            idNumberEncryptedAt,
+            (vehiclePlate || vehicle_plate)?.trim()?.toUpperCase() || null
           ]
         );
 
@@ -1080,7 +1222,7 @@ export const completeInvite = async (req, res) => {
         // BULK-001 FIX: Mark QR as failed for later retry
         await dbManager.query(
           'UPDATE visitors SET status = $1 WHERE id = $2',
-          ['qr_pending', visitor.id]
+          [PASS_STATUS.QR_PENDING, visitor.id]
         ).catch(err => console.error('[completeInvite] Failed to update QR status:', err));
       }
 
@@ -1157,14 +1299,14 @@ export const completeInvite = async (req, res) => {
       }
 
       // Encrypt ID number if provided
-      const idNumberPlain = idNumber?.trim() || null;
+      const idNumberPlain = (idNumber || id_number)?.trim() || null;
       const idNumberEncrypted = idNumberPlain ? await encryptionService.encrypt(idNumberPlain) : null;
       const idNumberEncryptedAt = idNumberEncrypted ? new Date() : null;
 
       const visitorToken = generateVisitorToken();
       const otp = generateOTP(6);
       const otpHash = await argon2.hash(otp);
-      const otpExpiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+      const otpExpiresAt = tokenExpiresAt; // Align Pass Code expiry with Digital Pass expiry
 
       const updated = await client.query(
         `UPDATE visitors
@@ -1172,42 +1314,41 @@ export const completeInvite = async (req, res) => {
            name = $2,
            phone = $3,
            email = $4,
-           id_number = COALESCE($5, id_number),
-           id_number_encrypted = COALESCE($16, id_number_encrypted),
-           id_number_encrypted_at = COALESCE($17, id_number_encrypted_at),
-           vehicle_plate = COALESCE($6, vehicle_plate),
-           purpose = COALESCE($7, purpose),
+           id_number = NULL,
+           id_number_encrypted = COALESCE($5, id_number_encrypted),
+           id_number_encrypted_at = COALESCE($6, id_number_encrypted_at),
+           vehicle_plate = COALESCE($7, vehicle_plate),
+           purpose = COALESCE($8, purpose),
            consent_given = TRUE,
-           consent_timestamp = $8,
-           consent_type = COALESCE($9, consent_type),
-           consent_version = COALESCE($10, consent_version),
-           visitor_token = $11,
-           token_expires_at = $12,
-           otp_hash = $13,
-           otp_expires_at = $14,
+           consent_timestamp = $9,
+           consent_type = COALESCE($10, consent_type),
+           consent_version = COALESCE($11, consent_version),
+           visitor_token = $12,
+           token_expires_at = $13,
+           otp_hash = $14,
+           otp_expires_at = $15,
            otp_attempts = 0,
-           status = $15,
+           status = $16,
            updated_at = NOW()
          WHERE id = $1
          RETURNING id, name, phone, email, purpose, date_of_visit, time_of_visit, visitor_token, token_expires_at, status, estate_id`,
         [
-          existing.id,
-          name.trim(),
-          hasPhone ? phone.trim() : null,
-          hasEmail ? email.trim() : null,
-          idNumberPlain,
-          vehiclePlate?.trim()?.toUpperCase() || null,
-          purpose?.trim() || null,
-          consent_timestamp ? new Date(consent_timestamp) : new Date(),
-          consent_type || 'data_processing',
-          consent_version || '1.0',
-          visitorToken,
-          tokenExpiresAt,
-          otpHash,
-          otpExpiresAt,
-          PASS_STATUS.OTP_SENT,
-          idNumberEncrypted,    // $16
-          idNumberEncryptedAt   // $17
+          existing.id,          // $1
+          name.trim(),          // $2
+          hasPhone ? phone.trim() : null, // $3
+          hasEmail ? email.trim() : null, // $4
+          idNumberEncrypted,    // $5
+          idNumberEncryptedAt,  // $6
+          (vehiclePlate || vehicle_plate)?.trim()?.toUpperCase() || null, // $7
+          purpose?.trim() || null, // $8
+          consent_timestamp ? new Date(consent_timestamp) : new Date(), // $9
+          consent_type || 'data_processing', // $10
+          consent_version || '1.0', // $11
+          visitorToken,        // $12
+          tokenExpiresAt,      // $13
+          otpHash,             // $14
+          otpExpiresAt,        // $15
+          PASS_STATUS.OTP_SENT // $16
         ]
       );
 
@@ -1255,15 +1396,15 @@ export const completeInvite = async (req, res) => {
     const passLink = `${CLIENT_ORIGIN}/v/${visitor.visitor_token}`;
 
     try {
-      console.log('DEBUG: Sending OTP...');
+      console.log('DEBUG: Sending Pass Code...');
       if (visitor.phone) {
         await sendOtpVerificationSms({ name: visitor.name, phone: visitor.phone }, otp, OTP_EXPIRY_MINUTES);
       } else if (visitor.email) {
         await sendOtpVerificationEmail({ name: visitor.name, email: visitor.email }, otp, OTP_EXPIRY_MINUTES);
       }
-      console.log('DEBUG: OTP Sent (or attempted)');
+      console.log('DEBUG: Pass Code Sent (or attempted)');
     } catch (notifyError) {
-      console.warn('[completeInvite] OTP notification failed:', notifyError.message);
+      console.warn('[completeInvite] Pass Code notification failed:', notifyError.message);
     }
 
     const responseData = {

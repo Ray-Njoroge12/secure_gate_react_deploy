@@ -1,6 +1,7 @@
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError, camelize } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
+import { maskPhoneNumber, maskEmail } from '../utils/masking.js';
 
 /**
  * Admin Controller
@@ -179,14 +180,16 @@ const getPendingUsers = async (req, res) => {
     }
 
     const result = await dbManager.query(
-      `SELECT id, username, email, phone, role, created_at, account_status
+      `SELECT id, username, email, phone, role, house, created_at, account_status, estate_id
        FROM users
-       WHERE account_status = 'pending' AND estate_id = $1
+       WHERE account_status = 'pending' AND estate_id = $1 AND role != 'super_admin'
        ORDER BY created_at ASC`,
       [estateId]
     );
 
-    respond(res, { data: camelize(result.rows) });
+    const users = result.rows;
+
+    respond(res, { data: camelize(users) });
   } catch (error) {
     console.error('Error fetching pending users:', error);
     respondError(res, 500, 'Failed to fetch pending users');
@@ -252,7 +255,7 @@ const getEstateInfo = async (req, res) => {
       return respondError(res, 404, 'Estate not found');
     }
 
-    respond(res, { data: camelize(result.rows[0]) });
+    respond(res, camelize(result.rows[0]));
   } catch (error) {
     console.error('Error fetching estate info:', error);
     respondError(res, 500, 'Failed to fetch estate info');

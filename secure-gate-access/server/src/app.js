@@ -54,7 +54,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import tenantProvisioningRoutes from './routes/tenantProvisioningRoutes.js';
 import visitorRoutes from './routes/visitorRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js'; // Dashboard routes
-// import guardRoutes from './routes/guardRoutes.js'; // Removed - placeholder implementation
+import guardRoutes from './routes/guardRoutes.js'; // Guard-specific operations (visitor history, etc.)
 import authRoutes from './routes/authRoutes.js';
 import mfaRoutes from './routes/mfaRoutes.js';
 import estateRoutes from './routes/estateRoutes.js';
@@ -254,15 +254,20 @@ const corsOptionsDelegate = (req, callback) => {
     return callback(null, { ...corsBaseOptions, origin: true });
   }
 
+  // allow development origins
+  if (process.env.NODE_ENV === 'development') {
+    return callback(null, { ...corsBaseOptions, origin: true });
+  }
+
   if (allowedOrigins.indexOf(origin) !== -1) {
     return callback(null, { ...corsBaseOptions, origin: origin });
   }
 
   // Log blocked origins in development for debugging
   if (process.env.NODE_ENV !== 'production') {
-    console.warn('🚫 CORS blocked origin:', origin);
+    console.warn(`🚫 CORS blocked origin: ${origin}`);
   }
-  return callback(new Error('CORS policy violation: Origin not allowed'));
+  return callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
 };
 
 // CORS configuration enabled
@@ -441,6 +446,9 @@ app.use('/api/events', eventManagementRoutes);
 
 // Phase 3: Visitor Approval routes (walk-in approval flow)
 app.use('/api/approvals', approvalRoutes);
+
+// Guard routes - general guard operations (visitor history, etc.)
+app.use('/api/guard', guardRoutes);
 
 // Phase G4: Guard Incident Reporting routes
 app.use('/api/guard/incidents', guardIncidentRoutes);

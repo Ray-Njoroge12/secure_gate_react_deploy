@@ -11,7 +11,7 @@
  * @module services/emergencyService
  */
 
-import { pool } from '../database/connection.js';
+import { dbManager } from '../database/connection.js';
 import loggingService from './loggingService.js';
 
 class EmergencyService {
@@ -32,7 +32,7 @@ class EmergencyService {
    * @returns {Object} Created emergency incident
    */
   async triggerPanicButton(guardId, locationData = {}, gateId = null) {
-    const client = await pool.connect();
+    const client = await dbManager.pool.connect();
 
     try {
       await client.query('BEGIN');
@@ -104,9 +104,9 @@ class EmergencyService {
       for (const recipient of recipients) {
         await client.query(
           `INSERT INTO emergency_alert_log (
-            emergency_id, recipient_id, recipient_role, channel
-          ) VALUES ($1, $2, $3, $4)`,
-          [emergency.id, recipient.id, recipient.role, 'in_app']
+            emergency_id, recipient_id, channel
+          ) VALUES ($1, $2, $3)`,
+          [emergency.id, recipient.id, 'in_app']
         );
       }
 
@@ -135,11 +135,19 @@ class EmergencyService {
       };
 
     } catch (error) {
-      await client.query('ROLLBACK');
-      loggingService.logError('PANIC_BUTTON_FAILED', { guardId, error: error.message });
+      if (client) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (rollbackError) {
+          loggingService.logError('PANIC_BUTTON_ROLLBACK_FAILED', { guardId, error: rollbackError.message });
+        }
+      }
+      loggingService.logError('PANIC_BUTTON_FAILED', error, { guardId });
       throw error;
     } finally {
-      client.release();
+      if (client) {
+        client.release();
+      }
     }
   }
 
@@ -152,7 +160,7 @@ class EmergencyService {
    * @returns {Object} Updated emergency
    */
   async acknowledgeEmergency(emergencyId, responderId) {
-    const client = await pool.connect();
+    const client = await dbManager.pool.connect();
 
     try {
       // Verify responder is admin or guard and get their estate
@@ -227,7 +235,7 @@ class EmergencyService {
    * @returns {Object} Updated emergency
    */
   async resolveEmergency(emergencyId, resolverId, resolution = {}) {
-    const client = await pool.connect();
+    const client = await dbManager.pool.connect();
 
     try {
       // Verify resolver is admin and get their estate
@@ -291,7 +299,7 @@ class EmergencyService {
    * @returns {Object} Updated emergency
    */
   async cancelEmergency(emergencyId, guardId) {
-    const client = await pool.connect();
+    const client = await dbManager.pool.connect();
 
     try {
       // Can only cancel within 30 seconds and if you triggered it
@@ -352,7 +360,7 @@ class EmergencyService {
 
     query += ` ORDER BY e.triggered_at DESC`;
 
-    const result = await pool.query(query, params);
+    const result = await dbManager.query(query, params);
 
     return result.rows;
   }
@@ -365,7 +373,7 @@ class EmergencyService {
    * @returns {Array} Guard's emergency history
    */
   async getGuardEmergencyHistory(guardId, limit = 10) {
-    const result = await pool.query(
+    const result = await dbManager.query(
       `SELECT 
         id,
         triggered_at,
@@ -392,7 +400,7 @@ class EmergencyService {
    * @returns {Object} Emergency details
    */
   async getEmergencyDetails(emergencyId, requesterId) {
-    const client = await pool.connect();
+    const client = await dbManager.pool.connect();
 
     try {
       // Check if requester is admin or the guard who triggered
@@ -484,7 +492,7 @@ class EmergencyService {
     query += ` AND estate_id = $1`;
     params.push(estateId);
 
-    const result = await pool.query(query, params);
+    const result = await dbManager.query(query, params);
 
     return {
       period,

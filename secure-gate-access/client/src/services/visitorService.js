@@ -12,18 +12,16 @@ export const getMyVisitors = () => http.get(API_BASE);
 export const listVisitors = getMyVisitors;
 
 // === Passes (basic, leave advanced to passService.js) ===
-export const createPass = (visitorId) => http.post(`${API_BASE}/${visitorId}/pass`);
+
 
 // === Bulk Invites ===
 export const bulkInvite = (eventDetails) => http.post(`${API_BASE}/bulk-invite`, eventDetails);
 export const getBulkInvite = (inviteCode) => http.get(`${API_BASE}/bulk-invite/${inviteCode}`);
 export const completeInvite = (inviteCode, guestDetails) => http.post(`${API_BASE}/complete/${inviteCode}`, guestDetails);
 
-// === Shared Links ===
-export const getInviteByCode = (inviteCode) => http.get(`/api/public/invites/${inviteCode}`);
-
 // === Public Invite Lookup (no auth) ===
 export const getPublicInvite = (inviteCode) => http.get(`/api/public/invites/${inviteCode}`);
+export const getInviteByCode = getPublicInvite;
 
 // === Optional OTP Support ===
 export const verifyOtp = (id, otp) => http.post(`${API_BASE}/${id}/verify-otp`, { otp });
@@ -42,8 +40,9 @@ export function normalizeVisitor(v) {
     dateOfVisit: v.date_of_visit !== undefined ? v.date_of_visit : v.dateOfVisit,
     timeOfVisit: v.time_of_visit !== undefined ? v.time_of_visit : v.timeOfVisit,
     status: v.status,
-    checkIn: v.check_in !== undefined ? v.check_in : v.checkIn,
-    checkOut: v.check_out !== undefined ? v.check_out : v.checkOut,
+    // Use current column names (check_in/check_out were removed in migration 051)
+    checkInTime: v.check_in_time !== undefined ? v.check_in_time : v.checkInTime,
+    checkOutTime: v.check_out_time !== undefined ? v.check_out_time : v.checkOutTime,
     inviteCode: v.invite_code !== undefined ? v.invite_code : v.inviteCode,
     qrCode: v.qr_code !== undefined ? v.qr_code : v.qrCode
   };

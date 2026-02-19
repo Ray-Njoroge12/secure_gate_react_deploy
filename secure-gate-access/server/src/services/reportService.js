@@ -13,15 +13,22 @@ import logger from '../config/logger.js';
 
 const pool = db.pool || db;
 
+import { maskPhoneNumber, maskEmail } from '../utils/masking.js';
+
 /**
  * Generate report based on configuration
  * @param {object} reportConfig - Report configuration
+ * @param {object} user - User object requesting the report (for role-based masking)
  * @returns {Promise<string>} File path of generated report
  */
-export async function generateReport(reportConfig) {
+export async function generateReport(reportConfig, user) {
   try {
     // Fetch report data
-    const data = await fetchReportData(reportConfig);
+    const rawData = await fetchReportData(reportConfig);
+
+    // Apply Masking if not Super Admin
+    const isSuperAdmin = user?.role === 'super_admin';
+    const data = isSuperAdmin ? rawData : maskReportData(rawData);
 
     // Generate based on format
     if (reportConfig.format === 'pdf') {
@@ -35,6 +42,28 @@ export async function generateReport(reportConfig) {
     logger.error('Error generating report:', error);
     throw error;
   }
+}
+
+/**
+ * Mask PII data in report
+ */
+function maskReportData(reportData) {
+  if (!reportData || !reportData.data) return reportData;
+
+  const maskedRows = reportData.data.map(row => {
+    const newRow = { ...row };
+
+    // Mask common PII fields if they exist
+    if (newRow.phone) newRow.phone = maskPhoneNumber(newRow.phone);
+    if (newRow.email) newRow.email = maskEmail(newRow.email);
+    if (newRow.resident_email) newRow.resident_email = maskEmail(newRow.resident_email);
+    if (newRow.visitor_phone) newRow.visitor_phone = maskPhoneNumber(newRow.visitor_phone);
+    if (newRow.visitor_email) newRow.visitor_email = maskEmail(newRow.visitor_email);
+
+    return newRow;
+  });
+
+  return { ...reportData, data: maskedRows };
 }
 
 /**

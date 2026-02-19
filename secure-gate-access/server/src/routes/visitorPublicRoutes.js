@@ -12,15 +12,8 @@
 
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import {
-  getVisitorByToken,
-  getEstateInfo,
-  getVisitorStatus,
-  confirmVisitorByToken,
-  getInviteByCode,
-  regenerateQRCode
-} from '../controllers/visitorPublicController.js';
-import { validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
+import { getEstateInfo, getVisitorByToken, confirmVisitorByToken, getVisitorStatus, regenerateQrCode, getInviteByCode } from '../controllers/visitorPublicController.js';
+import { validateParams, validateRequest, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { buildErrorPayload } from '../utils/responseFormatter.js';
 
 const router = express.Router();
@@ -72,10 +65,10 @@ const qrRegenerateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     // Rate limit by IP + token combination
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || 
-               req.headers['x-real-ip'] || 
-               req.ip || 
-               'unknown';
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      req.headers['x-real-ip'] ||
+      req.ip ||
+      'unknown';
     return `qr-regen:${ip}:${req.params.token || 'unknown'}`;
   },
   handler: (req, res) => {
@@ -99,7 +92,7 @@ const inviteLookupLimiter = rateLimit({
 // Optional middleware to validate estate ID if provided
 const validateEstateId = (req, res, next) => {
   const estateId = Number(req.query.estateId || req.query.estate_id);
-  
+
   // If estate ID is provided, validate it
   if (req.query.estateId || req.query.estate_id) {
     if (!estateId || Number.isNaN(estateId)) {
@@ -122,6 +115,7 @@ const validateEstateId = (req, res, next) => {
 router.get(
   '/by-token/:token',
   visitorTokenLimiter,
+  validateParams(ValidationSchemas.tokenParam),
   getVisitorByToken
 );
 
@@ -134,6 +128,7 @@ router.get(
 router.get(
   '/:token/status',
   statusPollLimiter,
+  validateParams(ValidationSchemas.tokenParam),
   getVisitorStatus
 );
 
@@ -146,6 +141,8 @@ router.get(
 router.post(
   '/:token/confirm',
   visitorTokenLimiter,
+  validateParams(ValidationSchemas.tokenParam),
+  validateRequest(ValidationSchemas.inviteCompletion),
   confirmVisitorByToken
 );
 
@@ -158,7 +155,8 @@ router.post(
 router.post(
   '/:token/regenerate-qr',
   qrRegenerateLimiter,
-  regenerateQRCode
+  validateParams(ValidationSchemas.tokenParam),
+  regenerateQrCode
 );
 
 /**

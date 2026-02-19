@@ -10,7 +10,7 @@ import { authStateMachine } from './authStateMachine';
 
 // Create axios instance with default config
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001',
+  baseURL: process.env.REACT_APP_API_URL || '',
   timeout: process.env.NODE_ENV === 'production' ? 10000 : 30000, // 10s prod, 30s dev
   withCredentials: true, // Include cookies
   headers: {
@@ -117,14 +117,14 @@ apiClient.interceptors.response.use(
     // Handle timeout
     if (error.code === 'ECONNABORTED') {
       logger.error('⏱️ Request timeout:', originalRequest.url);
-      
+
       // Retry once for GET requests
       if (originalRequest.method === 'get' && !originalRequest._retry) {
         originalRequest._retry = true;
         logger.info('🔄 Retrying request...');
         return apiClient(originalRequest);
       }
-      
+
       return Promise.reject({
         message: 'Request timeout. Please check your connection.',
         code: 'TIMEOUT'
@@ -163,12 +163,12 @@ apiClient.interceptors.response.use(
 
       // NOTE: httpOnly cookies are cleared by backend on 401
       // No need to clear localStorage tokens
-      // Don't redirect if already on login page
-      if (!window.location.pathname.includes('/login')) {
+      // Don't redirect if already on login page OR if this was an auth check (e.g. /api/auth/me)
+      if (!isAuthEndpoint && !window.location.pathname.includes('/login')) {
         navigateToLogin();
       }
       authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
-      
+
       return Promise.reject({
         message: 'Your session has expired. Please log in again.',
         code: 'UNAUTHORIZED'
@@ -178,7 +178,7 @@ apiClient.interceptors.response.use(
     // Handle 403 - Forbidden (estate required or CSRF or MFA setup required)
     if (error.response.status === 403) {
       const errorCode = error.response.data?.error?.code || error.response.data?.code;
-      
+
       // Handle MFA setup requirement
       if (errorCode === 'MFA_SETUP_REQUIRED') {
         logger.warn('🔐 MFA setup required');
@@ -189,7 +189,7 @@ apiClient.interceptors.response.use(
           code: 'MFA_SETUP_REQUIRED'
         });
       }
-      
+
       const estateCode = error.response.data?.error?.code;
       if (estateCode === 'ESTATE_REQUIRED' || estateCode === 'ESTATE_INVALID') {
         if (!window.location.pathname.includes('/estate-required')) {
@@ -202,10 +202,10 @@ apiClient.interceptors.response.use(
         });
       }
 
-      if (error.response.data?.error?.code === 'CSRF_TOKEN_MISSING' || 
-          error.response.data?.error?.code === 'CSRF_VALIDATION_FAILED') {
+      if (error.response.data?.error?.code === 'CSRF_TOKEN_MISSING' ||
+        error.response.data?.error?.code === 'CSRF_VALIDATION_FAILED') {
         logger.error('🛡️ CSRF token error');
-        
+
         // Try to refresh CSRF token
         try {
           if (!originalRequest._csrfRetry) {
@@ -218,7 +218,7 @@ apiClient.interceptors.response.use(
           logger.error('Failed to refresh CSRF token:', csrfError);
         }
       }
-      
+
       return Promise.reject({
         message: error.response.data?.message || 'Access forbidden',
         code: 'FORBIDDEN'
@@ -229,7 +229,7 @@ apiClient.interceptors.response.use(
     if (error.response.status === 429) {
       logger.warn('⚠️ Rate limited');
       const retryAfter = error.response.headers['retry-after'];
-      
+
       return Promise.reject({
         message: error.response.data?.message || 'Too many requests. Please try again later.',
         code: 'RATE_LIMITED',
@@ -240,7 +240,7 @@ apiClient.interceptors.response.use(
     // Handle 500+ - Server errors
     if (error.response.status >= 500) {
       logger.error('🔥 Server error:', error.response.status);
-      
+
       return Promise.reject({
         message: 'Server error. Please try again later.',
         code: 'SERVER_ERROR',
@@ -253,7 +253,8 @@ apiClient.interceptors.response.use(
       message: error.response.data?.message || 'An error occurred',
       code: error.response.data?.error?.code || 'UNKNOWN_ERROR',
       status: error.response.status,
-      data: error.response.data
+      data: error.response.data,
+      response: { payload: error.response.data }
     });
   }
 );
@@ -269,9 +270,9 @@ async function refreshCSRFToken() {
     const response = await axios.get('/api/auth/csrf-token', {
       withCredentials: true
     });
-    
+
     const csrfToken = response.data.csrfToken || response.headers['x-csrf-token'];
-    
+
     if (csrfToken) {
       // Update meta tag
       let metaTag = document.querySelector('meta[name="csrf-token"]');
@@ -281,7 +282,7 @@ async function refreshCSRFToken() {
         document.head.appendChild(metaTag);
       }
       metaTag.content = csrfToken;
-      
+
       return csrfToken;
     }
   } catch (error) {
@@ -388,26 +389,26 @@ const api = {
   // Request with retry
   withRetry: async (method, url, data, config = {}, maxRetries = 3) => {
     let lastError;
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         if (i > 0) {
           // Exponential backoff
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
         }
-        
+
         return await api[method](url, data, config);
       } catch (error) {
         lastError = error;
         logger.info(`Retry ${i + 1}/${maxRetries} for ${url}`);
-        
+
         // Don't retry on client errors (4xx)
         if (error.status && error.status >= 400 && error.status < 500) {
           throw error;
         }
       }
     }
-    
+
     throw lastError;
   },
 

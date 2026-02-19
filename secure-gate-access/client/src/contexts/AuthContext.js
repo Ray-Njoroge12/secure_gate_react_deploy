@@ -1,9 +1,7 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import logger from 'utils/logger';
 import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
-
-// API base URL for cross-site deployment (Netlify frontend + Render backend)
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/$/, '');
+import api from '../utils/apiClient.js';
 
 export const AuthContext = createContext();
 
@@ -34,19 +32,13 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = async () => {
     // Check if user is authenticated by calling a protected endpoint
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        method: 'GET',
-        credentials: 'include' // Include cookies
-      });
+      const response = await api.get('/api/auth/me');
 
-      if (res.ok) {
-        const data = await res.json();
-        // Response format: { success: true, data: { user: {...} } }
-        const userData = data.data?.user || data.user;
-        if (userData) {
-          setUser(userData);
-          authStateMachine.transition('AUTHENTICATED');
-        }
+      const data = response.data;
+      const userData = data.data?.user || data.user;
+      if (userData) {
+        setUser(userData);
+        authStateMachine.transition('AUTHENTICATED');
       } else {
         authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
       }
@@ -63,15 +55,13 @@ export const AuthProvider = ({ children }) => {
 
   // login(email, password, remember=false)
   const login = async (email, password, remember = false) => {
-    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: 'include', // Include cookies in request
-      body: JSON.stringify({ username: email, password }), // Backend expects 'username' field
+    const response = await api.post('/api/auth/login', {
+      username: email,
+      password
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
+    const data = response.data;
+    if (!data.success) {
       throw new Error(data.message || data.error || "Login failed");
     }
 
@@ -117,10 +107,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       // Call logout endpoint to clear httpOnly cookies and server session in background
-      await fetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+      await api.post('/api/auth/logout');
     } catch (error) {
       logger.error('Logout error', error);
     }
@@ -141,6 +128,18 @@ export const AuthProvider = ({ children }) => {
     logger.info('MFA completed, user authenticated', { role: userData.role });
   };
 
+  // Verify password for sensitive operations (returns boolean)
+  const verifyPassword = async (password) => {
+    try {
+      const response = await api.post('/api/auth/verify-password', { password });
+      const data = response.data;
+      return data.success && data.data?.verified;
+    } catch (error) {
+      logger.error('Password verification error', error);
+      return false;
+    }
+  };
+
   // Check if user has specific role
   const hasRole = (role) => {
     return user?.role === role;
@@ -155,23 +154,16 @@ export const AuthProvider = ({ children }) => {
         password: userData.password,
         role: userData.role || 'resident',
         phone: userData.phoneNumber, // Backend expects 'phone' not 'phoneNumber'
-        house: userData.residenceNumber, // Backend expects 'house' not 'residenceNumber'
+        house: userData.houseNumber, // Backend expects 'house' not 'residenceNumber'
         area: userData.area || 'General' // Backend expects 'area' field
       };
 
       // BUG-005 FIX: Changed from /api/register to /api/auth/register
       // Use API_BASE_URL for cross-site deployment (Netlify frontend + Render backend)
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registrationData),
-      });
+      const response = await api.post('/api/auth/register', registrationData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      const data = response.data;
+      if (!data.success) {
         // Handle validation errors from server
         if (data.errors && Array.isArray(data.errors)) {
           const error = new Error(data.message || 'Registration failed');
@@ -203,6 +195,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     register,
     completeMfa,
+    verifyPassword,
     hasRole,
     hasAnyRole,
     authState

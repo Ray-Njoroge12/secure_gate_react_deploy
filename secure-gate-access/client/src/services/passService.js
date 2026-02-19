@@ -10,9 +10,7 @@ export function getMyVisitors() {
   return http.get('/api/visitors');
 }
 
-export function createPass(visitorId) {
-  return http.post(`/api/visitors/${visitorId}/pass`);
-}
+
 
 // The following endpoints depend on backend implementation; keep but note may 404 until server supports them.
 export const listMyPasses = () => http.get('/api/passes/mine');

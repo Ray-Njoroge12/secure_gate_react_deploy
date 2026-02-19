@@ -35,14 +35,7 @@ describe('visitorService', () => {
     expect(res).toEqual({ items: [] });
   });
 
-  test('createPass posts visitor pass endpoint', async () => {
-    http.post.mockResolvedValueOnce({ ok: true });
 
-    const res = await visitorService.createPass('v1');
-
-    expect(http.post).toHaveBeenCalledWith('/api/visitors/v1/pass');
-    expect(res).toEqual({ ok: true });
-  });
 
   test('bulkInvite posts bulk invite details', async () => {
     http.post.mockResolvedValueOnce({ ok: true });
@@ -102,8 +95,8 @@ describe('visitorService', () => {
       resident_email: 'r@r.com',
       date_of_visit: '2025-01-01',
       time_of_visit: '10:00',
-      check_in: '10:01',
-      check_out: null,
+      check_in_time: '10:01',
+      check_out_time: null,
       invite_code: 'X',
       qr_code: 'Q'
     };
@@ -119,8 +112,8 @@ describe('visitorService', () => {
       dateOfVisit: '2025-01-01',
       timeOfVisit: '10:00',
       status: undefined,
-      checkIn: '10:01',
-      checkOut: null,
+      checkInTime: '10:01',
+      checkOutTime: null,
       inviteCode: 'X',
       qrCode: 'Q'
     });

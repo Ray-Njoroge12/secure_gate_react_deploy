@@ -1,6 +1,7 @@
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
+import { maskPhoneNumber, maskEmail } from '../utils/masking.js';
 
 const getActiveVisitors = async (req, res) => {
   try {
@@ -8,22 +9,74 @@ const getActiveVisitors = async (req, res) => {
     if (req.user.role !== 'guard' && req.user.role !== 'admin' && req.user.role !== 'super_admin') return respondError(res, 403, 'Forbidden');
 
     const estateId = req.user.estate_id;
+    const { q } = req.query; // Search query
 
     // SECURITY: Require estate context
     if (!estateId) {
       return respondError(res, 400, 'Estate context required');
     }
 
-    const vRes = await dbManager.query(`
-      SELECT id, name, phone, email, purpose, date_of_visit, time_of_visit, 
-             invite_code, status, check_in_time AS check_in, check_out_time AS check_out, created_at
-      FROM visitors 
-      WHERE status IN ($1, $2, $3) AND estate_id = $4
-      ORDER BY created_at DESC
-    `, [PASS_STATUS.PENDING, PASS_STATUS.VERIFIED, PASS_STATUS.ON_PREMISE, estateId]);
+    let queryText = '';
+    let queryParams = [];
 
-    await req.audit?.('visitor.list.active', 'visitor', null, { outcome: 'success', message: 'Retrieved active visitors', count: vRes.rows.length });
-    respond(res, { data: vRes.rows });
+    if (q) {
+      // SEARCH MODE: Search by Name or Invite Code in PENDING/APPROVED/ON_PREMISE status
+      queryText = `
+        SELECT v.id, v.name, v.phone, v.email, v.purpose, v.date_of_visit, v.time_of_visit, 
+               v.invite_code, v.status, v.check_in_time AS check_in, v.check_out_time AS check_out, v.created_at,
+               v.is_private, v.host_id, u.name AS resident_name
+        FROM visitors v
+        LEFT JOIN users u ON v.host_id = u.id
+        WHERE (
+          v.name ILIKE $1 OR 
+          v.invite_code ILIKE $1
+        ) 
+        AND v.status IN ($2, $3, $4, $5, $6) 
+        AND v.estate_id = $7
+        ORDER BY v.created_at DESC
+      `;
+      queryParams = [`%${q.trim()}%`, PASS_STATUS.PENDING, PASS_STATUS.VERIFIED, PASS_STATUS.ON_PREMISE, PASS_STATUS.OTP_SENT, PASS_STATUS.REVOKED, estateId];
+    } else {
+      // DEFAULT MODE: Only show ON_PREMISE (Available for checkout)
+      queryText = `
+        SELECT v.id, v.name, v.phone, v.email, v.purpose, v.date_of_visit, v.time_of_visit, 
+               v.invite_code, v.status, v.check_in_time AS check_in, v.check_out_time AS check_out, v.created_at,
+               v.is_private, v.host_id, u.name AS resident_name
+        FROM visitors v
+        LEFT JOIN users u ON v.host_id = u.id
+        WHERE v.status IN ($1) 
+        AND v.estate_id = $2
+        ORDER BY v.created_at DESC
+      `;
+      queryParams = [PASS_STATUS.ON_PREMISE, estateId];
+    }
+
+    const vRes = await dbManager.query(queryText, queryParams);
+
+    const isSuperAdmin = req.user.role === 'super_admin';
+    const isAdmin = req.user.role === 'admin';
+
+    // Privacy Masking
+    const visitors = vRes.rows.map(v => {
+      // Name Masking for Private Guests
+      let displayName = v.name;
+      if (v.is_private && !isSuperAdmin && !isAdmin) {
+        displayName = "Private Guest";
+      }
+
+      return {
+        ...v,
+        name: displayName,
+        phone: (isSuperAdmin || isAdmin) ? v.phone : maskPhoneNumber(v.phone),
+        email: (isSuperAdmin || isAdmin) ? v.email : maskEmail(v.email),
+        // SECURITY: We expose resident_name but mask host_id for direct linking if strict privacy needed,
+        // but for Active Log, standard practice is to show the host name.
+        host_id: null
+      };
+    });
+
+    await req.audit?.('visitor.list.active', 'visitor', null, { outcome: 'success', message: 'Retrieved active visitors', count: visitors.length, search: !!q });
+    respond(res, visitors);
   } catch (error) {
     await req.audit?.('visitor.list.active', 'visitor', null, { outcome: 'fail', message: 'Failed to retrieve active visitors', error: String(error?.message) });
     respondError(res, 500, 'Failed to retrieve active visitors');
@@ -117,8 +170,15 @@ const getVisitorReport = async (req, res) => {
     const listQuery = `SELECT id, name, phone, email, purpose, status, check_in_time AS check_in, check_out_time AS check_out, created_at ${baseQuery} ORDER BY created_at DESC LIMIT 100`;
     const listRes = await dbManager.query(listQuery, params);
 
+    const isSuperAdmin = req.user.role === 'super_admin';
+    const visitors = listRes.rows.map(v => ({
+      ...v,
+      phone: isSuperAdmin ? v.phone : maskPhoneNumber(v.phone),
+      email: isSuperAdmin ? v.email : maskEmail(v.email)
+    }));
+
     await req.audit?.('visitor.report', 'visitor', null, { outcome: 'success', message: 'Generated visitor report' });
-    respond(res, { data: listRes.rows });
+    respond(res, visitors);
 
   } catch (error) {
     await req.audit?.('visitor.report', 'visitor', null, { outcome: 'fail', message: 'Failed to generate visitor report', error: String(error?.message) });
@@ -161,4 +221,188 @@ const revokeVisitor = async (req, res) => {
   }
 };
 
-export { getActiveVisitors, getVisitorReport, revokeVisitor };
+const getRecentVisitors = async (req, res) => {
+  try {
+    // Auth check
+    if (!req.user || !req.user.email) {
+      return respondError(res, 401, 'Unauthorized');
+    }
+
+    // Role check: guards and admins only
+    if (!['guard', 'admin', 'super_admin'].includes(req.user.role)) {
+      return respondError(res, 403, 'Forbidden');
+    }
+
+    const estateId = req.user.estate_id;
+    if (!estateId) {
+      return respondError(res, 400, 'Estate context required');
+    }
+
+    // "Active Visitors" defined as anyone currently ON_PREMISE.
+    // We remove the 7-day limit because if someone is inside, we need to see them regardless of when they entered.
+    // We remove the LIMIT because we need to see everyone currently inside to manage them.
+    // If the list becomes too large (e.g. > 1000), pagination should be added, but for now 100 is a safe upper bound for a typical estate gate view.
+    const limit = Math.min(parseInt(req.query.limit) || 100, 200);
+
+    const query = `
+      SELECT 
+        v.id,
+        v.name as "visitorName",
+        v.phone as "visitorPhone", -- Will be masked below
+        v.email as "visitorEmail", -- Will be masked below
+        v.invite_code as "inviteCode",
+        v.status,
+        u.username as "residentName",
+        u.unit_number as "residentUnit",
+        to_char(v.check_in_time, 'Dy, DD Mon HH24:MI') as "checkInTime",
+        to_char(MAX(v.created_at) OVER (PARTITION BY v.id), 'Dy, DD Mon') as "lastVisitDate"
+      FROM visitors v
+      LEFT JOIN users u ON v.host_id = u.id
+      WHERE v.estate_id = $1
+        AND v.status = 'on_premise' -- STRICTLY Active Visitors only
+      ORDER BY v.check_in_time DESC
+      LIMIT $2
+    `;
+
+    const result = await dbManager.query(query, [estateId, limit]);
+
+    // Mask PII
+    const visitors = result.rows.map(v => ({
+      ...v,
+      visitorPhone: maskPhoneNumber(v.visitorPhone),
+      visitorEmail: maskEmail(v.visitorEmail)
+    }));
+
+    await req.audit?.('visitor.list.active_on_premise', 'visitor', null, {
+      outcome: 'success',
+      message: 'Retrieved active on-premise visitors',
+      count: visitors.length
+    });
+
+    respond(res, visitors);
+
+  } catch (error) {
+    console.error('[getActiveVisitors] Error:', error);
+    await req.audit?.('visitor.list.active_on_premise', 'visitor', null, {
+      outcome: 'fail',
+      message: 'Failed to retrieve active visitors',
+      error: String(error?.message)
+    });
+    respondError(res, 500, 'Failed to retrieve active visitors');
+  }
+};
+
+const getVisitorDetails = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
+    if (req.user.role !== 'admin' && req.user.role !== 'super_admin') return respondError(res, 403, 'Forbidden');
+
+    const { id } = req.params;
+    const estateId = req.user.estate_id;
+
+    if (!estateId) return respondError(res, 400, 'Estate context required');
+
+    const query = `
+      SELECT v.*, u.username as host_name 
+      FROM visitors v
+      LEFT JOIN users u ON v.host_id = u.id
+      WHERE v.id = $1 AND v.estate_id = $2
+    `;
+
+    const result = await dbManager.query(query, [id, estateId]);
+
+    if (result.rows.length === 0) {
+      return respondError(res, 404, 'Visitor not found');
+    }
+
+    // Return unmasked details (this endpoint is protected by password check on frontend/policy)
+    await req.audit?.('visitor.view_details', 'visitor', id, { outcome: 'success', message: 'Viewed unmasked visitor details' });
+    respond(res, result.rows[0]);
+
+  } catch (error) {
+    await req.audit?.('visitor.view_details', 'visitor', req.params.id, { outcome: 'fail', message: 'Failed to retrieve visitor details', error: String(error?.message) });
+    respondError(res, 500, 'Failed to retrieve visitor details');
+  }
+};
+
+
+const getVisitorHistory = async (req, res) => {
+  try {
+    if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
+    if (!['guard', 'admin', 'super_admin'].includes(req.user.role)) return respondError(res, 403, 'Forbidden');
+
+    const estateId = req.user.estate_id;
+    if (!estateId) return respondError(res, 400, 'Estate context required');
+
+    const { start_date, end_date } = req.query;
+
+    // Default to last 7 days if not provided
+    const startDate = start_date || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const endDate = end_date || new Date().toISOString();
+
+    const query = `
+      SELECT v.id, 
+             v.name as "visitorName", 
+             v.phone, 
+             v.email, 
+             v.purpose, 
+             v.status, 
+             v.check_in_time as "checkInTime", 
+             v.check_out_time as "checkOutTime", 
+             v.created_at, 
+             v.is_private,
+             u.username as "residentName", 
+             u.unit_number as "hostUnit"
+      FROM visitors v
+      LEFT JOIN users u ON v.host_id = u.id
+      WHERE v.estate_id = $1
+        AND (v.created_at BETWEEN $2 AND $3 OR v.check_in_time BETWEEN $2 AND $3)
+        AND v.status IN ('checked_in', 'checked_out', 'on_premise')
+      ORDER BY v.created_at DESC
+      LIMIT 500
+    `;
+
+    const result = await dbManager.query(query, [estateId, startDate, endDate]);
+
+    const isSuperAdmin = req.user.role === 'super_admin';
+    const isAdmin = req.user.role === 'admin';
+
+    const visitors = result.rows.map(v => {
+      // Keys are already camelCase from SQL aliases
+      const rawVisitorName = v.visitorName || v.visitor_name || v.name;
+      const rawResidentName = v.residentName || v.resident_name || v.host_name;
+      // Note: pg driver returns camelCase keys if quoted in SQL
+
+      const isPrivate = v.is_private || v.isPrivate; // check both just in case
+
+      // Name Masking for Private Guests
+      let displayName = rawVisitorName;
+      if (isPrivate && !isSuperAdmin && !isAdmin) {
+        displayName = "Private Guest";
+      }
+
+      return {
+        id: v.id,
+        visitorName: displayName, // Explicit camelCase return
+        name: displayName, // MAINTAIN COMPATIBILITY: Frontend expects 'name'
+        residentName: rawResidentName,
+        checkInTime: v.checkInTime, // Already aliased
+        checkOutTime: v.checkOutTime, // Already aliased
+        status: v.status,
+        purpose: v.purpose,
+        createdAt: v.created_at || v.createdAt,
+        isPrivate: isPrivate,
+        phone: (isSuperAdmin || isAdmin) ? v.phone : maskPhoneNumber(v.phone),
+        email: (isSuperAdmin || isAdmin) ? v.email : maskEmail(v.email)
+      };
+    });
+
+    await req.audit?.('visitor.history', 'visitor', null, { outcome: 'success', count: visitors.length });
+    respond(res, visitors);
+  } catch (error) {
+    console.error('getVisitorHistory error:', error);
+    respondError(res, 500, 'Failed to fetch visitor history');
+  }
+};
+
+export { getActiveVisitors, getVisitorReport, revokeVisitor, getRecentVisitors, getVisitorDetails, getVisitorHistory };

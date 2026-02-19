@@ -128,9 +128,9 @@ export default function VisitorHistory() {
       sortable: true,
       render: (value) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${value === 'checked_in' ? 'bg-green-100 text-green-800' :
-            value === 'checked_out' ? 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200' :
-              value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
+          value === 'checked_out' ? 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200' :
+            value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
           }`}>
           {value || "Unknown"}
         </span>
@@ -141,14 +141,14 @@ export default function VisitorHistory() {
       label: 'Check-in',
       priority: 3,
       sortable: true,
-      render: (value, row) => row.check_in || row.check_in_time || "Not checked in"
+      render: (value, row) => row.checkIn || row.check_in || row.check_in_time || "Not checked in"
     },
     {
       key: 'check_out',
       label: 'Check-out',
       priority: 4,
       sortable: true,
-      render: (value, row) => row.check_out || row.check_out_time || "Not checked out"
+      render: (value, row) => row.checkOut || row.check_out || row.check_out_time || "Not checked out"
     }
   ];
 
@@ -233,9 +233,9 @@ export default function VisitorHistory() {
           <p className="text-sm text-gray-600 dark:text-gray-200">📱 {visitor.phone || 'No phone'}</p>
         </div>
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${visitor.status === 'checked_in' ? 'bg-green-100 text-green-800' :
-            visitor.status === 'checked_out' ? 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200' :
-              visitor.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
+          visitor.status === 'checked_out' ? 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200' :
+            visitor.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
           }`}>
           {visitor.status}
         </span>
@@ -267,152 +267,152 @@ export default function VisitorHistory() {
     </div>
   );
 
-//   const role = useCurrentRole();
+  //   const role = useCurrentRole();
 
   return (
     // <AppShell role={role}>
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-        <PageHeader
-          title="Visitor History"
-          subtitle="View and manage visitor records"
-          icon={<Icon name="Clock" className="w-6 h-6 text-green-600" />}
-          showBack={true}
-          backTo="/dashboard/resident"
-          actions={
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowFilters(!showFilters)}
-                variant="outline"
-                size="sm"
-              >
-                <Icon name="Filter" className="w-4 h-4 mr-1" />
-                Filters
-              </Button>
-              <Button
-                onClick={() => handleExport('csv')}
-                variant="outline"
-                size="sm"
-                disabled={!hasResults}
-              >
-                <Icon name="Download" className="w-4 h-4 mr-1" />
-                Export
-              </Button>
-              <Button
-                onClick={fetchMine}
-                disabled={loading}
-                variant="outline"
-                size="sm"
-              >
-                <Icon name="RefreshCw" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-          }
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <PageHeader
+        title="Visitor History"
+        subtitle="View and manage visitor records"
+        icon={<Icon name="Clock" className="w-6 h-6 text-green-600" />}
+        showBack={true}
+        backTo="/dashboard/resident"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowFilters(!showFilters)}
+              variant="outline"
+              size="sm"
+            >
+              <Icon name="Filter" className="w-4 h-4 mr-1" />
+              Filters
+            </Button>
+            <Button
+              onClick={() => handleExport('csv')}
+              variant="outline"
+              size="sm"
+              disabled={!hasResults}
+            >
+              <Icon name="Download" className="w-4 h-4 mr-1" />
+              Export
+            </Button>
+            <Button
+              onClick={fetchMine}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+            >
+              <Icon name="RefreshCw" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Advanced Search and Filters */}
+        <SearchFilter
+          data={rows}
+          searchFields={searchFields}
+          filterFields={filterFields}
+          onSearch={setSearchTerm}
+          onFilter={setFilters}
+          placeholder="Search visitors by name, phone, email, or status..."
+          showAdvanced={showFilters}
+          enableSorting={true}
+          enablePagination={false}
         />
 
-        <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-          {/* Advanced Search and Filters */}
-          <SearchFilter
-            data={rows}
-            searchFields={searchFields}
-            filterFields={filterFields}
-            onSearch={setSearchTerm}
-            onFilter={setFilters}
-            placeholder="Search visitors by name, phone, email, or status..."
-            showAdvanced={showFilters}
-            enableSorting={true}
-            enablePagination={false}
-          />
-
-          {/* Results Summary */}
-          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-slate-400">
-            <div>
-              {isSearching || hasFilters ? (
-                <>
-                  Showing {filteredRows.length} of {rows.length} visitors
-                  {searchTerm && ` for "${searchTerm}"`}
-                </>
-              ) : (
-                `Total: ${rows.length} visitors`
-              )}
-            </div>
-            {pagination.totalPages > 1 && (
-              <div className="text-gray-500 dark:text-slate-400">
-                Page {pagination.currentPage} of {pagination.totalPages}
-              </div>
+        {/* Results Summary */}
+        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-slate-400">
+          <div>
+            {isSearching || hasFilters ? (
+              <>
+                Showing {filteredRows.length} of {rows.length} visitors
+                {searchTerm && ` for "${searchTerm}"`}
+              </>
+            ) : (
+              `Total: ${rows.length} visitors`
             )}
           </div>
-
-          {/* Table */}
-          {hasResults ? (
-            <div className="space-y-4">
-              <div className="hidden md:block">
-                <ResponsiveTable
-                  columns={columns}
-                  data={filteredRows}
-                  onRowClick={handleRowClick}
-                  onSort={handleSort}
-                  loading={loading}
-                  enableVirtualScrolling={true}
-                  virtualScrollThreshold={50}
-                  emptyState={{
-                    title: 'No visitors found',
-                    description: 'No visitor records match your current search criteria.',
-                    icon: <Icon name="Filter" className="w-12 h-12 mx-auto opacity-50" />
-                  }}
-                />
-              </div>
-
-              {/* Pagination */}
-              {pagination.totalPages > 1 && (
-                <Pagination
-                  currentPage={pagination.currentPage}
-                  totalPages={pagination.totalPages}
-                  onPageChange={setPage}
-                  className="mt-6"
-                />
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="text-gray-500 dark:text-slate-400 mb-4">
-                {isSearching || hasFilters ? (
-                  <>
-                    <Icon name="Filter" className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-medium mb-2">No visitors found</h3>
-                    <p>Try adjusting your search terms or filters</p>
-                  </>
-                ) : (
-                  <>
-                    <Icon name="RefreshCw" className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-medium mb-2">No visitor records</h3>
-                    <p>Visitor history will appear here once visitors are checked in</p>
-                  </>
-                )}
-              </div>
-              {(isSearching || hasFilters) && (
-                <Button
-                  onClick={() => {
-                    setSearchTerm('');
-                    clearFilters();
-                  }}
-                  variant="outline"
-                >
-                  Clear search and filters
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Mobile Card View */}
-          {hasResults && (
-            <div className="space-y-4 md:hidden">
-              {filteredRows.map((visitor) => (
-                <VisitorCard key={visitor.id || `${visitor.name}-${visitor.check_in || 'na'}`} visitor={visitor} />
-              ))}
+          {pagination.totalPages > 1 && (
+            <div className="text-gray-500 dark:text-slate-400">
+              Page {pagination.currentPage} of {pagination.totalPages}
             </div>
           )}
         </div>
+
+        {/* Table */}
+        {hasResults ? (
+          <div className="space-y-4">
+            <div className="hidden md:block">
+              <ResponsiveTable
+                columns={columns}
+                data={filteredRows}
+                onRowClick={handleRowClick}
+                onSort={handleSort}
+                loading={loading}
+                enableVirtualScrolling={true}
+                virtualScrollThreshold={50}
+                emptyState={{
+                  title: 'No visitors found',
+                  description: 'No visitor records match your current search criteria.',
+                  icon: <Icon name="Filter" className="w-12 h-12 mx-auto opacity-50" />
+                }}
+              />
+            </div>
+
+            {/* Pagination */}
+            {pagination.totalPages > 1 && (
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                onPageChange={setPage}
+                className="mt-6"
+              />
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-gray-500 dark:text-slate-400 mb-4">
+              {isSearching || hasFilters ? (
+                <>
+                  <Icon name="Filter" className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">No visitors found</h3>
+                  <p>Try adjusting your search terms or filters</p>
+                </>
+              ) : (
+                <>
+                  <Icon name="RefreshCw" className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium mb-2">No visitor records</h3>
+                  <p>Visitor history will appear here once visitors are checked in</p>
+                </>
+              )}
+            </div>
+            {(isSearching || hasFilters) && (
+              <Button
+                onClick={() => {
+                  setSearchTerm('');
+                  clearFilters();
+                }}
+                variant="outline"
+              >
+                Clear search and filters
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Mobile Card View */}
+        {hasResults && (
+          <div className="space-y-4 md:hidden">
+            {filteredRows.map((visitor) => (
+              <VisitorCard key={visitor.id || `${visitor.name}-${visitor.check_in || 'na'}`} visitor={visitor} />
+            ))}
+          </div>
+        )}
       </div>
+    </div>
     // </AppShell>
   );
 }

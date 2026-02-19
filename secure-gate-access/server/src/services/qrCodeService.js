@@ -11,7 +11,8 @@ import jwt from 'jsonwebtoken';
 import { dbManager } from '../database/db.enhanced.js';
 import qrTokenService from './qrTokenService.js';
 import logger from '../config/logger.js';
-import bcrypt from 'bcryptjs';
+import axios from 'axios';
+import argon2 from 'argon2';
 
 // Query timeout wrapper
 const withTimeout = async (queryPromise, timeoutMs = 5000) => {
@@ -119,16 +120,17 @@ class OptimizedQRCodeService {
       if (options.generateOtp !== false) {
         // Generate 6-digit OTP
         otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpHash = await bcrypt.hash(otp, 10);
+        const otpHash = await argon2.hash(otp); // Fixed: Use argon2 to match backend verification
 
-        // Store OTP hash in visitors table
+        // Store OTP hash and plaintext OTP in visitors table
         await dbManager.query(
           `UPDATE visitors 
            SET otp_hash = $1, 
-               otp_expires_at = $2,
+               otp = $2,
+               otp_expires_at = $3,
                otp_attempts = 0
-           WHERE id = $3 AND estate_id = $4`,
-          [otpHash, expirationTime, visitorData.id, visitorData.estate_id]
+           WHERE id = $4 AND estate_id = $5`,
+          [otpHash, otp, expirationTime, visitorData.id, visitorData.estate_id]
         );
       }
 
@@ -468,7 +470,7 @@ class OptimizedQRCodeService {
 
   async getQRCodeByVisitorId(visitorId, estateId = null) {
     const query = `
-      SELECT qr_id as id, visitor_id, status, expires_at, scan_count, created_at
+      SELECT qr_id as id, visitor_id, status, expires_at, scan_count, created_at, data_url
       FROM qr_codes
       WHERE visitor_id = $1
       ${estateId ? 'AND estate_id = $2' : ''}

@@ -28,6 +28,7 @@ const SavePassModal = ({
   const [saving, setSaving] = useState(false);
   const [saveFormat, setSaveFormat] = useState('image');
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const passRef = useRef(null);
   const modalRef = useRef(null);
   const previousActiveElementRef = useRef(null);
@@ -122,6 +123,7 @@ const SavePassModal = ({
    */
   const saveAsImage = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       // Dynamic import to reduce bundle size
       const html2canvas = (await import('html2canvas')).default;
@@ -143,7 +145,7 @@ const SavePassModal = ({
       onClose();
     } catch (error) {
       console.error('Failed to save as image:', error);
-      alert('Failed to save pass. Please try again.');
+      setSaveError('Failed to save pass as image. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -154,37 +156,38 @@ const SavePassModal = ({
    */
   const saveAsPDF = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       // Dynamic imports
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-      
+
       if (!passRef.current) throw new Error('Pass element not found');
-      
+
       const canvas = await html2canvas(passRef.current, {
         scale: 2,
         backgroundColor: '#ffffff', // Intentional: html2canvas requires raw hex for print/export
         logging: false,
         useCORS: true
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a5' // Smaller format, good for passes
       });
-      
+
       const imgWidth = 140; // A5 width minus margins
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
+
       pdf.addImage(imgData, 'PNG', 5, 5, imgWidth, imgHeight);
       pdf.save(`visitor-pass-${visitor?.id || 'pass'}.pdf`);
-      
+
       onClose();
     } catch (error) {
       console.error('Failed to save as PDF:', error);
-      alert('Failed to save pass. Please try again.');
+      setSaveError('Failed to save pass as PDF. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -362,6 +365,15 @@ const SavePassModal = ({
             </div>
           )}
         </div>
+
+        {/* Error Display */}
+        {saveError && (
+          <div className="px-4 pb-2">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300">
+              {saveError}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="p-4 border-t bg-gray-50 dark:bg-slate-900 rounded-b-2xl">

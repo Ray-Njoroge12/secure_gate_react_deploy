@@ -41,15 +41,15 @@ This invitation expires on {{expiryDate}}.
 Powered by Secure Gate Access
 `);
 
-// OTP Verification SMS Template
+// Pass Code (Entry Code) SMS Template
 const otpVerificationSmsTemplate = Handlebars.compile(`
-🔐 {{siteName}} - Verification Code
+🔐 {{siteName}} - Pass Code
 
 Hello {{visitorName}}!
 
-Your verification code is: {{otpCode}}
+Your Pass Code for gate entry is: {{otpCode}}
 
-This code expires in {{expiryMinutes}} minutes.
+This code is valid for the duration of your visitor pass.
 
 Do not share this code with anyone.
 

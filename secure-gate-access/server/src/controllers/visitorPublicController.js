@@ -10,6 +10,7 @@ import dbManager from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
 import qrCodeService from '../services/qrCodeService.js';
 import notificationQueueService from '../services/notificationQueueService.js';
+import encryptionService from '../services/encryptionService.js';
 
 /**
  * Get visitor details by secure token (public endpoint)
@@ -55,6 +56,8 @@ export const getVisitorByToken = async (req, res) => {
         v.visitor_token,
         v.token_expires_at,
         v.created_at,
+        v.id_number_encrypted,
+        v.otp,
         u.username as resident_name,
         u.email as resident_email,
         u.phone as resident_phone,
@@ -86,16 +89,19 @@ export const getVisitorByToken = async (req, res) => {
 
     // Check if visitor has confirmed and get QR code
     let qrCodeData = null;
-    if (visitor.status === 'confirmed' || visitor.status === 'approved') {
+    const isRegisteredStatus = ['confirmed', 'approved', 'verified', 'otp_sent', 'otp_verified', 'active', 'on_premise'].includes(visitor.status);
+
+    if (isRegisteredStatus) {
       try {
         const existingQR = await qrCodeService.getQRCodeByVisitorId(visitor.id);
         if (existingQR && existingQR.status === 'active') {
           qrCodeData = {
             hasQRCode: true,
+            dataUrl: existingQR.qr_code_data_url || existingQR.data_url,
             expiresAt: existingQR.expires_at,
-            message: 'QR code available - check your confirmation email'
+            message: 'Digital pass retrieved'
           };
-        } else if (visitor.status === 'approved') {
+        } else if (visitor.status === 'approved') { // Only generate QR if specifically 'approved' and no active QR exists
           // Generate QR code if approved but doesn't have one
           const qrResult = await qrCodeService.generateVisitorQR(visitor);
           if (qrResult.success) {
@@ -105,6 +111,10 @@ export const getVisitorByToken = async (req, res) => {
               expiresAt: qrResult.data.expiresAt,
               message: 'Digital pass generated'
             };
+            // Update local visitor object with new OTP if generated
+            if (qrResult.data.otp) {
+              visitor.otp = qrResult.data.otp;
+            }
           }
         }
       } catch (qrError) {
@@ -112,6 +122,16 @@ export const getVisitorByToken = async (req, res) => {
           visitorId: visitor.id,
           error: qrError.message
         });
+      }
+    }
+
+    // Decrypt ID number if exists
+    let idNumber = null;
+    if (visitor.id_number_encrypted) {
+      try {
+        idNumber = await encryptionService.decrypt(visitor.id_number_encrypted);
+      } catch (err) {
+        logger.warn('Failed to decrypt ID number for public pass visitor', { error: err.message });
       }
     }
 
@@ -125,11 +145,13 @@ export const getVisitorByToken = async (req, res) => {
       dateOfVisit: visitor.date_of_visit,
       timeOfVisit: visitor.time_of_visit,
       status: visitor.status,
+      idNumber: idNumber,
       vehiclePlate: visitor.vehicle_plate,
       visitorToken: visitor.visitor_token,
       tokenExpiresAt: visitor.token_expires_at,
       createdAt: visitor.created_at,
       qrCode: qrCodeData,
+      otp: visitor.otp,
       estateId: visitor.estate_id,
       resident: {
         name: visitor.resident_name,
@@ -395,11 +417,11 @@ export const confirmVisitorByToken = async (req, res) => {
       purpose: req.body?.purpose || null
     };
 
-    // Validate token format - expects vst_ prefix + 24 alphanumeric chars = 28 total
-    if (!token || !token.startsWith('vst_') || token.length !== 28) {
+    // Token format is now validated by Joi in routing
+    if (!token) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid token format'
+        error: 'Visitor token is required'
       });
     }
 
@@ -411,7 +433,7 @@ export const confirmVisitorByToken = async (req, res) => {
       });
     }
 
-    // Get visitor by token
+    // Get visitor by token (include estate_id for QR generation and scoping)
     const visitorQuery = `
       SELECT
         v.id,
@@ -423,7 +445,9 @@ export const confirmVisitorByToken = async (req, res) => {
         v.time_of_visit,
         v.status,
         v.visitor_token,
-        v.token_expires_at
+        v.token_expires_at,
+        v.estate_id,
+        v.otp
       FROM visitors v
       WHERE v.visitor_token = $1
         AND v.token_expires_at > NOW()
@@ -441,8 +465,9 @@ export const confirmVisitorByToken = async (req, res) => {
 
     const visitor = visitorResult.rows[0];
 
-    // Check if already confirmed
-    if (visitor.status === 'confirmed') {
+    // Check if already confirmed/registered
+    const isAlreadyRegistered = ['confirmed', 'approved', 'verified', 'otp_sent', 'otp_verified', 'active', 'on_premise'].includes(visitor.status);
+    if (isAlreadyRegistered) {
       // Re-generate QR code if expired or missing
       const existingQR = await qrCodeService.getQRCodeByVisitorId(visitor.id);
 
@@ -458,6 +483,11 @@ export const confirmVisitorByToken = async (req, res) => {
               dateOfVisit: visitor.date_of_visit,
               timeOfVisit: visitor.time_of_visit
             },
+            qrCode: {
+              dataUrl: existingQR.qr_code_data_url || existingQR.data_url,
+              expiresAt: existingQR.expires_at
+            },
+            otp: visitor.otp,
             alreadyConfirmed: true
           }
         });
@@ -479,6 +509,10 @@ export const confirmVisitorByToken = async (req, res) => {
     }
 
     // Update visitor status and store consent
+    const idNumberPlain = additionalInfo?.idNumber?.trim() || null;
+    const idNumberEncrypted = idNumberPlain ? await encryptionService.encrypt(idNumberPlain) : null;
+    const idNumberEncryptedAt = idNumberEncrypted ? new Date() : null;
+
     const updateQuery = `
       UPDATE visitors
       SET
@@ -487,11 +521,13 @@ export const confirmVisitorByToken = async (req, res) => {
         consent_given_at = NOW(),
         consent_timestamp = NOW(),
         additional_info = $2,
-        id_number = COALESCE($3, id_number),
-        vehicle_plate = COALESCE($4, vehicle_plate),
+        id_number = NULL,
+        id_number_encrypted = COALESCE($3, id_number_encrypted),
+        id_number_encrypted_at = COALESCE($4, id_number_encrypted_at),
+        vehicle_plate = COALESCE($5, vehicle_plate),
         updated_at = NOW()
-      WHERE id = $5
-      RETURNING id, name, email, phone, purpose, date_of_visit, time_of_visit, status, id_number, vehicle_plate
+      WHERE id = $6
+      RETURNING id, name, email, phone, purpose, date_of_visit, time_of_visit, status, id_number, vehicle_plate, otp
     `;
 
     const consentData = {
@@ -504,11 +540,12 @@ export const confirmVisitorByToken = async (req, res) => {
     };
 
     const updateResult = await dbManager.query(updateQuery, [
-      JSON.stringify(consentData),
-      additionalInfo ? JSON.stringify(additionalInfo) : null,
-      additionalInfo?.idNumber?.trim() || null,
-      additionalInfo?.vehiclePlate?.trim()?.toUpperCase() || null,
-      visitor.id
+      JSON.stringify(consentData), // $1
+      additionalInfo ? JSON.stringify(additionalInfo) : null, // $2
+      idNumberEncrypted, // $3
+      idNumberEncryptedAt, // $4
+      additionalInfo?.vehiclePlate?.trim()?.toUpperCase() || null, // $5
+      visitor.id // $6
     ]);
 
     const confirmedVisitor = updateResult.rows[0];
@@ -558,7 +595,8 @@ export const confirmVisitorByToken = async (req, res) => {
         qrCode: {
           dataUrl: qrResult.data.qrCodeDataUrl,
           expiresAt: qrResult.data.expiresAt
-        }
+        },
+        otp: confirmedVisitor.otp
       }
     });
 
@@ -614,7 +652,9 @@ export const getInviteByCode = async (req, res) => {
         NULL as event_id,
         NULL as event_name,
         v.invite_code,
-        v.estate_id
+        v.estate_id,
+        v.vehicle_plate,
+        v.id_number_encrypted
       FROM visitors v 
       WHERE (v.invite_code = $1 OR v.visitor_token = $1)
         -- AND v.token_expires_at > NOW() -- Allow expired lookups to show specific error
@@ -637,7 +677,9 @@ export const getInviteByCode = async (req, res) => {
         b.id as event_id,
         b.event_name,
         b.invite_code,
-        b.estate_id
+        b.estate_id,
+        NULL as vehicle_plate,
+        NULL as id_number_encrypted
       FROM bulk_invites b
       WHERE b.invite_code = $1
       
@@ -659,7 +701,9 @@ export const getInviteByCode = async (req, res) => {
         e.id as event_id,
         e.name as event_name,
         ev.event_qr_code as invite_code,
-        e.estate_id
+        e.estate_location_id as estate_id,
+        NULL as vehicle_plate,
+        NULL as id_number_encrypted
       FROM event_visitors ev
       INNER JOIN events e ON ev.event_id = e.id
       WHERE ev.event_qr_code = $1
@@ -686,6 +730,16 @@ export const getInviteByCode = async (req, res) => {
       });
     }
 
+    // Decrypt ID number if exists
+    let idNumber = null;
+    if (invite.id_number_encrypted) {
+      try {
+        idNumber = await encryptionService.decrypt(invite.id_number_encrypted);
+      } catch (err) {
+        logger.warn('Failed to decrypt ID number for public invite', { error: err.message });
+      }
+    }
+
     // Sanitize response
     const sanitizedInvite = {
       name: invite.name,
@@ -695,6 +749,10 @@ export const getInviteByCode = async (req, res) => {
       status: invite.status,
       type: invite.invite_type,
       expiresAt: invite.token_expires_at,
+      phone: invite.phone,
+      email: invite.email,
+      idNumber: idNumber,
+      vehiclePlate: invite.vehicle_plate,
       inviteCode: invite.invite_code,
       estateId: invite.estate_id
     };
@@ -710,6 +768,32 @@ export const getInviteByCode = async (req, res) => {
       if (invite.invite_type === 'bulk_event') {
         sanitizedInvite.isBulkInvite = true;
         sanitizedInvite.eventName = invite.event_name;
+      }
+    }
+
+    // Include QR code data if already confirmed (for visitors to re-access their pass)
+    if (invite.status === 'confirmed' || invite.status === 'approved') {
+      try {
+        const existingQR = await qrCodeService.getQRCodeByVisitorId(invite.id);
+        if (existingQR && existingQR.status === 'active') {
+          sanitizedInvite.qrCode = {
+            hasQRCode: true,
+            dataUrl: existingQR.qr_code_data_url || existingQR.data_url,
+            expiresAt: existingQR.expires_at,
+            message: 'Digital pass retrieved'
+          };
+
+          // Also check for Pass Code (OTP)
+          const visitorResult = await dbManager.query('SELECT otp FROM visitors WHERE id = $1', [invite.id]);
+          if (visitorResult.rows.length > 0) {
+            sanitizedInvite.otp = visitorResult.rows[0].otp;
+          }
+        }
+      } catch (qrError) {
+        logger.warn('Failed to retrieve QR code for confirmed invite', {
+          inviteId: invite.id,
+          error: qrError.message
+        });
       }
     }
 
@@ -832,7 +916,7 @@ function generateConfirmationEmailHTML(visitor, qrData) {
  * @param {string} token - Visitor token (format: vst_[24 alphanumeric chars])
  * @returns {Object} New QR code data URL
  */
-export const regenerateQRCode = async (req, res) => {
+export const regenerateQrCode = async (req, res) => {
   const startTime = Date.now();
 
   try {
@@ -861,7 +945,8 @@ export const regenerateQRCode = async (req, res) => {
         v.visitor_token,
         v.token_expires_at,
         v.estate_id,
-        v.created_by
+        v.created_by,
+        v.otp
       FROM visitors v
       WHERE v.visitor_token = $1
         AND v.token_expires_at > NOW()
@@ -945,9 +1030,11 @@ export const regenerateQRCode = async (req, res) => {
       success: true,
       message: 'QR code regenerated successfully',
       data: {
-        qrCodeDataUrl: qrResult.data.qrCodeDataUrl,
-        expiresAt: qrResult.data.expiresAt,
-        qrId: qrResult.data.qrId
+        qrCode: {
+          dataUrl: qrResult.data.qrCodeDataUrl,
+          expiresAt: qrResult.data.expiresAt
+        },
+        otp: visitor.otp
       }
     });
 
@@ -972,5 +1059,5 @@ export default {
   getVisitorStatus,
   confirmVisitorByToken,
   getInviteByCode,
-  regenerateQRCode
+  regenerateQrCode
 };

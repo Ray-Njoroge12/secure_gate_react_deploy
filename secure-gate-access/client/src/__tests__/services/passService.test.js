@@ -1,7 +1,7 @@
 import {
   createVisitor,
   getMyVisitors,
-  createPass,
+
   listMyPasses,
   verifyOtp,
   regenerateOtp,
@@ -53,16 +53,7 @@ describe('passService', () => {
     });
   });
 
-  describe('createPass', () => {
-    test('calls POST /api/visitors/:id/pass', async () => {
-      http.post.mockResolvedValue({ passId: 'abc123' });
 
-      const result = await createPass(5);
-
-      expect(http.post).toHaveBeenCalledWith('/api/visitors/5/pass');
-      expect(result).toEqual({ passId: 'abc123' });
-    });
-  });
 
   describe('listMyPasses', () => {
     test('calls GET /api/passes/mine', async () => {

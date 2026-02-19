@@ -119,7 +119,7 @@ jest.mock('../../components/ui', () => {
 // AddVisitor page doesn't exist - removed from mocks
 jest.mock('../../pages/resident/BulkInvite', () => () => <div>BulkInvite</div>);
 jest.mock('../../pages/resident/VisitorHistory', () => () => <div>VisitorHistory</div>);
-jest.mock('../../pages/resident/GeneratePass', () => () => <div>GeneratePass</div>);
+
 jest.mock('../../pages/resident/Settings', () => () => <div>Settings</div>);
 jest.mock('../../pages/resident/QuickInvite', () => () => <div>QuickInvite</div>);
 jest.mock('../../pages/resident/ResidentApprovalsPanel', () => () => <div>ResidentApprovalsPanel</div>);
