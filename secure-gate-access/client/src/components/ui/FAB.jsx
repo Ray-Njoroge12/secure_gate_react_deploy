@@ -39,38 +39,43 @@ const FAB = ({
   // Role-based default actions
   const roleActions = {
     resident: [
-      {
+      { 
         iconName: 'user-plus',
-        label: 'Quick Invite',
+        label: 'Quick Invite', 
         onClick: () => navigate('/resident/quick-invite'),
         color: 'primary'
       },
-      {
+      { 
         iconName: 'file-text',
-        label: 'Bulk Invite',
+        label: 'Bulk Invite', 
         onClick: () => navigate('/resident/bulk-invite'),
         color: 'secondary'
       },
-
+      { 
+        iconName: 'qr-code',
+        label: 'Generate Pass', 
+        onClick: () => navigate('/resident/generate-pass'),
+        color: 'primary'
+      }
     ],
     guard: [
-      {
+      { 
         iconName: 'user-plus',
-        label: 'New Entry',
+        label: 'New Entry', 
         onClick: () => navigate('/dashboard/guard/walk-in'),
         color: 'primary'
       },
-      {
+      { 
         iconName: 'alert-triangle',
-        label: 'Report Incident',
+        label: 'Report Incident', 
         onClick: () => navigate('/dashboard/guard/incidents'),
         color: 'danger'
       }
     ],
     admin: [
-      {
+      { 
         iconName: 'users',
-        label: 'User Approvals',
+        label: 'User Approvals', 
         onClick: () => navigate('/dashboard/admin/approvals'),
         color: 'primary'
       }
@@ -101,8 +106,8 @@ const FAB = ({
       {/* Action Menu */}
       <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
         {actions.map((action, index) => (
-          <div
-            key={index}
+          <div 
+            key={index} 
             className="flex items-center justify-end mb-3 mr-1"
             style={{ transitionDelay: `${index * 50}ms` }}
           >
@@ -110,7 +115,7 @@ const FAB = ({
             <span className="bg-white dark:bg-slate-800 text-gray-800 dark:text-white text-xs font-semibold py-1 px-3 rounded shadow-lg mr-3">
               {action.label}
             </span>
-
+            
             {/* Action Button */}
             <button
               onClick={() => {
@@ -119,9 +124,9 @@ const FAB = ({
               }}
               className={`
                 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-110 active:scale-90
-                ${action.color === 'danger' ? 'bg-red-500 hover:bg-red-600' :
-                  action.color === 'secondary' ? 'bg-gray-600 hover:bg-gray-700' :
-                    'bg-brand-600 hover:bg-brand-700'}
+                ${action.color === 'danger' ? 'bg-red-500 hover:bg-red-600' : 
+                  action.color === 'secondary' ? 'bg-gray-600 hover:bg-gray-700' : 
+                  'bg-brand-600 hover:bg-brand-700'}
                 text-white
               `}
               aria-label={action.label}
@@ -153,7 +158,7 @@ const FAB = ({
               <Icon name={isExpanded ? 'x' : 'plus'} size={mini ? 20 : 24} />
             )}
           </div>
-
+          
           {extended && !isExpanded && (
             <span className="ml-2 font-semibold text-sm whitespace-nowrap">
               {extendedLabel || label}

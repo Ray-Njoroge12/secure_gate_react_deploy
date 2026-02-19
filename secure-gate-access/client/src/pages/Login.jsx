@@ -127,7 +127,25 @@ export default function LoginPage() {
       // Redirect after short delay for animation
       setTimeout(() => {
         const from = location.state?.from?.pathname;
-
+        
+        // Check if MFA is required for the user's role
+        const mfaRequiredRoles = ['super_admin', 'admin', 'guard'];
+        const requiresMFA = mfaRequiredRoles.includes(result.user.role);
+        
+        // If MFA is required but not enabled, redirect to MFA setup
+        if (requiresMFA && !result.user.mfaEnabled) {
+          navigate('/mfa/setup', { 
+            state: { 
+              required: true, 
+              message: `Multi-Factor Authentication is required for ${result.user.role === 'super_admin' ? 'Super Admin' : result.user.role.charAt(0).toUpperCase() + result.user.role.slice(1)} accounts.`,
+              redirectTo: from || (result.user.role === "super_admin" ? "/dashboard/super-admin" : 
+                                   result.user.role === "admin" ? "/dashboard/admin" :
+                                   result.user.role === "guard" ? "/dashboard/guard" : "/")
+            }
+          });
+          return;
+        }
+        
         if (from && from !== '/login' && from !== '/forgot-password') {
           navigate(from, { replace: true });
         } else {
@@ -206,7 +224,25 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       const from = location.state?.from?.pathname;
-
+      
+      // Check if MFA is required for the user's role
+      const mfaRequiredRoles = ['super_admin', 'admin', 'guard'];
+      const requiresMFA = mfaRequiredRoles.includes(user.role);
+      
+      // If MFA is required but not enabled, redirect to MFA setup
+      if (requiresMFA && !user.mfaEnabled) {
+        navigate('/mfa/setup', { 
+          state: { 
+            required: true, 
+            message: `Multi-Factor Authentication is required for ${user.role === 'super_admin' ? 'Super Admin' : user.role.charAt(0).toUpperCase() + user.role.slice(1)} accounts.`,
+            redirectTo: from || (user.role === "super_admin" ? "/dashboard/super-admin" : 
+                                user.role === "admin" ? "/dashboard/admin" :
+                                user.role === "guard" ? "/dashboard/guard" : "/")
+          }
+        });
+        return;
+      }
+      
       if (from && from !== '/login' && from !== '/forgot-password') {
         navigate(from, { replace: true });
       } else {

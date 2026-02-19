@@ -125,11 +125,6 @@ export const sanitizeUser = (user) => {
   delete sanitized.otp_hash;
   delete sanitized.otp_secret;
   delete sanitized.reset_token;
-  delete sanitized.mfa_secret; // Never expose MFA secret to client
-
-  // Map snake_case DB fields to camelCase for frontend compatibility
-  sanitized.mfaEnabled = !!sanitized.mfa_enabled;
-  sanitized.mfaConfigured = !!sanitized.mfa_enabled;
 
   return sanitized;
 };

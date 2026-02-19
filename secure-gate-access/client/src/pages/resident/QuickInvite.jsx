@@ -29,7 +29,6 @@ const QuickInvite = () => {
     duration: 60, // Default 1 hour (in minutes)
     allowResidenceLocation: false,
     unitPin: "",
-    isPrivate: false,
   });
 
   // Check for URL params (e.g. from "Favorites" list)
@@ -86,26 +85,26 @@ const QuickInvite = () => {
 
   // Date chips configuration
   const dateChips = [
-    { id: 'today', label: 'Today', sublabel: today.getDate(), value: formatDateForInput(today) },
-    { id: 'tomorrow', label: 'Tomorrow', sublabel: tomorrow.getDate(), value: formatDateForInput(tomorrow) },
-    { id: 'dayafter', label: dayAfter.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }), sublabel: '', value: formatDateForInput(dayAfter) },
+    { id: 'today', label: 'Today', sublabel: formatDateDisplay(today), value: formatDateForInput(today) },
+    { id: 'tomorrow', label: 'Tomorrow', sublabel: formatDateDisplay(tomorrow), value: formatDateForInput(tomorrow) },
+    { id: 'dayafter', label: formatDateDisplay(dayAfter), sublabel: '', value: formatDateForInput(dayAfter) },
     { id: 'custom', label: 'Pick Date', sublabel: '📅', value: null },
   ];
 
   // Time chips configuration
   const timeChips = [
-    { id: 'morning', label: 'Morning', sublabel: '9 AM', value: '09:00' },
-    { id: 'afternoon', label: 'Afternoon', sublabel: '2 PM', value: '14:00' },
-    { id: 'evening', label: 'Evening', sublabel: '6 PM', value: '18:00' },
+    { id: 'morning', label: 'Morning', sublabel: '~9:00 AM', value: '09:00' },
+    { id: 'afternoon', label: 'Afternoon', sublabel: '~2:00 PM', value: '14:00' },
+    { id: 'evening', label: 'Evening', sublabel: '~6:00 PM', value: '18:00' },
     { id: 'custom', label: 'Pick Time', sublabel: '⏰', value: null },
   ];
 
   // Validity/Duration chips configuration
   const durationChips = [
-    { id: '1h', label: '1', sublabel: 'Hour', value: 60 },
-    { id: '6h', label: '6', sublabel: 'Hours', value: 360 },
-    { id: '12h', label: '12', sublabel: 'Hours', value: 720 },
-    { id: '24h', label: '24', sublabel: 'Hours', value: 1440 },
+    { id: '1h', label: '1 Hour', sublabel: 'Quick Visit', value: 60 },
+    { id: '6h', label: '6 Hours', sublabel: 'Standard', value: 360 },
+    { id: '12h', label: '12 Hours', sublabel: 'Full Day', value: 720 },
+    { id: '24h', label: '24 Hours', sublabel: 'Overnight', value: 1440 },
   ];
 
   // Handle date chip selection
@@ -146,8 +145,8 @@ const QuickInvite = () => {
     } else {
       // Allow spaces, dashes, + prefix
       const cleaned = formData.phone.replace(/[\s-]/g, '');
-      if (cleaned.length < 9 || cleaned.length > 20) {
-        errors.phone = "Enter a valid phone number (9-20 digits)";
+      if (cleaned.length < 9 || cleaned.length > 15) {
+        errors.phone = "Enter a valid Kenyan phone number";
       }
     }
 
@@ -212,7 +211,6 @@ const QuickInvite = () => {
         // Note: No consent here - visitor will provide it on their page
         generatePassImmediately: false, // Pass generated after visitor confirms
         status: 'pending_confirmation', // Visitor needs to confirm
-        isPrivate: !!formData.isPrivate,
       };
 
       if (process.env.NODE_ENV === 'development') {
@@ -226,8 +224,7 @@ const QuickInvite = () => {
         subtitle: `${formData.name} will receive an SMS with their invite link`,
         data: {
           visitor: response,
-          inviteCode: response.inviteCode || response.invite_code,
-          inviteLink: response.inviteLink || `${window.location.origin}/invite/${response.inviteCode || response.invite_code}`,
+          inviteLink: response.inviteLink || `${window.location.origin}/invite/${response.inviteCode}`,
           visitorId: response.id
         }
       });
@@ -559,7 +556,7 @@ const QuickInvite = () => {
                   <Icon name="Calendar" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   When are they visiting?
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-label="Visit date">
+                <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Visit date">
                   {dateChips.map((chip) => (
                     <Button
                       key={chip.id}
@@ -569,15 +566,15 @@ const QuickInvite = () => {
                       role="radio"
                       aria-checked={selectedDateChip === chip.id}
                       onClick={() => handleDateChipClick(chip)}
-                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-0.5 ${selectedDateChip === chip.id
+                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all text-center ${selectedDateChip === chip.id
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                         : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 text-gray-700 dark:text-gray-200'
                         }`}
                       aria-label={`Select date: ${chip.label}`}
                     >
-                      <div className="text-sm font-semibold leading-tight">{chip.label}</div>
+                      <div className="text-sm font-medium">{chip.label}</div>
                       {chip.sublabel && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{chip.sublabel}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
                       )}
                     </Button>
                   ))}
@@ -603,7 +600,7 @@ const QuickInvite = () => {
                   <Icon name="Clock" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" aria-hidden="true" />
                   Approximate time <span className="text-gray-500 dark:text-gray-300 font-normal">(optional)</span>
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-label="Visit time">
+                <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Visit time">
                   {timeChips.map((chip) => (
                     <Button
                       key={chip.id}
@@ -613,14 +610,14 @@ const QuickInvite = () => {
                       role="radio"
                       aria-checked={selectedTimeChip === chip.id}
                       onClick={() => handleTimeChipClick(chip)}
-                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-0.5 ${selectedTimeChip === chip.id
+                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all text-center ${selectedTimeChip === chip.id
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                         : 'border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 text-gray-700 dark:text-gray-200'
                         }`}
                       aria-label={`Select time: ${chip.label}`}
                     >
-                      <div className="text-sm font-semibold leading-tight">{chip.label}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{chip.sublabel}</div>
+                      <div className="text-sm font-medium">{chip.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
                     </Button>
                   ))}
                 </div>
@@ -641,7 +638,7 @@ const QuickInvite = () => {
                   <Icon name="Clock" className="w-4 h-4 inline mr-2 text-gray-400 dark:text-gray-300" />
                   Pass Validity
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="radiogroup" aria-label="Pass validity duration">
+                <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Pass validity duration">
                   {durationChips.map((chip) => (
                     <Button
                       key={chip.id}
@@ -651,13 +648,13 @@ const QuickInvite = () => {
                       role="radio"
                       aria-checked={formData.duration === chip.value}
                       onClick={() => handleInputChange('duration', chip.value)}
-                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-0.5 ${formData.duration === chip.value
+                      className={`h-auto min-h-[44px] p-3 rounded-xl border-2 transition-all text-center ${formData.duration === chip.value
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
                         : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600 text-gray-700 dark:text-gray-300'
                         }`}
                     >
-                      <div className="text-2xl font-bold leading-tight">{chip.label}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 leading-tight">{chip.sublabel}</div>
+                      <div className="text-sm font-medium">{chip.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{chip.sublabel}</div>
                     </Button>
                   ))}
                 </div>
@@ -699,31 +696,6 @@ const QuickInvite = () => {
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* Private Visit Toggle */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Privacy Settings <span className="text-gray-500 dark:text-gray-300 font-normal">(optional)</span>
-                </label>
-                <label className="flex items-start gap-3 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={!!formData.isPrivate}
-                    onChange={(e) => handleInputChange('isPrivate', e.target.checked)}
-                    className="mt-1 h-4 w-4 text-brand-600 border-gray-300 dark:border-slate-600 rounded focus:ring-brand-500"
-                    disabled={loading}
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Icon name="EyeOff" className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">Private Visit</div>
-                    </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-200 mt-1">
-                      Hide guest name from guards. They will only see "Private Guest" on the dashboard.
-                    </div>
-                  </div>
-                </label>
               </div>
 
               {/* Info note */}

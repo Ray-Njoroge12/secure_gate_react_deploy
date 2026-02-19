@@ -27,20 +27,15 @@ import logger from 'utils/logger';
 import ManageGuards from './ManageGuards';
 import ManageResidents from './ManageResidents';
 import VisitorLog from './VisitorLog';
-import IncidentManagement from './IncidentManagement';
-
 import Reports from './Reports';
 import Settings from './Settings';
 import Table from '../../components/Table';
 import Button from '../../components/ui/Button';
-import { ErrorState } from '../../components/ui/EmptyState.jsx';
-import { useToast } from '../../contexts/ToastContext';
 
 export default function AdminDashboard({ initialTab = 'overview' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { logout } = useAuth();
-  const { toast } = useToast();
   const role = useCurrentRole();
   const selectedSiteId = searchParams.get('siteId');
 
@@ -120,8 +115,6 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     { id: 'guards', label: 'Guards' },
     { id: 'residents', label: 'Residents' },
     { id: 'visitors', label: 'Visitor Logs' },
-    { id: 'incidents', label: 'Incidents' },
-
     { id: 'reports', label: 'Reports' },
     { id: 'settings', label: 'Settings' }
   ];
@@ -271,9 +264,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           const failures = await getNotificationFailures(withEstateParams({ limit: 25 }));
           setQueueFailures(failures?.data || failures || []);
         } catch (e) {
-          const errMsg = handleApiError(e);
-          toast?.error?.(errMsg || 'Failed to retry notification');
-          setQueueError(errMsg);
+          setQueueError(handleApiError(e));
         } finally {
           setRetryingJobId(null);
         }
@@ -303,7 +294,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       />
 
       {/* Phase 3: Offline Indicator */}
-      <OfflineIndicator position="bottom-left" />
+      <OfflineIndicator />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -440,18 +431,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             </div>
 
             {/* Admin Metrics - Essential */}
-            <AdminMetrics
-              metrics={metrics}
-              loading={loadingMetrics}
-              error={metricsError}
-              onRetry={() => {
-                setMetricsError(null);
-                setLoadingMetrics(true);
-                // Trigger refresh by interval or manual call?
-                // For now, let's just trigger a re-render of this component's load effect
-                getMetrics(withEstateParams()).then(data => setMetrics(data)).catch(err => setMetricsError(handleApiError(err))).finally(() => setLoadingMetrics(false));
-              }}
-            />
+            <AdminMetrics metrics={metrics} loading={loadingMetrics} error={metricsError} />
 
             {/* Notification Queue Status - NEW/Restored */}
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
@@ -461,11 +441,9 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               </h3>
 
               {queueError ? (
-                <ErrorState
-                  errorMessage={queueError}
-                  onRetry={() => setQueueError(null)}
-                  compact={true}
-                />
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-lg text-sm border border-red-200 dark:border-red-800">
+                  Error loading notification status: {queueError}
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
@@ -534,16 +512,6 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           </div>
         )
       }
-
-      {
-        activeTab === 'incidents' && (
-          <div id="admin-tabpanel-incidents" role="tabpanel" aria-labelledby="admin-tab-incidents">
-            <IncidentManagement estateId={currentEstate?.id} />
-          </div>
-        )
-      }
-
-
 
       {
         activeTab === 'reports' && (

@@ -12,12 +12,6 @@ import webhookService from '../services/webhookService.js';
 const pool = db.pool || db;
 
 const getEstateId = (req) => {
-  // Super admins can provide estate_id in body or query to manage different estates
-  if (req?.user?.role === 'super_admin' || req?.user?.role === 'system_admin') {
-    const providedId = req.body?.estate_id || req.query?.estate_id || req.user?.estate_id;
-    const parsedId = Number(providedId);
-    return Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null;
-  }
   const estateId = Number(req?.user?.estate_id);
   return Number.isInteger(estateId) && estateId > 0 ? estateId : null;
 };
@@ -100,15 +94,6 @@ export const getIncidentQueue = async (req, res) => {
       query += ` AND i.assigned_to IS NULL`;
     }
 
-    if (req.query.status && req.query.status !== 'all') {
-      // Map 'assigned' tab to 'under_review' status if needed, 
-      // but better to just support the status directly if passed.
-      const statusFilter = req.query.status === 'assigned' ? 'under_review' : req.query.status;
-      query += ` AND i.status = $${paramIndex}`;
-      params.push(statusFilter);
-      paramIndex++;
-    }
-
     if (slaBreached === 'true') {
       query += ` AND sla.resolution_sla_met = FALSE`;
     }
@@ -180,29 +165,20 @@ export const updateIncidentStatus = async (req, res) => {
       return res.status(400).json({ error: 'Estate context required' });
     }
 
-    const validStatuses = ['open', 'under_review', 'investigating', 'in_progress', 'resolved', 'closed', 'cancelled', 'escalated'];
+    const validStatuses = ['open', 'under_review', 'escalated', 'closed', 'cancelled'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: `Invalid status: ${status}. Must be one of: ${validStatuses.join(', ')}` });
+      return res.status(400).json({ error: 'Invalid status' });
     }
 
     // SECURITY: Filter by estate_id to prevent cross-estate modification
-    // Dynamic query construction to handle status-specific updates
-    let query = 'UPDATE incidents SET status = $1, updated_at = NOW()';
-    const params = [status];
-    let paramIndex = 2; // $1 is status
-
-    if (status === 'resolved') {
-      query += `, resolved_at = CURRENT_TIMESTAMP, resolved_by = $${paramIndex++}`;
-      params.push(userId);
-    } else if (status === 'closed') {
-      query += `, closed_at = CURRENT_TIMESTAMP, closed_by = $${paramIndex++}`;
-      params.push(userId);
-    }
-
-    query += ` WHERE id = $${paramIndex++} AND estate_id = $${paramIndex++} RETURNING *`;
-    params.push(id, estateId);
-
-    const result = await pool.query(query, params);
+    const result = await pool.query(
+      `UPDATE incidents
+       SET status = $1,
+           ${status === 'closed' ? 'closed_at = CURRENT_TIMESTAMP, closed_by = $2' : '1=1'}
+       WHERE id = $${status === 'closed' ? 3 : 2} AND estate_id = $${status === 'closed' ? 4 : 3}
+       RETURNING *`,
+      status === 'closed' ? [status, userId, id, estateId] : [status, id, estateId]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Incident not found or access denied' });
@@ -242,7 +218,7 @@ export const assignIncident = async (req, res) => {
     }
 
     const incidentId = parsePositiveInt(id);
-    const assigneeId = parsePositiveInt(assignedTo || req.body.assignee_id);
+    const assigneeId = parsePositiveInt(assignedTo);
     if (!incidentId || !assigneeId) {
       return res.status(400).json({ error: 'Invalid incident id or assignedTo user id' });
     }
@@ -271,7 +247,7 @@ export const assignIncident = async (req, res) => {
     // Log assignment
     await pool.query(
       `INSERT INTO incident_assignments (incident_id, assigned_to, assigned_by, assignment_type)
-       VALUES ($1, $2, $3, 'primary')`,
+       VALUES ($1, $2, $3, 'assigned')`,
       [incidentId, assigneeId, userId]
     );
 
@@ -305,54 +281,17 @@ export const escalateIncident = async (req, res) => {
     }
 
     const incidentId = parsePositiveInt(id);
-    let escalationTargetId = parsePositiveInt(escalateTo || req.body.escalate_to);
-
-    if (!incidentId) {
-      return res.status(400).json({ error: 'Invalid incident id' });
+    const escalationTargetId = parsePositiveInt(escalateTo);
+    if (!incidentId || !escalationTargetId) {
+      return res.status(400).json({ error: 'Invalid incident id or escalateTo user id' });
     }
 
-    // Get incident details to check category
-    const incidentRes = await pool.query(
-      'SELECT category, estate_id FROM incidents WHERE id = $1 AND estate_id = $2',
-      [incidentId, estateId]
-    );
-
-    if (incidentRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Incident not found or access denied' });
+    const escalationTargetInEstate = await ensureUserInEstate(escalationTargetId, estateId);
+    if (!escalationTargetInEstate) {
+      return res.status(400).json({ error: 'Escalation target must belong to the same estate' });
     }
 
-    const category = incidentRes.rows[0].category?.toLowerCase();
-    const systemCategories = ['system', 'downtime', 'security_breach', 'infrastructure'];
-
-    if (!systemCategories.includes(category)) {
-      return res.status(400).json({ error: 'Only system-related incidents (downtime, security breach) can be escalated to Super Admins' });
-    }
-
-    // Auto-pick escalation target if missing
-    if (!escalationTargetId) {
-      // Find the first available super_admin
-      const adminResult = await pool.query(
-        `SELECT id FROM users 
-         WHERE role = 'super_admin' AND account_status = 'active'
-         LIMIT 1`
-      );
-
-      if (adminResult.rows.length === 0) {
-        return res.status(400).json({ error: 'No Super Admin found to escalate to' });
-      }
-      escalationTargetId = adminResult.rows[0].id;
-    } else {
-      // Verify target is actually a super_admin
-      const targetRoleRes = await pool.query(
-        "SELECT role FROM users WHERE id = $1",
-        [escalationTargetId]
-      );
-      if (targetRoleRes.rows[0]?.role !== 'super_admin') {
-        return res.status(400).json({ error: 'Incident can only be escalated to a Super Admin' });
-      }
-    }
-
-    // SECURITY: Update incident status and escalation details
+    // SECURITY: Filter by estate_id
     const result = await pool.query(
       `UPDATE incidents
        SET status = 'escalated',
@@ -457,7 +396,7 @@ export const addIncidentComment = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO incident_comments (incident_id, user_id, comment, is_internal)
+      `INSERT INTO incident_comments (incident_id, user_id, comment, internal)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [incidentId, userId, comment.trim(), internal]

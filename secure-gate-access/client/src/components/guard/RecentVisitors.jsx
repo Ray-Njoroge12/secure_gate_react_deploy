@@ -1,11 +1,12 @@
 /**
- * Active Visitors Component
- * Phase 1.3: Active Visitors Quick Lookup for Guards
+ * Recent Visitors Component
+ * Phase 1.3: Recent Visitors Quick Lookup for Guards
  * 
  * Privacy Features:
- * - Shows ONLY active (ON_PREMISE) visitors
- * - Phone/Email masked by backend
- * - Only check-out actions allowed
+ * - Shows only last 7 days of visitors
+ * - No phone/email displayed
+ * - Only visit frequency shown (not detailed timestamps)
+ * - Respects resident opt-out preference
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -14,12 +15,11 @@ import apiClient from '../../utils/apiClient';
 import notificationService from '../../services/notificationService';
 import logger from '../../utils/logger';
 import Button from '../ui/Button';
-import { getStatusChipClass } from '../../utils/statusColors';
 
-const RecentVisitors = ({
-  onSelectVisitor = () => { },
+const RecentVisitors = ({ 
+  onSelectVisitor = () => {},
   className = '',
-  limit = 100
+  limit = 20 
 }) => {
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,24 +27,24 @@ const RecentVisitors = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
 
-  // Fetch active visitors
+  // Fetch recent visitors
   const fetchRecentVisitors = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
+      
       const response = await apiClient.get('/api/visitors/recent', {
         params: { limit }
       });
-
+      
       if (response.data.success) {
         setVisitors(response.data.data || []);
       } else {
         throw new Error(response.data.error || 'Failed to load');
       }
     } catch (err) {
-      setError(err.message || 'Failed to fetch active visitors');
-      logger.error('Failed to fetch active visitors:', err);
+      setError(err.message || 'Failed to fetch recent visitors');
+      logger.error('Failed to fetch recent visitors:', err);
     } finally {
       setLoading(false);
     }
@@ -55,19 +55,31 @@ const RecentVisitors = ({
   }, [fetchRecentVisitors]);
 
   // Filter visitors by search term
-  const filteredVisitors = visitors.filter(v =>
+  const filteredVisitors = visitors.filter(v => 
     v.visitorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     v.residentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     v.residentUnit?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle quick check-in click (now effectively only Check Out)
+  // Handle quick check-in click
   const handleQuickCheckIn = (visitor) => {
     onSelectVisitor(visitor);
     notificationService.info(
       'Visitor Selected',
-      `${visitor.visitorName} selected for processing`
+      `${visitor.visitorName} selected for check-in`
     );
+  };
+
+  // Format visit count badge
+  const getVisitCountBadge = (count) => {
+    if (count >= 10) {
+      return { label: 'Frequent', color: 'bg-green-100 text-green-800' };
+    } else if (count >= 5) {
+      return { label: 'Regular', color: 'bg-blue-100 text-blue-800' };
+    } else if (count > 1) {
+      return { label: `${count} visits`, color: 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300' };
+    }
+    return null;
   };
 
   if (loading) {
@@ -114,11 +126,10 @@ const RecentVisitors = ({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Active Visitors (On Premise)
+              Recent Visitors
             </h3>
-            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              Live
+            <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-200 px-2 py-1 rounded-full">
+              Last 7 days
             </span>
           </div>
           <Button
@@ -137,19 +148,20 @@ const RecentVisitors = ({
           <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
             <p className="font-medium mb-1">Privacy Protection</p>
             <ul className="text-xs space-y-1">
-              <li>• Only showing visitors currently inside the estate</li>
-              <li>• Phone and email are masked for privacy</li>
-              <li>• Use Manual Check to search for past visitors</li>
+              <li>• Only showing visitors from the last 7 days</li>
+              <li>• Phone and email are not displayed</li>
+              <li>• Residents can opt out of showing their visitors</li>
+              <li>• Only visit count shown, not detailed history</li>
             </ul>
           </div>
         )}
 
         {/* Search */}
         <div className="relative">
-          <svg
+          <svg 
             className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-300"
-            fill="none"
-            stroke="currentColor"
+            fill="none" 
+            stroke="currentColor" 
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -174,57 +186,67 @@ const RecentVisitors = ({
             {searchTerm ? (
               <p>No visitors matching "{searchTerm}"</p>
             ) : (
-              <p>No active visitors on premise</p>
+              <p>No recent visitors in the last 7 days</p>
             )}
           </div>
         ) : (
-          filteredVisitors.map((visitor) => (
-            <div role="button" tabIndex={0}
-              key={visitor.id}
-              className="p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-900 dark:text-white truncate">
-                      {visitor.visitorName}
-                    </span>
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                      Inside
-                    </span>
-                    <span className={getStatusChipClass(visitor.status, 'xs')}>
-                      {visitor.status || 'Active'}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-300 flex items-center gap-2">
-                    <span>→ {visitor.residentName}</span>
-                    {visitor.residentUnit && (
-                      <span className="bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">
-                        {visitor.residentUnit}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                    Entered: {visitor.checkInTime || visitor.lastVisitDate}
-                  </div>
-                </div>
-
-                {/* Check Out Button (Always Check Out for Active list) */}
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
+          filteredVisitors.map((visitor) => {
+            const visitBadge = getVisitCountBadge(visitor.visitCount);
+            
+            return (
+              <div role="button" tabIndex={0} 
+                key={visitor.id}
+                className="p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                onClick={() => handleQuickCheckIn(visitor)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
                     handleQuickCheckIn(visitor);
-                  }}
-                  className="ml-3 flex-shrink-0 bg-orange-100 hover:bg-orange-200 text-orange-700 text-sm font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-1 border border-orange-300"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Check Out
-                </Button>
+                  }
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-gray-900 dark:text-white truncate">
+                        {visitor.visitorName}
+                      </span>
+                      {visitBadge && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${visitBadge.color}`}>
+                          {visitBadge.label}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-300 flex items-center gap-2">
+                      <span>→ {visitor.residentName}</span>
+                      {visitor.residentUnit && (
+                        <span className="bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">
+                          {visitor.residentUnit}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
+                      Last visit: {visitor.lastVisitDate}
+                    </div>
+                  </div>
+                  
+                  {/* Quick Check-In Button */}
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleQuickCheckIn(visitor);
+                    }}
+                    className="ml-3 flex-shrink-0 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Check In
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

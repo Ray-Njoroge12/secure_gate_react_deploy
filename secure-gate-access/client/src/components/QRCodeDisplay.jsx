@@ -44,10 +44,10 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
       return () => qr.removeEventListener('keydown', handleKeyDown);
     }
   }, [value]);
-
+  
   // Responsive QR code sizing
   const responsiveSize = TOUCH_SIZES.qr[breakpoint] || size;
-
+  
   const wrapperClasses = 'flex flex-col items-center p-4 xs:p-6 sm:p-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm max-w-full';
   const qrContainerClasses = 'bg-white dark:bg-slate-800 p-3 xs:p-4 sm:p-6 rounded-md border border-gray-200 dark:border-slate-700 max-w-full overflow-hidden';
 
@@ -71,46 +71,46 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
       <div ref={qrRef} className={wrapperClasses} tabIndex={0}>
         <div className={qrContainerClasses}>
           {isDataUrl ? (
-            <img
-              src={value}
-              alt="QR code for gate entry"
+            <img 
+              src={value} 
+              alt="QR code for gate entry" 
               className="block w-full h-auto max-w-full"
-              style={{
-                width: responsiveSize,
-                height: responsiveSize,
+              style={{ 
+                width: responsiveSize, 
+                height: responsiveSize, 
                 maxWidth: '100%',
                 maxHeight: '80vh'
               }}
             />
           ) : (
-            <QRCode
-              value={value || ''}
-              size={responsiveSize}
-              fgColor="#111"
+            <QRCode 
+              value={value || ''} 
+              size={responsiveSize} 
+              fgColor="#111" 
               bgColor="#fff"
               aria-label="QR code for gate entry"
-              style={{
-                maxWidth: '100%',
+              style={{ 
+                maxWidth: '100%', 
                 height: 'auto',
                 display: 'block'
               }}
             />
           )}
         </div>
-
+        
         {otp && (
           <div className="mt-4 xs:mt-6 flex flex-col items-center gap-3 w-full max-w-sm">
-            <div
+            <div 
               className="text-sm xs:text-base sm:text-lg font-bold tracking-wider text-gray-800 dark:text-slate-200 bg-gray-100 dark:bg-slate-800 px-3 xs:px-4 py-2 xs:py-3 rounded-md border border-gray-200 dark:border-slate-700 font-mono text-center w-full break-all"
-              aria-label={`Pass code: ${otp}`}
+              aria-label={`One-time password: ${otp}`}
             >
-              <span className="block xs:inline">Pass Code:</span>{' '}
+              <span className="block xs:inline">OTP:</span>{' '}
               <span className="text-green-600 dark:text-green-400 font-mono">{otp}</span>
             </div>
-
+            
             {showCopyButton && (
-              <Button
-                variant="outline"
+              <Button 
+                variant="outline" 
                 size={breakpoint === 'xs' ? 'sm' : 'md'}
                 onClick={handleCopyOTP}
                 className="w-full xs:w-auto min-h-touch"
@@ -119,23 +119,23 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 }
-                aria-label="Copy Pass Code to clipboard"
+                aria-label="Copy OTP to clipboard"
               >
-                Copy Code
+                Copy OTP
               </Button>
             )}
           </div>
         )}
-
+        
         <div className="mt-3 text-sm text-slate-600 dark:text-slate-200 text-center">
-          <p>Present this QR code or Pass Code at the gate for entry</p>
+          <p>Present this QR code or OTP at the gate for entry</p>
         </div>
       </div>
-
+      
       {showToast && (
         <Toast
           type="success"
-          message="Pass Code copied to clipboard!"
+          message="OTP copied to clipboard!"
           onClose={() => setShowToast(false)}
         />
       )}

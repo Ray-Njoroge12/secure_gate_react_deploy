@@ -19,7 +19,7 @@ const ScanQR = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState(null);
-
+  
   const { user } = useAuth();
 
   // Check camera permission on mount
@@ -44,10 +44,10 @@ const ScanQR = () => {
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
+    
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
+    
     // Get pending sync count
     const updatePendingCount = async () => {
       try {
@@ -57,16 +57,16 @@ const ScanQR = () => {
         console.error('Failed to get pending sync count:', err);
       }
     };
-
+    
     updatePendingCount();
-
+    
     // Listen for offline service events
     const unsubscribe = offlineService.addConnectionListener((event) => {
       if (event === 'sync_completed' || event === 'offline_checkin_queued') {
         updatePendingCount();
       }
     });
-
+    
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
@@ -126,7 +126,7 @@ const ScanQR = () => {
     setIsProcessing(true);
     setError(null);
     setSyncMessage(null);
-
+    
     try {
       const qrToken = extractQrTokenFromQrData(qrData);
       const visitorId = extractVisitorIdFromQrData(qrData);
@@ -262,7 +262,7 @@ const ScanQR = () => {
     try {
       // Step 1: Try to validate QR code against local cache
       const localValidation = await offlineService.validateQRCodeOffline(qrData);
-
+      
       if (localValidation) {
         if (localValidation.expired) {
           setScannedData({
@@ -275,7 +275,7 @@ const ScanQR = () => {
           });
           return;
         }
-
+        
         if (localValidation.invalid) {
           setScannedData({
             qrData,
@@ -286,7 +286,7 @@ const ScanQR = () => {
           });
           return;
         }
-
+        
         if (localValidation.valid) {
           const queueVisitorId = localValidation.visitor_id || visitorId;
           if (!queueVisitorId) {
@@ -306,11 +306,11 @@ const ScanQR = () => {
             localValidation,
             user?.id
           );
-
+          
           // Update pending count
           const pending = await offlineService.getPendingOfflineCheckIns();
           setPendingSyncCount(pending.length);
-
+          
           setScannedData({
             qrData,
             status: 'success',
@@ -322,7 +322,7 @@ const ScanQR = () => {
           return;
         }
       }
-
+      
       // Step 2: QR not found in cache - show warning
       const canQueueUnknownVisitor = Boolean(visitorId);
       setScannedData({
@@ -335,7 +335,7 @@ const ScanQR = () => {
         unknownVisitor: canQueueUnknownVisitor,
         visitorId: visitorId
       });
-
+      
     } catch (err) {
       console.error('Offline check-in error:', err);
       setScannedData({
@@ -350,17 +350,17 @@ const ScanQR = () => {
   const handleForceOfflineCheckIn = async () => {
     // Allow guard to force check-in for unknown visitor (with warning)
     if (!scannedData?.visitorId) return;
-
+    
     try {
       await offlineService.queueOfflineCheckIn(
         scannedData.visitorId,
         { name: 'Unknown (Offline)', qr_code: scannedData.qrData },
         user?.id
       );
-
+      
       const pending = await offlineService.getPendingOfflineCheckIns();
       setPendingSyncCount(pending.length);
-
+      
       setScannedData({
         ...scannedData,
         status: 'success',
@@ -378,7 +378,7 @@ const ScanQR = () => {
       setError('Cannot sync while offline');
       return;
     }
-
+    
     try {
       setError(null);
       setSyncMessage(null);
@@ -468,7 +468,7 @@ const ScanQR = () => {
           </div>
         }
       />
-
+      
       <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-8 space-y-6">
         {/* Main Content */}
         <div className="flex flex-col items-center">
@@ -478,7 +478,6 @@ const ScanQR = () => {
               <QRScanner
                 onScan={handleScan}
                 onError={handleError}
-                onClose={handleClose}
                 className="w-full h-full object-cover"
               />
             ) : cameraPermission === 'denied' ? (
@@ -506,22 +505,22 @@ const ScanQR = () => {
                 <p className="text-gray-400">Camera inactive</p>
               </div>
             )}
-
+            
             {/* Overlay UI */}
-            <div className="absolute inset-0 pointer-events-none border-[30px] border-black/30 rounded-3xl">
-              <div className="absolute inset-0 border-2 border-white/20 rounded-lg m-8">
+             <div className="absolute inset-0 pointer-events-none border-[30px] border-black/30 rounded-3xl">
+               <div className="absolute inset-0 border-2 border-white/20 rounded-lg m-8">
                 {/* Scanning Line Animation */}
                 {isScanning && (
                   <div className="absolute top-0 left-0 w-full h-1 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-[scan_2s_linear_infinite]"></div>
                 )}
-              </div>
-            </div>
+               </div>
+             </div>
           </div>
-
+          
           {/* Controls */}
           <div className="w-full max-w-sm space-y-4">
-            {/* Offline Warning Banner */}
-            {!isOnline && (
+             {/* Offline Warning Banner */}
+             {!isOnline && (
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3 flex gap-2 w-full mb-4">
                 <Icon name="WifiOff" className="w-5 h-5 text-yellow-600 dark:text-yellow-300 flex-shrink-0" />
                 <div className="text-sm text-yellow-800 dark:text-yellow-200">
@@ -540,22 +539,24 @@ const ScanQR = () => {
             )}
 
             {syncMessage && (
-              <div className={`rounded-lg p-3 text-sm border ${syncMessage.tone === 'success'
+              <div className={`rounded-lg p-3 text-sm border ${
+                syncMessage.tone === 'success'
                   ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
                   : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300'
-                }`}>
+              }`}>
                 {syncMessage.text}
               </div>
             )}
-
+            
             <Button
               size="lg"
-              className={`w-full h-14 text-lg font-medium shadow-lg transition-all ${isScanning
-                  ? 'bg-red-500 hover:bg-red-600 text-white border-none'
+              className={`w-full h-14 text-lg font-medium shadow-lg transition-all ${
+                isScanning 
+                  ? 'bg-red-500 hover:bg-red-600 text-white border-none' 
                   : cameraPermission === 'denied'
-                    ? 'bg-gray-400 hover:bg-gray-500 text-white border-none cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white border-none'
-                }`}
+                  ? 'bg-gray-400 hover:bg-gray-500 text-white border-none cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white border-none'
+              }`}
               onClick={() => {
                 if (cameraPermission === 'denied') {
                   navigateTo('/dashboard/guard/manual-check');
@@ -573,7 +574,7 @@ const ScanQR = () => {
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-3">
                   Enter visitor code or invite code manually:
                 </p>
-                <form
+                <form 
                   className="flex flex-col sm:flex-row gap-2"
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -597,7 +598,7 @@ const ScanQR = () => {
                 </form>
               </div>
             )}
-
+            
             {isProcessing && (
               <div className="flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 py-2">
                 <Icon name="Loader2" className="w-5 h-5 animate-spin" />
@@ -606,73 +607,75 @@ const ScanQR = () => {
             )}
 
             {/* Manual Entry Option */}
-            <div className="text-center pt-4">
-              <Button
-                onClick={() => navigateTo('/dashboard/guard/manual-check')}
-                variant="ghost"
-                size="sm"
-                className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white underline"
-              >
-                Enter Code Manually
-              </Button>
-            </div>
+             <div className="text-center pt-4">
+                <Button 
+                  onClick={() => navigateTo('/dashboard/guard/manual-check')}
+                  variant="ghost"
+                  size="sm"
+                  className="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white underline"
+                >
+                  Enter Code Manually
+                </Button>
+             </div>
           </div>
         </div>
 
         {/* Scan Result Card */}
         {scannedData && (
-          <Card className={`border-l-4 ${scannedData.status === 'success'
-              ? 'border-l-green-500'
-              : scannedData.status === 'warning'
-                ? 'border-l-yellow-500'
-                : 'border-l-red-500'
-            }`}>
+          <Card className={`border-l-4 ${
+             scannedData.status === 'success'
+               ? 'border-l-green-500'
+               : scannedData.status === 'warning'
+               ? 'border-l-yellow-500'
+               : 'border-l-red-500'
+          }`}>
             <Card.Content className="p-4 flex items-start gap-4">
-              <div className={`p-2 rounded-full ${scannedData.status === 'success'
+              <div className={`p-2 rounded-full ${
+                scannedData.status === 'success'
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300'
                   : scannedData.status === 'warning'
-                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300'
-                    : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'
-                }`}>
-                {scannedData.status === 'success' ? <Icon name="CheckCircle" size={24} /> :
-                  scannedData.status === 'warning' ? <Icon name="AlertTriangle" size={24} /> :
-                    <Icon name="XCircle" size={24} />}
+                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300'
+                  : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300'
+              }`}>
+                {scannedData.status === 'success' ? <Icon name="CheckCircle" size={24} /> : 
+                 scannedData.status === 'warning' ? <Icon name="AlertTriangle" size={24} /> :
+                 <Icon name="XCircle" size={24} />}
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900 dark:text-white">
                   {scannedData.status === 'success'
                     ? (scannedData.pendingSync ? 'Check-In Queued' : 'Access Granted')
                     : scannedData.status === 'warning'
-                      ? 'Requires Attention'
-                      : 'Access Denied'}
+                    ? 'Requires Attention'
+                    : 'Access Denied'}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   {scannedData.message}
                 </p>
-
+                
                 {scannedData.mode === 'offline' && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
-                    <Icon name="WifiOff" size={12} />
-                    <span>Offline validation active. Sync required when online.</span>
-                  </div>
+                   <div className="mt-2 flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                      <Icon name="WifiOff" size={12} />
+                      <span>Offline validation active. Sync required when online.</span>
+                   </div>
                 )}
-
+                
                 {scannedData.pendingSync && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
-                    <Icon name="CloudOff" size={12} />
-                    <span>Action queued for sync.</span>
-                    {isOnline && (
-                      <Button
-                        size="xs"
-                        variant="ghost"
-                        className="h-6 ml-auto"
-                        disabled={isSyncing}
-                        onClick={handleSyncNow}
-                      >
-                        <Icon name="RefreshCw" size={12} className={`mr-1 ${isSyncing ? 'animate-spin' : ''}`} /> {isSyncing ? 'Syncing' : 'Sync'}
-                      </Button>
-                    )}
-                  </div>
+                   <div className="mt-2 flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 p-2 rounded">
+                      <Icon name="CloudOff" size={12} />
+                      <span>Action queued for sync.</span>
+                      {isOnline && (
+                        <Button 
+                          size="xs" 
+                          variant="ghost" 
+                          className="h-6 ml-auto"
+                          disabled={isSyncing}
+                          onClick={handleSyncNow}
+                        >
+                         <Icon name="RefreshCw" size={12} className={`mr-1 ${isSyncing ? 'animate-spin' : ''}`}/> {isSyncing ? 'Syncing' : 'Sync'}
+                        </Button>
+                      )}
+                   </div>
                 )}
 
                 {scannedData.visitorInfo && (

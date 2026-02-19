@@ -27,7 +27,7 @@ export default function Settings() {
 
   // Load profile from resident endpoint
   useEffect(() => {
-    fetch('/api/resident/profile', { method: 'GET', credentials: 'include', headers: { 'Content-Type': 'application/json' } })
+    fetch('/api/resident/profile', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
       .then(res => res.json())
       .then(data => {
         if (data?.data) {
@@ -43,7 +43,7 @@ export default function Settings() {
             email: user.email || '',
             phone: user.phone || '',
             area: user.area || '', // Note: Resident routes might not return area if not in query
-            house: user.house || ''
+            house: user.unit_number || ''
           });
         }
       })
@@ -111,10 +111,9 @@ export default function Settings() {
         const nameParts = profile.name.trim().split(/\s+/);
         const first_name = nameParts[0] || '';
         const last_name = nameParts.slice(1).join(' ') || '';
-
+        
         const res = await fetch('/api/resident/profile', {
           method: 'PUT',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             first_name,
@@ -122,7 +121,7 @@ export default function Settings() {
             email: profile.email,
             phone: profile.phone,
             area: profile.area,
-            house: profile.house
+            unit_number: profile.house
           })
         });
         const data = await res.json();
@@ -137,7 +136,6 @@ export default function Settings() {
         // Use auth endpoint for password change
         const res = await fetch('/api/auth/change-password', {
           method: 'POST',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             currentPassword: passwords.old,
@@ -209,8 +207,8 @@ export default function Settings() {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex items-center gap-2 min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg font-medium cursor-pointer whitespace-nowrap text-sm transition-colors focus:outline-none ${activeTab === tab.key
-                  ? "bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                    ? "bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
               >
                 {tab.icon}
@@ -302,7 +300,7 @@ export default function Settings() {
                   <div className={`p-4 rounded-lg border ${mfaStatus.mfaEnabled
                     ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                     : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600'
-                    }`}>
+                  }`}>
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-3">
                         <Icon

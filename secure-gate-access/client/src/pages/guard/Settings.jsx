@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import ErrorBoundary from "../../components/ErrorBoundary";
 
-
+import PanicHistory from "../../components/guard/PanicHistory"; // Phase 1.1: Emergency History
 import NotificationSettings from "../../components/settings/NotificationSettings";
 import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
 import { useTheme } from "../../contexts/ThemeContext";
 import api from "../../utils/apiClient";
 import notificationService from "../../services/notificationService";
 
-const GUARD_SETTINGS_TABS = ["profile", "notifications", "security", "appearance"];
+const GUARD_SETTINGS_TABS = ["profile", "notifications", "emergency", "security", "appearance"];
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -85,7 +84,7 @@ export default function Settings() {
   const tabs = [
     { key: "profile", label: "Profile", icon: <Icon name="User" size={16} /> },
     { key: "notifications", label: "Notifications", icon: <Icon name="Bell" size={16} /> },
-
+    { key: "emergency", label: "Emergency", icon: <Icon name="AlertTriangle" size={16} /> }, // Phase 1.1
     { key: "security", label: "Security", icon: <Icon name="Shield" size={16} /> },
     { key: "appearance", label: "Appearance", icon: <Icon name="Eye" size={16} /> },
   ];
@@ -122,14 +121,14 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
-      <PageHeader
+      <PageHeader 
         title="Settings"
         subtitle="Manage your guard profile and preferences"
         icon={<Icon name="Settings" className="w-6 h-6 text-gray-600 dark:text-gray-300" />}
         showBack={true}
         backTo="/dashboard/guard"
       />
-
+      
       <div className="max-w-4xl mx-auto px-4 py-6 pb-24 md:pb-8">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 sm:p-6">
           {/* Tab Buttons */}
@@ -141,10 +140,11 @@ export default function Settings() {
                 onClick={() => handleTabChange(tab.key)}
                 role="tab"
                 aria-selected={activeTab === tab.key}
-                className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${activeTab === tab.key
-                  ? "bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400"
-                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                  }`}
+                className={`flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
+                  activeTab === tab.key
+                    ? "bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400"
+                    : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                }`}
               >
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
@@ -176,39 +176,39 @@ export default function Settings() {
                         <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                           <div className="w-full">
                             <label htmlFor="guard-name" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Name</label>
-                            <input
+                            <input 
                               id="guard-name"
-                              className="mobile-input"
-                              placeholder="Your name"
-                              value={profile.name}
-                              onChange={e => setProfile({ ...profile, name: e.target.value })}
+                              className="mobile-input" 
+                              placeholder="Your name" 
+                              value={profile.name} 
+                              onChange={e=>setProfile({...profile, name:e.target.value})} 
                             />
                           </div>
                           <div className="w-full">
                             <label htmlFor="guard-email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
-                            <input
+                            <input 
                               id="guard-email"
-                              className="mobile-input"
-                              placeholder="Email address"
+                              className="mobile-input" 
+                              placeholder="Email address" 
                               type="email"
-                              value={profile.email}
-                              onChange={e => setProfile({ ...profile, email: e.target.value })}
+                              value={profile.email} 
+                              onChange={e=>setProfile({...profile, email:e.target.value})} 
                             />
                           </div>
                         </div>
                         <div className="mt-4">
                           <label htmlFor="guard-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Phone</label>
-                          <input
+                          <input 
                             id="guard-phone"
-                            className="mobile-input"
-                            placeholder="Phone number"
-                            value={profile.phone}
-                            onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                            className="mobile-input" 
+                            placeholder="Phone number" 
+                            value={profile.phone} 
+                            onChange={e=>setProfile({...profile, phone:e.target.value})} 
                           />
                         </div>
                       </div>
                     </div>
-
+                    
                     <Button variant="primary" fullWidth type="submit">
                       Save Profile
                     </Button>
@@ -224,7 +224,15 @@ export default function Settings() {
               </div>
             )}
 
-
+            {/* Emergency Tab - Phase 1.1 */}
+            {activeTab === "emergency" && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-semibold dark:text-white flex items-center gap-2">
+                  <Icon name="AlertTriangle" className="text-red-500" /> Emergency Settings
+                </h2>
+                <PanicHistory />
+              </div>
+            )}
 
             {/* Security Tab */}
             {activeTab === "security" && (
@@ -248,7 +256,7 @@ export default function Settings() {
                     <div className={`p-4 rounded-lg border ${mfaStatus.mfaEnabled
                       ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                       : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-                      }`}>
+                    }`}>
                       <div className="flex items-center justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-3">
                           <Icon
@@ -329,11 +337,11 @@ export default function Settings() {
                 {/* Other security options */}
                 <div className="space-y-4">
                   <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-                    <input
-                      type="checkbox"
+                    <input 
+                      type="checkbox" 
                       checked={security.showLoginHistory}
-                      onChange={(e) => setSecurity({ ...security, showLoginHistory: e.target.checked })}
-                      className="w-5 h-5 text-brand-600 rounded focus:ring-brand-500"
+                      onChange={(e) => setSecurity({...security, showLoginHistory: e.target.checked})}
+                      className="w-5 h-5 text-brand-600 rounded focus:ring-brand-500" 
                     />
                     <div>
                       <span className="font-medium text-gray-900 dark:text-white">Login History</span>
@@ -341,8 +349,8 @@ export default function Settings() {
                     </div>
                   </label>
                 </div>
-
-                <Button variant="primary" fullWidth onClick={() => notificationService.success('Security Settings', 'Security settings saved!')}>
+                
+                <Button variant="primary" fullWidth onClick={()=>notificationService.success('Security Settings', 'Security settings saved!')}>
                   Save Security Settings
                 </Button>
               </div>
