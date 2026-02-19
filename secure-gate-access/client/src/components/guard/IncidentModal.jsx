@@ -19,12 +19,12 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
   const [error, setError] = useState(null);
 
   const categories = [
-    { value: 'suspicious', label: 'Suspicious Behavior', icon: 'ShieldAlert', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', description: 'Unusual or concerning visitor behavior' },
-    { value: 'document_issue', label: 'Document Issue', icon: 'FileWarning', color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', description: 'ID verification or document problems' },
-    { value: 'vehicle', label: 'Vehicle Concern', icon: 'Car', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', description: 'Vehicle-related incidents' },
-    { value: 'behavior', label: 'Inappropriate Behavior', icon: 'UserX', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20', description: 'Conduct violations' },
-    { value: 'system_error', label: 'System Error', icon: 'Cpu', color: 'text-gray-600', bg: 'bg-gray-50 dark:bg-gray-900/20', description: 'Technical or system issues' },
-    { value: 'other', label: 'Other', icon: 'MoreHorizontal', color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-900/20', description: 'Other incidents not covered above' }
+    { value: 'suspicious', label: '🚨 Suspicious Behavior', description: 'Unusual or concerning visitor behavior' },
+    { value: 'document_issue', label: '📄 Document Issue', description: 'ID verification or document problems' },
+    { value: 'vehicle', label: '🚗 Vehicle Concern', description: 'Vehicle-related incidents' },
+    { value: 'behavior', label: '⚠️ Inappropriate Behavior', description: 'Conduct violations' },
+    { value: 'system_error', label: '💻 System Error', description: 'Technical or system issues' },
+    { value: 'other', label: '📝 Other', description: 'Other incidents not covered above' }
   ];
 
   const severityLevels = [
@@ -72,7 +72,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
 
       // Success
       onClose({ success: true, message: 'Incident logged successfully' });
-
+      
       // Reset form
       setFormData({
         category: '',
@@ -99,7 +99,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div
+      <div 
         ref={modalRef}
         className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden border border-gray-200 dark:border-slate-700"
         role="dialog"
@@ -128,15 +128,15 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Incident Category *
             </label>
-            <div className="grid grid-cols-1 gap-2 overflow-y-auto max-h-[300px] pr-1">
+            <div className="grid grid-cols-1 gap-2">
               {categories.map(cat => (
                 <label
                   key={cat.value}
                   className={`
-                    flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all
-                    ${formData.category === cat.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                      : 'border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
+                    flex items-start p-3 border-2 rounded-lg cursor-pointer transition-all
+                    ${formData.category === cat.value 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                      : 'border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500'
                     }
                   `}
                 >
@@ -146,21 +146,12 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                     value={cat.value}
                     checked={formData.category === cat.value}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="sr-only" /* Hide radio but keep accessible */
+                    className="mt-1 mr-3"
                   />
-                  <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center mr-3 flex-shrink-0
-                    ${formData.category === cat.value ? 'bg-blue-100 dark:bg-blue-800' : 'bg-gray-100 dark:bg-slate-700'}
-                  `}>
-                    <Icon name={cat.icon} className={`w-5 h-5 ${cat.color}`} />
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-white">{cat.label}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-200 mt-0.5">{cat.description}</div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-gray-900 dark:text-white text-sm md:text-base">{cat.label}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{cat.description}</div>
-                  </div>
-                  {formData.category === cat.value && (
-                    <Icon name="check" className="w-5 h-5 text-blue-600 ml-2" />
-                  )}
                 </label>
               ))}
             </div>
@@ -170,22 +161,22 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Severity Level *
             </label>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-              {severityLevels.map(lvl => (
-                <button
-                  key={lvl.value}
+            <div className="grid grid-cols-2 gap-2">
+              {severityLevels.map(level => (
+                <Button
+                  key={level.value}
                   type="button"
-                  onClick={() => setFormData({ ...formData, severity: lvl.value })}
+                  onClick={() => setFormData({ ...formData, severity: level.value })}
                   className={`
-                    py-2.5 px-3 text-xs font-bold rounded-xl border-2 transition-all
-                    ${formData.severity === lvl.value
-                      ? `${lvl.activeClass} border-transparent ring-2 ring-offset-2 ring-blue-500/20 shadow-sm scale-[1.02]`
-                      : 'border-gray-100 dark:border-slate-700 text-gray-500 dark:text-gray-400 hover:border-gray-200 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
+                    px-4 py-2 rounded-lg border-2 font-medium transition-all
+                    ${formData.severity === level.value 
+                      ? `${level.color} border-current` 
+                      : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-200 hover:border-gray-300 dark:hover:border-slate-500'
                     }
                   `}
                 >
-                  {lvl.label}
-                </button>
+                  {level.label}
+                </Button>
               ))}
             </div>
           </div>
@@ -197,9 +188,10 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Describe what happened in detail..."
               rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-100 dark:border-slate-700 rounded-xl dark:bg-slate-800 dark:text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-none text-sm md:text-base"
-              placeholder="Describe the incident details (location, people involved, actions taken)..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
             />
             <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
               Be as specific as possible. Include time, location, and any witnesses.

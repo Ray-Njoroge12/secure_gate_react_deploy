@@ -8,7 +8,12 @@ import React, { useState, useEffect } from 'react';
 import rideshareService from '../../services/rideshareService';
 import Button from '../ui/Button';
 
-
+const SERVICE_PROVIDERS = [
+  { value: 'uber', label: 'Uber', icon: '🚗', color: 'bg-black text-white' },
+  { value: 'bolt', label: 'Bolt', icon: '⚡', color: 'bg-green-500 text-white' },
+  { value: 'taxi', label: 'Taxi', icon: '🚕', color: 'bg-yellow-400 text-black' },
+  { value: 'other', label: 'Other', icon: '🚙', color: 'bg-gray-500 text-white' }
+];
 
 const RideshareEntry = () => {
   const [entries, setEntries] = useState([]);
@@ -18,6 +23,7 @@ const RideshareEntry = () => {
     driverName: '',
     vehiclePlate: '',
     vehicleDescription: '',
+    serviceProvider: 'uber',
     expiryMinutes: 30
   });
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +70,7 @@ const RideshareEntry = () => {
         driverName: '',
         vehiclePlate: '',
         vehicleDescription: '',
+        serviceProvider: 'uber',
         expiryMinutes: 30
       });
       loadEntries();
@@ -87,16 +94,18 @@ const RideshareEntry = () => {
     const now = new Date();
     const expiry = new Date(expiresAt);
     const diff = expiry - now;
-
+    
     if (diff <= 0) return 'Expired';
-
+    
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return 'Less than 1 min';
     if (minutes < 60) return `${minutes} min`;
     return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
   };
 
-
+  const getProviderInfo = (provider) => {
+    return SERVICE_PROVIDERS.find(p => p.value === provider) || SERVICE_PROVIDERS[3];
+  };
 
   if (loading) {
     return (
@@ -115,7 +124,7 @@ const RideshareEntry = () => {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">🚗 Rideshare Entry</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-300">Quick access for ride hailing</p>
+            <p className="text-sm text-gray-500 dark:text-gray-300">Quick access for Uber, Bolt & Taxi</p>
           </div>
           <Button
             onClick={() => setShowForm(!showForm)}
@@ -191,7 +200,26 @@ const RideshareEntry = () => {
               />
             </div>
 
-            <div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service</label>
+                <div className="flex gap-2">
+                  {SERVICE_PROVIDERS.map(provider => (
+                    <Button
+                      key={provider.value}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, serviceProvider: provider.value }))}
+                      className={`flex-1 py-2 rounded-md text-sm font-medium ${
+                        formData.serviceProvider === provider.value
+                          ? provider.color
+                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      {provider.icon}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valid For</label>
                 <select
@@ -233,26 +261,28 @@ const RideshareEntry = () => {
           <div className="p-8 text-center text-gray-500 dark:text-gray-300">
             <span className="text-4xl">🚕</span>
             <p className="mt-2">No active rideshare entries</p>
-            <p className="text-sm">Create an entry when your ride arrives</p>
+            <p className="text-sm">Create an entry when your Uber/Bolt arrives</p>
           </div>
         ) : (
           entries.map((entry) => {
+            const provider = getProviderInfo(entry.service_provider);
             const isExpired = new Date(entry.expires_at) < new Date();
-
+            
             return (
               <div key={entry.id} className={`p-4 ${isExpired ? 'opacity-50' : ''}`}>
                 <div className="flex justify-between items-start">
                   <div className="flex gap-3">
-                    <span className="text-2xl px-2 py-1 rounded bg-blue-600 text-white">
-                      🚗
+                    <span className={`text-2xl px-2 py-1 rounded ${provider.color}`}>
+                      {provider.icon}
                     </span>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900 dark:text-white">{entry.driver_name}</span>
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${entry.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
-                            entry.status === 'arrived' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                              'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
-                          }`}>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${
+                          entry.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                          entry.status === 'arrived' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                          'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200'
+                        }`}>
                           {entry.status}
                         </span>
                       </div>

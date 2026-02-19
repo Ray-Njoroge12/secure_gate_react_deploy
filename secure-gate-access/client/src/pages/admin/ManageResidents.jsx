@@ -7,15 +7,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, Button, Badge, Input, PageHeader, Skeleton, Modal } from "../../components/ui";
 import { SearchFilter, Pagination } from "../../components/ui";
+import { getAllResidents, updateResident, deleteResident, createResident } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
 import { useSearchData } from "../../hooks/useSearch";
 import { useToast } from "../../contexts/ToastContext";
 import { useConfirmation } from "../../components/common/ConfirmationDialog";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
-import { useAuth } from "../../contexts/AuthContext";
-import PasswordConfirmationModal from "../../components/common/PasswordConfirmationModal";
-import ResidentDetailsModal from "../../components/admin/ResidentDetailsModal";
-import { getAllResidents, updateResident, deleteResident, createResident, getUserDetails } from "../../services/adminService";
 import logger from 'utils/logger';
 import Icon from "../../components/ui/Icon";
 
@@ -115,7 +112,7 @@ const ResidentCard = ({ resident, onEdit, onToggle, onDelete, onEmail }) => (
 
           {/* Delete action - admin only */}
           {true && (
-            <Button
+             <Button
               variant="ghost"
               size="sm"
               onClick={() => onDelete(resident)}
@@ -170,7 +167,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
               type="text"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
               required
             />
           </div>
@@ -180,7 +177,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
               required
             />
           </div>
@@ -190,7 +187,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
               type="text"
               value={formData.first_name}
               onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
               required
             />
           </div>
@@ -200,7 +197,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
               type="text"
               value={formData.last_name}
               onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
               required
             />
           </div>
@@ -210,7 +207,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
               required
               minLength={8}
             />
@@ -221,7 +218,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
               type="tel"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
             />
           </div>
           <div>
@@ -231,7 +228,7 @@ const AddResidentModal = ({ isOpen, onClose, onSave }) => {
               value={formData.unit_number}
               onChange={(e) => setFormData({ ...formData, unit_number: e.target.value })}
               placeholder="e.g., A-101, B-205"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-brand-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500"
             />
           </div>
         </div>
@@ -390,35 +387,6 @@ export default function ManageResidents({ estateId }) {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
 
-  // Secure Reveal State
-  const [passwordModal, setPasswordModal] = useState({ open: false, type: null, targetId: null });
-  const [detailsModal, setDetailsModal] = useState({ open: false, resident: null });
-  const { verifyPassword } = useAuth(); // We'll just use the modal's verify logic, but good to have if needed
-
-  // ... existing code ...
-
-  const handleViewDetails = (resident) => {
-    // Open password confirmation first
-    setPasswordModal({ open: true, type: 'view_details', targetId: resident.id });
-  };
-
-  const handlePasswordConfirmed = async () => {
-    // Password verified by the modal, now fetch details
-    try {
-      const { targetId } = passwordModal;
-      // Fetch full details (unmasked)
-      // Note: getUserDetails calls the new /api/admin/users/:id endpoint which returns unmasked data
-      const response = await getUserDetails(targetId);
-      const residentDetails = response.data || response;
-
-      setDetailsModal({ open: true, resident: residentDetails });
-      setPasswordModal({ open: false, type: null, targetId: null });
-    } catch (err) {
-      toast?.error?.('Failed to fetch resident details');
-      logger.error('Failed to fetch resident details', err);
-    }
-  };
-
   // Search and filter configuration
   const searchFields = ['username', 'email', 'phone', 'unit_number'];
   const filterFields = [
@@ -437,8 +405,7 @@ export default function ManageResidents({ estateId }) {
     setPage,
     isSearching,
     hasFilters,
-    hasResults,
-    clearSearch
+    hasResults
   } = useSearchData(users, searchFields, filterFields, {
     enablePagination: true,
     pageSize: 10
@@ -497,14 +464,9 @@ export default function ManageResidents({ estateId }) {
     try {
       await createResident(data, estateParams);
       toast?.success?.('Resident created successfully');
-
-      // Clear search and filters after adding to ensure the new resident is visible
-      clearSearch();
-
       loadResidents();
     } catch (e) {
-      const errorMsg = handleApiError(e, 'Create resident');
-      toast?.error?.(errorMsg || 'Failed to create resident');
+      toast?.error?.(e.message || 'Failed to create resident');
       throw e;
     }
   };
@@ -527,7 +489,7 @@ export default function ManageResidents({ estateId }) {
   const handleDeactivate = async (resident) => {
     const confirmed = window.confirm(`Are you sure you want to deactivate ${resident.username}?`);
     if (!confirmed) return;
-
+    
     try {
       await updateResident(resident.id, { status: 'inactive' }, estateParams);
       toast?.success?.(`${resident.username} deactivated successfully.`);
@@ -813,16 +775,6 @@ export default function ManageResidents({ estateId }) {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleViewDetails(resident)}
-                              className="p-2 text-gray-500 dark:text-gray-300 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"
-                              title="View Details (Unmask)"
-                              aria-label={`View details for ${resident.username}`}
-                            >
-                              <Icon name="eye" className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
                               onClick={() => handleEmail(resident)}
                               className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                               aria-label={`Email ${resident.name}`}
@@ -877,32 +829,19 @@ export default function ManageResidents({ estateId }) {
         </>
       )}
 
-      {/* Modals */}
-      <AddResidentModal
-        isOpen={addModal}
-        onClose={() => setAddModal(false)}
-        onSave={handleAddResident}
-      />
-
+      {/* Edit Modal */}
       <EditResidentModal
-        isOpen={editModal.open}
         resident={editModal.resident}
+        isOpen={editModal.open}
         onClose={() => setEditModal({ open: false, resident: null })}
         onSave={handleSaveEdit}
       />
 
-      <PasswordConfirmationModal
-        isOpen={passwordModal.open}
-        onClose={() => setPasswordModal({ open: false, type: null, targetId: null })}
-        onConfirm={handlePasswordConfirmed}
-        title="Confirm Identity to View Details"
-        message="Please enter your password to view unmasked resident information."
-      />
-
-      <ResidentDetailsModal
-        isOpen={detailsModal.open}
-        onClose={() => setDetailsModal({ open: false, resident: null })}
-        resident={detailsModal.resident}
+      {/* Add Modal */}
+      <AddResidentModal
+        isOpen={addModal}
+        onClose={() => setAddModal(false)}
+        onSave={handleAddResident}
       />
     </div>
   );

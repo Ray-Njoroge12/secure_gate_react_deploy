@@ -9,7 +9,6 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { io } from 'socket.io-client';
 
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
 
 const stripApiSuffix = (url) => {
   if (!url || typeof url !== 'string') {
@@ -103,7 +102,7 @@ export const WS_EVENTS = {
   DISCONNECT: 'disconnect',
   CONNECT_ERROR: 'connect_error',
   CONNECTION_ESTABLISHED: 'connection:established',
-
+  
   // Dashboard events
   DASHBOARD_SUBSCRIBE: 'dashboard:subscribe',
   DASHBOARD_SUBSCRIBED: 'dashboard:subscribed',
@@ -113,7 +112,7 @@ export const WS_EVENTS = {
   DASHBOARD_EVENT: 'dashboard_event',
   ADMIN_EVENT: 'admin_event',
   GUARD_EVENT: 'guard_event',
-
+  
   // Visitor events
   VISITORS_SUBSCRIBE: 'visitors:subscribe',
   VISITORS_SUBSCRIBED: 'visitors:subscribed',
@@ -123,25 +122,23 @@ export const WS_EVENTS = {
   VISITOR_NEW: 'visitor:new',
   VISITOR_APPROVED: 'visitor:approved',
   VISITOR_DENIED: 'visitor:denied',
-  VISITOR_APPROVAL_REQUEST: 'visitor:approval_request',
-  VISITOR_APPROVAL_RESPONSE: 'visitor:approval_response',
-
+  
   // Notification events
   NOTIFICATION: 'notification',
-
+  
   // Admin events
   ADMIN_SUBSCRIBE: 'admin:subscribe',
   ADMIN_SUBSCRIBED: 'admin:subscribed',
   USER_CONNECTED: 'user:connected',
   USER_DISCONNECTED: 'user:disconnected',
-
+  
   // Security events
   SECURITY_ALERT: 'security:alert',
   EMERGENCY_TRIGGERED: 'emergency:triggered',
   EMERGENCY_ACKNOWLEDGED: 'emergency:acknowledged',
   EMERGENCY_RESOLVED: 'emergency:resolved',
   EMERGENCY_CANCELLED: 'emergency:cancelled',
-
+  
   // Error events
   ERROR: 'error'
 };
@@ -425,41 +422,6 @@ export function useWebSocket(options = {}) {
       emitToListeners(WS_EVENTS.SECURITY_ALERT, data);
     });
 
-    // Approval request from guard → resident notification
-    on(WS_EVENTS.VISITOR_APPROVAL_REQUEST, (data) => {
-      const visitorData = data?.data || {};
-      const notification = {
-        id: `approval_req_${visitorData.visitor_id || Date.now()}`,
-        type: 'visitor_arrival',
-        title: 'Approval Required',
-        message: `${visitorData.name || 'A visitor'} is at the gate and needs your approval`,
-        timestamp: data?.timestamp || new Date().toISOString(),
-        read: false,
-        data: visitorData
-      };
-      setNotifications(prev => [notification, ...prev].slice(0, 100));
-      emitToListeners(WS_EVENTS.VISITOR_APPROVAL_REQUEST, data);
-      emitToListeners(WS_EVENTS.NOTIFICATION, notification);
-    });
-
-    // Approval response from resident → guard notification
-    on(WS_EVENTS.VISITOR_APPROVAL_RESPONSE, (data) => {
-      const responseData = data?.data || {};
-      const approved = responseData.status === 'approved';
-      const notification = {
-        id: `approval_resp_${responseData.visitor_id || Date.now()}`,
-        type: approved ? 'visitor_approved' : 'visitor_denied',
-        title: approved ? 'Visitor Approved' : 'Visitor Denied',
-        message: `${responseData.responded_by || 'Resident'} has ${responseData.status} entry`,
-        timestamp: data?.timestamp || new Date().toISOString(),
-        read: false,
-        data: responseData
-      };
-      setNotifications(prev => [notification, ...prev].slice(0, 100));
-      emitToListeners(WS_EVENTS.VISITOR_APPROVAL_RESPONSE, data);
-      emitToListeners(WS_EVENTS.NOTIFICATION, notification);
-    });
-
     const forwardEmergencyEvent = (eventName) => (data) => {
       const normalized = {
         ...(data || {}),
@@ -494,7 +456,7 @@ export function useWebSocket(options = {}) {
 
     socketListenersRef.current = localListeners;
   }, [url, token, user?.role, subscribeDashboard, subscribeVisitors, subscribeAdmin,
-    maxReconnectAttempts, reconnectInterval, emitToListeners]);
+      maxReconnectAttempts, reconnectInterval, emitToListeners]);
 
   /**
    * Disconnect from WebSocket server
@@ -579,7 +541,7 @@ export function useWebSocket(options = {}) {
    * Mark notification as read
    */
   const markNotificationRead = useCallback((notificationId) => {
-    setNotifications(prev =>
+    setNotifications(prev => 
       prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
     );
   }, []);
@@ -610,19 +572,6 @@ export function useWebSocket(options = {}) {
     [notifications]
   );
 
-  /**
-   * Merge external notifications (bulk add)
-   */
-  const mergeNotifications = useCallback((newNotifications) => {
-    setNotifications(prev => {
-      // Avoid duplicates
-      const existingIds = new Set(prev.map(n => n.id));
-      const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
-      if (uniqueNew.length === 0) return prev;
-      return [...uniqueNew, ...prev].sort((a, b) => new Date(b.created_at || b.timestamp) - new Date(a.created_at || a.timestamp)).slice(0, 100);
-    });
-  }, []);
-
   return {
     // State
     connectionState,
@@ -634,7 +583,7 @@ export function useWebSocket(options = {}) {
     notifications,
     unreadNotifications,
     visitorEvents,
-
+    
     // Actions
     connect,
     disconnect,
@@ -646,10 +595,9 @@ export function useWebSocket(options = {}) {
     subscribeToAdmin,
     requestDashboardStats,
     clearNotifications,
-    mergeNotifications, // Added
     markNotificationRead,
     clearVisitorEvents,
-
+    
     // Socket reference (for advanced usage)
     socket: socketRef.current
   };
@@ -662,7 +610,7 @@ export function useWebSocket(options = {}) {
  */
 export function useVisitorEvents(options = {}) {
   const { onCheckIn, onCheckOut, onNewVisitor, onApproval, onDenial } = options;
-
+  
   const ws = useWebSocket({
     subscribeVisitors: true,
     ...options
@@ -697,9 +645,6 @@ export function useVisitorEvents(options = {}) {
   };
 }
 
-// Import API utility
-
-
 /**
  * useNotifications Hook
  * 
@@ -707,43 +652,11 @@ export function useVisitorEvents(options = {}) {
  */
 export function useNotifications(options = {}) {
   const { onNotification, autoMarkRead = false } = options;
-
+  
   const ws = useWebSocket({
     subscribeDashboard: true,
     ...options
   });
-
-  // Fetch recent notifications on mount
-  useEffect(() => {
-    let mounted = true;
-
-    async function fetchRecent() {
-      if (!ws.isConnected) return;
-
-      try {
-        const response = await api.get('/notifications/recent?limit=20');
-
-        if (mounted && response.data?.success && Array.isArray(response.data.data)) {
-          console.log('Fetching recent notifications:', response.data.data.length);
-          const normalized = response.data.data.map(n => ({
-            ...n,
-            timestamp: n.created_at, // Normalize timestamp
-            read: !!n.read_at
-          }));
-
-          if (ws.mergeNotifications) {
-            ws.mergeNotifications(normalized);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch recent notifications:', error);
-      }
-    }
-
-    fetchRecent();
-
-    return () => { mounted = false; };
-  }, [ws.isConnected, ws.mergeNotifications]); // Re-fetch on connection
 
   // Set up notification listener
   useEffect(() => {
@@ -774,7 +687,7 @@ export function useNotifications(options = {}) {
 export function useSecurityAlerts(options = {}) {
   const { onAlert } = options;
   const [alerts, setAlerts] = useState([]);
-
+  
   const ws = useWebSocket({
     subscribeVisitors: true,
     subscribeAdmin: true,
@@ -794,7 +707,7 @@ export function useSecurityAlerts(options = {}) {
   }, []);
 
   const acknowledgeAlert = useCallback((alertId) => {
-    setAlerts(prev =>
+    setAlerts(prev => 
       prev.map(a => a.id === alertId ? { ...a, acknowledged: true } : a)
     );
   }, []);

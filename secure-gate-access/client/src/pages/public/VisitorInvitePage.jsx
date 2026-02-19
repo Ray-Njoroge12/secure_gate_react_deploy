@@ -53,28 +53,6 @@ const VisitorInvitePage = () => {
   // Phase 1.2: Save Pass Modal state
   const [showSavePassModal, setShowSavePassModal] = useState(false);
 
-  // Determine if we need to show confirmation flow (visitor must fill their details)
-  const needsConfirmation = visitor?.status === 'pending_confirmation' || visitor?.status === 'pending';
-
-  // Proactively pre-fill information if provided by the host
-  React.useEffect(() => {
-    if (visitor && needsConfirmation) {
-      setAdditionalInfo(prev => ({
-        ...prev,
-        name: visitor.name || prev.name || '',
-        phone: visitor.phone || prev.phone || '',
-        email: visitor.email || prev.email || '',
-        purpose: visitor.purpose || prev.purpose || '',
-        vehiclePlate: visitor.vehiclePlate || visitor.vehicle_plate || prev.vehiclePlate || '',
-        idNumber: visitor.idNumber || visitor.id_number || prev.idNumber || ''
-      }));
-      // Pre-authorize consent if host indicated it (though typically visitor must check it)
-      if (visitor.consent_given || visitor.consentGiven) {
-        setConsentGiven(true);
-      }
-    }
-  }, [visitor, needsConfirmation]);
-
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -169,10 +147,11 @@ const VisitorInvitePage = () => {
     }
   };
 
+  // Determine if we need to show confirmation flow
+  const needsConfirmation = visitor?.status === 'pending_confirmation';
+
   // Determine if this is a bulk invite self-registration
   const isBulkInvite = visitor?.isBulkInvite;
-
-  // Handle visitor confirmation
 
   // Handle event registration (Bulk Invite)
   const handleEventRegistration = async (e) => {
@@ -528,12 +507,9 @@ const VisitorInvitePage = () => {
     );
   }
 
-  // Backend returns qrCode as { hasQRCode, dataUrl, expiresAt, message }
-  // Support both camelCase (API) and snake_case (legacy/cache) formats
-  const qrImageSrc = visitor?.qrCode?.dataUrl || visitor?.qrCode?.qrCodeDataUrl || visitor?.qr_code || visitor?.qrCodeDataUrl;
-  // Use visitor token as QR fallback — never fall back to numeric ID which isn't scannable
-  const qrFallbackValue = visitor?.visitorToken || visitor?.visitor_token || '';
-  const visitCode = visitor?.visitorToken || visitor?.visitor_token || visitor?.id;
+  const qrImageSrc = visitor?.qr_code || visitor?.qrCodeDataUrl || visitor?.qrCode?.dataUrl || visitor?.qrCode?.qrCodeDataUrl;
+  const qrFallbackValue = visitor?.visitorToken || visitor?.visitor_token || visitor?.qrId || String(visitor?.id || '');
+  const visitCode = visitor?.qrId || visitor?.visitorToken || visitor?.visitor_token || visitor?.id;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
@@ -595,15 +571,7 @@ const VisitorInvitePage = () => {
                 <p className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
                   📱 Show this QR code at the gate
                 </p>
-                {visitor?.otp && (
-                  <div className="mt-4 flex flex-col items-center gap-2 p-3 bg-white dark:bg-brand-900/40 rounded-lg border border-brand-200 dark:border-brand-800">
-                    <span className="text-xs uppercase tracking-wider text-brand-600 dark:text-brand-400 font-bold">Pass Code</span>
-                    <span className="text-2xl font-mono font-bold tracking-widest text-gray-900 dark:text-white">
-                      {visitor.otp}
-                    </span>
-                  </div>
-                )}
-                <p className="qr-code-text mt-4">
+                <p className="qr-code-text">
                   Visit Code: <strong>{visitCode}</strong>
                 </p>
 

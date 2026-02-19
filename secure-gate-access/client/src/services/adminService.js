@@ -107,6 +107,10 @@ export const checkOutVisitor = (id) => http.post(`${VISITOR_BASE}/${id}/check-ou
 export const approveVisitor = (visitorId, data = {}) => http.post(`/api/approvals/visitors/${visitorId}/approve`, data);
 export const rejectVisitor = (visitorId, data = {}) => http.post(`/api/approvals/visitors/${visitorId}/reject`, data);
 
+// === Visitor Approvals ===
+export const approveVisitor = (visitorId, data = {}) => http.post(`/api/approvals/visitors/${visitorId}/approve`, data);
+export const rejectVisitor = (visitorId, data = {}) => http.post(`/api/approvals/visitors/${visitorId}/reject`, data);
+
 // === Access Control ===
 export const getAccessLogs = (params = {}) => {
   const queryString = new URLSearchParams(params).toString();

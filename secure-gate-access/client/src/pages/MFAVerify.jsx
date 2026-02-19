@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
 import Button from '../components/ui/Button';
-import { useAuth } from '../contexts/AuthContext';
 
 /**
  * MFA Verification Component
@@ -11,7 +10,6 @@ import { useAuth } from '../contexts/AuthContext';
 const MFAVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { completeMfa } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
@@ -69,23 +67,19 @@ const MFAVerify = () => {
       });
 
       if (response.data.success) {
-        // MFA verification successful - update auth state and redirect
+        // MFA verification successful - redirect to dashboard
         sessionStorage.removeItem('mfa_session'); // Clear temp session
-
-        // Get user info from response and update AuthContext
+        
+        // Get user info from response
         const user = response.data.data?.user;
         if (user) {
-          // Update AuthContext so ProtectedRoute sees isAuthenticated=true
-          completeMfa(user);
-
           // Redirect based on role
-          if (user.role === 'super_admin') navigate('/dashboard/super-admin', { replace: true });
-          else if (user.role === 'admin') navigate('/dashboard/admin', { replace: true });
-          else if (user.role === 'guard') navigate('/dashboard/guard', { replace: true });
-          else if (user.role === 'resident') navigate('/dashboard/resident', { replace: true });
-          else navigate('/dashboard', { replace: true });
+          if (user.role === 'admin') navigate('/dashboard/admin');
+          else if (user.role === 'guard') navigate('/dashboard/guard');
+          else if (user.role === 'resident') navigate('/dashboard/resident');
+          else navigate('/dashboard');
         } else {
-          navigate('/dashboard', { replace: true });
+          navigate('/dashboard');
         }
       }
     } catch (err) {
