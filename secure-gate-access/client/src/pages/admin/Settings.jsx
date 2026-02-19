@@ -325,7 +325,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900" data-tour="system-settings">
       <PageHeader
         title="Admin Settings"
         subtitle="Configure system-wide settings and preferences"

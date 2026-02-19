@@ -385,7 +385,7 @@ const VisitorInvitePage = () => {
               </p>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6" data-tour="visitor-otp">
               {/* Visit Summary */}
               <div className="bg-gray-50 dark:bg-slate-900 rounded-xl p-4">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Visit Details</h3>
@@ -515,7 +515,7 @@ const VisitorInvitePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-brand-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       <div className="max-w-2xl mx-auto p-4 md:py-12 py-6">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 md:p-8 text-white text-center">
+          <div className="bg-gradient-to-r from-brand-600 to-brand-700 p-6 md:p-8 text-white text-center" data-tour="visitor-invite-header">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Visitor Pass</h1>
             <p className="text-brand-100 text-sm md:text-base">Your digital access to the estate</p>
           </div>
@@ -548,7 +548,7 @@ const VisitorInvitePage = () => {
                 </div>
               )}
 
-              <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-900/10 rounded-xl p-6">
+              <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-900/10 rounded-xl p-6" data-tour="visitor-qr">
                 <div className="qr-code-container">
                   {/* Use pre-generated QR code from server if available, otherwise generate client-side */}
                   {qrImageSrc ? (
@@ -620,13 +620,13 @@ const VisitorInvitePage = () => {
                 )}
               </div>
               {visitor.status === 'pending_approval' && (
-                <div className="status-message status-message-pending">
+                <div className="status-message status-message-pending" data-tour="visitor-confirm">
                   <p>⏳ <strong>Awaiting Approval</strong></p>
                   <p>Your host has been notified. Please wait for approval.</p>
                 </div>
               )}
               {visitor.status === 'approved' && (
-                <div className="status-message status-message-success">
+                <div className="status-message status-message-success" data-tour="visitor-confirm">
                   <p>✅ <strong>Visit Approved!</strong></p>
                   <p>You may proceed to the gate. Please have your ID ready.</p>
                 </div>

@@ -490,7 +490,7 @@ export default function ManageGuards({ estateId }) {
 
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-tour="manage-guards">
       {error && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
           {error}

@@ -64,7 +64,7 @@ const PendingApprovalsQueue = () => {
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full" data-tour="pending-approvals">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <Icon name="Clock" className="w-5 h-5 text-yellow-500" />

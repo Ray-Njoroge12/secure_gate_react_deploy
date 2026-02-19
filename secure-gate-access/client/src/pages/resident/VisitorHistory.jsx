@@ -271,7 +271,7 @@ export default function VisitorHistory() {
 
   return (
     // <AppShell role={role}>
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+      <div data-tour="visitor-history" className="min-h-screen bg-gray-50 dark:bg-slate-900">
         <PageHeader
           title="Visitor History"
           subtitle="View and manage visitor records"

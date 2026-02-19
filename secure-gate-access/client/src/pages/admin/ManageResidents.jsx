@@ -544,7 +544,7 @@ export default function ManageResidents({ estateId }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="manage-residents">
       {/* Page Header */}
       <PageHeader
         title="Residents"

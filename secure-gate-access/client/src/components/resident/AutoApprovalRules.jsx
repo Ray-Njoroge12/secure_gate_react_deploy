@@ -118,7 +118,7 @@ const AutoApprovalRules = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-tour="auto-approval" className="space-y-4">
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
