@@ -143,7 +143,7 @@ const VisitorLog = ({ estateId }) => {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="visitor-log">
       {/* Filters */}
       <div className="flex gap-4 bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
         <Input

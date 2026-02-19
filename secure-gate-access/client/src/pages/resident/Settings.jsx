@@ -6,12 +6,14 @@ import { useTheme } from "../../contexts/ThemeContext";
 import NotificationSettings from "../../components/settings/NotificationSettings";
 import AccessibilitySettings from "../../components/accessibility/AccessibilitySettings";
 import { Icon } from "../../components/ui/Icon";
+import { useOnboardingTour } from "../../components/common/OnboardingTour";
 import api from "../../utils/apiClient";
 import "../../styles.css";
 
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, resolvedTheme, isDark } = useTheme();
+  const { restartTour } = useOnboardingTour('resident');
   // const role = useCurrentRole();
 
   // UI State
@@ -180,7 +182,7 @@ export default function Settings() {
 
   return (
     // <AppShell role={role}>
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div data-tour="settings" className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <PageHeader
         title="Settings"
         subtitle="Manage your account preferences"
@@ -417,6 +419,19 @@ export default function Settings() {
             </div>
           )}
         </div>
+
+          {/* Guided Tour */}
+          <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Guided Tour</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Retake the feature walkthrough to discover what you can do.</p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={restartTour}>
+                Restart Tour
+              </Button>
+            </div>
+          </div>
       </div>
     </div>
     // </AppShell>

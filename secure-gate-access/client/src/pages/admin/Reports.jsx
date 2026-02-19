@@ -85,7 +85,7 @@ export default function Reports({ estateId }) {
   React.useEffect(() => { refreshPreview(); }, []);
 
   return (
-    <>
+    <div data-tour="reports">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Visitor Reports</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Overview Panel */}
@@ -221,7 +221,7 @@ export default function Reports({ estateId }) {
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

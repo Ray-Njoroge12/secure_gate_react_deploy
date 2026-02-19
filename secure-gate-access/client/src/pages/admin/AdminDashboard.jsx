@@ -290,7 +290,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   const healthComponents = Object.entries(healthDetails?.components || {});
 
   return (
-    <div className="admin-dashboard-container">
+    <div className="admin-dashboard-container" data-tour="admin-dashboard">
       {/* Phase 4: Onboarding Tour for Admins */}
       <OnboardingTour
         role="admin"

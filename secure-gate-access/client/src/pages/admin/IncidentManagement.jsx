@@ -163,7 +163,7 @@ export default function IncidentManagement({ estateId }) {
   if (!estateId) return <div className="text-gray-500">Select an estate to view incidents.</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="incident-management">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-white dark:bg-slate-800">

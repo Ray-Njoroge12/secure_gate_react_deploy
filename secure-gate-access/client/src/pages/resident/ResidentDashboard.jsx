@@ -354,7 +354,7 @@ const DashboardHome = () => {
 
       {/* Primary CTA - Quick Invite (Simplified Flow) */}
       <div role="button" tabIndex={0}
-        data-tour="add-visitor"
+        data-tour="quick-invite"
         data-test-id="cta-quick-invite"
         className="bg-gradient-to-r from-brand-600 to-brand-700 rounded-xl p-4 md:p-6 cursor-pointer hover:shadow-xl hover:shadow-brand-500/20 hover:scale-[1.01] transition-all duration-200 shadow-lg"
         onClick={() => navigateTo('/resident/quick-invite')}
@@ -632,7 +632,7 @@ const DashboardHome = () => {
 
             {/* Phase 4: Favorite Visitors */}
             <Card
-              data-tour="favorites"
+              data-tour="favorite-visitors"
               className="cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 relative"
               onClick={() => navigateTo('/resident/favorites')}
             >
