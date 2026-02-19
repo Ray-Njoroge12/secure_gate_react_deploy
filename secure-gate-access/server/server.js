@@ -27,7 +27,7 @@ import loggingService from './src/services/loggingService.js';
 import { createErrorMonitoring } from './integration/error-monitoring-integration.js';
 
 // Import migration service for auto-migration on startup
-// import migrationService from './src/database/migrationService.js';
+import migrationService from './src/database/migrationService.js';
 
 // Import data retention scheduler for GDPR compliance
 import retentionScheduler from './src/jobs/retentionScheduler.js';
@@ -282,17 +282,17 @@ async function startServer() {
       console.log('✅ Database connection established');
 
       // Run migrations automatically after database connection
-      // console.log('🔄 Running database migrations...');
-      // const migrationResult = await migrationService.runMigrations();
-      // if (!migrationResult.success) {
-      //   console.error('❌ Database migration failed:', migrationResult.error);
-      //   if (process.env.NODE_ENV === 'production') {
-      //     console.error('🚨 Server startup blocked - migrations required in production');
-      //     process.exit(1);
-      //   }
-      // } else {
-      //   console.log(`✅ Database migrations complete (${migrationResult.applied} applied)`);
-      // }
+      console.log('🔄 Running database migrations...');
+      const migrationResult = await migrationService.runMigrations();
+      if (!migrationResult.success) {
+        console.error('❌ Database migration failed:', migrationResult.error);
+        if (process.env.NODE_ENV === 'production') {
+          console.error('🚨 Server startup blocked - migrations required in production');
+          process.exit(1);
+        }
+      } else {
+        console.log(`✅ Database migrations complete (${migrationResult.applied} applied)`);
+      }
     } catch (dbError) {
       console.error('❌ Database initialization failed:', dbError.message);
 

@@ -53,27 +53,27 @@ const isGuardSensitiveOp = (url) => {
 const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => {
   // Admin roles always require MFA for sensitive ops
   const adminRoles = ['admin', 'super_admin'];
-  
+
   // Determine if this is a sensitive operation for the user's role
   const isAdmin = adminRoles.includes(req.user.role);
   const isGuard = req.user.role === 'guard';
   const isGuardSensitive = isGuard && isGuardSensitiveOp(req.originalUrl);
-  
+
   // Skip MFA check if not a sensitive operation for this role
   if (!isAdmin && !isGuardSensitive) {
     return next();
   }
-  
+
   // Check if user has MFA enabled
   const user = await dbManager.query(
     'SELECT mfa_enabled, email, username FROM users WHERE id = $1',
     [req.user.id]
   );
-  
+
   if (!user.rows[0]) {
     throw new AppError('User not found', 404, 'USER_NOT_FOUND');
   }
-  
+
   // For guards, MFA is optional but recommended for sensitive ops
   // If MFA is not enabled, log a warning but allow the operation
   if (isGuardSensitive && !user.rows[0].mfa_enabled) {
@@ -88,12 +88,12 @@ const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => {
       operation: 'guard_sensitive_operation_no_mfa',
       recommendation: 'Enable MFA for enhanced security'
     });
-    
+
     // Allow operation but add warning header
     res.set('X-Security-Warning', 'MFA-recommended-for-sensitive-operations');
     return next();
   }
-  
+
   // For admins, MFA is required
   if (isAdmin && !user.rows[0].mfa_enabled) {
     loggingService.warn('Sensitive operation blocked - MFA not enabled', {
@@ -107,14 +107,14 @@ const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => {
       estate_id: req.user.estate_id || null,
       operation: 'sensitive_admin_operation'
     });
-    
+
     throw new AppError(
       'This sensitive operation requires Multi-Factor Authentication. Please enable MFA on your account to continue.',
       403,
       'MFA_REQUIRED_FOR_SENSITIVE_OPS'
     );
   }
-  
+
   // Log successful MFA check for sensitive operation
   loggingService.info('MFA verified for sensitive operation', {
     route: req.originalUrl,
@@ -125,7 +125,7 @@ const requireMFAForSensitiveOps = asyncHandler(async (req, res, next) => {
     estate_id: req.user.estate_id || null,
     operation: isGuardSensitive ? 'guard_sensitive_operation' : 'sensitive_admin_operation'
   });
-  
+
   next();
 });
 
@@ -137,17 +137,17 @@ const requireMFAForGuardSensitiveOps = asyncHandler(async (req, res, next) => {
   if (req.user.role !== 'guard') {
     return next();
   }
-  
+
   // Check if user has MFA enabled
   const user = await dbManager.query(
     'SELECT mfa_enabled, username FROM users WHERE id = $1',
     [req.user.id]
   );
-  
+
   if (!user.rows[0]) {
     throw new AppError('User not found', 404, 'USER_NOT_FOUND');
   }
-  
+
   if (!user.rows[0].mfa_enabled) {
     loggingService.warn('Guard sensitive operation blocked - MFA not enabled', {
       route: req.originalUrl,
@@ -160,14 +160,14 @@ const requireMFAForGuardSensitiveOps = asyncHandler(async (req, res, next) => {
       estate_id: req.user.estate_id || null,
       operation: 'guard_sensitive_operation_blocked'
     });
-    
+
     throw new AppError(
       'This sensitive security operation requires Multi-Factor Authentication. Please enable MFA on your account.',
       403,
       'MFA_REQUIRED_FOR_GUARD_SENSITIVE_OPS'
     );
   }
-  
+
   next();
 });
 
@@ -180,18 +180,18 @@ const requireMFAForGuardSensitiveOps = asyncHandler(async (req, res, next) => {
  */
 const requireRecentMFAVerification = asyncHandler(async (req, res, next) => {
   const criticalRoles = ['admin', 'super_admin'];
-  
+
   if (!criticalRoles.includes(req.user.role)) {
     return next();
   }
-  
+
   // TODO: Implement session-based MFA verification tracking
   // For now, ensure MFA is enabled (same as requireMFAForSensitiveOps)
   const user = await dbManager.query(
     'SELECT mfa_enabled FROM users WHERE id = $1',
     [req.user.id]
   );
-  
+
   if (!user.rows[0]?.mfa_enabled) {
     throw new AppError(
       'This critical operation requires recent Multi-Factor Authentication verification.',
@@ -199,7 +199,7 @@ const requireRecentMFAVerification = asyncHandler(async (req, res, next) => {
       'RECENT_MFA_REQUIRED'
     );
   }
-  
+
   loggingService.info('Critical operation - MFA requirement verified', {
     route: req.originalUrl,
     method: req.method,
@@ -208,7 +208,7 @@ const requireRecentMFAVerification = asyncHandler(async (req, res, next) => {
     role: req.user.role,
     operation: 'critical_admin_operation'
   });
-  
+
   next();
 });
 
