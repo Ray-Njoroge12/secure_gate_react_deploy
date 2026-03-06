@@ -1,20 +1,11 @@
 // Polyfills for cross-browser compatibility
 // Import this file at the top of your main entry point
 
-// Promise polyfill for older browsers
-if (!window.Promise) {
-  import('es6-promise/auto');
-}
+// Promise is natively supported in all target browsers (Chrome 60+, Safari 12+).
 
-// Fetch polyfill for older browsers
-if (!window.fetch) {
-  import('whatwg-fetch');
-}
+// Fetch is natively supported in all target browsers. Axios is the primary API client.
 
-// URL polyfill for older browsers
-if (!window.URL || !window.URLSearchParams) {
-  import('url-polyfill');
-}
+// URL/URLSearchParams are natively supported in all target browsers.
 
 // Intersection Observer polyfill
 if (!window.IntersectionObserver) {
@@ -28,7 +19,7 @@ if (!window.ResizeObserver) {
 
 // Custom Event polyfill for older browsers
 if (!window.CustomEvent) {
-  (function() {
+  (function () {
     function CustomEvent(event, params) {
       params = params || { bubbles: false, cancelable: false, detail: undefined };
       const evt = document.createEvent('CustomEvent');
@@ -42,7 +33,7 @@ if (!window.CustomEvent) {
 
 // Object.assign polyfill for older browsers
 if (!Object.assign) {
-  Object.assign = function(target) {
+  Object.assign = function (target) {
     if (target == null) {
       throw new TypeError('Cannot convert undefined or null to object');
     }
@@ -63,7 +54,7 @@ if (!Object.assign) {
 
 // Array.from polyfill for older browsers
 if (!Array.from) {
-  Array.from = function(arrayLike, mapFn, thisArg) {
+  Array.from = function (arrayLike, mapFn, thisArg) {
     const C = this;
     const items = Object(arrayLike);
     if (arrayLike == null) {
@@ -99,7 +90,7 @@ if (!Array.from) {
 
 // Array.includes polyfill for older browsers
 if (!Array.prototype.includes) {
-  Array.prototype.includes = function(searchElement, fromIndex) {
+  Array.prototype.includes = function (searchElement, fromIndex) {
     if (this == null) {
       throw new TypeError('"this" is null or not defined');
     }
@@ -122,7 +113,7 @@ if (!Array.prototype.includes) {
 
 // String.includes polyfill for older browsers
 if (!String.prototype.includes) {
-  String.prototype.includes = function(search, start) {
+  String.prototype.includes = function (search, start) {
     if (typeof start !== 'number') {
       start = 0;
     }
@@ -136,7 +127,7 @@ if (!String.prototype.includes) {
 
 // String.startsWith polyfill for older browsers
 if (!String.prototype.startsWith) {
-  String.prototype.startsWith = function(searchString, position) {
+  String.prototype.startsWith = function (searchString, position) {
     position = position || 0;
     return this.substr(position, searchString.length) === searchString;
   };
@@ -144,7 +135,7 @@ if (!String.prototype.startsWith) {
 
 // String.endsWith polyfill for older browsers
 if (!String.prototype.endsWith) {
-  String.prototype.endsWith = function(searchString, length) {
+  String.prototype.endsWith = function (searchString, length) {
     if (length === undefined || length > this.length) {
       length = this.length;
     }
@@ -154,21 +145,21 @@ if (!String.prototype.endsWith) {
 
 // Number.isNaN polyfill for older browsers
 if (!Number.isNaN) {
-  Number.isNaN = function(value) {
+  Number.isNaN = function (value) {
     return typeof value === 'number' && isNaN(value);
   };
 }
 
 // Number.isFinite polyfill for older browsers
 if (!Number.isFinite) {
-  Number.isFinite = function(value) {
+  Number.isFinite = function (value) {
     return typeof value === 'number' && isFinite(value);
   };
 }
 
 // Object.values polyfill for older browsers
 if (!Object.values) {
-  Object.values = function(obj) {
+  Object.values = function (obj) {
     if (obj !== Object(obj)) {
       throw new TypeError('Object.values called on a non-object');
     }
@@ -185,7 +176,7 @@ if (!Object.values) {
 
 // Object.entries polyfill for older browsers
 if (!Object.entries) {
-  Object.entries = function(obj) {
+  Object.entries = function (obj) {
     if (obj !== Object(obj)) {
       throw new TypeError('Object.entries called on a non-object');
     }
@@ -203,7 +194,7 @@ if (!Object.entries) {
 // CSS.supports polyfill for older browsers
 if (!window.CSS || !CSS.supports) {
   window.CSS = window.CSS || {};
-  CSS.supports = function(property, value) {
+  CSS.supports = function (property, value) {
     if (arguments.length === 1) {
       return CSS.supports(property);
     }
@@ -215,14 +206,14 @@ if (!window.CSS || !CSS.supports) {
 
 // requestAnimationFrame polyfill for older browsers
 if (!window.requestAnimationFrame) {
-  window.requestAnimationFrame = function(callback) {
+  window.requestAnimationFrame = function (callback) {
     return window.setTimeout(callback, 1000 / 60);
   };
 }
 
 // cancelAnimationFrame polyfill for older browsers
 if (!window.cancelAnimationFrame) {
-  window.cancelAnimationFrame = function(id) {
+  window.cancelAnimationFrame = function (id) {
     window.clearTimeout(id);
   };
 }
@@ -230,33 +221,33 @@ if (!window.cancelAnimationFrame) {
 // console polyfill for older browsers
 if (!window.console) {
   window.console = {
-    log: function() {},
-    warn: function() {},
-    error: function() {},
-    info: function() {},
-    debug: function() {}
+    log: function () { },
+    warn: function () { },
+    error: function () { },
+    info: function () { },
+    debug: function () { }
   };
 }
 
 // localStorage polyfill for older browsers
 if (!window.localStorage) {
-  (function() {
+  (function () {
     const storage = {};
     window.localStorage = {
-      getItem: function(key) {
+      getItem: function (key) {
         return storage[key] || null;
       },
-      setItem: function(key, value) {
+      setItem: function (key, value) {
         storage[key] = value;
       },
-      removeItem: function(key) {
+      removeItem: function (key) {
         delete storage[key];
       },
-      clear: function() {
+      clear: function () {
         Object.keys(storage).forEach(key => delete storage[key]);
       },
       length: 0,
-      key: function(index) {
+      key: function (index) {
         const keys = Object.keys(storage);
         return keys[index] || null;
       }
@@ -266,23 +257,23 @@ if (!window.localStorage) {
 
 // sessionStorage polyfill for older browsers
 if (!window.sessionStorage) {
-  (function() {
+  (function () {
     const storage = {};
     window.sessionStorage = {
-      getItem: function(key) {
+      getItem: function (key) {
         return storage[key] || null;
       },
-      setItem: function(key, value) {
+      setItem: function (key, value) {
         storage[key] = value;
       },
-      removeItem: function(key) {
+      removeItem: function (key) {
         delete storage[key];
       },
-      clear: function() {
+      clear: function () {
         Object.keys(storage).forEach(key => delete storage[key]);
       },
       length: 0,
-      key: function(index) {
+      key: function (index) {
         const keys = Object.keys(storage);
         return keys[index] || null;
       }
@@ -294,11 +285,11 @@ if (!window.sessionStorage) {
 export default {
   // Check if polyfills are loaded
   isLoaded: true,
-  
+
   // Get list of loaded polyfills
   getLoadedPolyfills() {
     const polyfills = [];
-    
+
     if (window.Promise) polyfills.push('Promise');
     if (window.fetch) polyfills.push('Fetch');
     if (window.URL && window.URLSearchParams) polyfills.push('URL');
@@ -321,7 +312,7 @@ export default {
     if (window.console) polyfills.push('Console');
     if (window.localStorage) polyfills.push('localStorage');
     if (window.sessionStorage) polyfills.push('sessionStorage');
-    
+
     return polyfills;
   }
 };

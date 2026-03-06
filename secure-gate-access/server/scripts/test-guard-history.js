@@ -3,7 +3,6 @@
  * Quick test of guard visitor-history endpoint
  */
 
-import fetch from 'node-fetch';
 
 const API_BASE = 'http://localhost:3001';
 const GUARD_CREDENTIALS = {

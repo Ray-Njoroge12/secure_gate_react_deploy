@@ -8,10 +8,10 @@
 
 ```bash
 # 1. Start all services
-./quick-start-testing.sh
+./scripts/maintenance/quick-start-testing.sh
 
 # 2. Open testing interfaces
-./open-testing-tools.sh
+./scripts/maintenance/open-testing-tools.sh
 
 # 3. Follow the checklist
 # Open TESTING_CHECKLIST.md in your browser or editor
@@ -24,22 +24,25 @@ That's it! Your system is ready for testing.
 ## 🎯 What You Can Test Now
 
 ### 1. Manual UI Testing (Recommended for First Time)
+
 - Register users (Admin, Guard, Resident)
 - Create guest invites
 - Check-in/out visitors
 - View access logs
 - Test all user workflows
 
-**Start here**: Open http://localhost:3000 and follow `TESTING_CHECKLIST.md`
+**Start here**: Open <http://localhost:3000> and follow `TESTING_CHECKLIST.md`
 
 ### 2. Automated E2E Testing
+
 ```bash
 npx playwright test e2e/full-system-test.spec.js --headed
 ```
 
 ### 3. Database Verification
+
 ```bash
-./verify-test-data.sh
+./scripts/maintenance/verify-test-data.sh
 ```
 
 ---
@@ -48,9 +51,9 @@ npx playwright test e2e/full-system-test.spec.js --headed
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Frontend | http://localhost:3000 | Main application |
-| Backend | http://localhost:5001 | API server |
-| MailHog | http://localhost:8025 | Email viewer |
+| Frontend | <http://localhost:3000> | Main application |
+| Backend | <http://localhost:5001> | API server |
+| MailHog | <http://localhost:8025> | Email viewer |
 
 ---
 
@@ -77,22 +80,26 @@ Resident User:
 ## 📋 Testing Workflow (30 minutes)
 
 ### Step 1: Start Services (2 min)
+
 ```bash
-./quick-start-testing.sh
+./scripts/maintenance/quick-start-testing.sh
 ```
 
 ### Step 2: Open Browsers (1 min)
+
 ```bash
-./open-testing-tools.sh
+./scripts/maintenance/open-testing-tools.sh
 ```
 
 ### Step 3: Register Users (5 min)
-- Go to http://localhost:3000
+
+- Go to <http://localhost:3000>
 - Register Admin, Guard, and Resident
 - Check MailHog for verification emails
 - Click verification links
 
 ### Step 4: Test Resident Flow (10 min)
+
 - Log in as Resident
 - Create single guest invite
 - Create bulk invites (3 guests)
@@ -100,6 +107,7 @@ Resident User:
 - Check emails in MailHog
 
 ### Step 5: Test Guard Flow (10 min)
+
 - Log in as Guard
 - View visitor list
 - Check-in a visitor
@@ -107,6 +115,7 @@ Resident User:
 - View access logs
 
 ### Step 6: Test Admin Flow (10 min)
+
 - Log in as Admin
 - View all visitors
 - Review audit logs
@@ -117,20 +126,23 @@ Resident User:
 ## 🐛 Troubleshooting
 
 ### Services not starting?
+
 ```bash
 # Check what's running
-./manual-testing-guide.sh
+./scripts/maintenance/manual-testing-guide.sh
 # Select option 1 (Check System Status)
 ```
 
 ### Need to verify test data?
+
 ```bash
-./verify-test-data.sh
+./scripts/maintenance/verify-test-data.sh
 ```
 
 ### Clear and start fresh?
+
 ```bash
-./verify-test-data.sh
+./scripts/maintenance/verify-test-data.sh
 # Select option 2 (Clear test data)
 ```
 
@@ -139,6 +151,7 @@ Resident User:
 ## 📚 Full Documentation
 
 For comprehensive testing instructions, see:
+
 - **TESTING_CHECKLIST.md** - Complete step-by-step testing guide
 - **TESTING_SUMMARY.md** - Overview of all testing tools and workflows
 - **EMAIL_SETUP_GUIDE.md** - Email configuration details
@@ -159,6 +172,7 @@ For comprehensive testing instructions, see:
 ## ✅ Success Checklist
 
 After testing, you should have verified:
+
 - ✅ User registration works for all roles
 - ✅ Email verification works
 - ✅ Login/logout functions
@@ -173,6 +187,7 @@ After testing, you should have verified:
 ## 🚀 Next Steps
 
 After successful local testing:
+
 1. Run automated E2E tests
 2. Check test coverage
 3. Configure production email (Mailgun)
@@ -181,6 +196,6 @@ After successful local testing:
 
 ---
 
-**Need help?** Check the full documentation or run `./manual-testing-guide.sh` for interactive assistance.
+**Need help?** Check the full documentation or run `./scripts/maintenance/manual-testing-guide.sh` for interactive assistance.
 
 **Happy Testing! 🎉**

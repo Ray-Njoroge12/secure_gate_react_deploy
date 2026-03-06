@@ -3,7 +3,6 @@
  * Tests all seeded user credentials to ensure they work correctly
  */
 
-import fetch from 'node-fetch';
 
 const API_URL = 'http://127.0.0.1:3001';
 

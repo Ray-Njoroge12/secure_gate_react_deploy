@@ -6,7 +6,7 @@
 
 import express from 'express';
 import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
-import auditLoggerFactory from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import { asyncHandler, AppError, ERROR_CODES } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
 import { dbManager } from '../database/db.enhanced.js';
@@ -14,7 +14,6 @@ import { PASS_STATUS } from '../constants/statuses.js';
 import { minimizeData } from '../middleware/dataMinimization.js';
 
 const router = express.Router();
-const attachRequestAudit = auditLoggerFactory();
 
 /**
  * Check out visitor by QR code

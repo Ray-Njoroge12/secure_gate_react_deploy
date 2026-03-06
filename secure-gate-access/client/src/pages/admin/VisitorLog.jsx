@@ -4,9 +4,7 @@ import {
   checkInVisitor,
   checkOutVisitor
 } from '../../services/adminService';
-import Table from '../../components/ui/Table';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
+import { ResponsiveTable as Table, Button, Input } from '../../components/ui';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog';
 import { useError } from '../../contexts/ErrorContext';
 
@@ -82,41 +80,46 @@ const VisitorLog = ({ estateId }) => {
   };
 
   const columns = [
-    { header: 'Visitor', accessor: 'name' },
-    { header: 'Host', accessor: 'host_name' || 'host' }, // Fallback if join is missing
-    { header: 'Access Code', accessor: 'access_code' },
+    { label: 'Visitor', key: 'name', priority: 1 },
+    { label: 'Host', key: 'host_name', priority: 2 }, // Fallback if join is missing
+    { label: 'Access Code', key: 'access_code', priority: 2 },
     {
-      header: 'Status',
-      accessor: 'status',
+      label: 'Status',
+      key: 'status',
+      priority: 1,
       render: (value) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${value === 'checked_in' ? 'bg-green-100 text-green-800' :
-            value === 'checked_out' ? 'bg-gray-100 text-gray-800' :
-              value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-blue-100 text-blue-800'
+          value === 'checked_out' ? 'bg-gray-100 text-gray-800' :
+            value === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-blue-100 text-blue-800'
           }`}>
-          {value.replace('_', ' ').toUpperCase()}
+          {String(value || '').replace('_', ' ').toUpperCase()}
         </span>
       )
     },
     {
-      header: 'Visit Date',
-      accessor: 'created_at',
+      label: 'Visit Date',
+      key: 'created_at',
+      priority: 3,
       render: (value) => new Date(value).toLocaleDateString()
     },
     {
-      header: 'Time',
-      accessor: (row) => row.check_in || row.created_at,
-      render: (val, row) => {
+      label: 'Time',
+      key: 'id', // Re-using key for complex render
+      priority: 3,
+      render: (_, row) => {
         if (row.check_out) return `Out: ${new Date(row.check_out).toLocaleTimeString()}`;
         if (row.check_in) return `In: ${new Date(row.check_in).toLocaleTimeString()}`;
         return '-';
       }
     },
     {
-      header: 'Actions',
-      accessor: 'id',
+      label: 'Actions',
+      key: 'id',
+      priority: 1,
+      className: 'text-right',
       render: (_, visitor) => (
-        <div className="flex gap-2">
+        <div className="flex justify-end gap-2">
           {visitor.status === 'approved' || visitor.status === 'verified' ? (
             <Button
               size="xs"

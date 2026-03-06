@@ -3,7 +3,6 @@
  * Simulates the exact flow that ManualCheck.jsx uses to search for visitors by OTP
  */
 
-import fetch from 'node-fetch';
 import { dbManager } from '../src/database/db.enhanced.js';
 
 // Test credentials

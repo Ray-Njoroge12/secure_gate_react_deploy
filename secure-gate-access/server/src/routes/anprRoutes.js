@@ -8,12 +8,11 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { authenticateToken } from '../middleware/authMiddleware.js';
-import auditLoggerFactory from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import anprService from '../services/anprService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
-const attachRequestAudit = auditLoggerFactory();
 const anprLookupLimitMax = Number(process.env.ANPR_LOOKUP_RATE_LIMIT_MAX || 30);
 const anprLookupLimiter = rateLimit({
   windowMs: 60 * 1000,

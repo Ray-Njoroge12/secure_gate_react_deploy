@@ -1,16 +1,11 @@
 // server/server.js
-import dotenv from 'dotenv';
+import './load-env.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment files in priority order:
-// 1. .env.local (gitignored, contains secrets) - highest priority
-// 2. .env (tracked, contains defaults only) - fallback
-dotenv.config({ path: join(__dirname, '.env.local') }); // Secrets (dev)
-dotenv.config({ path: join(__dirname, '.env') }); // Defaults
 
 // Load console override for production safety (MUST BE FIRST)
 import './src/config/consoleOverride.js';
@@ -19,7 +14,7 @@ import './src/config/consoleOverride.js';
 import EnvironmentConfig from './src/config/environment.js';
 
 // Enhanced health monitoring imports
-import { enhancedHealthMonitoring as healthCheck } from './src/services/enhancedHealthService.js';
+import { enhancedHealthMonitoring as healthCheck } from './src/services/healthCore.js';
 import { createHealthMonitoring } from './integration/health-monitoring-integration.js';
 import loggingService from './src/services/loggingService.js';
 import { getDataRetentionSchedulerNotice, getStartupConsoleMessages } from './src/utils/startupLogHygiene.js';

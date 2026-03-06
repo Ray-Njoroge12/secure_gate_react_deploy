@@ -7,10 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Secure Gate Access Control System - A full-stack visitor management platform for gated communities and estates with role-based access for residents, guards, and administrators.
 
 **Tech Stack:**
+
 - **Frontend:** React 18.3, React Router, Socket.io-client, Axios, TailwindCSS
 - **Backend:** Express.js (ES modules), PostgreSQL, Redis, Socket.io, JWT auth
 - **Testing:** Jest (unit/integration), Playwright (E2E), k6 (performance)
-- **Infrastructure:** Node ≥20.11.0, Docker support
+- **Infrastructure**: Node ≥20.11.0, Docker support, **Primary Hosting: AWS (ECS Fargate / RDS Postgres / CloudFront)**
 
 ## Architecture
 
@@ -44,6 +45,7 @@ secure-gate-access/
 The system has three primary user roles with distinct functionality:
 
 **1. Resident:**
+
 - Generate visitor invitations (single, bulk, recurring)
 - Manage favorite visitors
 - View visitor history and delivery logs
@@ -51,6 +53,7 @@ The system has three primary user roles with distinct functionality:
 - Receive real-time notifications
 
 **2. Guard:**
+
 - Scan QR codes for visitor entry
 - Manual visitor check-in/check-out
 - Walk-in registration
@@ -59,6 +62,7 @@ The system has three primary user roles with distinct functionality:
 - Shift handover management
 
 **3. Admin/Super Admin:**
+
 - Manage users (residents, guards)
 - View system analytics and reports
 - Configure estates/sites
@@ -151,7 +155,8 @@ npm run retention:run        # Run GDPR data retention
 ### Connection
 
 - Uses `pg` (node-postgres) with connection pooling
-- Supports `DATABASE_URL` (for Render/Railway) or individual `PG*` env vars
+- Supports `DATABASE_URL` (for local/dev) or individual `PG*` env vars
+- **Production**: Fetches secrets from **AWS Secrets Manager**
 - SSL enabled in production
 - Pool sizes: 20 connections (prod), 40 (test)
 - Managed by `DatabaseManager` class in `db.enhanced.js`
@@ -161,6 +166,7 @@ npm run retention:run        # Run GDPR data retention
 Located in: `server/src/database/migrations/`
 
 **Key migrations:**
+
 - `001_initial_schema.sql` - Core tables (users, visitors, estates)
 - `002_compliance_tables.sql` - GDPR/KDPA compliance
 - `006_logging_monitoring.sql` - Audit and monitoring
@@ -168,6 +174,7 @@ Located in: `server/src/database/migrations/`
 - `061_privacy_compliance_system.sql` - Privacy features
 
 **Running migrations:**
+
 ```bash
 cd secure-gate-access/server
 npm run db:migrate
@@ -189,12 +196,14 @@ npm run db:migrate
 ### Token-Based Auth (JWT)
 
 **Authentication Flow:**
+
 1. Login: POST `/api/auth/login` → Returns httpOnly cookies (`accessToken`, `refreshToken`)
 2. Access: Include cookies automatically or `Authorization: Bearer <token>` header
 3. Refresh: POST `/api/auth/refresh` → Issues new access token
 4. Logout: POST `/api/auth/logout` → Clears cookies and invalidates refresh token
 
 **Middleware Stack:**
+
 ```javascript
 authenticateToken       // Verifies JWT and attaches req.user
 requireRole(['admin'])  // Enforces role-based access
@@ -202,6 +211,7 @@ requireEstate           // Ensures user has estate_id
 ```
 
 **Token Service:**
+
 - Access tokens: 15min expiry (configurable via `JWT_EXPIRES_IN`)
 - Refresh tokens: 30 days, stored in DB, one-time use
 - Located in: `server/src/services/tokenService.js`
@@ -225,23 +235,27 @@ requireEstate           // Ensures user has estate_id
 ## Testing Strategy
 
 ### Unit Tests
+
 - Location: `server/tests/unit/`, `client/src/__tests__/`
 - Framework: Jest with ES modules (`--experimental-vm-modules`)
 - Run: `npm run test:unit`
 - Focus: Services, utils, middleware, pure functions
 
 ### Integration Tests
+
 - Location: `server/tests/integration/`, `client/src/__tests__/integration/`
 - Tests full API flows with real database (test DB)
 - Run: `npm run test:integration`
 - **Critical tests:** auth-refresh, invite-lifecycle, estate-scoping
 
 ### E2E Tests
+
 - Playwright tests in `client/e2e/` and `server/tests/e2e/`
 - Test user flows across roles
 - Run: `npm run test:playwright` or `npm run test:e2e`
 
 ### Performance Tests
+
 - k6 load testing scripts in `server/tests/performance/`
 - Run: `npm run test:performance:load`, `:stress`, `:spike`
 
@@ -316,6 +330,7 @@ res.error({ message: 'Not found', statusCode: 404 });
 ### Environment Variables
 
 **Server:** `.env` or `.env.local` (secrets)
+
 - `DATABASE_URL` or `PG*` variables
 - `JWT_SECRET` (required)
 - `JWT_REFRESH_SECRET` (required)
@@ -323,6 +338,7 @@ res.error({ message: 'Not found', statusCode: 404 });
 - `CLIENT_ORIGIN` (CORS, required in production)
 
 **Client:** `.env.local`
+
 - `REACT_APP_API_URL` (backend URL)
 
 ## Common Workflows
@@ -375,5 +391,5 @@ npm run test:e2e               # Full system E2E tests
 ## Documentation
 
 - Runbooks: `docs/ops/runbooks/`
-- Deployment: `docs/ops/deployment/DEPLOYMENT_MASTER_GUIDE.md`
+- Deployment: `documentation/guides/DEPLOYMENT_GUIDE.md` (Primary AWS Guide)
 - Testing guides: `docs/testing/`

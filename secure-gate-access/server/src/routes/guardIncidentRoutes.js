@@ -8,7 +8,7 @@ import express from 'express';
 import { createIncident, getIncidents, resolveIncident } from '../controllers/incidentController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
-import attachRequestAudit from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 
 const router = express.Router();
 

@@ -5,12 +5,11 @@
 
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
-import auditLoggerFactory from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import recurringVisitorService from '../services/recurringVisitorService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
-const attachRequestAudit = auditLoggerFactory();
 
 /**
  * Create a recurring pass (Resident)

@@ -3,7 +3,6 @@
  * Checks guard user permissions, estate scoping, and API access
  */
 
-import fetch from 'node-fetch';
 import { dbManager } from '../src/database/db.enhanced.js';
 
 const GUARD_CREDENTIALS = {

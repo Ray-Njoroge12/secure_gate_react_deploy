@@ -19,7 +19,7 @@ import {
 } from '../controllers/bulkOperationsController.js';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
-import attachRequestAudit from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import { rateLimit } from 'express-rate-limit';
 
 const router = express.Router();

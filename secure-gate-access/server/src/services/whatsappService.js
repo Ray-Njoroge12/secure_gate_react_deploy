@@ -15,7 +15,6 @@
  * - WHATSAPP_VERIFY_TOKEN: Webhook verification token (for incoming messages)
  */
 
-import fetch from 'node-fetch';
 import loggingService from './loggingService.js';
 
 // Configuration

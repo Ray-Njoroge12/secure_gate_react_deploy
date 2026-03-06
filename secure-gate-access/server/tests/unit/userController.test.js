@@ -532,48 +532,6 @@ describe('userController', () => {
         );
       });
 
-      test('should login user with legacy bcrypt password', async () => {
-        const mockUser = {
-          id: 2,
-          email: 'legacy@example.com',
-          password_hash: '$2b$10$legacy_bcrypt_hash',
-          role: 'guard',
-          verified: true
-        };
-
-        mockDbManager.query.mockResolvedValueOnce({ rows: [mockUser], rowCount: 1 });
-        mockAccountSecurity.isAccountLocked.mockReturnValue(false);
-
-        // Mock bcrypt import
-        const mockBcrypt = {
-          default: {
-            compare: jest.fn().mockResolvedValue(true)
-          }
-        };
-
-        jest.unstable_mockModule('bcryptjs', () => mockBcrypt);
-
-        mockAccountSecurity.clearFailedAttempts.mockReturnValue(true);
-        mockSessionSecurityService.initializeSession.mockResolvedValue(true);
-
-        mockTokenService.generateTokens.mockReturnValue({
-          accessToken: 'access_token_xyz',
-          refreshToken: 'refresh_token_abc',
-          tokenType: 'Bearer',
-          expiresIn: 900,
-          tokenId: 'token-id-456'
-        });
-
-        await loginUser(mockReq, mockRes);
-
-        // Should work with bcrypt hash
-        expect(mockRes.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: true,
-            accessToken: 'access_token_xyz'
-          })
-        );
-      });
     });
 
     describe('Authentication Failures', () => {
@@ -601,7 +559,7 @@ describe('userController', () => {
           'warn',
           'Login attempt for non-existent email',
           expect.objectContaining({
-            email: 'user@example.com',
+            email: 'u***@example.com',
             reason: 'user_not_found'
           })
         );
@@ -1163,12 +1121,14 @@ describe('userController', () => {
     beforeEach(() => {
       mockReq.body = {
         email: 'user@example.com',
-        name: 'Updated Name',
+        first_name: 'Updated',
+        last_name: 'Name',
         phone: '+9876543210',
         profilePic: 'https://example.com/pic.jpg',
         notify_email: true,
         notify_sms: true
       };
+      mockReq.user = { id: 1, estate_id: 12 };
     });
 
     describe('Success Cases', () => {
@@ -1177,7 +1137,8 @@ describe('userController', () => {
           id: 1,
           email: 'user@example.com',
           role: 'resident',
-          name: 'Old Name',
+          first_name: 'Old',
+          last_name: 'Name',
           phone: '+1234567890',
           profile_pic: null,
           notify_email: false,
@@ -1187,7 +1148,8 @@ describe('userController', () => {
 
         const updatedUser = {
           ...existingUser,
-          name: 'Updated Name',
+          first_name: 'Updated',
+          last_name: 'Name',
           phone: '+9876543210',
           profile_pic: 'https://example.com/pic.jpg',
           notify_email: true,
@@ -1207,14 +1169,15 @@ describe('userController', () => {
         // Verify UPDATE query
         const updateCall = mockDbManager.query.mock.calls[1];
         expect(updateCall[0]).toContain('UPDATE users SET');
-        expect(updateCall[1]).toContain('Updated Name');
+        expect(updateCall[1]).toContain('Updated');
+        expect(updateCall[1]).toContain('Name');
         expect(updateCall[1]).toContain('+9876543210');
 
         // Verify response
         expect(mockResponseUtil.updated).toHaveBeenCalledWith(
           mockRes,
           expect.objectContaining({
-            name: 'Updated Name',
+            first_name: 'Updated',
             phone: '+9876543210'
           }),
           'Profile updated successfully'

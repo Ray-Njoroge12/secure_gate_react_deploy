@@ -6,14 +6,13 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
-import auditLoggerFactory from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import deliveryService from '../services/deliveryService.js';
 import { sendDeliveryNotification, sendHandoffDecisionNotification } from '../services/notificationService.js';
 import multer from 'multer';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
-const attachRequestAudit = auditLoggerFactory();
 
 // All delivery routes require authentication and estate context
 router.use(authenticateToken);

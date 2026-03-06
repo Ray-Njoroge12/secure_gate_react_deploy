@@ -6,7 +6,7 @@
 import express from 'express';
 import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
-import auditLoggerFactory from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
 import { dbManager } from '../database/db.enhanced.js';
@@ -15,7 +15,6 @@ import { minimizeData } from '../middleware/dataMinimization.js';
 import { strictRateLimit } from '../middleware/rateLimitMiddleware.js';
 
 const router = express.Router();
-const attachRequestAudit = auditLoggerFactory();
 
 // All check-in routes require authentication and estate context
 router.use(authenticateToken);

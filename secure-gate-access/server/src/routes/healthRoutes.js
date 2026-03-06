@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { systemHealthService } from '../services/systemHealthService.js';
+import { systemHealthService } from '../services/healthCore.js';
 import performanceMonitoringService from '../services/performanceMonitoringService.js';
 import performanceAlertingService from '../services/performanceAlertingService.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';

@@ -2,17 +2,12 @@
 import pkg from 'pg';
 import { EventEmitter } from 'events';
 import { setTimeout as setTimeoutPromise } from 'timers/promises';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-// Ensure environment variables are loaded first
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
-dotenv.config({ path: join(__dirname, '../..', envFile) });
+import EnvironmentConfig from '../config/environment.js';
 
 const { Pool, Client } = pkg;
+const config = new EnvironmentConfig();
+const dbConfig = config.getDatabaseConfig();
+
 const SHOULD_LOG_DB = process.env.NODE_ENV !== 'test';
 const IS_RENDER_ENVIRONMENT = Boolean(
   process.env.RENDER === 'true' ||
@@ -39,7 +34,7 @@ const logDb = (...args) => {
  * Database connection health monitoring and management
  */
 class DatabaseManager extends EventEmitter {
-  constructor(config = {}) {
+  constructor() {
     super();
 
     // Support DATABASE_URL (Render provides this) or individual PG* variables
@@ -60,14 +55,12 @@ class DatabaseManager extends EventEmitter {
     const pgPassword = process.env.PGPASSWORD || process.env.PG_PASSWORD || process.env.POSTGRES_PASSWORD || 'postgres';
 
     // Log which connection method is being used (without exposing credentials)
-    if (connectionString) {
-      // Parse DATABASE_URL to show connection info without password
+    if (dbConfig.connectionString) {
       try {
-        const url = new URL(connectionString);
-        logDb(`📊 Database: Using DATABASE_URL (host: ${url.hostname}, db: ${url.pathname.slice(1)})`);
-        logDb(`📊 Database: SSL required for cloud deployment`);
+        const url = new URL(dbConfig.connectionString);
+        logDb(`📊 Database: Using connection URL (host: ${url.hostname}, db: ${url.pathname.slice(1)})`);
       } catch {
-        logDb('📊 Database: Using DATABASE_URL connection string');
+        logDb('📊 Database: Using database connection string');
       }
     } else {
       logDb(`📊 Database: Using individual PG* variables (host: ${pgHost})`);
@@ -79,44 +72,27 @@ class DatabaseManager extends EventEmitter {
     }
 
     this.config = {
-      // Use DATABASE_URL if provided, otherwise use individual variables
-      ...(connectionString ? { connectionString } : {
-        user: pgUser,
-        host: pgHost,
-        database: pgDatabase,
-        password: pgPassword,
-        port: pgPort,
-      }),
+      ...(dbConfig.connectionString
+        ? { connectionString: dbConfig.connectionString }
+        : {
+          user: dbConfig.user,
+          host: dbConfig.host,
+          database: dbConfig.database,
+          password: dbConfig.password,
+          port: dbConfig.port,
+        }
+      ),
 
-      // SSL configuration for cloud providers
-      // Only enable SSL if explicitly requested or in production
-      ssl: (process.env.DB_SSL === 'true' || (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.includes('localhost')))
-        ? { rejectUnauthorized: false }
-        : false,
+      ssl: dbConfig.ssl,
+      max: dbConfig.pool.max,
+      idleTimeoutMillis: dbConfig.pool.idleTimeoutMillis,
+      connectionTimeoutMillis: dbConfig.pool.connectionTimeoutMillis,
 
-      // Pool configuration optimized for cloud environments (especially Render)
-      // Phase 3.2: Increased pool size for better performance
-      // Phase 2 Integration Testing: Higher pool size for test environment (40) vs production (20)
-      max: Number(process.env.PGPOOL_MAX) || (process.env.NODE_ENV === 'test' ? 40 : 20),
-      min: Number(process.env.PGPOOL_MIN) || (process.env.NODE_ENV === 'test' ? 10 : 5),
-      idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT) || (process.env.NODE_ENV === 'test' ? 30000 : 10000),
-      connectionTimeoutMillis: Number(process.env.PGPOOL_CONN_TIMEOUT) || 60000, // 60s for cloud cold starts
-
-      // Statement timeout to prevent hanging queries
-      statement_timeout: Number(process.env.PGPOOL_STATEMENT_TIMEOUT) || 30000,
-      query_timeout: Number(process.env.PGPOOL_QUERY_TIMEOUT) || 30000,
-
-      // Enhanced stability features for cloud
+      // Enhanced stability features
       keepAlive: true,
-      keepAliveInitialDelayMillis: Number(process.env.PGPOOL_KEEPALIVE_DELAY) || 10000,
-
-      // Allow pooling to handle connection drops gracefully
-      allowExitOnIdle: true,
-
-      // Custom config overrides
-      ...config
+      keepAliveInitialDelayMillis: 10000,
+      allowExitOnIdle: true
     };
-
     this.pool = null;
     this.isConnected = false;
     this.connectionAttempts = 0;

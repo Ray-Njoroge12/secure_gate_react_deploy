@@ -20,13 +20,31 @@ import { existsSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const envPath = join(__dirname, '.env');
+const getServerEnv = (file) => join(__dirname, file);
+const getRootEnv = (file) => join(__dirname, '..', file);
 
-if (existsSync(envPath)) {
-  console.log('📝 Loading environment from .env...');
-  dotenv.config({ path: envPath });
-} else if (process.env.NODE_ENV !== 'production') {
-  console.warn('⚠️  .env not found - copy .env.example to .env and configure');
+// Determine target file based on NODE_ENV
+const envFile = process.env.NODE_ENV === 'staging' ? '.env.staging' : '.env';
+
+const paths = [
+  getServerEnv(envFile),
+  getRootEnv(envFile),
+  getServerEnv('.env'), // Fallback
+  getRootEnv('.env')    // Fallback
+];
+
+let found = false;
+for (const path of paths) {
+  if (existsSync(path)) {
+    console.log(`📝 Loading environment from ${path}...`);
+    dotenv.config({ path: path });
+    found = true;
+    break;
+  }
 }
 
-console.log('✅ Environment variables loaded');
+if (!found && process.env.NODE_ENV !== 'production') {
+  console.warn('⚠️  No environment file found (.env or .env.staging). Check .env.example in root.');
+}
+
+console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
