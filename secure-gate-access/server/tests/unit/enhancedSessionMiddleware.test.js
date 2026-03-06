@@ -30,6 +30,7 @@ const mockLoggingService = {
 };
 
 const mockSession = jest.fn();
+mockSession.MemoryStore = jest.fn(() => mockMemoryStore);
 const mockRedisStore = jest.fn();
 const mockMemoryStore = jest.fn();
 const mockCryptoRandomBytes = jest.fn();
@@ -42,11 +43,9 @@ jest.unstable_mockModule('connect-redis', () => ({
   RedisStore: mockRedisStore
 }));
 
-jest.unstable_mockModule('memorystore', () => ({
-  default: jest.fn(() => mockMemoryStore)
-}));
 
 jest.unstable_mockModule('crypto', () => ({
+  randomBytes: mockCryptoRandomBytes,
   default: {
     randomBytes: mockCryptoRandomBytes
   }

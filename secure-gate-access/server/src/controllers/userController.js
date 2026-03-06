@@ -1,7 +1,7 @@
 import { dbManager } from '../database/db.enhanced.js';
 import { auditLog } from '../services/auditService.js';
 import { tokenService, passwordService, accountSecurity } from '../services/tokenService.js';
-import auditLogger from '../services/auditLogger.js';
+import { successResponse } from '../utils/responseFormatter.js';
 import { ErrorHelper } from '../middleware/standardizedErrorHandler.js';
 import { ResponseUtil, sanitizeUser } from '../utils/responseUtils.js';
 import { errorResponse } from '../utils/responseFormatter.js';
@@ -79,25 +79,23 @@ export async function loginUser(req, res) {
     const user = result?.rows?.[0];
 
     if (!user) {
-      loggingService.logSecurity('warn', 'Login attempt for non-existent email', {
+      loggingService.logSecurity('warn', 'auth.login.failed', {
         email: maskEmail(email),
-        reason: 'user_not_found'
-      });
-      auditLogger.logLoginAttempt(false, null, req.ip, req.get('User-Agent'), req.sessionID, {
-        email,
-        reason: 'user_not_found'
+        reason: 'user_not_found',
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
       });
       return errorResponse(res, 'Invalid credentials', 'INVALID_CREDENTIALS', 401, null, req);
     }
 
     if (accountSecurity.isAccountLocked(user.id)) {
       const lockoutInfo = accountSecurity.getLockoutInfo(user.id);
-      auditLogger.logAccountLockout(
-        user.id,
-        req.ip,
-        'login_attempt_while_locked',
-        lockoutInfo?.attemptCount
-      );
+      loggingService.logSecurity('warn', 'auth.account.locked_access_attempt', {
+        userId: user.id,
+        ip: req.ip,
+        reason: 'login_attempt_while_locked',
+        attemptCount: lockoutInfo?.attemptCount
+      });
 
       const remainingTimeMinutes = lockoutInfo?.remainingTime
         ? Math.ceil(lockoutInfo.remainingTime / 60000)
@@ -121,13 +119,7 @@ export async function loginUser(req, res) {
 
     let isValidPassword = false;
     try {
-      if (typeof user.password_hash === 'string' && user.password_hash.startsWith('$2')) {
-        const bcrypt = await import('bcryptjs');
-        const compareFn = bcrypt?.default?.compare || bcrypt?.compare;
-        isValidPassword = await compareFn(password, user.password_hash);
-      } else {
-        isValidPassword = await passwordService.verifyPassword(password, user.password_hash);
-      }
+      isValidPassword = await passwordService.verifyPassword(password, user.password_hash);
     } catch (err) {
       loggingService.logError('Password verification error during login', err, {
         email: maskEmail(email),
@@ -138,14 +130,21 @@ export async function loginUser(req, res) {
 
     if (!isValidPassword) {
       const attemptInfo = accountSecurity.recordFailedAttempt(user.id, req.ip);
-      auditLogger.logLoginAttempt(false, user.id, req.ip, req.get('User-Agent'), req.sessionID, {
+      loggingService.logSecurity('warn', 'auth.login.failed', {
+        userId: user.id,
         reason: 'invalid_password',
         attemptCount: attemptInfo?.totalAttempts,
-        remainingAttempts: attemptInfo?.remainingAttempts
+        remainingAttempts: attemptInfo?.remainingAttempts,
+        ip: req.ip
       });
 
       if (attemptInfo?.isLocked) {
-        auditLogger.logAccountLockout(user.id, req.ip, 'too_many_failed_attempts', attemptInfo?.totalAttempts);
+        loggingService.logSecurity('warn', 'auth.account.locked', {
+          userId: user.id,
+          ip: req.ip,
+          reason: 'too_many_failed_attempts',
+          attemptCount: attemptInfo?.totalAttempts
+        });
         return errorResponse(res, 'Too many failed attempts. Account temporarily locked.', 'ACCOUNT_LOCKED', 401, null, req);
       }
 
@@ -186,9 +185,10 @@ export async function loginUser(req, res) {
       path: '/api/auth/refresh'
     });
 
-    auditLogger.logLoginAttempt(true, user.id, req.ip, req.get('User-Agent'), req.sessionID, {
+    loggingService.logSecurity('info', 'auth.login.success', {
+      userId: user.id,
       role: user.role,
-      tokenId: tokens.tokenId,
+      ip: req.ip,
       loginMethod: 'password'
     });
 
@@ -239,11 +239,11 @@ export async function refreshToken(req, res) {
       path: '/api/auth/refresh'
     });
 
-    auditLogger.logSecurityEvent(
-      'user.token.refresh',
-      { oldTokenId: decoded.tokenId, newTokenId: tokens.tokenId },
-      { userId: user.id }
-    );
+    loggingService.logSecurity('info', 'auth.token.refreshed', {
+      userId: user.id,
+      oldTokenId: decoded.tokenId,
+      newTokenId: tokens.tokenId
+    });
 
     return res.json({
       success: true,
@@ -287,16 +287,13 @@ export async function logoutUser(req, res) {
       res.clearCookie('refreshToken', { path: '/api/auth/refresh' });
     }
 
-    auditLogger.logSecurityEvent(
-      'user.logout',
-      {
-        hasRefreshToken: Boolean(refresh),
-        hasAccessToken: Boolean(access),
-        tokensRevoked,
-        sessionDestroyed
-      },
-      { userId: req?.user?.id }
-    );
+    loggingService.logSecurity('info', 'auth.logout', {
+      userId: req?.user?.id,
+      hasRefreshToken: Boolean(refresh),
+      hasAccessToken: Boolean(access),
+      tokensRevoked,
+      sessionDestroyed
+    });
 
     return res.json({ success: true, message: 'Logged out successfully' });
   } catch (err) {
@@ -364,17 +361,11 @@ export async function changePassword(req, res) {
 
   // 2. Verify current password
   let isValidPassword = false;
-  if (typeof user.password_hash === 'string' && user.password_hash.startsWith('$2')) {
-    const bcrypt = await import('bcryptjs');
-    const compareFn = bcrypt?.default?.compare || bcrypt?.compare;
-    isValidPassword = await compareFn(currentPassword, user.password_hash);
-  } else {
-    isValidPassword = await passwordService.verifyPassword(currentPassword, user.password_hash);
-  }
+  isValidPassword = await passwordService.verifyPassword(currentPassword, user.password_hash);
 
   if (!isValidPassword) {
     // Audit log failed attempt?
-    auditLogger.logSecurityEvent('user.password_change.failed', { reason: 'invalid_current_password' }, { userId });
+    loggingService.logSecurity('warn', 'auth.password.change_failed', { userId, reason: 'invalid_current_password' });
     return errorResponse(res, 'Invalid current password', 'INVALID_CREDENTIALS', 401, null, req);
   }
 
@@ -396,7 +387,7 @@ export async function changePassword(req, res) {
   );
 
   // 6. Security logging
-  auditLogger.logSecurityEvent('user.password_change.success', {}, { userId });
+  loggingService.logSecurity('info', 'auth.password.changed', { userId });
   loggingService.info('User changed password successfully', { userId });
 
   // 7. Revoke all other sessions/tokens? 

@@ -138,7 +138,7 @@ LOG_ERRORS=true
 LOG_SECURITY=true
 
 # CORS (⚠️ UPDATE THIS!)
-CORS_ORIGIN=https://yourdomain.com
+CLIENT_ORIGIN=https://yourdomain.com
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS=900000
@@ -273,7 +273,7 @@ cat > PRE_DEPLOYMENT_TODO.md << EOF
 - [ ] Update DATABASE_URL in .env.production
 - [ ] Update EMAIL/SMTP settings
 - [ ] Update Twilio SMS credentials
-- [ ] Update CORS_ORIGIN with your domain
+- [ ] Update CLIENT_ORIGIN with your domain
 - [ ] Verify all keys are securely stored
 - [ ] Remove any placeholder values
 

@@ -1,7 +1,52 @@
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError, camelize } from '../utils/respond.js';
 import { maskEmail, maskPhone } from '../utils/redaction.js';
-import { getAuditLogs as fetchAuditLogs } from '../middleware/auditLogger.js';
+
+/**
+ * Inline audit log query (replaces archived auditLogger.getAuditLogs)
+ * Queries the audit_logs table directly with the same filter signature.
+ */
+const fetchAuditLogs = async (filters = {}) => {
+    const {
+        userId = null,
+        eventType = null,
+        level = null,
+        startDate = null,
+        endDate = null,
+        limit = 100,
+        offset = 0
+    } = filters;
+
+    let query = 'SELECT * FROM audit_logs WHERE 1=1';
+    const values = [];
+    let paramCount = 0;
+
+    if (userId) {
+        query += ` AND user_id = $${++paramCount}`;
+        values.push(userId);
+    }
+    if (eventType) {
+        query += ` AND action = $${++paramCount}`;
+        values.push(eventType);
+    }
+    if (level) {
+        query += ` AND details::json->>'level' = $${++paramCount}`;
+        values.push(level);
+    }
+    if (startDate) {
+        query += ` AND created_at >= $${++paramCount}`;
+        values.push(startDate);
+    }
+    if (endDate) {
+        query += ` AND created_at <= $${++paramCount}`;
+        values.push(endDate);
+    }
+    query += ` ORDER BY created_at DESC LIMIT $${++paramCount} OFFSET $${++paramCount}`;
+    values.push(limit, offset);
+
+    const result = await dbManager.query(query, values);
+    return result.rows;
+};
 import metricsService from '../services/metricsService.js';
 
 /**
@@ -424,8 +469,8 @@ const deleteEstate = async (req, res) => {
             [req.user.id, reason || null, id]
         );
 
-        respond(res, { 
-            message: 'Estate decommissioned successfully', 
+        respond(res, {
+            message: 'Estate decommissioned successfully',
             estate: result.rows[0],
             note: 'All users from this estate will no longer be able to access the system'
         });
@@ -444,7 +489,7 @@ const searchGlobalUsers = async (req, res) => {
         }
 
         const { q, page = 1, limit = 20, role, status, estate_id, sortBy = 'created_at', sortOrder = 'desc' } = req.query;
-        
+
         if (!q || q.length < 3) {
             return respondError(res, 400, 'Search query must be at least 3 characters');
         }
@@ -508,7 +553,7 @@ const searchGlobalUsers = async (req, res) => {
             ORDER BY u.${safeSortBy} ${safeSortOrder}
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
-        
+
         const result = await dbManager.query(searchQuery, [...queryParams, limitNum, offset]);
 
         // Apply privacy masking to the results for the list view
@@ -526,8 +571,8 @@ const searchGlobalUsers = async (req, res) => {
 
         // Log the search action
         if (req.audit) {
-            await req.audit('user.search.global', 'user', null, { 
-                query: q, 
+            await req.audit('user.search.global', 'user', null, {
+                query: q,
                 resultCount: safeUsers.length,
                 totalCount: totalItems,
                 filters: { role, status, estate_id }

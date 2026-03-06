@@ -17,7 +17,7 @@ const report = {
   NODE_ENV: runtimeEnv,
   ENABLE_CSRF: process.env.ENABLE_CSRF ?? '(unset)',
   ENABLE_RATE_LIMIT: process.env.ENABLE_RATE_LIMIT ?? '(unset)',
-  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN ?? '(unset)',
+  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN ?? process.env.CORS_ORIGIN ?? '(unset)',
   STAGING_CLIENT_ORIGIN: process.env.STAGING_CLIENT_ORIGIN ?? '(unset)',
   STAGING_ADDITIONAL_ORIGINS: process.env.STAGING_ADDITIONAL_ORIGINS ?? '(unset)',
   CORS_ALLOW_NO_ORIGIN: process.env.CORS_ALLOW_NO_ORIGIN ?? '(unset)',

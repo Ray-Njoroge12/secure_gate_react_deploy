@@ -10,7 +10,7 @@
  * - Protocol security validations
  */
 
-import auditLogger from '../services/auditLogger.js';
+import loggingService from '../services/loggingService.js';
 import { getCookieOptions } from '../utils/cookies.js';
 
 /**
@@ -29,11 +29,10 @@ export const httpsEnforcement = (req, res, next) => {
   // Log HTTP access attempts in production/staging (with error handling)
   if (process.env.ENFORCE_HTTPS === 'true') {
     try {
-      auditLogger.logSecurityEvent('security.http_access_attempt', {
+      loggingService.logSecurity('warn', 'security.http_access_attempt', {
         originalUrl: req.originalUrl,
         method: req.method,
-        redirected: true
-      }, {
+        redirected: true,
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
         requestId: req.id
@@ -110,7 +109,7 @@ export const secureCookieConfig = (req, res, next) => {
   // Override res.cookie to add security attributes
   const originalCookie = res.cookie.bind(res);
 
-  res.cookie = function(name, value, options = {}) {
+  res.cookie = function (name, value, options = {}) {
     // Default secure cookie options
     const secureOptions = {
       ...baseOptions,
@@ -138,16 +137,15 @@ export const secureCookieConfig = (req, res, next) => {
       // Audit cookie setting for sensitive cookies (with error handling)
       if (['refreshToken', 'sessionId', 'authToken'].includes(name)) {
         try {
-          auditLogger.logSecurityEvent('security.secure_cookie_set', {
+          loggingService.logSecurity('info', 'security.secure_cookie_set', {
             cookieName: name,
             secure: secureOptions.secure,
             httpOnly: secureOptions.httpOnly,
-            sameSite: secureOptions.sameSite
-          }, {
-          ipAddress: req.ip,
-          userAgent: req.get('User-Agent'),
-          requestId: req.id
-        });
+            sameSite: secureOptions.sameSite,
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent'),
+            requestId: req.id
+          });
         } catch (error) {
           console.warn('Failed to log security event for cookie:', error.message);
         }
@@ -206,12 +204,11 @@ export const tlsSecurityValidation = (req, res, next) => {
       // Log TLS details for security analysis
       if (cipher && cipher.version) {
         try {
-          auditLogger.logSecurityEvent('security.tls_connection', {
+          loggingService.logSecurity('info', 'security.tls_connection', {
             tlsVersion: cipher.version,
             cipherName: cipher.name,
             certificateValid: cert && !cert.valid_from || new Date(cert.valid_from) <= new Date(),
-            certificateExpiry: cert ? cert.valid_to : null
-          }, {
+            certificateExpiry: cert ? cert.valid_to : null,
             ipAddress: req.ip,
             userAgent: req.get('User-Agent'),
             requestId: req.id
@@ -262,14 +259,12 @@ export const protocolDowngradeProtection = (req, res, next) => {
   if (isProduction && !isHttps && req.headers['x-forwarded-proto'] !== 'https') {
     // Log potential downgrade attack
     try {
-      auditLogger.logSecurityEvent('security.protocol_downgrade_attempt', {
+      loggingService.logSecurity('warn', 'security.protocol_downgrade_attempt', {
         expectedProtocol: 'https',
         actualProtocol: 'http',
         forwardedProto: req.headers['x-forwarded-proto'],
-        userAgent: req.get('User-Agent')
-      }, {
-        ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
+        ipAddress: req.ip,
         requestId: req.id
       });
     } catch (error) {

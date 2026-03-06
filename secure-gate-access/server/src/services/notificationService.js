@@ -1,4 +1,5 @@
 import whatsappService from './whatsappService.js';
+import messagingGateway from './messagingGateway.js';
 import notificationMetricsService from './notificationMetricsService.js';
 import { getEmailProvider, getSmsProvider } from '../providers/notificationProviderFactory.js';
 import loggingService from './loggingService.js';
@@ -47,403 +48,89 @@ const maskPhone = (phone) => {
 /**
  * Send email using configured provider (SMTP or Mailgun API)
  */
+/**
+ * Send email using configured provider (Unified via MessagingGateway)
+ */
 async function sendEmail(to, subject, html, text = null) {
-  const provider = getEmailProvider();
-  const providerName = provider?.getName?.() || process.env.EMAIL_PROVIDER || 'smtp';
-  // Feature flag checks
-  if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
-    if (process.env.NODE_ENV !== 'test') {
-      console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
-    }
-    notificationMetricsService.recordNotificationResult({
-      channel: 'email',
-      provider: providerName,
-      success: false,
-      error: 'external_notifications_disabled'
-    });
-    return false;
-  }
-
-  if (process.env.ENABLE_EMAIL_NOTIFICATIONS !== 'true') {
-    if (process.env.NODE_ENV !== 'test') {
-      console.log('Email notifications are disabled via ENABLE_EMAIL_NOTIFICATIONS flag');
-    }
-    notificationMetricsService.recordNotificationResult({
-      channel: 'email',
-      provider: providerName,
-      success: false,
-      error: 'email_notifications_disabled'
-    });
-    return false;
-  }
-
-  if (!provider?.isConfigured?.()) {
-    console.warn('No email service configured');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'email',
-      provider: providerName,
-      success: false,
-      error: 'email_provider_not_configured'
-    });
-    return false;
-  }
-
-  const result = await provider.send({ to, subject, html, text });
-
-  if (result.success) {
-    loggingService.logInfo('Email sent via provider', {
-      provider: providerName,
-      recipient: maskEmail(to),
-      messageId: result.messageId
-    });
-    notificationMetricsService.recordNotificationResult({
-      channel: 'email',
-      provider: providerName,
-      success: true,
-      metadata: { messageId: result.messageId, to }
-    });
-    return result;
-  }
-
-  console.error(`${providerName} email sending failed:`, result.error);
-  notificationMetricsService.recordNotificationResult({
-    channel: 'email',
-    provider: providerName,
-    success: false,
-    error: result.error
-  });
-  return result;
+  const result = await messagingGateway.send(
+    { email: to },
+    'GENERIC_EMAIL',
+    { subject, html, text },
+    { channels: ['email'] }
+  );
+  return result.success;
 }
 
 /**
- * Send visitor invitation email
+ * Send visitor invitation email (Unified via MessagingGateway)
  */
 export async function sendVisitorInviteEmail(visitorData, residentData, inviteLink, qrCode = null) {
-  try {
-    const emailData = {
-      siteName: SITE_NAME,
-      visitorName: visitorData.name,
-      residentName: residentData.name || residentData.email,
-      residentEmail: residentData.email,
-      visitDate: new Date(visitorData.dateOfVisit).toLocaleDateString(),
-      visitTime: visitorData.time,
-      purpose: visitorData.purpose,
-      inviteCode: visitorData.inviteCode,
-      inviteLink: inviteLink,
-      qrCode: qrCode,
-      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
-    };
-
-    const html = visitorInviteTemplate(emailData);
-    const subject = `🏠 Visitor Invitation - ${SITE_NAME}`;
-
-    const result = await sendEmail(visitorData.email, subject, html);
-
-    if (result) {
-      metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
-      loggingService.logInfo('Visitor invitation email sent', {
-        visitorId: visitorData.id || null,
-        residentId: residentData.id || null
-      });
-    } else {
-      metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
-    }
-
-    return result;
-  } catch (err) {
-    metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
-    console.error('sendVisitorInviteEmail failed:', err?.message || err);
-    return false;
-  }
+  const result = await messagingGateway.send(
+    { email: visitorData.email, name: visitorData.name },
+    'VISITOR_INVITE',
+    { resident: residentData, inviteLink, qrCode, visitDate: visitorData.dateOfVisit, visitTime: visitorData.time, purpose: visitorData.purpose, inviteCode: visitorData.inviteCode },
+    { channels: ['email'] }
+  );
+  return result.success;
 }
 
 /**
- * Send OTP verification email
+ * Send OTP verification email (Unified via MessagingGateway)
  */
 export async function sendOtpVerificationEmail(visitorData, otpCode, expiryMinutes = 15) {
-  try {
-    const emailData = {
-      siteName: SITE_NAME,
-      visitorName: visitorData.name,
-      otpCode: otpCode,
-      expiryMinutes: expiryMinutes
-    };
-
-    const html = otpVerificationTemplate(emailData);
-    const subject = `🔐 Verification Code - ${SITE_NAME}`;
-
-    const result = await sendEmail(visitorData.email, subject, html);
-
-    if (result) {
-      metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
-      loggingService.logInfo('OTP verification email sent', {
-        visitorId: visitorData.id || null
-      });
-    } else {
-      metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
-    }
-
-    return result;
-  } catch (err) {
-    metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
-    console.error('sendOtpVerificationEmail failed:', err?.message || err);
-    return false;
-  }
+  const result = await messagingGateway.send(
+    { email: visitorData.email, name: visitorData.name },
+    'OTP_VERIFICATION',
+    { otpCode, expiryMinutes },
+    { channels: ['email'] }
+  );
+  return result.success;
 }
 
 /**
  * Send visitor invitation SMS/WhatsApp
  * Supports: africastalking, whatsapp
  */
+/**
+ * Send visitor invitation SMS/WhatsApp (Unified via MessagingGateway)
+ */
 export async function sendVisitorInviteSms(visitorData, residentData, inviteLink) {
-  const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
-  const smsProviderClient = getSmsProvider(smsProvider);
-
   // Feature flag check
-  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
-    if (process.env.NODE_ENV !== 'test') {
-      console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
-    }
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: false,
-      error: 'sms_notifications_disabled'
-    });
+  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true' && process.env.ENABLE_WHATSAPP_NOTIFICATIONS !== 'true') {
     return false;
   }
 
-  // WhatsApp provider (recommended)
-  if (smsProvider === 'whatsapp') {
-    if (!whatsappService.isConfigured()) {
-      console.warn('WhatsApp service not configured');
-      notificationMetricsService.recordNotificationResult({
-        channel: 'whatsapp',
-        provider: 'whatsapp',
-        success: false,
-        error: 'whatsapp_not_configured'
-      });
-      return false;
-    }
+  const result = await messagingGateway.send(
+    { phone: visitorData.phone, name: visitorData.name },
+    'VISITOR_INVITE',
+    { resident: residentData, inviteLink },
+    { channels: ['whatsapp', 'sms'] }
+  );
 
-    try {
-      const result = await whatsappService.sendVisitorInvitation(visitorData, residentData, inviteLink);
-      if (result.success) {
-        metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
-        loggingService.logInfo('Visitor invitation sent via WhatsApp', {
-          visitorId: visitorData.id || null,
-          recipient: maskPhone(visitorData.phone),
-          messageId: result.messageId
-        });
-        notificationMetricsService.recordNotificationResult({
-          channel: 'whatsapp',
-          provider: 'whatsapp',
-          success: true,
-          metadata: { messageId: result.messageId }
-        });
-        return true;
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      metrics.notifications_whatsapp_failed = (metrics.notifications_whatsapp_failed || 0) + 1;
-      console.error('WhatsApp send failed:', err?.message || err);
-      notificationMetricsService.recordNotificationResult({
-        channel: 'whatsapp',
-        provider: 'whatsapp',
-        success: false,
-        error: err?.message || String(err)
-      });
-      return false;
-    }
-  }
-
-  if (!smsProviderClient?.isConfigured?.()) {
-    console.warn('SMS provider not configured');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProviderClient?.getName?.() || smsProvider,
-      success: false,
-      error: 'sms_provider_not_configured'
-    });
-    return false;
-  }
-
-  try {
-    const smsData = {
-      siteName: SITE_NAME,
-      visitorName: visitorData.name,
-      residentName: residentData.name || residentData.email,
-      visitDate: new Date(visitorData.dateOfVisit).toLocaleDateString(),
-      visitTime: visitorData.time,
-      purpose: visitorData.purpose,
-      inviteCode: visitorData.inviteCode,
-      inviteLink: inviteLink,
-      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
-    };
-
-    const message = visitorInviteSmsTemplate(smsData);
-
-    const result = await smsProviderClient.send({
-      to: visitorData.phone,
-      message,
-      from: process.env.AT_SENDER_ID
-    });
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
-    loggingService.logInfo('Visitor invitation SMS sent', {
-      provider: smsProvider,
-      visitorId: visitorData.id || null,
-      recipient: maskPhone(visitorData.phone),
-      messageId: result.messageId
-    });
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: true,
-      metadata: { to: visitorData.phone, messageId: result.messageId }
-    });
-    return true;
-  } catch (err) {
-    metrics.notifications_sms_failed = (metrics.notifications_sms_failed || 0) + 1;
-    console.error('sendVisitorInviteSms failed:', err?.message || err);
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: false,
-      error: err?.message || String(err)
-    });
-    return false;
-  }
+  return result.success;
 }
 
 /**
  * Send OTP verification SMS/WhatsApp
  * Supports: africastalking, whatsapp
  */
+/**
+ * Send OTP verification SMS/WhatsApp (Unified via MessagingGateway)
+ */
 export async function sendOtpVerificationSms(visitorData, otpCode, expiryMinutes = 15) {
-  const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
-  const smsProviderClient = getSmsProvider(smsProvider);
-
   // Feature flag check
-  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true' && process.env.NODE_ENV !== 'development') {
-    console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: false,
-      error: 'sms_notifications_disabled'
-    });
-    return false;
-  } else if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true' && process.env.NODE_ENV === 'development') {
-    console.log('Development mode: Allowing SMS simulation despite disabled flag');
-  }
-
-  // WhatsApp provider (recommended)
-  if (smsProvider === 'whatsapp') {
-    if (!whatsappService.isConfigured()) {
-      console.warn('WhatsApp service not configured');
-      notificationMetricsService.recordNotificationResult({
-        channel: 'whatsapp',
-        provider: 'whatsapp',
-        success: false,
-        error: 'whatsapp_not_configured'
-      });
-      return false;
-    }
-
-    try {
-      const result = await whatsappService.sendOtpVerification(visitorData, otpCode, expiryMinutes);
-      if (result.success) {
-        metrics.notifications_whatsapp_sent = (metrics.notifications_whatsapp_sent || 0) + 1;
-        loggingService.logInfo('OTP verification sent via WhatsApp', {
-          visitorId: visitorData.id || null,
-          recipient: maskPhone(visitorData.phone),
-          messageId: result.messageId
-        });
-        notificationMetricsService.recordNotificationResult({
-          channel: 'whatsapp',
-          provider: 'whatsapp',
-          success: true,
-          metadata: { messageId: result.messageId }
-        });
-        return true;
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      metrics.notifications_whatsapp_failed = (metrics.notifications_whatsapp_failed || 0) + 1;
-      console.error('WhatsApp OTP send failed:', err?.message || err);
-      notificationMetricsService.recordNotificationResult({
-        channel: 'whatsapp',
-        provider: 'whatsapp',
-        success: false,
-        error: err?.message || String(err)
-      });
-      return false;
-    }
-  }
-
-  if (!smsProviderClient?.isConfigured?.()) {
-    console.warn('SMS provider not configured');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProviderClient?.getName?.() || smsProvider,
-      success: false,
-      error: 'sms_provider_not_configured'
-    });
+  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true' && process.env.ENABLE_WHATSAPP_NOTIFICATIONS !== 'true') {
     return false;
   }
 
-  try {
-    const smsData = {
-      siteName: SITE_NAME,
-      visitorName: visitorData.name,
-      otpCode: otpCode,
-      expiryMinutes: expiryMinutes
-    };
+  const result = await messagingGateway.send(
+    { phone: visitorData.phone, name: visitorData.name },
+    'OTP_VERIFICATION',
+    { otpCode, expiryMinutes },
+    { channels: ['whatsapp', 'sms'] }
+  );
 
-    const message = otpVerificationSmsTemplate(smsData);
-
-    const result = await smsProviderClient.send({
-      to: visitorData.phone,
-      message,
-      from: process.env.AT_SENDER_ID
-    });
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
-    loggingService.logInfo('OTP verification SMS sent', {
-      provider: smsProvider,
-      visitorId: visitorData.id || null,
-      recipient: maskPhone(visitorData.phone),
-      messageId: result.messageId
-    });
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: true,
-      metadata: { to: visitorData.phone, messageId: result.messageId }
-    });
-    return true;
-  } catch (err) {
-    metrics.notifications_sms_failed = (metrics.notifications_sms_failed || 0) + 1;
-    console.error('sendOtpVerificationSms failed:', err?.message || err);
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: false,
-      error: err?.message || String(err)
-    });
-    return false;
-  }
+  return result.success;
 }
 
 /**
@@ -522,98 +209,25 @@ export async function sendHandoffDecisionNotification(deliveryData, preference) 
   }
 }
 
-// Legacy functions for backward compatibility
+// Legacy functions for backward compatibility (Now use MessagingGateway)
 export async function sendInviteEmail(to, subject, html) {
-  try {
-    const result = await sendEmail(to, subject, html);
-
-    if (result) {
-      metrics.notifications_email_sent = (metrics.notifications_email_sent || 0) + 1;
-    } else {
-      metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
-    }
-
-    return result;
-  } catch (err) {
-    metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
-    console.error('sendInviteEmail failed', err?.message || err);
-    return false;
-  }
+  const result = await messagingGateway.send(
+    { email: to },
+    'GENERIC_EMAIL',
+    { subject, html },
+    { channels: ['email'] }
+  );
+  return result.success;
 }
 
 export async function sendSms(to, text) {
-  const smsProvider = process.env.SMS_PROVIDER || 'africastalking';
-  const smsProviderClient = getSmsProvider(smsProvider);
-
-  // Feature flag checks
-  if (process.env.ENABLE_EXTERNAL_NOTIFICATIONS !== 'true') {
-    console.log('External notifications are disabled via ENABLE_EXTERNAL_NOTIFICATIONS flag');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: false,
-      error: 'external_notifications_disabled'
-    });
-    return false;
-  }
-
-  if (process.env.ENABLE_SMS_NOTIFICATIONS !== 'true') {
-    console.log('SMS notifications are disabled via ENABLE_SMS_NOTIFICATIONS flag');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: false,
-      error: 'sms_notifications_disabled'
-    });
-    return false;
-  }
-
-  if (!smsProviderClient?.isConfigured?.()) {
-    console.warn('SMS provider not configured');
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProviderClient?.getName?.() || smsProvider,
-      success: false,
-      error: 'sms_provider_not_configured'
-    });
-    return false;
-  }
-
-  try {
-    const result = await smsProviderClient.send({
-      to,
-      message: text,
-      from: process.env.AT_SENDER_ID
-    });
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
-
-    metrics.notifications_sms_sent = (metrics.notifications_sms_sent || 0) + 1;
-    loggingService.logInfo('SMS sent via provider', {
-      provider: smsProvider,
-      recipient: maskPhone(to),
-      messageId: result.messageId
-    });
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: true,
-      metadata: { to, messageId: result.messageId }
-    });
-    return result;
-  } catch (err) {
-    metrics.notifications_sms_failed = (metrics.notifications_sms_failed || 0) + 1;
-    console.error('sendSms failed', err?.message || err);
-    notificationMetricsService.recordNotificationResult({
-      channel: 'sms',
-      provider: smsProvider,
-      success: false,
-      error: err?.message || String(err)
-    });
-    return { success: false, error: err?.message || String(err) };
-  }
+  const result = await messagingGateway.send(
+    { phone: to },
+    'GENERIC_SMS',
+    { message: text },
+    { channels: ['sms'] }
+  );
+  return result.success;
 }
 
 export default {

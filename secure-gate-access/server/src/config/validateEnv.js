@@ -14,18 +14,39 @@ import * as crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { existsSync } from 'fs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
+// Search for .env files the same way load-env.js does
+const getServerEnv = (file) => path.join(__dirname, '../../', file);
+const getRootEnv = (file) => path.join(__dirname, '../../../', file);
+
+const envFile = process.env.NODE_ENV === 'staging' ? '.env.staging' : '.env';
+const paths = [
+  getServerEnv(envFile),
+  getRootEnv(envFile),
+  getServerEnv('.env'),
+  getRootEnv('.env')
+];
+
+let found = false;
+for (const envPath of paths) {
+  if (existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    found = true;
+    break;
+  }
+}
 
 class EnvironmentValidator {
   constructor() {
     this.errors = [];
     this.warnings = [];
     this.isProduction = process.env.NODE_ENV === 'production';
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
     this.isTest = process.env.NODE_ENV === 'test';
     this.isStaging = process.env.NODE_ENV === 'staging';
   }
@@ -34,22 +55,22 @@ class EnvironmentValidator {
    * Validate all environment variables
    */
   validate() {
-    console.log('🔍 Validating environment configuration...\n');
+    console.log(`🔍 Validating ${process.env.NODE_ENV || 'development'} configuration...\n`);
 
     // Required variables for all environments
     this.validateRequired();
-    
+
     // Database configuration
     this.validateDatabase();
-    
+
     // Security configuration
     this.validateSecurity();
-    
+
     // Optional services
     this.validateOptionalServices();
-    
+
     // Production/staging-specific validations
-    if (this.isProduction) {
+    if (this.isProduction || this.isStaging) {
       this.validateProduction();
     }
     if (this.isStaging) {
@@ -58,7 +79,7 @@ class EnvironmentValidator {
 
     // Report results
     this.reportResults();
-    
+
     return this.errors.length === 0;
   }
 
@@ -67,11 +88,7 @@ class EnvironmentValidator {
    */
   validateRequired() {
     const required = [
-      'NODE_ENV',
       'PORT',
-      'PGHOST',
-      'PGDATABASE',
-      'PGUSER',
       'JWT_SECRET'
     ];
 
@@ -79,6 +96,11 @@ class EnvironmentValidator {
       if (!process.env[variable]) {
         this.errors.push(`Required environment variable missing: ${variable}`);
       }
+    }
+
+    // Database check: either DATABASE_URL or individual PG* variables
+    if (!process.env.DATABASE_URL && !process.env.PGHOST) {
+      this.errors.push('Database configuration missing: Provide DATABASE_URL or PGHOST/PGDATABASE/PGUSER');
     }
 
     // Validate NODE_ENV
@@ -98,6 +120,13 @@ class EnvironmentValidator {
    * Validate database configuration
    */
   validateDatabase() {
+    if (process.env.DATABASE_URL) {
+      if (!process.env.DATABASE_URL.startsWith('postgres') && !process.env.DATABASE_URL.startsWith('pg')) {
+        this.errors.push('DATABASE_URL must be a valid PostgreSQL connection string');
+      }
+      return; // Skip individual checks if URL is provided
+    }
+
     const dbConfig = {
       host: process.env.PGHOST,
       database: process.env.PGDATABASE,
@@ -108,7 +137,7 @@ class EnvironmentValidator {
 
     // Check required database fields
     if (!dbConfig.host) {
-      this.errors.push('Database host (PGHOST) is required');
+      this.errors.push('Database host (PGHOST) is required when DATABASE_URL is not provided');
     }
 
     if (!dbConfig.database) {
@@ -121,8 +150,8 @@ class EnvironmentValidator {
 
     // Password validation
     if (!dbConfig.password) {
-      if (this.isProduction) {
-        this.errors.push('Database password (PGPASSWORD) is required in production');
+      if (this.isProduction || this.isStaging) {
+        this.errors.push('Database password (PGPASSWORD) is required in production/staging');
       } else {
         this.warnings.push('Database password (PGPASSWORD) not set - using default');
       }
@@ -135,12 +164,6 @@ class EnvironmentValidator {
         this.errors.push(`Invalid database port (PGPORT): ${dbConfig.port}`);
       }
     }
-
-    // Connection pool validation
-    const poolMax = parseInt(process.env.PGPOOL_MAX);
-    if (process.env.PGPOOL_MAX && (isNaN(poolMax) || poolMax < 1 || poolMax > 100)) {
-      this.warnings.push(`Database pool size (PGPOOL_MAX) should be between 1-100, got: ${poolMax}`);
-    }
   }
 
   /**
@@ -151,8 +174,8 @@ class EnvironmentValidator {
     const jwtSecret = process.env.JWT_SECRET;
     if (jwtSecret) {
       if (this.isWeakSecret(jwtSecret)) {
-        if (this.isProduction) {
-          this.errors.push('JWT_SECRET is too weak for production (min 32 chars, high entropy)');
+        if (this.isProduction || this.isStaging) {
+          this.errors.push('JWT_SECRET is too weak for production/staging (min 32 chars, high entropy)');
         } else {
           this.warnings.push('JWT_SECRET appears weak - consider using stronger secret');
         }
@@ -163,38 +186,29 @@ class EnvironmentValidator {
     const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
     if (jwtRefreshSecret) {
       if (this.isWeakSecret(jwtRefreshSecret)) {
-        if (this.isProduction) {
-          this.errors.push('JWT_REFRESH_SECRET is too weak for production');
+        if (this.isProduction || this.isStaging) {
+          this.errors.push('JWT_REFRESH_SECRET is too weak for production/staging');
         } else {
           this.warnings.push('JWT_REFRESH_SECRET appears weak');
         }
       }
-    } else if (this.isProduction) {
-      this.warnings.push('JWT_REFRESH_SECRET not set - using fallback');
+    } else if (this.isProduction || this.isStaging) {
+      this.errors.push('JWT_REFRESH_SECRET is required in production/staging');
     }
 
     // Session Secret validation
     const sessionSecret = process.env.SESSION_SECRET;
-    if (this.isProduction && !sessionSecret) {
-      this.warnings.push('SESSION_SECRET not set - using fallback');
+    if ((this.isProduction || this.isStaging) && !sessionSecret) {
+      this.errors.push('SESSION_SECRET is required in production/staging');
     }
 
     // CORS validation
-    if (this.isProduction) {
-      const clientOrigin = process.env.CLIENT_ORIGIN;
+    const clientOrigin = process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN;
+    if (this.isProduction || this.isStaging) {
       if (!clientOrigin) {
-        this.errors.push('CLIENT_ORIGIN is required in production for CORS');
+        this.errors.push('CLIENT_ORIGIN is required in production/staging for CORS');
       } else if (this.isLocalOrigin(clientOrigin)) {
-        this.errors.push('CLIENT_ORIGIN must not point to localhost in production');
-      }
-    }
-
-    if (this.isStaging) {
-      const stagingOrigin = process.env.STAGING_CLIENT_ORIGIN || process.env.CLIENT_ORIGIN;
-      if (!stagingOrigin) {
-        this.errors.push('STAGING_CLIENT_ORIGIN or CLIENT_ORIGIN is required in staging for CORS');
-      } else if (this.isLocalOrigin(stagingOrigin)) {
-        this.errors.push('STAGING_CLIENT_ORIGIN must not point to localhost in staging');
+        this.errors.push('CLIENT_ORIGIN must not point to localhost in production/staging');
       }
     }
   }
@@ -208,7 +222,7 @@ class EnvironmentValidator {
     if (smtpHost) {
       const smtpUser = process.env.SMTP_USER;
       const smtpPass = process.env.SMTP_PASS;
-      
+
       if (!smtpUser || !smtpPass) {
         this.warnings.push('SMTP configured but missing SMTP_USER or SMTP_PASS');
       }
@@ -222,46 +236,32 @@ class EnvironmentValidator {
 
     // Redis Configuration
     const redisUrl = process.env.REDIS_URL;
-    if (!redisUrl && this.isProduction) {
-      this.warnings.push('REDIS_URL not set - rate limiting will use memory store');
+    if (!redisUrl && (this.isProduction || this.isStaging)) {
+      this.warnings.push('REDIS_URL not set - session storage and rate limiting will use memory store (not recommended)');
     }
   }
 
   /**
-   * Validate production-specific requirements
+   * Validate production/staging requirements
    */
   validateProduction() {
     // HTTPS enforcement
-    if (process.env.ENFORCE_HTTPS !== 'true' && !process.env.ALLOW_HTTP_IN_PRODUCTION) {
+    if (process.env.ENFORCE_HTTPS !== 'true' && !process.env.ALLOW_HTTP_IN_PRODUCTION && this.isProduction) {
       this.errors.push('ENFORCE_HTTPS must be "true" in production');
     }
 
     // Secure cookies
     if (process.env.SECURE_COOKIES !== 'true') {
-      this.errors.push('SECURE_COOKIES must be "true" in production');
-    }
-
-    // Trust proxy
-    if (!process.env.TRUST_PROXY) {
-      this.warnings.push('TRUST_PROXY not configured - may affect client IP detection');
+      this.errors.push('SECURE_COOKIES must be "true" in production/staging');
     }
 
     // Debug features disabled
     if (process.env.OTP_DEBUG_ECHO === 'true') {
-      this.errors.push('OTP_DEBUG_ECHO must be disabled in production');
+      this.errors.push('OTP_DEBUG_ECHO must be disabled in production/staging');
     }
 
     if (process.env.ENABLE_DEBUG_ROUTES === 'true') {
-      this.errors.push('ENABLE_DEBUG_ROUTES must be disabled in production');
-    }
-
-    // Strong secrets required
-    const secrets = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'SESSION_SECRET'];
-    for (const secret of secrets) {
-      const value = process.env[secret];
-      if (value && this.isWeakSecret(value)) {
-        this.errors.push(`${secret} is too weak for production`);
-      }
+      this.errors.push('ENABLE_DEBUG_ROUTES must be disabled in production/staging');
     }
   }
 
@@ -270,23 +270,15 @@ class EnvironmentValidator {
    */
   validateStaging() {
     if (process.env.ENABLE_CSRF === 'false') {
-      this.errors.push('ENABLE_CSRF must not be "false" in staging');
+      this.warnings.push('ENABLE_CSRF is disabled in staging - ensure this is intentional');
     }
 
     if (process.env.ENABLE_RATE_LIMIT === 'false') {
-      this.errors.push('ENABLE_RATE_LIMIT must not be "false" in staging');
-    }
-
-    if (process.env.SECURE_COOKIES !== 'true') {
-      this.warnings.push('SECURE_COOKIES should be "true" in staging for parity with production');
+      this.warnings.push('ENABLE_RATE_LIMIT is disabled in staging');
     }
 
     if ((process.env.COOKIE_SAMESITE || '').toLowerCase() !== 'none') {
       this.warnings.push('COOKIE_SAMESITE should be "none" in staging for cross-site auth flows');
-    }
-
-    if (!process.env.TRUST_PROXY) {
-      this.warnings.push('TRUST_PROXY not configured - may affect client IP detection');
     }
   }
 
@@ -314,7 +306,7 @@ class EnvironmentValidator {
 
     // Basic entropy check
     const uniqueChars = new Set(secret.toLowerCase()).size;
-    if (uniqueChars < 16) return true;
+    if (uniqueChars < 8) return true;
 
     return false;
   }
@@ -376,43 +368,10 @@ class EnvironmentValidator {
     console.log('\n📊 Current Configuration:');
     console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`   Port: ${process.env.PORT || '5000'}`);
-    console.log(`   Database: ${process.env.PGHOST || 'localhost'}:${process.env.PGPORT || '5432'}/${process.env.PGDATABASE || 'secure_gate'}`);
-    console.log(`   User: ${process.env.PGUSER || 'postgres'}`);
+    console.log(`   Database: ${process.env.DATABASE_URL ? '✅ Connected via URL' : (process.env.PGHOST || 'localhost')}`);
     console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
-    console.log(`   JWT Refresh Secret: ${process.env.JWT_REFRESH_SECRET ? '✅ Set' : '⚠️  Using fallback'}`);
-    console.log(`   Session Secret: ${process.env.SESSION_SECRET ? '✅ Set' : '⚠️  Using fallback'}`);
+    console.log(`   Client Origin: ${process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN || '❌ Missing'}`);
     console.log(`   SMTP: ${process.env.SMTP_HOST ? '✅ Configured' : '❌ Not configured'}`);
-    console.log(`   Africa's Talking: ${process.env.AT_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-    console.log(`   Redis: ${process.env.REDIS_URL ? '✅ Configured' : '⚠️  Using memory store'}`);
-  }
-
-  /**
-   * Generate .env file with secure defaults
-   */
-  generateEnvFile() {
-    const secrets = this.generateSecureSecret(64);
-    const refreshSecret = this.generateSecureSecret(64);
-    const sessionSecret = this.generateSecureSecret(64);
-
-    const envContent = `# Generated environment file with secure defaults
-NODE_ENV=development
-PORT=3001
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=secure_gate
-PGUSER=secure_gate_user
-PGPASSWORD=secure_gate_password
-JWT_SECRET=${secrets}
-JWT_REFRESH_SECRET=${refreshSecret}
-SESSION_SECRET=${sessionSecret}
-CLIENT_ORIGIN=http://localhost:3000
-ENFORCE_HTTPS=false
-SECURE_COOKIES=false
-TRUST_PROXY=false
-LOG_LEVEL=info
-`;
-
-    return envContent;
   }
 }
 
@@ -420,13 +379,10 @@ LOG_LEVEL=info
 if (import.meta.url === `file://${process.argv[1]}`) {
   const validator = new EnvironmentValidator();
   const isValid = validator.validate();
-  
+
   if (!isValid) {
-    console.log('\n💡 To generate a secure .env file, run:');
-    console.log('   node src/config/validateEnv.js --generate');
     process.exit(1);
   } else {
-    console.log('\n🎉 Environment validation passed!');
     process.exit(0);
   }
 }

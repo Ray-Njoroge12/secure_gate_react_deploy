@@ -13,13 +13,14 @@ import { checkInVisitor, checkOutVisitor, selfCheckIn } from '../controllers/vis
 import { revokeVisitor, getActiveVisitors, getVisitorReport, getRecentVisitors, getVisitorDetails, getVisitorHistory } from '../controllers/visitorAdminController.js';
 import { attachUserFromToken, authenticateToken, requireEstate, requireRole } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
-import attachRequestAudit from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import CacheMiddleware from '../middleware/cacheMiddleware.js';
 import { validateRequest, validateParams, ValidationSchemas } from '../middleware/validationMiddleware.js';
 import { rateLimit } from 'express-rate-limit';
 import { minimizeData } from '../middleware/dataMinimization.js';
 import { buildErrorPayload } from '../utils/responseFormatter.js';
 import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
+import qrCodeController from '../controllers/qrCodeController.js';
 
 import { registerWalkIn, getTodayWalkIns } from '../controllers/walkInController.js';
 import {
@@ -595,79 +596,7 @@ router.post('/:id/regenerate-qr', rateLimit({
   message: 'Too many QR regeneration attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false
-}), asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const { QRCodeService } = await import('../services/qrCodeService.js');
-  const { dbManager } = await import('../config/database.js');
-
-  // Get visitor details
-  const visitorResult = await dbManager.query(
-    `SELECT id, name, phone, email, purpose, date_of_visit, estate_id, status, visitor_token
-     FROM visitors WHERE id = $1`,
-    [id]
-  );
-
-  if (visitorResult.rows.length === 0) {
-    return res.status(404).json({
-      success: false,
-      error: { code: 'NOT_FOUND', message: 'Visitor not found' }
-    });
-  }
-
-  const visitor = visitorResult.rows[0];
-
-  // Only allow regeneration if status indicates QR issue
-  if (!['qr_pending', 'otp_verified', 'pending'].includes(visitor.status)) {
-    return res.status(400).json({
-      success: false,
-      error: { code: 'INVALID_STATUS', message: 'QR regeneration not available for this visitor status' }
-    });
-  }
-
-  try {
-    const qrResult = await QRCodeService.generateVisitorQR({
-      id: visitor.id,
-      name: visitor.name,
-      phone: visitor.phone,
-      purpose: visitor.purpose,
-      date_of_visit: visitor.date_of_visit,
-      estate_id: visitor.estate_id
-    }, { generateOtp: false });
-
-    if (qrResult?.success) {
-      const qrCodeDataUrl = qrResult.data.qrCodeDataUrl;
-      const qrId = qrResult.data.qrId;
-
-      // Update visitor with QR code
-      if (qrId) {
-        await dbManager.query(
-          'UPDATE visitors SET qr_code = $1, status = $2 WHERE id = $3',
-          [qrId, 'otp_verified', visitor.id]
-        );
-      }
-
-      res.json({
-        success: true,
-        message: 'QR code regenerated successfully',
-        data: {
-          qr_code: qrCodeDataUrl,
-          visitor_token: visitor.visitor_token
-        }
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: { code: 'QR_GENERATION_FAILED', message: 'Failed to generate QR code, please try again later' }
-      });
-    }
-  } catch (error) {
-    console.error('[regenerateQR] Error:', error);
-    res.status(500).json({
-      success: false,
-      error: { code: 'INTERNAL_ERROR', message: 'QR regeneration failed' }
-    });
-  }
-}));
+}), qrCodeController.regenerateQR);
 
 // Cancel/Delete visitor (resident can cancel their own, admin can cancel any)
 router.delete('/:id', authenticateToken, attachRequestAudit, cancelVisitor);

@@ -7,12 +7,11 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
-import auditLoggerFactory from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import rideshareService from '../services/rideshareService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
-const attachRequestAudit = auditLoggerFactory();
 
 // Rate limiting for rideshare creation (prevents abuse)
 const rideshareCreationLimit = rateLimit({

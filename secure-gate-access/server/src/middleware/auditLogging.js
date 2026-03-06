@@ -1,329 +1,167 @@
 #!/usr/bin/env node
 /**
- * Audit Logging Middleware
- * Provides comprehensive audit logging for security and compliance
+ * Unified Audit Logging Middleware
+ *
+ * Single source of truth for all audit logging. Replaces the legacy auditLogger.js.
+ * - Attaches req.audit() helper for controller-level manual logging.
+ * - Exports attachRequestAudit as a named export for drop-in compatibility.
+ * - Persists to DB + Winston on every response.
  */
 
-import { auditLogger, logAuditEvent } from '../config/logger.js';
+import { logAuditEvent as winstonLogAuditEvent } from '../config/logger.js';
+import { dbManager } from '../database/db.enhanced.js';
 
 /**
- * Audit logging middleware
+ * Persist audit event to database
  */
-export const auditLogging = (options = {}) => {
+async function persistToDatabase(auditData) {
+  try {
+    const query = `
+      INSERT INTO audit_logs (
+        action, resource, user_id, user_role, estate_id, request_id,
+        ip_address, user_agent, details, timestamp, created_at
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()
+      )
+    `;
+
+    await dbManager.query(query, [
+      auditData.category || 'api',
+      auditData.url.substring(0, 100),
+      auditData.user?.id || null,
+      auditData.user?.role || null,
+      auditData.user?.estateId || null,
+      auditData.requestId || null,
+      auditData.ip || '127.0.0.1',
+      auditData.userAgent || null,
+      JSON.stringify(auditData.details || {})
+    ]);
+  } catch (error) {
+    console.error('❌ Failed to persist audit log to DB:', error.message);
+  }
+}
+
+/**
+ * Unified Audit Logging Middleware
+ *
+ * Usage: app.use(unifiedAuditMiddleware())
+ * Or as a per-route middleware: router.post('/...', unifiedAuditMiddleware(), handler)
+ */
+export const unifiedAuditMiddleware = (options = {}) => {
   const {
-    logRequests = true,
-    logResponses = true,
-    logErrors = true,
-    logAuthEvents = true,
-    logDataChanges = true,
-    sensitiveFields = ['password', 'token', 'secret', 'key'],
-    excludePaths = ['/health', '/metrics']
+    sensitiveFields = ['password', 'token', 'secret', 'key', 'otp'],
+    excludePaths = ['/health', '/metrics', '/api/health']
   } = options;
 
   return (req, res, next) => {
-    // Skip excluded paths
-    if (excludePaths.some(path => req.originalUrl.startsWith(path))) {
-      return next();
-    }
+    if (excludePaths.some(path => req.originalUrl.startsWith(path))) return next();
 
-    const requestId = req.id || 'unknown';
-    const userId = req.user?.id;
-    const userRole = req.user?.role;
+    const timestamp = new Date().toISOString();
+    const requestId = req.requestId || req.id || 'unknown';
 
-    // Log request
-    if (logRequests) {
-      const requestData = {
-        method: req.method,
-        url: req.originalUrl,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        headers: sanitizeHeaders(req.headers),
-        body: sanitizeBody(req.body, sensitiveFields),
-        query: req.query,
-        params: req.params
+    // Attach req.audit() helper for controllers to manually log specific actions
+    if (!req.audit) {
+      req.audit = async (action, entityType, entityId, details = {}) => {
+        try {
+          const resource = (entityType || req.path || 'unknown').toString().substring(0, 100);
+          const userAgent = req.get?.('User-Agent') || req.headers?.['user-agent'] || null;
+          await dbManager.query(
+            `INSERT INTO audit_logs (
+               action, resource, user_id, user_role, estate_id, request_id,
+               ip_address, user_agent, details, timestamp, created_at
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+            [
+              String(action || 'unknown').substring(0, 100),
+              resource,
+              req.user?.id || null,
+              req.user?.role || null,
+              req.user?.estate_id ?? null,
+              requestId,
+              req.ip || '127.0.0.1',
+              userAgent,
+              JSON.stringify({ entity_type: entityType || null, entity_id: entityId || null, ...details })
+            ]
+          );
+        } catch {
+          // Non-critical: silently ignore audit insert failures
+        }
       };
-
-      logAuditEvent('request', 'api', requestData, req);
     }
 
-    // Override res.end to log response
-    const originalEnd = res.end;
-    res.end = function(chunk, encoding) {
-      if (logResponses) {
-        const responseData = {
-          statusCode: res.statusCode,
-          headers: sanitizeHeaders(res.getHeaders()),
-          responseTime: res.get('X-Response-Time'),
-          contentLength: res.get('Content-Length')
-        };
-
-        logAuditEvent('response', 'api', responseData, req);
-      }
-
-      originalEnd.call(this, chunk, encoding);
+    const requestData = {
+      method: req.method,
+      url: req.originalUrl,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      requestId
     };
 
-    // Override res.json to log data changes
-    if (logDataChanges && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-      const originalJson = res.json;
-      res.json = function(obj) {
-        const changeData = {
-          method: req.method,
-          url: req.originalUrl,
-          statusCode: res.statusCode,
-          data: sanitizeBody(obj, sensitiveFields)
-        };
+    const originalJson = res.json;
+    res.json = function (obj) {
+      const statusCode = res.statusCode;
+      const isSensitivePath = req.originalUrl.includes('/auth/') || req.originalUrl.includes('/admin/');
 
-        logAuditEvent('data_change', 'api', changeData, req);
-        return originalJson.call(this, obj);
+      let category = 'api';
+      if (req.originalUrl.includes('/auth/')) category = 'auth';
+      if (statusCode === 401 || statusCode === 403 || statusCode === 429) category = 'security';
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) category = 'data_change';
+
+      const auditData = {
+        ...requestData,
+        statusCode,
+        timestamp,
+        category,
+        user: req.user ? { id: req.user.id, role: req.user.role, estateId: req.user.estate_id } : null,
+        details: isSensitivePath ? { message: 'Sensitive action' } : sanitizeBody(obj, sensitiveFields)
       };
-    }
+
+      // 1. Winston structured logging
+      winstonLogAuditEvent(category, category === 'security' ? 'warn' : 'info', auditData, req);
+
+      // 2. Database persistence (async, fire-and-forget)
+      persistToDatabase(auditData);
+
+      return originalJson.call(this, obj);
+    };
 
     next();
   };
 };
 
 /**
- * Authentication audit logging
+ * Pre-instantiated middleware for drop-in compatibility with the legacy auditLogger.js.
+ * Replaces: import attachRequestAudit from '../middleware/auditLogger.js'
+ * With:     import { attachRequestAudit } from '../middleware/auditLogging.js'
  */
-export const authAuditLogging = (req, res, next) => {
-  const originalJson = res.json;
-  
-  res.json = function(obj) {
-    // Log authentication events
-    if (req.originalUrl.includes('/auth/login')) {
-      const loginData = {
-        success: res.statusCode === 200,
-        email: req.body?.email,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        timestamp: new Date().toISOString()
-      };
-
-      logAuditEvent('login_attempt', 'auth', loginData, req);
-    }
-
-    if (req.originalUrl.includes('/auth/register')) {
-      const registerData = {
-        success: res.statusCode === 201,
-        email: req.body?.email,
-        role: req.body?.role,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        timestamp: new Date().toISOString()
-      };
-
-      logAuditEvent('registration_attempt', 'auth', registerData, req);
-    }
-
-    if (req.originalUrl.includes('/auth/logout')) {
-      const logoutData = {
-        userId: req.user?.id,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        timestamp: new Date().toISOString()
-      };
-
-      logAuditEvent('logout', 'auth', logoutData, req);
-    }
-
-    if (req.originalUrl.includes('/auth/refresh')) {
-      const refreshData = {
-        success: res.statusCode === 200,
-        userId: req.user?.id,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        timestamp: new Date().toISOString()
-      };
-
-      logAuditEvent('token_refresh', 'auth', refreshData, req);
-    }
-
-    return originalJson.call(this, obj);
-  };
-
-  next();
+/**
+ * Named export for drop-in compatibility with the legacy auditLogger.js factory.
+ * Supports BOTH patterns without breaking existing routes:
+ *   - attachRequestAudit          (direct middleware reference)
+ *   - attachRequestAudit()        (legacy factory-call pattern from auditLogger.js)
+ */
+const _attachMiddleware = unifiedAuditMiddleware();
+export const attachRequestAudit = function (...args) {
+  // Called as factory: attachRequestAudit() — return the middleware function
+  if (args.length === 0) return _attachMiddleware;
+  // Called as middleware directly: router.use(attachRequestAudit)
+  return _attachMiddleware(...args);
 };
 
-/**
- * Security event audit logging
- */
-export const securityAuditLogging = (req, res, next) => {
-  // Log security-related events
-  const securityEvents = [
-    'unauthorized_access',
-    'permission_denied',
-    'rate_limit_exceeded',
-    'suspicious_activity',
-    'data_breach_attempt',
-    'sql_injection_attempt',
-    'xss_attempt',
-    'csrf_attempt'
-  ];
-
-  // Check for security events in response
-  const originalJson = res.json;
-  res.json = function(obj) {
-    if (res.statusCode === 401) {
-      logAuditEvent('unauthorized_access', 'security', {
-        url: req.originalUrl,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        reason: obj.message || 'Unauthorized access attempt'
-      }, req);
-    }
-
-    if (res.statusCode === 403) {
-      logAuditEvent('permission_denied', 'security', {
-        url: req.originalUrl,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        reason: obj.message || 'Permission denied'
-      }, req);
-    }
-
-    if (res.statusCode === 429) {
-      logAuditEvent('rate_limit_exceeded', 'security', {
-        url: req.originalUrl,
-        method: req.method,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        reason: 'Rate limit exceeded'
-      }, req);
-    }
-
-    return originalJson.call(this, obj);
-  };
-
-  next();
-};
 
 /**
- * Data access audit logging
- */
-export const dataAccessAuditLogging = (req, res, next) => {
-  const originalJson = res.json;
-  
-  res.json = function(obj) {
-    // Log data access events
-    if (req.originalUrl.includes('/admin/') || req.originalUrl.includes('/residents/') || req.originalUrl.includes('/visitors/')) {
-      const accessData = {
-        resource: req.originalUrl,
-        method: req.method,
-        userId: req.user?.id,
-        userRole: req.user?.role,
-        ip: req.ip,
-        userAgent: req.get('User-Agent'),
-        timestamp: new Date().toISOString(),
-        recordCount: Array.isArray(obj.data) ? obj.data.length : 1
-      };
-
-      logAuditEvent('data_access', 'data', accessData, req);
-    }
-
-    return originalJson.call(this, obj);
-  };
-
-  next();
-};
-
-/**
- * System configuration audit logging
- */
-export const configAuditLogging = (req, res, next) => {
-  const originalJson = res.json;
-  
-  res.json = function(obj) {
-    // Log configuration changes
-    if (req.originalUrl.includes('/config/') || req.originalUrl.includes('/settings/')) {
-      const configData = {
-        resource: req.originalUrl,
-        method: req.method,
-        userId: req.user?.id,
-        userRole: req.user?.role,
-        ip: req.ip,
-        changes: req.body,
-        timestamp: new Date().toISOString()
-      };
-
-      logAuditEvent('config_change', 'system', configData, req);
-    }
-
-    return originalJson.call(this, obj);
-  };
-
-  next();
-};
-
-/**
- * Sanitize headers to remove sensitive information
- */
-function sanitizeHeaders(headers) {
-  const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
-  const sanitized = { ...headers };
-  
-  sensitiveHeaders.forEach(header => {
-    if (sanitized[header]) {
-      sanitized[header] = '[REDACTED]';
-    }
-  });
-  
-  return sanitized;
-}
-
-/**
- * Sanitize body to remove sensitive fields
+ * Sanitize body to remove sensitive fields before logging
  */
 function sanitizeBody(body, sensitiveFields) {
-  if (!body || typeof body !== 'object') {
-    return body;
-  }
-
-  const sanitized = { ...body };
-  
+  if (!body || typeof body !== 'object') return body;
+  const sanitized = Array.isArray(body) ? [...body.slice(0, 5)] : { ...body };
   sensitiveFields.forEach(field => {
-    if (sanitized[field]) {
-      sanitized[field] = '[REDACTED]';
-    }
+    if (sanitized[field]) sanitized[field] = '[REDACTED]';
   });
-
-  // Recursively sanitize nested objects
-  Object.keys(sanitized).forEach(key => {
-    if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-      sanitized[key] = sanitizeBody(sanitized[key], sensitiveFields);
-    }
-  });
-
   return sanitized;
 }
 
-/**
- * Log specific audit event (helper function)
- */
-export const logAuditEventHelper = (action, resource, details, req = null) => {
-  const auditData = {
-    action,
-    resource,
-    details,
-    timestamp: new Date().toISOString(),
-    ...(req && {
-      requestId: req.id,
-      ip: req.ip,
-      userId: req.user?.id,
-      userRole: req.user?.role
-    })
-  };
-
-  auditLogger.info('Audit event', auditData);
-};
-
 export default {
-  auditLogging,
-  authAuditLogging,
-  securityAuditLogging,
-  dataAccessAuditLogging,
-  configAuditLogging,
-  logAuditEvent: logAuditEventHelper
+  unifiedAuditMiddleware,
+  attachRequestAudit,
+  logAuditEvent: winstonLogAuditEvent
 };

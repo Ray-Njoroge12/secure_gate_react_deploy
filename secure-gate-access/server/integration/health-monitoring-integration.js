@@ -6,7 +6,7 @@
 
 import express from 'express';
 import healthRoutes from '../src/routes/healthRoutes.js';
-import { enhancedHealthMonitoring } from '../src/services/enhancedHealthService.js';
+import { enhancedHealthMonitoring } from '../src/services/healthCore.js';
 import loggingService from '../src/services/loggingService.js';
 
 /**

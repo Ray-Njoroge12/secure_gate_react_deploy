@@ -1,13 +1,10 @@
 // server/src/middleware/enhancedSessionMiddleware.js
 import session from 'express-session';
 import { RedisStore } from 'connect-redis';
-import createMemoryStore from 'memorystore';
 import * as crypto from 'crypto';
 import sessionSecurityService from '../services/sessionSecurityService.js';
 import loggingService from '../services/loggingService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
-
-const MemoryStore = createMemoryStore(session);
 
 /**
  * Enhanced Session Middleware with Security Hardening
@@ -53,10 +50,7 @@ class EnhancedSessionManager {
         });
         loggingService.logSecurity('Enhanced session store initialized with Redis backend', {});
       } else {
-        this.sessionStore = new MemoryStore({
-          checkPeriod: 86400000, // Prune expired entries every 24h
-          max: 10000 // Maximum sessions in memory
-        });
+        this.sessionStore = new session.MemoryStore();
         loggingService.logSecurity('Enhanced session store initialized with memory fallback', {});
       }
 
@@ -340,18 +334,18 @@ class EnhancedSessionManager {
       let statusCode = 401;
 
       switch (reason) {
-      case 'fingerprint_mismatch':
-        message = 'Session security violation detected';
-        statusCode = 403;
-        break;
-      case 'session_timeout':
-        message = 'Session expired';
-        break;
-      case 'no_session':
-        message = 'No active session';
-        break;
-      default:
-        message = 'Session validation failed';
+        case 'fingerprint_mismatch':
+          message = 'Session security violation detected';
+          statusCode = 403;
+          break;
+        case 'session_timeout':
+          message = 'Session expired';
+          break;
+        case 'no_session':
+          message = 'No active session';
+          break;
+        default:
+          message = 'Session validation failed';
       }
 
       return res.status(statusCode).json({

@@ -1,5 +1,4 @@
 
-import fetch from 'node-fetch';
 
 const BASE_URL = 'http://localhost:5001/api';
 // Assuming the server is running on port 5000. Adjust if necessary.

@@ -7,12 +7,11 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
-import auditLoggerFactory from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import autoApprovalService from '../services/autoApprovalService.js';
 import { errorResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
-const attachRequestAudit = auditLoggerFactory();
 
 // Rate limiting for rule creation/modification
 const ruleModificationLimit = rateLimit({

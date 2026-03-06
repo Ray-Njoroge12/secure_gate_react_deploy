@@ -4,7 +4,7 @@ import { authenticateToken, requireRole } from '../middleware/authMiddleware.js'
 import { asyncHandler } from '../middleware/standardizedErrorHandler.js';
 import { ResponseUtil } from '../utils/responseUtils.js';
 import { getDBStatus, testDBConnection } from '../database/db.enhanced.js';
-import dbHealthService from '../services/databaseHealthService.js';
+import { dbHealthService } from '../services/healthCore.js';
 
 const router = Router();
 

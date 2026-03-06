@@ -18,16 +18,22 @@ import secretsManagerService from '../services/secretsManagerService.js';
 class EnvironmentConfig {
   constructor() {
     this.isProduction = process.env.NODE_ENV === 'production';
-    this.isDevelopment = process.env.NODE_ENV === 'development';
+    this.isStaging = process.env.NODE_ENV === 'staging';
+    this.isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
     this.isTest = process.env.NODE_ENV === 'test';
 
     // Determine if AWS Secrets Manager should be used (explicit opt-in)
     this.useAwsSecrets = process.env.USE_AWS_SECRETS === 'true';
 
-    // Initialize secrets manager for production when explicitly enabled
-    this.secretsManager = this.isProduction && !this.isTest && this.useAwsSecrets
+    // Initialize secrets manager for production/staging when explicitly enabled
+    this.secretsManager = (this.isProduction || this.isStaging) && !this.isTest && this.useAwsSecrets
       ? secretsManagerService
       : null;
+
+    // Set dynamic prefix based on environment
+    if (this.secretsManager) {
+      process.env.SECRETS_PREFIX = process.env.SECRETS_PREFIX || `secure-gate/${process.env.NODE_ENV}`;
+    }
 
     this.secretsLoaded = false;
 
@@ -170,15 +176,26 @@ class EnvironmentConfig {
   validateDatabaseConfig() {
     const dbConfig = this.getDatabaseConfig();
 
-    if (!dbConfig.host || !dbConfig.database || !dbConfig.user) {
-      this.validationErrors.push('Database configuration incomplete (PGHOST, PGDATABASE, PGUSER required)');
-    }
+    if (!dbConfig.connectionString) {
+      if (!dbConfig.host || !dbConfig.database || !dbConfig.user) {
+        this.validationErrors.push('Database configuration incomplete (DATABASE_URL or PGHOST, PGDATABASE, PGUSER required)');
+      }
 
-    if (!dbConfig.password) {
-      if (this.isProduction) {
-        this.validationErrors.push('Database password (PGPASSWORD) is required in production');
-      } else {
-        this.warnings.push('Database password (PGPASSWORD) not set - using default');
+      if (!dbConfig.password) {
+        if (this.isProduction || this.isStaging) {
+          this.validationErrors.push('Database password (PGPASSWORD) is required in production/staging');
+        } else {
+          this.warnings.push('Database password (PGPASSWORD) not set - using default');
+        }
+      }
+    } else {
+      // Basic validation of connection string
+      try {
+        if (!dbConfig.connectionString.startsWith('postgres://') && !dbConfig.connectionString.startsWith('postgresql://')) {
+          this.validationErrors.push('DATABASE_URL must be a valid postgres connection string');
+        }
+      } catch (e) {
+        this.validationErrors.push('DATABASE_URL validation failed');
       }
     }
 
@@ -370,11 +387,13 @@ class EnvironmentConfig {
    */
   getDatabaseConfig() {
     return {
+      connectionString: process.env.DATABASE_URL,
       user: process.env.PGUSER || 'postgres',
       host: process.env.PGHOST || 'localhost',
       database: process.env.PGDATABASE || 'secure_gate',
       password: process.env.PGPASSWORD || 'postgres',
       port: Number(process.env.PGPORT || 5432),
+      ssl: process.env.PGSSLMODE === 'require' ? { rejectUnauthorized: false } : false,
       pool: {
         max: Number(process.env.PGPOOL_MAX || 20),
         idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT || 30000),
@@ -387,6 +406,12 @@ class EnvironmentConfig {
    * Get validated security configuration
    */
   getSecurityConfig() {
+    // Standardize on CLIENT_ORIGIN
+    const clientOrigin = process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN;
+    if (clientOrigin && !process.env.CLIENT_ORIGIN) {
+      process.env.CLIENT_ORIGIN = clientOrigin;
+    }
+
     // SECURITY: No fallback secrets allowed - must be set in environment
     if (!process.env.JWT_SECRET) {
       throw new Error('JWT_SECRET environment variable is required');
@@ -394,8 +419,8 @@ class EnvironmentConfig {
     if (!process.env.JWT_REFRESH_SECRET) {
       throw new Error('JWT_REFRESH_SECRET environment variable is required');
     }
-    if (!process.env.SESSION_SECRET && this.isProduction) {
-      throw new Error('SESSION_SECRET environment variable is required in production');
+    if (!process.env.SESSION_SECRET && (this.isProduction || this.isStaging)) {
+      throw new Error('SESSION_SECRET environment variable is required in production/staging');
     }
 
     return {
@@ -403,8 +428,8 @@ class EnvironmentConfig {
       jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
       sessionSecret: process.env.SESSION_SECRET || this.generateSecureSecret(32), // Only generate for development
       enforceHttps: process.env.ENFORCE_HTTPS === 'true',
-      secureCookies: process.env.SECURE_COOKIES === 'true' || this.isProduction,
-      trustProxy: process.env.TRUST_PROXY === 'true' || this.isProduction,
+      secureCookies: process.env.SECURE_COOKIES === 'true' || this.isProduction || this.isStaging,
+      trustProxy: process.env.TRUST_PROXY === 'true' || this.isProduction || this.isStaging,
       corsOrigins: this.getCorsOrigins(),
       rateLimiting: this.getRateLimitConfig()
     };

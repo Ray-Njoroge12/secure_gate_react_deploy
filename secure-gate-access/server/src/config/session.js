@@ -7,7 +7,6 @@ import session from 'express-session';
 import { createHash } from 'crypto';
 import { RedisStore } from 'connect-redis';
 import { createClient } from 'redis';
-import createMemoryStore from 'memorystore';
 import dotenv from 'dotenv';
 import { errorResponse } from '../utils/responseFormatter.js';
 import { getCookieOptions } from '../utils/cookies.js';
@@ -68,12 +67,7 @@ if (process.env.CACHE_ENABLED === 'true' && (process.env.REDIS_URL || process.en
 
 // Fall back to memory store if Redis is not available
 if (!sessionStore) {
-  const MemoryStore = createMemoryStore(session);
-  sessionStore = new MemoryStore({
-    checkPeriod: 86400000, // prune expired entries every 24h
-    max: 1000, // max number of sessions
-    ttl: 86400 // 24 hours
-  });
+  sessionStore = new session.MemoryStore();
   const sessionStoreWarning = getInMemorySessionStoreWarning();
   if (sessionStoreWarning) {
     console.log(sessionStoreWarning);
@@ -100,12 +94,12 @@ if (process.env.NODE_ENV === 'production') {
   if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
     throw new Error('SESSION_SECRET must be at least 32 characters in production');
   }
-  
+
   if (!sessionStore || sessionStore.constructor.name === 'MemoryStore') {
     console.warn('⚠️  WARNING: Memory store should not be used in production!');
     console.warn('⚠️  Please configure Redis for session storage');
   }
-  
+
   if (!process.env.ENFORCE_HTTPS || process.env.ENFORCE_HTTPS !== 'true') {
     console.warn('⚠️  WARNING: HTTPS should be enforced in production');
   }
@@ -206,7 +200,7 @@ export const sessionUtils = {
    */
   getSessionInfo: (req) => {
     if (!req.session) return null;
-    
+
     return {
       id: req.sessionID,
       authenticated: req.session.authenticated || false,
@@ -238,7 +232,7 @@ export const sessionSecurity = (req, res, next) => {
   // Set security headers
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  
+
   // Check session fingerprint
   if (req.session && req.session.fingerprint) {
     const currentFingerprint = generateFingerprint(req);
@@ -248,7 +242,7 @@ export const sessionSecurity = (req, res, next) => {
       return errorResponse(res, 'Session security violation', 'SESSION_SECURITY_VIOLATION', 401, null, req);
     }
   }
-  
+
   next();
 };
 
@@ -260,7 +254,7 @@ function generateFingerprint(req) {
     req.headers['accept-encoding'] || '',
     req.ip || req.connection.remoteAddress || ''
   ];
-  
+
   return createHash('sha256')
     .update(components.join('|'))
     .digest('hex');

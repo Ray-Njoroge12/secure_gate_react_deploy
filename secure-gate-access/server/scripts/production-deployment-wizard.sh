@@ -176,7 +176,7 @@ configure_environment() {
         echo "  • DATABASE_URL (production database connection)"
         echo "  • SMTP credentials (email service)"
         echo "  • Twilio credentials (SMS service)"
-        echo "  • CORS_ORIGIN (your frontend domain)"
+        echo "  • CLIENT_ORIGIN (your frontend domain)"
         echo "  • Any other service-specific values"
         echo ""
         

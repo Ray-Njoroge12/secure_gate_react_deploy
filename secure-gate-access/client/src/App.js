@@ -61,7 +61,7 @@ const BulkInviteWizard = lazy(() => import("./pages/resident/BulkInviteWizard.js
 const Settings = lazy(() => import("./pages/resident/Settings.jsx"));
 const ResidentDashboard = lazy(() => import("./pages/resident/ResidentDashboard.jsx"));
 
-const GeneratePass = lazy(() => import("./pages/resident/GeneratePass.jsx"));
+// GeneratePass removed - using QuickInvite instead
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
 const FavoriteVisitors = lazy(() => import("./pages/resident/FavoriteVisitors.jsx")); // Added for Task 2.3
 const DeliveryList = lazy(() => import("./components/resident/DeliveryList.jsx"));
@@ -83,7 +83,7 @@ const MFASetupGuide = lazy(() => import("./pages/guard/MFASetupGuide.jsx")); // 
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
-const MessageViewer = lazy(() => import("./pages/admin/MessageViewer.jsx")); // Dev Tool
+// MessageViewer removed - file missing // Dev Tool
 const SuperAdminDashboard = lazy(() => import("./pages/admin/SuperAdminDashboard.jsx"));
 const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
 const AdminSettings = lazy(() => import("./pages/admin/Settings.jsx"));
@@ -91,12 +91,13 @@ const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
 const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
 const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
 const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
-const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
-const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
+// NotificationPreferences and ActivityDashboard removed - files missing
+// const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
+// const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
 
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
-// const SelfCheckInKiosk = lazy(() => import("./pages/public/SelfCheckInKiosk.jsx"));
+// SelfCheckInKiosk removed - file missing
 const VisitorConfirmation = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
 
 // Resident additional pages
@@ -133,7 +134,7 @@ const AdvancedSearchPanel = lazy(() => import("./components/search/AdvancedSearc
 const DataExportPanel = lazy(() => import("./components/export/DataExportPanel.jsx"));
 
 // Guard additional pages
-const GuardAnalytics = lazy(() => import("./pages/guard/GuardAnalytics.jsx"));
+// GuardAnalytics removed - Guards do not need analytics functionality
 
 /**
  * Main App component that renders the entire application
@@ -244,16 +245,7 @@ function App() {
                         }
                       />
                       {/* Resident Sub-routes - Wrapped in AppShell individually for now (Plan: Refactor to Layout Route in future cleanup) */}
-                      <Route
-                        path="/resident/generate-pass"
-                        element={
-                          <ProtectedRoute allowedRoles={["resident"]}>
-                            <AppShell role="resident" title="Generate Pass">
-                              <GeneratePass />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
+                      {/* GeneratePass route removed - using QuickInvite */}
                       <Route
                         path="/resident/visitor-history"
                         element={
@@ -491,16 +483,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                      <Route
-                        path="/dashboard/guard/analytics"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard", "admin"]}>
-                            <AppShell role="guard" title="Analytics">
-                              <GuardAnalytics />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
+                      {/* Phase 3 Cleanup: GuardAnalytics route removed */}
                       <Route
                         path="/dashboard/guard/shift-handover"
                         element={
@@ -546,16 +529,7 @@ function App() {
                       />
 
                       {/* Dev Tools - Message Viewer */}
-                      <Route
-                        path="/admin/messages"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Message Simulator">
-                              <MessageViewer />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
+                      {/* MessageViewer route removed */}
 
                       {/* Main Dashboard with Nested Route Parameter for Tabs */}
                       <Route
@@ -638,26 +612,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                      <Route
-                        path="/dashboard/admin/notifications"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Notification Preferences">
-                              <NotificationPreferences />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dashboard/admin/activity"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Activity Dashboard">
-                              <ActivityDashboard />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
-                      />
+                      {/* NotificationPreferences and ActivityDashboard routes removed */}
                       <Route
                         path="/dashboard/admin/help/security"
                         element={
