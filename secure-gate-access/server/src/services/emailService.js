@@ -10,6 +10,16 @@ import logger from '../config/logger.js';
 import { emailTemplates } from '../templates/email-templates.js';
 import { maskEmail } from '../utils/redaction.js';
 
+const isTestEnvironment = (process.env.NODE_ENV || '').toLowerCase() === 'test';
+
+const shouldWarnAboutMissingMailgunCredentials = () => {
+  const configuredProvider = (process.env.EMAIL_PROVIDER || '').trim().toLowerCase();
+
+  return configuredProvider === 'mailgun'
+    || Boolean(process.env.MAILGUN_API_KEY)
+    || Boolean(process.env.MAILGUN_DOMAIN);
+};
+
 export class EmailService {
   constructor() {
     this.mailgun = null;
@@ -53,7 +63,9 @@ export class EmailService {
         const domain = process.env.MAILGUN_DOMAIN;
 
         if (!apiKey || !domain) {
-          logger.warn('Mailgun credentials not found. Email service will operate in stub mode.');
+          if (!isTestEnvironment && shouldWarnAboutMissingMailgunCredentials()) {
+            logger.warn('Mailgun credentials not found. Email service will operate in stub mode.');
+          }
           this.initialized = false;
           return;
         }
