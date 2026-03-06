@@ -97,6 +97,7 @@ describe('EmailService', () => {
     // Reset environment
     delete process.env.MAILGUN_API_KEY;
     delete process.env.MAILGUN_DOMAIN;
+    delete process.env.EMAIL_PROVIDER;
     delete process.env.EMAIL_FROM;
     delete process.env.EMAIL_FROM_NAME;
     delete process.env.MAILGUN_BASE_URL;
@@ -148,11 +149,13 @@ describe('EmailService', () => {
       });
     });
 
-    describe('in stub mode (no credentials)', () => {
+    describe('in stub mode with Mailgun explicitly selected', () => {
       beforeEach(async () => {
         // Ensure no Mailgun credentials
         delete process.env.MAILGUN_API_KEY;
         delete process.env.MAILGUN_DOMAIN;
+        process.env.EMAIL_PROVIDER = 'mailgun';
+        process.env.NODE_ENV = 'development';
 
         jest.resetModules();
 
@@ -180,6 +183,73 @@ describe('EmailService', () => {
 
       it('should log warning about stub mode', () => {
         expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Mailgun credentials not found. Email service will operate in stub mode.'
+        );
+      });
+    });
+
+    describe('in stub mode with provider unset', () => {
+      beforeEach(async () => {
+        delete process.env.MAILGUN_API_KEY;
+        delete process.env.MAILGUN_DOMAIN;
+        delete process.env.EMAIL_PROVIDER;
+        process.env.NODE_ENV = 'development';
+
+        jest.resetModules();
+
+        jest.unstable_mockModule('../../src/config/logger.js', () => ({
+          default: mockLogger
+        }));
+        jest.unstable_mockModule('../../src/templates/email-templates.js', () => ({
+          emailTemplates: mockEmailTemplates
+        }));
+        jest.unstable_mockModule('mailgun.js', () => ({
+          default: MockMailgun
+        }));
+        jest.unstable_mockModule('form-data', () => ({
+          default: mockFormData
+        }));
+
+        const { EmailService: EmailServiceClass } = await import('../../src/services/emailService.js');
+        EmailService = new EmailServiceClass();
+      });
+
+      it('should stay in stub mode without logging the Mailgun bootstrap warning', () => {
+        expect(EmailService.initialized).toBe(false);
+        expect(mockLogger.warn).not.toHaveBeenCalledWith(
+          'Mailgun credentials not found. Email service will operate in stub mode.'
+        );
+      });
+    });
+
+    describe('in stub mode during test bootstrap', () => {
+      beforeEach(async () => {
+        delete process.env.MAILGUN_API_KEY;
+        delete process.env.MAILGUN_DOMAIN;
+        process.env.NODE_ENV = 'test';
+
+        jest.resetModules();
+
+        jest.unstable_mockModule('../../src/config/logger.js', () => ({
+          default: mockLogger
+        }));
+        jest.unstable_mockModule('../../src/templates/email-templates.js', () => ({
+          emailTemplates: mockEmailTemplates
+        }));
+        jest.unstable_mockModule('mailgun.js', () => ({
+          default: MockMailgun
+        }));
+        jest.unstable_mockModule('form-data', () => ({
+          default: mockFormData
+        }));
+
+        const { EmailService: EmailServiceClass } = await import('../../src/services/emailService.js');
+        EmailService = new EmailServiceClass();
+      });
+
+      it('should suppress the bootstrap warning in test env', () => {
+        expect(EmailService.initialized).toBe(false);
+        expect(mockLogger.warn).not.toHaveBeenCalledWith(
           'Mailgun credentials not found. Email service will operate in stub mode.'
         );
       });
@@ -528,7 +598,7 @@ describe('EmailService', () => {
         await EmailService.send('user@test.com', 'Test', '<html>Test</html>');
 
         expect(mockLogger.info).toHaveBeenCalledWith(
-          'Email sent successfully via Mailgun to user@test.com',
+          'Email sent successfully via Mailgun to u***@test.com',
           expect.objectContaining({
             messageId: 'msg-123',
             subject: 'Test'
@@ -592,7 +662,7 @@ describe('EmailService', () => {
         await EmailService.send('user@test.com', 'Test', '<html>Test</html>');
 
         expect(mockLogger.warn).toHaveBeenCalledWith(
-          '[EMAIL STUB] Would send email to user@test.com: Test'
+          '[EMAIL STUB] Would send email to u***@test.com: Test'
         );
       });
 
