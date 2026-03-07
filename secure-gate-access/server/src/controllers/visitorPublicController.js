@@ -57,7 +57,6 @@ export const getVisitorByToken = async (req, res) => {
         v.token_expires_at,
         v.created_at,
         v.id_number_encrypted,
-        v.otp,
         u.username as resident_name,
         u.email as resident_email,
         u.phone as resident_phone,
@@ -89,6 +88,7 @@ export const getVisitorByToken = async (req, res) => {
 
     // Check if visitor has confirmed and get QR code
     let qrCodeData = null;
+    let generatedOtp = null;
     const isRegisteredStatus = ['confirmed', 'approved', 'verified', 'otp_sent', 'otp_verified', 'active', 'on_premise'].includes(visitor.status);
 
     if (isRegisteredStatus) {
@@ -113,7 +113,7 @@ export const getVisitorByToken = async (req, res) => {
             };
             // Update local visitor object with new OTP if generated
             if (qrResult.data.otp) {
-              visitor.otp = qrResult.data.otp;
+              generatedOtp = qrResult.data.otp;
             }
           }
         }
@@ -151,7 +151,7 @@ export const getVisitorByToken = async (req, res) => {
       tokenExpiresAt: visitor.token_expires_at,
       createdAt: visitor.created_at,
       qrCode: qrCodeData,
-      otp: visitor.otp,
+      otp: generatedOtp,
       estateId: visitor.estate_id,
       resident: {
         name: visitor.resident_name,
@@ -446,8 +446,7 @@ export const confirmVisitorByToken = async (req, res) => {
         v.status,
         v.visitor_token,
         v.token_expires_at,
-        v.estate_id,
-        v.otp
+        v.estate_id
       FROM visitors v
       WHERE v.visitor_token = $1
         AND v.token_expires_at > NOW()
@@ -487,7 +486,7 @@ export const confirmVisitorByToken = async (req, res) => {
               dataUrl: existingQR.qr_code_data_url || existingQR.data_url,
               expiresAt: existingQR.expires_at
             },
-            otp: visitor.otp,
+            otp: null,
             alreadyConfirmed: true
           }
         });
@@ -527,7 +526,7 @@ export const confirmVisitorByToken = async (req, res) => {
         vehicle_plate = COALESCE($5, vehicle_plate),
         updated_at = NOW()
       WHERE id = $6
-      RETURNING id, name, email, phone, purpose, date_of_visit, time_of_visit, status, id_number, vehicle_plate, otp
+      RETURNING id, name, email, phone, purpose, date_of_visit, time_of_visit, status, id_number, vehicle_plate
     `;
 
     const consentData = {
@@ -596,7 +595,7 @@ export const confirmVisitorByToken = async (req, res) => {
           dataUrl: qrResult.data.qrCodeDataUrl,
           expiresAt: qrResult.data.expiresAt
         },
-        otp: confirmedVisitor.otp
+        otp: qrResult.data.otp || null
       }
     });
 

@@ -1,6 +1,16 @@
 import AfricasTalking from 'africastalking';
 import localMessageStore from './localMessageStore.js';
 
+const isTestEnvironment = (process.env.NODE_ENV || '').toLowerCase() === 'test';
+
+const shouldWarnAboutMissingAfricasTalkingCredentials = () => {
+  const configuredProvider = (process.env.SMS_PROVIDER || '').trim().toLowerCase();
+
+  return configuredProvider === 'africastalking'
+    || Boolean(process.env.AT_USERNAME)
+    || Boolean(process.env.AT_API_KEY);
+};
+
 /**
  * SMS Service (Africa's Talking + Local Simulation)
  */
@@ -17,13 +27,17 @@ class SMSService {
 
     // Check if explicitly using local provider
     if (process.env.SMS_PROVIDER === 'local') {
-      console.log('📱 SMS Service initialized in LOCAL SIMULATION mode');
+      if (!isTestEnvironment) {
+        console.log('📱 SMS Service initialized in LOCAL SIMULATION mode');
+      }
       this.isConfigured = false;
       return;
     }
 
     if (!username || !apiKey) {
-      console.log('ℹ️  Africa\'s Talking credentials missing - defaulting to LOCAL SIMULATION mode');
+      if (!isTestEnvironment && shouldWarnAboutMissingAfricasTalkingCredentials()) {
+        console.log('ℹ️  Africa\'s Talking credentials missing - defaulting to LOCAL SIMULATION mode');
+      }
       this.isConfigured = false;
       return;
     }

@@ -67,6 +67,7 @@ export async function setupTestDatabase() {
       'DELETE FROM guard_training WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_shifts WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR reported_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR resolved_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR closed_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR assigned_to IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR assigned_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR escalated_to IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR escalated_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete delivery records for test users
       'DELETE FROM delivery_logs WHERE created_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM deliveries WHERE recipient_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
@@ -120,6 +121,7 @@ export async function cleanupTestDatabase() {
       'DELETE FROM guard_training WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM guard_shifts WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
+      'DELETE FROM incidents WHERE guard_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR reported_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR resolved_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR closed_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR assigned_to IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR assigned_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR escalated_to IN (SELECT id FROM users WHERE email LIKE \'%@test.com\') OR escalated_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       // Delete delivery records for test users
       'DELETE FROM delivery_logs WHERE created_by IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',
       'DELETE FROM deliveries WHERE recipient_id IN (SELECT id FROM users WHERE email LIKE \'%@test.com\')',

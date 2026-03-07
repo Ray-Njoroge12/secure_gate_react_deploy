@@ -29,6 +29,25 @@ const config = {
 
 let pool = null;
 
+const TEST_EMAIL_PATTERN = '%@test.com';
+
+async function cleanupTestUsers(p) {
+  await p.query(
+    `DELETE FROM incidents
+     WHERE guard_id IN (SELECT id FROM users WHERE email LIKE $1)
+        OR reported_by IN (SELECT id FROM users WHERE email LIKE $1)
+        OR resolved_by IN (SELECT id FROM users WHERE email LIKE $1)
+        OR closed_by IN (SELECT id FROM users WHERE email LIKE $1)
+        OR assigned_to IN (SELECT id FROM users WHERE email LIKE $1)
+        OR assigned_by IN (SELECT id FROM users WHERE email LIKE $1)
+        OR escalated_to IN (SELECT id FROM users WHERE email LIKE $1)
+        OR escalated_by IN (SELECT id FROM users WHERE email LIKE $1)`,
+    [TEST_EMAIL_PATTERN]
+  ).catch(() => {});
+
+  await p.query('DELETE FROM users WHERE email LIKE $1', [TEST_EMAIL_PATTERN]);
+}
+
 export async function getTestPool() {
   if (!pool) {
     pool = new Pool(config);
@@ -63,7 +82,7 @@ export async function cleanupTables() {
     await p.query('DELETE FROM delivery_logs').catch(() => {});
     await p.query('DELETE FROM recurring_passes').catch(() => {});
     await p.query('DELETE FROM visitors').catch(() => {});
-    await p.query('DELETE FROM users CASCADE').catch(() => {});
+    await cleanupTestUsers(p).catch(() => {});
   } catch (error) {
     console.error('Cleanup error:', error.message);
   }
@@ -85,8 +104,8 @@ export async function createTestUsers() {
      ON CONFLICT (estate_id) DO NOTHING`
   );
 
-  // Clean existing test users
-  await p.query('DELETE FROM users WHERE email LIKE $1', ['%@test.com']);
+  // Clean existing test users and directly related incidents
+  await cleanupTestUsers(p);
 
   // Insert into both 'password' (legacy) and 'password_hash' columns for compatibility
   const adminResult = await p.query(

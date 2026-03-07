@@ -14,6 +14,21 @@ dotenv.config({ path: join(__dirname, '../..', envFile) });
 
 const { Pool, Client } = pkg;
 const SHOULD_LOG_DB = process.env.NODE_ENV !== 'test';
+const IS_RENDER_ENVIRONMENT = Boolean(
+  process.env.RENDER === 'true' ||
+  process.env.RENDER_SERVICE_ID ||
+  process.env.RENDER_EXTERNAL_URL
+);
+const getExplicitEnvValue = (...names) => {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value !== undefined && value !== '') {
+      return value;
+    }
+  }
+
+  return undefined;
+};
 const logDb = (...args) => {
   if (SHOULD_LOG_DB) {
     console.log(...args);
@@ -29,6 +44,15 @@ class DatabaseManager extends EventEmitter {
 
     // Support DATABASE_URL (Render provides this) or individual PG* variables
     const connectionString = process.env.DATABASE_URL;
+    const explicitRenderFallbackVars = [
+      { name: 'PGHOST', value: getExplicitEnvValue('PGHOST', 'PG_HOST', 'POSTGRES_HOST') },
+      { name: 'PGDATABASE', value: getExplicitEnvValue('PGDATABASE', 'PG_DATABASE', 'POSTGRES_DB') },
+      { name: 'PGUSER', value: getExplicitEnvValue('PGUSER', 'PG_USER', 'POSTGRES_USER') },
+      { name: 'PGPASSWORD', value: getExplicitEnvValue('PGPASSWORD', 'PG_PASSWORD', 'POSTGRES_PASSWORD') }
+    ];
+    const missingRenderFallbackVars = explicitRenderFallbackVars
+      .filter(({ value }) => !value)
+      .map(({ name }) => name);
     const pgHost = process.env.PGHOST || process.env.PG_HOST || process.env.POSTGRES_HOST || 'localhost';
     const pgPort = Number(process.env.PGPORT || process.env.PG_PORT || process.env.POSTGRES_PORT) || 5432;
     const pgUser = process.env.PGUSER || process.env.PG_USER || process.env.POSTGRES_USER || 'postgres';
@@ -47,7 +71,11 @@ class DatabaseManager extends EventEmitter {
       }
     } else {
       logDb(`📊 Database: Using individual PG* variables (host: ${pgHost})`);
-      console.warn('⚠️ DATABASE_URL not set - this may cause issues on Render');
+      if (IS_RENDER_ENVIRONMENT && missingRenderFallbackVars.length > 0) {
+        console.warn(
+          `⚠️ Render environment missing DATABASE_URL and explicit ${missingRenderFallbackVars.join(', ')} configuration - falling back to available PG* values/defaults`
+        );
+      }
     }
 
     this.config = {

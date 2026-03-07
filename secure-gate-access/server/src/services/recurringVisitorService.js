@@ -427,35 +427,28 @@ async function logFailedPinAttempt(passId, ipAddress) {
  * Record entry for a recurring pass (Guard action)
  */
 export async function recordPassEntry(passId, guardId, method = 'pin', notes = null) {
-  const client = await pool.connect();
-
   try {
-    await client.query('BEGIN');
+    await pool.transaction(async (client) => {
+      // Insert entry record
+      await client.query(
+        `INSERT INTO recurring_pass_entries (pass_id, verified_by_guard_id, entry_method, notes)
+         VALUES ($1, $2, $3, $4)`,
+        [passId, guardId, method, notes]
+      );
 
-    // Insert entry record
-    await client.query(
-      `INSERT INTO recurring_pass_entries (pass_id, verified_by_guard_id, entry_method, notes)
-       VALUES ($1, $2, $3, $4)`,
-      [passId, guardId, method, notes]
-    );
-
-    // Update pass stats
-    await client.query(
-      `UPDATE recurring_passes 
-       SET total_entries = total_entries + 1, last_used_at = NOW()
-       WHERE id = $1`,
-      [passId]
-    );
-
-    await client.query('COMMIT');
+      // Update pass stats
+      await client.query(
+        `UPDATE recurring_passes 
+         SET total_entries = total_entries + 1, last_used_at = NOW()
+         WHERE id = $1`,
+        [passId]
+      );
+    });
 
     return { success: true, message: 'Entry recorded' };
   } catch (error) {
-    await client.query('ROLLBACK');
     console.error('Record entry error:', error);
-    return { success: false, error: 'Failed to record entry' };
-  } finally {
-    client.release();
+    throw error;
   }
 }
 

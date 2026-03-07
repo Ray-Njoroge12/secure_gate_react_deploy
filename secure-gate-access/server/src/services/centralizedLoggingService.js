@@ -16,6 +16,7 @@ import { promisify } from 'util';
 import * as crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { getCentralizedLoggingWarning } from '../utils/startupLogHygiene.js';
 
 const execAsync = promisify(exec);
 
@@ -118,17 +119,26 @@ class CentralizedLoggingService {
    */
   async initializeService() {
     try {
+      const centralizedLoggingWarning = getCentralizedLoggingWarning({
+        nodeEnv: process.env.NODE_ENV,
+        loggingEndpoint: process.env.LOGGING_ENDPOINT,
+        loggingCentralizationEnabled: process.env.LOGGING_CENTRALIZATION_ENABLED
+      });
+
       // Log initialization status
       if (!this.config.centralization.enabled) {
         loggingService.logInfo('Centralized logging service initialized (centralization disabled)', {
           format: this.config.logging.format,
           centralizationEnabled: false,
-          reason: !process.env.LOGGING_ENDPOINT ? 'LOGGING_ENDPOINT not configured' : 'Disabled via LOGGING_CENTRALIZATION_ENABLED',
+          reason: process.env.LOGGING_CENTRALIZATION_ENABLED === 'true' && !process.env.LOGGING_ENDPOINT
+            ? 'LOGGING_ENDPOINT not configured while LOGGING_CENTRALIZATION_ENABLED=true'
+            : !process.env.LOGGING_ENDPOINT
+              ? 'Centralization not configured'
+              : 'Disabled via LOGGING_CENTRALIZATION_ENABLED',
           traceabilityEnabled: this.config.traceability.enabled
         });
-        if (process.env.NODE_ENV !== 'test') {
-          console.log('⚠️  Centralized logging disabled (no LOGGING_ENDPOINT configured)');
-          console.log('   Logs will only be written locally. Set LOGGING_ENDPOINT to enable.');
+        if (centralizedLoggingWarning) {
+          console.log(centralizedLoggingWarning);
         }
         return;
       }

@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
 import RedisService from './redisService.js';
 import { dbManager } from '../database/db.enhanced.js';
+import { getPasswordHashingWarning } from '../utils/startupLogHygiene.js';
 
 /**
  * Enhanced Token Service with Refresh Token Support
@@ -551,18 +552,23 @@ class PasswordService {
     // Argon2 configuration with environment-aware settings
     // Development: Faster for testing (timeCost: 1)
     // Production: Secure settings (timeCost: 3)
-    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const usesReducedHashingProfile = process.env.NODE_ENV !== 'production';
 
     this.argon2Config = {
       type: argon2.argon2id, // Most secure variant
-      memoryCost: isDevelopment ? 2 ** 14 : 2 ** 16,  // Dev: 16MB, Prod: 64MB
-      timeCost: isDevelopment ? 1 : 3,                // Dev: 1 iteration, Prod: 3
+      memoryCost: usesReducedHashingProfile ? 2 ** 14 : 2 ** 16,  // Dev: 16MB, Prod: 64MB
+      timeCost: usesReducedHashingProfile ? 1 : 3,                // Dev: 1 iteration, Prod: 3
       parallelism: 1,                                  // 1 thread
       hashLength: 32                                   // 32 byte hash
     };
 
-    if (isDevelopment && process.env.NODE_ENV !== 'test') {
-      console.log('⚠️  Using faster password hashing for development (timeCost: 1)');
+    const passwordHashingWarning = getPasswordHashingWarning({
+      nodeEnv: process.env.NODE_ENV,
+      timeCost: this.argon2Config.timeCost
+    });
+
+    if (passwordHashingWarning) {
+      console.log(passwordHashingWarning);
     }
   }
 

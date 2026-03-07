@@ -724,6 +724,7 @@ describe('visitorInviteController', () => {
     const validCompleteData = {
       name: 'Guest Name',
       phone: '+1234567890',
+      idNumber: 'ID-UNIT-0001',
       consent_given: true,
       consent_timestamp: new Date().toISOString()
     };

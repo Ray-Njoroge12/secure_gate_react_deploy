@@ -280,12 +280,12 @@ class UserService {
     }
 
     try {
-      // Get user by username OR email using parameterized query, including email verification status
-      // Uses column names matching render_init.sql schema: verified instead of email_verified_at
-      // MFA-005 FIX: Include all MFA fields in query
+      // Get user by username OR email using parameterized query, including email verification status.
+      // Uses column names matching render_init.sql schema: verified instead of email_verified_at.
+      // Keep login tolerant of partial MFA schema rollout: this path only needs mfa_enabled.
       const result = await this.db.query(
         `SELECT id, username, first_name, last_name, email, password_hash, role, estate_id, 
-                created_at, verified, mfa_enabled, mfa_secret, backup_codes, mfa_methods
+                created_at, verified, mfa_enabled
          FROM users
          WHERE (username = $1 OR email = $1)
            AND estate_id IS NOT DISTINCT FROM COALESCE($2, estate_id)`,
@@ -385,10 +385,11 @@ class UserService {
     }
 
     try {
-      // MFA-006 FIX: Include all MFA fields in getUserById
+      // Keep generic user fetches tolerant of partial MFA schema rollout.
+      // Dedicated MFA operations read secret/backup columns through mfaService instead.
       const result = await this.db.query(
         `SELECT id, username, first_name, last_name, email, role, estate_id, 
-                created_at, updated_at, mfa_enabled, mfa_secret, backup_codes, mfa_methods 
+                created_at, updated_at, mfa_enabled 
          FROM users WHERE id = $1`,
         [userId]
       );

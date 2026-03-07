@@ -156,18 +156,9 @@ describe('E2 Integration: Visitor Confirmation Workflow', () => {
           timestamp: new Date().toISOString(),
         },
         additionalInfo: {
-          vehicleDetails: {
-            plate: 'KAA 123B',
-            color: 'Silver',
-            make: 'Toyota',
-            model: 'Corolla',
-          },
-          emergencyContact: {
-            name: 'Jane Doe',
-            phone: '+254700000001',
-            relationship: 'Spouse',
-          },
-          specialRequirements: 'Wheelchair accessible parking',
+          vehiclePlate: 'KAA 123B',
+          idNumber: 'ID123456',
+          purpose: 'Testing E2 feature',
         },
       };
 
@@ -209,7 +200,9 @@ describe('E2 Integration: Visitor Confirmation Workflow', () => {
         // Verify additional_info is stored
         expect(visitor.additional_info).toBeDefined();
         expect(typeof visitor.additional_info).toBe('object');
-        expect(visitor.additional_info.vehicleDetails?.plate).toBe('KAA 123B');
+        expect(visitor.additional_info.vehiclePlate).toBe('KAA 123B');
+        expect(visitor.additional_info.idNumber).toBe('ID123456');
+        expect(visitor.additional_info.purpose).toBe('Testing E2 feature');
 
         // Verify consent_given_at timestamp
         expect(visitor.consent_given_at).toBeDefined();
@@ -239,7 +232,7 @@ describe('E2 Integration: Visitor Confirmation Workflow', () => {
       }
 
       const invalidData = {
-        consent_data: {
+        consent: {
           // Missing required dataProcessing and privacyPolicy
           marketing: true,
         },
@@ -260,7 +253,7 @@ describe('E2 Integration: Visitor Confirmation Workflow', () => {
       }
 
       const confirmationData = {
-        consent_data: {
+        consent: {
           dataProcessing: true,
           privacyPolicy: true,
         },
@@ -394,8 +387,9 @@ describe('E2 Integration: Visitor Confirmation Workflow', () => {
               marketing: true,
             },
             additionalInfo: {
-              dietaryRestrictions: 'Vegetarian',
-              accessibilityNeeds: 'None',
+              vehiclePlate: 'KBB 456C',
+              idNumber: 'JOURNEY123',
+              purpose: 'Full E2 test',
             },
           });
 

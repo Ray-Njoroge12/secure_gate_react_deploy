@@ -6,9 +6,31 @@
  */
 
 import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { getTestPool, query, closeTestPool, createTestUsers, cleanupTables, getAuthToken } from './test-db.js';
+import request from 'supertest';
+import { getTestPool, query, closeTestPool, createTestUsers, cleanupTables } from './test-db.js';
+
+process.env.PGDATABASE = process.env.PGDATABASE || 'secure_gate_test';
+process.env.NODE_ENV = 'test';
+
+jest.unstable_mockModule('../../src/services/emailService.js', () => ({
+  default: {
+    sendEmail: jest.fn().mockResolvedValue(),
+    sendVerificationEmail: jest.fn().mockResolvedValue(),
+    sendPasswordResetEmail: jest.fn().mockResolvedValue(),
+    sendWelcomeEmail: jest.fn().mockResolvedValue()
+  }
+}));
+
+jest.unstable_mockModule('../../src/services/smsService.js', () => ({
+  default: {
+    sendSMS: jest.fn().mockResolvedValue(),
+    sendOTP: jest.fn().mockResolvedValue()
+  }
+}));
 
 describe('Pass Management Integration Tests', () => {
+  let app;
+  let cleanupAppTestDatabase;
   let testUsers;
   let residentToken;
   let guardToken;
@@ -16,6 +38,7 @@ describe('Pass Management Integration Tests', () => {
 
   const toDate = (date) => date.toISOString().split('T')[0];
   const buildQrToken = () => `RP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const getCurrentDayCode = () => ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()];
   const buildPassData = (residentId, overrides = {}) => {
     const now = new Date();
     return {
@@ -56,17 +79,45 @@ describe('Pass Management Integration Tests', () => {
       ]
     );
   };
+  const createAdditionalResident = async () => {
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const result = await query(
+      `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
+       SELECT $1, $2, password, password_hash, 'resident', $3, $4, true, estate_id
+       FROM users
+       WHERE id = $5
+       RETURNING *`,
+      [
+        `resident_other_${suffix}`,
+        `resident_other_${suffix}@test.com`,
+        `+2547${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`,
+        'B202',
+        testUsers.resident.id
+      ]
+    );
+
+    return result.rows[0];
+  };
 
   beforeAll(async () => {
+    const integrationSetup = await import('./setup.js');
+    await integrationSetup.setupTestDatabase();
+    cleanupAppTestDatabase = integrationSetup.cleanupTestDatabase;
+
     await getTestPool();
     await cleanupTables();
     testUsers = await createTestUsers();
-    residentToken = await getAuthToken(testUsers.resident.email);
-    guardToken = await getAuthToken(testUsers.guard.email);
-    adminToken = await getAuthToken(testUsers.admin.email);
+    residentToken = await integrationSetup.getAuthToken(testUsers.resident.email);
+    guardToken = await integrationSetup.getAuthToken(testUsers.guard.email);
+    adminToken = await integrationSetup.getAuthToken(testUsers.admin.email);
+    const appModule = await import('../../src/app.js');
+    app = appModule.default;
   }, 30000);
 
   afterAll(async () => {
+    if (cleanupAppTestDatabase) {
+      await cleanupAppTestDatabase();
+    }
     await cleanupTables();
     await closeTestPool();
   }, 30000);
@@ -290,24 +341,6 @@ describe('Pass Management Integration Tests', () => {
       expect(reactivated.rows[0].status).toBe('active');
     });
 
-    it('should revoke pass permanently', async () => {
-      const insertResult = await insertPass(testUsers.resident.id, {
-        visitor_name: 'Revoke Test Pass',
-        visitor_phone: '+254711000000',
-        status: 'active'
-      });
-
-      const passId = insertResult.rows[0].id;
-
-      await query(
-        `UPDATE recurring_passes SET status = 'revoked', updated_at = NOW() WHERE id = $1`,
-        [passId]
-      );
-
-      const revoked = await query('SELECT * FROM recurring_passes WHERE id = $1', [passId]);
-      expect(revoked.rows[0].status).toBe('revoked');
-    });
-
     it('should handle pass expiration correctly', async () => {
       // Create pass that expires today
       const today = toDate(new Date());
@@ -334,49 +367,487 @@ describe('Pass Management Integration Tests', () => {
   });
 
   // =========================================
-  // Pass Authorization Tests
+  // Pass Route Access Boundary Tests
   // =========================================
-  describe('Pass Authorization', () => {
-    it('should allow resident to view only their passes', async () => {
-      // Create passes for different residents
+  describe('Pass Route Access Boundary', () => {
+    it('should allow resident GET /api/recurring-passes to return only the authenticated resident pass set', async () => {
+      const otherResident = await createAdditionalResident();
+
       await insertPass(testUsers.resident.id, {
-        visitor_name: 'My Pass',
+        visitor_name: 'Resident Owned Pass',
         visitor_phone: '+254711222222'
       });
 
-      // Query as resident (should only see their own)
-      const residentPasses = await query(
-        'SELECT * FROM recurring_passes WHERE resident_id = $1',
-        [testUsers.resident.id]
-      );
-
-      expect(residentPasses.rows.length).toBeGreaterThanOrEqual(1);
-      residentPasses.rows.forEach(pass => {
-        expect(pass.resident_id).toBe(testUsers.resident.id);
-      });
-    });
-
-    it('should allow admin to view all passes', async () => {
-      // Admin can query all passes
-      const allPasses = await query('SELECT * FROM recurring_passes');
-      expect(allPasses.rows).toBeDefined();
-    });
-
-    it('should allow guard to validate any pass', async () => {
-      const insertResult = await insertPass(testUsers.resident.id, {
-        visitor_name: 'Guard Validate Pass',
+      await insertPass(otherResident.id, {
+        visitor_name: 'Other Resident Pass',
         visitor_phone: '+254711333333'
+      });
+
+      const response = await request(app)
+        .get('/api/recurring-passes')
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+
+      const visitorNames = response.body.data.map((pass) => pass.visitor_name);
+      expect(visitorNames).toContain('Resident Owned Pass');
+      expect(visitorNames).not.toContain('Other Resident Pass');
+    });
+
+    it('should allow admin GET /api/recurring-passes but only return passes owned by the authenticated admin identity', async () => {
+      await insertPass(testUsers.admin.id, {
+        visitor_name: 'Admin Owned Pass',
+        visitor_phone: '+254711444444'
+      });
+
+      await insertPass(testUsers.resident.id, {
+        visitor_name: 'Resident Pass Not Returned To Admin',
+        visitor_phone: '+254711555555'
+      });
+
+      const response = await request(app)
+        .get('/api/recurring-passes')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+
+      const visitorNames = response.body.data.map((pass) => pass.visitor_name);
+      expect(visitorNames).toContain('Admin Owned Pass');
+      expect(visitorNames).not.toContain('Resident Pass Not Returned To Admin');
+    });
+
+    it('should reject guard access to GET /api/recurring-passes', async () => {
+      const response = await request(app)
+        .get('/api/recurring-passes')
+        .set('Authorization', `Bearer ${guardToken}`);
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should reject resident access to POST /api/recurring-passes/validate', async () => {
+      const response = await request(app)
+        .post('/api/recurring-passes/validate')
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send({
+          credential: 'RP-NOT-ALLOWED',
+          method: 'qr'
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should allow guard access to POST /api/recurring-passes/validate to reach request validation', async () => {
+      const response = await request(app)
+        .post('/api/recurring-passes/validate')
+        .set('Authorization', `Bearer ${guardToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Credential required');
+    });
+  });
+
+  // =========================================
+  // Pass Route Validate Success Tests
+  // =========================================
+  describe('Pass Route Validate Success', () => {
+    it('should validate QR pass successfully and record entry side effects', async () => {
+      const qrCredential = buildQrToken();
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Route Success Pass',
+        visitor_phone: '+254711666666',
+        qr_code_token: qrCredential,
+        valid_from: toDate(new Date(Date.now() - 86400000)),
+        valid_until: toDate(new Date(Date.now() + 86400000)),
+        allowed_days: [getCurrentDayCode()],
+        status: 'active'
       });
 
       const passId = insertResult.rows[0].id;
 
-      // Guard can read pass for validation
-      const pass = await query(
-        'SELECT * FROM recurring_passes WHERE id = $1',
+      await query(
+        `UPDATE recurring_passes
+         SET allowed_time_start = '00:00', allowed_time_end = '23:59'
+         WHERE id = $1`,
         [passId]
       );
 
-      expect(pass.rows).toHaveLength(1);
+      const beforeEntries = await query(
+        'SELECT COUNT(*)::int AS count FROM recurring_pass_entries WHERE pass_id = $1',
+        [passId]
+      );
+      const beforePass = await query(
+        'SELECT total_entries FROM recurring_passes WHERE id = $1',
+        [passId]
+      );
+
+      expect(beforeEntries.rows[0].count).toBe(0);
+      expect(beforePass.rows[0].total_entries).toBe(0);
+
+      const response = await request(app)
+        .post('/api/recurring-passes/validate')
+        .set('Authorization', `Bearer ${guardToken}`)
+        .send({
+          credential: qrCredential,
+          method: 'qr'
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.valid).toBe(true);
+      expect(response.body.pass.id).toBe(passId);
+      expect(response.body.pass.visitorName).toBe('Route Success Pass');
+
+      const recordedEntries = await query(
+        `SELECT pass_id, verified_by_guard_id, entry_method
+         FROM recurring_pass_entries
+         WHERE pass_id = $1
+         ORDER BY id ASC`,
+        [passId]
+      );
+      const updatedPass = await query(
+        'SELECT total_entries, last_used_at FROM recurring_passes WHERE id = $1',
+        [passId]
+      );
+
+      expect(recordedEntries.rows).toHaveLength(1);
+      expect(recordedEntries.rows[0].pass_id).toBe(passId);
+      expect(recordedEntries.rows[0].verified_by_guard_id).toBe(testUsers.guard.id);
+      expect(recordedEntries.rows[0].entry_method).toBe('qr');
+      expect(updatedPass.rows[0].total_entries).toBe(1);
+      expect(updatedPass.rows[0].last_used_at).toBeTruthy();
+    });
+  });
+
+  // =========================================
+  // Pass Route Suspend Boundary Tests
+  // =========================================
+  describe('Pass Route Suspend Boundary', () => {
+    it('should allow only the authenticated owner to suspend an active pass and then reject further suspend attempts once inactive', async () => {
+      const otherResident = await createAdditionalResident();
+      const { getAuthToken } = await import('./setup.js');
+      const otherResidentToken = await getAuthToken(otherResident.email);
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Suspend Route Pass',
+        visitor_phone: '+254711757575',
+        status: 'active'
+      });
+
+      const passId = insertResult.rows[0].id;
+
+      const otherResidentResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/suspend`)
+        .set('Authorization', `Bearer ${otherResidentToken}`);
+
+      expect(otherResidentResponse.status).toBe(404);
+      expect(otherResidentResponse.body.success).toBe(false);
+      expect(otherResidentResponse.body.error).toBe('Pass not found or not active');
+
+      const adminResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/suspend`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(adminResponse.status).toBe(404);
+      expect(adminResponse.body.success).toBe(false);
+      expect(adminResponse.body.error).toBe('Pass not found or not active');
+
+      const guardResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/suspend`)
+        .set('Authorization', `Bearer ${guardToken}`);
+
+      expect(guardResponse.status).toBe(404);
+      expect(guardResponse.body.success).toBe(false);
+      expect(guardResponse.body.error).toBe('Pass not found or not active');
+
+      const ownerResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/suspend`)
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(ownerResponse.status).toBe(200);
+      expect(ownerResponse.body.success).toBe(true);
+      expect(ownerResponse.body.data.id).toBe(passId);
+      expect(ownerResponse.body.data.status).toBe('suspended');
+      expect(ownerResponse.body.data.visitor_name).toBe('Suspend Route Pass');
+
+      const suspendedPass = await query(
+        'SELECT status FROM recurring_passes WHERE id = $1',
+        [passId]
+      );
+
+      expect(suspendedPass.rows[0].status).toBe('suspended');
+
+      const ownerAlreadySuspendedResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/suspend`)
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(ownerAlreadySuspendedResponse.status).toBe(404);
+      expect(ownerAlreadySuspendedResponse.body.success).toBe(false);
+      expect(ownerAlreadySuspendedResponse.body.error).toBe('Pass not found or not active');
+    });
+  });
+
+  // =========================================
+  // Pass Route Revoke Boundary Tests
+  // =========================================
+  describe('Pass Route Revoke Boundary', () => {
+    it('should allow only the authenticated owner to revoke an active pass, persist the revoke reason, and then reject further revoke attempts once inactive', async () => {
+      const otherResident = await createAdditionalResident();
+      const { getAuthToken } = await import('./setup.js');
+      const otherResidentToken = await getAuthToken(otherResident.email);
+      const revokeReason = 'Resident ended contractor access';
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Revoke Route Pass',
+        visitor_phone: '+254711797979',
+        status: 'active'
+      });
+
+      const passId = insertResult.rows[0].id;
+
+      const otherResidentResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/revoke`)
+        .set('Authorization', `Bearer ${otherResidentToken}`)
+        .send({ reason: revokeReason });
+
+      expect(otherResidentResponse.status).toBe(404);
+      expect(otherResidentResponse.body.success).toBe(false);
+      expect(otherResidentResponse.body.error).toBe('Pass not found or already revoked');
+
+      const adminResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/revoke`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ reason: revokeReason });
+
+      expect(adminResponse.status).toBe(404);
+      expect(adminResponse.body.success).toBe(false);
+      expect(adminResponse.body.error).toBe('Pass not found or already revoked');
+
+      const guardResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/revoke`)
+        .set('Authorization', `Bearer ${guardToken}`)
+        .send({ reason: revokeReason });
+
+      expect(guardResponse.status).toBe(404);
+      expect(guardResponse.body.success).toBe(false);
+      expect(guardResponse.body.error).toBe('Pass not found or already revoked');
+
+      const ownerResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/revoke`)
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send({ reason: revokeReason });
+
+      expect(ownerResponse.status).toBe(200);
+      expect(ownerResponse.body.success).toBe(true);
+      expect(ownerResponse.body.data.id).toBe(passId);
+      expect(ownerResponse.body.data.status).toBe('revoked');
+      expect(ownerResponse.body.data.visitor_name).toBe('Revoke Route Pass');
+
+      const revokedPass = await query(
+        'SELECT status, revoked_reason FROM recurring_passes WHERE id = $1',
+        [passId]
+      );
+
+      expect(revokedPass.rows[0].status).toBe('revoked');
+      expect(revokedPass.rows[0].revoked_reason).toBe(revokeReason);
+
+      const ownerAlreadyRevokedResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/revoke`)
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send({ reason: 'Second revoke should not succeed' });
+
+      expect(ownerAlreadyRevokedResponse.status).toBe(404);
+      expect(ownerAlreadyRevokedResponse.body.success).toBe(false);
+      expect(ownerAlreadyRevokedResponse.body.error).toBe('Pass not found or already revoked');
+    });
+  });
+
+  // =========================================
+  // Pass Route Reactivate Boundary Tests
+  // =========================================
+  describe('Pass Route Reactivate Boundary', () => {
+    it('should allow only the authenticated owner to reactivate a suspended pass and then reject further reactivation attempts once already active', async () => {
+      const otherResident = await createAdditionalResident();
+      const { getAuthToken } = await import('./setup.js');
+      const otherResidentToken = await getAuthToken(otherResident.email);
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Reactivate Route Pass',
+        visitor_phone: '+254711787878',
+        status: 'suspended'
+      });
+
+      const passId = insertResult.rows[0].id;
+
+      const otherResidentResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/reactivate`)
+        .set('Authorization', `Bearer ${otherResidentToken}`);
+
+      expect(otherResidentResponse.status).toBe(404);
+      expect(otherResidentResponse.body.success).toBe(false);
+      expect(otherResidentResponse.body.error).toBe('Pass not found or not suspended');
+
+      const adminResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/reactivate`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(adminResponse.status).toBe(404);
+      expect(adminResponse.body.success).toBe(false);
+      expect(adminResponse.body.error).toBe('Pass not found or not suspended');
+
+      const guardResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/reactivate`)
+        .set('Authorization', `Bearer ${guardToken}`);
+
+      expect(guardResponse.status).toBe(404);
+      expect(guardResponse.body.success).toBe(false);
+      expect(guardResponse.body.error).toBe('Pass not found or not suspended');
+
+      const ownerResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/reactivate`)
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(ownerResponse.status).toBe(200);
+      expect(ownerResponse.body.success).toBe(true);
+      expect(ownerResponse.body.data.id).toBe(passId);
+      expect(ownerResponse.body.data.status).toBe('active');
+      expect(ownerResponse.body.data.visitor_name).toBe('Reactivate Route Pass');
+
+      const reactivatedPass = await query(
+        'SELECT status FROM recurring_passes WHERE id = $1',
+        [passId]
+      );
+
+      expect(reactivatedPass.rows[0].status).toBe('active');
+
+      const ownerAlreadyActiveResponse = await request(app)
+        .post(`/api/recurring-passes/${passId}/reactivate`)
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(ownerAlreadyActiveResponse.status).toBe(404);
+      expect(ownerAlreadyActiveResponse.body.success).toBe(false);
+      expect(ownerAlreadyActiveResponse.body.error).toBe('Pass not found or not suspended');
+    });
+  });
+
+  // =========================================
+  // Pass Route Detail Boundary Tests
+  // =========================================
+  describe('Pass Route Detail Boundary', () => {
+    it('should return pass detail to the owner and respond with not found for other authenticated identities', async () => {
+      const otherResident = await createAdditionalResident();
+      const { getAuthToken } = await import('./setup.js');
+      const otherResidentToken = await getAuthToken(otherResident.email);
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Owner Scoped Detail Pass',
+        visitor_phone: '+254711767676'
+      });
+
+      const passId = insertResult.rows[0].id;
+
+      const ownerResponse = await request(app)
+        .get(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(ownerResponse.status).toBe(200);
+      expect(ownerResponse.body.success).toBe(true);
+      expect(ownerResponse.body.data.id).toBe(passId);
+      expect(ownerResponse.body.data.resident_id).toBe(testUsers.resident.id);
+      expect(ownerResponse.body.data.visitor_name).toBe('Owner Scoped Detail Pass');
+
+      const otherResidentResponse = await request(app)
+        .get(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${otherResidentToken}`);
+
+      expect(otherResidentResponse.status).toBe(404);
+      expect(otherResidentResponse.body.success).toBe(false);
+      expect(otherResidentResponse.body.error).toBe('Pass not found');
+
+      const adminResponse = await request(app)
+        .get(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(adminResponse.status).toBe(404);
+      expect(adminResponse.body.success).toBe(false);
+      expect(adminResponse.body.error).toBe('Pass not found');
+
+      const guardResponse = await request(app)
+        .get(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${guardToken}`);
+
+      expect(guardResponse.status).toBe(404);
+      expect(guardResponse.body.success).toBe(false);
+      expect(guardResponse.body.error).toBe('Pass not found');
+    });
+  });
+
+  // =========================================
+  // Pass Route History Boundary Tests
+  // =========================================
+  describe('Pass Route History Boundary', () => {
+    it('should return owner history after validate-success records an entry and reject other resident and admin access', async () => {
+      const otherResident = await createAdditionalResident();
+      const { getAuthToken } = await import('./setup.js');
+      const otherResidentToken = await getAuthToken(otherResident.email);
+      const qrCredential = buildQrToken();
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'History Route Pass',
+        visitor_phone: '+254711777777',
+        qr_code_token: qrCredential,
+        valid_from: toDate(new Date(Date.now() - 86400000)),
+        valid_until: toDate(new Date(Date.now() + 86400000)),
+        allowed_days: [getCurrentDayCode()],
+        status: 'active'
+      });
+
+      const passId = insertResult.rows[0].id;
+
+      await query(
+        `UPDATE recurring_passes
+         SET allowed_time_start = '00:00', allowed_time_end = '23:59'
+         WHERE id = $1`,
+        [passId]
+      );
+
+      const validateResponse = await request(app)
+        .post('/api/recurring-passes/validate')
+        .set('Authorization', `Bearer ${guardToken}`)
+        .send({
+          credential: qrCredential,
+          method: 'qr'
+        });
+
+      expect(validateResponse.status).toBe(200);
+      expect(validateResponse.body.success).toBe(true);
+      expect(validateResponse.body.valid).toBe(true);
+
+      const ownerResponse = await request(app)
+        .get(`/api/recurring-passes/${passId}/history`)
+        .set('Authorization', `Bearer ${residentToken}`);
+
+      expect(ownerResponse.status).toBe(200);
+      expect(ownerResponse.body.success).toBe(true);
+      expect(ownerResponse.body.data).toHaveLength(1);
+      expect(ownerResponse.body.data[0].pass_id).toBe(passId);
+      expect(ownerResponse.body.data[0].verified_by_guard_id).toBe(testUsers.guard.id);
+      expect(ownerResponse.body.data[0].entry_method).toBe('qr');
+
+      const otherResidentResponse = await request(app)
+        .get(`/api/recurring-passes/${passId}/history`)
+        .set('Authorization', `Bearer ${otherResidentToken}`);
+
+      expect(otherResidentResponse.status).toBe(404);
+      expect(otherResidentResponse.body.success).toBe(false);
+      expect(otherResidentResponse.body.error).toBe('Pass not found');
+
+      const adminResponse = await request(app)
+        .get(`/api/recurring-passes/${passId}/history`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(adminResponse.status).toBe(404);
+      expect(adminResponse.body.success).toBe(false);
+      expect(adminResponse.body.error).toBe('Pass not found');
     });
   });
 
