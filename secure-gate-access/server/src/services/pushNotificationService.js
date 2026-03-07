@@ -3,6 +3,14 @@ import { dbManager as db } from '../database/db.enhanced.js';
 import logger from '../config/logger.js';
 import notificationMetricsService from './notificationMetricsService.js';
 
+const isTestEnvironment = (process.env.NODE_ENV || '').toLowerCase() === 'test';
+
+const shouldWarnAboutMissingPushConfiguration = () => (
+    Boolean(process.env.VAPID_PUBLIC_KEY)
+    || Boolean(process.env.VAPID_PRIVATE_KEY)
+    || Boolean(process.env.VAPID_EMAIL)
+);
+
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@example.com';
@@ -22,7 +30,9 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
         logger.error('Failed to configure web-push:', error);
     }
 } else {
-    logger.warn('Push notification service NOT configured (missing keys)');
+    if (!isTestEnvironment && shouldWarnAboutMissingPushConfiguration()) {
+        logger.warn('Push notification service NOT configured (missing keys)');
+    }
 }
 
 /**

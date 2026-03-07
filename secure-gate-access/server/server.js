@@ -22,12 +22,13 @@ import EnvironmentConfig from './src/config/environment.js';
 import { enhancedHealthMonitoring as healthCheck } from './src/services/enhancedHealthService.js';
 import { createHealthMonitoring } from './integration/health-monitoring-integration.js';
 import loggingService from './src/services/loggingService.js';
+import { getDataRetentionSchedulerNotice, getStartupConsoleMessages } from './src/utils/startupLogHygiene.js';
 
 // Enhanced error monitoring imports
 import { createErrorMonitoring } from './integration/error-monitoring-integration.js';
 
 // Import migration service for auto-migration on startup
-import migrationService from './src/database/migrationService.js';
+import migrationService from './src/services/migrationService.js';
 
 // Import data retention scheduler for GDPR compliance
 import retentionScheduler from './src/jobs/retentionScheduler.js';
@@ -330,11 +331,8 @@ async function startServer() {
 
     // Start server
     const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Secure Gate server running on http://localhost:${PORT}`);
-      console.log(`🌐 Server accessible on all network interfaces`);
-      console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log('✅ All security validations passed');
-      console.log('📊 Enhanced logging and monitoring active');
+      getStartupConsoleMessages({ port: PORT, nodeEnv: process.env.NODE_ENV })
+        .forEach((message) => console.log(message));
 
       // Log server startup event
       loggingService.logInfo('Server started successfully', {
@@ -355,7 +353,10 @@ async function startServer() {
       retentionScheduler.start();
       console.log('✅ Data retention scheduler started successfully');
     } else {
-      console.log('ℹ️  Data retention scheduler disabled (set ENABLE_DATA_RETENTION=true to enable)');
+      const dataRetentionSchedulerNotice = getDataRetentionSchedulerNotice();
+      if (dataRetentionSchedulerNotice) {
+        console.log(dataRetentionSchedulerNotice);
+      }
     }
 
     // Enhanced graceful shutdown handling

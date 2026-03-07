@@ -122,15 +122,14 @@ class OptimizedQRCodeService {
         otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpHash = await argon2.hash(otp); // Fixed: Use argon2 to match backend verification
 
-        // Store OTP hash and plaintext OTP in visitors table
+        // Store OTP hash metadata only; plaintext OTP is returned once, not persisted
         await dbManager.query(
           `UPDATE visitors 
            SET otp_hash = $1, 
-               otp = $2,
-               otp_expires_at = $3,
+               otp_expires_at = $2,
                otp_attempts = 0
-           WHERE id = $4 AND estate_id = $5`,
-          [otpHash, otp, expirationTime, visitorData.id, visitorData.estate_id]
+           WHERE id = $3 AND estate_id = $4`,
+          [otpHash, expirationTime, visitorData.id, visitorData.estate_id]
         );
       }
 

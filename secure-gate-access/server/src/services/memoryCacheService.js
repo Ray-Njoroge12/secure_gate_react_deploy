@@ -6,6 +6,8 @@ import { EventEmitter } from 'events';
  * Provides basic caching functionality when Redis is unavailable
  */
 class MemoryCacheService extends EventEmitter {
+  static hasWarnedAboutProductionFallback = false;
+
   constructor() {
     super();
     this.shouldLog = process.env.NODE_ENV !== 'test';
@@ -19,7 +21,8 @@ class MemoryCacheService extends EventEmitter {
       operations: 0
     };
 
-    if (this.shouldLog) {
+    if (this.shouldLog && !MemoryCacheService.hasWarnedAboutProductionFallback) {
+      MemoryCacheService.hasWarnedAboutProductionFallback = true;
       console.log('⚠️  Using in-memory cache (not recommended for production)');
     }
   }

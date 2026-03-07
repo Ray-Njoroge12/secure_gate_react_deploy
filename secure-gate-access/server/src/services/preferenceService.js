@@ -109,7 +109,34 @@ const ROLE_DEFAULTS = {
 
 class PreferenceService {
   constructor() {
-    this.initializeDatabase();
+    this.databaseInitialized = false;
+    this.databaseInitializationPromise = null;
+
+    void this.ensureDatabaseInitialized().catch(() => { });
+  }
+
+  async ensureDatabaseInitialized() {
+    if (this.databaseInitialized) {
+      return true;
+    }
+
+    if (!dbManager?.isInitialized || !dbManager?.pool) {
+      return false;
+    }
+
+    if (!this.databaseInitializationPromise) {
+      this.databaseInitializationPromise = this.initializeDatabase()
+        .then(() => {
+          this.databaseInitialized = true;
+          return true;
+        })
+        .catch((error) => {
+          this.databaseInitializationPromise = null;
+          throw error;
+        });
+    }
+
+    return this.databaseInitializationPromise;
   }
 
   /**
@@ -158,6 +185,8 @@ class PreferenceService {
    * Get user preferences for a specific estate
    */
   async getUserPreferences(userId, estateId = null) {
+    await this.ensureDatabaseInitialized();
+
     try {
       const result = await dbManager.query(
         'SELECT preferences, version FROM user_preferences WHERE user_id = $1 AND estate_id = $2',
@@ -201,6 +230,8 @@ class PreferenceService {
    * Update user preferences with real-time application
    */
   async updateUserPreferences(userId, estateId, preferences, version = null) {
+    await this.ensureDatabaseInitialized();
+
     const client = await dbManager.pool.connect();
     
     try {
@@ -270,6 +301,8 @@ class PreferenceService {
    * Get preferences for all estates a user has access to
    */
   async getAllUserPreferences(userId) {
+    await this.ensureDatabaseInitialized();
+
     try {
       const result = await dbManager.query(`
         SELECT 
@@ -301,6 +334,8 @@ class PreferenceService {
    * Create preference backup
    */
   async createPreferenceBackup(userId, estateId, backupName) {
+    await this.ensureDatabaseInitialized();
+
     try {
       const currentPrefs = await this.getUserPreferences(userId, estateId);
 
@@ -334,6 +369,8 @@ class PreferenceService {
    * Restore preferences from backup
    */
   async restorePreferenceBackup(userId, estateId, backupName) {
+    await this.ensureDatabaseInitialized();
+
     try {
       const backupResult = await dbManager.query(
         'SELECT preferences FROM preference_backups WHERE user_id = $1 AND estate_id = $2 AND backup_name = $3',
@@ -371,6 +408,8 @@ class PreferenceService {
    * List available backups for a user
    */
   async listPreferenceBackups(userId, estateId) {
+    await this.ensureDatabaseInitialized();
+
     try {
       const result = await dbManager.query(
         'SELECT backup_name, created_at FROM preference_backups WHERE user_id = $1 AND estate_id = $2 ORDER BY created_at DESC',
@@ -391,6 +430,8 @@ class PreferenceService {
    * Reset preferences to role defaults
    */
   async resetToDefaults(userId, estateId) {
+    await this.ensureDatabaseInitialized();
+
     try {
       const userResult = await dbManager.query(
         'SELECT role FROM users WHERE id = $1',
@@ -462,6 +503,8 @@ class PreferenceService {
    * Get preference statistics for admin dashboard
    */
   async getPreferenceStatistics(estateId = null) {
+    await this.ensureDatabaseInitialized();
+
     try {
       const whereClause = estateId ? 'WHERE estate_id = $1' : '';
       const params = estateId ? [estateId] : [];

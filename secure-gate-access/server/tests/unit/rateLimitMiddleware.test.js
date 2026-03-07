@@ -939,13 +939,19 @@ describe('RateLimitMiddleware', () => {
 
   describe('Store creation based on Redis state', () => {
     it('should log warning when using memory store', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'staging';
       rateLimitMiddleware.setRateLimitRedisService(null);
-      
-      const middleware = rateLimitMiddleware.generalRateLimit();
-      
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('memory store')
-      );
+
+      try {
+        const middleware = rateLimitMiddleware.generalRateLimit();
+
+        expect(console.warn).toHaveBeenCalledWith(
+          expect.stringContaining('memory store')
+        );
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
     });
 
     it('should use Redis store when connected', () => {
@@ -958,14 +964,20 @@ describe('RateLimitMiddleware', () => {
     });
 
     it('should handle Redis service with isConnected returning false', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'staging';
       mockRedisService.isConnected.mockReturnValue(false);
       rateLimitMiddleware.setRateLimitRedisService(mockRedisService);
-      
-      const middleware = rateLimitMiddleware.generalRateLimit();
-      
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('memory store')
-      );
+
+      try {
+        const middleware = rateLimitMiddleware.generalRateLimit();
+
+        expect(console.warn).toHaveBeenCalledWith(
+          expect.stringContaining('memory store')
+        );
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
     });
   });
 
@@ -1019,13 +1031,19 @@ describe('RateLimitMiddleware', () => {
 
     describe('increment operation', () => {
       it('should return fallback when Redis not available', async () => {
+        const originalNodeEnv = process.env.NODE_ENV;
+        process.env.NODE_ENV = 'staging';
         mockRedisService.isConnected.mockReturnValue(false);
         rateLimitMiddleware.setRateLimitRedisService(mockRedisService);
-        
-        // The middleware will use memory store when Redis unavailable
-        const middleware = rateLimitMiddleware.generalRateLimit();
-        expect(typeof middleware).toBe('function');
-        expect(console.warn).toHaveBeenCalled();
+
+        try {
+          // The middleware will use memory store when Redis unavailable
+          const middleware = rateLimitMiddleware.generalRateLimit();
+          expect(typeof middleware).toBe('function');
+          expect(console.warn).toHaveBeenCalled();
+        } finally {
+          process.env.NODE_ENV = originalNodeEnv;
+        }
       });
 
       it('should handle Redis multi exec error gracefully', async () => {
@@ -1392,24 +1410,55 @@ describe('RateLimitMiddleware', () => {
     });
 
     it('should fallback to memory store and warn when Redis not connected', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'staging';
       mockRedisService.isConnected.mockReturnValue(false);
       rateLimitMiddleware.setRateLimitRedisService(mockRedisService);
-      
-      const middleware = rateLimitMiddleware.generalRateLimit();
-      
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('memory store')
-      );
+
+      try {
+        const middleware = rateLimitMiddleware.generalRateLimit();
+
+        expect(console.warn).toHaveBeenCalledWith(
+          expect.stringContaining('memory store')
+        );
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
     });
 
     it('should fallback to memory store when no Redis service', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'staging';
       rateLimitMiddleware.setRateLimitRedisService(null);
-      
-      const middleware = rateLimitMiddleware.generalRateLimit();
-      
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('memory store')
-      );
+
+      try {
+        const middleware = rateLimitMiddleware.generalRateLimit();
+
+        expect(console.warn).toHaveBeenCalledWith(
+          expect.stringContaining('memory store')
+        );
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
+    });
+
+    it('should only warn once when multiple memory stores are created in one process', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'staging';
+      rateLimitMiddleware.setRateLimitRedisService(null);
+
+      try {
+        rateLimitMiddleware.generalRateLimit();
+        rateLimitMiddleware.authRateLimit();
+        rateLimitMiddleware.customRateLimit();
+
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith(
+          expect.stringContaining('memory store')
+        );
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+      }
     });
   });
 });

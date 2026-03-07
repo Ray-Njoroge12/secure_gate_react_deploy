@@ -18,6 +18,7 @@ describe('MemoryCacheService', () => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    MemoryCacheService.hasWarnedAboutProductionFallback = false;
     
     cacheService = new MemoryCacheService();
   });
@@ -36,6 +37,26 @@ describe('MemoryCacheService', () => {
   describe('Constructor', () => {
     it('should initialize with empty cache', () => {
       expect(cacheService.cache.size).toBe(0);
+    });
+
+    it('should log the production fallback warning only once across multiple instances', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'staging';
+      MemoryCacheService.hasWarnedAboutProductionFallback = false;
+
+      try {
+        new MemoryCacheService();
+        new MemoryCacheService();
+
+        const warningCalls = consoleLogSpy.mock.calls.filter(([message]) =>
+          typeof message === 'string' && message.includes('Using in-memory cache')
+        );
+
+        expect(warningCalls).toHaveLength(1);
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
+        MemoryCacheService.hasWarnedAboutProductionFallback = false;
+      }
     });
 
     it('should initialize with isConnected true', () => {

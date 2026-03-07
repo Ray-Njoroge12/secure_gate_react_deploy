@@ -74,6 +74,7 @@ describe('Invite lifecycle integration', () => {
       .send({
         name: 'Pilot Visitor',
         phone: '+254700999111',
+        idNumber: 'ID-TEST-0001',
         purpose: 'Pilot visit',
         consent_given: true
       });

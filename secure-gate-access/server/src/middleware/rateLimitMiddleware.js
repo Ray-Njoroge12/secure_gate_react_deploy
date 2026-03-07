@@ -10,6 +10,7 @@ import { buildErrorPayload } from '../utils/responseFormatter.js';
 
 // Redis-based store for rate limiting (will be injected)
 let redisService = null;
+let hasWarnedAboutMemoryStore = false;
 
 /**
  * Environment-specific rate limit configuration
@@ -139,7 +140,8 @@ const createStore = () => {
   if (redisService && redisService.isConnected()) {
     return new RedisRateLimitStore();
   }
-  if (process.env.NODE_ENV !== 'test') {
+  if (process.env.NODE_ENV !== 'test' && !hasWarnedAboutMemoryStore) {
+    hasWarnedAboutMemoryStore = true;
     console.warn('⚠️ Using memory store for rate limiting (not suitable for production clusters)');
   }
   return undefined; // Use default memory store
