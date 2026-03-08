@@ -26,8 +26,14 @@ jest.mock('../../components/admin/AdminMetrics', () => () => <div data-testid="a
 jest.mock('../../components/admin/AdminUserApprovals', () => () => <div data-testid="user-approvals">Approvals</div>);
 jest.mock('../../components/admin/AuditLogs', () => () => <div data-testid="audit-logs">Audit Logs</div>);
 jest.mock('../../components/common/AnnouncementsBanner', () => () => null);
+jest.mock('../../components/common/OnboardingTour', () => () => null);
 jest.mock('../../components/admin/AnnouncementsAdmin', () => () => null);
 jest.mock('../../components/common/OfflineIndicator', () => () => null);
+jest.mock('../../pages/admin/ManageGuards', () => () => null);
+jest.mock('../../pages/admin/ManageResidents', () => () => null);
+jest.mock('../../pages/admin/VisitorLog', () => () => null);
+jest.mock('../../pages/admin/Reports', () => () => null);
+jest.mock('../../pages/admin/Settings', () => () => null);
 
 jest.mock('../../components/admin/AnalyticsDashboard', () => () => <div data-testid="analytics-dashboard">Analytics Dashboard</div>);
 
