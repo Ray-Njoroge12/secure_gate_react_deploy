@@ -69,21 +69,8 @@ router.get('/clients',
   requireRolePolicy('adminOnly'),
   async (req, res) => {
     try {
-      // This would typically fetch from database
-      // For now, we'll return a placeholder response
-      const clients = [
-        {
-          id: 'client_1',
-          name: 'Mobile App',
-          tier: 'premium',
-          status: 'active',
-          createdAt: '2025-01-01T00:00:00Z',
-          lastUsed: '2025-01-29T10:00:00Z'
-        }
-      ];
-
+      const clients = await apiEnhancementMiddleware.getAllApiClients();
       successResponse(res, { clients }, 'API clients retrieved successfully');
-
     } catch (error) {
       console.error('Error retrieving API clients:', error);
       errorResponse(res, 'Failed to retrieve API clients', 'CLIENTS_RETRIEVAL_ERROR', 500);
@@ -212,17 +199,19 @@ router.get('/rate-limit-status',
   apiEnhancementMiddleware.enhancedAuthentication(),
   (req, res) => {
     try {
-      // This would typically check current rate limit status from Redis
-      // For now, we'll return a mock response
-      const status = {
-        limit: 1000,
-        remaining: 850,
-        resetTime: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-        tier: req.apiClient?.tier || 'authenticated'
-      };
+      const tier = req.apiClient?.tier || 'authenticated';
+      // Read real rate limit values from response headers (set by rateLimiters middleware)
+      const limitHeader = res.getHeader('X-RateLimit-Limit');
+      const remainingHeader = res.getHeader('X-RateLimit-Remaining');
+      const resetHeader = res.getHeader('X-RateLimit-Reset');
 
-      successResponse(res, status, 'Rate limit status retrieved successfully');
+      const limit = limitHeader ? parseInt(limitHeader, 10) : 1000;
+      const remaining = remainingHeader ? parseInt(remainingHeader, 10) : limit;
+      const resetTime = resetHeader
+        ? new Date(parseInt(resetHeader, 10) * 1000).toISOString()
+        : new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
+      successResponse(res, { limit, remaining, resetTime, tier }, 'Rate limit status retrieved successfully');
     } catch (error) {
       console.error('Error retrieving rate limit status:', error);
       errorResponse(res, 'Failed to retrieve rate limit status', 'RATE_LIMIT_STATUS_ERROR', 500);
