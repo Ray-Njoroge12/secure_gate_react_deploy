@@ -15,6 +15,13 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 // Mock dbManager
 const mockQuery = jest.fn();
 jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
+  __esModule: true,
+  default: {
+    query: mockQuery
+  },
+  db: {
+    query: mockQuery
+  },
   dbManager: {
     query: mockQuery
   }
@@ -23,7 +30,9 @@ jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
 // Mock respond utilities
 const mockRespond = jest.fn();
 const mockRespondError = jest.fn();
+const mockCamelize = jest.fn((value) => value);
 jest.unstable_mockModule('../../src/utils/respond.js', () => ({
+  camelize: mockCamelize,
   respond: mockRespond,
   respondError: mockRespondError
 }));
@@ -39,12 +48,21 @@ jest.unstable_mockModule('../../src/routes/sseRoutes.js', () => ({
 // Mock statuses
 jest.unstable_mockModule('../../src/constants/statuses.js', () => ({
   PASS_STATUS: {
+    PENDING: 'pending',
+    APPROVED: 'approved',
     ON_PREMISE: 'on_premise',
     CHECKED_OUT: 'checked_out',
     VERIFIED: 'verified'
   },
+  normalizeStatus: jest.fn((status) => status),
   canCheckInStatus: jest.fn((status) => ['verified', 'approved', 'pending'].includes(status)),
   statusEquals: jest.fn((a, b) => a === b)
+}));
+
+// Mock visitor state service
+const mockValidateVisitorTransition = jest.fn();
+jest.unstable_mockModule('../../src/services/visitorStateService.js', () => ({
+  validateVisitorTransition: mockValidateVisitorTransition
 }));
 
 // Mock WebSocket service
@@ -65,6 +83,22 @@ describe('VisitorCheckInController', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.resetModules();
+
+    mockValidateVisitorTransition.mockImplementation((fromStatus, toStatus) => {
+      if (toStatus === 'on_premise') {
+        return ['verified', 'approved', 'pending'].includes(fromStatus)
+          ? { valid: true }
+          : { valid: false, reason: 'Visitor cannot be checked in' };
+      }
+
+      if (toStatus === 'checked_out') {
+        return fromStatus === 'on_premise'
+          ? { valid: true }
+          : { valid: false, reason: 'Visitor not checked in' };
+      }
+
+      return { valid: true };
+    });
     
     controller = await import('../../src/controllers/visitorCheckInController.js');
     
@@ -90,6 +124,7 @@ describe('VisitorCheckInController', () => {
     id: 1,
     email: 'guard@test.com',
     role: 'guard',
+    estate_id: 1,
     ...overrides
   });
   
@@ -117,7 +152,7 @@ describe('VisitorCheckInController', () => {
         message: 'Visitor checked in successfully',
         check_in: expect.any(Date)
       });
-      expect(mockBroadcastVisitorCheckIn).toHaveBeenCalledWith('1', 'checkin');
+      expect(mockBroadcastVisitorCheckIn).toHaveBeenCalledWith('1', 'checkin', 1);
     });
     
     it('should return 401 when user is not authenticated', async () => {
@@ -251,7 +286,7 @@ describe('VisitorCheckInController', () => {
         message: 'Visitor checked out successfully',
         check_out: expect.any(Date)
       });
-      expect(mockBroadcastVisitorCheckIn).toHaveBeenCalledWith('1', 'checkout');
+      expect(mockBroadcastVisitorCheckIn).toHaveBeenCalledWith('1', 'checkout', 1);
     });
     
     it('should return 401 when user is not authenticated', async () => {
