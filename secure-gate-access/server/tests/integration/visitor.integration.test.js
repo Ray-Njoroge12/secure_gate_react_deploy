@@ -84,7 +84,8 @@ describe('Visitor Management Integration Tests', () => {
         .send({
           name: 'Visitor One',
           phone: '+254700111111',
-          purpose: 'Visit 1'
+          purpose: 'Visit 1',
+          date_of_visit: new Date(Date.now() + 86400000).toISOString().split('T')[0]
         });
 
       const visitor2 = await request(app)
@@ -93,7 +94,8 @@ describe('Visitor Management Integration Tests', () => {
         .send({
           name: 'Visitor Two',
           phone: '+254700222222',
-          purpose: 'Visit 2'
+          purpose: 'Visit 2',
+          date_of_visit: new Date(Date.now() + 86400000).toISOString().split('T')[0]
         });
 
       // Debug: check if creation succeeded
@@ -139,7 +141,8 @@ describe('Visitor Management Integration Tests', () => {
         .send({
           name: 'Associated Visitor',
           phone: '+254700123456',
-          purpose: 'Test'
+          purpose: 'Test',
+          date_of_visit: new Date(Date.now() + 86400000).toISOString().split('T')[0]
         });
 
       expect(response.status).toBe(201);
@@ -606,7 +609,8 @@ describe('Visitor Management Integration Tests', () => {
         [testVisitor.id]
       );
 
-      expect(deleted.rows.length).toBe(0);
+      expect(deleted.rows.length).toBe(1);
+      expect(deleted.rows[0].status).toBe('cancelled');
     });
 
     it('should prevent non-owner resident from canceling visitors', async () => {
@@ -652,7 +656,8 @@ describe('Visitor Management Integration Tests', () => {
           name: 'Lifecycle Test Visitor',
           phone: '+254700999999',
           email: 'lifecycle@test.com',
-          purpose: 'Full lifecycle test'
+          purpose: 'Full lifecycle test',
+          date_of_visit: new Date(Date.now() + 86400000).toISOString().split('T')[0]
         });
 
       expect(createResponse.status).toBe(201);
