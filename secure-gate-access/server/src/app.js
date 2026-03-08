@@ -45,6 +45,9 @@ import systemDomain from './routes/domains/system.domain.js';
 // Remaining standalone routes not covered by domains
 import devRoutes from './routes/devRoutes.js';
 
+// Rate limiting
+import { rateLimiters, speedLimiters } from './config/rateLimits.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
