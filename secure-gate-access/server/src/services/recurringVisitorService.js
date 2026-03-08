@@ -83,13 +83,13 @@ export async function createRecurringPass(residentId, passData) {
     const result = await pool.query(
       `INSERT INTO recurring_passes (
         resident_id, visitor_name, visitor_phone, visitor_id_number, vehicle_plate,
-        pass_type, purpose, access_pin_hash, qr_code_token,
+        pass_type, purpose, access_pin, access_pin_hash, qr_code_token,
         valid_from, valid_until, allowed_days, allowed_time_start, allowed_time_end
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING id, visitor_name, pass_type, qr_code_token, valid_from, valid_until, status, created_at`,
       [
         residentId, visitorName, visitorPhone, visitorIdNumber, vehiclePlate,
-        passType, purpose, accessPinHash, qrCodeToken,
+        passType, purpose, accessPin, accessPinHash, qrCodeToken,
         validFrom || new Date(), validUntil, allowedDays, allowedTimeStart, allowedTimeEnd
       ]
     );

@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import { rateLimiters, speedLimiters } from './config/rateLimits.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { isLocalLikeEnvironment } from './utils/startupLogHygiene.js';
 
 import { sessionMiddleware } from './config/session.js';
 
@@ -554,7 +555,9 @@ app.use('/api/security', enhancedSecurityRoutes);
 // Dev Tools Routes (Message Viewer) - Development Only
 if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_DEV_ROUTES === 'true') {
   app.use('/api/dev', devRoutes);
-  console.log('🛠️  Dev routes enabled at /api/dev');
+  if (isLocalLikeEnvironment(process.env.NODE_ENV)) {
+    console.log('🛠️  Dev routes enabled at /api/dev');
+  }
 }
 
 // Legacy alias to the canonical guard SSE endpoint

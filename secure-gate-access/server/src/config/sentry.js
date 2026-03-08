@@ -16,6 +16,16 @@
 import * as Sentry from '@sentry/node';
 
 const SHOULD_LOG_SENTRY = process.env.NODE_ENV !== 'test';
+const SENTRY_CONFIG_HINT_KEYS = [
+  'SENTRY_ENVIRONMENT',
+  'SENTRY_RELEASE',
+  'SENTRY_TRACES_SAMPLE_RATE',
+  'SENTRY_PROFILES_SAMPLE_RATE'
+];
+
+const hasExplicitSentryConfiguration = () => (
+  SENTRY_CONFIG_HINT_KEYS.some((key) => process.env[key] !== undefined)
+);
 
 // Attempt to load profiling integration, but don't fail if native module unavailable
 // The @sentry/profiling-node package requires platform-specific native binaries
@@ -41,9 +51,9 @@ export function initializeSentry() {
 
   // Skip initialization if no DSN is configured
   if (!dsn) {
-    if (SHOULD_LOG_SENTRY) {
-      console.warn('⚠️  Sentry DSN not configured - error tracking disabled');
-      console.warn('   Set SENTRY_DSN environment variable to enable Sentry');
+    if (SHOULD_LOG_SENTRY && hasExplicitSentryConfiguration()) {
+      console.warn('⚠️  Sentry configuration detected but SENTRY_DSN is missing - error tracking disabled');
+      console.warn('   Set SENTRY_DSN or remove Sentry-specific environment variables');
     }
     return null;
   }

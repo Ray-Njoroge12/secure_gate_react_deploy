@@ -11,6 +11,7 @@ import createMemoryStore from 'memorystore';
 import dotenv from 'dotenv';
 import { errorResponse } from '../utils/responseFormatter.js';
 import { getCookieOptions } from '../utils/cookies.js';
+import { getInMemorySessionStoreWarning } from '../utils/startupLogHygiene.js';
 
 dotenv.config();
 
@@ -73,8 +74,9 @@ if (!sessionStore) {
     max: 1000, // max number of sessions
     ttl: 86400 // 24 hours
   });
-  if (process.env.NODE_ENV !== 'test') {
-    console.log('⚠️  Using in-memory session store (development only)');
+  const sessionStoreWarning = getInMemorySessionStoreWarning();
+  if (sessionStoreWarning) {
+    console.log(sessionStoreWarning);
   }
 }
 

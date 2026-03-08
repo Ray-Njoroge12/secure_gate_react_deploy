@@ -142,7 +142,7 @@ describe('Auth, CSRF, and estate integration', () => {
       .get('/api/resident/profile');
 
     expect(profileResponse.status).toBe(403);
-    expect(profileResponse.body.error?.code).toBe('ESTATE_REQUIRED');
+    expect(profileResponse.body.error?.code).toBe('ESTATE_NOT_ASSIGNED');
     expect(profileResponse.body.error?.requestId).toBeTruthy();
   });
 });
