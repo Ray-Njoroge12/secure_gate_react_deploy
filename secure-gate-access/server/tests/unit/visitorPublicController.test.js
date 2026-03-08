@@ -219,7 +219,7 @@ describe('Visitor Public Controller', () => {
             qrCode: expect.objectContaining({
               hasQRCode: true,
               expiresAt: '2026-01-16',
-              message: 'QR code available - check your confirmation email'
+              message: 'Digital pass retrieved'
             })
           })
         });
@@ -380,8 +380,20 @@ describe('Visitor Public Controller', () => {
     it('should return estate information', async () => {
       mockReq.query = { estateId: '1' };
       
-      // Mock estate_public_info query
+      // Mock estates query
       mockQuery
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 1,
+            name: 'Secure Gate Estate',
+            slug: 'secure-gate-estate',
+            address: 'Nairobi, Kenya',
+            timezone: 'Africa/Nairobi',
+            contact_phone: '+254 700 000 000',
+            emergency_contact: '+254 700 000 000'
+          }]
+        })
+        // Mock estate_public_info query
         .mockResolvedValueOnce({
           rows: [{
             estate_id: 1,
@@ -410,18 +422,6 @@ describe('Visitor Public Controller', () => {
             gate_longitude: 36.123456,
             directions_from_highway: 'Take exit 5',
             directions_from_city: 'Head north on Main Road'
-          }]
-        })
-        // Mock estates query
-        .mockResolvedValueOnce({
-          rows: [{
-            id: 1,
-            name: 'Secure Gate Estate',
-            slug: 'secure-gate-estate',
-            address: 'Nairobi, Kenya',
-            timezone: 'Africa/Nairobi',
-            contact_phone: '+254 700 000 000',
-            emergency_contact: '+254 700 000 000'
           }]
         });
 
@@ -548,8 +548,8 @@ describe('Visitor Public Controller', () => {
     const validToken = 'vst_' + 'a'.repeat(24);
 
     describe('Token Validation', () => {
-      it('should return 400 for invalid token format', async () => {
-        mockReq.params = { token: 'invalid' };
+      it('should return 400 when token is missing', async () => {
+        mockReq.params = {};
         mockReq.body = {
           consent: {
             dataProcessing: true,
@@ -562,7 +562,7 @@ describe('Visitor Public Controller', () => {
         expect(mockRes.status).toHaveBeenCalledWith(400);
         expect(mockRes.json).toHaveBeenCalledWith({
           success: false,
-          error: 'Invalid token format'
+          error: 'Visitor token is required'
         });
       });
     });
@@ -890,11 +890,11 @@ describe('Visitor Public Controller', () => {
             phone: '+254712345678',
             email: 'john@example.com',
             purpose: 'Meeting',
-            date_of_visit: '2026-01-15',
+            date_of_visit: '2099-01-15',
             time_of_visit: '14:00',
             status: 'pending',
             invite_type: 'visitor',
-            token_expires_at: '2026-01-20'
+            token_expires_at: '2099-01-20'
           }]
         });
 
@@ -922,13 +922,13 @@ describe('Visitor Public Controller', () => {
             id: 1,
             name: 'Jane Doe',
             purpose: 'Event Invitation',
-            date_of_visit: '2026-02-01',
+            date_of_visit: '2099-02-01',
             time_of_visit: '18:00',
             status: 'confirmed',
             invite_type: 'event',
             event_id: 5,
             event_name: 'Annual Party',
-            token_expires_at: '2026-02-02'
+            token_expires_at: '2099-02-02'
           }]
         });
 

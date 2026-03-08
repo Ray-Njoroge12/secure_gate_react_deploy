@@ -152,7 +152,11 @@ describe('OptimizedQRCodeService', () => {
       default: { toDataURL: mockToDataURL }
     }));
     jest.unstable_mockModule('crypto', () => ({
-      randomUUID: mockRandomUUID
+      __esModule: true,
+      ...actualCrypto,
+      default: { ...actualCrypto, randomUUID: mockRandomUUID },
+      randomUUID: mockRandomUUID,
+      randomBytes: jest.fn().mockReturnValue(Buffer.from('test-token'))
     }));
     jest.unstable_mockModule('jsonwebtoken', () => ({
       default: { sign: mockSign, verify: mockVerify }
