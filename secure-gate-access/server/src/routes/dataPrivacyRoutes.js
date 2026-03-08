@@ -4,6 +4,7 @@ import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.j
 import { userService } from '../services/userService.js';
 import databaseService from '../services/optimizedDatabaseService.js';
 import dataExportService from '../services/dataExportService.js';
+import { getCookieOptions } from '../utils/cookies.js';
 
 const router = express.Router();
 
@@ -513,6 +514,7 @@ router.post('/delete', authenticateToken, asyncHandler(async (req, res) => {
 router.post('/delete-account', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { reason, confirmDeletion } = req.body;
+  const cookieOptions = getCookieOptions();
 
   if (!confirmDeletion) {
     throw new AppError('Please confirm account deletion', 400, 'CONFIRMATION_REQUIRED');
@@ -535,7 +537,9 @@ router.post('/delete-account', authenticateToken, asyncHandler(async (req, res) 
   await userService.anonymizeHistoricalRecords(userId);
 
   // Clear authentication token
-  res.clearCookie('token');
+  res.clearCookie('token', cookieOptions);
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('refreshToken', { ...cookieOptions, path: '/api/auth/refresh' });
 
   res.json({
     success: true,

@@ -1013,7 +1013,7 @@ router.post('/logout', authenticateToken, attachRequestAudit(), asyncHandler(asy
   }
 
   res.clearCookie('accessToken', cookieOptions);
-  res.clearCookie('refreshToken', cookieOptions);
+  res.clearCookie('refreshToken', { ...cookieOptions, path: '/api/auth/refresh' });
 
   successResponse(res, {}, 'Logout successful');
 }));

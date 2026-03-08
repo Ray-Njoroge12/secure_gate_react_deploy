@@ -64,27 +64,28 @@ describe('Auth refresh/logout integration', () => {
   });
 
   it('logs out and clears auth cookies', async () => {
-    const loginResponse = await request(app)
+    const agent = request.agent(app);
+    const loginResponse = await agent
       .post('/api/auth/login')
-      .set('X-Client-Platform', 'api')
       .send({
         email: testUsers.admin.email,
         password: 'testpass123'
       });
 
-    const accessToken = loginResponse.body.accessToken || loginResponse.body.data?.accessToken;
+    expect(loginResponse.status).toBe(200);
 
-    const logoutResponse = await request(app)
-      .post('/api/auth/logout')
-      .set('Authorization', `Bearer ${accessToken}`);
+    const logoutResponse = await agent.post('/api/auth/logout');
 
     expect(logoutResponse.status).toBe(200);
     expect(logoutResponse.body.success).toBe(true);
 
     const cookies = logoutResponse.headers['set-cookie'] || [];
-    const cookieHeader = cookies.join(';');
-    expect(cookieHeader).toContain('accessToken=');
-    expect(cookieHeader).toContain('refreshToken=');
+    const accessCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
+    const refreshCookie = cookies.find(cookie => cookie.startsWith('refreshToken='));
+
+    expect(accessCookie).toMatch(/Expires=Thu, 01 Jan 1970/i);
+    expect(refreshCookie).toMatch(/Expires=Thu, 01 Jan 1970/i);
+    expect(refreshCookie).toContain('Path=/api/auth/refresh');
   });
 
   it('rejects refresh without a token', async () => {
