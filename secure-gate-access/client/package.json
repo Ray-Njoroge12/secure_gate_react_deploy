@@ -108,7 +108,7 @@
       }
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!(axios|fast-check)/)"
+      "node_modules/(?!(axios|fast-check|uuid)/)"
     ]
   },
   "devDependencies": {
