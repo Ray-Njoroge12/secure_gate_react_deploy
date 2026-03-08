@@ -284,10 +284,16 @@ describe('Admin Operations Integration Tests', () => {
         const { dbManager } = await import('../../src/database/db.enhanced.js');
         const argon2 = await import('argon2');
         const hashedPassword = await argon2.default.hash('testpass123');
+
+        await dbManager.query(
+          'UPDATE users SET mfa_enabled = true WHERE id = $1',
+          [testUsers.admin.id]
+        );
+
         const tempUser = await dbManager.query(
-          `INSERT INTO users (username, email, password, password_hash, role, verified, account_status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-          ['temp_user', 'temp@test.com', hashedPassword, hashedPassword, 'resident', true, 'active']
+          `INSERT INTO users (username, email, password, password_hash, role, verified, estate_id, account_status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+          ['temp_user', 'temp@test.com', hashedPassword, hashedPassword, 'resident', true, testUsers.admin.estate_id, 'active']
         );
 
         const response = await request(app)
@@ -309,6 +315,13 @@ describe('Admin Operations Integration Tests', () => {
       });
 
       it('should prevent deleting own account', async () => {
+        const { dbManager } = await import('../../src/database/db.enhanced.js');
+
+        await dbManager.query(
+          'UPDATE users SET mfa_enabled = true WHERE id = $1',
+          [testUsers.admin.id]
+        );
+
         const response = await request(app)
           .delete(`/api/admin/users/${testUsers.admin.id}`)
           .set('Cookie', `token=${adminToken}`);

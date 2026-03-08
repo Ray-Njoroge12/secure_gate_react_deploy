@@ -310,8 +310,8 @@ describe('Guard Authorization Integration Tests', () => {
             });
         });
 
-        describe('Incident Resolution - Ownership Model', () => {
-            it('should allow guard to resolve THEIR OWN incident', async () => {
+        describe('Incident Resolution - Admin-Only Mounted Route', () => {
+            it('should deny guard from resolving THEIR OWN incident (403)', async () => {
                 const response = await request(app)
                     .put(`/api/guard/incidents/${incidentId}/resolve`)
                     .set('Cookie', `token=${guardToken}`)
@@ -319,12 +319,9 @@ describe('Guard Authorization Integration Tests', () => {
                         resolution: 'Resolved by original guard'
                     });
 
-                if (response.status !== 200) {
-                    console.error('Incident Resolve Error:', JSON.stringify(response.body, null, 2));
-                }
-                expect(response.status).toBe(200);
-                expect(response.body.success).toBe(true);
-                expect(response.body.data.message).toContain('resolved');
+                expect(response.status).toBe(403);
+                expect(response.body.message).toBe('Insufficient permissions');
+                expect(response.body.error.code).toBe('AUTH_FORBIDDEN');
             });
 
             it('should deny guard from resolving ANOTHER guard\'s incident (403)', async () => {
@@ -336,7 +333,8 @@ describe('Guard Authorization Integration Tests', () => {
                     });
 
                 expect(response.status).toBe(403);
-                expect(response.body.message).toMatch(/own incidents|forbidden/i);
+                expect(response.body.message).toBe('Insufficient permissions');
+                expect(response.body.error.code).toBe('AUTH_FORBIDDEN');
             });
 
             it('should allow admin to resolve ANY guard\'s incident', async () => {
@@ -380,7 +378,7 @@ describe('Guard Authorization Integration Tests', () => {
             expect(auditLogs.rows.length).toBeGreaterThan(0);
         });
 
-        it('should log authorization failures for incident resolution', async () => {
+        it('should log route-level access denial for incident resolution', async () => {
             // Create incident as guard1
             const createResponse = await request(app)
                 .post('/api/guard/incidents')
@@ -393,24 +391,39 @@ describe('Guard Authorization Integration Tests', () => {
 
             const incidentId = createResponse.body.data.data.id;
 
-            // Try to resolve as guard2 (should fail and log)
+            // Try to resolve as guard2 (should fail at role middleware and log access denial)
             await request(app)
                 .put(`/api/guard/incidents/${incidentId}/resolve`)
                 .set('Cookie', `token=${guard2Token}`)
                 .send({ resolution: 'Attempt' });
 
-            // Check audit logs for failure
-            const auditLogs = await dbManager.query(
-                `SELECT * FROM audit_logs WHERE action LIKE '%incident.resolve%' AND details::text LIKE '%fail%' ORDER BY created_at DESC LIMIT 1`
-            );
+            // Check audit logs for access denial (written asynchronously on response finish)
+            let auditLogs = { rows: [] };
+            for (let attempt = 0; attempt < 10; attempt++) {
+                auditLogs = await dbManager.query(
+                    `SELECT * FROM audit_logs
+                     WHERE action = 'security.access.denied'
+                       AND user_id = $1
+                       AND resource LIKE '%/resolve'
+                     ORDER BY created_at DESC LIMIT 1`,
+                    [guard2User.id]
+                );
+
+                if (auditLogs.rows.length > 0) {
+                    break;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
 
             expect(auditLogs.rows.length).toBeGreaterThan(0);
             // Safely parse JSONB details field
             const details = typeof auditLogs.rows[0].details === 'string'
                 ? JSON.parse(auditLogs.rows[0].details)
                 : auditLogs.rows[0].details;
-            if (details && details.message) {
-                expect(details.message).toMatch(/another guard's incident/i);
+            expect(auditLogs.rows[0].action).toBe('security.access.denied');
+            if (details && details.response) {
+                expect(details.response.statusCode).toBe(403);
             }
         });
     });
