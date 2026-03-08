@@ -140,3 +140,6 @@ secure-gate-access/server/logs/
 *.db
 *.db-shm
 *.db-wal
+
+# Git worktrees
+.worktrees/
