@@ -21,6 +21,33 @@ import errorQueueService from '../../services/errorQueueService';
 
 console.log('[DIAGNOSTIC] Real Service:', errorQueueService);
 
+const fillRegistrationForm = async (user, overrides = {}) => {
+  const defaults = {
+    username: 'newuser',
+    firstName: 'New',
+    lastName: 'User',
+    email: 'newuser@test.com',
+    password: 'SecurePass123!',
+    confirmPassword: 'SecurePass123!',
+    phone: '+254700123456',
+    estateId: '1',
+    houseNumber: 'H101'
+  };
+
+  const values = { ...defaults, ...overrides };
+
+  await user.type(await screen.findByLabelText(/username/i), values.username);
+  await user.type(screen.getByLabelText(/first name/i), values.firstName);
+  await user.type(screen.getByLabelText(/last name/i), values.lastName);
+  await user.type(screen.getByLabelText(/email address/i), values.email);
+  await user.selectOptions(screen.getByLabelText(/^estate/i), values.estateId);
+  await user.type(screen.getByLabelText(/^house number/i), values.houseNumber);
+  await user.type(screen.getByLabelText(/^phone number/i), values.phone);
+  await user.type(screen.getByLabelText(/^password$/i), values.password);
+  await user.type(screen.getByLabelText(/^confirm password$/i), values.confirmPassword);
+  await user.click(screen.getByLabelText(/i agree to the/i));
+};
+
 const TestWrapper = ({ children, initialRoute = '/login' }) => (
   <ErrorProvider>
     <MemoryRouter initialEntries={[initialRoute]}>
@@ -112,7 +139,7 @@ describe('Authentication Integration Tests', () => {
       render(<TestWrapper initialRoute="/login" />);
 
       const emailInput = await screen.findByLabelText(/email/i);
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByTestId('input-password');
       const submitButton = screen.getByRole('button', { name: /sign in|login/i });
 
       await user.type(emailInput, 'resident@test.com');
@@ -130,7 +157,7 @@ describe('Authentication Integration Tests', () => {
       render(<TestWrapper initialRoute="/login" />);
 
       const emailInput = await screen.findByLabelText(/email/i);
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByTestId('input-password');
       const submitButton = screen.getByRole('button', { name: /sign in|login/i });
 
       await user.type(emailInput, 'wrong@test.com');
@@ -153,7 +180,7 @@ describe('Authentication Integration Tests', () => {
       render(<TestWrapper initialRoute="/login" />);
 
       const emailInput = await screen.findByLabelText(/email/i);
-      const passwordInput = screen.getByLabelText(/password/i);
+      const passwordInput = screen.getByTestId('input-password');
       const submitButton = screen.getByRole('button', { name: /sign in|login/i });
 
       await user.type(emailInput, 'resident@test.com');
@@ -171,28 +198,12 @@ describe('Authentication Integration Tests', () => {
 
       render(<TestWrapper initialRoute="/register" />);
 
-      const usernameInput = await screen.findByLabelText(/username/i);
-      const emailInput = screen.getByLabelText(/email/i);
-      const passwordInput = screen.getByLabelText(/^password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
-      const phoneInput = screen.getByLabelText(/phone/i);
-      const houseInput = screen.getByLabelText(/house/i);
-
       const submitButton = screen.getByRole('button', { name: /create account/i });
-      const privacyCheckbox = screen.getByLabelText(/i agree to the/i);
-
-      await user.type(usernameInput, 'newuser');
-      await user.type(emailInput, 'newuser@test.com');
-      await user.type(passwordInput, 'SecurePass123!');
-      await user.type(confirmPasswordInput, 'SecurePass123!');
-      await user.type(phoneInput, '+254700123456');
-      await user.type(houseInput, 'H101');
-
-      await user.click(privacyCheckbox);
+      await fillRegistrationForm(user);
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/Registration successful/i)).toBeInTheDocument();
+        expect(screen.getByText(/Account created! Pending Admin approval/i)).toBeInTheDocument();
       }, { timeout: 3000 });
     });
 
@@ -201,28 +212,14 @@ describe('Authentication Integration Tests', () => {
 
       render(<TestWrapper initialRoute="/register" />);
 
-      const usernameInput = await screen.findByLabelText(/username/i);
-      const emailInput = screen.getByLabelText(/email/i);
-      const passwordInput = screen.getByLabelText(/^password/i);
-      const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
-      const phoneInput = screen.getByLabelText(/phone/i);
-      const houseInput = screen.getByLabelText(/house/i);
-
       const submitButton = screen.getByRole('button', { name: /create account/i });
-      const privacyCheckbox = screen.getByLabelText(/i agree to the/i);
-
-      await user.type(usernameInput, 'duplicate');
-      await user.type(emailInput, 'duplicate@test.com');
-      await user.type(passwordInput, 'SecurePass123!');
-      await user.type(confirmPasswordInput, 'SecurePass123!');
-      await user.type(phoneInput, '+254700123456');
-      await user.type(houseInput, 'H101');
-
-      await user.click(privacyCheckbox);
+      await fillRegistrationForm(user, {
+        username: 'duplicate',
+        email: 'duplicate@test.com'
+      });
       await user.click(submitButton);
 
-      const errorMessages = await screen.findAllByText(/email.*already.*(exist|register)/i, {}, { timeout: 3000 });
-      expect(errorMessages.length).toBeGreaterThan(0);
+      expect(await screen.findByText(/This email is already registered/i, {}, { timeout: 3000 })).toBeInTheDocument();
     });
   });
 
