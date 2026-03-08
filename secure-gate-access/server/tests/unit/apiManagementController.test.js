@@ -406,6 +406,17 @@ describe('API Management Controller', () => {
     });
   });
 
+  describe('getAllApiClients registry', () => {
+    it('should return clients list from registry (or empty array when Redis unavailable)', async () => {
+      // getAllApiClients should exist as a method
+      expect(typeof apiEnhancementMiddleware.getAllApiClients).toBe('function');
+
+      // It should return an array (even if empty — Redis may not be available in test env)
+      const clients = await apiEnhancementMiddleware.getAllApiClients();
+      expect(Array.isArray(clients)).toBe(true);
+    });
+  });
+
   describe('Permission Validation', () => {
     test('should validate API key permissions', async () => {
       const mockApiKey = {
