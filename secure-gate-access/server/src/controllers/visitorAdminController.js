@@ -3,6 +3,29 @@ import { respond, respondError } from '../utils/respond.js';
 import { PASS_STATUS } from '../constants/statuses.js';
 import { maskPhoneNumber, maskEmail } from '../utils/masking.js';
 
+const DETAIL_INTERNAL_FIELDS = [
+  'otp',
+  'otp_hash',
+  'otp_expires_at',
+  'otp_attempts',
+  'otp_resend_count',
+  'otp_last_resend',
+  'visitor_token',
+  'token_expires_at',
+  'unit_pin_encrypted',
+  'unit_pin_encrypted_at',
+  'id_number_encrypted',
+  'id_number_encrypted_at'
+];
+
+const stripDetailSecrets = (visitor) => {
+  const sanitizedVisitor = { ...visitor };
+  for (const field of DETAIL_INTERNAL_FIELDS) {
+    delete sanitizedVisitor[field];
+  }
+  return sanitizedVisitor;
+};
+
 const getActiveVisitors = async (req, res) => {
   try {
     if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
@@ -20,28 +43,28 @@ const getActiveVisitors = async (req, res) => {
     let queryParams = [];
 
     if (q) {
-      // SEARCH MODE: Search by Name or Invite Code in PENDING/APPROVED/ON_PREMISE status
+      // SEARCH MODE: Search by name or invite code while staying scoped to on-premise visitors only
       queryText = `
         SELECT v.id, v.name, v.phone, v.email, v.purpose, v.date_of_visit, v.time_of_visit, 
                v.invite_code, v.status, v.check_in_time AS check_in, v.check_out_time AS check_out, v.created_at,
-               v.is_private, v.host_id, u.name AS resident_name
+               v.is_private, v.host_id, u.username AS resident_name
         FROM visitors v
         LEFT JOIN users u ON v.host_id = u.id
         WHERE (
           v.name ILIKE $1 OR 
           v.invite_code ILIKE $1
         ) 
-        AND v.status IN ($2, $3, $4, $5, $6) 
-        AND v.estate_id = $7
+        AND v.status = $2
+        AND v.estate_id = $3
         ORDER BY v.created_at DESC
       `;
-      queryParams = [`%${q.trim()}%`, PASS_STATUS.PENDING, PASS_STATUS.VERIFIED, PASS_STATUS.ON_PREMISE, PASS_STATUS.OTP_SENT, PASS_STATUS.REVOKED, estateId];
+      queryParams = [`%${q.trim()}%`, PASS_STATUS.ON_PREMISE, estateId];
     } else {
       // DEFAULT MODE: Only show ON_PREMISE (Available for checkout)
       queryText = `
         SELECT v.id, v.name, v.phone, v.email, v.purpose, v.date_of_visit, v.time_of_visit, 
                v.invite_code, v.status, v.check_in_time AS check_in, v.check_out_time AS check_out, v.created_at,
-               v.is_private, v.host_id, u.name AS resident_name
+               v.is_private, v.host_id, u.username AS resident_name
         FROM visitors v
         LEFT JOIN users u ON v.host_id = u.id
         WHERE v.status IN ($1) 
@@ -157,6 +180,7 @@ const getVisitorReport = async (req, res) => {
         `;
       const hostRes = await dbManager.query(hostQuery, [estateId]);
 
+      await req.audit?.('visitor.report', 'visitor', null, { outcome: 'success', message: 'Generated visitor report aggregates' });
       return respond(res, {
         data: {
           counts: statsRes.rows[0],
@@ -238,11 +262,9 @@ const getRecentVisitors = async (req, res) => {
       return respondError(res, 400, 'Estate context required');
     }
 
-    // "Active Visitors" defined as anyone currently ON_PREMISE.
-    // We remove the 7-day limit because if someone is inside, we need to see them regardless of when they entered.
-    // We remove the LIMIT because we need to see everyone currently inside to manage them.
-    // If the list becomes too large (e.g. > 1000), pagination should be added, but for now 100 is a safe upper bound for a typical estate gate view.
-    const limit = Math.min(parseInt(req.query.limit) || 100, 200);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
+    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const endDate = new Date().toISOString();
 
     const query = `
       SELECT 
@@ -255,16 +277,17 @@ const getRecentVisitors = async (req, res) => {
         u.username as "residentName",
         u.unit_number as "residentUnit",
         to_char(v.check_in_time, 'Dy, DD Mon HH24:MI') as "checkInTime",
-        to_char(MAX(v.created_at) OVER (PARTITION BY v.id), 'Dy, DD Mon') as "lastVisitDate"
+        to_char(COALESCE(v.check_in_time, v.created_at), 'Dy, DD Mon') as "lastVisitDate"
       FROM visitors v
       LEFT JOIN users u ON v.host_id = u.id
       WHERE v.estate_id = $1
-        AND v.status = 'on_premise' -- STRICTLY Active Visitors only
-      ORDER BY v.check_in_time DESC
-      LIMIT $2
+        AND (v.created_at BETWEEN $2 AND $3 OR v.check_in_time BETWEEN $2 AND $3)
+        AND v.status IN ('checked_in', 'checked_out', 'on_premise')
+      ORDER BY COALESCE(v.check_in_time, v.created_at) DESC
+      LIMIT $4
     `;
 
-    const result = await dbManager.query(query, [estateId, limit]);
+    const result = await dbManager.query(query, [estateId, startDate, endDate, limit]);
 
     // Mask PII
     const visitors = result.rows.map(v => ({
@@ -273,22 +296,22 @@ const getRecentVisitors = async (req, res) => {
       visitorEmail: maskEmail(v.visitorEmail)
     }));
 
-    await req.audit?.('visitor.list.active_on_premise', 'visitor', null, {
+    await req.audit?.('visitor.list.recent', 'visitor', null, {
       outcome: 'success',
-      message: 'Retrieved active on-premise visitors',
+      message: 'Retrieved recent visitors',
       count: visitors.length
     });
 
     respond(res, visitors);
 
   } catch (error) {
-    console.error('[getActiveVisitors] Error:', error);
-    await req.audit?.('visitor.list.active_on_premise', 'visitor', null, {
+    console.error('[getRecentVisitors] Error:', error);
+    await req.audit?.('visitor.list.recent', 'visitor', null, {
       outcome: 'fail',
-      message: 'Failed to retrieve active visitors',
+      message: 'Failed to retrieve recent visitors',
       error: String(error?.message)
     });
-    respondError(res, 500, 'Failed to retrieve active visitors');
+    respondError(res, 500, 'Failed to retrieve recent visitors');
   }
 };
 
@@ -301,6 +324,7 @@ const getVisitorDetails = async (req, res) => {
     const estateId = req.user.estate_id;
 
     if (!estateId) return respondError(res, 400, 'Estate context required');
+    if (!/^[0-9]+$/.test(String(id))) return respondError(res, 400, 'Invalid visitor ID');
 
     const query = `
       SELECT v.*, u.username as host_name 
@@ -315,9 +339,11 @@ const getVisitorDetails = async (req, res) => {
       return respondError(res, 404, 'Visitor not found');
     }
 
-    // Return unmasked details (this endpoint is protected by password check on frontend/policy)
+    const visitorDetails = stripDetailSecrets(result.rows[0]);
+
+    // Return unmasked administrative detail fields while withholding auth-sensitive secrets.
     await req.audit?.('visitor.view_details', 'visitor', id, { outcome: 'success', message: 'Viewed unmasked visitor details' });
-    respond(res, result.rows[0]);
+    respond(res, visitorDetails);
 
   } catch (error) {
     await req.audit?.('visitor.view_details', 'visitor', req.params.id, { outcome: 'fail', message: 'Failed to retrieve visitor details', error: String(error?.message) });

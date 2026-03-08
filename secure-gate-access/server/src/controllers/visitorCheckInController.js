@@ -18,6 +18,7 @@ const checkInVisitor = async (req, res) => {
     const allowedRoles = ['guard', 'admin', 'super_admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
+    if (!/^[0-9]+$/.test(String(id))) return respondError(res, 400, 'Invalid visitor ID');
     const idempotencyKey = getIdempotencyKey(req);
     const requestHash = idempotencyKey
       ? buildRequestHash({ method: req.method, path: req.originalUrl, body: req.body, userId: req.user.id })
@@ -131,6 +132,7 @@ const checkOutVisitor = async (req, res) => {
     const allowedRoles = ['guard', 'admin', 'super_admin'];
     if (req.user.role && !allowedRoles.includes(req.user.role)) return respondError(res, 403, 'Forbidden');
     const { id } = req.params;
+    if (!/^[0-9]+$/.test(String(id))) return respondError(res, 400, 'Invalid visitor ID');
     const idempotencyKey = getIdempotencyKey(req);
     const requestHash = idempotencyKey
       ? buildRequestHash({ method: req.method, path: req.originalUrl, body: req.body, userId: req.user.id })

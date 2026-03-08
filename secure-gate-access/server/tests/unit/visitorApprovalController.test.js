@@ -136,7 +136,7 @@ describe('VisitorApprovalController', () => {
       }));
     });
 
-    it('should return 403 for non-guard users', async () => {
+    it('should return 403 for users outside the guard/admin approval requester roles', async () => {
       mockReq.user = createResidentUser();
       mockReq.params = { id: '1' };
 
@@ -145,7 +145,7 @@ describe('VisitorApprovalController', () => {
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        message: 'Only guards can request visitor approval'
+        message: 'Only guards and admins can request visitor approval'
       }));
     });
 
@@ -346,7 +346,7 @@ describe('VisitorApprovalController', () => {
       }));
     });
 
-    it('should return 403 for non-resident users', async () => {
+    it('should return 403 for users outside the resident/admin approver roles', async () => {
       mockReq.user = createGuardUser();
       mockReq.params = { id: '1' };
 
@@ -355,7 +355,7 @@ describe('VisitorApprovalController', () => {
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         success: false,
-        message: 'Only residents can approve visitors'
+        message: 'Only residents and admins can approve visitors'
       }));
     });
 
