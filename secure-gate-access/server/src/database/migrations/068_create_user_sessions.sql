@@ -17,9 +17,8 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 -- Indexes for admin queries (list by user, filter active)
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_user_sessions_token_id ON user_sessions(token_id);
+-- Note: idx_user_sessions_token_id omitted — UNIQUE constraint already creates an implicit index
 
--- Partial index for active sessions only
+-- Composite index for listing a user's sessions by recent activity
 CREATE INDEX IF NOT EXISTS idx_user_sessions_active
-  ON user_sessions(user_id, last_activity DESC)
-  WHERE expires_at > NOW();
+  ON user_sessions(user_id, last_activity DESC);
