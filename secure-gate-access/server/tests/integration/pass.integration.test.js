@@ -80,18 +80,23 @@ describe('Pass Management Integration Tests', () => {
     );
   };
   const createAdditionalResident = async () => {
+    return createAdditionalUser('resident');
+  };
+  const createAdditionalUser = async (role = 'resident') => {
     const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const usernamePrefix = role.replace(/[^a-z]/g, '') || 'user';
     const result = await query(
       `INSERT INTO users (username, email, password, password_hash, role, phone, house, verified, estate_id)
-       SELECT $1, $2, password, password_hash, 'resident', $3, $4, true, estate_id
+       SELECT $1, $2, password, password_hash, $3, $4, $5, true, estate_id
        FROM users
-       WHERE id = $5
+       WHERE id = $6
        RETURNING *`,
       [
-        `resident_other_${suffix}`,
-        `resident_other_${suffix}@test.com`,
+        `${usernamePrefix}_${suffix}`,
+        `${usernamePrefix}_${suffix}@test.com`,
+        role,
         `+2547${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}`,
-        'B202',
+        `${usernamePrefix.toUpperCase().slice(0, 8) || 'USER'}_${suffix.slice(-4)}`,
         testUsers.resident.id
       ]
     );
@@ -363,6 +368,106 @@ describe('Pass Management Integration Tests', () => {
 
       // These would be marked as expired by a scheduled job
       expect(expiringPasses.rows).toBeDefined();
+    });
+  });
+
+  // =========================================
+  // Pass Route Create Boundary Tests
+  // =========================================
+  describe('Pass Route Create Boundary', () => {
+    it('should reject guard access to POST /api/recurring-passes', async () => {
+      const response = await request(app)
+        .post('/api/recurring-passes')
+        .set('Authorization', `Bearer ${guardToken}`)
+        .send({
+          visitorName: 'Guard Blocked Create',
+          validUntil: toDate(new Date(Date.now() + 86400000))
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should return the required-field 400 when validUntil is missing', async () => {
+      const response = await request(app)
+        .post('/api/recurring-passes')
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send({
+          visitorName: 'Missing Valid Until'
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        success: false,
+        error: 'Visitor name and valid until date are required'
+      });
+    });
+
+    it('should allow resident, admin, and super_admin to create passes owned by the authenticated caller and expose only the reachable success fields', async () => {
+      const { getAuthToken } = await import('./setup.js');
+      const superAdmin = await createAdditionalUser('super_admin');
+      const superAdminToken = await getAuthToken(superAdmin.email);
+      const successPayloadKeys = [
+        'access_pin',
+        'created_at',
+        'id',
+        'pass_type',
+        'qr_code_token',
+        'status',
+        'valid_from',
+        'valid_until',
+        'visitor_name'
+      ];
+      const testCases = [
+        { label: 'resident', user: testUsers.resident, token: residentToken },
+        { label: 'admin', user: testUsers.admin, token: adminToken },
+        { label: 'super_admin', user: superAdmin, token: superAdminToken }
+      ];
+
+      for (const [index, testCase] of testCases.entries()) {
+        const visitorName = `Create Route ${testCase.label} Pass`;
+        const response = await request(app)
+          .post('/api/recurring-passes')
+          .set('Authorization', `Bearer ${testCase.token}`)
+          .send({
+            residentId: testUsers.guard.id,
+            resident_id: testUsers.guard.id,
+            visitorName,
+            visitorPhone: `+2547119${String(index).padStart(5, '0')}`,
+            vehiclePlate: `K${String.fromCharCode(65 + index)}A ${100 + index}B`,
+            passType: 'daily_worker',
+            purpose: `${testCase.label} create route proof`,
+            validUntil: toDate(new Date(Date.now() + (index + 7) * 86400000)),
+            allowedDays: ['mon', 'wed', 'fri'],
+            allowedTimeStart: '06:00',
+            allowedTimeEnd: '18:00'
+          });
+
+        expect(response.status).toBe(201);
+        expect(response.body.success).toBe(true);
+        expect(Object.keys(response.body.data).sort()).toEqual(successPayloadKeys);
+        expect(response.body.data.visitor_name).toBe(visitorName);
+        expect(response.body.data.pass_type).toBe('daily_worker');
+        expect(response.body.data.status).toBe('active');
+        expect(response.body.data.access_pin).toMatch(/^\d{6}$/);
+        expect(response.body.data.qr_code_token).toMatch(/^RP-/);
+        expect(response.body.data.valid_from).toBeTruthy();
+        expect(response.body.data.valid_until).toBeTruthy();
+        expect(response.body.data.created_at).toBeTruthy();
+
+        const persistedRow = await query(
+          `SELECT resident_id, visitor_name, access_pin, access_pin_hash, qr_code_token
+           FROM recurring_passes
+           WHERE id = $1`,
+          [response.body.data.id]
+        );
+
+        expect(persistedRow.rows).toHaveLength(1);
+        expect(persistedRow.rows[0].resident_id).toBe(testCase.user.id);
+        expect(persistedRow.rows[0].visitor_name).toBe(visitorName);
+        expect(persistedRow.rows[0].access_pin).toBe(response.body.data.access_pin);
+        expect(persistedRow.rows[0].access_pin_hash).toBeTruthy();
+        expect(persistedRow.rows[0].qr_code_token).toBe(response.body.data.qr_code_token);
+      }
     });
   });
 
@@ -728,6 +833,162 @@ describe('Pass Management Integration Tests', () => {
       expect(ownerAlreadyActiveResponse.status).toBe(404);
       expect(ownerAlreadyActiveResponse.body.success).toBe(false);
       expect(ownerAlreadyActiveResponse.body.error).toBe('Pass not found or not suspended');
+    });
+  });
+
+  // =========================================
+  // Pass Route Update Boundary Tests
+  // =========================================
+  describe('Pass Route Update Boundary', () => {
+    it('should allow only the authenticated owner to update a pass when the payload contains accepted update fields', async () => {
+      const otherResident = await createAdditionalResident();
+      const { getAuthToken } = await import('./setup.js');
+      const otherResidentToken = await getAuthToken(otherResident.email);
+      const updatedValidUntil = toDate(new Date(Date.now() + 45 * 86400000));
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Original Update Route Pass',
+        visitor_phone: '+254711808080',
+        purpose: 'Original access purpose'
+      });
+
+      const passId = insertResult.rows[0].id;
+      const updates = {
+        visitorName: 'Updated Update Route Pass',
+        visitor_phone: '+254711818181',
+        vehiclePlate: 'KDD 123A',
+        purpose: 'Updated access purpose',
+        valid_until: updatedValidUntil,
+        allowedDays: ['tue', 'thu'],
+        allowed_time_start: '08:30',
+        allowedTimeEnd: '17:45'
+      };
+
+      const otherResidentResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${otherResidentToken}`)
+        .send(updates);
+
+      expect(otherResidentResponse.status).toBe(404);
+      expect(otherResidentResponse.body.success).toBe(false);
+      expect(otherResidentResponse.body.error).toBe('Pass not found');
+
+      const adminResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(updates);
+
+      expect(adminResponse.status).toBe(404);
+      expect(adminResponse.body.success).toBe(false);
+      expect(adminResponse.body.error).toBe('Pass not found');
+
+      const guardResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${guardToken}`)
+        .send(updates);
+
+      expect(guardResponse.status).toBe(404);
+      expect(guardResponse.body.success).toBe(false);
+      expect(guardResponse.body.error).toBe('Pass not found');
+
+      const ownerResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send(updates);
+
+      expect(ownerResponse.status).toBe(200);
+      expect(ownerResponse.body.success).toBe(true);
+      expect(ownerResponse.body.data.id).toBe(passId);
+      expect(ownerResponse.body.data.visitor_name).toBe('Updated Update Route Pass');
+      expect(ownerResponse.body.data.status).toBe('active');
+      expect(ownerResponse.body.data.valid_until).toBeTruthy();
+
+      const updatedPass = await query(
+        `SELECT visitor_name, visitor_phone, vehicle_plate, purpose,
+                TO_CHAR(valid_until, 'YYYY-MM-DD') AS valid_until_ymd,
+                allowed_days, allowed_time_start, allowed_time_end, status
+         FROM recurring_passes
+         WHERE id = $1`,
+        [passId]
+      );
+
+      expect(updatedPass.rows[0].visitor_name).toBe('Updated Update Route Pass');
+      expect(updatedPass.rows[0].visitor_phone).toBe('+254711818181');
+      expect(updatedPass.rows[0].vehicle_plate).toBe('KDD 123A');
+      expect(updatedPass.rows[0].purpose).toBe('Updated access purpose');
+      expect(updatedPass.rows[0].valid_until_ymd).toBe(updatedValidUntil);
+      expect(updatedPass.rows[0].allowed_days).toEqual(['tue', 'thu']);
+      expect(updatedPass.rows[0].allowed_time_start.slice(0, 5)).toBe('08:30');
+      expect(updatedPass.rows[0].allowed_time_end.slice(0, 5)).toBe('17:45');
+      expect(updatedPass.rows[0].status).toBe('active');
+    });
+
+    it('should return no valid fields to update for any authenticated identity before ownership is evaluated', async () => {
+      const otherResident = await createAdditionalResident();
+      const { getAuthToken } = await import('./setup.js');
+      const otherResidentToken = await getAuthToken(otherResident.email);
+      const insertResult = await insertPass(testUsers.resident.id, {
+        visitor_name: 'Invalid Update Route Pass',
+        visitor_phone: '+254711828282',
+        status: 'active'
+      });
+
+      const passId = insertResult.rows[0].id;
+      const invalidUpdates = {
+        status: 'revoked',
+        visitorIdNumber: '12345678'
+      };
+
+      const ownerResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send(invalidUpdates);
+
+      expect(ownerResponse.status).toBe(400);
+      expect(ownerResponse.body).toEqual({
+        success: false,
+        error: 'No valid fields to update'
+      });
+
+      const otherResidentResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${otherResidentToken}`)
+        .send(invalidUpdates);
+
+      expect(otherResidentResponse.status).toBe(400);
+      expect(otherResidentResponse.body).toEqual({
+        success: false,
+        error: 'No valid fields to update'
+      });
+
+      const adminResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send(invalidUpdates);
+
+      expect(adminResponse.status).toBe(400);
+      expect(adminResponse.body).toEqual({
+        success: false,
+        error: 'No valid fields to update'
+      });
+
+      const guardResponse = await request(app)
+        .put(`/api/recurring-passes/${passId}`)
+        .set('Authorization', `Bearer ${guardToken}`)
+        .send(invalidUpdates);
+
+      expect(guardResponse.status).toBe(400);
+      expect(guardResponse.body).toEqual({
+        success: false,
+        error: 'No valid fields to update'
+      });
+
+      const unchangedPass = await query(
+        'SELECT visitor_name, status FROM recurring_passes WHERE id = $1',
+        [passId]
+      );
+
+      expect(unchangedPass.rows[0].visitor_name).toBe('Invalid Update Route Pass');
+      expect(unchangedPass.rows[0].status).toBe('active');
     });
   });
 
