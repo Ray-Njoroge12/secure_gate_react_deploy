@@ -367,7 +367,7 @@ router.delete('/history', attachRequestAudit, async (req, res) => {
   try {
     const { id: residentId } = req.user;
 
-    const result = await deliveryService.deleteDeliveryHistory(residentId);
+    const result = await deliveryService.deleteResidentDeliveryHistory(residentId);
 
     res.json(result);
   } catch (error) {

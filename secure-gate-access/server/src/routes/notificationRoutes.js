@@ -142,8 +142,8 @@ router.put('/preferences', authenticateToken, updateNotificationPreferences);
 router.post('/devices/register', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const estateId = req.body.estateId ?? req.user.estate_id ?? null;
-    const role = req.body.role ?? req.user.role ?? null;
+    const estateId = req.user.estate_id ?? null;
+    const role = req.user.role ?? null;
     const { token, platform, deviceInfo, topics = [] } = req.body;
 
     if (!token) {
@@ -265,6 +265,7 @@ router.post('/devices/unregister', authenticateToken, async (req, res) => {
  */
 router.post('/devices/topics', authenticateToken, async (req, res) => {
   try {
+    const userId = req.user.id;
     const { token, topics = [], includeDefaults = true } = req.body;
 
     if (!token) {
@@ -275,8 +276,8 @@ router.post('/devices/topics', authenticateToken, async (req, res) => {
     }
 
     const lookup = await db.query(
-      `SELECT id, estate_id, role FROM device_tokens WHERE token = $1`,
-      [token]
+      `SELECT id, estate_id, role FROM device_tokens WHERE token = $1 AND user_id = $2`,
+      [token, userId]
     );
 
     if (lookup.rows.length === 0) {

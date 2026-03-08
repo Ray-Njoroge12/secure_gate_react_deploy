@@ -7,10 +7,11 @@ import express from 'express';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
-import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
+import { asyncHandler, AppError, ERROR_CODES } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
 import { dbManager } from '../database/db.enhanced.js';
 import requireEstateContext from '../middleware/estateContextMiddleware.js';
+import { PASS_STATUS } from '../constants/statuses.js';
 
 const router = express.Router();
 const attachRequestAudit = auditLoggerFactory();
@@ -110,7 +111,7 @@ router.post('/favorites', authenticateToken, requireEstateContext, requireRolePo
   // Logic to find or create visitor if visitor_id is NOT provided
   if (!targetVisitorId) {
     if (!visitor_name || (!visitor_phone && !visitor_email)) {
-      throw new AppError('Visitor Name and either Phone or Email are required', 400);
+      throw new AppError('Visitor Name and either Phone or Email are required', 400, ERROR_CODES.VALIDATION_ERROR);
     }
 
     // Check if visitor exists by phone or email in the current estate
@@ -126,12 +127,12 @@ router.post('/favorites', authenticateToken, requireEstateContext, requireRolePo
     if (existing.rows.length > 0) {
       targetVisitorId = existing.rows[0].id;
     } else {
-      // Create new visitor record (Profile only, status PENDING, no visit date yet)
+      // Create new visitor record (profile only, canonical pending status, no visit date yet)
       const newVisitor = await dbManager.query(
         `INSERT INTO visitors (
           name, phone, email, resident_id, host_id, estate_id, 
           created_by, status, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
         RETURNING id`,
         [
           visitor_name.trim(),
@@ -140,7 +141,8 @@ router.post('/favorites', authenticateToken, requireEstateContext, requireRolePo
           userId,
           userId,
           req.user.estate_id,
-          req.user.email
+          req.user.email,
+          PASS_STATUS.PENDING
         ]
       );
       targetVisitorId = newVisitor.rows[0].id;
@@ -202,8 +204,8 @@ router.get('/stats', authenticateToken, requireEstateContext, requireRolePolicy(
       [userEmail, req.user.estate_id]
     ),
     dbManager.query(
-      "SELECT COUNT(*) as count FROM visitors WHERE created_by = $1 AND status = 'pending' AND estate_id = $2",
-      [userEmail, req.user.estate_id]
+      'SELECT COUNT(*) as count FROM visitors WHERE created_by = $1 AND status = $2 AND estate_id = $3',
+      [userEmail, PASS_STATUS.PENDING, req.user.estate_id]
     ),
     dbManager.query(
       `SELECT COUNT(*) as count FROM visitors 

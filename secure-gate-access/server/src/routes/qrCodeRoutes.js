@@ -128,7 +128,7 @@ router.post('/validate', authenticateToken, requireEstateContext, attachRequestA
     }
 
     // Validate QR code
-    const validation = await QRCodeService.validateQRCode(qrToken);
+    const validation = await QRCodeService.validateQRCode(qrToken, { estateId: req.user.estate_id });
 
     if (!validation.valid) {
       await req.audit?.('qr.validate', 'qr_code', null, {
@@ -139,8 +139,12 @@ router.post('/validate', authenticateToken, requireEstateContext, attachRequestA
       return respondError(res, 400, validation.error);
     }
 
-    if (validation.visitor?.estate_id !== req.user.estate_id) {
-      await req.audit?.('qr.validate', 'qr_code', validation.qrCode?.id, {
+    const validationQrId = validation.qrCode?.id ?? validation.qrCode?.qr_id ?? validation.qrId ?? null;
+    const visitorEstateId = validation.visitor?.estate_id ?? req.user.estate_id;
+    const qrCodeData = validation.qrCode ?? (validationQrId ? { id: validationQrId } : undefined);
+
+    if (visitorEstateId !== req.user.estate_id) {
+      await req.audit?.('qr.validate', 'qr_code', validationQrId, {
         outcome: 'fail',
         message: 'QR code estate mismatch',
         visitorId: validation.visitor?.id
@@ -148,7 +152,7 @@ router.post('/validate', authenticateToken, requireEstateContext, attachRequestA
       return respondError(res, 403, 'Visitor does not belong to your estate');
     }
 
-    await req.audit?.('qr.validate', 'qr_code', validation.qrCode.id, {
+    await req.audit?.('qr.validate', 'qr_code', validationQrId, {
       outcome: 'success',
       message: 'QR code validated successfully',
       visitorId: validation.visitor.id,
@@ -170,7 +174,7 @@ router.post('/validate', authenticateToken, requireEstateContext, attachRequestA
       message: 'QR code is valid',
       data: {
         visitor: visitorData,
-        qrCode: validation.qrCode,
+        qrCode: qrCodeData,
         canCheckIn: validateVisitorTransition(validation.visitor.status, PASS_STATUS.ON_PREMISE).valid,
         otpRequired: otpRequired
       }
@@ -205,15 +209,18 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
     }
 
     // Validate QR code
-    const validation = await QRCodeService.validateQRCode(qrToken);
+    const validation = await QRCodeService.validateQRCode(qrToken, { estateId: req.user.estate_id });
 
     if (!validation.valid) {
       return respondError(res, 400, validation.error);
     }
 
     const visitor = validation.visitor;
+    const visitorId = visitor?.id ?? validation.visitorId ?? null;
+    const validationQrId = validation.qrCode?.id ?? validation.qrCode?.qr_id ?? validation.qrId ?? null;
+    const visitorEstateId = visitor?.estate_id ?? req.user.estate_id;
 
-    if (visitor?.estate_id !== req.user.estate_id) {
+    if (visitorEstateId !== req.user.estate_id) {
       return respondError(res, 403, 'Visitor does not belong to your estate');
     }
 
@@ -234,10 +241,10 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
 
         if (!isValid) {
           // Increment attempts? (Optional, skipping DB update for speed unless critical)
-          await req.audit?.('visitor.checkin_failed', 'visitor', String(visitor.id), {
+          await req.audit?.('visitor.checkin_failed', 'visitor', String(visitorId), {
             outcome: 'fail',
             message: 'Invalid OTP provided',
-            qrId: validation.qrCode.id
+            qrId: validationQrId
           });
           return respondError(res, 401, 'Invalid OTP', 'INVALID_OTP');
         }
@@ -254,16 +261,16 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
     const now = new Date();
     await dbManager.query(
       'UPDATE visitors SET status = $1, check_in_time = $2, real_time_status = $3 WHERE id = $4 AND estate_id = $5',
-      [PASS_STATUS.ON_PREMISE, now, PASS_STATUS.ON_PREMISE, visitor.id, req.user.estate_id]
+      [PASS_STATUS.ON_PREMISE, now, PASS_STATUS.ON_PREMISE, visitorId, req.user.estate_id]
     );
 
     // Mark QR code as used
-    await QRCodeService.markQRCodeUsed(qrToken);
+    await QRCodeService.markQRCodeUsed(qrToken, { estateId: req.user.estate_id });
 
     // Emit real-time check-in event
     try {
       WebSocketService.emitVisitorCheckIn({
-        id: visitor.id,
+        id: visitorId,
         name: visitor.name,
         phone: visitor.phone,
         purpose: visitor.purpose,
@@ -275,10 +282,10 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
       console.warn('Failed to emit check-in event:', wsError.message);
     }
 
-    await req.audit?.('visitor.qr_checkin', 'visitor', String(visitor.id), {
+    await req.audit?.('visitor.qr_checkin', 'visitor', String(visitorId), {
       outcome: 'success',
       message: 'Visitor checked in via QR code',
-      qrId: validation.qrCode.id,
+      qrId: validationQrId,
       location: location,
       guardEmail: req.user.email
     });
@@ -287,7 +294,7 @@ router.post('/checkin', authenticateToken, requireEstateContext, attachRequestAu
       message: 'Visitor checked in successfully',
       data: {
         visitor: {
-          id: visitor.id,
+          id: visitorId,
           name: visitor.name,
           status: PASS_STATUS.ON_PREMISE,
           checkInTime: now.toISOString(),
