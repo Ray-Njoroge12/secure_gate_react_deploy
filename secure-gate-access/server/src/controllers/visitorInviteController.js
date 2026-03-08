@@ -1450,6 +1450,10 @@ export const cancelVisitor = async (req, res) => {
     const { id } = req.params;
     const role = req.user.role;
 
+    if (!/^[0-9]+$/.test(String(id))) {
+      return respondError(res, 400, 'Invalid visitor ID');
+    }
+
     // Get the visitor with estate scoping
     const queryParams = [id];
     let queryArgs = 'SELECT id, resident_id, host_id, name, status FROM visitors WHERE id = $1';

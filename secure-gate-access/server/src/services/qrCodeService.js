@@ -202,7 +202,7 @@ class OptimizedQRCodeService {
 
       // SECURITY FIX: Use token-based validation (v2.0+)
       if (version === '2.0') {
-        const tokenResult = await qrTokenService.validateToken(token);
+        const tokenResult = await qrTokenService.validateToken(token, options.estateId ?? null);
 
         if (!tokenResult.success) {
           return {
@@ -217,6 +217,7 @@ class OptimizedQRCodeService {
           success: true,
           data: {
             qrId: qrId,
+            visitorId: tokenResult.data.visitorId,
             visitor: tokenResult.data.visitor,
             scanCount: tokenResult.data.scanCount,
             maxScans: tokenResult.data.maxScans,
@@ -418,8 +419,8 @@ class OptimizedQRCodeService {
   // Compatibility wrappers for existing routes (qrCodeRoutes.js)
   // ---------------------------------------------------------------------------
 
-  async validateQRCode(qrToken) {
-    const validation = await this.validateQR(qrToken);
+  async validateQRCode(qrToken, options = {}) {
+    const validation = await this.validateQR(qrToken, options);
     if (!validation.success) {
       return {
         valid: false,
@@ -429,8 +430,10 @@ class OptimizedQRCodeService {
 
     return {
       valid: true,
+      visitorId: validation.data.visitorId ?? validation.data.visitor?.id,
       visitor: validation.data.visitor,
       qrCode: validation.data.qrCode,
+      qrId: validation.data.qrId,
       payload: validation.data.payload,
       validUntil: validation.data.validUntil
     };

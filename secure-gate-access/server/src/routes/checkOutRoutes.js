@@ -7,7 +7,7 @@
 import express from 'express';
 import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
 import auditLoggerFactory from '../middleware/auditLogger.js';
-import { asyncHandler, AppError } from '../middleware/standardizedErrorHandler.js';
+import { asyncHandler, AppError, ERROR_CODES } from '../middleware/standardizedErrorHandler.js';
 import { successResponse } from '../utils/responseFormatter.js';
 import { dbManager } from '../database/db.enhanced.js';
 import { PASS_STATUS } from '../constants/statuses.js';
@@ -30,12 +30,12 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin', 'super_admin'
   }
 
   if (!qrCode) {
-    throw new AppError('QR code is required', 400);
+    throw new AppError('QR code is required', 400, ERROR_CODES.VALIDATION_REQUIRED_FIELD, { field: 'qrCode' });
   }
 
   // SECURITY: Require estate context
   if (!req.user.estate_id) {
-    throw new AppError('Estate context required', 400);
+    throw new AppError('Estate context required', 400, 'ESTATE_REQUIRED');
   }
 
   let parsedQrData = null;
@@ -52,14 +52,14 @@ router.post('/qr', authenticateToken, authorize(['guard', 'admin', 'super_admin'
   );
 
   if (visitorQuery.rows.length === 0) {
-    throw new AppError('Invalid QR code', 404);
+    throw new AppError('Invalid QR code', 404, ERROR_CODES.RESOURCE_NOT_FOUND);
   }
 
   const visitorData = visitorQuery.rows[0];
 
   // Validate visitor status
   if (visitorData.status !== PASS_STATUS.ON_PREMISE) {
-    throw new AppError('Visitor is not currently checked in', 400);
+    throw new AppError('Visitor is not currently checked in', 400, ERROR_CODES.BUSINESS_RULE_VIOLATION);
   }
 
   // Perform check-out with estate_id filter

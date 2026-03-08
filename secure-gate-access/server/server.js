@@ -39,7 +39,7 @@ if (!envValidation.isValid && process.env.NODE_ENV === 'production') {
   console.error('🚨 Server startup blocked due to configuration errors');
   process.exit(1);
 } else if (!envValidation.isValid) {
-  console.warn('⚠️  Configuration warnings detected - proceeding in development mode');
+  console.warn('⚠️  Configuration warnings detected - proceeding in non-production mode');
 }
 
 console.log('🔐 Environment validation passed - starting secure server...');

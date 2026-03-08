@@ -39,6 +39,8 @@ export const getAnalyticsOverview = async (req, res) => {
     // Build site filter
     const siteFilter = siteId ? 'AND v.estate_id = $3' : '';
     const params = siteId ? [fromDate, toDate, siteId] : [fromDate, toDate];
+    const todaySiteFilter = siteId ? 'AND v.estate_id = $1' : '';
+    const todayParams = siteId ? [siteId] : [];
 
     // Parallel queries for all metrics
     const [
@@ -99,8 +101,8 @@ export const getAnalyticsOverview = async (req, res) => {
         FROM visitors v
         LEFT JOIN incidents i ON i.created_at::DATE = CURRENT_DATE
         WHERE v.date_of_visit >= CURRENT_DATE - INTERVAL '1 day'
-          ${siteFilter}
-      `, params)
+          ${todaySiteFilter}
+      `, todayParams)
     ]);
 
     return res.status(200).json({

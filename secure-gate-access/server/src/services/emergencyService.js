@@ -358,6 +358,9 @@ class EmergencyService {
     // SECURITY: Must filter by estate!
     if (!estateId) throw new Error('Estate context required for active emergencies');
 
+    query += ` AND e.estate_id = $1`;
+    params.push(estateId);
+
     query += ` ORDER BY e.triggered_at DESC`;
 
     const result = await dbManager.query(query, params);
@@ -405,7 +408,7 @@ class EmergencyService {
     try {
       // Check if requester is admin or the guard who triggered
       const requesterResult = await client.query(
-        `SELECT role FROM users WHERE id = $1`,
+        `SELECT role, estate_id FROM users WHERE id = $1`,
         [requesterId]
       );
 
@@ -414,6 +417,11 @@ class EmergencyService {
       }
 
       const requesterRole = requesterResult.rows[0].role;
+      const requesterEstateId = requesterResult.rows[0].estate_id;
+
+      if (!requesterEstateId) {
+        throw new Error('Estate context required');
+      }
 
       // Get emergency with guard info
       const result = await client.query(
@@ -426,8 +434,8 @@ class EmergencyService {
          LEFT JOIN users g ON e.guard_id = g.id
          LEFT JOIN users a ON e.acknowledged_by = a.id
          LEFT JOIN users r ON e.resolved_by = r.id
-         WHERE e.id = $1`,
-        [emergencyId]
+         WHERE e.id = $1 AND e.estate_id = $2`,
+        [emergencyId, requesterEstateId]
       );
 
       if (result.rows.length === 0) {
@@ -436,13 +444,15 @@ class EmergencyService {
 
       const emergency = result.rows[0];
 
-      // Guards can only view their own emergencies
-      if (requesterRole === 'guard' && emergency.guard_id !== requesterId) {
+      const isAdmin = requesterRole === 'admin' || requesterRole === 'super_admin';
+
+      // Non-admin users can only view their own emergencies
+      if (!isAdmin && emergency.guard_id !== requesterId) {
         throw new Error('Access denied: You can only view your own emergencies');
       }
 
       // For non-admins, redact location after 24 hours (extra privacy)
-      if (requesterRole !== 'admin') {
+      if (!isAdmin) {
         const hoursAgo = (Date.now() - new Date(emergency.triggered_at).getTime()) / (1000 * 60 * 60);
         if (hoursAgo > 24) {
           emergency.latitude = null;

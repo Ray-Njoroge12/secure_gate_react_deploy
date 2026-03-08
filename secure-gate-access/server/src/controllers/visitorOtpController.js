@@ -10,6 +10,7 @@ const verifyOtp = async (req, res) => {
     const { id } = req.params;
     const { otp } = req.body;
 
+    if (!/^[0-9]+$/.test(String(id))) return respondError(res, 400, 'Invalid visitor ID');
     if (!otp) return respondError(res, 400, 'Pass Code is required');
     if (!validateOTPFormat(otp)) return respondError(res, 400, 'Invalid Pass Code format');
 
@@ -88,6 +89,7 @@ const resendOtp = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (!/^[0-9]+$/.test(String(id))) return respondError(res, 400, 'Invalid visitor ID');
     let query = 'SELECT id, phone, email, status, name, otp_resend_count, otp_last_resend FROM visitors WHERE id = $1';
     const params = [id];
 

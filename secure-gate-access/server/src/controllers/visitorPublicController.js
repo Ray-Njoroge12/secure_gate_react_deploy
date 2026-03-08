@@ -729,16 +729,6 @@ export const getInviteByCode = async (req, res) => {
       });
     }
 
-    // Decrypt ID number if exists
-    let idNumber = null;
-    if (invite.id_number_encrypted) {
-      try {
-        idNumber = await encryptionService.decrypt(invite.id_number_encrypted);
-      } catch (err) {
-        logger.warn('Failed to decrypt ID number for public invite', { error: err.message });
-      }
-    }
-
     // Sanitize response
     const sanitizedInvite = {
       name: invite.name,
@@ -748,12 +738,7 @@ export const getInviteByCode = async (req, res) => {
       status: invite.status,
       type: invite.invite_type,
       expiresAt: invite.token_expires_at,
-      phone: invite.phone,
-      email: invite.email,
-      idNumber: idNumber,
-      vehiclePlate: invite.vehicle_plate,
-      inviteCode: invite.invite_code,
-      estateId: invite.estate_id
+      inviteCode: invite.invite_code
     };
 
     // Add event details if it's an event invitation

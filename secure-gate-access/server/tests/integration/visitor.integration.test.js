@@ -213,10 +213,10 @@ describe('Visitor Management Integration Tests', () => {
       expect(visitorIds).not.toContain(otherVisitor.id);
     });
 
-    it('should forbid guard from listing active visitors', async () => {
+    it('should forbid resident from listing active visitors', async () => {
       const response = await request(app)
         .get('/api/visitors/active')
-        .set('Cookie', `token=${guardToken}`);
+        .set('Cookie', `token=${residentToken}`);
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
