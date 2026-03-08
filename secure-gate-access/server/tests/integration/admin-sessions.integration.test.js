@@ -64,7 +64,7 @@ describe('Admin Session Management', () => {
         .set('Cookie', `token=${adminToken}`);
 
       // 200 OK or 400 if MFA required in test env
-      expect([200, 400, 403]).toContain(res.status);
+      expect([200, 400]).toContain(res.status);
     });
 
     it('should prevent admin from revoking their own sessions', async () => {
