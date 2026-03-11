@@ -142,41 +142,59 @@ export default function GuardDashboard() {
 
   useEffect(() => { fetchActive(); }, [fetchActive]);
 
-  // Subscribe to guard SSE for live updates
+  // Subscribe to guard SSE for live updates with exponential backoff reconnect
   useEffect(() => {
     let es;
-    try {
-      es = new EventSource('/api/ws/guards', { withCredentials: false });
+    let retryCount = 0;
+    let retryTimer = null;
 
-      // Track connection status
-      es.onopen = () => setIsConnected(true);
-      es.onerror = () => setIsConnected(false);
+    const connectSSE = () => {
+      try {
+        es = new EventSource('/api/ws/guards', { withCredentials: false });
 
-      const onEvt = (evt) => {
-        setIsConnected(true); // Receiving events means we're connected
-        try {
-          const data = JSON.parse(evt.data || '{}');
-          // Minimal toast based on severity; never show PII
-          const map = {
-            'visitor.check_in': 'Visitor checked in',
-            'visitor.check_out': 'Visitor checked out',
-            'visitor.revoked': 'Visitor revoked',
-            'visitor.self_check_in': 'Visitor self check-in',
-          };
-          const msg = map[evt.type] || 'Event';
-          const sev = (data && data.severity) || 'info';
-          pushToast({ message: msg, severity: sev });
-        } catch { /* ignore */ }
-        fetchActive();
-      };
-      es.addEventListener('visitor.check_in', onEvt);
-      es.addEventListener('visitor.check_out', onEvt);
-      es.addEventListener('visitor.revoked', onEvt);
-      es.addEventListener('visitor.self_check_in', onEvt);
-    } catch {
-      setIsConnected(false);
-    }
-    return () => { try { es && es.close(); } catch { } };
+        es.onopen = () => {
+          setIsConnected(true);
+          retryCount = 0; // Reset backoff on successful connection
+        };
+
+        es.onerror = () => {
+          setIsConnected(false);
+          try { es.close(); } catch { /* ignore */ }
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+          retryCount++;
+          retryTimer = setTimeout(connectSSE, delay);
+        };
+
+        const onEvt = (evt) => {
+          setIsConnected(true);
+          try {
+            const data = JSON.parse(evt.data || '{}');
+            const map = {
+              'visitor.check_in': 'Visitor checked in',
+              'visitor.check_out': 'Visitor checked out',
+              'visitor.revoked': 'Visitor revoked',
+              'visitor.self_check_in': 'Visitor self check-in',
+            };
+            const msg = map[evt.type] || 'Event';
+            const sev = (data && data.severity) || 'info';
+            pushToast({ message: msg, severity: sev });
+          } catch { /* ignore */ }
+          fetchActive();
+        };
+        es.addEventListener('visitor.check_in', onEvt);
+        es.addEventListener('visitor.check_out', onEvt);
+        es.addEventListener('visitor.revoked', onEvt);
+        es.addEventListener('visitor.self_check_in', onEvt);
+      } catch {
+        setIsConnected(false);
+      }
+    };
+
+    connectSSE();
+    return () => {
+      clearTimeout(retryTimer);
+      try { es && es.close(); } catch { /* ignore */ }
+    };
   }, [fetchActive]);
 
   // Persist toast filter and auto-scroll to newest
