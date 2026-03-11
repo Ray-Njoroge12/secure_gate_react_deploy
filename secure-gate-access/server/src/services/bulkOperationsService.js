@@ -203,6 +203,9 @@ class BulkOperationsService extends EventEmitter {
       case 'update_status':
         return await this.updateStatusBatch(batch, data, userId, estateId, operation);
 
+      case 'checkout_visitors':
+        return await this.checkoutVisitorsBatch(batch, data, userId, estateId, operation);
+
       default:
         throw new Error(`Unsupported bulk operation type: ${operationType}`);
     }
@@ -366,6 +369,54 @@ class BulkOperationsService extends EventEmitter {
 
       await client.query('COMMIT');
 
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Checkout visitors in batch
+   */
+  async checkoutVisitorsBatch(visitorIds, data, userId, estateId, operation) {
+    const client = await dbManager.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      for (const id of visitorIds) {
+        try {
+          const visitorCheck = await client.query(
+            'SELECT id, name, status FROM visitors WHERE id = $1 AND estate_id = $2',
+            [id, estateId]
+          );
+
+          if (visitorCheck.rows.length === 0) {
+            operation.results.skipped.push({ id, reason: 'Visitor not found or not in estate' });
+            continue;
+          }
+
+          const visitor = visitorCheck.rows[0];
+
+          if (visitor.status === 'CHECKED_OUT') {
+            operation.results.skipped.push({ id, reason: 'Visitor already checked out' });
+            continue;
+          }
+
+          await client.query(
+            'UPDATE visitors SET status = $1, check_out_time = NOW(), updated_at = NOW() WHERE id = $2',
+            ['CHECKED_OUT', id]
+          );
+
+          operation.results.success.push({ id, name: visitor.name });
+        } catch (error) {
+          operation.results.failed.push({ id, error: error.message });
+        }
+      }
+
+      await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
