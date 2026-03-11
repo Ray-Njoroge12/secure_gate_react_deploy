@@ -7,22 +7,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
 import { Button, Card, Badge, ErrorDisplay, SuccessDisplay, Icon } from '../../components/ui';
+import Modal from '../../components/ui/Modal.jsx';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext.jsx';
 import useWebSocket from '../../hooks/useWebSocket';
 import { handleApiError } from '../../utils/errorMapper';
+import pushNotificationService from '../../services/pushNotificationService.js';
 
 const ResidentApprovalsPanel = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [processingIds, setProcessingIds] = useState(new Set());
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
   const { addEventListener } = useWebSocket({
     enabled: !!user,
     autoConnect: true,
     subscribeDashboard: false,
-    subscribeVisitors: false,
+    subscribeVisitors: true,
     subscribeAdmin: false
   });
 
@@ -87,6 +94,13 @@ const ResidentApprovalsPanel = () => {
     fetchPendingApprovals();
   }, [fetchPendingApprovals]);
 
+  // Subscribe to push notifications for walk-in approval alerts
+  useEffect(() => {
+    if (pushNotificationService.getPermissionStatus() === 'granted') {
+      pushNotificationService.subscribe().catch(() => {});
+    }
+  }, []);
+
   // Handle approve action
   const handleApprove = async (visitorId, visitorName) => {
     setProcessingIds(prev => new Set(prev).add(visitorId));
@@ -123,21 +137,26 @@ const ResidentApprovalsPanel = () => {
     }
   };
 
-  // Handle reject action
-  const handleReject = async (visitorId, visitorName) => {
-    // Optional: Show reason dialog
-    const reason = window.prompt('Reason for rejection (optional):');
-    
-    setProcessingIds(prev => new Set(prev).add(visitorId));
+  // Handle reject action — open modal instead of window.prompt
+  const openRejectModal = (visitorId, visitorName) => {
+    setRejectTarget({ id: visitorId, name: visitorName });
+    setRejectReason('');
+    setRejectModalOpen(true);
+  };
+
+  const submitRejection = async () => {
+    const { id, name } = rejectTarget;
+    setRejectModalOpen(false);
+    setProcessingIds(prev => new Set(prev).add(id));
     setError('');
     setSuccess('');
 
     try {
-      const response = await fetch(`/api/visitors/${visitorId}/reject`, {
+      const response = await fetch(`/api/visitors/${id}/reject`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: reason || 'Not expecting this visitor' })
+        body: JSON.stringify({ reason: rejectReason || 'Not expecting this visitor' })
       });
 
       if (!response.ok) {
@@ -145,21 +164,17 @@ const ResidentApprovalsPanel = () => {
         throw new Error(errorData.message || 'Failed to reject visitor');
       }
 
-      // Remove from pending list
-      setPendingApprovals(prev => prev.filter(a => a.id !== visitorId));
-      setSuccess(`❌ ${visitorName} rejected. Guard will be notified.`);
-      
-      // Clear success after 5 seconds
-      setTimeout(() => setSuccess(''), 5000);
-
+      setPendingApprovals(prev => prev.filter(a => a.id !== id));
+      toast.success(`${name} declined. Guard will be notified.`);
     } catch (err) {
-      setError(handleApiError(err));
+      toast.error(handleApiError(err));
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
-        newSet.delete(visitorId);
+        newSet.delete(id);
         return newSet;
       });
+      setRejectTarget(null);
     }
   };
 
@@ -299,7 +314,7 @@ const ResidentApprovalsPanel = () => {
                       
                       <Button
                         variant="danger"
-                        onClick={() => handleReject(approval.id, approval.name)}
+                        onClick={() => openRejectModal(approval.id, approval.name)}
                         disabled={isProcessing}
                         className="w-full flex items-center justify-center gap-2"
                       >
@@ -339,6 +354,39 @@ const ResidentApprovalsPanel = () => {
           </div>
         </div>
       </div>
+
+      {/* Rejection Reason Modal */}
+      <Modal
+        isOpen={rejectModalOpen}
+        onClose={() => setRejectModalOpen(false)}
+        title="Decline Visitor"
+        size="sm"
+        ariaLabel="Rejection reason dialog"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-slate-400">
+            Reason for declining <strong>{rejectTarget?.name}</strong>
+          </p>
+          <label className="block">
+            <span id="reject-reason-label" className="block text-sm font-medium mb-1">
+              Rejection reason (optional)
+            </span>
+            <textarea
+              id="reject-reason"
+              aria-labelledby="reject-reason-label"
+              className="w-full px-3 py-2 border rounded-lg resize-none dark:bg-slate-800 dark:border-slate-600"
+              rows={3}
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              placeholder="e.g. Not expecting this visitor"
+            />
+          </label>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => setRejectModalOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={submitRejection}>Confirm Decline</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
