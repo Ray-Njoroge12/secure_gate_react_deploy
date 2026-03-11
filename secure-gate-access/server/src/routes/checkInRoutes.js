@@ -92,15 +92,11 @@ router.post('/qr', authorize(['guard', 'admin', 'super_admin']), strictRateLimit
   // Find visitor by QR code or visitor_id from QR record
   let visitorQuery;
   if (qrRecord?.visitor_id) {
-    console.log('DEBUG: Querying visitor by ID from QR record');
     visitorQuery = await dbManager.query(
       'SELECT * FROM visitors WHERE id = $1 AND estate_id = $2',
       [qrRecord.visitor_id, req.user.estate_id]
     );
   } else {
-    console.log('DEBUG: Querying visitor by Token/Code');
-    console.log('DEBUG: Token:', parsedQrData.token || qrCode);
-    console.log('DEBUG: EstateID:', req.user.estate_id);
     visitorQuery = await dbManager.query(
       'SELECT * FROM visitors WHERE (qr_code::text = $1 OR visitor_token = $1) AND estate_id = $2',
       [parsedQrData.token || qrCode, req.user.estate_id]
