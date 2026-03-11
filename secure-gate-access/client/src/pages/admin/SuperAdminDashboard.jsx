@@ -8,7 +8,9 @@ import Button from '../../components/ui/Button';
 import GradientButton from '../../components/ui/GradientButton';
 import Icon from '../../components/ui/Icon';
 import { useAuth } from '../../contexts/AuthContext';
+import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
 import { handleApiError } from '../../utils/errorMapper';
+import logger from '../../utils/logger.js';
 import api from '../../utils/apiClient';
 
 // Mock service for now, will implement real service calls
@@ -17,6 +19,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 export default function SuperAdminDashboard() {
     const navigate = useNavigate();
     const { logout } = useAuth();
+    const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState(null);
     const [isAddEstateOpen, setIsAddEstateOpen] = useState(false);
@@ -133,7 +136,7 @@ export default function SuperAdminDashboard() {
             }
 
         } catch (err) {
-            console.error('Failed to load super admin data:', err);
+            logger.error('SuperAdmin: Failed to load dashboard data:', err);
             setErrorMessage('Failed to load dashboard data');
             setHealth({ status: 'error', text: 'System Error' });
         } finally {
@@ -158,7 +161,7 @@ export default function SuperAdminDashboard() {
                 setErrorMessage('Failed to refresh system metrics.');
             }
         } catch (err) {
-            console.error('Failed to fetch system metrics:', err);
+            logger.error('SuperAdmin: Failed to fetch system metrics:', err);
             setErrorMessage('Failed to refresh system metrics.');
         }
     };
@@ -216,7 +219,13 @@ export default function SuperAdminDashboard() {
     };
 
     const handleStatusChange = async (estateId, newStatus) => {
-        if (!window.confirm(`Are you sure you want to ${newStatus} this estate?`)) return;
+        const confirmed = await confirm({
+            variant: 'warning',
+            title: 'Change Estate Status',
+            message: `Are you sure you want to ${newStatus} this estate?`,
+            confirmText: 'Confirm'
+        });
+        if (!confirmed) return;
 
         try {
             // Optimistic update
@@ -245,7 +254,7 @@ export default function SuperAdminDashboard() {
             // Refresh real data to confirm
             fetchDashboardData();
         } catch (err) {
-            console.error(err);
+            logger.error('SuperAdmin: Estate status change failed:', err);
             setErrorMessage(handleApiError(err));
             // Revert on error
             fetchDashboardData();
@@ -706,6 +715,8 @@ export default function SuperAdminDashboard() {
                     estate={estateToDecommission}
                     onSuccess={handleDecommissionSuccess}
                 />
+
+                <ConfirmDialog {...dialogProps} />
         </div>
     );
 }
