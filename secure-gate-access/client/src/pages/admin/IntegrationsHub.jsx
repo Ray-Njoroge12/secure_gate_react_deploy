@@ -12,6 +12,9 @@
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
+import { useToast } from '../../contexts/ToastContext.jsx';
+import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
+import logger from '../../utils/logger.js';
 import './IntegrationsHub.css';
 
 const IntegrationsHub = () => {
@@ -25,6 +28,8 @@ const IntegrationsHub = () => {
   const [editingItem, setEditingItem] = useState(null);
   const closeModal = () => setShowModal(false);
   const { modalRef } = useModalAccessibility(showModal, closeModal);
+  const { toast } = useToast();
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
 
   // Webhook form data
   const [webhookForm, setWebhookForm] = useState({
@@ -76,7 +81,7 @@ const IntegrationsHub = () => {
         setWebhooks(data.data || []);
       }
     } catch (err) {
-      console.error('Error:', err);
+      logger.error('IntegrationsHub:', err);
     } finally {
       setLoading(false);
     }
@@ -91,7 +96,7 @@ const IntegrationsHub = () => {
         setAutomationRules(data.data || []);
       }
     } catch (err) {
-      console.error('Error:', err);
+      logger.error('IntegrationsHub:', err);
     } finally {
       setLoading(false);
     }
@@ -106,7 +111,7 @@ const IntegrationsHub = () => {
         setApiKeys(data.data || []);
       }
     } catch (err) {
-      console.error('Error:', err);
+      logger.error('IntegrationsHub:', err);
     } finally {
       setLoading(false);
     }
@@ -137,7 +142,7 @@ const IntegrationsHub = () => {
       setShowModal(false);
       resetForms();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
@@ -167,7 +172,7 @@ const IntegrationsHub = () => {
       setShowModal(false);
       resetForms();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
@@ -187,12 +192,13 @@ const IntegrationsHub = () => {
       setNewApiKey(data.data.api_key);
       await fetchAPIKeys();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
   const deleteWebhook = async (id) => {
-    if (!window.confirm('Delete this webhook?')) return;
+    const confirmed = await confirm({ variant: 'danger', title: 'Delete Webhook', message: 'Are you sure you want to delete this webhook?', confirmText: 'Delete' });
+    if (!confirmed) return;
     try {
       const response = await fetch(`/api/admin/webhooks/${id}`, {
         method: 'DELETE',
@@ -201,12 +207,13 @@ const IntegrationsHub = () => {
       if (!response.ok) throw new Error('Failed to delete webhook');
       await fetchWebhooks();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
   const deleteAutomation = async (id) => {
-    if (!window.confirm('Delete this automation rule?')) return;
+    const confirmed = await confirm({ variant: 'danger', title: 'Delete Automation', message: 'Are you sure you want to delete this automation rule?', confirmText: 'Delete' });
+    if (!confirmed) return;
     try {
       const response = await fetch(`/api/admin/automations/${id}`, {
         method: 'DELETE',
@@ -215,12 +222,13 @@ const IntegrationsHub = () => {
       if (!response.ok) throw new Error('Failed to delete automation');
       await fetchAutomationRules();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
   const revokeAPIKey = async (id) => {
-    if (!window.confirm('Revoke this API key? This cannot be undone.')) return;
+    const confirmed = await confirm({ variant: 'danger', title: 'Revoke API Key', message: 'Revoke this API key? This cannot be undone.', confirmText: 'Revoke' });
+    if (!confirmed) return;
     try {
       const response = await fetch(`/api/admin/api-keys/${id}`, {
         method: 'DELETE',
@@ -229,7 +237,7 @@ const IntegrationsHub = () => {
       if (!response.ok) throw new Error('Failed to revoke API key');
       await fetchAPIKeys();
     } catch (err) {
-      alert('Error: ' + err.message);
+      toast.error(err.message || 'An error occurred');
     }
   };
 
@@ -240,9 +248,9 @@ const IntegrationsHub = () => {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Test failed');
-      alert('Webhook test successful!');
+      toast.success('Webhook test successful!');
     } catch (err) {
-      alert('Test failed: ' + err.message);
+      toast.error('Test failed: ' + err.message);
     }
   };
 
@@ -610,7 +618,7 @@ const IntegrationsHub = () => {
                         <code>{newApiKey}</code>
                         <Button variant="secondary" className="btn-copy" onClick={() => {
                           navigator.clipboard.writeText(newApiKey);
-                          alert('Copied to clipboard!');
+                          toast.success('Copied!');
                         }}>Copy</Button>
                       </div>
                       <Button variant="primary" className="btn-primary" onClick={() => { closeModal(); resetForms(); }}>
@@ -664,6 +672,8 @@ const IntegrationsHub = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 };
