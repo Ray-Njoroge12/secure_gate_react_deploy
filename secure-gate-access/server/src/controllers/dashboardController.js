@@ -8,6 +8,7 @@
 
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError } from '../utils/respond.js';
+import logger from '../config/logger.js';
 
 /**
  * Get dashboard statistics based on user role
@@ -47,7 +48,7 @@ export const getDashboardStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Dashboard stats error:', error);
+    logger.error('Dashboard stats error', { error: error.message, stack: error.stack });
     respondError(res, 500, 'Failed to get dashboard stats');
   }
 };
@@ -213,7 +214,6 @@ async function getResidentStats(userEmail, estateId) {
   );
 
   // Recent visitors - filtered by estate
-  console.log('DEBUG: Querying recent visitors for resident:', residentId, 'estate:', estateId);
   try {
     const recentResult = await dbManager.query(
       `SELECT id, name, phone, purpose, status, date_of_visit, created_at 
@@ -223,8 +223,6 @@ async function getResidentStats(userEmail, estateId) {
        LIMIT 5`,
       [residentId, estateId]
     );
-    console.log('DEBUG: Recent visitors query success, rows:', recentResult.rowCount);
-
     // This month's visitors - filtered by estate
     const monthStart = new Date();
     monthStart.setDate(1);
@@ -235,8 +233,6 @@ async function getResidentStats(userEmail, estateId) {
      WHERE resident_id = $1 AND created_at >= $2 AND estate_id = $3`,
       [residentId, monthStart, estateId]
     );
-    console.log('DEBUG: Monthly visitors query success');
-
     return {
       visitors: {
         total: parseInt(totalResult.rows[0]?.total || 0),
@@ -247,7 +243,7 @@ async function getResidentStats(userEmail, estateId) {
       recent: recentResult.rows
     };
   } catch (err) {
-    console.error('>>> DASHBOARD RESIDENT STATS ERROR <<<', err);
+    logger.error('Dashboard resident stats error', { error: err.message, stack: err.stack });
     throw err;
   }
 }

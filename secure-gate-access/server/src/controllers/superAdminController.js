@@ -1,6 +1,7 @@
 import { dbManager } from '../database/db.enhanced.js';
 import { respond, respondError, camelize } from '../utils/respond.js';
 import { maskEmail, maskPhone } from '../utils/redaction.js';
+import logger from '../config/logger.js';
 
 /**
  * Inline audit log query (replaces archived auditLogger.getAuditLogs)
@@ -90,7 +91,7 @@ const getPlatformOverview = async (req, res) => {
 
         respond(res, overview);
     } catch (error) {
-        console.error('Error fetching platform overview:', error);
+        logger.error('Error fetching platform overview', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to fetch platform overview');
     }
 };
@@ -120,7 +121,7 @@ const listEstates = async (req, res) => {
 
         respond(res, camelize(result.rows));
     } catch (error) {
-        console.error('Error listing estates:', error);
+        logger.error('Error listing estates', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to list estates');
     }
 };
@@ -275,9 +276,9 @@ const createEstate = async (req, res) => {
             try {
                 const { default: emailService } = await import('../services/emailService.js');
                 await emailService.sendWelcomeEmail(newUserForEmail.email, newUserForEmail.username, adminPassword);
-                console.log(`Welcome email sent to ${newUserForEmail.email}`);
+                logger.info(`Welcome email sent to ${newUserForEmail.email}`);
             } catch (emailErr) {
-                console.error('Failed to send welcome email:', emailErr);
+                logger.error('Failed to send welcome email', { error: emailErr.message });
                 // Non-blocking error
             }
         }
@@ -285,7 +286,7 @@ const createEstate = async (req, res) => {
         respond(res, { message: 'Estate created successfully', estate: result }, 201);
 
     } catch (error) {
-        console.error('Error creating estate:', error);
+        logger.error('Error creating estate', { error: error.message, stack: error.stack });
         // Transaction automatically rolled back by dbManager on error
         respondError(res, 500, 'Failed to create estate: ' + error.message);
     }
@@ -300,9 +301,6 @@ const updateEstateStatus = async (req, res) => {
 
         const { id } = req.params;
         const { status } = req.body; // 'active', 'suspended'
-        console.log('SUPERADMIN: updateEstateStatus called for:', id, 'New Status:', status);
-        console.log('User:', req.user);
-
         if (!['active', 'suspended'].includes(status)) {
             return respondError(res, 400, 'Invalid status. Must be active or suspended');
         }
@@ -318,7 +316,7 @@ const updateEstateStatus = async (req, res) => {
 
         respond(res, result.rows[0]);
     } catch (error) {
-        console.error('Error updating estate status:', error);
+        logger.error('Error updating estate status', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to update estate status');
     }
 };
@@ -400,7 +398,7 @@ const getEstateDecommissionImpact = async (req, res) => {
         respond(res, impact);
 
     } catch (error) {
-        console.error('Error getting estate decommission impact:', error);
+        logger.error('Error getting estate decommission impact', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to get estate impact summary');
     }
 };
@@ -476,7 +474,7 @@ const deleteEstate = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error deleting estate:', error);
+        logger.error('Error deleting estate', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to delete estate');
     }
 }
@@ -591,7 +589,7 @@ const searchGlobalUsers = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error searching global users:', error);
+        logger.error('Error searching global users', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to search users');
     }
 };
@@ -615,7 +613,7 @@ const getGlobalLogs = async (req, res) => {
         respond(res, logs);
 
     } catch (error) {
-        console.error('Error fetching global logs:', error);
+        logger.error('Error fetching global logs', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to fetch audit logs');
     }
 };
@@ -633,7 +631,7 @@ const getSystemMetrics = async (req, res) => {
         respond(res, snapshot);
 
     } catch (error) {
-        console.error('Error fetching system metrics:', error);
+        logger.error('Error fetching system metrics', { error: error.message, stack: error.stack });
         respondError(res, 500, 'Failed to fetch system metrics');
     }
 };

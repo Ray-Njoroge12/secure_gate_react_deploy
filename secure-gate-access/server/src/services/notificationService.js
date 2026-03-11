@@ -1,3 +1,4 @@
+import logger from '../config/logger.js';
 import whatsappService from './whatsappService.js';
 import messagingGateway from './messagingGateway.js';
 import notificationMetricsService from './notificationMetricsService.js';
@@ -181,7 +182,7 @@ export async function sendDeliveryNotification(residentData, deliveryData) {
     return result;
   } catch (err) {
     metrics.notifications_email_failed = (metrics.notifications_email_failed || 0) + 1;
-    console.error('sendDeliveryNotification failed:', err?.message || err);
+    logger.error('sendDeliveryNotification failed', { error: err?.message || String(err) });
     notificationMetricsService.recordNotificationResult({
       channel: 'email',
       provider: process.env.EMAIL_PROVIDER || 'smtp',
@@ -199,12 +200,12 @@ export async function sendDeliveryNotification(residentData, deliveryData) {
 export async function sendHandoffDecisionNotification(deliveryData, preference) {
   try {
     const preferenceLabel = preference === 'pickup_at_gate' ? 'Pickup at Gate' : 'Deliver to Residence';
-    console.log(`[Notification] Handoff decision for delivery #${deliveryData.id}: ${preferenceLabel}`);
+    logger.info(`Handoff decision for delivery #${deliveryData.id}: ${preferenceLabel}`);
     // In production, this would emit a WebSocket event to guard dashboards
     // For now, we log it and return success
     return { success: true, preference: preferenceLabel };
   } catch (err) {
-    console.error('sendHandoffDecisionNotification failed:', err?.message || err);
+    logger.error('sendHandoffDecisionNotification failed', { error: err?.message || String(err) });
     return { success: false, error: err?.message };
   }
 }
