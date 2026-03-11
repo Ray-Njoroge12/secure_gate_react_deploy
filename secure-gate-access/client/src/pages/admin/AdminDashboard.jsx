@@ -28,6 +28,7 @@ import ManageGuards from './ManageGuards';
 import ManageResidents from './ManageResidents';
 import VisitorLog from './VisitorLog';
 import Reports from './Reports';
+import AuditLogs from './AuditLogs';
 import Settings from './Settings';
 import Table from '../../components/Table';
 import Button from '../../components/ui/Button';
@@ -116,6 +117,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     { id: 'residents', label: 'Residents' },
     { id: 'visitors', label: 'Visitor Logs' },
     { id: 'reports', label: 'Reports' },
+    { id: 'audit', label: 'Audit Logs' },
     { id: 'settings', label: 'Settings' }
   ];
 
@@ -517,6 +519,14 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
         activeTab === 'reports' && (
           <div id="admin-tabpanel-reports" role="tabpanel" aria-labelledby="admin-tab-reports">
             <Reports estateId={currentEstate?.id} />
+          </div>
+        )
+      }
+
+      {
+        activeTab === 'audit' && (
+          <div id="admin-tabpanel-audit" role="tabpanel" aria-labelledby="admin-tab-audit">
+            <AuditLogs />
           </div>
         )
       }
