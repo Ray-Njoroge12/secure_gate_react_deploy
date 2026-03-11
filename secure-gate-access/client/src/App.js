@@ -91,6 +91,13 @@ const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
 const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
 const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
 const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
+const WatchlistManagement = lazy(() => import("./pages/admin/WatchlistManagement.jsx"));
+const RoleManagement = lazy(() => import("./pages/admin/RoleManagement.jsx"));
+const AccessControl = lazy(() => import("./pages/admin/AccessControl.jsx"));
+const PolicyManagement = lazy(() => import("./pages/admin/PolicyManagement.jsx"));
+const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
+const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
+const AdminOperationsDashboard = lazy(() => import("./pages/admin/AdminOperationsDashboard.jsx"));
 // NotificationPreferences and ActivityDashboard removed - files missing
 // const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
 // const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
@@ -754,6 +761,43 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+
+                      {/* Admin management pages */}
+                      <Route path="/admin/watchlist" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Watchlist Management"><WatchlistManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/roles" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Role Management"><RoleManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/access-control" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Access Control"><AccessControl /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/policies" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Policy Management"><PolicyManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/sites" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Site Management"><SiteManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/incidents" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Incident Management"><IncidentManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/operations" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Operations Dashboard"><AdminOperationsDashboard /></AppShell>
+                        </ProtectedRoute>
+                      } />
 
                       {/* Catch-all route for unmatched paths */}
                       <Route path="*" element={<Navigate to="/login" replace />} />
