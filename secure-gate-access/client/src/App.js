@@ -25,6 +25,7 @@ import ErrorQueue from "./components/ErrorQueue.jsx";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
 import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
 import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
+import SessionExpiryToast from "./components/common/SessionExpiryToast.jsx";
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
 import Loading from "./components/ui/Loading.jsx";
@@ -98,6 +99,7 @@ const PolicyManagement = lazy(() => import("./pages/admin/PolicyManagement.jsx")
 const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
 const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
 const AdminOperationsDashboard = lazy(() => import("./pages/admin/AdminOperationsDashboard.jsx"));
+const AuditLogs = lazy(() => import("./pages/admin/AuditLogs.jsx"));
 // NotificationPreferences and ActivityDashboard removed - files missing
 // const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
 // const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
@@ -199,6 +201,7 @@ function App() {
 
             {/* Session Timeout Warning - Global (uses role-based configuration) */}
             <SessionTimeoutWarning />
+            <SessionExpiryToast />
             <OfflineRetryBanner />
             <RateLimitIndicator threshold={15} position="bottom-right" />
             <ErrorBoundary level="page">
@@ -796,6 +799,11 @@ function App() {
                       <Route path="/admin/operations" element={
                         <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
                           <AppShell role="admin" title="Operations Dashboard"><AdminOperationsDashboard /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/audit-logs" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Audit Logs"><AuditLogs /></AppShell>
                         </ProtectedRoute>
                       } />
 

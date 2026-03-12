@@ -165,6 +165,10 @@ apiClient.interceptors.response.use(
       // No need to clear localStorage tokens
       // Don't redirect if already on login page OR if this was an auth check (e.g. /api/auth/me)
       if (!isAuthEndpoint && !window.location.pathname.includes('/login')) {
+        // Dispatch event so React tree can show toast before redirect
+        window.dispatchEvent(new CustomEvent('session-expired', {
+          detail: { message: 'Your session has expired. Please log in again.' }
+        }));
         navigateToLogin();
       }
       authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
