@@ -25,6 +25,7 @@ import './VisitorInvitePage.css';
 import { useVisitorInvite } from '../../hooks/useVisitorInvite';
 import Button from '../../components/ui/Button';
 import { useI18n } from '../../i18n/index.js';
+import offlineService from '../../services/offlineService';
 
 const VisitorInvitePage = () => {
   const { token } = useParams();
@@ -113,6 +114,30 @@ const VisitorInvitePage = () => {
 
     setConfirmLoading(true);
     setConfirmError(null);
+
+    if (!navigator.onLine) {
+      try {
+        await offlineService.addToSyncQueue({
+          type: 'visitor_confirmation',
+          url: `/api/public/visitors/${token}/confirm`,
+          method: 'POST',
+          body: {
+            consent: { dataProcessing: true, privacyPolicy: true, marketing: false },
+            additionalInfo: {
+              purpose: additionalInfo.purpose || 'Personal Visit',
+              vehiclePlate: additionalInfo.vehiclePlate,
+              idNumber: additionalInfo.idNumber
+            }
+          }
+        });
+        setConfirmError('You are offline. Your confirmation has been saved and will be sent when you reconnect.');
+      } catch {
+        setConfirmError('Failed to save confirmation for offline sync.');
+      } finally {
+        setConfirmLoading(false);
+      }
+      return;
+    }
 
     try {
       const response = await fetch(`/api/public/visitors/${token}/confirm`, {
