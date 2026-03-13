@@ -1,3 +1,12 @@
+/**
+ * @deprecated Use intelligentNotificationService.js instead.
+ * This service is kept for backward compatibility. The intelligentNotificationService
+ * is the primary notification service with full feature set including batching,
+ * priority routing, and intelligent delivery.
+ *
+ * New consumers should import from intelligentNotificationService:
+ *   import intelligentNotificationService from './intelligentNotificationService';
+ */
 // Toast Notification Service
 import logger from 'utils/logger';
 

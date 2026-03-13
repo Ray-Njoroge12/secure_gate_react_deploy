@@ -1,4 +1,8 @@
 /**
+ * Primary notification service for SecureGate.
+ * This is the canonical notification service — prefer this over notificationService.js.
+ * Features: intelligent batching, priority routing, multi-channel delivery.
+ *
  * @file intelligentNotificationService.js
  * @description Client-side service for intelligent notification management
  * Features:
