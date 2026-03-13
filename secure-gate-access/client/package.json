@@ -28,7 +28,7 @@
     "test:playwright:headed": "playwright test --headed",
     "test:playwright:debug": "playwright test --debug",
     "test:playwright:report": "playwright show-report",
-    "test:a11y": "playwright test accessibility.spec.js"
+    "test:a11y": "react-scripts test --testPathPattern='a11y' --watchAll=false"
   },
   "dependencies": {
     "@sentry/react": "^7.120.4",
