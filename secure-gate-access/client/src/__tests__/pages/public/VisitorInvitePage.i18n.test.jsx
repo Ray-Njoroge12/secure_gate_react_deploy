@@ -18,6 +18,12 @@ jest.mock('../../../hooks/useVisitorInvite', () => ({
   })
 }));
 
+// Mock offlineService to avoid IndexedDB in tests
+jest.mock('../../../services/offlineService', () => ({
+  __esModule: true,
+  default: { addToSyncQueue: jest.fn().mockResolvedValue(true) }
+}));
+
 // Mock dependencies that VisitorInvitePage imports
 jest.mock('qrcode.react', () => ({
   QRCodeSVG: (props) => <svg data-testid="qr-svg" {...props} />
