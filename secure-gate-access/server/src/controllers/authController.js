@@ -5,6 +5,7 @@
 import { randomBytes } from 'crypto';
 import { userService } from '../services/userService.js';
 import { tokenService } from '../services/tokenService.js';
+import { dbManager } from '../database/db.enhanced.js';
 import loggingService from '../services/loggingService.js';
 import emailService from '../services/emailService.js';
 import { maskEmail } from '../utils/redaction.js';
@@ -125,7 +126,7 @@ export const login = async (req, res) => {
 
     const platform = getClientPlatform(req);
     const isWeb = platform === 'web';
-    const { accessToken, refreshToken, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
+    const { accessToken, refreshToken, jti, refreshJti, expiresIn, tokenType } = tokenService.generateTokens(user);
 
     const refreshInfo = tokenService.getTokenInfo(refreshToken);
     const refreshExpiresAt = refreshInfo?.exp ? new Date(refreshInfo.exp * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -134,6 +135,26 @@ export const login = async (req, res) => {
         userAgent: req.get('User-Agent'),
         ipAddress: req.ip
     });
+
+    // Track session in user_sessions for admin visibility
+    try {
+        const accessExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+        await dbManager.query(
+            `INSERT INTO user_sessions (user_id, token_id, ip_address, user_agent, expires_at)
+             VALUES ($1, $2, $3::INET, $4, $5)
+             ON CONFLICT (token_id) DO NOTHING`,
+            [
+                user.id,
+                jti,
+                req.ip || null,
+                req.get('User-Agent') || null,
+                accessExpiry
+            ]
+        );
+    } catch (sessionErr) {
+        // Non-fatal: session tracking failure should not block login
+        loggingService.warn('Failed to record session in user_sessions', { error: sessionErr.message, userId: user.id });
+    }
 
     if (isWeb) {
         const cookieOptions = getCookieOptions();
@@ -293,6 +314,18 @@ export const logout = async (req, res) => {
 
     if (accessToken) await tokenService.revokeToken(accessToken);
     if (refreshToken) await tokenService.revokeRefreshToken(refreshToken);
+
+    // Remove session from user_sessions if tracked
+    try {
+        if (req.user?.jti) {
+            await dbManager.query(
+                'DELETE FROM user_sessions WHERE token_id = $1',
+                [req.user.jti]
+            );
+        }
+    } catch (sessionErr) {
+        loggingService.warn('Failed to remove session from user_sessions', { error: sessionErr.message });
+    }
 
     res.clearCookie('accessToken', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
