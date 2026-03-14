@@ -7,6 +7,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import logger from 'utils/logger';
 
+const CONSENT_VERSION = '1.1';
+
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
 import { Checkbox } from './ui/Checkbox';
@@ -40,7 +42,13 @@ const CookieConsentBanner = () => {
     } else {
       try {
         const parsedConsent = JSON.parse(savedConsent);
-        setConsent(parsedConsent);
+        if (parsedConsent.version !== CONSENT_VERSION) {
+          // Privacy policy text has been updated — re-prompt user
+          localStorage.removeItem('cookieConsent');
+          setShowBanner(true);
+        } else {
+          setConsent(parsedConsent);
+        }
       } catch (error) {
         logger.error('Failed to parse saved consent:', error);
         setShowBanner(true);
@@ -78,8 +86,8 @@ const CookieConsentBanner = () => {
     try {
       setLoading(true);
       
-      // Save to localStorage
-      localStorage.setItem('cookieConsent', JSON.stringify(consentData));
+      // Save to localStorage with version so future policy updates can re-prompt
+      localStorage.setItem('cookieConsent', JSON.stringify({ ...consentData, version: CONSENT_VERSION }));
       localStorage.setItem('cookieConsentDate', new Date().toISOString());
       
       // Send to backend if user is authenticated (uses httpOnly cookies)
