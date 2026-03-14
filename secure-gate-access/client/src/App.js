@@ -26,6 +26,7 @@ import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; 
 import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
 import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
 import SessionExpiryToast from "./components/common/SessionExpiryToast.jsx";
+import SyncConflictListener from "./components/common/SyncConflictListener.jsx";
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
 import Loading from "./components/ui/Loading.jsx";
@@ -202,6 +203,7 @@ function App() {
             {/* Session Timeout Warning - Global (uses role-based configuration) */}
             <SessionTimeoutWarning />
             <SessionExpiryToast />
+            <SyncConflictListener />
             <OfflineRetryBanner />
             <RateLimitIndicator threshold={15} position="bottom-right" />
             <ErrorBoundary level="page">
