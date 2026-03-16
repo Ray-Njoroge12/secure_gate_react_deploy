@@ -71,7 +71,7 @@ const csvImportLimit = rateLimit({
  *             properties:
  *               operationType:
  *                 type: string
- *                 enum: [approve_users, reject_users, delete_users, approve_visitors, reject_visitors, send_notifications, update_status]
+ *                 enum: [approve_users, reject_users, delete_users, approve_visitors, reject_visitors, checkout_visitors, send_notifications, update_status]
  *                 description: Type of bulk operation to perform
  *                 example: approve_users
  *               itemIds:

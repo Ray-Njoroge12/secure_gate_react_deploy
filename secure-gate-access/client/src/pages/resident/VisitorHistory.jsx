@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import logger from 'utils/logger';
 
 import { Button, SearchFilter, Pagination, ResponsiveTable, PageHeader, Icon } from "../../components/ui";
+import Modal from "../../components/ui/Modal";
 import { useSearchData } from "../../hooks/useSearch";
 // import AppShell from "../../layouts/AppShell";
 // import { useCurrentRole } from "../../hooks/useCurrentRole";
@@ -17,6 +18,7 @@ export default function VisitorHistory() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedVisitor, setSelectedVisitor] = useState(null);
 
   // Search and filter configuration
   const searchFields = ['name', 'phone', 'email', 'status'];
@@ -49,6 +51,9 @@ export default function VisitorHistory() {
     }
   ];
 
+  // Sort state
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
   // Use search hook
   const {
     data: filteredRows,
@@ -58,6 +63,7 @@ export default function VisitorHistory() {
     setFilters,
     clearFilters,
     setPage,
+    setSort,
     isSearching,
     hasFilters,
     hasResults
@@ -152,16 +158,18 @@ export default function VisitorHistory() {
     }
   ];
 
-  // Handle sort
+  // Handle sort — toggle direction if same column, reset to asc for new column
   const handleSort = (columnKey, direction) => {
-    // Implement sorting logic here
-    logger.debug('Sort by:', columnKey, direction);
+    const newDirection = sortConfig.key === columnKey && sortConfig.direction === 'asc'
+      ? 'desc'
+      : (direction || 'asc');
+    setSortConfig({ key: columnKey, direction: newDirection });
+    setSort(columnKey, newDirection);
   };
 
-  // Handle row click
+  // Handle row click — open detail modal
   const handleRowClick = (row) => {
-    logger.debug('Row clicked:', row);
-    // Navigate to visitor details or show modal
+    setSelectedVisitor(row);
   };
 
   // Enhanced export functionality
@@ -412,6 +420,67 @@ export default function VisitorHistory() {
             </div>
           )}
         </div>
+
+        {/* Visitor Detail Modal */}
+        {selectedVisitor && (
+          <Modal
+            isOpen={!!selectedVisitor}
+            onClose={() => setSelectedVisitor(null)}
+            title="Visitor Details"
+            size="md"
+          >
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Name</p>
+                <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.name || 'Unknown'}</p>
+              </div>
+              {selectedVisitor.phone && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Phone</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.phone}</p>
+                </div>
+              )}
+              {selectedVisitor.email && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.email}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                <p className="font-medium text-gray-900 dark:text-white capitalize">
+                  {(selectedVisitor.status || 'Unknown').replace(/_/g, ' ')}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Visit Date</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {selectedVisitor.visit_date
+                    ? new Date(selectedVisitor.visit_date).toLocaleString()
+                    : selectedVisitor.check_in
+                      ? new Date(selectedVisitor.check_in).toLocaleString()
+                      : selectedVisitor.created_at
+                        ? new Date(selectedVisitor.created_at).toLocaleString()
+                        : 'N/A'}
+                </p>
+              </div>
+              {selectedVisitor.check_out && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Check-out</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {new Date(selectedVisitor.check_out).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {selectedVisitor.purpose && (
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Purpose</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedVisitor.purpose}</p>
+                </div>
+              )}
+            </div>
+          </Modal>
+        )}
       </div>
     // </AppShell>
   );

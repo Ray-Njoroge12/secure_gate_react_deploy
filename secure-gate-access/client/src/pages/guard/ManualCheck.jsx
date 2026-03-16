@@ -52,74 +52,25 @@ const ManualCheck = () => {
       setLoading('manualCheck', true, { message: 'Searching visitors...' });
       clearAllErrors();
 
-      // Check if search term is a 6-digit OTP
-      const isOTP = /^\d{6}$/.test(searchTerm.trim());
+      // Server-side search — the backend handles OTP (6-digit), name, phone, and invite code
+      const query = encodeURIComponent(searchTerm.trim());
+      const response = await fetch(`/api/visitors?search=${query}`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-      if (isOTP) {
-        // Search by OTP - find visitors with status otp_sent or pending
-        const response = await fetch('/api/visitors', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
+      if (response.ok) {
+        const data = await response.json();
+        const visitors = data.data || [];
+        setSearchResults(visitors);
 
-        if (response.ok) {
-          const data = await response.json();
-          const visitors = data.data || [];
-
-          // Filter for visitors awaiting OTP verification
-          const otpPending = visitors.filter((visitor) => {
-            const normalized = normalizeVisitorStatus(visitor.status);
-            return normalized === 'OTP_SENT' || normalized === 'PENDING';
-          });
-
-          // Try to verify OTP for each pending visitor
-          const verified = [];
-          for (const visitor of otpPending) {
-            try {
-              const otpResult = await verifyOtp(visitor.id, searchTerm.trim());
-              verified.push({
-                ...visitor,
-                status: otpResult?.status || 'verified',
-                _otpVerified: true
-              });
-              break; // Found the match
-            } catch (e) {
-              // OTP doesn't match this visitor, continue
-            }
-          }
-
-          if (verified.length > 0) {
-            setSearchResults(verified);
-            notificationService.success('OTP Verified', 'Visitor verified successfully');
-          } else {
-            setSearchResults([]);
-            handleError('Invalid OTP or OTP expired', { context: 'OTP Verification' });
-          }
+        if (/^\d{6}$/.test(searchTerm.trim()) && visitors.length > 0) {
+          notificationService.success('OTP Match', 'Visitor found by OTP');
         }
       } else {
-        // Regular search by name, phone, or invite code
-        const response = await fetch('/api/visitors', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const visitors = data.data || [];
-
-          const query = searchTerm.toLowerCase();
-          const filtered = visitors.filter((visitor) =>
-            visitor.name?.toLowerCase().includes(query) ||
-            visitor.phone?.includes(searchTerm) ||
-            visitor.invite_code?.toLowerCase().includes(query)
-          );
-
-          setSearchResults(filtered);
-        } else {
-          const error = new Error('Failed to fetch visitors');
-          error.response = { status: response.status };
-          throw error;
-        }
+        const error = new Error('Failed to search visitors');
+        error.response = { status: response.status };
+        throw error;
       }
     } catch (err) {
       handleApiError(err, 'Manual Check Search');

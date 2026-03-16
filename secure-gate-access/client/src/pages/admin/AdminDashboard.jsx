@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useI18n } from "../../i18n/index.js";
 import { useCurrentRole } from "../../hooks/useCurrentRole";
 // AppShell removed - handled by Layout Route
 import AdminMetrics from '../../components/admin/AdminMetrics.jsx';
@@ -28,6 +29,7 @@ import ManageGuards from './ManageGuards';
 import ManageResidents from './ManageResidents';
 import VisitorLog from './VisitorLog';
 import Reports from './Reports';
+import AuditLogs from './AuditLogs';
 import Settings from './Settings';
 import Table from '../../components/Table';
 import Button from '../../components/ui/Button';
@@ -37,6 +39,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   const [searchParams] = useSearchParams();
   const { logout } = useAuth();
   const role = useCurrentRole();
+  const { t } = useI18n();
   const selectedSiteId = searchParams.get('siteId');
 
   // Metrics state
@@ -110,13 +113,14 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   }, [initialTab]);
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'approvals', label: 'User Approvals' },
-    { id: 'guards', label: 'Guards' },
-    { id: 'residents', label: 'Residents' },
-    { id: 'visitors', label: 'Visitor Logs' },
-    { id: 'reports', label: 'Reports' },
-    { id: 'settings', label: 'Settings' }
+    { id: 'overview', label: t('dashboard.admin.overview') },
+    { id: 'approvals', label: t('dashboard.admin.approvals') },
+    { id: 'guards', label: t('dashboard.admin.guards') },
+    { id: 'residents', label: t('dashboard.admin.residents') },
+    { id: 'visitors', label: t('dashboard.admin.visitorLogs') },
+    { id: 'reports', label: t('dashboard.admin.reports') },
+    { id: 'audit', label: t('dashboard.admin.auditLogs') },
+    { id: 'settings', label: t('dashboard.admin.settings') }
   ];
 
   useEffect(() => {
@@ -272,7 +276,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
       disabled={retryingJobId === item.id}
     >
-      {retryingJobId === item.id ? 'Retrying...' : 'Retry'}
+      {retryingJobId === item.id ? t('dashboard.admin.retrying') : t('dashboard.admin.retry')}
     </Button>
   ]);
 
@@ -299,7 +303,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            Admin Dashboard
+            {t('dashboard.admin.adminDashboard')}
             {currentEstate && !isSuperAdmin && (
               <span className="text-sm font-normal px-3 py-1 bg-brand-100 dark:bg-brand-900/30 text-brand-800 dark:text-brand-300 rounded-full border border-brand-200 dark:border-brand-700">
                 {currentEstate.name}
@@ -319,7 +323,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   }
                 }}
               >
-                <option value="">Select Estate</option>
+                <option value="">{t('dashboard.admin.selectEstate')}</option>
                 {availableEstates.map(est => (
                   <option key={est.id} value={est.id}>{est.name}</option>
                 ))}
@@ -327,7 +331,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             )}
             <span className={`text-xs px-2 py-1 rounded-full ${role === 'super_admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
               }`}>
-              {role === 'super_admin' ? 'Super Admin' : 'Administrator'}
+              {role === 'super_admin' ? t('dashboard.admin.superAdmin') : t('dashboard.admin.administrator')}
             </span>
           </h1>
         </div>
@@ -339,7 +343,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             onClick={() => navigate('/dashboard/admin/help/security')}
             className="flex items-center px-4 py-2 text-sm font-medium"
           >
-            Security Help
+            {t('dashboard.common.securityHelp')}
           </Button>
           {role === 'super_admin' && (
             <Button
@@ -348,7 +352,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               onClick={() => navigate('/dashboard/super-admin')}
               className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
             >
-              ← Back to Global Dashboard
+              ← {t('dashboard.admin.backToGlobalDashboard')}
             </Button>
           )}
         </div>
@@ -393,7 +397,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           >
             {/* Quick Actions Panel */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm p-6 text-white">
-              <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('dashboard.admin.quickActions')}</h2>
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="ghost"
@@ -401,7 +405,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   onClick={() => navigate(appendSiteId('/dashboard/admin/approvals'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
-                  ✓ Approve Users
+                  ✓ {t('dashboard.admin.approveUsers')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -409,7 +413,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   onClick={() => navigate(appendSiteId('/dashboard/admin/visitors'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
-                  📋 View Today's Visitors
+                  📋 {t('dashboard.admin.viewTodaysVisitors')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -417,7 +421,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   onClick={() => navigate(appendSiteId('/dashboard/admin/residents'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
-                  🏠 Manage Residents
+                  🏠 {t('dashboard.admin.manageResidents')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -425,7 +429,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   onClick={() => navigate(appendSiteId('/dashboard/admin/reports'))}
                   className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
                 >
-                  📊 Generate Reports
+                  📊 {t('dashboard.admin.generateReports')}
                 </Button>
               </div>
             </div>
@@ -437,7 +441,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${queueError ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                Notification System Status
+                {t('dashboard.admin.notificationSystemStatus')}
               </h3>
 
               {queueError ? (
@@ -447,15 +451,15 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-300 text-sm">Active Jobs</span>
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">{t('dashboard.admin.activeJobs')}</span>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.active || 0}</div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-300 text-sm">Completed</span>
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">{t('dashboard.admin.completed')}</span>
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">{queueStats?.completed || 0}</div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
-                    <span className="text-gray-500 dark:text-gray-300 text-sm">Failed</span>
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">{t('dashboard.admin.failed')}</span>
                     <div className="text-2xl font-bold text-red-600">{queueStats?.failed || 0}</div>
                   </div>
                 </div>
@@ -485,7 +489,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
       {
         activeTab === 'approvals' && (
           <div id="admin-tabpanel-approvals" role="tabpanel" aria-labelledby="admin-tab-approvals" className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">User Account Approvals</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">{t('dashboard.admin.userAccountApprovals')}</h3>
             <AdminUserApprovals siteId={currentEstate?.id} />
           </div>
         )
@@ -517,6 +521,14 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
         activeTab === 'reports' && (
           <div id="admin-tabpanel-reports" role="tabpanel" aria-labelledby="admin-tab-reports">
             <Reports estateId={currentEstate?.id} />
+          </div>
+        )
+      }
+
+      {
+        activeTab === 'audit' && (
+          <div id="admin-tabpanel-audit" role="tabpanel" aria-labelledby="admin-tab-audit">
+            <AuditLogs />
           </div>
         )
       }

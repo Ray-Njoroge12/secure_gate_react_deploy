@@ -7,6 +7,7 @@ import QRCodeDisplay from '../components/QRCodeDisplay';
 import { Badge, Button, Card, Input, Loading, StatusAnnouncement } from '../components/ui';
 import { completeInvite, getPublicInvite } from '../services/visitorService';
 import { handleApiError, mapSuccessMessage } from '../utils/errorMapper';
+import { useI18n } from '../i18n/index.js';
 
 // Calendar generation utilities
 const generateICSFile = (eventData) => {
@@ -195,6 +196,7 @@ const AddToCalendarButton = ({ inviteData, visitorName }) => {
 
 export default function GuestInvite() {
   const { inviteCode } = useParams();
+  const { t } = useI18n();
 
   const [loading, setLoading] = useState(true);
   const [inviteData, setInviteData] = useState(null);
@@ -326,7 +328,7 @@ export default function GuestInvite() {
       <div className="max-w-xs xs:max-w-sm sm:max-w-md md:max-w-lg mx-auto">
         <Card>
           <Card.Header>
-            <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white text-center">Guest Invitation</h1>
+            <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white text-center">{t('visitor.guestInvitation')}</h1>
             {inviteData && (
               <div className="mt-3 xs:mt-4 text-center">
                 <Badge variant="info" className="mb-2 text-xs xs:text-sm">
@@ -371,7 +373,7 @@ export default function GuestInvite() {
                 {/* Visitor Details */}
                 <Card className="bg-gray-50 dark:bg-slate-800/50">
                   <Card.Header>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Your Visit Details</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{t('visitor.yourVisitDetails')}</h3>
                   </Card.Header>
                   <Card.Content>
                     <div className="text-sm text-gray-600 dark:text-gray-200 space-y-2">
@@ -396,8 +398,8 @@ export default function GuestInvite() {
                 </Card>
 
                 <div className="text-sm text-gray-600 dark:text-gray-200 bg-blue-50 p-3 rounded-md">
-                  <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">Entry Instructions:</p>
-                  <p>Present the QR code above at the gate, or provide the OTP to security.</p>
+                  <p className="font-medium text-blue-800 dark:text-blue-300 mb-1">{t('visitor.entryInstructions')}</p>
+                  <p>{t('visitor.entryInstructionsMsg')}</p>
                 </div>
 
                 {/* Add to Calendar Button */}
@@ -414,7 +416,7 @@ export default function GuestInvite() {
                   className="w-full min-h-touch"
                   size="lg"
                 >
-                  Register Another Guest
+                  {t('visitor.registerAnotherGuest')}
                 </Button>
               </div>
             )}
@@ -430,7 +432,7 @@ export default function GuestInvite() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <Input
-                    label="Full Name"
+                    label={t('visitor.fullName')}
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
@@ -445,7 +447,7 @@ export default function GuestInvite() {
                   />
 
                   <Input
-                    label="Phone Number"
+                    label={t('visitor.phoneNumber')}
                     name="phone"
                     type="tel"
                     value={formData.phone}
@@ -460,7 +462,7 @@ export default function GuestInvite() {
                   />
 
                   <Input
-                    label="Email Address"
+                    label={t('visitor.emailAddress')}
                     name="email"
                     type="email"
                     value={formData.email}
@@ -476,7 +478,7 @@ export default function GuestInvite() {
                   />
 
                   <Input
-                    label="ID / Passport Number"
+                    label={t('visitor.idPassportNumber')}
                     name="idNumber"
                     value={formData.idNumber}
                     onChange={handleInputChange}
@@ -491,7 +493,7 @@ export default function GuestInvite() {
                   />
 
                   <Input
-                    label="Vehicle Registration (Optional)"
+                    label={t('visitor.vehicleRegistration')}
                     name="vehiclePlate"
                     value={formData.vehiclePlate}
                     onChange={handleInputChange}
@@ -515,7 +517,7 @@ export default function GuestInvite() {
                       className="mt-1 h-4 w-4 text-brand-600 border-gray-300 dark:border-slate-600 rounded focus:ring-brand-500"
                     />
                     <label htmlFor="consent" className="text-sm text-gray-600 dark:text-gray-200">
-                      I consent to the collection and processing of my personal data for visitor registration and estate access management, in accordance with the Kenya Data Protection Act 2019.
+                      {t('visitor.kdpaConsent')}
                     </label>
                   </div>
 
@@ -527,7 +529,7 @@ export default function GuestInvite() {
                     loading={submitting}
                     className="w-full min-h-touch"
                   >
-                    Complete Invitation
+                    {t('visitor.completeInvitation')}
                   </Button>
                 </form>
 
@@ -544,7 +546,7 @@ export default function GuestInvite() {
 
           <Card.Footer>
             <div className="text-center text-xs text-gray-500 dark:text-gray-300">
-              Powered by SecureGate Access System
+              {t('visitor.poweredBy')}
             </div>
           </Card.Footer>
         </Card>

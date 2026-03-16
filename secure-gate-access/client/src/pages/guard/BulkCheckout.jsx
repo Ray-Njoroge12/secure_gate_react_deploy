@@ -187,36 +187,26 @@ export default function BulkCheckout() {
     try {
       setLoading('performCheckout', true);
 
-      const results = { success: 0, failed: 0, errors: [] };
+      // Single bulk API call instead of N individual calls
+      const res = await fetch('/api/bulk-operations/execute', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operationType: 'checkout_visitors',
+          itemIds: Array.from(selectedIds)
+        })
+      });
 
-      // Process each checkout
-      for (const visitorId of selectedIds) {
-        try {
-          const res = await fetch(`/api/visitors/${visitorId}/check-out`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-          });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Bulk checkout failed');
 
-          const json = await res.json();
-
-          if (json.success) {
-            results.success++;
-          } else {
-            results.failed++;
-            results.errors.push({
-              id: visitorId,
-              error: json.error || 'Unknown error'
-            });
-          }
-        } catch (error) {
-          results.failed++;
-          results.errors.push({
-            id: visitorId,
-            error: error.message
-          });
-        }
-      }
+      const bulkResults = json.data?.results || json.results || {};
+      const results = {
+        success: Array.isArray(bulkResults.success) ? bulkResults.success.length : (bulkResults.success || 0),
+        failed: Array.isArray(bulkResults.failed) ? bulkResults.failed.length : (bulkResults.failed || 0),
+        errors: Array.isArray(bulkResults.failed) ? bulkResults.failed : []
+      };
 
       setCheckoutResults(results);
       setSelectedIds(new Set());
@@ -237,40 +227,28 @@ export default function BulkCheckout() {
     try {
       setLoading('eodCheckout', true);
 
-      // Select all visitors for EOD
-      const allIds = new Set(activeVisitors.map(v => v.id));
-      const results = { success: 0, failed: 0, errors: [] };
+      // Single bulk API call for EOD checkout of all visitors
+      const allIds = activeVisitors.map(v => v.id);
+      const res = await fetch('/api/bulk-operations/execute', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operationType: 'checkout_visitors',
+          itemIds: allIds,
+          data: { notes: `EOD Checkout - ${eodNotes || 'End of day batch checkout'}` }
+        })
+      });
 
-      for (const visitorId of allIds) {
-        try {
-          const res = await fetch(`/api/visitors/${visitorId}/check-out`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              notes: `EOD Checkout - ${eodNotes || 'End of day batch checkout'}`
-            })
-          });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'EOD checkout failed');
 
-          const json = await res.json();
-
-          if (json.success) {
-            results.success++;
-          } else {
-            results.failed++;
-            results.errors.push({
-              id: visitorId,
-              error: json.error || 'Unknown error'
-            });
-          }
-        } catch (error) {
-          results.failed++;
-          results.errors.push({
-            id: visitorId,
-            error: error.message
-          });
-        }
-      }
+      const bulkResults = json.data?.results || json.results || {};
+      const results = {
+        success: Array.isArray(bulkResults.success) ? bulkResults.success.length : (bulkResults.success || 0),
+        failed: Array.isArray(bulkResults.failed) ? bulkResults.failed.length : (bulkResults.failed || 0),
+        errors: Array.isArray(bulkResults.failed) ? bulkResults.failed : []
+      };
 
       setCheckoutResults(results);
       setShowEODConfirm(false);

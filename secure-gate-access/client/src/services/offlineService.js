@@ -1559,6 +1559,23 @@ class OfflineService {
     }
   }
 
+  // ==================== SYNC QUEUE ====================
+
+  async addToSyncQueue(action) {
+    const db = this.db || await this.initDatabase();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('syncQueue', 'readwrite');
+      const store = tx.objectStore('syncQueue');
+      const request = store.add({
+        ...action,
+        timestamp: Date.now(),
+        synced: false
+      });
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   // ==================== CLEANUP ====================
 
   async clearOldCache() {

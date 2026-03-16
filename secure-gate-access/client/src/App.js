@@ -25,6 +25,8 @@ import ErrorQueue from "./components/ErrorQueue.jsx";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
 import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
 import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
+import SessionExpiryToast from "./components/common/SessionExpiryToast.jsx";
+import SyncConflictListener from "./components/common/SyncConflictListener.jsx";
 import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
 import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
 import Loading from "./components/ui/Loading.jsx";
@@ -91,6 +93,14 @@ const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
 const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
 const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
 const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
+const WatchlistManagement = lazy(() => import("./pages/admin/WatchlistManagement.jsx"));
+const RoleManagement = lazy(() => import("./pages/admin/RoleManagement.jsx"));
+const AccessControl = lazy(() => import("./pages/admin/AccessControl.jsx"));
+const PolicyManagement = lazy(() => import("./pages/admin/PolicyManagement.jsx"));
+const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
+const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
+const AdminOperationsDashboard = lazy(() => import("./pages/admin/AdminOperationsDashboard.jsx"));
+const AuditLogs = lazy(() => import("./pages/admin/AuditLogs.jsx"));
 // NotificationPreferences and ActivityDashboard removed - files missing
 // const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
 // const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
@@ -192,6 +202,8 @@ function App() {
 
             {/* Session Timeout Warning - Global (uses role-based configuration) */}
             <SessionTimeoutWarning />
+            <SessionExpiryToast />
+            <SyncConflictListener />
             <OfflineRetryBanner />
             <RateLimitIndicator threshold={15} position="bottom-right" />
             <ErrorBoundary level="page">
@@ -754,6 +766,48 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
+
+                      {/* Admin management pages */}
+                      <Route path="/admin/watchlist" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Watchlist Management"><WatchlistManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/roles" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Role Management"><RoleManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/access-control" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Access Control"><AccessControl /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/policies" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Policy Management"><PolicyManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/sites" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Site Management"><SiteManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/incidents" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Incident Management"><IncidentManagement /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/operations" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Operations Dashboard"><AdminOperationsDashboard /></AppShell>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/audit-logs" element={
+                        <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                          <AppShell role="admin" title="Audit Logs"><AuditLogs /></AppShell>
+                        </ProtectedRoute>
+                      } />
 
                       {/* Catch-all route for unmatched paths */}
                       <Route path="*" element={<Navigate to="/login" replace />} />
