@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 
+import api from '../../utils/apiClient';
 import { Card, Button } from '../ui';
 import Icon from '../ui/Icon';
 
@@ -41,48 +42,6 @@ const VisitorInsights = () => {
     };
   }, []);
 
-  // Fetch with retry and exponential backoff
-  const fetchWithRetry = useCallback(async (url, options, maxRetries = 3) => {
-    let lastError;
-    
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const response = await fetch(url, options);
-        
-        // Handle rate limiting
-        if (response.status === 429) {
-          const retryAfter = response.headers.get('Retry-After') || 5;
-          if (attempt < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-            continue;
-          }
-        }
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        
-        return await response.json();
-      } catch (err) {
-        lastError = err;
-        
-        // Don't retry if offline
-        if (!navigator.onLine) {
-          throw new Error('You are offline');
-        }
-        
-        // Exponential backoff
-        if (attempt < maxRetries) {
-          await new Promise(resolve => 
-            setTimeout(resolve, Math.pow(2, attempt) * 1000)
-          );
-        }
-      }
-    }
-    
-    throw lastError;
-  }, []);
-
   const fetchInsights = useCallback(async () => {
     // Don't fetch if offline
     if (!navigator.onLine) {
@@ -102,27 +61,16 @@ const VisitorInsights = () => {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       
       const formatDate = (date) => date.toISOString().split('T')[0];
-      const fetchOptions = { 
-        method: 'GET', 
-        credentials: 'include', 
-        headers: { 'Content-Type': 'application/json' } 
-      };
 
-      // Fetch all data in parallel with retry logic
-      const [weekData, monthData, onPremiseData] = await Promise.all([
-        fetchWithRetry(
-          `/api/visitors?fromDate=${formatDate(weekAgo)}&toDate=${formatDate(now)}&limit=100`,
-          fetchOptions
-        ),
-        fetchWithRetry(
-          `/api/visitors?fromDate=${formatDate(monthAgo)}&toDate=${formatDate(now)}&limit=100`,
-          fetchOptions
-        ),
-        fetchWithRetry(
-          `/api/visitors?status=on_premise&limit=100`,
-          fetchOptions
-        )
+      // Fetch all data in parallel
+      const [weekRes, monthRes, onPremiseRes] = await Promise.all([
+        api.get(`/api/visitors?fromDate=${formatDate(weekAgo)}&toDate=${formatDate(now)}&limit=100`),
+        api.get(`/api/visitors?fromDate=${formatDate(monthAgo)}&toDate=${formatDate(now)}&limit=100`),
+        api.get(`/api/visitors?status=on_premise&limit=100`)
       ]);
+      const weekData = weekRes.data;
+      const monthData = monthRes.data;
+      const onPremiseData = onPremiseRes.data;
 
       const getVisitors = (payload) => {
         if (Array.isArray(payload?.data)) {
@@ -173,7 +121,7 @@ const VisitorInsights = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchWithRetry]);
+  }, []);
 
   useEffect(() => {
     fetchInsights();

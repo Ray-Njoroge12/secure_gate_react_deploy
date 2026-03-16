@@ -27,6 +27,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 import { navigateTo } from '../../utils/appNavigation';
+import api from '../../utils/apiClient';
 
 // Relationship type options
 const RELATIONSHIP_TYPES = [
@@ -77,33 +78,18 @@ const FavoriteVisitors = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/resident/favorites', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await api.get('/api/resident/favorites');
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          setFavorites([]);
-          return;
-        }
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Your session has expired. Please log in again.');
-        }
-        
-        // For any other error (including database errors), show empty state instead of error
-        console.error('Error fetching favorites:', await response.text());
-        setFavorites([]);
-        return;
-      }
-
-      const data = await response.json();
+      const data = response.data;
       setFavorites(data.data?.favorites || []);
     } catch (err) {
       console.error('Error fetching favorites:', err);
-      // Only show error for auth issues, otherwise show empty state
-      if (err.message.includes('session has expired') || err.message.includes('log in')) {
-        setError(err.message);
+      if (err.response?.status === 404) {
+        setFavorites([]);
+        return;
+      }
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Your session has expired. Please log in again.');
       } else {
         setFavorites([]);
       }
@@ -115,12 +101,8 @@ const FavoriteVisitors = () => {
   const fetchHistory = async () => {
     try {
       setHistoryLoading(true);
-      const res = await fetch('/api/visitors', {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors');
+      const json = res.data;
       if (json?.success) {
         const visitors = Array.isArray(json.data) ? json.data : (json.data?.visitors || []);
         setHistoryVisitors(visitors);
@@ -207,23 +189,13 @@ const FavoriteVisitors = () => {
         ? `/api/resident/favorites/${editingFavorite.id}`
         : '/api/resident/favorites';
 
-      const response = await fetch(url, {
-        method: editingFavorite ? 'PUT' : 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save favorite');
-      }
+      await (editingFavorite ? api.put(url, formData) : api.post(url, formData));
 
       setIsModalOpen(false);
       fetchFavorites(); // Refresh list
     } catch (err) {
       console.error('Error saving favorite:', err);
-      toast.error(err.message);
+      toast.error(err.response?.data?.message || err.message);
     } finally {
       setSubmitting(false);
     }
@@ -232,21 +204,13 @@ const FavoriteVisitors = () => {
   // Handle delete
   const handleDelete = async (favoriteId) => {
     try {
-      const response = await fetch(`/api/resident/favorites/${favoriteId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete favorite');
-      }
+      await api.delete(`/api/resident/favorites/${favoriteId}`);
 
       setDeleteConfirm(null);
       fetchFavorites(); // Refresh list
     } catch (err) {
       console.error('Error deleting favorite:', err);
-      toast.error(err.message);
+      toast.error(err.response?.data?.message || err.message);
     }
   };
 

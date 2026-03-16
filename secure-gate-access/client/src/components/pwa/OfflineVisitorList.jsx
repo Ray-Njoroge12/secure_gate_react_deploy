@@ -1,6 +1,7 @@
 // Offline-capable Visitor List Component
 import React, { useState, useEffect, useContext } from 'react';
 import { PWAContext } from './PWAManager';
+import api from '../../utils/apiClient';
 import offlineService from '../../services/offlineService';
 import backgroundSyncService from '../../services/backgroundSyncService';
 import Button from '../ui/Button';
@@ -41,20 +42,13 @@ const OfflineVisitorList = ({
       if (pwaStatus.isOnline) {
         // Try to fetch from API first
         try {
-          const response = await fetch('/api/visitors?' + new URLSearchParams(filters), {
-            credentials: 'include'
-          });
+          const response = await api.get('/api/visitors?' + new URLSearchParams(filters));
+          const data = response.data;
+          visitorData = data.data?.visitors || data.visitors || [];
 
-          if (response.ok) {
-            const data = await response.json();
-            visitorData = data.data?.visitors || data.visitors || [];
-
-            // Cache the data for offline use
-            await offlineService.cacheVisitors(visitorData);
-            setCacheTimestamp(Date.now());
-          } else {
-            throw new Error('API request failed');
-          }
+          // Cache the data for offline use
+          await offlineService.cacheVisitors(visitorData);
+          setCacheTimestamp(Date.now());
         } catch (apiError) {
           console.warn('API request failed, falling back to cache:', apiError);
           visitorData = await offlineService.getCachedVisitors(filters);
@@ -86,22 +80,13 @@ const OfflineVisitorList = ({
       if (pwaStatus.isOnline) {
         // Try immediate action
         try {
-          const response = await fetch(`/api/visitors/${visitorId}/${action}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(data)
-          });
+          await api.post(`/api/visitors/${visitorId}/${action}`, data);
 
-          if (response.ok) {
-            // Update local state immediately
-            updateVisitorLocally(visitorId, action);
-            
-            if (onVisitorAction) {
-              onVisitorAction(visitorId, action, data);
-            }
-          } else {
-            throw new Error('Action failed');
+          // Update local state immediately
+          updateVisitorLocally(visitorId, action);
+          
+          if (onVisitorAction) {
+            onVisitorAction(visitorId, action, data);
           }
         } catch (apiError) {
           console.warn('API action failed, queuing for sync:', apiError);

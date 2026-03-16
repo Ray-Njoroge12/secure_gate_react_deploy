@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import logger from 'utils/logger';
 
 import { Button, SearchFilter, Pagination, ResponsiveTable, PageHeader, Icon } from "../../components/ui";
+import api from '../../utils/apiClient';
 import Modal from "../../components/ui/Modal";
 import { useSearchData } from "../../hooks/useSearch";
 // import AppShell from "../../layouts/AppShell";
@@ -91,15 +92,8 @@ export default function VisitorHistory() {
   async function fetchMine() {
     try {
       setLoading(true);
-      // Use httpOnly cookies for authentication
-      const res = await fetch('/api/visitors', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors');
+      const json = res.data;
       if (json?.success) {
         // Handle response format: { data: { visitors: [] } } or { data: [] }
         const visitors = Array.isArray(json.data)

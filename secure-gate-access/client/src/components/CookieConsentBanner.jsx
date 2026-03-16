@@ -5,15 +5,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import api from '../utils/apiClient';
 import logger from 'utils/logger';
-
-const CONSENT_VERSION = '1.1';
-
 import { Button } from './ui/Button';
 import { Card, CardContent } from './ui/Card';
 import { Checkbox } from './ui/Checkbox';
 import Icon from './ui/Icon';
 import { Label } from './ui/Label';
+
+const CONSENT_VERSION = '1.1';
 
 const CookieConsentBanner = () => {
   const location = useLocation();
@@ -92,19 +92,12 @@ const CookieConsentBanner = () => {
       
       // Send to backend if user is authenticated (uses httpOnly cookies)
       try {
-        await fetch('/api/compliance/consent', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
+        await api.post('/api/compliance/consent', {
             type: 'all',
             granted: true,
             version: '1.0',
             preferences: consentData
-          })
-        });
+          });
       } catch (error) {
         logger.error('Failed to save consent to backend:', error);
       }

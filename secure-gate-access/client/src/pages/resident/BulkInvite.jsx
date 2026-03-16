@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
 import { Button, Card, PageHeader, Icon } from "../../components/ui";
+import api from '../../utils/apiClient';
 
 // Helper to format date for input
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -48,22 +49,11 @@ const BulkInvite = () => {
     try {
       setLoading('bulkInvite', true);
 
-      const res = await fetch('/api/visitors/bulk-invite', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
+      const res = await api.post('/api/visitors/bulk-invite', formData);
 
-      const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.message || 'Failed to generate link');
-      }
-
-      if (json.success) {
-        setGeneratedLink(json.data.inviteLink);
-        setGeneratedCode(json.data.inviteCode);
+      if (res.data.success) {
+        setGeneratedLink(res.data.data.inviteLink);
+        setGeneratedCode(res.data.data.inviteCode);
         setCurrentStep(2);
       }
     } catch (err) {
