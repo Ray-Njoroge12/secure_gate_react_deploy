@@ -1,8 +1,10 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import GuardDashboard from '../../pages/guard/GuardDashboard.jsx';
 import { renderWithAuth } from '../../test-utils';
+import notificationService from '../../services/notificationService';
 
 jest.mock('../../layouts/AppShell', () => ({ children, title }) => (
   <div>
@@ -157,6 +159,38 @@ describe('GuardDashboard', () => {
     await waitFor(() => {
       expect(screen.queryAllByText(emptyStateText, { exact: false }).length).toBeGreaterThan(0);
     });
+
+    fetchSpy.mockRestore();
+  });
+
+  test('check-in failure shows persistent dismissible toast', async () => {
+    const user = userEvent.setup();
+    const fetchSpy = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: [{ id: 1, name: 'Visitor One', host: 'Host One', status: 'CONFIRMED' }]
+        })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: false, error: 'Gate denied' })
+      });
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/dashboard/guard" element={<GuardDashboard />} />
+      </Routes>,
+      { route: '/dashboard/guard', auth: { user: { id: 'g1', role: 'guard' } } }
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Check-in' })).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'Check-in' }));
+
+    expect(await screen.findByText(/Check-in failed:/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
+    expect(notificationService.error).not.toHaveBeenCalled();
 
     fetchSpy.mockRestore();
   });

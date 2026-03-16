@@ -171,6 +171,7 @@ describe('apiClient', () => {
   test('response interceptor handles 401 by redirecting to /login when refresh fails', async () => {
     process.env.NODE_ENV = 'development';
     window.location.pathname = '/dashboard/resident';
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
 
     axios.post.mockRejectedValue(new Error('refresh failed'));
 
@@ -183,10 +184,13 @@ describe('apiClient', () => {
 
     await expect(responseRejected(error)).rejects.toEqual({
       message: 'Your session has expired. Please log in again.',
-      code: 'UNAUTHORIZED'
+      code: 'UNAUTHORIZED',
+      status: 401
     });
 
     expect(authNavigation.navigateToLogin).toHaveBeenCalled();
+    expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'session-expired' }));
+    dispatchSpy.mockRestore();
   });
 
   test('response interceptor refreshes CSRF token and retries on CSRF errors', async () => {
@@ -243,7 +247,8 @@ describe('apiClient', () => {
 
     await expect(responseRejected(error)).rejects.toEqual({
       message: 'Access forbidden',
-      code: 'FORBIDDEN'
+      code: 'FORBIDDEN',
+      status: 403
     });
 
     expect(axios.get).not.toHaveBeenCalled();

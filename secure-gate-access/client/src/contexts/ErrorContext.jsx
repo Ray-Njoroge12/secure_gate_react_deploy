@@ -11,6 +11,12 @@ const ErrorContext = createContext();
 /**
  * Error Context Provider
  * Provides standardized error handling across the application
+ *
+ * Error channel guidance:
+ * - Field/form validation and authentication feedback should be shown inline in the local form.
+ * - Session expiry should come from apiClient 401 interception via the `session-expired` event flow.
+ * - Action failures requiring operator acknowledgement can use persistent/local toasts.
+ * - Unexpected server errors (5xx) can use the global error queue handlers in this context.
  */
 export const ErrorProvider = ({ children, options = {} }) => {
   const errorHandler = useErrorHandler(options);
