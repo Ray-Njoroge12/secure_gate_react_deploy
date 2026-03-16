@@ -3,11 +3,12 @@
 import { readdir } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { KNOWN_HISTORICAL_GAPS } from '../src/database/migrations/migrationNumbering.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const migrationsDir = join(__dirname, '../src/database/migrations');
-const knownHistoricalGaps = new Set([3, 4, 27, 28, 29]);
+const knownHistoricalGaps = new Set(KNOWN_HISTORICAL_GAPS);
 
 function parseNumericPrefix(filename) {
   const match = filename.match(/^(\d{3})_/);
@@ -37,6 +38,7 @@ async function run() {
 
   if (unexpectedGaps.length > 0) {
     console.log(`::warning::Unexpected migration number gaps detected: ${unexpectedGaps.join(', ')}`);
+    console.log('[migration-sequence-check] Warnings are non-blocking to allow investigation without breaking CI.');
   } else {
     console.log('[migration-sequence-check] No unexpected migration number gaps detected.');
   }

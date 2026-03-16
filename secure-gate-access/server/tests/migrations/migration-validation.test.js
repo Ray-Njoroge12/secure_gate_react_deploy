@@ -7,6 +7,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { KNOWN_HISTORICAL_GAPS } from '../../src/database/migrations/migrationNumbering.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,8 +32,6 @@ describe('Migration File Validation', () => {
 
   beforeAll(async () => {
     const files = await fs.readdir(MIGRATIONS_DIR);
-    const disabledFiles = files.filter(f => f.endsWith('.disabled'));
-    expect(disabledFiles).not.toContain('033_02_add_estates_and_tenant_scoping.sql.disabled');
     migrationFiles = files.filter(f => f.endsWith('.sql')).sort();
     sortedMigrations = [...migrationFiles].sort(migrationSort);
   });
@@ -95,7 +94,6 @@ describe('Migration File Validation', () => {
     });
 
     test('should preserve only the documented historical sequence gaps', () => {
-      const knownGaps = [3, 4, 27, 28, 29];
       const numericPrefixes = migrationFiles
         .filter(f => /^\d{3}_/.test(f))
         .map(f => Number.parseInt(f.slice(0, 3), 10));
@@ -108,7 +106,7 @@ describe('Migration File Validation', () => {
         }
       }
 
-      expect(missing).toEqual(knownGaps);
+      expect(missing).toEqual(KNOWN_HISTORICAL_GAPS);
     });
 
     test('should NOT have any files with duplicate 007 prefix', () => {
@@ -155,6 +153,21 @@ describe('Migration File Validation', () => {
         // Should contain CREATE TABLE statements
         expect(content).toMatch(/CREATE TABLE/i);
       }
+    });
+
+    test('active migrations should cover estates and tenant scoping changes', async () => {
+      const estatesMigration = await fs.readFile(
+        path.join(MIGRATIONS_DIR, '033_00_add_estates_table.sql'),
+        'utf8'
+      );
+      const tenantScopingMigration = await fs.readFile(
+        path.join(MIGRATIONS_DIR, '033_01_add_estate_id_to_users_visitors.sql'),
+        'utf8'
+      );
+
+      expect(estatesMigration).toMatch(/CREATE TABLE IF NOT EXISTS estates/i);
+      expect(tenantScopingMigration).toMatch(/ALTER TABLE users[\s\S]*?ADD COLUMN IF NOT EXISTS estate_id/i);
+      expect(tenantScopingMigration).toMatch(/ALTER TABLE visitors[\s\S]*?ADD COLUMN IF NOT EXISTS estate_id/i);
     });
 
     test('initial_schema should create core tables', async () => {
