@@ -15,6 +15,8 @@ import './SiteManagement.css';
 const SiteManagement = () => {
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingSite, setEditingSite] = useState(null);
   const closeModal = () => setShowModal(false);
@@ -67,18 +69,17 @@ const SiteManagement = () => {
       setShowModal(false);
       resetForm();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 
   const switchSite = async (siteId) => {
     try {
       await api.patch(`/api/admin/sites/${siteId}/switch`);
-
-      alert('Site switched successfully! Reloading page...');
-      window.location.reload();
+      setNotice('Site switched successfully! Reloading page...');
+      setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 
@@ -130,6 +131,8 @@ const SiteManagement = () => {
 
   return (
     <div className="site-management">
+      {error && <div role="alert" className="error-banner" style={{ color: 'red', padding: '8px', marginBottom: '8px' }}>{error}</div>}
+      {notice && <div role="status" className="notice-banner" style={{ color: 'green', padding: '8px', marginBottom: '8px' }}>{notice}</div>}
       <div className="site-header">
         <div className="header-left">
           <h1>🏢 Site Management</h1>

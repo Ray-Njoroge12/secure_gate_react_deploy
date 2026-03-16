@@ -377,7 +377,7 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSave }) => {
 export default function ManageResidents({ estateId }) {
   const role = useCurrentRole();
   const toast = useToast();
-  const confirm = useConfirmation();
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -487,8 +487,13 @@ export default function ManageResidents({ estateId }) {
   };
 
   const handleDeactivate = async (resident) => {
-    const confirmed = window.confirm(`Are you sure you want to deactivate ${resident.username}?`);
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: 'Deactivate Resident',
+      message: `Are you sure you want to deactivate ${resident.username}?`,
+      variant: 'warning',
+      confirmText: 'Deactivate',
+    });
+    if (!ok) return;
     
     try {
       await updateResident(resident.id, { status: 'inactive' }, estateParams);
@@ -505,8 +510,14 @@ export default function ManageResidents({ estateId }) {
   };
 
   const handleDeleteResident = async (resident) => {
-    const confirmed = window.confirm(`Are you sure you want to delete ${resident.username}? This action cannot be undone.`);
-    if (!confirmed) return;
+    const ok = await confirm({
+      title: 'Delete Resident',
+      message: `Are you sure you want to delete ${resident.username}? This action cannot be undone.`,
+      variant: 'danger',
+      confirmText: 'Delete',
+      requireDoubleConfirm: true,
+    });
+    if (!ok) return;
 
     try {
       await deleteResident(resident.id, estateParams);
@@ -843,6 +854,7 @@ export default function ManageResidents({ estateId }) {
         onClose={() => setAddModal(false)}
         onSave={handleAddResident}
       />
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }
