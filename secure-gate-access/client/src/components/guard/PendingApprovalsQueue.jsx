@@ -55,7 +55,7 @@ const PendingApprovalsQueue = () => {
 
   if (loading) {
     return (
-      <Card className="h-full flex items-center justify-center p-8">
+      <Card className="h-full flex items-center justify-center p-8" data-tour="pending-approvals">
         <div className="animate-spin text-blue-600">
           <Icon name="Clock" className="w-8 h-8" />
         </div>
