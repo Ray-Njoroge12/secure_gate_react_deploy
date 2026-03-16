@@ -7,6 +7,12 @@ import { useError } from "../contexts/ErrorContext.jsx";
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const AUTH_INLINE_ERROR_PATTERN = /invalid credentials|incorrect|locked|too many/i;
+const INLINE_ERROR_ALERT_CLASS = 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300';
+
+const shouldRenderInlineAuthError = (error, message) => {
+  return error?.code === 'UNAUTHORIZED' || error?.status === 401 || AUTH_INLINE_ERROR_PATTERN.test(String(message));
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -176,7 +182,7 @@ export default function LoginPage() {
     } catch (err) {
       const message = err?.message || 'Unable to sign in. Please try again.';
       const isRateLimited = err?.code === 'RATE_LIMITED' || err?.status === 429;
-      const isAuthError = err?.code === 'UNAUTHORIZED' || err?.status === 401 || /invalid credentials|incorrect|account locked|locked|too many/i.test(String(message));
+      const isAuthError = shouldRenderInlineAuthError(err, message);
 
       if (isRateLimited || isAuthError) {
         setAuthError(message);
@@ -315,7 +321,7 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
         {authError && (
-          <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+          <div role="alert" className={INLINE_ERROR_ALERT_CLASS}>
             <p>{authError}</p>
             {rateLimitSeconds > 0 && (
               <p className="mt-1 text-xs font-medium">Try again in {rateLimitSeconds}s.</p>
@@ -383,7 +389,7 @@ export default function LoginPage() {
         </p>
       </div>
       {forgotPasswordError && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+        <div role="alert" className={INLINE_ERROR_ALERT_CLASS}>
           {forgotPasswordError}
         </div>
       )}

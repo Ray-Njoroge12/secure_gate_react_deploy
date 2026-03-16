@@ -141,6 +141,62 @@ describe('LoginPage', () => {
     expect(errorHandlers.handleError).not.toHaveBeenCalled();
   });
 
+  test('login message-based auth error is shown inline in form', async () => {
+    const login = jest.fn().mockRejectedValue(new Error('Account locked. Contact admin.'));
+
+    const user = userEvent.setup();
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>,
+      { route: '/login', auth: { login, isAuthenticated: false, user: null } }
+    );
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    expect(login).toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Account locked. Contact admin.');
+    expect(errorHandlers.handleError).not.toHaveBeenCalled();
+  });
+
+  test('rate limited login shows inline countdown', async () => {
+    jest.useFakeTimers();
+    const login = jest.fn().mockRejectedValue({
+      message: 'Too many attempts',
+      code: 'RATE_LIMITED',
+      status: 429,
+      retryAfter: 12
+    });
+
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>,
+      { route: '/login', auth: { login, isAuthenticated: false, user: null } }
+    );
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    expect(await screen.findByText('Too many attempts')).toBeInTheDocument();
+    expect(screen.getByText('Try again in 12s.')).toBeInTheDocument();
+    expect(errorHandlers.handleError).not.toHaveBeenCalled();
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText('Try again in 11s.')).toBeInTheDocument();
+    jest.useRealTimers();
+  });
+
   test('login server error still uses global error handler', async () => {
     const login = jest.fn().mockRejectedValue({ message: 'Server error', code: 'SERVER_ERROR', status: 500 });
 
