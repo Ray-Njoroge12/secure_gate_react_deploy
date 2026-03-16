@@ -73,7 +73,7 @@ const SiteManagement = () => {
 
   const switchSite = async (siteId) => {
     try {
-      await api.get(`/api/admin/sites/${siteId}/switch`);
+      await api.patch(`/api/admin/sites/${siteId}/switch`);
 
       alert('Site switched successfully! Reloading page...');
       window.location.reload();

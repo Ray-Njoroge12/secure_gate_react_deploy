@@ -97,12 +97,12 @@ export default function SuperAdminDashboard() {
                     const errorData = overviewErr.response?.data || {};
                     
                     if (errorData.code === 'MFA_SETUP_REQUIRED' || errorData.error?.code === 'MFA_SETUP_REQUIRED') {
-                        navigate('/mfa/setup', { 
-                            state: { 
-                                message: 'Multi-Factor Authentication is required for SuperAdmin access. Please complete setup to continue.',
-                                returnUrl: '/dashboard/admin/super'
-                            } 
-                        });
+                        setMfaGateMessage(
+                            errorData.message ||
+                            'Multi-Factor Authentication is required for SuperAdmin access. Please complete MFA setup to continue.'
+                        );
+                        setHealth({ status: 'error', text: 'MFA Required' });
+                        setLoading(false);
                         return;
                     }
                     
@@ -152,12 +152,12 @@ export default function SuperAdminDashboard() {
     };
 
     useEffect(() => {
-        if (activeTab === 'health') {
+        if (activeTab === 'health' && !errorMessage && !mfaGateMessage) {
             fetchSystemMetrics();
             const interval = setInterval(fetchSystemMetrics, 30000); // Poll every 30s
             return () => clearInterval(interval);
         }
-    }, [activeTab]);
+    }, [activeTab, errorMessage, mfaGateMessage]);
 
 
 
