@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from '../../utils/apiClient';
 import logger from 'utils/logger';
 import { useAuth } from "../../contexts/AuthContext";
 import { useI18n } from "../../i18n/index.js";
@@ -101,11 +102,8 @@ export default function GuardDashboard() {
     try {
       setLoading('guardDashboard', true, { message: 'Loading active visitors...' });
       clearAllErrors();
-      const res = await fetch('/api/visitors/active', {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors/active');
+      const json = res.data;
       if (!json.success) throw new Error(json.error || 'Failed');
       setActive(json.data || []);
     } catch (e) {
@@ -217,13 +215,8 @@ export default function GuardDashboard() {
 
   async function postAction(id, action) {
     const url = `/api/visitors/${id}/${action}`;
-    const headers = { 'Content-Type': 'application/json' };
-    const res = await fetch(url, {
-      method: 'POST',
-      credentials: 'include',
-      headers
-    });
-    const json = await res.json();
+    const res = await api.post(url);
+    const json = res.data;
     if (!json.success) throw new Error(json.error || 'Action failed');
     await fetchActive();
     return json;

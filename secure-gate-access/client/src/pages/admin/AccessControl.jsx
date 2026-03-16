@@ -5,7 +5,6 @@
  */
 
 import React, { useEffect, useState, useCallback } from "react";
-import AppShell from "../../layouts/AppShell";
 import { Card, Button, Badge, Input, PageHeader, Skeleton, Modal } from "../../components/ui";
 import { SearchFilter, Pagination } from "../../components/ui";
 import { getAccessLogs } from "../../services/adminService";
@@ -384,7 +383,7 @@ export default function AccessControl() {
   };
 
   return (
-    <AppShell role={role} title="Access Control">
+    <>
       <PageHeader 
         title="Access Control"
         subtitle="Manage access cards and zone permissions"
@@ -568,6 +567,6 @@ export default function AccessControl() {
         onSave={handleSaveCard}
         mode={modalMode}
       />
-    </AppShell>
+    </> 
   );
 }

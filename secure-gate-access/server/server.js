@@ -51,7 +51,7 @@ import { startDataRetentionScheduler, stopDataRetentionScheduler } from './src/s
 // Import WebSocket service for Phase 2.3 real-time features
 import webSocketService from './src/services/websocketService.js';
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 // Enhanced error handling for unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {

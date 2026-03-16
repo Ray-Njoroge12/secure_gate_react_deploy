@@ -6,6 +6,7 @@ import { EnhancedLoading } from "../components/ui/EnhancedLoading.jsx";
 import { StatsCard } from "../components/StatsCard.jsx";
 import { PageHeader } from "../components/PageHeader.jsx";
 import Button from "../components/ui/Button";
+import api from "../utils/apiClient";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -30,20 +31,8 @@ export default function Dashboard() {
     
     setLoading(true);
     try {
-      // BUG-007 FIX: Use credentials: 'include' for httpOnly cookies instead of localStorage token
-      const response = await fetch(`/api/dashboard/${user.role}`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to load dashboard data');
-      }
-      
-      const data = await response.json();
-      setDashboardData(data);
+      const response = await api.get(`/api/dashboard/${user.role}`);
+      setDashboardData(response.data);
     } catch (error) {
       handleError('Failed to load dashboard data', {
         context: 'Dashboard',
