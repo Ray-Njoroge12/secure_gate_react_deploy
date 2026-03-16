@@ -71,39 +71,11 @@ export default function SuperAdminDashboard() {
         try {
             setLoading(true);
             setErrorMessage(null);
-            const headers = {
-                'Content-Type': 'application/json'
-            };
 
             // 1. Get Overview Stats
-            const overviewRes = await fetch(`${API_BASE_URL}/api/admin/super-admin/overview`, {
-                headers,
-                credentials: 'include'
-            });
-
-            if (overviewRes.status === 401 || overviewRes.status === 403) {
-                // Check if it's an MFA setup requirement
-                const errorData = await overviewRes.json().catch(() => ({}));
-                
-                if (errorData.code === 'MFA_SETUP_REQUIRED' || errorData.error?.code === 'MFA_SETUP_REQUIRED') {
-                    // Redirect to MFA setup
-                    navigate('/mfa/setup', { 
-                        state: { 
-                            message: 'Multi-Factor Authentication is required for SuperAdmin access. Please complete setup to continue.',
-                            returnUrl: '/dashboard/admin/super'
-                        } 
-                    });
-                    return;
-                }
-                
-                setHealth({ status: 'error', text: 'Auth Failed' });
-                setErrorMessage(errorData.message || 'Session expired. Please login again.');
-                if (overviewRes.status === 401) logout(); // Auto logout on 401
-                return;
-            }
-
-            if (overviewRes.ok) {
-                const data = await overviewRes.json();
+            try {
+                const overviewRes = await api.get(`${API_BASE_URL}/api/admin/super-admin/overview`);
+                const data = overviewRes.data;
                 if (data.success && data.data) {
                     setStats(data.data.stats || {
                         totalEstates: 0,
@@ -116,23 +88,41 @@ export default function SuperAdminDashboard() {
                     setStats(data.stats);
                     if (data.systemHealth) setHealth({ status: 'healthy', text: 'Operational' });
                 }
-            } else {
+            } catch (overviewErr) {
+                const status = overviewErr.response?.status;
+                if (status === 401 || status === 403) {
+                    const errorData = overviewErr.response?.data || {};
+                    
+                    if (errorData.code === 'MFA_SETUP_REQUIRED' || errorData.error?.code === 'MFA_SETUP_REQUIRED') {
+                        navigate('/mfa/setup', { 
+                            state: { 
+                                message: 'Multi-Factor Authentication is required for SuperAdmin access. Please complete setup to continue.',
+                                returnUrl: '/dashboard/admin/super'
+                            } 
+                        });
+                        return;
+                    }
+                    
+                    setHealth({ status: 'error', text: 'Auth Failed' });
+                    setErrorMessage(errorData.message || 'Session expired. Please login again.');
+                    if (status === 401) logout();
+                    return;
+                }
                 setHealth({ status: 'error', text: 'API Error' });
                 setErrorMessage('Unable to load platform overview. Please retry.');
             }
 
             // 2. Get Estates List
-            const estatesRes = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates`, {
-                headers,
-                credentials: 'include'
-            });
-            if (estatesRes.ok) {
-                const data = await estatesRes.json();
+            try {
+                const estatesRes = await api.get(`${API_BASE_URL}/api/admin/super-admin/estates`);
+                const data = estatesRes.data;
                 if (data.success && data.data) {
                     setEstates(data.data || []);
                 } else if (Array.isArray(data)) {
                     setEstates(data);
                 }
+            } catch {
+                // Silently fail — estates list is non-critical here
             }
 
         } catch (err) {
@@ -150,16 +140,8 @@ export default function SuperAdminDashboard() {
 
     const fetchSystemMetrics = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/system/metrics`, {
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setSystemMetrics(data.data);
-            } else {
-                setErrorMessage('Failed to refresh system metrics.');
-            }
+            const res = await api.get(`${API_BASE_URL}/api/admin/super-admin/system/metrics`);
+            setSystemMetrics(res.data.data);
         } catch (err) {
             logger.error('SuperAdmin: Failed to fetch system metrics:', err);
             setErrorMessage('Failed to refresh system metrics.');
@@ -181,12 +163,8 @@ export default function SuperAdminDashboard() {
         setIsSearching(true);
         setErrorMessage(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/users/search?q=${encodeURIComponent(searchQuery)}`, {
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
-            });
-            if (!res.ok) throw new Error('Search failed');
-            const data = await res.json();
+            const res = await api.get(`${API_BASE_URL}/api/admin/super-admin/users/search?q=${encodeURIComponent(searchQuery)}`);
+            const data = res.data;
             const normalizedResults = Array.isArray(data?.data)
                 ? data.data
                 : Array.isArray(data)
@@ -231,25 +209,7 @@ export default function SuperAdminDashboard() {
             // Optimistic update
             setEstates(prev => prev.map(e => e.id === estateId ? { ...e, status: newStatus } : e));
 
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            const resText = await res.text();
-
-            if (!res.ok) {
-                try {
-                    const json = JSON.parse(resText);
-                    throw new Error(json.message || 'Failed to update status');
-                } catch (e) {
-                    throw new Error('Failed to update status: ' + resText);
-                }
-            }
+            await api.patch(`${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/status`, { status: newStatus });
 
             // Refresh real data to confirm
             fetchDashboardData();

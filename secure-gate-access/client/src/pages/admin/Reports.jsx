@@ -1,6 +1,7 @@
 // client/src/pages/admin/Reports.jsx
 import React from 'react';
 import Button from '../../components/ui/Button';
+import api from '../../utils/apiClient';
 
 export default function Reports({ estateId }) {
   const params = new URLSearchParams(window.location.search);
@@ -32,12 +33,8 @@ export default function Reports({ estateId }) {
   };
   const exportJson = async () => {
     const q = buildQuery();
-    const res = await fetch(`/api/visitors/reports?${q}&format=json`, {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const data = await res.json();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const res = await api.get(`/api/visitors/reports?${q}&format=json`);
+    const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = 'visitors.json'; a.click(); URL.revokeObjectURL(url);
   };
@@ -46,12 +43,12 @@ export default function Reports({ estateId }) {
     try {
       setLoading(true); setError('');
       const q = buildQuery();
-      const headers = { 'Content-Type': 'application/json' };
       const [resRows, resAgg] = await Promise.all([
-        fetch(`/api/visitors/reports?${q}&format=json`, { credentials: 'include', headers }),
-        fetch(`/api/visitors/reports?${q}&mode=aggregates`, { credentials: 'include', headers })
+        api.get(`/api/visitors/reports?${q}&format=json`),
+        api.get(`/api/visitors/reports?${q}&mode=aggregates`)
       ]);
-      const [jsonRows, jsonAgg] = await Promise.all([resRows.json(), resAgg.json()]);
+      const jsonRows = resRows.data;
+      const jsonAgg = resAgg.data;
 
       // Robust array extraction for rows
       let rowsData = [];
