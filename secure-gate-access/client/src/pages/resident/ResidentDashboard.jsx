@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import logger from 'utils/logger';
 import { useI18n } from "../../i18n/index.js";
+import api from '../../utils/apiClient';
 
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
 import OnboardingTour from "../../components/common/OnboardingTour";
@@ -110,17 +111,11 @@ const DashboardHome = () => {
       if (mfaDismissed) return;
 
       try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const userData = data.data || data.user || data;
-          if (userData && userData.mfa_enabled === false) {
-            setShowMfaBanner(true);
-          }
+        const response = await api.get('/api/auth/me');
+        const data = response.data;
+        const userData = data.data || data.user || data;
+        if (userData && userData.mfa_enabled === false) {
+          setShowMfaBanner(true);
         }
       } catch (error) {
         logger.error('Error checking MFA status:', error);
@@ -140,17 +135,10 @@ const DashboardHome = () => {
     try {
       startLoading({ message: 'Loading dashboard data...' });
 
-      // Fetch visitor data using httpOnly cookies
-      const response = await fetch('/api/visitors', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.get('/api/visitors');
 
-      if (response.ok) {
-        const data = await response.json();
+      {
+        const data = response.data;
         // Handle response format: { data: { visitors: [] } } or { data: [] }
         const visitors = Array.isArray(data.data)
           ? data.data
@@ -189,11 +177,6 @@ const DashboardHome = () => {
 
         setUpcomingInvites(upcoming);
         setRecentVisitors(recent);
-      } else {
-        logger.error('[ERROR] Failed to fetch visitor data:', response.status);
-        // Fallback to empty data
-        setUpcomingInvites([]);
-        setRecentVisitors([]);
       }
     } catch (error) {
       logger.error('[ERROR] Error fetching dashboard data:', error);

@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import api from '../../utils/apiClient';
 import {
   LineChart,
   Line,
@@ -151,12 +152,10 @@ const PerformanceAnalyticsDashboard = () => {
    */
   const fetchInitialData = async () => {
     try {
-      const response = await fetch('/api/admin/performance/metrics');
-      if (response.ok) {
-        const data = await response.json();
-        setMetrics(data.data);
-        setAlerts(data.data.alerts || []);
-      }
+      const response = await api.get('/api/admin/performance/metrics');
+      const data = response.data;
+      setMetrics(data.data);
+      setAlerts(data.data.alerts || []);
     } catch (error) {
       console.error('[PERFORMANCE] Error fetching initial data:', error);
     }

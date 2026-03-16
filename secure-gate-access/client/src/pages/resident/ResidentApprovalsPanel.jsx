@@ -13,6 +13,7 @@ import { useToast } from '../../contexts/ToastContext.jsx';
 import useWebSocket from '../../hooks/useWebSocket';
 import { handleApiError } from '../../utils/errorMapper';
 import pushNotificationService from '../../services/pushNotificationService.js';
+import api from '../../utils/apiClient';
 
 const ResidentApprovalsPanel = () => {
   const { user } = useAuth();
@@ -36,17 +37,9 @@ const ResidentApprovalsPanel = () => {
   // Fetch pending approvals from API
   const fetchPendingApprovals = useCallback(async () => {
     try {
-      const response = await fetch('/api/visitors/pending-approvals', {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await api.get('/api/visitors/pending-approvals');
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch pending approvals');
-      }
-
-      const result = await response.json();
+      const result = response.data;
       setPendingApprovals(result.data || []);
       setError('');
     } catch (err) {
@@ -108,16 +101,7 @@ const ResidentApprovalsPanel = () => {
     setSuccess('');
 
     try {
-      const response = await fetch(`/api/visitors/${visitorId}/approve`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to approve visitor');
-      }
+      await api.post(`/api/visitors/${visitorId}/approve`);
 
       // Remove from pending list
       setPendingApprovals(prev => prev.filter(a => a.id !== visitorId));
@@ -152,17 +136,7 @@ const ResidentApprovalsPanel = () => {
     setSuccess('');
 
     try {
-      const response = await fetch(`/api/visitors/${id}/reject`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: rejectReason || 'Not expecting this visitor' })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to reject visitor');
-      }
+      await api.post(`/api/visitors/${id}/reject`, { reason: rejectReason || 'Not expecting this visitor' });
 
       setPendingApprovals(prev => prev.filter(a => a.id !== id));
       toast.success(`${name} declined. Guard will be notified.`);
