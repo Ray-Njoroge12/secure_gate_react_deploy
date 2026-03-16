@@ -18,7 +18,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { startTour, isTourCompleted, resetTour, destroyActiveTour } from '../../services/tourService';
+import { startTour, isTourCompleted, shouldOfferTour, resetTour, destroyActiveTour } from '../../services/tourService';
 
 const OnboardingTour = ({
   role = 'resident',
@@ -31,7 +31,7 @@ const OnboardingTour = ({
 
   // Check if tour should be offered on mount
   useEffect(() => {
-    if (user && !isTourCompleted(role)) {
+    if (user && shouldOfferTour(role)) {
       // Delay showing the banner to let the page render first
       const timer = setTimeout(() => {
         setShowBanner(true);
@@ -39,21 +39,6 @@ const OnboardingTour = ({
       return () => clearTimeout(timer);
     }
   }, [role, user]);
-
-  // Support ?tour=true URL parameter to force-start a tour
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('tour') === 'true') {
-      const timer = setTimeout(() => {
-        handleStartTour();
-        // Clean the URL param without page reload
-        const url = new URL(window.location);
-        url.searchParams.delete('tour');
-        window.history.replaceState({}, '', url.toString());
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [role]);
 
   const handleStartTour = useCallback(() => {
     setShowBanner(false);
@@ -68,6 +53,21 @@ const OnboardingTour = ({
       },
     });
   }, [role, onComplete, onSkip]);
+
+  // Support ?tour=true URL parameter to force-start a tour
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tour') === 'true') {
+      const timer = setTimeout(() => {
+        handleStartTour();
+        // Clean the URL param without page reload
+        const url = new URL(window.location);
+        url.searchParams.delete('tour');
+        window.history.replaceState({}, '', url.toString());
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [handleStartTour]);
 
   const handleDismissBanner = useCallback(() => {
     setShowBanner(false);
@@ -147,10 +147,9 @@ export const useOnboardingTour = (role = 'resident') => {
 
   const handleRestartTour = useCallback(() => {
     resetTour(role);
-    // Small delay to let state clear
-    setTimeout(() => {
-      startTour(role);
-    }, 100);
+    const raf = window.requestAnimationFrame || ((callback) => setTimeout(callback, 16));
+    // Use two frames so route/layout updates have finished before driver queries DOM targets.
+    raf(() => raf(() => startTour(role)));
   }, [role]);
 
   return {
