@@ -7,6 +7,12 @@ import { useError } from "../contexts/ErrorContext.jsx";
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+const AUTH_INLINE_ERROR_PATTERN = /invalid credentials|incorrect|locked|too many/i;
+const INLINE_ERROR_ALERT_CLASS = 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300';
+
+const shouldRenderInlineAuthError = (error, message) => {
+  return error?.code === 'UNAUTHORIZED' || error?.status === 401 || AUTH_INLINE_ERROR_PATTERN.test(String(message));
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -23,6 +29,16 @@ export default function LoginPage() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [authError, setAuthError] = useState("");
+  const [forgotPasswordError, setForgotPasswordError] = useState("");
+  const [rateLimitSeconds, setRateLimitSeconds] = useState(0);
+
+  useEffect(() => {
+    if (rateLimitSeconds <= 0) return undefined;
+    const timer = setInterval(() => {
+      setRateLimitSeconds((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [rateLimitSeconds]);
 
   // Validation functions
   const validateEmail = (value) => {
@@ -69,6 +85,8 @@ export default function LoginPage() {
         setEmailError("");
         setPasswordError("");
         setAuthError("");
+        setForgotPasswordError("");
+        setRateLimitSeconds(0);
       }
     };
 
@@ -82,9 +100,10 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     clearAllErrors();
+    setAuthError("");
+    setRateLimitSeconds(0);
 
     // Validate inputs
-    setAuthError("");
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
 
@@ -161,11 +180,27 @@ export default function LoginPage() {
         }
       }, 100);
     } catch (err) {
-      const loginErrorMessage =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Unable to sign in. Please verify your details and try again.";
-      setAuthError(loginErrorMessage);
+      const message = err?.message || 'Unable to sign in. Please try again.';
+      const isRateLimited = err?.code === 'RATE_LIMITED' || err?.status === 429;
+      const isAuthError = shouldRenderInlineAuthError(err, message);
+
+      if (isRateLimited || isAuthError) {
+        setAuthError(message);
+        if (isRateLimited) {
+          const parsedRetryAfter = Number.parseInt(err?.retryAfter, 10);
+          if (Number.isFinite(parsedRetryAfter) && parsedRetryAfter > 0) {
+            setRateLimitSeconds(parsedRetryAfter);
+          }
+        }
+        return;
+      }
+
+      handleError(err, {
+        context: 'Login',
+        title: 'Login Failed',
+        showRecoveryActions: true,
+        onRetry: () => handleLogin(e)
+      });
     } finally {
       setLoading(false);
     }
@@ -175,7 +210,7 @@ export default function LoginPage() {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     clearAllErrors();
-    setAuthError("");
+    setForgotPasswordError("");
 
     if (!validateEmail(resetEmail)) {
       return;
@@ -194,12 +229,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        handleError(data.message || "Error sending reset link", {
-          context: 'Password Reset',
-          title: 'Reset Failed',
-          showRecoveryActions: true,
-          onRetry: () => handleForgotPassword(e)
-        });
+        setForgotPasswordError(data.message || "Error sending reset link");
         return;
       }
 
@@ -212,12 +242,7 @@ export default function LoginPage() {
       setResetEmail("");
       navigate('/login', { replace: true });
     } catch (err) {
-      handleError(err, {
-        context: 'Password Reset',
-        title: 'Server Error',
-        showRecoveryActions: true,
-        onRetry: () => handleForgotPassword(e)
-      });
+      setForgotPasswordError(err?.message || 'Error sending reset link');
     } finally {
       setLoading(false);
     }
@@ -270,7 +295,6 @@ export default function LoginPage() {
           onChange={(e) => {
             setEmail(e.target.value);
             if (emailError) validateEmail(e.target.value);
-            if (authError) setAuthError("");
           }}
           onBlur={(e) => validateEmail(e.target.value)}
           error={emailError}
@@ -288,7 +312,6 @@ export default function LoginPage() {
           onChange={(e) => {
             setPassword(e.target.value);
             if (passwordError) validatePassword(e.target.value);
-            if (authError) setAuthError("");
           }}
           onBlur={(e) => validatePassword(e.target.value)}
           error={passwordError}
@@ -298,11 +321,11 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
         {authError && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
-          >
-            {authError}
+          <div role="alert" className={INLINE_ERROR_ALERT_CLASS}>
+            <p>{authError}</p>
+            {rateLimitSeconds > 0 && (
+              <p className="mt-1 text-xs font-medium">Try again in {rateLimitSeconds}s.</p>
+            )}
           </div>
         )}
         <div className="flex items-center justify-between">
@@ -323,6 +346,8 @@ export default function LoginPage() {
               setEmailError("");
               setPasswordError("");
               setAuthError("");
+              setForgotPasswordError("");
+              setRateLimitSeconds(0);
               navigate('/forgot-password', { state: { prefillEmail: email.trim() } });
             }}
             className="h-auto min-h-0 p-0 text-sm font-medium text-brand-700 hover:bg-transparent hover:text-brand-800 dark:text-brand-400 dark:hover:bg-transparent dark:hover:text-brand-300"
@@ -363,6 +388,11 @@ export default function LoginPage() {
           Enter your email address and we'll send you a link to reset your password.
         </p>
       </div>
+      {forgotPasswordError && (
+        <div role="alert" className={INLINE_ERROR_ALERT_CLASS}>
+          {forgotPasswordError}
+        </div>
+      )}
 
       <FloatingLabelInput
         id="resetEmail"
@@ -398,8 +428,10 @@ export default function LoginPage() {
           onClick={() => {
             clearAllErrors();
             setEmailError("");
-            setAuthError("");
             setResetEmail("");
+            setForgotPasswordError("");
+            setAuthError("");
+            setRateLimitSeconds(0);
             navigate('/login');
           }}
           className="text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
