@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { Button, Icon } from '../ui';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
+import api from '../../utils/apiClient';
 
 const IncidentModal = ({ isOpen, onClose, visitor }) => {
   const { modalRef } = useModalAccessibility(isOpen, onClose);
@@ -51,24 +52,12 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
     try {
       setIsSubmitting(true);
 
-      const response = await fetch('/api/guard/incidents', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          visitorId: visitor?.id || null,
-          category: formData.category,
-          severity: formData.severity,
-          description: formData.description.trim()
-        })
+      await api.post('/api/guard/incidents', {
+        visitorId: visitor?.id || null,
+        category: formData.category,
+        severity: formData.severity,
+        description: formData.description.trim()
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to log incident');
-      }
 
       // Success
       onClose({ success: true, message: 'Incident logged successfully' });
@@ -81,7 +70,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
       });
 
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message);
     } finally {
       setIsSubmitting(false);
     }
