@@ -5,8 +5,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, Icon } from '../ui';
+
+import { Icon } from '../ui';
 import Button from '../ui/Button';
+import { fetchDashboardKPIs } from '../../services/guardService';
+import logger from '../../utils/logger';
 
 const DashboardKPIs = ({ onFilterClick }) => {
   const [kpis, setKpis] = useState({
@@ -18,58 +21,32 @@ const DashboardKPIs = ({ onFilterClick }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchKPIs();
+    let isMounted = true;
+
+    const loadKPIs = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchDashboardKPIs();
+        if (isMounted) {
+          setKpis(data);
+        }
+      } catch (error) {
+        logger.error('Failed to fetch KPIs:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadKPIs();
     // Refresh every 30 seconds
-    const interval = setInterval(fetchKPIs, 30000);
-    return () => clearInterval(interval);
+    const interval = setInterval(loadKPIs, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
-
-  const fetchKPIs = async () => {
-    try {
-      setLoading(true);
-      const today = new Date().toISOString().split('T')[0];
-
-      // Fetch all KPIs in parallel
-      const [onPremRes, arrivingRes, pendingRes, deniedRes] = await Promise.all([
-        fetch('/api/visitors?status=on_premise&limit=1', { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch(`/api/visitors?fromDate=${today}&toDate=${today}&status=approved&limit=1`, { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch('/api/visitors?status=pending_approval&limit=1', { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch(`/api/visitors?status=rejected&fromDate=${today}&toDate=${today}&limit=1`, { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        })
-      ]);
-
-      // Parse all responses
-      const [onPrem, arriving, pending, denied] = await Promise.all([
-        onPremRes.json(),
-        arrivingRes.json(),
-        pendingRes.json(),
-        deniedRes.json()
-      ]);
-
-      // Extract totals from pagination data
-      setKpis({
-        onPremise: onPrem.data?.pagination?.total || 0,
-        arrivingToday: arriving.data?.pagination?.total || 0,
-        pendingApproval: pending.data?.pagination?.total || 0,
-        deniedToday: denied.data?.pagination?.total || 0
-      });
-    } catch (error) {
-      console.error('Failed to fetch KPIs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const stats = [
     {
