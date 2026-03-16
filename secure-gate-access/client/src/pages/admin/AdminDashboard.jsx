@@ -187,7 +187,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadMetrics();
     const id = setInterval(loadMetrics, 30000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id, withEstateParams]); // Reload metrics when estate changes
+  }, [currentEstate?.id]); // Reload metrics when estate changes
 
   useEffect(() => {
     let cancelled = false;
@@ -218,7 +218,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadQueueData();
     const id = setInterval(loadQueueData, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id, withEstateParams]);
+  }, [currentEstate?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -243,7 +243,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
     loadHealthDetails();
     const id = setInterval(loadHealthDetails, 60000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [currentEstate?.id, withEstateParams]);
+  }, [currentEstate?.id]);
 
   const onLogout = async () => {
     await logout();
