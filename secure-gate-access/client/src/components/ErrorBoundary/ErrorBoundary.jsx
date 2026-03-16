@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import logger from 'utils/logger';
 import PropTypes from 'prop-types';
 import { v4 as uuidv4 } from 'uuid';
+import api from '../../utils/apiClient';
 import { navigateTo } from '../../utils/appNavigation';
 import './ErrorBoundary.css';
 import Button from '../ui/Button';
@@ -107,14 +108,7 @@ class ErrorBoundary extends Component {
 
     try {
       // Send to backend logging service using httpOnly cookies
-      await fetch('/api/logs/error', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(errorData)
-      });
+      await api.post('/api/logs/error', errorData);
     } catch (logError) {
       logger.error('Failed to log error:', logError);
     }

@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/apiClient';
 import { Card, Button, Badge, PageHeader, Icon, Skeleton, EmptyState } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -49,16 +50,9 @@ const IncidentList = () => {
         if (value) queryParams.append(key, value);
       });
 
-      const response = await fetch(`/api/guard/incidents?${queryParams}`, {
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setIncidents(result.data?.data || []);
-      } else {
-        throw new Error('Failed to fetch incidents');
-      }
+      const response = await api.get(`/api/guard/incidents?${queryParams}`);
+      const result = response.data;
+      setIncidents(result.data?.data || []);
     } catch (error) {
       setFetchError(error.message || 'Failed to load incidents. Please try again.');
       handleApiError(error, 'Incident List');

@@ -13,8 +13,6 @@ import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles/accessibility.css"; // WCAG 2.1 AA compliance styles
 import "./styles.css"; // Additional app styles
-// BUG-003 FIX: httpInterceptor removed - using httpOnly cookies instead
-// import "./utils/httpInterceptor.js"; // HTTP interceptor for automatic auth headers
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
 import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
@@ -101,9 +99,6 @@ const SiteManagement = lazy(() => import("./pages/admin/SiteManagement.jsx"));
 const IncidentManagement = lazy(() => import("./pages/admin/IncidentManagement.jsx"));
 const AdminOperationsDashboard = lazy(() => import("./pages/admin/AdminOperationsDashboard.jsx"));
 const AuditLogs = lazy(() => import("./pages/admin/AuditLogs.jsx"));
-// NotificationPreferences and ActivityDashboard removed - files missing
-// const NotificationPreferences = lazy(() => import("./pages/admin/NotificationPreferences.jsx"));
-// const ActivityDashboard = lazy(() => import("./pages/admin/ActivityDashboard.jsx"));
 
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));

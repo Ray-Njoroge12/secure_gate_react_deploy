@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import deliveryService from '../../services/deliveryService';
 import Button from '../ui/Button';
+import api from '../../utils/apiClient';
 
 const RegisterDelivery = ({ onSuccess, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -57,11 +58,9 @@ const RegisterDelivery = ({ onSuccess, onCancel }) => {
       // For now, using placeholder
 
       // Use guard-specific endpoint for fetching residents
-      const response = await fetch('/api/guard/residents');
-      if (response.ok) {
-        const data = await response.json();
-        setResidents(data.data || []);
-      }
+      const response = await api.get('/api/guard/residents');
+      const data = response.data;
+      setResidents(data.data || []);
     } catch (err) {
       console.error('Failed to load residents:', err);
     }

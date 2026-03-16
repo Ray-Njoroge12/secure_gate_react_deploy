@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/apiClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -159,10 +160,8 @@ export default function ActivityLog() {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       // Fetch visitor check-ins/check-outs
-      const visitorsRes = await fetch(`/api/visitors/history?start_date=${weekAgo}&end_date=${today}`, {
-        credentials: 'include'
-      });
-      const visitorsJson = await visitorsRes.json();
+      const visitorsRes = await api.get(`/api/visitors/history?start_date=${weekAgo}&end_date=${today}`);
+      const visitorsJson = visitorsRes.data;
 
       // Transform visitor data to activity format
       const visitorActivities = [];
@@ -211,10 +210,8 @@ export default function ActivityLog() {
       }
 
       // Fetch shifts for shift start/end activities
-      const shiftsRes = await fetch(`/api/guards/shifts?start_date=${weekAgo}&end_date=${today}`, {
-        credentials: 'include'
-      });
-      const shiftsJson = await shiftsRes.json();
+      const shiftsRes = await api.get(`/api/guards/shifts?start_date=${weekAgo}&end_date=${today}`);
+      const shiftsJson = shiftsRes.data;
 
       const shiftActivities = [];
       if (shiftsJson.success && shiftsJson.data) {

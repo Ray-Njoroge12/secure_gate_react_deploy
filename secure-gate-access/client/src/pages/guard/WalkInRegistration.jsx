@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import api from '../../utils/apiClient';
 import { Card, Button, PageHeader, Icon } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -157,22 +158,8 @@ const WalkInRegistration = () => {
       setLoading('walkInReg', true, { message: 'Registering walk-in visitor...' });
       safelyClearErrors();
 
-      const response = await fetch('/api/visitors/walk-in', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(walkInData)
-      });
-
-      if (!response.ok) {
-        const error = new Error('Failed to register walk-in visitor');
-        error.response = { status: response.status, data: await response.json() };
-        throw error;
-      }
-
-      const result = await response.json();
+      const response = await api.post('/api/visitors/walk-in', walkInData);
+      const result = response.data;
       const visitor = result.data || result;
 
       setRegisteredVisitor({ ...visitor, mode: 'online' });
@@ -244,23 +231,10 @@ const WalkInRegistration = () => {
     try {
       setLoading('approval', true, { message: 'Requesting resident approval...' });
 
-      const response = await fetch(`/api/visitors/${targetVisitor.id}/request-approval`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          reason: options.forceResend ? 'Follow-up approval reminder from guard' : 'Walk-in visitor at gate',
-          guardNotes: formData.purpose
-        })
+      const response = await api.post(`/api/visitors/${targetVisitor.id}/request-approval`, {
+        reason: options.forceResend ? 'Follow-up approval reminder from guard' : 'Walk-in visitor at gate',
+        guardNotes: formData.purpose
       });
-
-      if (!response.ok) {
-        const error = new Error('Failed to request approval');
-        error.response = { status: response.status };
-        throw error;
-      }
 
       // Update visitor status
       setRegisteredVisitor(prev => ({

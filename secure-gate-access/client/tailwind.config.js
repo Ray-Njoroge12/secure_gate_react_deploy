@@ -245,6 +245,25 @@ module.exports = {
         'xl': '1280px',
         '2xl': '1536px',
       },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideIn: {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        scaleIn: {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 200ms ease-out',
+        'slide-in': 'slideIn 200ms ease-out',
+        'scale-in': 'scaleIn 200ms ease-out',
+      },
     },
   },
   plugins: [
@@ -274,21 +293,6 @@ module.exports = {
         },
         '.rounded-smooth': {
           'border-radius': '8px',
-        },
-        '.bg-app': {
-          'background-color': '#0f172a',
-        },
-        '.bg-panel': {
-          'background-color': '#1e293b',
-        },
-        '.text-app': {
-          'color': '#e2e8f0',
-        },
-        '.text-muted': {
-          'color': '#94a3b8',
-        },
-        '.border-app': {
-          'border-color': '#334155',
         },
         '.bg-accent': {
           'background-color': '#10b981',
@@ -408,19 +412,4 @@ module.exports = {
       addUtilities(newUtilities);
     },
   ],
-  // Add keyframes for animations
-  keyframes: {
-    fadeIn: {
-      '0%': { opacity: '0' },
-      '100%': { opacity: '1' },
-    },
-    slideIn: {
-      '0%': { transform: 'translateY(-10px)', opacity: '0' },
-      '100%': { transform: 'translateY(0)', opacity: '1' },
-    },
-    scaleIn: {
-      '0%': { transform: 'scale(0.95)', opacity: '0' },
-      '100%': { transform: 'scale(1)', opacity: '1' },
-    },
-  },
 };

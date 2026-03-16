@@ -29,9 +29,9 @@ export default function Settings() {
 
   // Load profile from resident endpoint
   useEffect(() => {
-    fetch('/api/resident/profile', { method: 'GET', headers: { 'Content-Type': 'application/json' } })
-      .then(res => res.json())
-      .then(data => {
+    api.get('/api/resident/profile')
+      .then(res => {
+        const data = res.data;
         if (data?.data) {
           const user = data.data;
           setNotifications({
@@ -115,19 +115,15 @@ export default function Settings() {
         const first_name = nameParts[0] || '';
         const last_name = nameParts.slice(1).join(' ') || '';
         
-        const res = await fetch('/api/resident/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            first_name,
-            last_name,
-            email: profile.email,
-            phone: profile.phone,
-            area: profile.area,
-            unit_number: profile.house
-          })
+        const res = await api.put('/api/resident/profile', {
+          first_name,
+          last_name,
+          email: profile.email,
+          phone: profile.phone,
+          area: profile.area,
+          unit_number: profile.house
         });
-        const data = await res.json();
+        const data = res.data;
         console.log('Profile update response:', data);
         console.log('Returned data object:', data.data);
         if (data.success) {
@@ -165,16 +161,12 @@ export default function Settings() {
         }
 
         // Use auth endpoint for password change
-        const res = await fetch('/api/auth/change-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentPassword: passwords.old,
-            newPassword: passwords.new,
-            ...(mfaCode ? { mfaCode } : {})
-          })
+        const res = await api.post('/api/auth/change-password', {
+          currentPassword: passwords.old,
+          newPassword: passwords.new,
+          ...(mfaCode ? { mfaCode } : {})
         });
-        const data = await res.json();
+        const data = res.data;
         if (data.success) {
           setSuccess('Password changed successfully!');
           setPasswords({ old: "", new: "" });

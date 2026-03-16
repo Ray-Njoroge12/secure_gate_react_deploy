@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/apiClient';
 
 import QRScanner from '../../components/QRScanner';
 import { Card, Button, PageHeader, Icon } from '../../components/ui';
@@ -172,16 +173,9 @@ const ScanQR = () => {
       return;
     }
 
-    const response = await fetch(`/api/visitors/${visitorId}/check-in`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.ok) {
-      const result = await readJsonSafely(response);
+    try {
+      const response = await api.post(`/api/visitors/${visitorId}/check-in`);
+      const result = response.data;
       setScannedData({
         qrData,
         status: 'success',
@@ -189,32 +183,23 @@ const ScanQR = () => {
         visitorInfo: result.data || result,
         mode: 'online'
       });
-      return;
+    } catch (err) {
+      const errorData = err.response?.data || {};
+      setScannedData({
+        qrData,
+        status: 'error',
+        message: errorData.message || 'Check-in failed',
+        mode: 'online'
+      });
     }
-
-    const errorData = await readJsonSafely(response);
-    setScannedData({
-      qrData,
-      status: 'error',
-      message: errorData.message || 'Check-in failed',
-      mode: 'online'
-    });
   };
 
   const processOnlineCheckIn = async ({ visitorId, qrData, qrToken }) => {
     try {
       if (qrToken) {
-        const tokenResponse = await fetch('/api/qr/checkin', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ qrToken })
-        });
-
-        if (tokenResponse.ok) {
-          const result = await readJsonSafely(tokenResponse);
+        try {
+          const tokenResponse = await api.post('/api/qr/checkin', { qrToken });
+          const result = tokenResponse.data;
           setScannedData({
             qrData,
             status: 'success',
@@ -223,31 +208,32 @@ const ScanQR = () => {
             mode: 'online'
           });
           return;
-        }
+        } catch (tokenErr) {
+          const errorData = tokenErr.response?.data || {};
 
-        const errorData = await readJsonSafely(tokenResponse);
-        if (tokenResponse.status === 428) {
+          if (tokenErr.response?.status === 428) {
+            setScannedData({
+              qrData,
+              status: 'warning',
+              message: errorData.message || 'OTP required before check-in. Use Manual Check to verify OTP first.',
+              mode: 'online'
+            });
+            return;
+          }
+
+          if (visitorId) {
+            await processLegacyCheckIn(visitorId, qrData);
+            return;
+          }
+
           setScannedData({
             qrData,
-            status: 'warning',
-            message: errorData.message || 'OTP required before check-in. Use Manual Check to verify OTP first.',
+            status: 'error',
+            message: errorData.message || 'Check-in failed',
             mode: 'online'
           });
           return;
         }
-
-        if (visitorId) {
-          await processLegacyCheckIn(visitorId, qrData);
-          return;
-        }
-
-        setScannedData({
-          qrData,
-          status: 'error',
-          message: errorData.message || 'Check-in failed',
-          mode: 'online'
-        });
-        return;
       }
 
       await processLegacyCheckIn(visitorId, qrData);
