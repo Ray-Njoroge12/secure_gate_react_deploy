@@ -8,7 +8,7 @@
     "build": "echo 'No build step needed for backend'"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.11.0"
   },
   "dependencies": {
     "@byterover/cipher": "^0.3.0",

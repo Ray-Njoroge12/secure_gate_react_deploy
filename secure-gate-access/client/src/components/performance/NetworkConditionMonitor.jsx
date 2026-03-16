@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useContext, createContext } from 'react';
+import api from '../../utils/apiClient';
 import performanceService from '../../services/performanceService.js';
 import logger from '../../utils/logger.js';
 import './NetworkConditionMonitor.css';
@@ -190,10 +191,7 @@ export const NetworkProvider = ({ children }) => {
     const monitorPerformance = async () => {
       try {
         const startTime = performance.now();
-        const response = await fetch('/api/health', { 
-          method: 'HEAD',
-          cache: 'no-cache'
-        });
+        await api.get('/api/health');
         const endTime = performance.now();
         
         const actualRtt = endTime - startTime;
@@ -201,7 +199,7 @@ export const NetworkProvider = ({ children }) => {
         // Update performance metrics
         performanceService.recordMetric('network_performance', {
           rtt: actualRtt,
-          success: response.ok,
+          success: true,
           timestamp: Date.now()
         });
 

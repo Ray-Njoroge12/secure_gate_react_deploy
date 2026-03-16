@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../utils/apiClient';
 import { navigateTo } from '../../utils/appNavigation';
 import { Card, Button, PageHeader, Icon, Skeleton, EmptyState } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
@@ -54,23 +55,13 @@ const ManualCheck = () => {
 
       // Server-side search — the backend handles OTP (6-digit), name, phone, and invite code
       const query = encodeURIComponent(searchTerm.trim());
-      const response = await fetch(`/api/visitors?search=${query}`, {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await api.get(`/api/visitors?search=${query}`);
+      const data = response.data;
+      const visitors = data.data || [];
+      setSearchResults(visitors);
 
-      if (response.ok) {
-        const data = await response.json();
-        const visitors = data.data || [];
-        setSearchResults(visitors);
-
-        if (/^\d{6}$/.test(searchTerm.trim()) && visitors.length > 0) {
-          notificationService.success('OTP Match', 'Visitor found by OTP');
-        }
-      } else {
-        const error = new Error('Failed to search visitors');
-        error.response = { status: response.status };
-        throw error;
+      if (/^\d{6}$/.test(searchTerm.trim()) && visitors.length > 0) {
+        notificationService.success('OTP Match', 'Visitor found by OTP');
       }
     } catch (err) {
       handleApiError(err, 'Manual Check Search');
@@ -82,27 +73,14 @@ const ManualCheck = () => {
   const handleCheckIn = async (visitorId) => {
     try {
       setLoading('checkIn', true, { message: 'Checking in visitor...' });
-      const response = await fetch(`/api/visitors/${visitorId}/check-in`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        setSearchResults(prev =>
-          prev.map(v =>
-            v.id === visitorId
-              ? { ...v, status: 'on_premise', check_in: new Date().toISOString() }
-              : v
-          )
-        );
-      } else {
-        const error = new Error('Check-in failed');
-        error.response = { status: response.status, data: await response.json() };
-        throw error;
-      }
+      await api.post(`/api/visitors/${visitorId}/check-in`);
+      setSearchResults(prev =>
+        prev.map(v =>
+          v.id === visitorId
+            ? { ...v, status: 'on_premise', check_in: new Date().toISOString() }
+            : v
+        )
+      );
     } catch (err) {
       handleApiError(err, 'Visitor Check-in');
     } finally {
@@ -113,27 +91,14 @@ const ManualCheck = () => {
   const handleCheckOut = async (visitorId) => {
     try {
       setLoading('checkOut', true, { message: 'Checking out visitor...' });
-      const response = await fetch(`/api/visitors/${visitorId}/check-out`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        setSearchResults(prev =>
-          prev.map(v =>
-            v.id === visitorId
-              ? { ...v, status: 'checked_out', check_out: new Date().toISOString() }
-              : v
-          )
-        );
-      } else {
-        const error = new Error('Check-out failed');
-        error.response = { status: response.status, data: await response.json() };
-        throw error;
-      }
+      await api.post(`/api/visitors/${visitorId}/check-out`);
+      setSearchResults(prev =>
+        prev.map(v =>
+          v.id === visitorId
+            ? { ...v, status: 'checked_out', check_out: new Date().toISOString() }
+            : v
+        )
+      );
     } catch (err) {
       handleApiError(err, 'Visitor Check-out');
     } finally {

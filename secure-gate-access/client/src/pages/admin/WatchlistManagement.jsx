@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
+import api from '../../utils/apiClient';
 import './WatchlistManagement.css';
 
 const WatchlistManagement = () => {
@@ -43,11 +44,8 @@ const WatchlistManagement = () => {
   const fetchWatchlist = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/watchlist', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch watchlist');
-      
-      const data = await response.json();
-      setEntries(data.data || []);
+      const response = await api.get('/api/admin/watchlist');
+      setEntries(response.data.data || []);
     } catch (err) {
       console.error('Error fetching watchlist:', err);
     } finally {
@@ -57,11 +55,8 @@ const WatchlistManagement = () => {
 
   const fetchMatches = async () => {
     try {
-      const response = await fetch('/api/admin/watchlist/matches', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch matches');
-      
-      const data = await response.json();
-      setMatches(data.data || []);
+      const response = await api.get('/api/admin/watchlist/matches');
+      setMatches(response.data.data || []);
     } catch (err) {
       console.error('Error fetching matches:', err);
     }
@@ -75,16 +70,11 @@ const WatchlistManagement = () => {
         ? `/api/admin/watchlist/${editingEntry.id}`
         : '/api/admin/watchlist';
       
-      const method = editingEntry ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) throw new Error('Failed to save watchlist entry');
+      if (editingEntry) {
+        await api.put(url, formData);
+      } else {
+        await api.post(url, formData);
+      }
 
       await fetchWatchlist();
       setShowModal(false);
@@ -98,12 +88,7 @@ const WatchlistManagement = () => {
     if (!window.confirm('Are you sure you want to remove this entry from the watchlist?')) return;
 
     try {
-      const response = await fetch(`/api/admin/watchlist/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to delete entry');
+      await api.delete(`/api/admin/watchlist/${id}`);
       await fetchWatchlist();
     } catch (err) {
       alert('Error: ' + err.message);
@@ -112,14 +97,7 @@ const WatchlistManagement = () => {
 
   const toggleEntry = async (entry) => {
     try {
-      const response = await fetch(`/api/admin/watchlist/${entry.id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...entry, active: !entry.active })
-      });
-
-      if (!response.ok) throw new Error('Failed to toggle entry');
+      await api.put(`/api/admin/watchlist/${entry.id}`, { ...entry, active: !entry.active });
       await fetchWatchlist();
     } catch (err) {
       alert('Error: ' + err.message);

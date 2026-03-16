@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
+import api from '../../utils/apiClient';
 import './SiteManagement.css';
 
 const SiteManagement = () => {
@@ -38,11 +39,8 @@ const SiteManagement = () => {
   const fetchSites = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/sites', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch sites');
-      
-      const data = await response.json();
-      setSites(data.data || []);
+      const response = await api.get('/api/admin/sites');
+      setSites(response.data.data || []);
     } catch (err) {
       console.error('Error fetching sites:', err);
     } finally {
@@ -58,16 +56,11 @@ const SiteManagement = () => {
         ? `/api/admin/sites/${editingSite.id}`
         : '/api/admin/sites';
       
-      const method = editingSite ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) throw new Error('Failed to save site');
+      if (editingSite) {
+        await api.put(url, formData);
+      } else {
+        await api.post(url, formData);
+      }
 
       await fetchSites();
       setShowModal(false);
@@ -79,12 +72,7 @@ const SiteManagement = () => {
 
   const switchSite = async (siteId) => {
     try {
-      const response = await fetch(`/api/admin/sites/${siteId}/switch`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to switch site');
+      await api.get(`/api/admin/sites/${siteId}/switch`);
 
       alert('Site switched successfully! Reloading page...');
       window.location.reload();

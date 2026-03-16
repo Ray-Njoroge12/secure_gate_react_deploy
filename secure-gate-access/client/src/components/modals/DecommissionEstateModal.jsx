@@ -3,6 +3,7 @@ import Modal from '../ui/Modal';
 import GradientButton from '../ui/GradientButton';
 import Icon from '../ui/Icon';
 import Button from '../ui/Button';
+import api from '../../utils/apiClient';
 
 /**
  * DecommissionEstateModal
@@ -36,16 +37,11 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
         setFetchingImpact(true);
         setError(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}/decommission-impact`, {
-                credentials: 'include'
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.message || 'Failed to fetch impact summary');
-            }
+            const res = await api.get(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}/decommission-impact`);
+            const data = res.data;
             setImpact(data.data || data);
         } catch (err) {
-            setError(err.message || 'Failed to load impact data');
+            setError(err.response?.data?.message || err.message || 'Failed to load impact data');
         } finally {
             setFetchingImpact(false);
         }
@@ -64,25 +60,16 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ confirmationText, reason })
+            const res = await api.delete(`${API_BASE_URL}/api/admin/super-admin/estates/${estate.id}`, {
+                data: { confirmationText, reason }
             });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.message || 'Failed to decommission estate');
-            }
+            const data = res.data;
 
             onSuccess?.(data);
             onClose();
         } catch (err) {
-            // Show field-specific validation errors if available
-            const fieldError = err.errors?.[0]?.message;
-            setError(fieldError || err.message || 'Failed to decommission estate');
+            const fieldError = err.response?.data?.errors?.[0]?.message;
+            setError(fieldError || err.response?.data?.message || err.message || 'Failed to decommission estate');
         } finally {
             setLoading(false);
         }

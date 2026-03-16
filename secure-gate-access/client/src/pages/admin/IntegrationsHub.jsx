@@ -15,6 +15,7 @@ import Button from '../../components/ui/Button';
 import { useToast } from '../../contexts/ToastContext.jsx';
 import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
 import logger from '../../utils/logger.js';
+import api from '../../utils/apiClient';
 import './IntegrationsHub.css';
 
 const IntegrationsHub = () => {
@@ -75,11 +76,8 @@ const IntegrationsHub = () => {
   const fetchWebhooks = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/webhooks', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setWebhooks(data.data || []);
-      }
+      const response = await api.get('/api/admin/webhooks');
+      setWebhooks(response.data.data || []);
     } catch (err) {
       logger.error('IntegrationsHub:', err);
     } finally {
@@ -90,11 +88,8 @@ const IntegrationsHub = () => {
   const fetchAutomationRules = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/automations', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setAutomationRules(data.data || []);
-      }
+      const response = await api.get('/api/admin/automations');
+      setAutomationRules(response.data.data || []);
     } catch (err) {
       logger.error('IntegrationsHub:', err);
     } finally {
@@ -105,11 +100,8 @@ const IntegrationsHub = () => {
   const fetchAPIKeys = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/api-keys', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setApiKeys(data.data || []);
-      }
+      const response = await api.get('/api/admin/api-keys');
+      setApiKeys(response.data.data || []);
     } catch (err) {
       logger.error('IntegrationsHub:', err);
     } finally {
@@ -124,19 +116,16 @@ const IntegrationsHub = () => {
         ? `/api/admin/webhooks/${editingItem.id}`
         : '/api/admin/webhooks';
       
-      const method = editingItem ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...webhookForm,
-          headers: JSON.parse(webhookForm.headers)
-        })
-      });
+      const payload = {
+        ...webhookForm,
+        headers: JSON.parse(webhookForm.headers)
+      };
 
-      if (!response.ok) throw new Error('Failed to save webhook');
+      if (editingItem) {
+        await api.put(url, payload);
+      } else {
+        await api.post(url, payload);
+      }
 
       await fetchWebhooks();
       setShowModal(false);
@@ -153,20 +142,17 @@ const IntegrationsHub = () => {
         ? `/api/admin/automations/${editingItem.id}`
         : '/api/admin/automations';
       
-      const method = editingItem ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...automationForm,
-          conditions: JSON.parse(automationForm.conditions),
-          actions: JSON.parse(automationForm.actions)
-        })
-      });
+      const payload = {
+        ...automationForm,
+        conditions: JSON.parse(automationForm.conditions),
+        actions: JSON.parse(automationForm.actions)
+      };
 
-      if (!response.ok) throw new Error('Failed to save automation');
+      if (editingItem) {
+        await api.put(url, payload);
+      } else {
+        await api.post(url, payload);
+      }
 
       await fetchAutomationRules();
       setShowModal(false);
@@ -179,17 +165,8 @@ const IntegrationsHub = () => {
   const handleAPIKeyGenerate = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/admin/api-keys', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiKeyForm)
-      });
-
-      if (!response.ok) throw new Error('Failed to generate API key');
-
-      const data = await response.json();
-      setNewApiKey(data.data.api_key);
+      const response = await api.post('/api/admin/api-keys', apiKeyForm);
+      setNewApiKey(response.data.data.api_key);
       await fetchAPIKeys();
     } catch (err) {
       toast.error(err.message || 'An error occurred');
@@ -200,11 +177,7 @@ const IntegrationsHub = () => {
     const confirmed = await confirm({ variant: 'danger', title: 'Delete Webhook', message: 'Are you sure you want to delete this webhook?', confirmText: 'Delete' });
     if (!confirmed) return;
     try {
-      const response = await fetch(`/api/admin/webhooks/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to delete webhook');
+      await api.delete(`/api/admin/webhooks/${id}`);
       await fetchWebhooks();
     } catch (err) {
       toast.error(err.message || 'An error occurred');
@@ -215,11 +188,7 @@ const IntegrationsHub = () => {
     const confirmed = await confirm({ variant: 'danger', title: 'Delete Automation', message: 'Are you sure you want to delete this automation rule?', confirmText: 'Delete' });
     if (!confirmed) return;
     try {
-      const response = await fetch(`/api/admin/automations/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to delete automation');
+      await api.delete(`/api/admin/automations/${id}`);
       await fetchAutomationRules();
     } catch (err) {
       toast.error(err.message || 'An error occurred');
@@ -230,11 +199,7 @@ const IntegrationsHub = () => {
     const confirmed = await confirm({ variant: 'danger', title: 'Revoke API Key', message: 'Revoke this API key? This cannot be undone.', confirmText: 'Revoke' });
     if (!confirmed) return;
     try {
-      const response = await fetch(`/api/admin/api-keys/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to revoke API key');
+      await api.delete(`/api/admin/api-keys/${id}`);
       await fetchAPIKeys();
     } catch (err) {
       toast.error(err.message || 'An error occurred');
@@ -243,11 +208,7 @@ const IntegrationsHub = () => {
 
   const testWebhook = async (id) => {
     try {
-      const response = await fetch(`/api/admin/webhooks/${id}/test`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Test failed');
+      await api.post(`/api/admin/webhooks/${id}/test`);
       toast.success('Webhook test successful!');
     } catch (err) {
       toast.error('Test failed: ' + err.message);
