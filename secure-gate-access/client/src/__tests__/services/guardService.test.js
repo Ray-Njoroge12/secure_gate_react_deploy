@@ -26,6 +26,10 @@ describe('guardService', () => {
         jest.clearAllMocks();
     });
 
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
     describe('getVisitorHistory', () => {
         it('should fetch visitor history successfully', async () => {
             const mockData = { data: { data: [{ id: 1, name: 'John Doe' }] } };
@@ -140,6 +144,56 @@ describe('guardService', () => {
 
             expect(apiClient.get).toHaveBeenCalledWith('/api/guard/analytics', { params: {} });
             expect(result).toEqual(mockResponse.data);
+        });
+    });
+
+    describe('fetchDashboardKPIs', () => {
+        it('should fetch and normalize KPI totals from visitor endpoints', async () => {
+            jest.spyOn(Date.prototype, 'toISOString').mockReturnValue('2026-03-16T10:00:00.000Z');
+            apiClient.get
+                .mockResolvedValueOnce({ data: { data: { pagination: { total: 4 } } } })
+                .mockResolvedValueOnce({ data: { data: { pagination: { total: 7 } } } })
+                .mockResolvedValueOnce({ data: { data: { pagination: { total: 2 } } } })
+                .mockResolvedValueOnce({ data: { data: { pagination: { total: 1 } } } });
+
+            const result = await guardService.fetchDashboardKPIs();
+
+            expect(apiClient.get).toHaveBeenNthCalledWith(1, '/api/visitors?status=on_premise&limit=1');
+            expect(apiClient.get).toHaveBeenNthCalledWith(2, '/api/visitors?fromDate=2026-03-16&toDate=2026-03-16&status=approved&limit=1');
+            expect(apiClient.get).toHaveBeenNthCalledWith(3, '/api/visitors?status=pending_approval&limit=1');
+            expect(apiClient.get).toHaveBeenNthCalledWith(4, '/api/visitors?status=rejected&fromDate=2026-03-16&toDate=2026-03-16&limit=1');
+            expect(result).toEqual({
+                onPremise: 4,
+                arrivingToday: 7,
+                pendingApproval: 2,
+                deniedToday: 1
+            });
+        });
+
+        it('should fallback to zero totals when pagination data is missing', async () => {
+            apiClient.get
+                .mockResolvedValueOnce({ data: {} })
+                .mockResolvedValueOnce({ data: { data: {} } })
+                .mockResolvedValueOnce({ data: { pagination: {} } })
+                .mockResolvedValueOnce({ data: { data: { pagination: {} } } });
+
+            const result = await guardService.fetchDashboardKPIs();
+
+            expect(result).toEqual({
+                onPremise: 0,
+                arrivingToday: 0,
+                pendingApproval: 0,
+                deniedToday: 0
+            });
+        });
+
+        it('should throw when any KPI request fails', async () => {
+            const mockError = new Error('Request failed');
+            apiClient.get
+                .mockResolvedValueOnce({ data: { data: { pagination: { total: 4 } } } })
+                .mockRejectedValueOnce(mockError);
+
+            await expect(guardService.fetchDashboardKPIs()).rejects.toThrow(mockError);
         });
     });
 

@@ -110,6 +110,38 @@ export const getGuardAnalytics = async (params = {}) => {
 };
 
 /**
+ * Fetch dashboard KPI totals for guard dashboard cards
+ * @returns {Promise<Object>} KPI totals
+ */
+export const fetchDashboardKPIs = async () => {
+  const today = new Date().toISOString().split('T')[0];
+  // Visitor endpoints may return pagination under either data.pagination or data.data.pagination.
+  const extractTotal = (response) =>
+    response?.data?.data?.pagination?.total ??
+    response?.data?.pagination?.total ??
+    0;
+
+  try {
+    const [onPremRes, arrivingRes, pendingRes, deniedRes] = await Promise.all([
+      apiClient.get('/api/visitors?status=on_premise&limit=1'),
+      apiClient.get(`/api/visitors?fromDate=${today}&toDate=${today}&status=approved&limit=1`),
+      apiClient.get('/api/visitors?status=pending_approval&limit=1'),
+      apiClient.get(`/api/visitors?status=rejected&fromDate=${today}&toDate=${today}&limit=1`)
+    ]);
+
+    return {
+      onPremise: extractTotal(onPremRes),
+      arrivingToday: extractTotal(arrivingRes),
+      pendingApproval: extractTotal(pendingRes),
+      deniedToday: extractTotal(deniedRes)
+    };
+  } catch (error) {
+    logger.error('Failed to fetch dashboard KPIs:', error);
+    throw error;
+  }
+};
+
+/**
  * Get active visitors list
  * @returns {Promise<Array>} List of currently checked-in visitors
  */
@@ -166,6 +198,7 @@ export default {
   registerWalkIn,
   reportIncident,
   getGuardAnalytics,
+  fetchDashboardKPIs,
   getActiveVisitors,
   getPendingApprovals,
   processApproval
