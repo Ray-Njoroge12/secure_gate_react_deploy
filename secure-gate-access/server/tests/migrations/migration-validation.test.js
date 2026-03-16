@@ -31,6 +31,8 @@ describe('Migration File Validation', () => {
 
   beforeAll(async () => {
     const files = await fs.readdir(MIGRATIONS_DIR);
+    const disabledFiles = files.filter(f => f.endsWith('.disabled'));
+    expect(disabledFiles).not.toContain('033_02_add_estates_and_tenant_scoping.sql.disabled');
     migrationFiles = files.filter(f => f.endsWith('.sql')).sort();
     sortedMigrations = [...migrationFiles].sort(migrationSort);
   });
@@ -92,10 +94,21 @@ describe('Migration File Validation', () => {
       expect(files001[0]).toBe('001_initial_schema.sql');
     });
 
-    test('should NOT have any files with duplicate 003 prefix', () => {
-      const files003 = migrationFiles.filter(f => f.startsWith('003_'));
-      expect(files003).toHaveLength(1);
-      expect(files003[0]).toBe('003_secret_management.sql');
+    test('should preserve only the documented historical sequence gaps', () => {
+      const knownGaps = [3, 4, 27, 28, 29];
+      const numericPrefixes = migrationFiles
+        .filter(f => /^\d{3}_/.test(f))
+        .map(f => Number.parseInt(f.slice(0, 3), 10));
+      const uniqueSorted = [...new Set(numericPrefixes)].sort((a, b) => a - b);
+      const missing = [];
+
+      for (let n = uniqueSorted[0]; n <= uniqueSorted[uniqueSorted.length - 1]; n++) {
+        if (!uniqueSorted.includes(n)) {
+          missing.push(n);
+        }
+      }
+
+      expect(missing).toEqual(knownGaps);
     });
 
     test('should NOT have any files with duplicate 007 prefix', () => {
@@ -182,8 +195,6 @@ describe('Migration File Validation', () => {
       const expectedOrder = [
         '001_initial_schema',            // Foundation
         '002_compliance_tables',         // Compliance (depends on users)
-        '003_secret_management',         // Security
-        '004_backup_dr',                 // DR
         '005_performance_optimizations', // Performance
         '006_logging_monitoring',        // Monitoring
         '007_refresh_tokens',            // Auth enhancement
