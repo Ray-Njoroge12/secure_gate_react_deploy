@@ -23,7 +23,7 @@ Files with the `.disabled` suffix are **not executed** by the migration runner. 
 retained for historical reference only:
 
 - `033_02_add_estates_and_tenant_scoping.sql.disabled` — Superseded by `033_00_add_estates_table.sql`
-  and subsequent estate-scoping migrations (072, 075, 076). Retained for audit trail.
+  and subsequent estate-scoping migrations (072, 075, 076). Removed from the repository as part of cleanup.
 
 ## Adding New Migrations
 
