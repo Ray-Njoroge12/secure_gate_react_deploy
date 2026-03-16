@@ -5,10 +5,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, Icon } from '../ui';
-import Button from '../ui/Button';
+
 import api from '../../utils/apiClient';
 import logger from '../../utils/logger';
+import { Icon } from '../ui';
+import Button from '../ui/Button';
 
 const DashboardKPIs = ({ onFilterClick }) => {
   const [kpis, setKpis] = useState({
