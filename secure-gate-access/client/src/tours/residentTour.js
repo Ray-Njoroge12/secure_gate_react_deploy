@@ -1,7 +1,7 @@
 /**
  * @file tours/residentTour.js
  * @description Driver.js tour steps for the Resident role.
- * 8-step guided tour covering the core resident workflow.
+ * Dashboard-scoped tour covering the core resident workflow.
  */
 
 const residentTourSteps = [
@@ -42,39 +42,12 @@ const residentTourSteps = [
     },
   },
   {
-    element: '[data-tour="visitor-history"]',
+    element: '[data-tour="quick-actions"]',
     popover: {
-      title: 'Full Visitor History',
-      description: 'Every invitation, entry, and exit — fully audited and searchable. Track who visited and when.',
+      title: 'Quick Actions',
+      description: 'Jump straight to your most-used tools from here — invites, history, privacy controls, and favourites.',
       side: 'top',
       align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="approvals-panel"]',
-    popover: {
-      title: 'Walk-In Approvals',
-      description: 'When a guard at the gate needs your approval for an unexpected visitor, the request appears here in real time.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="auto-approval"]',
-    popover: {
-      title: 'Auto-Approval Rules',
-      description: 'Set trusted visitors who can enter without manual approval every time. Perfect for regular service providers.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
-    element: '[data-tour="settings"]',
-    popover: {
-      title: 'Notifications & Preferences',
-      description: 'Control how and when you\'re alerted — push notifications, SMS, email. Adjust your privacy and profile settings here.',
-      side: 'left',
-      align: 'start',
     },
   },
 ];
