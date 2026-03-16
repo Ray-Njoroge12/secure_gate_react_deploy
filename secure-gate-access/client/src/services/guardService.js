@@ -115,6 +115,7 @@ export const getGuardAnalytics = async (params = {}) => {
  */
 export const fetchDashboardKPIs = async () => {
   const today = new Date().toISOString().split('T')[0];
+  // Visitor endpoints may return pagination under either data.pagination or data.data.pagination.
   const extractTotal = (response) =>
     response?.data?.data?.pagination?.total ??
     response?.data?.pagination?.total ??

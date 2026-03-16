@@ -168,7 +168,6 @@ describe('guardService', () => {
                 pendingApproval: 2,
                 deniedToday: 1
             });
-
         });
 
         it('should fallback to zero totals when pagination data is missing', async () => {
