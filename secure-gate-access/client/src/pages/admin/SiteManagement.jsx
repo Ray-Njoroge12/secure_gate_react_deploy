@@ -9,6 +9,7 @@ import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 import './SiteManagement.css';
 
 const SiteManagement = () => {
@@ -42,7 +43,7 @@ const SiteManagement = () => {
       const response = await api.get('/api/admin/sites');
       setSites(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching sites:', err);
+      logger.error('Error fetching sites:', err);
     } finally {
       setLoading(false);
     }
