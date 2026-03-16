@@ -197,6 +197,26 @@ describe('Admin Operations Integration Tests', () => {
     });
   });
 
+  describe('GET /api/admin/access-logs - Access Log Retrieval', () => {
+    it('should return access logs payload for admin', async () => {
+      const response = await request(app)
+        .get('/api/admin/access-logs')
+        .set('Cookie', `token=${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    it('should deny access to non-admin users', async () => {
+      const response = await request(app)
+        .get('/api/admin/access-logs')
+        .set('Cookie', `token=${residentToken}`);
+
+      expect(response.status).toBe(403);
+    });
+  });
+
   describe('User Management', () => {
     describe('GET /api/admin/users - List Users', () => {
       it('should list all users for admin', async () => {
