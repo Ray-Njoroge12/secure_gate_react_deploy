@@ -119,7 +119,7 @@ describe('LoginPage', () => {
     expect(await screen.findByText('MFA Verify')).toBeInTheDocument();
   });
 
-  test('login error calls handleError', async () => {
+  test('login error is shown inline in the form', async () => {
     const login = jest.fn().mockRejectedValue(new Error('Invalid credentials'));
 
     const user = userEvent.setup();
@@ -137,7 +137,8 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     expect(login).toHaveBeenCalled();
-    expect(errorHandlers.handleError).toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid credentials');
+    expect(errorHandlers.handleError).not.toHaveBeenCalled();
   });
 
   test('forgot password flow calls API and returns to sign in', async () => {
