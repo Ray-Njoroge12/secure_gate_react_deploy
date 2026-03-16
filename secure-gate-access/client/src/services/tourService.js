@@ -9,6 +9,7 @@
 import { createDriver, residentTourSteps, guardTourSteps, adminTourSteps, visitorTourSteps } from '../tours';
 
 const TOUR_KEY_PREFIX = 'securegate-tour-completed-';
+const TOUR_SKIPPED_KEY_PREFIX = 'securegate-tour-skipped-';
 
 // Map roles to their tour step definitions
 const tourStepsMap = {
@@ -57,8 +58,7 @@ export function startTour(role, options = {}) {
         completeTour(role);
         if (onComplete) onComplete();
       } else {
-        // Skipped — still mark as completed so we don't nag
-        completeTour(role);
+        markTourSkipped(role);
         if (onSkip) onSkip();
       }
       activeDriver.destroy();
@@ -80,13 +80,71 @@ export function startTour(role, options = {}) {
 export function completeTour(role) {
   try {
     localStorage.setItem(`${TOUR_KEY_PREFIX}${role}`, 'completed');
+    localStorage.removeItem(`${TOUR_SKIPPED_KEY_PREFIX}${role}`);
   } catch (e) {
     console.warn('[tourService] Could not write to localStorage:', e);
   }
 }
 
 /**
- * Check if a tour has been completed (or skipped).
+ * Mark a tour as skipped in localStorage.
+ * Uses two states:
+ * - pending: skipped and should be re-offered once on next login
+ * - done: re-offer already consumed/skipped again
+ * @param {string} role
+ */
+export function markTourSkipped(role) {
+  try {
+    const completed = localStorage.getItem(`${TOUR_KEY_PREFIX}${role}`);
+    if (completed) {
+      return;
+    }
+
+    const key = `${TOUR_SKIPPED_KEY_PREFIX}${role}`;
+    const currentState = localStorage.getItem(key);
+
+    if (currentState === 'reoffered') {
+      localStorage.setItem(key, 'done');
+      return;
+    }
+
+    if (!currentState) {
+      localStorage.setItem(key, 'pending');
+    }
+  } catch (e) {
+    console.warn('[tourService] Could not write skip state to localStorage:', e);
+  }
+}
+
+/**
+ * Returns whether the tour should be auto-offered.
+ * If user previously skipped, it will be re-offered exactly once.
+ * @param {string} role
+ * @returns {boolean}
+ */
+export function shouldOfferTour(role) {
+  try {
+    const completed = localStorage.getItem(`${TOUR_KEY_PREFIX}${role}`);
+    if (completed) {
+      return false;
+    }
+
+    const skipKey = `${TOUR_SKIPPED_KEY_PREFIX}${role}`;
+    const skipState = localStorage.getItem(skipKey);
+
+    if (skipState === 'pending') {
+      localStorage.setItem(skipKey, 'reoffered');
+      return true;
+    }
+
+    return !skipState;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Check if a tour has been completed.
  * @param {string} role
  * @returns {boolean}
  */
@@ -106,6 +164,7 @@ export function isTourCompleted(role) {
 export function resetTour(role) {
   try {
     localStorage.removeItem(`${TOUR_KEY_PREFIX}${role}`);
+    localStorage.removeItem(`${TOUR_SKIPPED_KEY_PREFIX}${role}`);
   } catch (e) {
     console.warn('[tourService] Could not clear localStorage:', e);
   }
@@ -136,6 +195,8 @@ export function getAvailableRoles() {
 export default {
   startTour,
   completeTour,
+  markTourSkipped,
+  shouldOfferTour,
   isTourCompleted,
   resetTour,
   destroyActiveTour,

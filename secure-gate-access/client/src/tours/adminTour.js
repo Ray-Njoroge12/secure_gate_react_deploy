@@ -1,12 +1,17 @@
 /**
  * @file tours/adminTour.js
  * @description Driver.js tour steps for the Admin role.
- * 7-step guided tour covering estate administration features.
+ * 6-step guided tour covering estate administration features.
  */
+
+const switchToAdminTab = (tab) => {
+  window.dispatchEvent(new CustomEvent('securegate-tour-admin-tab', { detail: { tab } }));
+};
 
 const adminTourSteps = [
   {
     element: '[data-tour="admin-dashboard"]',
+    onHighlightStarted: () => switchToAdminTab('overview'),
     popover: {
       title: 'Estate Control Centre',
       description: 'Your estate-wide overview — active visitors, guard coverage, security alerts, and system health at a glance.',
@@ -16,6 +21,7 @@ const adminTourSteps = [
   },
   {
     element: '[data-tour="manage-guards"]',
+    onHighlightStarted: () => switchToAdminTab('guards'),
     popover: {
       title: 'Manage Guard Accounts',
       description: 'Create, edit, and deactivate guard accounts. Assign shifts and monitor guard activity across the estate.',
@@ -25,6 +31,7 @@ const adminTourSteps = [
   },
   {
     element: '[data-tour="manage-residents"]',
+    onHighlightStarted: () => switchToAdminTab('residents'),
     popover: {
       title: 'Manage Residents',
       description: 'Approve new resident registrations, manage existing accounts, and oversee unit assignments.',
@@ -34,6 +41,7 @@ const adminTourSteps = [
   },
   {
     element: '[data-tour="visitor-log"]',
+    onHighlightStarted: () => switchToAdminTab('visitors'),
     popover: {
       title: 'Complete Visitor Log',
       description: 'Full audit trail of every visitor across the estate — searchable, filterable, and exportable for compliance.',
@@ -42,16 +50,8 @@ const adminTourSteps = [
     },
   },
   {
-    element: '[data-tour="incident-management"]',
-    popover: {
-      title: 'Incident Management',
-      description: 'Review, escalate, and resolve security incidents reported by guards. Track resolution status and response times.',
-      side: 'top',
-      align: 'center',
-    },
-  },
-  {
     element: '[data-tour="reports"]',
+    onHighlightStarted: () => switchToAdminTab('reports'),
     popover: {
       title: 'Generate Reports',
       description: 'Visitor traffic patterns, incident summaries, guard activity logs — generate and export detailed reports.',
@@ -61,6 +61,7 @@ const adminTourSteps = [
   },
   {
     element: '[data-tour="system-settings"]',
+    onHighlightStarted: () => switchToAdminTab('settings'),
     popover: {
       title: 'System Settings & Integrations',
       description: 'Configure estate policies, SMS and email gateways, third-party integrations, and system-wide preferences.',

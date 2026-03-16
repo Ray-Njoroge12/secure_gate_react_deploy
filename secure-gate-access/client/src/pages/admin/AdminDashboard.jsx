@@ -124,6 +124,27 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
   ];
 
   useEffect(() => {
+    const tourSupportedTabs = new Set(['overview', 'guards', 'residents', 'visitors', 'reports', 'settings']);
+    const handleTourTabSwitch = (event) => {
+      if (!event?.detail) {
+        return;
+      }
+
+      const tab = event?.detail?.tab;
+      if (!tab || !tourSupportedTabs.has(tab)) {
+        return;
+      }
+
+      setActiveTab(tab);
+      const path = tab === 'overview' ? '/dashboard/admin' : `/dashboard/admin/${tab}`;
+      navigate(appendSiteId(path), { replace: true });
+    };
+
+    window.addEventListener('securegate-tour-admin-tab', handleTourTabSwitch);
+    return () => window.removeEventListener('securegate-tour-admin-tab', handleTourTabSwitch);
+  }, [appendSiteId, navigate]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function initializeEstateContext() {
