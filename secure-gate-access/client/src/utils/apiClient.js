@@ -172,10 +172,18 @@ apiClient.interceptors.response.use(
         navigateToLogin();
       }
       authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
+      window.dispatchEvent(new CustomEvent('session-expired', {
+        detail: {
+          status: 401,
+          code: 'UNAUTHORIZED',
+          message: 'Your session has expired. Please log in again.'
+        }
+      }));
 
       return Promise.reject({
         message: 'Your session has expired. Please log in again.',
-        code: 'UNAUTHORIZED'
+        code: 'UNAUTHORIZED',
+        status: 401
       });
     }
 
@@ -225,7 +233,8 @@ apiClient.interceptors.response.use(
 
       return Promise.reject({
         message: error.response.data?.message || 'Access forbidden',
-        code: 'FORBIDDEN'
+        code: 'FORBIDDEN',
+        status: 403
       });
     }
 

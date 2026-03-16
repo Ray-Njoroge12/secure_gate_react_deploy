@@ -205,12 +205,14 @@ export default function GuardDashboard() {
 
   function pushToast(t) {
     const id = Math.random().toString(36).slice(2);
-    const item = { id, ...t };
+    const item = { id, persistent: false, ...t };
     setToasts((prev) => [item, ...prev].slice(0, 5));
-    // Auto-remove after 4s
-    setTimeout(() => {
-      setToasts((prev) => prev.filter(x => x.id !== id));
-    }, 4000);
+    if (!item.persistent) {
+      // Auto-remove after 4s
+      setTimeout(() => {
+        setToasts((prev) => prev.filter(x => x.id !== id));
+      }, 4000);
+    }
   }
 
   async function postAction(id, action) {
@@ -231,7 +233,7 @@ export default function GuardDashboard() {
         notificationService.success('Check-in Successful', `Visitor ${id} has been checked in`);
       }
     } catch (e) {
-      notificationService.error('Check-in Failed', e.message);
+      pushToast({ severity: 'error', message: `Check-in failed: ${e?.message || 'Please try again.'}`, persistent: true });
     }
   };
 
@@ -244,7 +246,7 @@ export default function GuardDashboard() {
         notificationService.success('Check-out Successful', `Visitor ${id} has been checked out`);
       }
     } catch (e) {
-      notificationService.error('Check-out Failed', e.message);
+      pushToast({ severity: 'error', message: `Check-out failed: ${e?.message || 'Please try again.'}`, persistent: true });
     }
   };
 
@@ -263,7 +265,7 @@ export default function GuardDashboard() {
       await postAction(id, 'revoke');
       notificationService.warning('Visitor Revoked', `Visitor ${id} has been revoked`);
     } catch (e) {
-      notificationService.error('Revoke Failed', e.message);
+      pushToast({ severity: 'error', message: `Revoke failed: ${e?.message || 'Please try again.'}`, persistent: true });
     }
   };
 
@@ -451,7 +453,13 @@ export default function GuardDashboard() {
           </span>
         </div>
         {toasts.filter(t => toastFilter === 'all' || t.severity === toastFilter).map(t => (
-          <Toast key={t.id} severity={t.severity} message={t.message} />
+          <Toast
+            key={t.id}
+            severity={t.severity}
+            message={t.message}
+            persistent={Boolean(t.persistent)}
+            onDismiss={() => setToasts((prev) => prev.filter((toast) => toast.id !== t.id))}
+          />
         ))}
       </div>
 
@@ -975,15 +983,29 @@ function VisitorCard({ visitor, onCheckIn, onCheckOut, onRevoke, role, onViewDet
   );
 }
 
-function Toast({ severity, message }) {
+function Toast({ severity, message, persistent = false, onDismiss }) {
   const colors = { info: 'bg-blue-600', warning: 'bg-yellow-600', error: 'bg-red-600' };
   const bg = colors[severity] || 'bg-gray-600';
   return (
     <div data-testid="toast" className={`${bg} text-white p-3 rounded-lg shadow-lg min-w-64`}>
-      <div data-testid="toast-title" className="font-bold text-sm opacity-95 mb-1 tracking-wide">
-        {severity?.toUpperCase?.() || 'INFO'}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div data-testid="toast-title" className="font-bold text-sm opacity-95 mb-1 tracking-wide">
+            {severity?.toUpperCase?.() || 'INFO'}
+          </div>
+          <div className="text-sm">{message}</div>
+          {persistent && <div className="mt-1 text-xs opacity-90">Persistent alert</div>}
+        </div>
+        {persistent && (
+          <button
+            type="button"
+            className="text-xs underline underline-offset-2 whitespace-nowrap"
+            onClick={onDismiss}
+          >
+            Dismiss
+          </button>
+        )}
       </div>
-      <div className="text-sm">{message}</div>
     </div>
   );
 }
