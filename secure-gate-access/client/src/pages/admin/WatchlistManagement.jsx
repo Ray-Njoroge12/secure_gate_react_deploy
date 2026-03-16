@@ -8,6 +8,8 @@ import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
+import { DeleteConfirmation } from '../../components/common/ConfirmationDialog';
 import './WatchlistManagement.css';
 
 const WatchlistManagement = () => {
@@ -17,6 +19,8 @@ const WatchlistManagement = () => {
   const [activeTab, setActiveTab] = useState('entries'); // 'entries' or 'matches'
   const [showModal, setShowModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState(null);
   const closeModal = () => setShowModal(false);
   const { modalRef } = useModalAccessibility(showModal, closeModal);
   const [formData, setFormData] = useState({
@@ -47,7 +51,7 @@ const WatchlistManagement = () => {
       const response = await api.get('/api/admin/watchlist');
       setEntries(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching watchlist:', err);
+      logger.error('Error fetching watchlist:', err);
     } finally {
       setLoading(false);
     }
@@ -58,7 +62,7 @@ const WatchlistManagement = () => {
       const response = await api.get('/api/admin/watchlist/matches');
       setMatches(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching matches:', err);
+      logger.error('Error fetching matches:', err);
     }
   };
 
@@ -85,11 +89,16 @@ const WatchlistManagement = () => {
   };
 
   const deleteEntry = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this entry from the watchlist?')) return;
+    setEntryToDelete(id);
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/api/admin/watchlist/${id}`);
+      await api.delete(`/api/admin/watchlist/${entryToDelete}`);
       await fetchWatchlist();
+      setDeleteConfirmOpen(false);
+      setEntryToDelete(null);
     } catch (err) {
       alert('Error: ' + err.message);
     }
@@ -486,6 +495,16 @@ const WatchlistManagement = () => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmation
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setEntryToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        itemName="this watchlist entry"
+      />
     </div>
   );
 };
