@@ -68,7 +68,7 @@ const QRCodeDisplay = memo(function QRCodeDisplay({ value, size = 220, otp, altI
 
   return (
     <>
-      <div ref={qrRef} className={wrapperClasses} tabIndex={0}>
+      <div ref={qrRef} className={wrapperClasses} tabIndex={0} role="img" aria-label="QR code for visitor access">
         <div className={qrContainerClasses}>
           {isDataUrl ? (
             <img

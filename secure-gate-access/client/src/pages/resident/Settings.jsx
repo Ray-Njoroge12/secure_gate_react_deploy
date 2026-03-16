@@ -56,6 +56,9 @@ export default function Settings() {
 
   // MFA state
   const [mfaStatus, setMfaStatus] = useState({ mfaEnabled: false, mfaRequired: false, loading: true, error: null });
+  const [mfaCode, setMfaCode] = useState('');
+  const [showMfaPrompt, setShowMfaPrompt] = useState(false);
+  const [mfaError, setMfaError] = useState('');
 
   const fetchMfaStatus = useCallback(async () => {
     try {
@@ -75,10 +78,8 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'security') {
-      fetchMfaStatus();
-    }
-  }, [activeTab, fetchMfaStatus]);
+    fetchMfaStatus();
+  }, [fetchMfaStatus]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -135,19 +136,51 @@ export default function Settings() {
         }
         else throw new Error(data.message || 'Failed to update profile');
       } else if (type === 'Password') {
+        // If MFA is enabled, require verification first
+        if (mfaStatus.mfaEnabled && !showMfaPrompt) {
+          setShowMfaPrompt(true);
+          setLoading(false);
+          return;
+        }
+
+        // If MFA prompt is shown, verify MFA code first
+        if (mfaStatus.mfaEnabled && showMfaPrompt) {
+          if (!mfaCode || mfaCode.length !== 6) {
+            setMfaError('Please enter a valid 6-digit code');
+            setLoading(false);
+            return;
+          }
+          try {
+            const mfaRes = await api.post('/api/mfa/verify', { code: mfaCode });
+            if (!mfaRes.data?.success) {
+              setMfaError('Invalid MFA code. Please try again.');
+              setLoading(false);
+              return;
+            }
+          } catch {
+            setMfaError('MFA verification failed. Please try again.');
+            setLoading(false);
+            return;
+          }
+        }
+
         // Use auth endpoint for password change
         const res = await fetch('/api/auth/change-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             currentPassword: passwords.old,
-            newPassword: passwords.new
+            newPassword: passwords.new,
+            ...(mfaCode ? { mfaCode } : {})
           })
         });
         const data = await res.json();
         if (data.success) {
           setSuccess('Password changed successfully!');
           setPasswords({ old: "", new: "" });
+          setMfaCode('');
+          setShowMfaPrompt(false);
+          setMfaError('');
         }
         else throw new Error(data.message || 'Failed to change password');
       } else {
@@ -266,6 +299,28 @@ export default function Settings() {
                   <input id="new-password" type="password" placeholder="Enter new password" value={passwords.new} onChange={(e) => setPasswords({ ...passwords, new: e.target.value })} className={`${inputClass} dark:bg-slate-800 dark:border-slate-600 dark:text-white`} />
                 </div>
               </div>
+              {showMfaPrompt && mfaStatus.mfaEnabled && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <label htmlFor="mfa-code" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Authenticator Code
+                  </label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    Enter the 6-digit code from your authenticator app to confirm this change.
+                  </p>
+                  <input
+                    id="mfa-code"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={mfaCode}
+                    onChange={(e) => { setMfaCode(e.target.value.replace(/\D/g, '')); setMfaError(''); }}
+                    className={`${inputClass} max-w-[200px] text-center tracking-widest text-lg`}
+                    autoComplete="one-time-code"
+                  />
+                  {mfaError && <p className="text-sm text-red-600 dark:text-red-400 mt-1">{mfaError}</p>}
+                </div>
+              )}
               <div className="mt-4">
                 <Button type="submit" variant="primary">Change Password</Button>
               </div>

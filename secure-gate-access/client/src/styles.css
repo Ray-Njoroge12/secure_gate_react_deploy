@@ -186,3 +186,43 @@ textarea:focus {
 
 /* Import browser compatibility styles */
 @import './styles/browserCompatibility.css';
+
+/* ==================== PRINT STYLES ==================== */
+@media print {
+  /* Hide navigation, sidebar, buttons, and non-essential UI */
+  nav, .sidebar, .navbar, header, footer,
+  button:not(.print-visible),
+  .no-print, .offline-indicator, .cookie-banner,
+  .cookie-consent-banner, .toast-container {
+    display: none !important;
+  }
+
+  /* Show only pass content */
+  .visitor-pass, .qr-code-display {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto;
+    padding: 20mm;
+  }
+
+  /* Full-page QR */
+  .qr-code-display svg, .qr-code-display img {
+    width: 60mm !important;
+    height: 60mm !important;
+    margin: 0 auto;
+    display: block;
+  }
+
+  /* Clean typography */
+  body {
+    font-size: 14pt;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 15mm;
+  }
+}

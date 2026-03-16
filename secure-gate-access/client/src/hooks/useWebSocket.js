@@ -166,6 +166,8 @@ export const CONNECTION_STATE = {
  * @param {Function} options.onError - Callback on error
  * @returns {Object} WebSocket state and controls
  */
+const MAX_BUFFER = 50;
+
 export function useWebSocket(options = {}) {
   const {
     autoConnect = true,
@@ -190,6 +192,8 @@ export function useWebSocket(options = {}) {
   const socketListenersRef = useRef([]);
   const reconnectAttemptsRef = useRef(0);
   const maxReconnectAttempts = reconnectAttemptsOption;
+  const eventBufferRef = useRef([]);
+  const isDisconnectedRef = useRef(false);
 
   const [connectionState, setConnectionState] = useState(CONNECTION_STATE.DISCONNECTED);
   const [lastMessage, setLastMessage] = useState(null);
@@ -315,11 +319,99 @@ export function useWebSocket(options = {}) {
       localListeners.push({ event, handler });
     };
 
+    // Helper to process an event by type and data (used for buffered replay)
+    const handleEvent = (eventName, data) => {
+      switch (eventName) {
+        case WS_EVENTS.DASHBOARD_UPDATE:
+          setDashboardStats(data.data);
+          setLastMessage(data);
+          emitToListeners(WS_EVENTS.DASHBOARD_UPDATE, data);
+          break;
+        case WS_EVENTS.DASHBOARD_STATS:
+          setDashboardStats(data);
+          emitToListeners(WS_EVENTS.DASHBOARD_STATS, data);
+          break;
+        case WS_EVENTS.VISITOR_EVENT: {
+          const normalized = normalizeSocketPayload(data) || data;
+          setVisitorEvents(prev => [normalized, ...prev].slice(0, 50));
+          setLastMessage(normalized);
+          emitToListeners(WS_EVENTS.VISITOR_EVENT, normalized);
+          if (normalized.type) {
+            emitToListeners(normalized.type, normalized);
+            const legacyEvent = toLegacyVisitorEvent(normalized.type);
+            if (legacyEvent) {
+              emitToListeners(legacyEvent, normalized);
+            }
+          }
+          break;
+        }
+        case WS_EVENTS.DASHBOARD_EVENT:
+        case WS_EVENTS.ADMIN_EVENT:
+        case WS_EVENTS.GUARD_EVENT: {
+          const normalized = normalizeSocketPayload(data) || data;
+          setLastMessage(normalized);
+          emitToListeners(eventName, normalized);
+          if (normalized.type?.startsWith('visitor.')) {
+            setVisitorEvents(prev => [normalized, ...prev].slice(0, 50));
+            emitToListeners(WS_EVENTS.VISITOR_EVENT, normalized);
+          }
+          if (normalized.type) {
+            emitToListeners(normalized.type, normalized);
+            const legacyEvent = toLegacyVisitorEvent(normalized.type);
+            if (legacyEvent) {
+              emitToListeners(legacyEvent, normalized);
+            }
+          }
+          break;
+        }
+        case WS_EVENTS.NOTIFICATION:
+          setNotifications(prev => [data, ...prev].slice(0, 100));
+          emitToListeners(WS_EVENTS.NOTIFICATION, data);
+          break;
+        case WS_EVENTS.SECURITY_ALERT:
+          emitToListeners(WS_EVENTS.SECURITY_ALERT, data);
+          break;
+        case WS_EVENTS.EMERGENCY_TRIGGERED:
+        case WS_EVENTS.EMERGENCY_ACKNOWLEDGED:
+        case WS_EVENTS.EMERGENCY_RESOLVED:
+        case WS_EVENTS.EMERGENCY_CANCELLED:
+          setLastMessage(data);
+          emitToListeners(eventName, data);
+          emitToListeners(data.type, data);
+          break;
+        case WS_EVENTS.USER_CONNECTED:
+          emitToListeners(WS_EVENTS.USER_CONNECTED, data);
+          break;
+        case WS_EVENTS.USER_DISCONNECTED:
+          emitToListeners(WS_EVENTS.USER_DISCONNECTED, data);
+          break;
+        default:
+          emitToListeners(eventName, data);
+      }
+    };
+
+    // Helper to buffer an event when disconnected
+    const bufferEvent = (eventName, data) => {
+      eventBufferRef.current.push({ eventName, data });
+      if (eventBufferRef.current.length > MAX_BUFFER) {
+        eventBufferRef.current.shift(); // Remove oldest to keep latest 50
+      }
+    };
+
     // Connection established
     on(WS_EVENTS.CONNECT, () => {
       console.log('🟢 WebSocket connected');
       setConnectionState(CONNECTION_STATE.CONNECTED);
       reconnectAttemptsRef.current = 0;
+      isDisconnectedRef.current = false;
+
+      // Replay buffered events that arrived while disconnected
+      const buffered = [...eventBufferRef.current];
+      eventBufferRef.current = [];
+      buffered.forEach(({ eventName, data }) => {
+        handleEvent(eventName, data);
+      });
+
       lifecycleCallbacksRef.current.onConnect?.();
       lifecycleCallbacksRef.current.onOpen?.();
       emitToListeners(WS_EVENTS.CONNECT, { connected: true });
@@ -344,6 +436,7 @@ export function useWebSocket(options = {}) {
     // Disconnect
     on(WS_EVENTS.DISCONNECT, (reason) => {
       console.log('🔴 WebSocket disconnected:', reason);
+      isDisconnectedRef.current = true;
       setConnectionState(CONNECTION_STATE.DISCONNECTED);
       lifecycleCallbacksRef.current.onDisconnect?.(reason);
       lifecycleCallbacksRef.current.onClose?.(reason);
@@ -362,18 +455,21 @@ export function useWebSocket(options = {}) {
 
     // Dashboard updates
     on(WS_EVENTS.DASHBOARD_UPDATE, (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(WS_EVENTS.DASHBOARD_UPDATE, data); return; }
       setDashboardStats(data.data);
       setLastMessage(data);
       emitToListeners(WS_EVENTS.DASHBOARD_UPDATE, data);
     });
 
     on(WS_EVENTS.DASHBOARD_STATS, (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(WS_EVENTS.DASHBOARD_STATS, data); return; }
       setDashboardStats(data);
       emitToListeners(WS_EVENTS.DASHBOARD_STATS, data);
     });
 
     // Visitor events
     on(WS_EVENTS.VISITOR_EVENT, (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(WS_EVENTS.VISITOR_EVENT, data); return; }
       const normalized = normalizeSocketPayload(data) || data;
       setVisitorEvents(prev => [normalized, ...prev].slice(0, 50));
       setLastMessage(normalized);
@@ -389,6 +485,7 @@ export function useWebSocket(options = {}) {
     });
 
     const forwardScopedEvent = (eventName) => (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(eventName, data); return; }
       const normalized = normalizeSocketPayload(data) || data;
       setLastMessage(normalized);
       emitToListeners(eventName, normalized);
@@ -413,12 +510,14 @@ export function useWebSocket(options = {}) {
 
     // Notifications
     on(WS_EVENTS.NOTIFICATION, (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(WS_EVENTS.NOTIFICATION, data); return; }
       setNotifications(prev => [data, ...prev].slice(0, 100));
       emitToListeners(WS_EVENTS.NOTIFICATION, data);
     });
 
     // Security alerts
     on(WS_EVENTS.SECURITY_ALERT, (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(WS_EVENTS.SECURITY_ALERT, data); return; }
       emitToListeners(WS_EVENTS.SECURITY_ALERT, data);
     });
 
@@ -428,6 +527,7 @@ export function useWebSocket(options = {}) {
         type: eventName.replace(/:/g, '.'),
         timestamp: data?.timestamp || new Date().toISOString()
       };
+      if (isDisconnectedRef.current) { bufferEvent(eventName, normalized); return; }
       setLastMessage(normalized);
       emitToListeners(eventName, normalized);
       emitToListeners(normalized.type, normalized);
@@ -440,10 +540,12 @@ export function useWebSocket(options = {}) {
 
     // User connection events (admin only)
     on(WS_EVENTS.USER_CONNECTED, (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(WS_EVENTS.USER_CONNECTED, data); return; }
       emitToListeners(WS_EVENTS.USER_CONNECTED, data);
     });
 
     on(WS_EVENTS.USER_DISCONNECTED, (data) => {
+      if (isDisconnectedRef.current) { bufferEvent(WS_EVENTS.USER_DISCONNECTED, data); return; }
       emitToListeners(WS_EVENTS.USER_DISCONNECTED, data);
     });
 

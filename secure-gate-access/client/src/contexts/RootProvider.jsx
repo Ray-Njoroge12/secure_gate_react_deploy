@@ -21,6 +21,7 @@ import { PreferenceProvider } from './PreferenceContext.jsx';
 import { ToastProvider } from './ToastContext.jsx';
 import { UndoProvider } from './UndoContext.jsx';
 import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider.jsx';
+import { I18nProvider } from '../i18n/index.js';
 
 /**
  * React Query client configuration
@@ -77,6 +78,7 @@ export const RootProvider = ({ children }) => {
           <ThemeProvider>
             <PreferenceProvider>
               <AccessibilityProvider>
+                <I18nProvider defaultLanguage="en">
                 <BrowserCompatibilityProvider>
                   <LoadingProvider>
                     <ToastProvider position="top-right" maxVisible={4}>
@@ -99,6 +101,7 @@ export const RootProvider = ({ children }) => {
                     </ToastProvider>
                   </LoadingProvider>
                 </BrowserCompatibilityProvider>
+                </I18nProvider>
               </AccessibilityProvider>
             </PreferenceProvider>
           </ThemeProvider>
