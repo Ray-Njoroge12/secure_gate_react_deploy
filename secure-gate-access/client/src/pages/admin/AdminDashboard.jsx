@@ -341,7 +341,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
             variant="secondary"
             size="sm"
             onClick={() => navigate('/dashboard/admin/help/security')}
-            className="flex items-center px-4 py-2 text-sm font-medium"
+            className="flex items-center text-sm font-medium"
           >
             {t('dashboard.common.securityHelp')}
           </Button>
@@ -350,7 +350,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               variant="secondary"
               size="sm"
               onClick={() => navigate('/dashboard/super-admin')}
-              className="flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              className="flex items-center bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
             >
               ← {t('dashboard.admin.backToGlobalDashboard')}
             </Button>
@@ -367,6 +367,8 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
           {tabs.map((tab) => (
             <Button
               key={tab.id}
+              variant="ghost"
+              size="sm"
               id={`admin-tab-${tab.id}`}
               role="tab"
               aria-selected={activeTab === tab.id}
@@ -379,7 +381,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
               className={`${activeTab === tab.id
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300 dark:text-gray-300 dark:hover:text-gray-200 dark:hover:border-gray-600'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                } h-auto rounded-none whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               {tab.label}
             </Button>
@@ -403,7 +405,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/approvals'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
                   ✓ {t('dashboard.admin.approveUsers')}
                 </Button>
@@ -411,7 +413,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/visitors'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
                   📋 {t('dashboard.admin.viewTodaysVisitors')}
                 </Button>
@@ -419,7 +421,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/residents'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
                   🏠 {t('dashboard.admin.manageResidents')}
                 </Button>
@@ -427,7 +429,7 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate(appendSiteId('/dashboard/admin/reports'))}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+                  className="bg-white/20 hover:bg-white/30 text-sm font-medium transition-colors"
                 >
                   📊 {t('dashboard.admin.generateReports')}
                 </Button>
