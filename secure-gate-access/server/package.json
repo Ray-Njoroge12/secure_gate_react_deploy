@@ -51,7 +51,6 @@
     "validate:env": "node src/config/validateEnv.js",
     "db:init": "node src/database/init.js",
     "db:migrate": "node scripts/migrate.js",
-    "migrations:check-sequence": "node scripts/check-migration-sequence.js",
     "db:seed": "node scripts/seed.js",
     "create:guard": "node scripts/create-guard.js",
     "create:resident": "node scripts/create-resident.js",
