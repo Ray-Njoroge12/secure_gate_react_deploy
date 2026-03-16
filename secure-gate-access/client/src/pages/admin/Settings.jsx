@@ -162,19 +162,14 @@ export default function Settings() {
   const handleSave = (section, e) => {
     e.preventDefault();
     // API call to save settings
-    fetch('/api/admin/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        section, data:
-          section === 'system' ? systemSettings :
-            section === 'security' ? securitySettings :
-              emailSettings
-      })
+    api.put('/api/admin/settings', {
+      section, data:
+        section === 'system' ? systemSettings :
+          section === 'security' ? securitySettings :
+            emailSettings
     })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
+      .then(res => {
+        if (res.data.success) {
           alert(`${section} settings saved successfully!`);
         } else {
           alert('Failed to save settings');
@@ -226,16 +221,16 @@ export default function Settings() {
     setComplianceError(null);
     try {
       const [dpoResponse, odpcResponse, metadataResponse, retentionResponse] = await Promise.all([
-        fetch("/api/privacy/dpo"),
-        fetch("/api/privacy/odpc-registration"),
-        fetch("/api/privacy/policy-metadata"),
-        fetch("/api/privacy/retention-policy")
+        api.get("/api/privacy/dpo"),
+        api.get("/api/privacy/odpc-registration"),
+        api.get("/api/privacy/policy-metadata"),
+        api.get("/api/privacy/retention-policy")
       ]);
 
-      const dpoData = await dpoResponse.json();
-      const odpcData = await odpcResponse.json();
-      const metadataData = await metadataResponse.json();
-      const retentionData = await retentionResponse.json();
+      const dpoData = dpoResponse.data;
+      const odpcData = odpcResponse.data;
+      const metadataData = metadataResponse.data;
+      const retentionData = retentionResponse.data;
 
       if (!dpoData.success || !odpcData.success || !metadataData.success || !retentionData.success) {
         throw new Error("Failed to load compliance settings");
@@ -286,13 +281,9 @@ export default function Settings() {
 
   const handleComplianceUpdate = async (section, payload) => {
     try {
-      const response = await fetch(`/api/admin/compliance/${section}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const response = await api.put(`/api/admin/compliance/${section}`, payload);
 
-      const data = await response.json();
+      const data = response.data;
       if (!data.success) {
         throw new Error(data.message || "Failed to update compliance settings");
       }
@@ -307,11 +298,8 @@ export default function Settings() {
   const handleComplianceReview = async () => {
     setReviewRunning(true);
     try {
-      const response = await fetch("/api/admin/compliance/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await response.json();
+      const response = await api.post("/api/admin/compliance/review");
+      const data = response.data;
       if (!data.success) {
         throw new Error(data.message || "Failed to run compliance review");
       }

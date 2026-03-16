@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import { COLORS } from '../../utils/designTokens';
+import api from '../../utils/apiClient';
 import './IncidentDetailModal.css';
 
 const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
@@ -31,14 +32,8 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`/api/admin/incidents/${incident.id}/comments`, {
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setComments(data.data || []);
-      }
+      const response = await api.get(`/api/admin/incidents/${incident.id}/comments`);
+      setComments(response.data.data || []);
     } catch (err) {
       console.error('Error fetching comments:', err);
     }
@@ -46,14 +41,8 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
   const fetchHistory = async () => {
     try {
-      const response = await fetch(`/api/admin/incidents/${incident.id}/history`, {
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setHistory(data.data || []);
-      }
+      const response = await api.get(`/api/admin/incidents/${incident.id}/history`);
+      setHistory(response.data.data || []);
     } catch (err) {
       console.error('Error fetching history:', err);
     }
@@ -61,14 +50,8 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
   const fetchSLAInfo = async () => {
     try {
-      const response = await fetch(`/api/admin/incidents/${incident.id}/sla`, {
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSlaInfo(data.data);
-      }
+      const response = await api.get(`/api/admin/incidents/${incident.id}/sla`);
+      setSlaInfo(response.data.data);
     } catch (err) {
       console.error('Error fetching SLA info:', err);
     }
@@ -80,14 +63,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
     setSubmittingComment(true);
     try {
-      const response = await fetch(`/api/admin/incidents/${incident.id}/comments`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comment: newComment, internal: true })
-      });
-
-      if (!response.ok) throw new Error('Failed to add comment');
+      await api.post(`/api/admin/incidents/${incident.id}/comments`, { comment: newComment, internal: true });
 
       setNewComment('');
       await fetchComments();
@@ -100,14 +76,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      const response = await fetch(`/api/admin/incidents/${incident.id}/status`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (!response.ok) throw new Error('Failed to update status');
+      await api.put(`/api/admin/incidents/${incident.id}/status`, { status: newStatus });
 
       onUpdate();
       onClose();
@@ -118,14 +87,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
   const handleAssignment = async (guardId) => {
     try {
-      const response = await fetch(`/api/admin/incidents/${incident.id}/assign`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignedTo: guardId })
-      });
-
-      if (!response.ok) throw new Error('Failed to assign');
+      await api.post(`/api/admin/incidents/${incident.id}/assign`, { assignedTo: guardId });
 
       onUpdate();
     } catch (err) {

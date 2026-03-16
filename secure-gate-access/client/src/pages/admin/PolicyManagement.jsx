@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
+import api from '../../utils/apiClient';
 import './PolicyManagement.css';
 
 const PolicyManagement = () => {
@@ -33,11 +34,8 @@ const PolicyManagement = () => {
   const fetchPolicies = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/policies', { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch policies');
-      
-      const data = await response.json();
-      setPolicies(data.data || []);
+      const response = await api.get('/api/admin/policies');
+      setPolicies(response.data.data || []);
     } catch (err) {
       console.error('Error fetching policies:', err);
     } finally {
@@ -53,20 +51,17 @@ const PolicyManagement = () => {
         ? `/api/admin/policies/${editingPolicy.id}`
         : '/api/admin/policies';
       
-      const method = editingPolicy ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          conditions: JSON.parse(formData.conditions),
-          actions: JSON.parse(formData.actions)
-        })
-      });
+      const payload = {
+        ...formData,
+        conditions: JSON.parse(formData.conditions),
+        actions: JSON.parse(formData.actions)
+      };
 
-      if (!response.ok) throw new Error('Failed to save policy');
+      if (editingPolicy) {
+        await api.put(url, payload);
+      } else {
+        await api.post(url, payload);
+      }
 
       await fetchPolicies();
       setShowModal(false);
@@ -77,15 +72,10 @@ const PolicyManagement = () => {
   };
 
   const deletePolicy = async (id) => {
-    if (!confirm('Are you sure you want to delete this policy?')) return;
+    if (!window.confirm('Are you sure you want to delete this policy?')) return;
 
     try {
-      const response = await fetch(`/api/admin/policies/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to delete policy');
+      await api.delete(`/api/admin/policies/${id}`);
       await fetchPolicies();
     } catch (err) {
       alert('Error: ' + err.message);
@@ -94,14 +84,7 @@ const PolicyManagement = () => {
 
   const togglePolicy = async (policy) => {
     try {
-      const response = await fetch(`/api/admin/policies/${policy.id}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...policy, enabled: !policy.enabled })
-      });
-
-      if (!response.ok) throw new Error('Failed to toggle policy');
+      await api.put(`/api/admin/policies/${policy.id}`, { ...policy, enabled: !policy.enabled });
       await fetchPolicies();
     } catch (err) {
       alert('Error: ' + err.message);
