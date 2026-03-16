@@ -100,6 +100,10 @@ jobs:
         working-directory: secure-gate-access/server
         run: npm run db:init
 
+      - name: Check migration sequence numbering
+        working-directory: secure-gate-access/server
+        run: npm run migrations:check-sequence
+
       - name: Apply SQL migrations
         working-directory: secure-gate-access/server
         run: |
