@@ -58,5 +58,6 @@ router.get('/sites', getSites);
 router.post('/sites', createSite);
 router.put('/sites/:id', updateSite);
 router.get('/sites/:id/switch', switchSite);
+router.patch('/sites/:id/switch', switchSite);
 
 export default router;

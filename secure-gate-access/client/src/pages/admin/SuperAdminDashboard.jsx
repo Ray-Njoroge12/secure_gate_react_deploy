@@ -22,6 +22,7 @@ export default function SuperAdminDashboard() {
     const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState(null);
+    const [mfaGateMessage, setMfaGateMessage] = useState(null);
     const [isAddEstateOpen, setIsAddEstateOpen] = useState(false);
     
     // Decommission Modal State
@@ -94,12 +95,12 @@ export default function SuperAdminDashboard() {
                     const errorData = overviewErr.response?.data || {};
                     
                     if (errorData.code === 'MFA_SETUP_REQUIRED' || errorData.error?.code === 'MFA_SETUP_REQUIRED') {
-                        navigate('/mfa/setup', { 
-                            state: { 
-                                message: 'Multi-Factor Authentication is required for SuperAdmin access. Please complete setup to continue.',
-                                returnUrl: '/dashboard/admin/super'
-                            } 
-                        });
+                        setMfaGateMessage(
+                            errorData.message ||
+                            'Multi-Factor Authentication is required for SuperAdmin access. Please complete MFA setup to continue.'
+                        );
+                        setHealth({ status: 'error', text: 'MFA Required' });
+                        setLoading(false);
                         return;
                     }
                     
@@ -149,12 +150,12 @@ export default function SuperAdminDashboard() {
     };
 
     useEffect(() => {
-        if (activeTab === 'health') {
+        if (activeTab === 'health' && !errorMessage && !mfaGateMessage) {
             fetchSystemMetrics();
             const interval = setInterval(fetchSystemMetrics, 30000); // Poll every 30s
             return () => clearInterval(interval);
         }
-    }, [activeTab]);
+    }, [activeTab, errorMessage, mfaGateMessage]);
 
 
 
@@ -260,6 +261,28 @@ export default function SuperAdminDashboard() {
                         >
                             Dismiss
                         </Button>
+                    </div>
+                )}
+                {mfaGateMessage && (
+                    <div
+                        role="alert"
+                        className="flex items-start justify-between gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 px-4 py-3 rounded-lg"
+                    >
+                        <div className="flex items-center gap-2 text-sm">
+                            <Icon name="ShieldAlert" className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                            <span>{mfaGateMessage}</span>
+                        </div>
+                        <GradientButton
+                            size="sm"
+                            onClick={() => navigate('/mfa/setup', {
+                                state: {
+                                    message: mfaGateMessage,
+                                    returnUrl: '/dashboard/admin/super'
+                                }
+                            })}
+                        >
+                            Complete MFA Setup
+                        </GradientButton>
                     </div>
                 )}
 
