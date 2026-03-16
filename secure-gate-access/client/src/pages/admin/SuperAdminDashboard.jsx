@@ -9,6 +9,7 @@ import GradientButton from '../../components/ui/GradientButton';
 import Icon from '../../components/ui/Icon';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfirmation } from '../../components/common/ConfirmationDialog.jsx';
+import notificationService from '../../services/notificationService';
 import { handleApiError } from '../../utils/errorMapper';
 import logger from '../../utils/logger.js';
 import api from '../../utils/apiClient';
@@ -21,8 +22,6 @@ export default function SuperAdminDashboard() {
     const { logout } = useAuth();
     const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
     const [loading, setLoading] = useState(true);
-    const [errorMessage, setErrorMessage] = useState(null);
-    const [mfaGateMessage, setMfaGateMessage] = useState(null);
     const [isAddEstateOpen, setIsAddEstateOpen] = useState(false);
     
     // Decommission Modal State
@@ -51,6 +50,10 @@ export default function SuperAdminDashboard() {
     // MFA Status Badge
     const [mfaBadge, setMfaBadge] = useState({ enabled: null, required: false });
 
+    const showApiErrorToast = useCallback((title, message) => {
+        notificationService.error(title, message);
+    }, []);
+
     useEffect(() => {
         const fetchMfaBadge = async () => {
             try {
@@ -71,7 +74,6 @@ export default function SuperAdminDashboard() {
     const fetchDashboardData = useCallback(async () => {
         try {
             setLoading(true);
-            setErrorMessage(null);
 
             // 1. Get Overview Stats
             try {
@@ -105,12 +107,12 @@ export default function SuperAdminDashboard() {
                     }
                     
                     setHealth({ status: 'error', text: 'Auth Failed' });
-                    setErrorMessage(errorData.message || 'Session expired. Please login again.');
+                    showApiErrorToast('Authentication Error', errorData.message || 'Session expired. Please login again.');
                     if (status === 401) logout();
                     return;
                 }
                 setHealth({ status: 'error', text: 'API Error' });
-                setErrorMessage('Unable to load platform overview. Please retry.');
+                showApiErrorToast('Overview Load Failed', 'Unable to load platform overview. Please retry.');
             }
 
             // 2. Get Estates List
@@ -128,12 +130,12 @@ export default function SuperAdminDashboard() {
 
         } catch (err) {
             logger.error('SuperAdmin: Failed to load dashboard data:', err);
-            setErrorMessage('Failed to load dashboard data');
+            showApiErrorToast('Dashboard Load Failed', 'Failed to load dashboard data');
             setHealth({ status: 'error', text: 'System Error' });
         } finally {
             setLoading(false);
         }
-    }, [logout]);
+    }, [logout, navigate, showApiErrorToast]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -145,7 +147,7 @@ export default function SuperAdminDashboard() {
             setSystemMetrics(res.data.data);
         } catch (err) {
             logger.error('SuperAdmin: Failed to fetch system metrics:', err);
-            setErrorMessage('Failed to refresh system metrics.');
+            showApiErrorToast('Metrics Refresh Failed', 'Failed to refresh system metrics.');
         }
     };
 
@@ -162,7 +164,6 @@ export default function SuperAdminDashboard() {
     const handleSearch = async () => {
         if (!searchQuery || searchQuery.length < 3) return;
         setIsSearching(true);
-        setErrorMessage(null);
         try {
             const res = await api.get(`${API_BASE_URL}/api/admin/super-admin/users/search?q=${encodeURIComponent(searchQuery)}`);
             const data = res.data;
@@ -173,7 +174,7 @@ export default function SuperAdminDashboard() {
                     : [];
             setSearchResults(normalizedResults);
         } catch (err) {
-            setErrorMessage(handleApiError(err));
+            showApiErrorToast('Search Failed', handleApiError(err));
         } finally {
             setIsSearching(false);
         }
@@ -216,7 +217,7 @@ export default function SuperAdminDashboard() {
             fetchDashboardData();
         } catch (err) {
             logger.error('SuperAdmin: Estate status change failed:', err);
-            setErrorMessage(handleApiError(err));
+            showApiErrorToast('Status Update Failed', handleApiError(err));
             // Revert on error
             fetchDashboardData();
         }
@@ -243,49 +244,6 @@ export default function SuperAdminDashboard() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
-                {errorMessage && (
-                    <div
-                        role="alert"
-                        className="flex items-start justify-between gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg"
-                    >
-                        <div className="flex items-center gap-2 text-sm">
-                            <Icon name="AlertTriangle" className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                            <span>{errorMessage}</span>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setErrorMessage(null)}
-                            className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200"
-                            aria-label="Dismiss error message"
-                        >
-                            Dismiss
-                        </Button>
-                    </div>
-                )}
-                {mfaGateMessage && (
-                    <div
-                        role="alert"
-                        className="flex items-start justify-between gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300 px-4 py-3 rounded-lg"
-                    >
-                        <div className="flex items-center gap-2 text-sm">
-                            <Icon name="ShieldAlert" className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                            <span>{mfaGateMessage}</span>
-                        </div>
-                        <GradientButton
-                            size="sm"
-                            onClick={() => navigate('/mfa/setup', {
-                                state: {
-                                    message: mfaGateMessage,
-                                    returnUrl: '/dashboard/admin/super'
-                                }
-                            })}
-                        >
-                            Complete MFA Setup
-                        </GradientButton>
-                    </div>
-                )}
-
                 {/* Welcome Section */}
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">Platform Overview</h2>

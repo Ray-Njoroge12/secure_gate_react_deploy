@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [authError, setAuthError] = useState("");
 
   // Validation functions
   const validateEmail = (value) => {
@@ -67,6 +68,7 @@ export default function LoginPage() {
         clearAllErrors();
         setEmailError("");
         setPasswordError("");
+        setAuthError("");
       }
     };
 
@@ -82,6 +84,7 @@ export default function LoginPage() {
     clearAllErrors();
 
     // Validate inputs
+    setAuthError("");
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
 
@@ -158,12 +161,11 @@ export default function LoginPage() {
         }
       }, 100);
     } catch (err) {
-      handleError(err, {
-        context: 'Login',
-        title: 'Login Failed',
-        showRecoveryActions: true,
-        onRetry: () => handleLogin(e)
-      });
+      const loginErrorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Unable to sign in. Please verify your details and try again.";
+      setAuthError(loginErrorMessage);
     } finally {
       setLoading(false);
     }
@@ -173,6 +175,7 @@ export default function LoginPage() {
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     clearAllErrors();
+    setAuthError("");
 
     if (!validateEmail(resetEmail)) {
       return;
@@ -267,6 +270,7 @@ export default function LoginPage() {
           onChange={(e) => {
             setEmail(e.target.value);
             if (emailError) validateEmail(e.target.value);
+            if (authError) setAuthError("");
           }}
           onBlur={(e) => validateEmail(e.target.value)}
           error={emailError}
@@ -284,6 +288,7 @@ export default function LoginPage() {
           onChange={(e) => {
             setPassword(e.target.value);
             if (passwordError) validatePassword(e.target.value);
+            if (authError) setAuthError("");
           }}
           onBlur={(e) => validatePassword(e.target.value)}
           error={passwordError}
@@ -292,6 +297,14 @@ export default function LoginPage() {
           required
           autoComplete="current-password"
         />
+        {authError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+          >
+            {authError}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <Checkbox
             id="remember-me"
@@ -309,6 +322,7 @@ export default function LoginPage() {
               setResetEmail(email.trim());
               setEmailError("");
               setPasswordError("");
+              setAuthError("");
               navigate('/forgot-password', { state: { prefillEmail: email.trim() } });
             }}
             className="h-auto min-h-0 p-0 text-sm font-medium text-brand-700 hover:bg-transparent hover:text-brand-800 dark:text-brand-400 dark:hover:bg-transparent dark:hover:text-brand-300"
@@ -384,6 +398,7 @@ export default function LoginPage() {
           onClick={() => {
             clearAllErrors();
             setEmailError("");
+            setAuthError("");
             setResetEmail("");
             navigate('/login');
           }}
