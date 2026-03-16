@@ -230,16 +230,20 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-700">
                                 <Button
                                     type="button"
+                                    variant="secondary"
+                                    size="sm"
                                     onClick={onClose}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-md hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
+                                    className="text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
                                     disabled={loading}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     type="submit"
+                                    variant="danger"
+                                    size="sm"
                                     disabled={!isConfirmationValid() || loading}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                    className="text-sm font-medium transition-colors flex items-center gap-2"
                                 >
                                     {loading && <Icon name="loader-2" className="h-4 w-4 animate-spin" aria-hidden="true" />}
                                     Decommission Estate
