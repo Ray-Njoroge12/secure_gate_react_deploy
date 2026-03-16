@@ -303,8 +303,10 @@ export default function AddEstateModal({ isOpen, onClose, onSuccess }) {
                 <div className="mt-6 flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-slate-700">
                     <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                        className="text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                     >
                         Cancel
                     </Button>

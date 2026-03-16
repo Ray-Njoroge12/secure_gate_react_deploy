@@ -6,6 +6,7 @@
  */
 
 import React, { memo, useEffect, useRef } from 'react';
+import { twMerge } from 'tailwind-merge';
 import Icon from './Icon';
 
 /**
@@ -167,7 +168,7 @@ const Button = memo(({
    * Combined CSS classes for the button
    * @constant {string}
    */
-  const buttonClasses = `${baseClasses} ${resolvedVariantClasses} ${resolvedSizeClasses} ${className}`;
+  const buttonClasses = twMerge(baseClasses, resolvedVariantClasses, resolvedSizeClasses, className);
   
   // Auto-generate aria-label for icon-only buttons
   const isIconOnly = icon && !children;
