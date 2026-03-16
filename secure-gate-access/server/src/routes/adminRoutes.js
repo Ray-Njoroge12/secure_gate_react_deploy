@@ -11,7 +11,8 @@ import {
   getMetrics, getAuditLogs, getPendingUsers, updateUserStatus, getEstateInfo,
   triggerBackup, bulkApproveUsers, bulkRejectUsers,
   getResidents, createResident, updateResident, deleteResident,
-  getVisitorLogs, getAccessLogs
+  getVisitorLogs, getAccessLogs,
+  getSites, createSite, updateSite, switchSite
 } from '../controllers/adminController.js';
 import {
   getPlatformOverview,
@@ -389,6 +390,12 @@ router.post('/compliance/review', authenticateToken, requireRolePolicy('adminOnl
 // Audit logs endpoint
 router.get('/audit-logs', authenticateToken, adminQueryLimit(), attachRequestAudit, getAuditLogs);
 router.get('/access-logs', authenticateToken, adminQueryLimit(), attachRequestAudit, getAccessLogs);
+
+// Site management routes
+router.get('/sites', authenticateToken, requireRole(['admin', 'super_admin']), adminQueryLimit(), attachRequestAudit, getSites);
+router.post('/sites', authenticateToken, requireRole(['super_admin']), estateModificationLimit(), attachRequestAudit, createSite);
+router.put('/sites/:id', authenticateToken, requireRole(['super_admin']), estateModificationLimit(), attachRequestAudit, updateSite);
+router.patch('/sites/:id/switch', authenticateToken, requireRole(['super_admin']), superAdminSensitiveLimit(), attachRequestAudit, switchSite);
 
 /**
  * @swagger

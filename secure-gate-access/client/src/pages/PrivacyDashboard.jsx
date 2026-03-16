@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/apiClient';
 import Button from '../components/ui/Button';
+import { useConfirmation } from '../components/common/ConfirmationDialog';
 
 /**
  * Privacy Dashboard Component
@@ -8,6 +9,7 @@ import Button from '../components/ui/Button';
  * Articles 31 (Consent), 33 (Right to Erasure), 39 (Data Portability)
  */
 const PrivacyDashboard = () => {
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -115,7 +117,13 @@ const PrivacyDashboard = () => {
 
   // Withdraw consent
   const handleWithdrawConsent = async (consentType) => {
-    if (!window.confirm('Are you sure you want to withdraw this consent? This may limit your ability to use certain features.')) {
+    const ok = await confirm({
+      title: 'Withdraw Consent',
+      message: 'Are you sure you want to withdraw this consent? This may limit your ability to use certain features.',
+      variant: 'warning',
+      confirmText: 'Withdraw',
+    });
+    if (!ok) {
       return;
     }
     
@@ -481,6 +489,7 @@ const PrivacyDashboard = () => {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 };

@@ -17,6 +17,7 @@ import {
   updateGuardShift
 } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
+import { useConfirmation } from "../../components/common/ConfirmationDialog";
 import logger from '../../utils/logger';
 import Icon from "../../components/ui/Icon";
 import Button from "../../components/ui/Button";
@@ -62,6 +63,7 @@ const getDefaultShiftDates = () => {
 };
 
 export default function ManageGuards({ estateId }) {
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const [guards, setGuards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -464,7 +466,13 @@ export default function ManageGuards({ estateId }) {
   };
 
   const confirmDeleteGuard = async (guardId) => {
-    if (!window.confirm('Are you sure you want to remove this guard account? This action cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Remove Guard Account',
+      message: 'Are you sure you want to remove this guard account? This action cannot be undone.',
+      variant: 'danger',
+      confirmText: 'Remove',
+    });
+    if (!ok) return;
 
     setLoading(true);
     try {
@@ -1452,6 +1460,7 @@ export default function ManageGuards({ estateId }) {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

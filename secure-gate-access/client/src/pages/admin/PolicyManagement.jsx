@@ -7,12 +7,15 @@
 import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
+import { useConfirmation } from '../../components/common/ConfirmationDialog';
 import api from '../../utils/apiClient';
 import './PolicyManagement.css';
 
 const PolicyManagement = () => {
+  const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
   const closeModal = () => setShowModal(false);
@@ -67,18 +70,24 @@ const PolicyManagement = () => {
       setShowModal(false);
       resetForm();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 
   const deletePolicy = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this policy?')) return;
+    const ok = await confirm({
+      title: 'Delete Policy',
+      message: 'Are you sure you want to delete this policy?',
+      variant: 'danger',
+      confirmText: 'Delete',
+    });
+    if (!ok) return;
 
     try {
       await api.delete(`/api/admin/policies/${id}`);
       await fetchPolicies();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 
@@ -87,7 +96,7 @@ const PolicyManagement = () => {
       await api.put(`/api/admin/policies/${policy.id}`, { ...policy, enabled: !policy.enabled });
       await fetchPolicies();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 
@@ -174,6 +183,7 @@ const PolicyManagement = () => {
 
   return (
     <div className="policy-management">
+      {error && <div role="alert" style={{ color: 'red', padding: '8px', marginBottom: '8px' }}>{error}</div>}
       <div className="policy-header">
         <div className="header-left">
           <h1>📋 Policy Management</h1>
@@ -362,6 +372,7 @@ const PolicyManagement = () => {
           </div>
         </div>
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 };
