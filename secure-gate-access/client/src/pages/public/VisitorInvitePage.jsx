@@ -26,6 +26,7 @@ import { useVisitorInvite } from '../../hooks/useVisitorInvite';
 import Button from '../../components/ui/Button';
 import { useI18n } from '../../i18n/index.js';
 import offlineService from '../../services/offlineService';
+import api from '../../utils/apiClient';
 
 const VisitorInvitePage = () => {
   const { token } = useParams();
@@ -140,29 +141,19 @@ const VisitorInvitePage = () => {
     }
 
     try {
-      const response = await fetch(`/api/public/visitors/${token}/confirm`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await api.post(`/api/public/visitors/${token}/confirm`, {
+        consent: {
+          dataProcessing: true,
+          privacyPolicy: true,
+          marketing: false
         },
-        body: JSON.stringify({
-          consent: {
-            dataProcessing: true,
-            privacyPolicy: true,
-            marketing: false
-          },
-          additionalInfo: {
-            purpose: additionalInfo.purpose || 'Personal Visit',
-            vehiclePlate: additionalInfo.vehiclePlate,
-            idNumber: additionalInfo.idNumber
-          }
-        })
+        additionalInfo: {
+          purpose: additionalInfo.purpose || 'Personal Visit',
+          vehiclePlate: additionalInfo.vehiclePlate,
+          idNumber: additionalInfo.idNumber
+        }
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || data?.message || 'Failed to confirm visit');
-      }
+      const data = response.data;
 
       // Refresh visitor details to get updated status and QR code
       await fetchVisitorDetails();
@@ -207,31 +198,21 @@ const VisitorInvitePage = () => {
     setConfirmError(null);
 
     try {
-      const response = await fetch(`/api/visitors/complete/${token}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: additionalInfo.name,
-          phone: additionalInfo.phone,
-          email: additionalInfo.email,
-          purpose: additionalInfo.purpose || visitor.eventName || 'Event',
-          vehiclePlate: additionalInfo.vehiclePlate,
-          // company removed
-          idNumber: additionalInfo.idNumber,
-          consent_given: true,
-          consent_timestamp: new Date().toISOString(),
-          consent_type: 'data_processing',
-          consent_version: '1.0'
-        })
+      const response = await api.post(`/api/visitors/complete/${token}`, {
+        name: additionalInfo.name,
+        phone: additionalInfo.phone,
+        email: additionalInfo.email,
+        purpose: additionalInfo.purpose || visitor.eventName || 'Event',
+        vehiclePlate: additionalInfo.vehiclePlate,
+        // company removed
+        idNumber: additionalInfo.idNumber,
+        consent_given: true,
+        consent_timestamp: new Date().toISOString(),
+        consent_type: 'data_processing',
+        consent_version: '1.0'
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.error || 'Failed to register');
-      }
+      const data = response.data;
 
       // On success, redirect to the new visitor pass URL
       if (data.visitor_token) {

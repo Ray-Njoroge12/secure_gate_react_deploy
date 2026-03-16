@@ -1908,4 +1908,85 @@ router.get('/retention/scheduler/status', authenticateToken, requireRolePolicy('
   }
 });
 
+// ==============================================================================
+// ROLE MANAGEMENT
+// ==============================================================================
+
+/**
+ * @route GET /api/admin/roles
+ * @desc Get list of available roles with descriptions
+ * @access Private (Admin only)
+ */
+router.get('/roles', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, async (req, res) => {
+  const roles = [
+    { id: 'resident', name: 'Resident', description: 'Estate resident with visitor invitation privileges', permissions: ['invite_visitors', 'view_own_visitors', 'manage_deliveries'] },
+    { id: 'guard', name: 'Guard', description: 'Security guard with check-in/check-out privileges', permissions: ['check_in_visitors', 'check_out_visitors', 'view_all_visitors', 'log_incidents', 'manage_walk_ins'] },
+    { id: 'admin', name: 'Admin', description: 'Estate administrator with full management access', permissions: ['manage_users', 'manage_settings', 'view_analytics', 'manage_watchlist', 'manage_policies'] },
+    { id: 'super_admin', name: 'Super Admin', description: 'Platform-wide administrator', permissions: ['manage_estates', 'manage_all_users', 'platform_settings', 'view_global_analytics'] },
+  ];
+  return respond(res, 200, 'Roles retrieved', roles);
+});
+
+/**
+ * @route GET /api/admin/permissions
+ * @desc Get list of available permissions
+ * @access Private (Admin only)
+ */
+router.get('/permissions', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, async (req, res) => {
+  const permissions = [
+    { id: 'invite_visitors', name: 'Invite Visitors', category: 'visitor' },
+    { id: 'view_own_visitors', name: 'View Own Visitors', category: 'visitor' },
+    { id: 'view_all_visitors', name: 'View All Visitors', category: 'visitor' },
+    { id: 'check_in_visitors', name: 'Check In Visitors', category: 'guard' },
+    { id: 'check_out_visitors', name: 'Check Out Visitors', category: 'guard' },
+    { id: 'log_incidents', name: 'Log Incidents', category: 'guard' },
+    { id: 'manage_walk_ins', name: 'Manage Walk-Ins', category: 'guard' },
+    { id: 'manage_users', name: 'Manage Users', category: 'admin' },
+    { id: 'manage_settings', name: 'Manage Settings', category: 'admin' },
+    { id: 'view_analytics', name: 'View Analytics', category: 'admin' },
+    { id: 'manage_watchlist', name: 'Manage Watchlist', category: 'admin' },
+    { id: 'manage_policies', name: 'Manage Policies', category: 'admin' },
+    { id: 'manage_deliveries', name: 'Manage Deliveries', category: 'resident' },
+    { id: 'manage_estates', name: 'Manage Estates', category: 'super_admin' },
+    { id: 'manage_all_users', name: 'Manage All Users', category: 'super_admin' },
+    { id: 'platform_settings', name: 'Platform Settings', category: 'super_admin' },
+    { id: 'view_global_analytics', name: 'View Global Analytics', category: 'super_admin' },
+  ];
+  return respond(res, 200, 'Permissions retrieved', permissions);
+});
+
+/**
+ * @route POST /api/admin/users/:id/assign-role
+ * @desc Assign a role to a user
+ * @access Private (Admin only)
+ */
+router.post('/users/:id/assign-role', authenticateToken, requireRolePolicy('adminOnly'), requireEstateContextForAdmin, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+  const estateId = req.user.estate_id;
+
+  const validRoles = ['resident', 'guard', 'admin'];
+  if (!role || !validRoles.includes(role)) {
+    return respondError(res, 400, `Invalid role. Must be one of: ${validRoles.join(', ')}`);
+  }
+
+  // Verify user belongs to same estate
+  const userResult = await dbManager.query(
+    'SELECT id, role FROM users WHERE id = $1 AND estate_id = $2',
+    [id, estateId]
+  );
+
+  if (userResult.rows.length === 0) {
+    return respondError(res, 404, 'User not found in this estate');
+  }
+
+  await dbManager.query(
+    'UPDATE users SET role = $1 WHERE id = $2 AND estate_id = $3',
+    [role, id, estateId]
+  );
+
+  logger.info(`Role assigned: user ${id} -> ${role} by admin ${req.user.id}`);
+  return respond(res, 200, 'Role assigned successfully', { userId: id, role });
+}));
+
 export default router;

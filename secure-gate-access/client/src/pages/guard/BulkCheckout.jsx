@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/apiClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -86,10 +87,8 @@ export default function BulkCheckout() {
       setLoading('bulkCheckout', true);
       setFetchError(null);
 
-      const res = await fetch('/api/visitors/active', {
-        credentials: 'include'
-      });
-      const json = await res.json();
+      const res = await api.get('/api/visitors/active');
+      const json = res.data;
 
       if (!json.success) {
         throw new Error(json.error || 'Failed to fetch visitors');
@@ -188,18 +187,12 @@ export default function BulkCheckout() {
       setLoading('performCheckout', true);
 
       // Single bulk API call instead of N individual calls
-      const res = await fetch('/api/bulk-operations/execute', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operationType: 'checkout_visitors',
-          itemIds: Array.from(selectedIds)
-        })
+      const res = await api.post('/api/bulk-operations/execute', {
+        operationType: 'checkout_visitors',
+        itemIds: Array.from(selectedIds)
       });
 
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'Bulk checkout failed');
+      const json = res.data;
 
       const bulkResults = json.data?.results || json.results || {};
       const results = {
@@ -229,19 +222,13 @@ export default function BulkCheckout() {
 
       // Single bulk API call for EOD checkout of all visitors
       const allIds = activeVisitors.map(v => v.id);
-      const res = await fetch('/api/bulk-operations/execute', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operationType: 'checkout_visitors',
-          itemIds: allIds,
-          data: { notes: `EOD Checkout - ${eodNotes || 'End of day batch checkout'}` }
-        })
+      const res = await api.post('/api/bulk-operations/execute', {
+        operationType: 'checkout_visitors',
+        itemIds: allIds,
+        data: { notes: `EOD Checkout - ${eodNotes || 'End of day batch checkout'}` }
       });
 
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || 'EOD checkout failed');
+      const json = res.data;
 
       const bulkResults = json.data?.results || json.results || {};
       const results = {
@@ -562,12 +549,8 @@ export default function BulkCheckout() {
                               });
                               if (confirmed) {
                                 try {
-                                  const res = await fetch(`/api/visitors/${visitor.id}/check-out`, {
-                                    method: 'POST',
-                                    credentials: 'include',
-                                    headers: { 'Content-Type': 'application/json' }
-                                  });
-                                  const json = await res.json();
+                                  const res = await api.post(`/api/visitors/${visitor.id}/check-out`);
+                                  const json = res.data;
                                   if (json.success) {
                                     notificationService.success('Checked Out', `${visitor.name} has been checked out.`);
                                     fetchActiveVisitors();
@@ -636,12 +619,8 @@ export default function BulkCheckout() {
                         });
                         if (confirmed) {
                           try {
-                            const res = await fetch(`/api/visitors/${visitor.id}/check-out`, {
-                              method: 'POST',
-                              credentials: 'include',
-                              headers: { 'Content-Type': 'application/json' }
-                            });
-                            const json = await res.json();
+                            const res = await api.post(`/api/visitors/${visitor.id}/check-out`);
+                            const json = res.data;
                             if (json.success) {
                               notificationService.success('Checked Out', `${visitor.name} has been checked out.`);
                               fetchActiveVisitors();

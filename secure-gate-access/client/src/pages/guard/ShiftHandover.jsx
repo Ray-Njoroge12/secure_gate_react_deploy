@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/apiClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -81,10 +82,8 @@ export default function ShiftHandover() {
 
       // Get current shift
       const today = new Date().toISOString().split('T')[0];
-      const shiftsRes = await fetch(`/api/guards/shifts?start_date=${today}&end_date=${today}`, {
-        credentials: 'include'
-      });
-      const shiftsJson = await shiftsRes.json();
+      const shiftsRes = await api.get(`/api/guards/shifts?start_date=${today}&end_date=${today}`);
+      const shiftsJson = shiftsRes.data;
 
       if (shiftsJson.success && shiftsJson.data?.length > 0) {
         // Find current user's active shift
@@ -95,10 +94,8 @@ export default function ShiftHandover() {
 
         // Get handover notes for the previous shift
         if (myShift) {
-          const handoverRes = await fetch(`/api/guards/handover/${myShift.id}`, {
-            credentials: 'include'
-          });
-          const handoverJson = await handoverRes.json();
+          const handoverRes = await api.get(`/api/guards/handover/${myShift.id}`);
+          const handoverJson = handoverRes.data;
           if (handoverJson.success && handoverJson.data?.length > 0) {
             setIncomingHandover(handoverJson.data[0]);
           }
@@ -106,10 +103,8 @@ export default function ShiftHandover() {
       }
 
       // Fetch list of guards for handover selection
-      const guardsRes = await fetch('/api/guards/shifts?start_date=' + today + '&end_date=' + today, {
-        credentials: 'include'
-      });
-      const guardsJson = await guardsRes.json();
+      const guardsRes = await api.get('/api/guards/shifts?start_date=' + today + '&end_date=' + today);
+      const guardsJson = guardsRes.data;
       if (guardsJson.success) {
         // Extract unique guards from shifts
         const uniqueGuards = [];
@@ -164,20 +159,15 @@ export default function ShiftHandover() {
     try {
       setLoading('submitHandover', true);
 
-      const res = await fetch('/api/guards/handover', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shift_id: currentShift.id,
-          to_guard_id: handoverForm.to_guard_id || null,
-          notes: handoverForm.notes,
-          incidents_summary: handoverForm.incidents_summary,
-          equipment_status: handoverForm.equipment_status
-        })
+      const res = await api.post('/api/guards/handover', {
+        shift_id: currentShift.id,
+        to_guard_id: handoverForm.to_guard_id || null,
+        notes: handoverForm.notes,
+        incidents_summary: handoverForm.incidents_summary,
+        equipment_status: handoverForm.equipment_status
       });
 
-      const json = await res.json();
+      const json = res.data;
 
       if (!json.success) {
         throw new Error(json.message || 'Failed to submit handover');
@@ -220,16 +210,11 @@ export default function ShiftHandover() {
     try {
       setLoading('endShift', true);
 
-      const res = await fetch(`/api/guards/shifts/${currentShift.id}/end`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          handover_notes: handoverForm.notes || 'Shift ended without additional notes.'
-        })
+      const res = await api.post(`/api/guards/shifts/${currentShift.id}/end`, {
+        handover_notes: handoverForm.notes || 'Shift ended without additional notes.'
       });
 
-      const json = await res.json();
+      const json = res.data;
 
       if (!json.success) {
         throw new Error(json.message || 'Failed to end shift');

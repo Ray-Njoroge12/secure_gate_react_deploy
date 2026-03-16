@@ -230,7 +230,7 @@ requireEstate           // Ensures user has estate_id
 
 ### Security Features
 
-- CSRF protection (disabled in dev unless `ENABLE_CSRF=true`)
+- CSRF protection (disabled in dev when `DISABLE_CSRF=true`; enabled by default)
 - Rate limiting (configurable, disabled in dev unless `ENABLE_RATE_LIMIT=true`)
 - Helmet.js security headers
 - Session management with connect-redis
