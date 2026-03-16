@@ -119,8 +119,30 @@ describe('LoginPage', () => {
     expect(await screen.findByText('MFA Verify')).toBeInTheDocument();
   });
 
-  test('login error calls handleError', async () => {
-    const login = jest.fn().mockRejectedValue(new Error('Invalid credentials'));
+  test('login auth error is shown inline in form', async () => {
+    const login = jest.fn().mockRejectedValue({ message: 'Invalid credentials', code: 'UNAUTHORIZED', status: 401 });
+
+    const user = userEvent.setup();
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>,
+      { route: '/login', auth: { login, isAuthenticated: false, user: null } }
+    );
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+
+    expect(login).toHaveBeenCalled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Invalid credentials');
+    expect(errorHandlers.handleError).not.toHaveBeenCalled();
+  });
+
+  test('login server error still uses global error handler', async () => {
+    const login = jest.fn().mockRejectedValue({ message: 'Server error', code: 'SERVER_ERROR', status: 500 });
 
     const user = userEvent.setup();
 
@@ -154,6 +176,7 @@ describe('LoginPage', () => {
     renderWithAuth(
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<LoginPage />} />
       </Routes>,
       { route: '/login', auth: { isAuthenticated: false, user: null } }
     );
@@ -185,5 +208,28 @@ describe('LoginPage', () => {
 
     fetchSpy.mockRestore();
     jest.useRealTimers();
+  });
+
+  test('forgot password API error is shown inline', async () => {
+    const user = userEvent.setup();
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: 'Reset request failed' })
+    });
+
+    renderWithAuth(
+      <Routes>
+        <Route path="/forgot-password" element={<LoginPage />} />
+      </Routes>,
+      { route: '/forgot-password', auth: { isAuthenticated: false, user: null } }
+    );
+
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send Reset Link' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Reset request failed');
+    expect(errorHandlers.handleError).not.toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
   });
 });

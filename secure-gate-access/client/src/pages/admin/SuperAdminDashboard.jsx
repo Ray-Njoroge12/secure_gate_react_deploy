@@ -7,16 +7,10 @@ import { GradientCard } from '../../components/ui';
 import Button from '../../components/ui/Button';
 import GradientButton from '../../components/ui/GradientButton';
 import Icon from '../../components/ui/Icon';
-import { useAuth } from '../../contexts/AuthContext';
-import { handleApiError } from '../../utils/errorMapper';
 import api from '../../utils/apiClient';
-
-// Mock service for now, will implement real service calls
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export default function SuperAdminDashboard() {
     const navigate = useNavigate();
-    const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState(null);
     const [isAddEstateOpen, setIsAddEstateOpen] = useState(false);
@@ -73,73 +67,52 @@ export default function SuperAdminDashboard() {
             };
 
             // 1. Get Overview Stats
-            const overviewRes = await fetch(`${API_BASE_URL}/api/admin/super-admin/overview`, {
-                headers,
-                credentials: 'include'
-            });
+            const overviewRes = await api.get('/api/admin/super-admin/overview', { headers });
+            const overviewData = overviewRes?.data || {};
 
-            if (overviewRes.status === 401 || overviewRes.status === 403) {
-                // Check if it's an MFA setup requirement
-                const errorData = await overviewRes.json().catch(() => ({}));
-                
-                if (errorData.code === 'MFA_SETUP_REQUIRED' || errorData.error?.code === 'MFA_SETUP_REQUIRED') {
-                    // Redirect to MFA setup
-                    navigate('/mfa/setup', { 
-                        state: { 
-                            message: 'Multi-Factor Authentication is required for SuperAdmin access. Please complete setup to continue.',
-                            returnUrl: '/dashboard/admin/super'
-                        } 
-                    });
-                    return;
-                }
-                
-                setHealth({ status: 'error', text: 'Auth Failed' });
-                setErrorMessage(errorData.message || 'Session expired. Please login again.');
-                if (overviewRes.status === 401) logout(); // Auto logout on 401
+            if (overviewData.code === 'MFA_SETUP_REQUIRED' || overviewData.error?.code === 'MFA_SETUP_REQUIRED') {
+                navigate('/mfa/setup', {
+                    state: {
+                        message: 'Multi-Factor Authentication is required for SuperAdmin access. Please complete setup to continue.',
+                        returnUrl: '/dashboard/admin/super'
+                    }
+                });
                 return;
             }
 
-            if (overviewRes.ok) {
-                const data = await overviewRes.json();
-                if (data.success && data.data) {
-                    setStats(data.data.stats || {
-                        totalEstates: 0,
-                        totalUsers: 0,
-                        totalVisitors: 0,
-                        totalIncidents: 0
-                    });
-                    if (data.data.systemHealth) setHealth({ status: 'healthy', text: 'Operational' });
-                } else if (data.stats) {
-                    setStats(data.stats);
-                    if (data.systemHealth) setHealth({ status: 'healthy', text: 'Operational' });
-                }
+            if (overviewData.success && overviewData.data) {
+                setStats(overviewData.data.stats || {
+                    totalEstates: 0,
+                    totalUsers: 0,
+                    totalVisitors: 0,
+                    totalIncidents: 0
+                });
+                if (overviewData.data.systemHealth) setHealth({ status: 'healthy', text: 'Operational' });
+            } else if (overviewData.stats) {
+                setStats(overviewData.stats);
+                if (overviewData.systemHealth) setHealth({ status: 'healthy', text: 'Operational' });
             } else {
                 setHealth({ status: 'error', text: 'API Error' });
                 setErrorMessage('Unable to load platform overview. Please retry.');
             }
 
             // 2. Get Estates List
-            const estatesRes = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates`, {
-                headers,
-                credentials: 'include'
-            });
-            if (estatesRes.ok) {
-                const data = await estatesRes.json();
-                if (data.success && data.data) {
-                    setEstates(data.data || []);
-                } else if (Array.isArray(data)) {
-                    setEstates(data);
-                }
+            const estatesRes = await api.get('/api/admin/super-admin/estates', { headers });
+            const estatesData = estatesRes?.data || {};
+            if (estatesData.success && estatesData.data) {
+                setEstates(estatesData.data || []);
+            } else if (Array.isArray(estatesData)) {
+                setEstates(estatesData);
             }
 
         } catch (err) {
             console.error('Failed to load super admin data:', err);
-            setErrorMessage('Failed to load dashboard data');
+            setErrorMessage(err?.message || 'Failed to load dashboard data');
             setHealth({ status: 'error', text: 'System Error' });
         } finally {
             setLoading(false);
         }
-    }, [logout]);
+    }, [navigate]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -147,19 +120,13 @@ export default function SuperAdminDashboard() {
 
     const fetchSystemMetrics = async () => {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/system/metrics`, {
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
+            const res = await api.get('/api/admin/super-admin/system/metrics', {
+                headers: { 'Content-Type': 'application/json' }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setSystemMetrics(data.data);
-            } else {
-                setErrorMessage('Failed to refresh system metrics.');
-            }
+            setSystemMetrics(res?.data?.data);
         } catch (err) {
             console.error('Failed to fetch system metrics:', err);
-            setErrorMessage('Failed to refresh system metrics.');
+            setErrorMessage(err?.message || 'Failed to refresh system metrics.');
         }
     };
 
@@ -178,12 +145,11 @@ export default function SuperAdminDashboard() {
         setIsSearching(true);
         setErrorMessage(null);
         try {
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/users/search?q=${encodeURIComponent(searchQuery)}`, {
+            const res = await api.get('/api/admin/super-admin/users/search', {
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include'
+                params: { q: searchQuery }
             });
-            if (!res.ok) throw new Error('Search failed');
-            const data = await res.json();
+            const data = res?.data || {};
             const normalizedResults = Array.isArray(data?.data)
                 ? data.data
                 : Array.isArray(data)
@@ -191,7 +157,7 @@ export default function SuperAdminDashboard() {
                     : [];
             setSearchResults(normalizedResults);
         } catch (err) {
-            setErrorMessage(handleApiError(err));
+            setErrorMessage(err?.message || 'Search failed');
         } finally {
             setIsSearching(false);
         }
@@ -222,31 +188,17 @@ export default function SuperAdminDashboard() {
             // Optimistic update
             setEstates(prev => prev.map(e => e.id === estateId ? { ...e, status: newStatus } : e));
 
-            const res = await fetch(`${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/status`, {
-                method: 'PATCH',
+            await api.patch(`/api/admin/super-admin/estates/${estateId}/status`, { status: newStatus }, {
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            const resText = await res.text();
-
-            if (!res.ok) {
-                try {
-                    const json = JSON.parse(resText);
-                    throw new Error(json.message || 'Failed to update status');
-                } catch (e) {
-                    throw new Error('Failed to update status: ' + resText);
                 }
-            }
+            });
 
             // Refresh real data to confirm
             fetchDashboardData();
         } catch (err) {
             console.error(err);
-            setErrorMessage(handleApiError(err));
+            setErrorMessage(err?.message || 'Failed to update status');
             // Revert on error
             fetchDashboardData();
         }
