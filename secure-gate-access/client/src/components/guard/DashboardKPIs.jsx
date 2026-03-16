@@ -7,6 +7,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Icon } from '../ui';
 import Button from '../ui/Button';
+import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 
 const DashboardKPIs = ({ onFilterClick }) => {
   const [kpis, setKpis] = useState({
@@ -30,42 +32,22 @@ const DashboardKPIs = ({ onFilterClick }) => {
       const today = new Date().toISOString().split('T')[0];
 
       // Fetch all KPIs in parallel
-      const [onPremRes, arrivingRes, pendingRes, deniedRes] = await Promise.all([
-        fetch('/api/visitors?status=on_premise&limit=1', { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch(`/api/visitors?fromDate=${today}&toDate=${today}&status=approved&limit=1`, { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch('/api/visitors?status=pending_approval&limit=1', { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        fetch(`/api/visitors?status=rejected&fromDate=${today}&toDate=${today}&limit=1`, { 
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        })
-      ]);
-
-      // Parse all responses
       const [onPrem, arriving, pending, denied] = await Promise.all([
-        onPremRes.json(),
-        arrivingRes.json(),
-        pendingRes.json(),
-        deniedRes.json()
+        api.get('/api/visitors?status=on_premise&limit=1'),
+        api.get(`/api/visitors?fromDate=${today}&toDate=${today}&status=approved&limit=1`),
+        api.get('/api/visitors?status=pending_approval&limit=1'),
+        api.get(`/api/visitors?status=rejected&fromDate=${today}&toDate=${today}&limit=1`)
       ]);
 
       // Extract totals from pagination data
       setKpis({
-        onPremise: onPrem.data?.pagination?.total || 0,
-        arrivingToday: arriving.data?.pagination?.total || 0,
-        pendingApproval: pending.data?.pagination?.total || 0,
-        deniedToday: denied.data?.pagination?.total || 0
+        onPremise: onPrem.data?.data?.pagination?.total || 0,
+        arrivingToday: arriving.data?.data?.pagination?.total || 0,
+        pendingApproval: pending.data?.data?.pagination?.total || 0,
+        deniedToday: denied.data?.data?.pagination?.total || 0
       });
     } catch (error) {
-      console.error('Failed to fetch KPIs:', error);
+      logger.error('Failed to fetch KPIs:', error);
     } finally {
       setLoading(false);
     }
