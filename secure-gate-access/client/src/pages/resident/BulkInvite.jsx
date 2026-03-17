@@ -4,6 +4,7 @@ import { useError } from "../../contexts/ErrorContext";
 import { useLoading } from "../../contexts/LoadingContext";
 import { Button, Card, PageHeader, Icon } from "../../components/ui";
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 
 // Helper to format date for input
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -70,7 +71,7 @@ const BulkInvite = () => {
         // Could add a toast success here if available, 
         // relying on user feedback on button for now or just generic success
       } catch (err) {
-        console.error('Failed to copy', err);
+        logger.error('Failed to copy', err);
       }
     }
   };

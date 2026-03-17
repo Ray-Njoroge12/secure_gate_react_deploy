@@ -9,6 +9,7 @@ import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import { useConfirmation } from '../../components/common/ConfirmationDialog';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 import './PolicyManagement.css';
 
 const PolicyManagement = () => {
@@ -40,7 +41,7 @@ const PolicyManagement = () => {
       const response = await api.get('/api/admin/policies');
       setPolicies(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching policies:', err);
+      logger.error('Error fetching policies:', err);
     } finally {
       setLoading(false);
     }

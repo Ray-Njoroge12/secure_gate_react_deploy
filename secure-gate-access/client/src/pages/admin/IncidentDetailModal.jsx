@@ -9,6 +9,7 @@ import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import { COLORS } from '../../utils/designTokens';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 import './IncidentDetailModal.css';
 
 const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
@@ -19,6 +20,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
   const [slaInfo, setSlaInfo] = useState(null);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [actionError, setActionError] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'comments') {
@@ -35,7 +37,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
       const response = await api.get(`/api/admin/incidents/${incident.id}/comments`);
       setComments(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching comments:', err);
+      logger.error('Error fetching comments:', err);
     }
   };
 
@@ -44,7 +46,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
       const response = await api.get(`/api/admin/incidents/${incident.id}/history`);
       setHistory(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching history:', err);
+      logger.error('Error fetching history:', err);
     }
   };
 
@@ -53,7 +55,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
       const response = await api.get(`/api/admin/incidents/${incident.id}/sla`);
       setSlaInfo(response.data.data);
     } catch (err) {
-      console.error('Error fetching SLA info:', err);
+      logger.error('Error fetching SLA info:', err);
     }
   };
 
@@ -68,7 +70,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
       setNewComment('');
       await fetchComments();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     } finally {
       setSubmittingComment(false);
     }
@@ -81,7 +83,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
       onUpdate();
       onClose();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
@@ -91,7 +93,7 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
 
       onUpdate();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
@@ -128,6 +130,14 @@ const IncidentDetailModal = ({ incident, guards, onClose, onUpdate }) => {
           </div>
           <Button variant="ghost" className="modal-close" onClick={onClose} aria-label="Close incident details">×</Button>
         </div>
+
+        {/* Action error display */}
+        {actionError && (
+          <div className="px-4 py-2 bg-red-50 text-red-700 text-sm border-b border-red-200" role="alert">
+            {actionError}
+            <button onClick={() => setActionError(null)} className="ml-2 underline text-xs">Dismiss</button>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="modal-tabs" role="tablist" aria-label="Incident sections">

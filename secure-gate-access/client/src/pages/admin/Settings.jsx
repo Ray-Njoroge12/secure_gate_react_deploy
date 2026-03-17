@@ -4,11 +4,13 @@ import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../utils/apiClient";
+import { useToast } from "../../contexts/ToastContext";
 import NotificationSettings from "../../components/settings/NotificationSettings";
 import "../../styles.css";
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { theme, resolvedTheme } = useTheme();
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'super_admin';
@@ -170,12 +172,12 @@ export default function Settings() {
     })
       .then(res => {
         if (res.data.success) {
-          alert(`${section} settings saved successfully!`);
+          toast.success({ title: `${section} settings saved successfully!` });
         } else {
-          alert('Failed to save settings');
+          toast.error({ title: 'Failed to save settings' });
         }
       })
-      .catch(() => alert('Failed to save settings'));
+      .catch(() => toast.error({ title: 'Failed to save settings' }));
   };
 
   // Define all tabs - some are Super Admin only
@@ -289,9 +291,9 @@ export default function Settings() {
       }
 
       await loadComplianceData();
-      alert("Compliance settings updated successfully!");
+      toast.success({ title: 'Compliance settings updated successfully!' });
     } catch (error) {
-      alert(error.message || "Failed to update compliance settings");
+      toast.error({ title: error.message || 'Failed to update compliance settings' });
     }
   };
 
@@ -304,9 +306,9 @@ export default function Settings() {
         throw new Error(data.message || "Failed to run compliance review");
       }
       await loadComplianceData();
-      alert("Compliance review completed.");
+      toast.success({ title: 'Compliance review completed.' });
     } catch (error) {
-      alert(error.message || "Failed to run compliance review");
+      toast.error({ title: error.message || 'Failed to run compliance review' });
     } finally {
       setReviewRunning(false);
     }

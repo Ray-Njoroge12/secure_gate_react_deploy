@@ -21,6 +21,7 @@ const WatchlistManagement = () => {
   const [editingEntry, setEditingEntry] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
+  const [actionError, setActionError] = useState(null);
   const closeModal = () => setShowModal(false);
   const { modalRef } = useModalAccessibility(showModal, closeModal);
   const [formData, setFormData] = useState({
@@ -84,7 +85,7 @@ const WatchlistManagement = () => {
       setShowModal(false);
       resetForm();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
@@ -100,7 +101,7 @@ const WatchlistManagement = () => {
       setDeleteConfirmOpen(false);
       setEntryToDelete(null);
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
@@ -109,7 +110,7 @@ const WatchlistManagement = () => {
       await api.put(`/api/admin/watchlist/${entry.id}`, { ...entry, active: !entry.active });
       await fetchWatchlist();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setActionError('Error: ' + err.message);
     }
   };
 
@@ -177,6 +178,12 @@ const WatchlistManagement = () => {
 
   return (
     <div className="watchlist-management">
+      {actionError && (
+        <div className="px-4 py-2 mb-4 bg-red-50 text-red-700 text-sm rounded border border-red-200" role="alert">
+          {actionError}
+          <button onClick={() => setActionError(null)} className="ml-2 underline text-xs">Dismiss</button>
+        </div>
+      )}
       <div className="watchlist-header">
         <div className="header-left">
           <h1>🛡️ Security Watchlist</h1>
