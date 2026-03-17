@@ -1,5 +1,6 @@
 -- Enhanced Security System Migration
 -- Creates tables for comprehensive security logging, incident tracking, and forensic data
+-- Fixed: 2026-03-17 - Added IF NOT EXISTS to prevent duplicate index errors
 
 -- Security audit logs table for comprehensive access logging
 CREATE TABLE IF NOT EXISTS security_audit_logs (
@@ -27,6 +28,13 @@ CREATE TABLE IF NOT EXISTS security_audit_logs (
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Create indices only if they don't already exist
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_user_id ON security_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_event_type ON security_audit_logs(event_type);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_severity ON security_audit_logs(severity);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_timestamp ON security_audit_logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_user_timestamp ON security_audit_logs(user_id, timestamp);
 
 -- Security incidents table for tracking detected security incidents
 CREATE TABLE IF NOT EXISTS security_incidents (
@@ -156,37 +164,37 @@ CREATE TABLE IF NOT EXISTS forensic_data_collection (
 -- Indexes for performance optimization
 
 -- Security audit logs indexes
-CREATE INDEX idx_security_audit_logs_user_timestamp ON security_audit_logs(user_id, timestamp);
-CREATE INDEX idx_security_audit_logs_event_type ON security_audit_logs(event_type);
-CREATE INDEX idx_security_audit_logs_severity ON security_audit_logs(severity);
-CREATE INDEX idx_security_audit_logs_risk_score ON security_audit_logs(risk_score);
-CREATE INDEX idx_security_audit_logs_correlation_id ON security_audit_logs(correlation_id);
-CREATE INDEX idx_security_audit_logs_ip_address ON security_audit_logs(ip_address);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_user_timestamp ON security_audit_logs(user_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_event_type ON security_audit_logs(event_type);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_severity ON security_audit_logs(severity);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_risk_score ON security_audit_logs(risk_score);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_correlation_id ON security_audit_logs(correlation_id);
+CREATE INDEX IF NOT EXISTS idx_security_audit_logs_ip_address ON security_audit_logs(ip_address);
 
 -- Security incidents indexes
-CREATE INDEX idx_security_incidents_user_id ON security_incidents(user_id);
-CREATE INDEX idx_security_incidents_type_severity ON security_incidents(incident_type, severity);
-CREATE INDEX idx_security_incidents_status ON security_incidents(status);
-CREATE INDEX idx_security_incidents_created_at ON security_incidents(created_at);
-CREATE INDEX idx_security_incidents_assigned_to ON security_incidents(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_security_incidents_user_id ON security_incidents(user_id);
+CREATE INDEX IF NOT EXISTS idx_security_incidents_type_severity ON security_incidents(incident_type, severity);
+CREATE INDEX IF NOT EXISTS idx_security_incidents_status ON security_incidents(status);
+CREATE INDEX IF NOT EXISTS idx_security_incidents_created_at ON security_incidents(created_at);
+CREATE INDEX IF NOT EXISTS idx_security_incidents_assigned_to ON security_incidents(assigned_to);
 
 -- Additional auth sessions indexes
-CREATE INDEX idx_additional_auth_sessions_user_id ON additional_auth_sessions(user_id);
-CREATE INDEX idx_additional_auth_sessions_expires_at ON additional_auth_sessions(expires_at);
-CREATE INDEX idx_additional_auth_sessions_status ON additional_auth_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_additional_auth_sessions_user_id ON additional_auth_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_additional_auth_sessions_expires_at ON additional_auth_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_additional_auth_sessions_status ON additional_auth_sessions(status);
 
 -- User security settings indexes
-CREATE INDEX idx_user_security_settings_mfa_enabled ON user_security_settings(mfa_enabled);
-CREATE INDEX idx_user_security_settings_account_locked ON user_security_settings(account_locked_until) WHERE account_locked_until IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_user_security_settings_mfa_enabled ON user_security_settings(mfa_enabled);
+CREATE INDEX IF NOT EXISTS idx_user_security_settings_account_locked ON user_security_settings(account_locked_until) WHERE account_locked_until IS NOT NULL;
 
 -- Security alert recipients indexes
-CREATE INDEX idx_security_alert_recipients_estate_id ON security_alert_recipients(estate_id);
-CREATE INDEX idx_security_alert_recipients_active ON security_alert_recipients(active) WHERE active = true;
+CREATE INDEX IF NOT EXISTS idx_security_alert_recipients_estate_id ON security_alert_recipients(estate_id);
+CREATE INDEX IF NOT EXISTS idx_security_alert_recipients_active ON security_alert_recipients(active) WHERE active = true;
 
 -- Forensic data collection indexes
-CREATE INDEX idx_forensic_data_collection_incident_id ON forensic_data_collection(incident_id);
-CREATE INDEX idx_forensic_data_collection_event_id ON forensic_data_collection(event_id);
-CREATE INDEX idx_forensic_data_collection_type ON forensic_data_collection(collection_type);
+CREATE INDEX IF NOT EXISTS idx_forensic_data_collection_incident_id ON forensic_data_collection(incident_id);
+CREATE INDEX IF NOT EXISTS idx_forensic_data_collection_event_id ON forensic_data_collection(event_id);
+CREATE INDEX IF NOT EXISTS idx_forensic_data_collection_type ON forensic_data_collection(collection_type);
 
 -- Functions for automatic timestamp updates
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -198,14 +206,17 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for automatic timestamp updates
+DROP TRIGGER IF EXISTS update_security_incidents_updated_at ON security_incidents;
 CREATE TRIGGER update_security_incidents_updated_at 
     BEFORE UPDATE ON security_incidents 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_security_settings_updated_at ON user_security_settings;
 CREATE TRIGGER update_user_security_settings_updated_at 
     BEFORE UPDATE ON user_security_settings 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_security_alert_recipients_updated_at ON security_alert_recipients;
 CREATE TRIGGER update_security_alert_recipients_updated_at 
     BEFORE UPDATE ON security_alert_recipients 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
