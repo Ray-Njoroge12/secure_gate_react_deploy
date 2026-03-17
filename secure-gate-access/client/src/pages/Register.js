@@ -8,6 +8,7 @@ import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
 import phoneValidator from '../utils/phoneValidator.js';
 import passwordValidator from '../utils/passwordValidator.js';
 import logger from '../utils/logger';
+import api from '../utils/apiClient';
 import PasswordRequirements from '../components/PasswordRequirements';
 import Button from '../components/ui/Button';
 
@@ -81,17 +82,8 @@ export default function RegistrationPage() {
         setEstatesLoading(true);
         setEstateError('');  // Clear previous errors
 
-        const response = await fetch(`${API_BASE_URL}/api/estates/available`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to load estates: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const availableEstates = data?.data?.estates || [];
+        const response = await api.get('/api/estates/available');
+        const availableEstates = response.data?.data?.estates || [];
         setEstates(availableEstates);
         setFormData((prev) => {
           if (!prev.estateId) return prev;
@@ -278,10 +270,7 @@ export default function RegistrationPage() {
         ? Number(formData.estateId)
         : (hasDefaultEstateFallback ? DEFAULT_ESTATE_ID : null);
 
-      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const response = await api.post('/api/auth/register', {
           username: formData.username,
           first_name: formData.first_name,
           last_name: formData.last_name,
@@ -291,41 +280,7 @@ export default function RegistrationPage() {
           house: formData.role === "resident" ? formData.houseNumber : "",
           password: formData.password,
           estate_id: Number.isFinite(resolvedEstateId) ? resolvedEstateId : null
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Handle specific error cases to preserve user context
-        if (res.status === 409 || (data.message && data.message.toLowerCase().includes('already exist'))) {
-          // Duplicate email or username - set inline errors
-          const isDuplicateEmail = data.message.toLowerCase().includes('email');
-          const isDuplicateUsername = data.message.toLowerCase().includes('username');
-
-          if (isDuplicateEmail) {
-            setErrors(prev => ({ ...prev, email: 'This email is already registered. Try logging in instead.' }));
-          }
-          if (isDuplicateUsername) {
-            setErrors(prev => ({ ...prev, username: 'This username is already taken. Please choose another.' }));
-          }
-
-          handleError(data.message, {
-            context: 'User Registration',
-            title: 'Account Already Exists',
-            severity: 'error'
-          });
-        } else {
-          // Generic error - preserve all form state
-          handleError(data.message || "Registration failed. Please try again.", {
-            context: 'User Registration',
-            title: 'Registration Failed',
-            showRecoveryActions: true,
-            onRetry: () => handleRegister(e)
-          });
-        }
-        return;
-      }
+        });
 
       // Success - show detailed message with longer delay
       handleSuccess(`✅ Registration successful!
@@ -344,13 +299,43 @@ Redirecting to login in 10 seconds...`, {
       setSuccess("Account created! Pending Admin approval. You'll receive an email when activated.");
       setTimeout(() => navigate("/login"), 10000);  // 10 seconds delay
     } catch (err) {
-      // Network or unexpected errors - preserve form state
-      handleError(err.message || "Network error. Please check your connection and try again.", {
-        context: 'User Registration',
-        title: 'Connection Error',
-        showRecoveryActions: true,
-        onRetry: () => handleRegister(e)
-      });
+      const status = err.response?.status;
+      const errData = err.response?.data;
+
+      if (status === 409 || (errData?.message && errData.message.toLowerCase().includes('already exist'))) {
+        // Duplicate email or username - set inline errors
+        const isDuplicateEmail = errData?.message?.toLowerCase().includes('email');
+        const isDuplicateUsername = errData?.message?.toLowerCase().includes('username');
+
+        if (isDuplicateEmail) {
+          setErrors(prev => ({ ...prev, email: 'This email is already registered. Try logging in instead.' }));
+        }
+        if (isDuplicateUsername) {
+          setErrors(prev => ({ ...prev, username: 'This username is already taken. Please choose another.' }));
+        }
+
+        handleError(errData?.message, {
+          context: 'User Registration',
+          title: 'Account Already Exists',
+          severity: 'error'
+        });
+      } else if (status) {
+        // Server error with a response
+        handleError(errData?.message || "Registration failed. Please try again.", {
+          context: 'User Registration',
+          title: 'Registration Failed',
+          showRecoveryActions: true,
+          onRetry: () => handleRegister(e)
+        });
+      } else {
+        // Network or unexpected errors - preserve form state
+        handleError(err.message || "Network error. Please check your connection and try again.", {
+          context: 'User Registration',
+          title: 'Connection Error',
+          showRecoveryActions: true,
+          onRetry: () => handleRegister(e)
+        });
+      }
     } finally {
       setLoading(false);
     }

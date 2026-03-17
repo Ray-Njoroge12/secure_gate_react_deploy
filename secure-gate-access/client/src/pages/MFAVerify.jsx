@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
+import logger from '../utils/logger';
 import Button from '../components/ui/Button';
 
 /**
@@ -31,7 +32,7 @@ const MFAVerify = () => {
           return parsed;
         }
       } catch (e) {
-        console.error('Failed to parse stored MFA session');
+        logger.error('Failed to parse stored MFA session');
       }
     }
     return {};

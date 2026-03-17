@@ -28,6 +28,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 import { navigateTo } from '../../utils/appNavigation';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 
 // Relationship type options
 const RELATIONSHIP_TYPES = [
@@ -83,7 +84,7 @@ const FavoriteVisitors = () => {
       const data = response.data;
       setFavorites(data.data?.favorites || []);
     } catch (err) {
-      console.error('Error fetching favorites:', err);
+      logger.error('Error fetching favorites:', err);
       if (err.response?.status === 404) {
         setFavorites([]);
         return;
@@ -108,7 +109,7 @@ const FavoriteVisitors = () => {
         setHistoryVisitors(visitors);
       }
     } catch (err) {
-      console.error('Error fetching history:', err);
+      logger.error('Error fetching history:', err);
     } finally {
       setHistoryLoading(false);
     }
@@ -194,7 +195,7 @@ const FavoriteVisitors = () => {
       setIsModalOpen(false);
       fetchFavorites(); // Refresh list
     } catch (err) {
-      console.error('Error saving favorite:', err);
+      logger.error('Error saving favorite:', err);
       toast.error(err.response?.data?.message || err.message);
     } finally {
       setSubmitting(false);
@@ -209,7 +210,7 @@ const FavoriteVisitors = () => {
       setDeleteConfirm(null);
       fetchFavorites(); // Refresh list
     } catch (err) {
-      console.error('Error deleting favorite:', err);
+      logger.error('Error deleting favorite:', err);
       toast.error(err.response?.data?.message || err.message);
     }
   };

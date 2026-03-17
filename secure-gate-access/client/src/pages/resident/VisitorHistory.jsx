@@ -3,6 +3,7 @@ import logger from 'utils/logger';
 
 import { Button, SearchFilter, Pagination, ResponsiveTable, PageHeader, Icon } from "../../components/ui";
 import api from '../../utils/apiClient';
+import { useToast } from '../../contexts/ToastContext';
 import Modal from "../../components/ui/Modal";
 import { useSearchData } from "../../hooks/useSearch";
 // import AppShell from "../../layouts/AppShell";
@@ -16,6 +17,7 @@ function mask(value) {
 }
 
 export default function VisitorHistory() {
+  const { toast } = useToast();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -218,7 +220,7 @@ export default function VisitorHistory() {
       case 'pdf':
         // For PDF export, we'd typically use a library like jsPDF
         // For now, we'll show an alert and suggest CSV/JSON
-        alert('PDF export requires additional setup. Please use CSV or JSON export for now.');
+        toast.info({ title: 'PDF export requires additional setup. Please use CSV or JSON export for now.' });
         break;
 
       default:

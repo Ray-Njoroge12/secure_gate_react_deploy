@@ -15,9 +15,12 @@ import React, { useState, useEffect } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
+import { useToast } from '../../contexts/ToastContext';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('roles'); // 'roles', 'users', 'permissions'
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
@@ -69,11 +72,11 @@ const RoleManagement = () => {
     try {
       await api.post(`/api/admin/users/${userId}/assign-role`, { roleId });
 
-      alert('Role assigned successfully!');
+      toast.success({ title: 'Role assigned successfully!' });
       setShowAssignModal(false);
       fetchUsers();
     } catch (err) {
-      alert('Error: ' + err.message);
+      setError('Error: ' + err.message);
     }
   };
 

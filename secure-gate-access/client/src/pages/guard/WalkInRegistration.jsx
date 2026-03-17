@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 import { Card, Button, PageHeader, Icon } from '../../components/ui';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -45,7 +46,7 @@ const WalkInRegistration = () => {
       const pending = await offlineService.getPendingWalkIns();
       setPendingWalkIns(pending);
     } catch (err) {
-      console.error('Failed to load pending walk-ins:', err);
+      logger.error('Failed to load pending walk-ins:', err);
     }
   }, []);
 
@@ -59,7 +60,7 @@ const WalkInRegistration = () => {
         await loadPendingWalkIns();
       }
     } catch (err) {
-      console.error('Failed to sync pending walk-ins:', err);
+      logger.error('Failed to sync pending walk-ins:', err);
     } finally {
       setLoading('syncWalkIns', false);
     }

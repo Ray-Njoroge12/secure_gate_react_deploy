@@ -8,6 +8,7 @@ import AccessibilitySettings from "../../components/accessibility/AccessibilityS
 import { Icon } from "../../components/ui/Icon";
 import { useOnboardingTour } from "../../components/common/OnboardingTour";
 import api from "../../utils/apiClient";
+import logger from '../../utils/logger';
 import "../../styles.css";
 
 export default function Settings() {
@@ -49,7 +50,7 @@ export default function Settings() {
           });
         }
       })
-      .catch(err => console.error('Failed to load profile:', err));
+      .catch(err => logger.error('Failed to load profile:', err));
   }, []);
   const [security, setSecurity] = useState({ showLoginHistory: true });
   const [visitorPrefs, setVisitorPrefs] = useState({ defaultDuration: "1 hour", maxVisitors: 5 });
@@ -398,6 +399,20 @@ export default function Settings() {
               </div>
               <div className="mt-4">
                 <Button type="button" variant="primary" onClick={(e) => handleUpdate("Security", e)}>Save Security Settings</Button>
+              </div>
+
+              {/* Privacy Dashboard link */}
+              <div className="pt-2 border-t border-gray-200 dark:border-slate-600">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Data Privacy</h3>
+                <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-600">
+                  <div>
+                    <p className="font-medium text-sm text-gray-900 dark:text-white">Privacy &amp; Data Rights</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Manage your consent, data access, and erasure requests</p>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => navigate('/privacy-dashboard')}>
+                    Manage Privacy
+                  </Button>
+                </div>
               </div>
             </div>
           )}

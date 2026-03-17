@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/apiClient';
+import logger from '../utils/logger';
 import Button from '../components/ui/Button';
 import { useConfirmation } from '../components/common/ConfirmationDialog';
 
@@ -45,7 +46,7 @@ const PrivacyDashboard = () => {
         setConsentStatus(response.data.data);
       }
     } catch (err) {
-      console.error('Failed to load consent status');
+      logger.error('Failed to load consent status');
     }
   };
 
@@ -57,7 +58,7 @@ const PrivacyDashboard = () => {
         setRetentionPolicy(response.data.data);
       }
     } catch (err) {
-      console.error('Failed to load retention policy');
+      logger.error('Failed to load retention policy');
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
 
 import QRScanner from '../../components/QRScanner';
 import { Card, Button, PageHeader, Icon } from '../../components/ui';
@@ -55,7 +56,7 @@ const ScanQR = () => {
         const pending = await offlineService.getPendingOfflineCheckIns();
         setPendingSyncCount(pending.length);
       } catch (err) {
-        console.error('Failed to get pending sync count:', err);
+        logger.error('Failed to get pending sync count:', err);
       }
     };
     
@@ -323,7 +324,7 @@ const ScanQR = () => {
       });
       
     } catch (err) {
-      console.error('Offline check-in error:', err);
+      logger.error('Offline check-in error:', err);
       setScannedData({
         qrData,
         status: 'error',

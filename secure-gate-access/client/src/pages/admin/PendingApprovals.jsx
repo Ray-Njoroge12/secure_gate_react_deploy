@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Icon from '../../components/ui/Icon';
 import Button from '../../components/ui/Button';
-import axios from 'axios';
+import api from '../../utils/apiClient';
+import logger from '../../utils/logger';
+import { useToast } from '../../contexts/ToastContext';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog';
 import './PendingApprovals.css';
 
 const PendingApprovals = ({ siteId }) => {
+    const { toast } = useToast();
     const [pendingUsers, setPendingUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -27,10 +30,7 @@ const PendingApprovals = ({ siteId }) => {
         try {
             setLoading(true);
             const params = siteId ? { siteId } : {};
-            const response = await axios.get('/api/admin/users/pending', {
-                params,
-                withCredentials: true
-            });
+            const response = await api.get('/api/admin/users/pending', { params });
             // Robust array extraction - handle various response formats
             const responseData = response.data;
             let usersArray = [];
@@ -44,7 +44,7 @@ const PendingApprovals = ({ siteId }) => {
             setPendingUsers(usersArray);
             setError(null);
         } catch (err) {
-            console.error('Error fetching pending users:', err);
+            logger.error('Error fetching pending users:', err);
             setPendingUsers([]); // Reset to empty array on error
             setError(err.response?.data?.message || 'Failed to load pending users');
         } finally {
@@ -54,9 +54,7 @@ const PendingApprovals = ({ siteId }) => {
 
     const fetchEstates = async () => {
         try {
-            const response = await axios.get('/api/estates', {
-                withCredentials: true
-            });
+            const response = await api.get('/api/estates');
             // Robust array extraction
             const responseData = response.data;
             let estatesArray = [];
@@ -69,14 +67,14 @@ const PendingApprovals = ({ siteId }) => {
             }
             setEstates(estatesArray);
         } catch (err) {
-            console.error('Error fetching estates:', err);
+            logger.error('Error fetching estates:', err);
             setEstates([]); // Reset to empty array on error
         }
     };
 
     const handleApprove = async (userId, estateId) => {
         if (!estateId) {
-            alert('Please select an estate before activating the user');
+            setError('Please select an estate before activating the user');
             return;
         }
 
@@ -89,26 +87,22 @@ const PendingApprovals = ({ siteId }) => {
 
         try {
             setProcessingUserId(userId);
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
-            await axios.put(
+            await api.put(
                 `/api/admin/users/${userId}/status`,
                 {
                     status: 'active',
                     estate_id: parseInt(estateId)
-                },
-                {
-                    withCredentials: true
                 }
             );
 
             // Refresh the list
             await fetchPendingUsers();
-            alert('User activated successfully! Activation email sent.');
+            toast.success({ title: 'User activated successfully! Activation email sent.' });
             setApproveDialog({ isOpen: false, userId: null, estateId: null });
         } catch (err) {
-            console.error('Error activating user:', err);
-            alert(err.response?.data?.message || 'Failed to activate user');
+            logger.error('Error activating user:', err);
+            setError(err.response?.data?.message || 'Failed to activate user');
         } finally {
             setProcessingUserId(null);
         }
@@ -124,23 +118,19 @@ const PendingApprovals = ({ siteId }) => {
 
         try {
             setProcessingUserId(userId);
-            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
-            await axios.put(
+            await api.put(
                 `/api/admin/users/${userId}/status`,
-                { status: 'rejected' },
-                {
-                    withCredentials: true
-                }
+                { status: 'rejected' }
             );
 
             // Refresh the list
             await fetchPendingUsers();
-            alert('User rejected');
+            toast.success({ title: 'User rejected' });
             setRejectDialog({ isOpen: false, userId: null });
         } catch (err) {
-            console.error('Error rejecting user:', err);
-            alert(err.response?.data?.message || 'Failed to reject user');
+            logger.error('Error rejecting user:', err);
+            setError(err.response?.data?.message || 'Failed to reject user');
         } finally {
             setProcessingUserId(null);
         }
@@ -174,7 +164,7 @@ const PendingApprovals = ({ siteId }) => {
 
     const handleBulkApprove = () => {
         if (selectedUsers.length === 0) {
-            alert('Please select at least one user to approve');
+            setError('Please select at least one user to approve');
             return;
         }
         
@@ -186,22 +176,21 @@ const PendingApprovals = ({ siteId }) => {
         try {
             setProcessingUserId('bulk');
             
-            const response = await axios.post(
+            const response = await api.post(
                 '/api/admin/users/bulk-approve',
                 {
                     userIds: selectedUsers,
                     estateId: bulkApproveDialog.estateId || siteId
-                },
-                { withCredentials: true }
+                }
             );
 
             await fetchPendingUsers();
             setSelectedUsers([]);
             setBulkApproveDialog({ isOpen: false, estateId: null });
-            alert(`${response.data.data.count} user(s) approved successfully`);
+            toast.success({ title: `${response.data.data.count} user(s) approved successfully` });
         } catch (err) {
-            console.error('Error in bulk approve:', err);
-            alert(err.response?.data?.message || 'Failed to approve users');
+            logger.error('Error in bulk approve:', err);
+            setError(err.response?.data?.message || 'Failed to approve users');
         } finally {
             setProcessingUserId(null);
         }
@@ -209,7 +198,7 @@ const PendingApprovals = ({ siteId }) => {
 
     const handleBulkReject = () => {
         if (selectedUsers.length === 0) {
-            alert('Please select at least one user to reject');
+            setError('Please select at least one user to reject');
             return;
         }
         
@@ -220,22 +209,21 @@ const PendingApprovals = ({ siteId }) => {
         try {
             setProcessingUserId('bulk');
             
-            const response = await axios.post(
+            const response = await api.post(
                 '/api/admin/users/bulk-reject',
                 {
                     userIds: selectedUsers,
                     reason: 'Bulk rejection by admin'
-                },
-                { withCredentials: true }
+                }
             );
 
             await fetchPendingUsers();
             setSelectedUsers([]);
             setBulkRejectDialog({ isOpen: false });
-            alert(`${response.data.data.count} user(s) rejected`);
+            toast.success({ title: `${response.data.data.count} user(s) rejected` });
         } catch (err) {
-            console.error('Error in bulk reject:', err);
-            alert(err.response?.data?.message || 'Failed to reject users');
+            logger.error('Error in bulk reject:', err);
+            setError(err.response?.data?.message || 'Failed to reject users');
         } finally {
             setProcessingUserId(null);
         }

@@ -4,6 +4,7 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { FloatingLabelInput, GradientButton, GradientCard, Checkbox, Icon, Button } from "../components/ui";
 import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
+import api from "../utils/apiClient";
 
 // API base URL for cross-site deployment (Netlify frontend + Render backend)
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -219,19 +220,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: 'include', // Include cookies for cross-site
-        body: JSON.stringify({ email: resetEmail }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setForgotPasswordError(data.message || "Error sending reset link");
-        return;
-      }
+      const response = await api.post('/api/auth/forgot-password', { email: resetEmail });
 
       handleSuccess("Password reset link sent to your email.", {
         context: 'Password Reset',
@@ -242,7 +231,7 @@ export default function LoginPage() {
       setResetEmail("");
       navigate('/login', { replace: true });
     } catch (err) {
-      setForgotPasswordError(err?.message || 'Error sending reset link');
+      setForgotPasswordError(err?.response?.data?.message || err?.message || 'Error sending reset link');
     } finally {
       setLoading(false);
     }
