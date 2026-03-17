@@ -4,7 +4,7 @@
   "description": "Secure Gate Access Control System - Backend API",
   "scripts": {
     "start": "cd secure-gate-access/server && npm start",
-    "postinstall": "cd secure-gate-access/server && npm install",
+    "postinstall": "cd secure-gate-access/server && npm install && cd ../client && npm install --legacy-peer-deps",
     "build": "echo 'No build step needed for backend'"
   },
   "engines": {

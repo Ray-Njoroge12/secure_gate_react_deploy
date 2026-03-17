@@ -47,6 +47,10 @@ export default function SuperAdminDashboard() {
     const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'health'
     const [systemMetrics, setSystemMetrics] = useState(null);
 
+    // MFA gate and error message state
+    const [mfaGateMessage, setMfaGateMessage] = useState(null);
+    const [errorMessage, setErrorMessage] = useState(null);
+
     // MFA Status Badge
     const [mfaBadge, setMfaBadge] = useState({ enabled: null, required: false });
 
