@@ -13,7 +13,7 @@ import {
   getPendingApprovals,
   getApprovalHistory
 } from '../controllers/visitorApprovalController.js';
-import attachRequestAudit from '../middleware/auditLogger.js';
+import { attachRequestAudit } from '../middleware/auditLogging.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 import { requireRolePolicy } from '../middleware/rolePolicy.js';
 import { buildErrorPayload } from '../utils/responseFormatter.js';
