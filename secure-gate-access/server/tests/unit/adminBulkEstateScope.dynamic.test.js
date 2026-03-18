@@ -117,4 +117,19 @@ describe('admin bulk governance estate-scope dynamic verification', () => {
       })
     );
   });
+
+  it('bulkApproveUsers does not expose internal error details on query failure', async () => {
+    req.user.estate_id = 77;
+    req.body = { userIds: [101] };
+    mockQuery.mockRejectedValueOnce(new Error('sensitive-db-error'));
+
+    await bulkApproveUsers(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    const payload = res.json.mock.calls[0][0];
+    expect(payload.success).toBe(false);
+    expect(payload.message).toBe('Failed to approve users');
+    expect(payload.error.code).toBe('INTERNAL_ERROR');
+    expect(JSON.stringify(payload)).not.toContain('sensitive-db-error');
+  });
 });

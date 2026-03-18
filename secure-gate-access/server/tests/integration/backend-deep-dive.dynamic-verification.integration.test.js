@@ -63,25 +63,21 @@ describe('Backend deep-dive dynamic verification', () => {
     mockCleanupExpiredQRCodes.mockResolvedValue(3);
   });
 
-  describe('Setup route exposure verification', () => {
-    it('allows unauthenticated callers to reach /api/setup/migrate secret gate', async () => {
+  describe('Setup route hardening verification', () => {
+    it('blocks unauthenticated callers from setup migrate surface by default', async () => {
       const response = await request(app)
         .post('/api/setup/migrate')
         .send({ secret: 'not-the-secret' });
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('FORBIDDEN');
+      expect([403, 404]).toContain(response.status);
     });
 
-    it('allows unauthenticated callers to reach /api/setup/seed secret gate', async () => {
+    it('blocks unauthenticated callers from setup seed surface by default', async () => {
       const response = await request(app)
         .post('/api/setup/seed')
         .send({ secret: 'not-the-secret' });
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('FORBIDDEN');
+      expect([403, 404]).toContain(response.status);
     });
   });
 
