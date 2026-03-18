@@ -94,7 +94,7 @@ export default function DecommissionEstateModal({ isOpen, onClose, estate, onSuc
                                 Danger Zone
                             </h3>
                             <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                                This action cannot be easily undone. All users from this estate will lose access immediately.
+                                <strong>This action is permanent and cannot be undone.</strong> All users from this estate will lose access immediately, active sessions will be terminated, and pending visitor invites will be invalidated.
                             </p>
                         </div>
                     </div>

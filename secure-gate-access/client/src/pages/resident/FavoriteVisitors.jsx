@@ -32,13 +32,13 @@ import logger from '../../utils/logger';
 
 // Relationship type options
 const RELATIONSHIP_TYPES = [
-  { value: 'Family', label: 'Family Member', icon: '👨‍👩‍👧‍👦' },
-  { value: 'Friend', label: 'Friend', icon: '🤝' },
-  { value: 'Colleague', label: 'Colleague', icon: '💼' },
-  { value: 'Service Provider', label: 'Service Provider', icon: '🔧' },
-  { value: 'Delivery', label: 'Delivery Person', icon: '📦' },
-  { value: 'Guest', label: 'General Guest', icon: '👤' },
-  { value: 'Other', label: 'Other', icon: '❓' }
+  { value: 'Family', label: 'Family Member', iconName: 'Users' },
+  { value: 'Friend', label: 'Friend', iconName: 'Heart' },
+  { value: 'Colleague', label: 'Colleague', iconName: 'Building' },
+  { value: 'Service Provider', label: 'Service Provider', iconName: 'Settings' },
+  { value: 'Delivery', label: 'Delivery Person', iconName: 'Package' },
+  { value: 'Guest', label: 'General Guest', iconName: 'User' },
+  { value: 'Other', label: 'Other', iconName: 'HelpCircle' }
 ];
 
 /**
@@ -238,10 +238,10 @@ const FavoriteVisitors = () => {
     });
   };
 
-  // Get relationship icon
-  const getRelationshipIcon = (relationship) => {
+  // Get relationship icon name
+  const getRelationshipIconName = (relationship) => {
     const found = RELATIONSHIP_TYPES.find(r => r.value === relationship);
-    return found?.icon || '👤';
+    return found?.iconName || 'User';
   };
 
 
@@ -358,9 +358,9 @@ const FavoriteVisitors = () => {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${isDark ? 'bg-slate-700' : 'bg-gray-100 dark:bg-slate-700'
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDark ? 'bg-slate-700' : 'bg-gray-100 dark:bg-slate-700'
                         }`}>
-                        {getRelationshipIcon(favorite.relationship)}
+                        <Icon name={getRelationshipIconName(favorite.relationship)} className="w-6 h-6 text-gray-600 dark:text-gray-300" aria-hidden="true" />
                       </div>
                       <div>
                         <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
@@ -650,7 +650,7 @@ const FavoriteVisitors = () => {
                   >
                     {RELATIONSHIP_TYPES.map(type => (
                       <option key={type.value} value={type.value}>
-                        {type.icon} {type.label}
+                        {type.label}
                       </option>
                     ))}
                   </select>

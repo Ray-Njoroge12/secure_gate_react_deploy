@@ -155,9 +155,9 @@ export default function Reports({ estateId }) {
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Export</h2>
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <label className="sr-only" htmlFor="report-from">From date</label>
-          <input id="report-from" type="date" value={from} onChange={e => setFrom(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          <input id="report-from" type="date" value={from} onChange={e => { setFrom(e.target.value); if (to && e.target.value > to) setTo(e.target.value); }} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
           <label className="sr-only" htmlFor="report-to">To date</label>
-          <input id="report-to" type="date" value={to} onChange={e => setTo(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          <input id="report-to" type="date" value={to} min={from || undefined} onChange={e => setTo(e.target.value)} className="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
           {showHostFilter && (
             <>
               <label className="sr-only" htmlFor="report-host">Host email</label>

@@ -25,6 +25,8 @@ const WalkInRegistration = () => {
   });
   const [registeredVisitor, setRegisteredVisitor] = useState(null);
   const [showApprovalCard, setShowApprovalCard] = useState(false);
+  const [houseNumberError, setHouseNumberError] = useState('');
+  const [notificationWarning, setNotificationWarning] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingWalkIns, setPendingWalkIns] = useState([]);
   const [showPendingList, setShowPendingList] = useState(false);
@@ -110,6 +112,9 @@ const WalkInRegistration = () => {
       ...prev,
       [name]: value
     }));
+    if (name === 'houseNumber') {
+      setHouseNumberError('');
+    }
   };
 
   const validateForm = () => {
@@ -122,6 +127,7 @@ const WalkInRegistration = () => {
       return false;
     }
     if (!formData.houseNumber.trim()) {
+      setHouseNumberError('House number is required');
       handleError('House number is required', { context: 'Walk-In Registration' });
       return false;
     }
@@ -166,9 +172,21 @@ const WalkInRegistration = () => {
       setRegisteredVisitor({ ...visitor, mode: 'online' });
       setShowApprovalCard(true);
 
+      // Check if resident notification failed
+      if (visitor.residentNotified === false || result.notificationStatus === 'failed') {
+        setNotificationWarning('Registration saved. Resident could not be notified — please contact them manually.');
+      }
+
     } catch (err) {
+      // Detect resident-not-found error
+      const status = err.response?.status;
+      const errorCode = err.response?.data?.code || err.response?.data?.error?.code;
+      if (status === 404 || errorCode === 'RESIDENT_NOT_FOUND' || errorCode === 'resident_not_found') {
+        setHouseNumberError(`No resident found at "${formData.houseNumber}". Please verify with the visitor and try again.`);
+        return;
+      }
       // Network error - fall back to offline registration
-      if (err.message.includes('fetch') || err.message.includes('network')) {
+      if (err.message?.includes('fetch') || err.message?.includes('network')) {
         console.warn('Online registration failed, falling back to offline:', err);
         await registerOffline(walkInData);
       } else {
@@ -237,13 +255,26 @@ const WalkInRegistration = () => {
         guardNotes: formData.purpose
       });
 
+      const result = response.data;
+
       // Update visitor status
       setRegisteredVisitor(prev => ({
         ...prev,
         status: 'pending_approval'
       }));
 
+      // Check if resident notification failed
+      if (result.notificationStatus === 'failed' || result.data?.residentNotified === false) {
+        setNotificationWarning('Approval requested but resident could not be notified — please contact them manually.');
+      }
+
     } catch (err) {
+      const status = err.response?.status;
+      const errorCode = err.response?.data?.code || err.response?.data?.error?.code;
+      if (status === 404 || errorCode === 'RESIDENT_NOT_FOUND' || errorCode === 'resident_not_found') {
+        setNotificationWarning(`No resident found for house "${formData.houseNumber}". Please verify and try again.`);
+        return;
+      }
       handleApiError(err, 'Approval Request');
     } finally {
       setLoading('approval', false);
@@ -260,6 +291,8 @@ const WalkInRegistration = () => {
     });
     setRegisteredVisitor(null);
     setShowApprovalCard(false);
+    setHouseNumberError('');
+    setNotificationWarning('');
     safelyClearErrors();
   };
 
@@ -300,6 +333,23 @@ const WalkInRegistration = () => {
       />
 
       <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-8 space-y-6">
+        {/* Notification Warning Banner */}
+        {notificationWarning && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+            <Icon name="AlertTriangle" className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-800">{notificationWarning}</p>
+            </div>
+            <button
+              onClick={() => setNotificationWarning('')}
+              className="text-amber-600 hover:text-amber-800 p-1"
+              aria-label="Dismiss warning"
+            >
+              <Icon name="X" className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Offline Mode Banner */}
         {!isOnline && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
@@ -417,10 +467,16 @@ const WalkInRegistration = () => {
                     value={formData.houseNumber}
                     onChange={handleInputChange}
                     placeholder="e.g., A-14, B-23, Villa 101"
-                    className="mobile-input w-full"
+                    className={`mobile-input w-full ${houseNumberError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : ''}`}
                     required
+                    aria-invalid={!!houseNumberError}
+                    aria-describedby={houseNumberError ? 'house-number-error' : undefined}
                   />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter the resident's house/unit number for accurate lookup</p>
+                  {houseNumberError ? (
+                    <p id="house-number-error" className="text-xs text-red-600 dark:text-red-400 mt-1" role="alert">{houseNumberError}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter the resident's house/unit number for accurate lookup</p>
+                  )}
                 </div>
 
                 {/* Purpose */}

@@ -385,6 +385,17 @@ describe('TokenService', () => {
       await expect(tokenService.revokeToken('invalid-token')).resolves.not.toThrow();
     });
 
+    test('should surface catch-path scope defect when Redis blacklist fails', async () => {
+      const payload = { id: 1, email: 'test@example.com', role: 'resident' };
+      const token = tokenService.generateAccessToken(payload);
+
+      tokenService.redisInitialized = true;
+      mockRedisService.blacklistToken.mockRejectedValueOnce(new Error('redis unavailable'));
+
+      // Current behavior: catch block references decoded outside scope and throws.
+      await expect(tokenService.revokeToken(token)).rejects.toThrow(/decoded is not defined/);
+    });
+
     test('should cleanup when revoked tokens exceed limit', async () => {
       // Add many tokens
       for (let i = 0; i < 10005; i++) {

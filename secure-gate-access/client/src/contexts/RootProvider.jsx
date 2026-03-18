@@ -19,7 +19,7 @@ import { BrowserCompatibilityProvider } from './BrowserCompatibilityContext.jsx'
 import { ThemeProvider } from './ThemeContext.jsx';
 import { PreferenceProvider } from './PreferenceContext.jsx';
 import { ToastProvider } from './ToastContext.jsx';
-import { UndoProvider } from './UndoContext.jsx';
+// UndoProvider removed — no consumer uses it (P2-09)
 import { AccessibilityProvider } from '../components/accessibility/AccessibilityProvider.jsx';
 import { I18nProvider } from '../i18n/index.js';
 
@@ -82,7 +82,6 @@ export const RootProvider = ({ children }) => {
                 <BrowserCompatibilityProvider>
                   <LoadingProvider>
                     <ToastProvider position="top-right" maxVisible={4}>
-                      <UndoProvider maxHistory={10}>
                         <SearchProvider>
                           <Router
                             future={{
@@ -97,7 +96,6 @@ export const RootProvider = ({ children }) => {
                             </NavigationProvider>
                           </Router>
                         </SearchProvider>
-                      </UndoProvider>
                     </ToastProvider>
                   </LoadingProvider>
                 </BrowserCompatibilityProvider>

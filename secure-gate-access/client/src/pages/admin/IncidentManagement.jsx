@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getIncidents,
   getIncidentStats,
   updateIncidentStatus,
   assignIncident,
-  escalateIncident
+  escalateIncident,
+  getUsers
 } from '../../services/adminService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
@@ -23,6 +24,12 @@ export default function IncidentManagement({ estateId }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+
+  // Guards list for assignment dropdown
+  const [guards, setGuards] = useState([]);
+  const [assignDropdownOpen, setAssignDropdownOpen] = useState(null); // incident id or null
+  const [assignSearch, setAssignSearch] = useState('');
+  const assignDropdownRef = useRef(null);
 
   // Confirmation Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,6 +65,46 @@ export default function IncidentManagement({ estateId }) {
       fetchData();
     }
   }, [fetchData, estateId]);
+
+  // Fetch guards for assignment dropdown
+  useEffect(() => {
+    if (!estateId) return;
+    const fetchGuards = async () => {
+      try {
+        const data = await getUsers({ role: 'guard', estate_id: estateId });
+        const guardList = Array.isArray(data) ? data : data?.users || data?.data || [];
+        setGuards(guardList.filter(u => u.status === 'active' || !u.status));
+      } catch {
+        // Silently fail - dropdown will just be empty
+        setGuards([]);
+      }
+    };
+    fetchGuards();
+  }, [estateId]);
+
+  // Close assign dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (assignDropdownRef.current && !assignDropdownRef.current.contains(e.target)) {
+        setAssignDropdownOpen(null);
+        setAssignSearch('');
+      }
+    };
+    if (assignDropdownOpen !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [assignDropdownOpen]);
+
+  const filteredGuards = guards.filter(g => {
+    const label = `${g.full_name || g.name || ''} (${g.username || ''})`.toLowerCase();
+    return label.includes(assignSearch.toLowerCase());
+  });
+
+  const getGuardDisplayName = (guardId) => {
+    const guard = guards.find(g => g.id === guardId);
+    return guard ? `${guard.full_name || guard.name || guard.username}` : null;
+  };
 
   const handleAction = (incident, action, payload = {}) => {
     setDialogConfig({
@@ -126,14 +173,52 @@ export default function IncidentManagement({ estateId }) {
       render: (row) => (
         <div className="flex gap-2">
           {row.status === 'open' && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => handleAction(row, 'assign', { assignee_id: user.id })}
-              loading={actionLoading === row.id}
-            >
-              Assign to Me
-            </Button>
+            <div className="relative" ref={assignDropdownOpen === row.id ? assignDropdownRef : undefined}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setAssignDropdownOpen(assignDropdownOpen === row.id ? null : row.id);
+                  setAssignSearch('');
+                }}
+                loading={actionLoading === row.id}
+              >
+                Assign
+              </Button>
+              {assignDropdownOpen === row.id && (
+                <div className="absolute z-50 mt-1 w-64 bg-white dark:bg-slate-800 shadow-lg rounded-md border border-gray-200 dark:border-slate-600 overflow-hidden">
+                  <div className="p-2 border-b border-gray-200 dark:border-slate-600">
+                    <input
+                      type="text"
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-slate-500 rounded bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      placeholder="Search guards..."
+                      value={assignSearch}
+                      onChange={(e) => setAssignSearch(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <ul className="max-h-48 overflow-y-auto py-1">
+                    {filteredGuards.length === 0 ? (
+                      <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No guards found</li>
+                    ) : (
+                      filteredGuards.map(guard => (
+                        <li
+                          key={guard.id}
+                          className="px-3 py-2 text-sm cursor-pointer hover:bg-brand-50 dark:hover:bg-brand-900/20 text-gray-900 dark:text-gray-100"
+                          onClick={() => {
+                            setAssignDropdownOpen(null);
+                            setAssignSearch('');
+                            handleAction(row, 'assign', { assignee_id: guard.id });
+                          }}
+                        >
+                          {guard.full_name || guard.name || guard.username} ({guard.username})
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
           )}
           {row.status !== 'resolved' && row.status !== 'closed' && (
             <Button
@@ -209,7 +294,7 @@ export default function IncidentManagement({ estateId }) {
             status: getStatusBadge(i.status),
             priority: getPriorityBadge(i.priority),
             reported_by: i.reported_by_name || 'Unknown',
-            assigned_to: i.assigned_to_name || 'Unassigned'
+            assigned_to: i.assigned_to_name || getGuardDisplayName(i.assigned_to) || (i.assigned_to ? `ID: ${i.assigned_to}` : 'Unassigned')
           }))}
           loading={loading}
           emptyMessage="No incidents found."

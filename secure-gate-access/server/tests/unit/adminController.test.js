@@ -376,7 +376,7 @@ describe('AdminController', () => {
       );
     });
   });
-  
+
   describe('Exports', () => {
     it('should export getMetrics function', () => {
       expect(adminController.getMetrics).toBeDefined();
