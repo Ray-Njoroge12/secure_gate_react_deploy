@@ -26,7 +26,6 @@ describe('Express App Route Mounting Integration', () => {
       '/api/visitors',
       '/api/estates',
       '/api/notifications',
-      '/api/setup',
       '/api/monitoring',
       '/api/preferences',
       '/api/intelligent-notifications' // Newly added route

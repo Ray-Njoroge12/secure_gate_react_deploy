@@ -14,8 +14,17 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Security: Only allow in production with specific secret
-const SETUP_SECRET = process.env.SETUP_SECRET || 'secure-gate-setup-2024';
+const getSetupSecret = () => (process.env.SETUP_SECRET || '').trim();
+const isStrongSetupSecret = (secret) => secret.length >= 32;
+
+function assertSetupSecretConfigured(req, res) {
+  const configuredSecret = getSetupSecret();
+  if (!configuredSecret || !isStrongSetupSecret(configuredSecret)) {
+    errorResponse(res, 'Setup is disabled', 'FORBIDDEN', 403, null, req);
+    return null;
+  }
+  return configuredSecret;
+}
 
 function extractMigrationMeta(filename) {
   const match = filename.match(/^(\d+)_/);
@@ -43,9 +52,12 @@ function extractUpSql(fullSql) {
  */
 router.post('/migrate', async (req, res) => {
   try {
+    const configuredSecret = assertSetupSecretConfigured(req, res);
+    if (!configuredSecret) return;
+
     const { secret } = req.body;
     
-    if (secret !== SETUP_SECRET) {
+    if (secret !== configuredSecret) {
       return errorResponse(res, 'Invalid setup secret', 'FORBIDDEN', 403, null, req);
     }
 
@@ -131,11 +143,7 @@ router.post('/migrate', async (req, res) => {
 
   } catch (error) {
     console.error('Migration error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Migration failed',
-      error: error.message
-    });
+    return errorResponse(res, 'Migration failed', 'INTERNAL_ERROR', 500, null, req);
   }
 });
 
@@ -145,9 +153,12 @@ router.post('/migrate', async (req, res) => {
  */
 router.post('/seed', async (req, res) => {
   try {
+    const configuredSecret = assertSetupSecretConfigured(req, res);
+    if (!configuredSecret) return;
+
     const { secret } = req.body;
     
-    if (secret !== SETUP_SECRET) {
+    if (secret !== configuredSecret) {
       return errorResponse(res, 'Invalid setup secret', 'FORBIDDEN', 403, null, req);
     }
 
@@ -196,11 +207,7 @@ router.post('/seed', async (req, res) => {
 
   } catch (error) {
     console.error('Seeding error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Seeding failed',
-      error: error.message
-    });
+    return errorResponse(res, 'Seeding failed', 'INTERNAL_ERROR', 500, null, req);
   }
 });
 
@@ -210,6 +217,9 @@ router.post('/seed', async (req, res) => {
  */
 router.get('/status', async (req, res) => {
   try {
+    const configuredSecret = assertSetupSecretConfigured(req, res);
+    if (!configuredSecret) return;
+
     await dbManager.initializeAsync();
 
     // Check if migrations table exists
@@ -242,11 +252,7 @@ router.get('/status', async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Status check failed',
-      error: error.message
-    });
+    return errorResponse(res, 'Status check failed', 'INTERNAL_ERROR', 500, null, req);
   }
 });
 

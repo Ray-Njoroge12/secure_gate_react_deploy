@@ -427,7 +427,7 @@ export const bulkApproveUsers = async (req, res) => {
       data: { approved: result.rows, count: result.rows.length, requested: userIds.length }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to approve users', error: error.message });
+    _respondError(res, 500, 'Failed to approve users');
   }
 };
 
@@ -458,7 +458,7 @@ export const bulkRejectUsers = async (req, res) => {
       data: { rejected: result.rows, count: result.rows.length }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to reject users', error: error.message });
+    _respondError(res, 500, 'Failed to reject users');
   }
 };
 
