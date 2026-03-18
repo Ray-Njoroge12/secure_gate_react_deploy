@@ -24,6 +24,6 @@
     "test:all": "node tests/parallel-test-runner.mjs --all"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.11.0"
   }
 }

@@ -13,6 +13,12 @@ const crypto = require('crypto');
 
 class ProductionDeploymentManager {
   constructor(options = {}) {
+    this.paths = {
+      repoRoot: path.resolve(__dirname, '..'),
+      server: path.resolve(__dirname, '..', 'secure-gate-access', 'server'),
+      client: path.resolve(__dirname, '..', 'secure-gate-access', 'client')
+    };
+
     this.options = {
       environment: 'production',
       region: 'us-east-1',
@@ -29,6 +35,16 @@ class ProductionDeploymentManager {
     this.rollbackPlan = [];
     
     this.log('info', `Initializing deployment ${this.deploymentId}`);
+  }
+
+  hasServerScript(scriptName) {
+    try {
+      const packageJsonPath = path.join(this.paths.server, 'package.json');
+      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      return Boolean(pkg.scripts && pkg.scripts[scriptName]);
+    } catch {
+      return false;
+    }
   }
 
   generateDeploymentId() {
@@ -210,20 +226,23 @@ class ProductionDeploymentManager {
     try {
       // Run unit tests
       this.log('info', 'Running unit tests');
-      execSync('npm run test:unit', { stdio: 'inherit', cwd: 'secure-gate-access/server' });
-      execSync('npm run test', { stdio: 'inherit', cwd: 'secure-gate-access/client' });
+      execSync('npm run test:unit', { stdio: 'inherit', cwd: this.paths.server });
+      execSync('npm run test', { stdio: 'inherit', cwd: this.paths.client });
       
       // Run integration tests
       this.log('info', 'Running integration tests');
-      execSync('npm run test:integration', { stdio: 'inherit', cwd: 'secure-gate-access/server' });
+      execSync('npm run test:integration', { stdio: 'inherit', cwd: this.paths.server });
       
       // Run E2E tests
       this.log('info', 'Running E2E tests');
-      execSync('npm run test:e2e', { stdio: 'inherit', cwd: 'e2e' });
+      execSync('npx playwright test', { stdio: 'inherit', cwd: this.paths.repoRoot });
       
       // Run security validation
       this.log('info', 'Running security validation');
-      execSync('node comprehensive-validation-runner.js --no-performance --no-privacy', { stdio: 'inherit' });
+      execSync('node scripts/maintenance/comprehensive-validation-runner.js --no-performance --no-privacy', {
+        stdio: 'inherit',
+        cwd: this.paths.repoRoot
+      });
       
       this.log('success', 'Test suite completed successfully');
       
@@ -297,7 +316,7 @@ class ProductionDeploymentManager {
       `;
       
       fs.writeFileSync('/tmp/db-test.js', testScript);
-      execSync('node /tmp/db-test.js', { stdio: 'inherit', cwd: 'secure-gate-access/server' });
+      execSync('node /tmp/db-test.js', { stdio: 'inherit', cwd: this.paths.server });
       fs.unlinkSync('/tmp/db-test.js');
       
       this.log('success', 'Database connection validated');
@@ -432,10 +451,14 @@ class ProductionDeploymentManager {
     
     try {
       // Run database migrations
-      execSync('npm run db:migrate', { stdio: 'inherit', cwd: 'secure-gate-access/server' });
+      execSync('npm run db:migrate', { stdio: 'inherit', cwd: this.paths.server });
       
       // Verify migration status
-      execSync('npm run db:status', { stdio: 'inherit', cwd: 'secure-gate-access/server' });
+      if (this.hasServerScript('db:status')) {
+        execSync('npm run db:status', { stdio: 'inherit', cwd: this.paths.server });
+      } else {
+        this.log('warning', 'Skipping db:status verification because script is not defined in server/package.json');
+      }
       
       this.log('success', 'Database migrations completed');
       
@@ -635,7 +658,7 @@ class ProductionDeploymentManager {
     
     try {
       // Run a subset of critical E2E tests
-      execSync('npm run test:e2e:critical', { stdio: 'inherit', cwd: 'e2e' });
+      execSync('npm run test:critical', { stdio: 'inherit', cwd: this.paths.server });
       
       this.log('success', 'Critical functionality validation completed');
       

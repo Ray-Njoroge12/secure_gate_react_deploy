@@ -361,6 +361,45 @@ class HealthCore {
         };
     }
 
+    // Backward-compat helpers used by legacy health routes
+    getHealthSummary() {
+        const lastCheck = this._lastHealthCheck || null;
+        const activeAlerts = Array.isArray(lastCheck?.alerts) ? lastCheck.alerts : [];
+
+        return {
+            status: this._healthStatus,
+            lastCheck: lastCheck?.timestamp || null,
+            responseTime: lastCheck?.responseTime ?? null,
+            activeAlerts,
+            alertCount: activeAlerts.length,
+            components: lastCheck?.components || {},
+            metrics: this.getHealthMetrics()
+        };
+    }
+
+    getHealthReport() {
+        return {
+            summary: this.getHealthSummary(),
+            lastCheck: this._lastHealthCheck,
+            history: this._healthHistory.slice(-50),
+            generatedAt: new Date().toISOString()
+        };
+    }
+
+    async runHealthCheck() {
+        const report = await this.performHealthCheck();
+        return {
+            ...report,
+            success: report.status !== 'unhealthy'
+        };
+    }
+
+    clearAllAlerts() {
+        if (this._lastHealthCheck && Array.isArray(this._lastHealthCheck.alerts)) {
+            this._lastHealthCheck.alerts = [];
+        }
+    }
+
     // ─── Database Checks (from dbHealthService) ──────────────────────────────
     async checkDatabaseHealth() {
         const startTime = Date.now();

@@ -4,6 +4,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RegistrationPage from '../../pages/Register.js';
 import { renderWithRouter } from '../../test-utils';
+import api from '../../utils/apiClient';
 
 jest.mock('utils/logger', () => ({
   __esModule: true,
@@ -70,45 +71,31 @@ jest.mock('../../services/passService.js', () => ({
 jest.mock('../../utils/apiClient', () => ({
   __esModule: true,
   default: {
+    get: jest.fn(),
     post: jest.fn()
   }
 }));
-
-// Mock fetch globally before any tests run
-const mockFetch = jest.fn().mockImplementation((url) => {
-  if (url.includes('/api/estates/available')) {
-    return Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({ data: { estates: [{ id: 1, name: 'Test Estate' }] } })
-    });
-  }
-  if (url.includes('/api/auth/register')) {
-    return Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({ message: 'Registration successful' })
-    });
-  }
-  return Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({})
-  });
-});
 
 describe('RegistrationPage', () => {
   // Increase timeout for these tests since userEvent typing is slow
   jest.setTimeout(30000);
 
-  beforeAll(() => {
-    global.fetch = mockFetch;
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetch.mockClear();
-  });
 
-  afterAll(() => {
-    jest.restoreAllMocks();
+    api.get.mockResolvedValue({
+      data: {
+        data: {
+          estates: [{ id: 1, name: 'Test Estate' }]
+        }
+      }
+    });
+
+    api.post.mockResolvedValue({
+      data: {
+        message: 'Registration successful'
+      }
+    });
   });
 
   test('renders registration form with required fields', () => {
@@ -183,9 +170,13 @@ describe('RegistrationPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/auth/register'),
-        expect.objectContaining({ method: 'POST' })
+      expect(api.post).toHaveBeenCalledWith(
+        '/api/auth/register',
+        expect.objectContaining({
+          username: 'testuser',
+          email: 'test@example.com',
+          estate_id: 1
+        })
       );
     });
   });

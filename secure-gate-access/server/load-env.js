@@ -24,7 +24,11 @@ const getServerEnv = (file) => join(__dirname, file);
 const getRootEnv = (file) => join(__dirname, '..', file);
 
 // Determine target file based on NODE_ENV
-const envFile = process.env.NODE_ENV === 'staging' ? '.env.staging' : '.env';
+const envFile = process.env.NODE_ENV === 'test'
+  ? '.env.test'
+  : process.env.NODE_ENV === 'staging'
+    ? '.env.staging'
+    : '.env';
 
 const paths = [
   getServerEnv(envFile),

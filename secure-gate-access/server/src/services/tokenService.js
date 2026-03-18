@@ -5,7 +5,6 @@ import { randomUUID } from 'crypto';
 import RedisService from './redisService.js';
 import { dbManager } from '../database/db.enhanced.js';
 import { getPasswordHashingWarning } from '../utils/startupLogHygiene.js';
-import logger from '../config/logger.js';
 
 /**
  * Enhanced Token Service with Refresh Token Support
@@ -569,7 +568,9 @@ class PasswordService {
     });
 
     if (passwordHashingWarning) {
-      logger.warn(passwordHashingWarning);
+      process.emitWarning(passwordHashingWarning, {
+        code: 'PASSWORD_HASHING_PROFILE_WARNING'
+      });
     }
   }
 

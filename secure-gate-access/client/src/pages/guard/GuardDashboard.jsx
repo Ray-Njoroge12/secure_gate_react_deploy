@@ -424,7 +424,7 @@ export default function GuardDashboard() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    navigate('/dashboard/guard/help/mfa-setup');
+                    navigate('/dashboard/guard/settings?tab=security');
                   }}
                   className="min-h-[44px] text-amber-700 hover:text-amber-900 font-medium py-2 px-4 rounded-lg border border-amber-300 hover:bg-amber-100 transition-colors focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                   aria-label="Learn more about MFA setup"

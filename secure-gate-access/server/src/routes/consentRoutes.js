@@ -23,6 +23,20 @@ import { AppError, asyncHandler } from '../middleware/standardizedErrorHandler.j
 import { successResponse, createdResponse } from '../utils/responseFormatter.js';
 
 const router = express.Router();
+const LEGACY_CONSENT_PREFIX = '/api/consent';
+const CANONICAL_CONSENT_PREFIX = '/api/privacy/consent';
+
+router.use((req, res, next) => {
+  if (req.baseUrl === LEGACY_CONSENT_PREFIX) {
+    res.set('Deprecation', 'true');
+    res.set('Sunset', 'Wed, 31 Dec 2026 23:59:59 GMT');
+    res.set('Link', `<${CANONICAL_CONSENT_PREFIX}>; rel="successor-version"`);
+    res.set('Warning', `299 - "Deprecated API path. Use ${CANONICAL_CONSENT_PREFIX}"`);
+    res.set('X-API-Deprecated', 'true');
+  }
+
+  next();
+});
 
 /**
  * @swagger

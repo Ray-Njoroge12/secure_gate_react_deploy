@@ -426,7 +426,10 @@ npm run test:e2e               # Full system E2E tests
 ## Gotchas
 
 - **Node engine mismatch:** Root `package.json` says `node >= 18`, server requires `>= 20.11.0`. Always use Node 20.11.0+ to avoid issues.
+- **Audit middleware rename:** `auditLogger.js` is **archived** in `server/src/archive/zombie-services/`. The live middleware is `server/src/middleware/auditLogging.js`. All route imports must use `import { attachRequestAudit } from '../middleware/auditLogging.js'`. Using the old path crashes the server with `ERR_MODULE_NOT_FOUND`.
+- **Archived/dead code:** `server/src/archive/` contains deprecated services removed from active paths. Do not import from there.
 - **Duplicate migration numbers:** Migration `021` appears three times (`021_add_estate_settings.sql`, `021_add_invite_directions_privacy_fields.sql`, `021_data_retention_policy_updates.sql`). Be careful when adding new migrations — check the latest number.
+- **Migration numbering gaps:** Migrations skip 003–004 and 027–029 (historical gaps, low risk). Only `033_00` and a `033_02_add_estates_and_tenant_scoping.sql.disabled` file exist at that range — `033_01` is missing and the `.disabled` file is not an active migration.
 - **Three E2E test locations:** Root `e2e/` (system-wide Playwright), `client/e2e/` (client Playwright), and `server/tests/e2e/` (server Jest E2E). Each has its own config.
 - **Jest requires ES module flag:** All server Jest commands need `--experimental-vm-modules` (already configured in package.json scripts).
 - **Client proxy:** Dev server proxies API requests to `localhost:3001` (configured in `client/package.json` `"proxy"` field and `setupProxy.js`).

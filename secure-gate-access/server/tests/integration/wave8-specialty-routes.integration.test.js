@@ -46,16 +46,17 @@ describe('Wave 8 specialty mounted routes', () => {
     ]);
   });
 
-  it('returns 404 for unmounted session and compliance route families', async () => {
-    const responses = await Promise.all([
+  it('enforces auth on mounted session routes and keeps legacy compliance family unmounted', async () => {
+    const [sessionMetricsResponse, complianceResponse] = await Promise.all([
       request(app).get('/api/sessions/metrics'),
       request(app).get('/api/compliance/status')
     ]);
 
-    responses.forEach((response) => {
-      expect(response.status).toBe(404);
-      expect(response.body.error.code).toBe('NOT_FOUND');
-    });
+    expect(sessionMetricsResponse.status).toBe(401);
+    expect(sessionMetricsResponse.body.error.code).toBe('AUTH_TOKEN_MISSING');
+
+    expect(complianceResponse.status).toBe(404);
+    expect(complianceResponse.body.error.code).toBe('NOT_FOUND');
   });
 
   it('exposes public health, database health, Kenya DPA, and SSE smoke endpoints', async () => {
@@ -84,8 +85,8 @@ describe('Wave 8 specialty mounted routes', () => {
       request(app).post('/api/monitoring/thresholds').set('Authorization', `Bearer ${adminToken}`).send({ errorRate: 0.2 }),
       request(app).post('/api/monitoring/thresholds').set('Authorization', `Bearer ${superAdminToken}`).send({}),
       request(app).get('/health/detailed').set('Authorization', `Bearer ${adminToken}`),
-      request(app).get('/api/admin/compliance/kenya-dpa').set('Authorization', `Bearer ${guardToken}`),
-      request(app).get('/api/admin/compliance/kenya-dpa').set('Authorization', `Bearer ${adminToken}`)
+      request(app).get('/api/privacy/compliance/kenya-dpa').set('Authorization', `Bearer ${guardToken}`),
+      request(app).get('/api/privacy/compliance/kenya-dpa').set('Authorization', `Bearer ${adminToken}`)
     ]);
 
     expect(mfaVerifyResponse.status).toBe(400);

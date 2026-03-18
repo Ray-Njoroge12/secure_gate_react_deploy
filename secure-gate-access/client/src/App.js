@@ -79,7 +79,7 @@ const IncidentList = lazy(() => import("./pages/guard/IncidentList.jsx"));
 const ShiftHandover = lazy(() => import("./pages/guard/ShiftHandover.jsx")); // Phase 3: Shift handover management
 const ActivityLog = lazy(() => import("./pages/guard/ActivityLog.jsx")); // Phase 3: Guard activity log
 const BulkCheckout = lazy(() => import("./pages/guard/BulkCheckout.jsx")); // Phase 3: Bulk checkout & EOD operations
-const MFASetupGuide = lazy(() => import("./pages/guard/MFASetupGuide.jsx")); // Guard in-app documentation
+// MFASetupGuide removed (P1-12) — redundant with Settings → Security tab
 
 // Admin pages - System administration and reporting
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
@@ -462,13 +462,7 @@ function App() {
                       />
                       <Route
                         path="/dashboard/guard/help/mfa-setup"
-                        element={
-                          <ProtectedRoute allowedRoles={["guard"]}>
-                            <AppShell role="guard" title="MFA Setup Guide">
-                              <MFASetupGuide />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
+                        element={<Navigate to="/dashboard/guard/settings?tab=security" replace />}
                       />
                       <Route
                         path="/dashboard/guard/walk-in"
@@ -622,13 +616,7 @@ function App() {
                       {/* NotificationPreferences and ActivityDashboard routes removed */}
                       <Route
                         path="/dashboard/admin/help/security"
-                        element={
-                          <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                            <AppShell role="admin" title="Security Help">
-                              <MFASetupGuide />
-                            </AppShell>
-                          </ProtectedRoute>
-                        }
+                        element={<Navigate to="/dashboard/admin/settings?tab=security" replace />}
                       />
                       {/* Other admin routes that might be separate pages eventually, mapping to dashboard for now if they exist as tabs */}
 

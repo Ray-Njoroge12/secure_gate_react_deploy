@@ -692,20 +692,7 @@ class PerformanceTestSuite {
       'Consider CDN implementation for static assets'
     ];
   }
-}
 
-// Worker thread execution
-if (!isMainThread && workerData?.isWorker) {
-  PerformanceTestSuite.runWorker(workerData);
-}
-
-module.exports = PerformanceTestSuite;
-
-// CLI execution
-if (require.main === module) {
-  const suite = new PerformanceTestSuite();
-  suite.runAllTests().catch(console.error);
-}
   // Additional helper methods for comprehensive testing
   async makeRequest(method, endpoint, data = null, options = {}) {
     const config = {
@@ -1083,6 +1070,11 @@ if (require.main === module) {
 }
 
 module.exports = PerformanceTestSuite;
+
+// Worker thread execution
+if (!isMainThread && workerData?.isWorker) {
+  PerformanceTestSuite.runWorker(workerData);
+}
 
 // CLI execution
 if (require.main === module) {

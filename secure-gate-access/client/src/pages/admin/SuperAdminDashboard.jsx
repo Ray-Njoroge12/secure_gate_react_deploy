@@ -82,6 +82,8 @@ export default function SuperAdminDashboard() {
     const fetchDashboardData = useCallback(async () => {
         try {
             setLoading(true);
+            setMfaGateMessage(null);
+            setErrorMessage(null);
 
             // 1. Get Overview Stats
             try {
@@ -109,17 +111,20 @@ export default function SuperAdminDashboard() {
                             errorData.message ||
                             'Multi-Factor Authentication is required for SuperAdmin access. Please complete MFA setup to continue.'
                         );
+                        setErrorMessage(null);
                         setHealth({ status: 'error', text: 'MFA Required' });
                         setLoading(false);
                         return;
                     }
                     
                     setHealth({ status: 'error', text: 'Auth Failed' });
+                    setErrorMessage(errorData.message || 'Authentication failed. Please login again.');
                     showApiErrorToast('Authentication Error', errorData.message || 'Session expired. Please login again.');
                     if (status === 401) logout();
                     return;
                 }
                 setHealth({ status: 'error', text: 'API Error' });
+                setErrorMessage('Unable to load platform overview.');
                 showApiErrorToast('Overview Load Failed', 'Unable to load platform overview. Please retry.');
             }
 
@@ -138,6 +143,7 @@ export default function SuperAdminDashboard() {
 
         } catch (err) {
             logger.error('SuperAdmin: Failed to load dashboard data:', err);
+            setErrorMessage('Unable to load platform overview.');
             showApiErrorToast('Dashboard Load Failed', 'Failed to load dashboard data');
             setHealth({ status: 'error', text: 'System Error' });
         } finally {
@@ -295,6 +301,27 @@ export default function SuperAdminDashboard() {
                         </GradientButton>
                     </div>
                 </div>
+
+                {mfaGateMessage && (
+                    <GradientCard className="p-4 border border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">{mfaGateMessage}</p>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => navigate('/mfa/setup', { state: { required: true } })}
+                            >
+                                Complete MFA Setup
+                            </Button>
+                        </div>
+                    </GradientCard>
+                )}
+
+                {!mfaGateMessage && errorMessage && (
+                    <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                        {errorMessage}
+                    </div>
+                )}
 
                 {/* Tabs */}
                 <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Dashboard sections">

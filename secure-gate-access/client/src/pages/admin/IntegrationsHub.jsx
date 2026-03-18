@@ -76,7 +76,7 @@ const IntegrationsHub = () => {
   const fetchWebhooks = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/admin/webhooks');
+      const response = await api.get('/api/integrations/webhooks');
       setWebhooks(response.data.data || []);
     } catch (err) {
       logger.error('IntegrationsHub:', err);
@@ -88,7 +88,7 @@ const IntegrationsHub = () => {
   const fetchAutomationRules = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/admin/automations');
+      const response = await api.get('/api/integrations/automations');
       setAutomationRules(response.data.data || []);
     } catch (err) {
       logger.error('IntegrationsHub:', err);
@@ -100,7 +100,7 @@ const IntegrationsHub = () => {
   const fetchAPIKeys = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/api/admin/api-keys');
+      const response = await api.get('/api/integrations/api-keys');
       setApiKeys(response.data.data || []);
     } catch (err) {
       logger.error('IntegrationsHub:', err);
@@ -113,8 +113,8 @@ const IntegrationsHub = () => {
     e.preventDefault();
     try {
       const url = editingItem 
-        ? `/api/admin/webhooks/${editingItem.id}`
-        : '/api/admin/webhooks';
+        ? `/api/integrations/webhooks/${editingItem.id}`
+        : '/api/integrations/webhooks';
       
       const payload = {
         ...webhookForm,
@@ -139,8 +139,8 @@ const IntegrationsHub = () => {
     e.preventDefault();
     try {
       const url = editingItem 
-        ? `/api/admin/automations/${editingItem.id}`
-        : '/api/admin/automations';
+        ? `/api/integrations/automations/${editingItem.id}`
+        : '/api/integrations/automations';
       
       const payload = {
         ...automationForm,
@@ -165,7 +165,7 @@ const IntegrationsHub = () => {
   const handleAPIKeyGenerate = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/api/admin/api-keys', apiKeyForm);
+      const response = await api.post('/api/integrations/api-keys', apiKeyForm);
       setNewApiKey(response.data.data.api_key);
       await fetchAPIKeys();
     } catch (err) {
@@ -177,7 +177,7 @@ const IntegrationsHub = () => {
     const confirmed = await confirm({ variant: 'danger', title: 'Delete Webhook', message: 'Are you sure you want to delete this webhook?', confirmText: 'Delete' });
     if (!confirmed) return;
     try {
-      await api.delete(`/api/admin/webhooks/${id}`);
+      await api.delete(`/api/integrations/webhooks/${id}`);
       await fetchWebhooks();
     } catch (err) {
       toast.error(err.message || 'An error occurred');
@@ -188,7 +188,7 @@ const IntegrationsHub = () => {
     const confirmed = await confirm({ variant: 'danger', title: 'Delete Automation', message: 'Are you sure you want to delete this automation rule?', confirmText: 'Delete' });
     if (!confirmed) return;
     try {
-      await api.delete(`/api/admin/automations/${id}`);
+      await api.delete(`/api/integrations/automations/${id}`);
       await fetchAutomationRules();
     } catch (err) {
       toast.error(err.message || 'An error occurred');
@@ -199,7 +199,7 @@ const IntegrationsHub = () => {
     const confirmed = await confirm({ variant: 'danger', title: 'Revoke API Key', message: 'Revoke this API key? This cannot be undone.', confirmText: 'Revoke' });
     if (!confirmed) return;
     try {
-      await api.delete(`/api/admin/api-keys/${id}`);
+      await api.delete(`/api/integrations/api-keys/${id}`);
       await fetchAPIKeys();
     } catch (err) {
       toast.error(err.message || 'An error occurred');
@@ -208,7 +208,7 @@ const IntegrationsHub = () => {
 
   const testWebhook = async (id) => {
     try {
-      await api.post(`/api/admin/webhooks/${id}/test`);
+      await api.post(`/api/integrations/webhooks/${id}/test`);
       toast.success('Webhook test successful!');
     } catch (err) {
       toast.error('Test failed: ' + err.message);

@@ -158,8 +158,9 @@ export const login = async (req, res) => {
 
     if (isWeb) {
         const cookieOptions = getCookieOptions();
+        const refreshCookieOptions = { ...cookieOptions, path: '/api/auth/refresh' };
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-        res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+        res.cookie('refreshToken', refreshToken, { ...refreshCookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
     }
 
     loggingService.info('Login successful', {
@@ -236,8 +237,9 @@ export const refresh = async (req, res) => {
 
     if (isWebClient) {
         const cookieOptions = getCookieOptions();
+        const refreshCookieOptions = { ...cookieOptions, path: '/api/auth/refresh' };
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-        res.cookie('refreshToken', nextRefreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+        res.cookie('refreshToken', nextRefreshToken, { ...refreshCookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
     }
 
     return successResponse(res, {
@@ -309,6 +311,7 @@ export const getCsrfToken = async (req, res) => {
  */
 export const logout = async (req, res) => {
     const cookieOptions = getCookieOptions();
+    const refreshCookieOptions = { ...cookieOptions, path: '/api/auth/refresh' };
     const accessToken = getBearerToken(req) || req.cookies?.accessToken;
     const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
@@ -328,7 +331,7 @@ export const logout = async (req, res) => {
     }
 
     res.clearCookie('accessToken', cookieOptions);
-    res.clearCookie('refreshToken', cookieOptions);
+    res.clearCookie('refreshToken', refreshCookieOptions);
 
     return successResponse(res, {}, 'Logout successful');
 };

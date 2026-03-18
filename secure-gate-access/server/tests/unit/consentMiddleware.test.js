@@ -141,7 +141,16 @@ describe('Consent Middleware', () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it('should skip consent check for /api/consent endpoints', async () => {
+    it('should skip consent check for canonical /api/privacy/consent endpoints', async () => {
+      mockReq.path = '/api/privacy/consent/required';
+      const middleware = createConsentMiddleware([CONSENT_TYPES.DATA_PROCESSING]);
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should skip consent check for legacy /api/consent endpoints', async () => {
       mockReq.path = '/api/consent/required';
       const middleware = createConsentMiddleware([CONSENT_TYPES.DATA_PROCESSING]);
 
@@ -299,7 +308,7 @@ describe('Consent Middleware', () => {
       expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
         error: expect.objectContaining({
           details: expect.objectContaining({
-            consentUrl: '/api/consent/required'
+            consentUrl: '/api/privacy/consent/required'
           })
         })
       }));

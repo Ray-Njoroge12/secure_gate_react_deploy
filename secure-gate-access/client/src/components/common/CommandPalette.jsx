@@ -59,7 +59,7 @@ const getCommands = (role) => {
       category: 'Help',
       icon: '❓',
       action: 'navigate',
-      path: isAdminLike ? '/dashboard/admin/help/security' : role === 'guard' ? '/dashboard/guard/help/mfa-setup' : '/resident/settings'
+      path: isAdminLike ? '/dashboard/admin/settings?tab=security' : role === 'guard' ? '/dashboard/guard/settings?tab=security' : '/resident/settings?tab=security'
     },
     {
       id: 'keyboard-shortcuts',

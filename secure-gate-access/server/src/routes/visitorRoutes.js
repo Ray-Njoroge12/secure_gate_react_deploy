@@ -259,6 +259,7 @@ const dailyBulkInviteLimit = rateLimit({
 router.post('/',
   visitorCreationLimit,
   authenticateToken,  // Changed from attachUserFromToken to authenticateToken (requires auth)
+  requireRolePolicy('adminOrResident'),
   validateRequest(ValidationSchemas.visitorCreation),
   attachRequestAudit,
   createVisitor
