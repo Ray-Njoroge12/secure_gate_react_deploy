@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import logger from 'utils/logger';
 
 import { Button, SearchFilter, Pagination, ResponsiveTable, PageHeader, Icon } from "../../components/ui";
@@ -6,6 +6,7 @@ import api from '../../utils/apiClient';
 import { useToast } from '../../contexts/ToastContext';
 import Modal from "../../components/ui/Modal";
 import { useSearchData } from "../../hooks/useSearch";
+import { useResidentVisitorEvents, VISITOR_EVENTS } from "../../hooks/useVisitorEvents";
 // import AppShell from "../../layouts/AppShell";
 // import { useCurrentRole } from "../../hooks/useCurrentRole";
 
@@ -75,6 +76,51 @@ export default function VisitorHistory() {
     pageSize: 10
   });
 
+  // WebSocket: subscribe to real-time visitor events
+  const handleVisitorEvent = useCallback((event) => {
+    // On any visitor event, update the rows in-place or re-fetch
+    const visitorData = event.visitor || event.data?.visitor || event;
+    const visitorId = visitorData.id || visitorData.visitor_id;
+    const eventType = event.type;
+
+    if (!visitorId) {
+      // Cannot match to a row — do a full refresh
+      fetchMine();
+      return;
+    }
+
+    setRows(prev => {
+      const idx = prev.findIndex(r => r.id === visitorId);
+      if (idx === -1) {
+        // New visitor — prepend if it's an invite or check-in
+        if (
+          eventType === VISITOR_EVENTS.INVITED ||
+          eventType === VISITOR_EVENTS.CHECK_IN ||
+          eventType === VISITOR_EVENTS.SELF_CHECK_IN ||
+          eventType === VISITOR_EVENTS.ARRIVAL
+        ) {
+          return [visitorData, ...prev];
+        }
+        // Unknown visitor for other events — trigger full refresh
+        fetchMine();
+        return prev;
+      }
+      // Update existing row in-place
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], ...visitorData };
+      return updated;
+    });
+  }, []);
+
+  const {
+    isConnected: wsConnected,
+    connectionStatus: wsStatus
+  } = useResidentVisitorEvents({
+    enabled: true,
+    onVisitorEvent: handleVisitorEvent,
+    showNotifications: false
+  });
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -108,10 +154,9 @@ export default function VisitorHistory() {
     }
   }
 
+  // Initial fetch on mount (no polling — WebSocket handles live updates)
   React.useEffect(() => {
     fetchMine();
-    const t = setInterval(fetchMine, 10000);
-    return () => clearInterval(t);
   }, []);
 
   // Transform data for ResponsiveTable
@@ -284,6 +329,23 @@ export default function VisitorHistory() {
           backTo="/dashboard/resident"
           actions={
             <div className="flex items-center gap-2">
+              {/* Live connection indicator */}
+              {wsConnected ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                  </span>
+                  Live
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-400" />
+                  </span>
+                  Offline
+                </span>
+              )}
               <Button
                 onClick={() => setShowFilters(!showFilters)}
                 variant="outline"
@@ -306,8 +368,10 @@ export default function VisitorHistory() {
                 disabled={loading}
                 variant="outline"
                 size="sm"
+                title={wsConnected ? "Refresh data" : "WebSocket offline — click to refresh manually"}
               >
                 <Icon name="RefreshCw" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {!wsConnected && <span className="ml-1">Refresh</span>}
               </Button>
             </div>
           }

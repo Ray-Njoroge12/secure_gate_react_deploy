@@ -99,16 +99,16 @@ const IncidentList = () => {
     return colors[severity] || colors.medium;
   };
 
-  const getCategoryIcon = (category) => {
+  const getCategoryIconName = (category) => {
     const icons = {
-      suspicious: '🚨',
-      document_issue: '📄',
-      vehicle: '🚗',
-      behavior: '⚠️',
-      system_error: '💻',
-      other: '📝'
+      suspicious: 'ShieldAlert',
+      document_issue: 'FileWarning',
+      vehicle: 'Car',
+      behavior: 'AlertTriangle',
+      system_error: 'Monitor',
+      other: 'FileText'
     };
-    return icons[category] || '📝';
+    return icons[category] || 'FileText';
   };
 
   return (
@@ -288,7 +288,9 @@ const IncidentList = () => {
                   >
                     {/* Mobile: stacked layout */}
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="text-2xl flex-shrink-0">{getCategoryIcon(incident.category)}</div>
+                      <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-700">
+                        <Icon name={getCategoryIconName(incident.category)} className="w-5 h-5 text-gray-700 dark:text-gray-300" aria-hidden="true" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-900 dark:text-white capitalize">
                           {incident.category.replace('_', ' ')}
