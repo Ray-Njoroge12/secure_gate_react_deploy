@@ -248,8 +248,7 @@ router.post('/disable', authenticateToken, asyncHandler(async (req, res) => {
   }
 
   // Verify password
-  const user = await userService.getUserById(userId);
-  const isPasswordValid = await userService.verifyPassword(password, user.password);
+  const isPasswordValid = await userService.verifyPassword(userId, password);
 
   if (!isPasswordValid) {
     throw new AppError('Invalid password', 401, 'INVALID_PASSWORD');

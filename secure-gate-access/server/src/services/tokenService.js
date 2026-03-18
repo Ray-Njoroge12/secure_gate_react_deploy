@@ -325,11 +325,10 @@ class TokenService {
    * Revoke token (add JTI to blacklist) - Uses Redis for persistence
    */
   async revokeToken(token) {
-    try {
-      // Decode without verification to get JTI
-      const decoded = jwt.decode(token);
-      const jti = decoded?.jti || token;
+    const decoded = jwt.decode(token);
+    const jti = decoded?.jti || token;
 
+    try {
       // Calculate TTL based on token expiry
       let ttlSeconds = 900; // Default 15 minutes
       if (decoded?.exp) {
@@ -351,7 +350,6 @@ class TokenService {
       }
     } catch (error) {
       // If Redis fails, use database for persistence AND in-memory for speed
-      const jti = decoded?.jti || token;
       await this.revokeTokenInDatabase(jti);
       this.revokedTokens.add(jti);
     }
