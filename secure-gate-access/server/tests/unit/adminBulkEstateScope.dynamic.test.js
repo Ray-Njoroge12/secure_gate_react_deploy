@@ -44,7 +44,7 @@ describe('admin bulk governance estate-scope dynamic verification', () => {
     });
   });
 
-  it('bulkApproveUsers applies caller-provided estateId when req.user.estate_id is missing', async () => {
+  it('bulkApproveUsers rejects when estate context is missing even if body estateId is supplied', async () => {
     req.body = {
       userIds: [101],
       estateId: 88
@@ -52,37 +52,53 @@ describe('admin bulk governance estate-scope dynamic verification', () => {
 
     await bulkApproveUsers(req, res);
 
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.stringContaining('AND estate_id = $2'),
-      [[101], 88]
-    );
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        success: true,
-        message: expect.stringContaining('approved successfully')
+        success: false,
+        message: 'Estate context required'
       })
     );
   });
 
-  it('bulkApproveUsers can execute without estate filter when both req.user.estate_id and body.estateId are absent', async () => {
+  it('bulkApproveUsers rejects when both req.user.estate_id and req.estateId are absent', async () => {
     req.body = {
       userIds: [101]
     };
 
     await bulkApproveUsers(req, res);
 
-    expect(mockQuery).toHaveBeenCalledWith(
-      expect.not.stringContaining('AND estate_id = $2'),
-      [[101]]
-    );
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        success: true
+        success: false,
+        message: 'Estate context required'
       })
     );
   });
 
-  it('bulkRejectUsers executes without estate filter when req.user.estate_id is missing', async () => {
+  it('bulkRejectUsers rejects when estate context is missing', async () => {
+    req.body = {
+      userIds: [101],
+      reason: 'dynamic-verification'
+    };
+
+    await bulkRejectUsers(req, res);
+
+    expect(mockQuery).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message: 'Estate context required'
+      })
+    );
+  });
+
+  it('bulkRejectUsers enforces estate filter when estate context is present', async () => {
+    req.user.estate_id = 77;
     req.body = {
       userIds: [101],
       reason: 'dynamic-verification'
@@ -91,8 +107,8 @@ describe('admin bulk governance estate-scope dynamic verification', () => {
     await bulkRejectUsers(req, res);
 
     expect(mockQuery).toHaveBeenCalledWith(
-      expect.not.stringContaining('AND estate_id = $3'),
-      [[101], 'dynamic-verification']
+      expect.stringContaining('AND estate_id = $3'),
+      [[101], 'dynamic-verification', 77]
     );
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
