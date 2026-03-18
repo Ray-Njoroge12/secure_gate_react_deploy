@@ -109,7 +109,7 @@ jobs:
         run: |
           set -e
           shopt -s nullglob
-          for f in migrations/*.sql; do
+          for f in src/database/migrations/*.sql; do
             echo "Applying migration: $f"
             psql -v ON_ERROR_STOP=1 -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f "$f"
           done

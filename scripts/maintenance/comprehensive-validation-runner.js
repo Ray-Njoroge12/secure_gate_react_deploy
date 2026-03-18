@@ -6,11 +6,10 @@
  * Generates consolidated validation report for Task 19.2
  */
 
-const SecurityTestSuite = require('./security-validation/security-test-suite');
-const PerformanceTestSuite = require('./performance-validation/performance-test-suite');
-const PrivacyComplianceTestSuite = require('./privacy-validation/privacy-compliance-test');
 const fs = require('fs');
 const path = require('path');
+
+const repoRoot = path.resolve(__dirname, '..', '..');
 
 class ComprehensiveValidationRunner {
   constructor(baseUrl = 'http://localhost:3001', options = {}) {
@@ -93,6 +92,7 @@ class ComprehensiveValidationRunner {
 
   async runSecurityValidation() {
     try {
+      const SecurityTestSuite = require(path.join(repoRoot, 'secure-gate-access', 'server', 'scripts', 'security', 'security-test-suite.js'));
       const securitySuite = new SecurityTestSuite(this.baseUrl, {
         timeout: 30000,
         verbose: this.options.verbose
@@ -104,7 +104,7 @@ class ComprehensiveValidationRunner {
         summary: securityReport.summary,
         tests: securityReport.tests,
         recommendations: securityReport.recommendations,
-        reportPath: path.join(__dirname, 'security-validation', 'security-validation-report.json')
+        reportPath: path.join(repoRoot, 'secure-gate-access', 'server', 'scripts', 'security', 'security-validation-report.json')
       };
       
       // Add critical security issues
@@ -127,6 +127,7 @@ class ComprehensiveValidationRunner {
 
   async runPerformanceValidation() {
     try {
+      const PerformanceTestSuite = require(path.join(repoRoot, 'performance-validation', 'performance-test-suite.js'));
       const performanceSuite = new PerformanceTestSuite(this.baseUrl, {
         timeout: 30000,
         maxConcurrentUsers: 50, // Reduced for validation
@@ -140,7 +141,7 @@ class ComprehensiveValidationRunner {
         summary: performanceReport.summary,
         metrics: performanceReport.metrics,
         recommendations: performanceReport.recommendations,
-        reportPath: path.join(__dirname, 'performance-validation', 'performance-validation-report.json')
+        reportPath: path.join(repoRoot, 'performance-validation', 'performance-validation-report.json')
       };
       
       // Add performance issues
@@ -167,6 +168,7 @@ class ComprehensiveValidationRunner {
 
   async runPrivacyValidation() {
     try {
+      const PrivacyComplianceTestSuite = require(path.join(repoRoot, 'privacy-validation', 'privacy-compliance-test.js'));
       const privacySuite = new PrivacyComplianceTestSuite(this.baseUrl, {
         timeout: 30000,
         verbose: this.options.verbose
@@ -179,7 +181,7 @@ class ComprehensiveValidationRunner {
         complianceAreas: privacyReport.complianceAreas,
         tests: privacyReport.tests,
         recommendations: privacyReport.recommendations,
-        reportPath: path.join(__dirname, 'privacy-validation', 'privacy-compliance-report.json')
+        reportPath: path.join(repoRoot, 'privacy-validation', 'privacy-compliance-report.json')
       };
       
       // Add critical privacy issues

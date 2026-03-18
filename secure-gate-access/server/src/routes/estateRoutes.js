@@ -40,20 +40,46 @@ router.post('/select', authenticateToken, asyncHandler(async (req, res) => {
     throw new AppError('Invalid estate selection', 400, 'ESTATE_INVALID');
   }
 
-  const updateResult = await dbManager.query(
-    `UPDATE users
-     SET estate_id = $1, updated_at = NOW()
-     WHERE id = $2 AND estate_id IS NULL
-     RETURNING id, username, email, role, estate_id`,
-    [estateId, req.user.id]
+  const userResult = await dbManager.query(
+    `SELECT id, username, email, role, estate_id
+     FROM users
+     WHERE id = $1`,
+    [req.user.id]
   );
 
-  if (updateResult.rowCount === 0) {
-    throw new AppError('Unable to update estate assignment', 409, 'ESTATE_ASSIGNMENT_FAILED');
+  if (userResult.rowCount === 0) {
+    throw new AppError('User account not found', 404, 'USER_NOT_FOUND');
+  }
+
+  const selectedEstateId = Number(estateId);
+  const currentEstateId = userResult.rows[0].estate_id === null
+    ? null
+    : Number(userResult.rows[0].estate_id);
+
+  if (currentEstateId !== null && currentEstateId !== selectedEstateId) {
+    throw new AppError('Estate already assigned to this account', 409, 'ESTATE_ALREADY_SET');
+  }
+
+  let assignedUser = userResult.rows[0];
+
+  if (currentEstateId === null) {
+    const updateResult = await dbManager.query(
+      `UPDATE users
+       SET estate_id = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, username, email, role, estate_id`,
+      [selectedEstateId, req.user.id]
+    );
+
+    if (updateResult.rowCount === 0) {
+      throw new AppError('Unable to update estate assignment', 409, 'ESTATE_ASSIGNMENT_FAILED');
+    }
+
+    assignedUser = updateResult.rows[0];
   }
 
   successResponse(res, {
-    user: updateResult.rows[0],
+    user: assignedUser,
     estate: estateCheck.rows[0]
   }, 'Estate assignment updated successfully');
 }));

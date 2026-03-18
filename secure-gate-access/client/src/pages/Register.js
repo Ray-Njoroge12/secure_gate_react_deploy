@@ -12,8 +12,6 @@ import api from '../utils/apiClient';
 import PasswordRequirements from '../components/PasswordRequirements';
 import Button from '../components/ui/Button';
 
-// API base URL for cross-site deployment (Netlify frontend + Render backend)
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const DEFAULT_ESTATE_ID = Number.parseInt(process.env.REACT_APP_DEFAULT_ESTATE_ID || '1', 10);
 const DEFAULT_ESTATE_NAME = process.env.REACT_APP_DEFAULT_ESTATE_NAME || 'Default Estate';
 const hasDefaultEstateFallback = Number.isFinite(DEFAULT_ESTATE_ID) && DEFAULT_ESTATE_ID > 0;
@@ -270,7 +268,7 @@ export default function RegistrationPage() {
         ? Number(formData.estateId)
         : (hasDefaultEstateFallback ? DEFAULT_ESTATE_ID : null);
 
-      const response = await api.post('/api/auth/register', {
+      await api.post('/api/auth/register', {
           username: formData.username,
           first_name: formData.first_name,
           last_name: formData.last_name,

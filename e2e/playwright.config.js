@@ -6,8 +6,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  // Test directory
-  testDir: './e2e',
+  // Test directory (relative to this config file — i.e. the e2e/ folder itself)
+  testDir: '.',
   
   // Global test timeout
   timeout: 60000,
@@ -39,8 +39,8 @@ export default defineConfig({
   ],
   
   // Global setup and teardown
-  globalSetup: './e2e/utils/global-setup.js',
-  globalTeardown: './e2e/utils/global-teardown.js',
+  globalSetup: './utils/global-setup.js',
+  globalTeardown: './utils/global-teardown.js',
   
   // Shared settings for all tests
   use: {
@@ -151,7 +151,7 @@ export default defineConfig({
   // Web server configuration for local testing
   webServer: process.env.CI ? undefined : [
     {
-      command: 'cd secure-gate-access/server && npm run test:server',
+      command: 'cd ../secure-gate-access/server && npm start',
       port: 3001,
       reuseExistingServer: !process.env.CI,
       timeout: 120000

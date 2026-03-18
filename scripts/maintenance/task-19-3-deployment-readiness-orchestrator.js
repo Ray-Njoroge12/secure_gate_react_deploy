@@ -23,11 +23,14 @@ const { execSync } = require('child_process');
 
 class DeploymentReadinessOrchestrator {
   constructor(options = {}) {
+    this.repoRoot = path.resolve(__dirname, '..', '..');
+
     this.options = {
       environment: 'production',
       skipValidation: false,
       skipDocumentation: false,
       skipMonitoring: false,
+      includeDeferredAws: false,
       dryRun: false,
       verbose: true,
       ...options
@@ -92,10 +95,20 @@ class DeploymentReadinessOrchestrator {
     console.log('-' .repeat(50));
     
     try {
+      if (!this.options.includeDeferredAws) {
+        console.log('⏭️  AWS deployment orchestration deferred (use --include-deferred-aws to enable)');
+        this.results.phases.deploymentScripts = {
+          status: 'DEFERRED',
+          reason: 'Deferred AWS orchestration is disabled by default for local/CI cleanup scope',
+          timestamp: new Date().toISOString()
+        };
+        return;
+      }
+
       console.log('Validating deployment script configuration...');
       
       // Verify deployment scripts exist and are executable
-      const deploymentScriptPath = path.join(__dirname, 'deployment/production-deployment-scripts.js');
+      const deploymentScriptPath = path.join(this.repoRoot, 'deployment', 'production-deployment-scripts.js');
       if (!fs.existsSync(deploymentScriptPath)) {
         throw new Error('Production deployment scripts not found');
       }
@@ -103,7 +116,7 @@ class DeploymentReadinessOrchestrator {
       // Test deployment script initialization (dry run)
       if (!this.options.dryRun) {
         console.log('Testing deployment script initialization...');
-        const ProductionDeploymentManager = require('./deployment/production-deployment-scripts');
+        const ProductionDeploymentManager = require(deploymentScriptPath);
         const deploymentManager = new ProductionDeploymentManager({
           environment: this.options.environment,
           skipTests: true,
@@ -141,10 +154,20 @@ class DeploymentReadinessOrchestrator {
     console.log('-' .repeat(50));
     
     try {
+      if (!this.options.includeDeferredAws) {
+        console.log('⏭️  AWS monitoring orchestration deferred (use --include-deferred-aws to enable)');
+        this.results.phases.monitoring = {
+          status: 'DEFERRED',
+          reason: 'Deferred AWS orchestration is disabled by default for local/CI cleanup scope',
+          timestamp: new Date().toISOString()
+        };
+        return;
+      }
+
       console.log('Configuring production monitoring and alerting...');
       
       // Verify monitoring scripts exist
-      const monitoringScriptPath = path.join(__dirname, 'monitoring/production-monitoring-system.js');
+      const monitoringScriptPath = path.join(this.repoRoot, 'monitoring', 'production-monitoring-system.js');
       if (!fs.existsSync(monitoringScriptPath)) {
         throw new Error('Production monitoring scripts not found');
       }
@@ -152,7 +175,7 @@ class DeploymentReadinessOrchestrator {
       // Test monitoring system initialization
       if (!this.options.skipMonitoring && !this.options.dryRun) {
         console.log('Testing monitoring system configuration...');
-        const ProductionMonitoringSystem = require('./monitoring/production-monitoring-system');
+        const ProductionMonitoringSystem = require(monitoringScriptPath);
         const monitoringSystem = new ProductionMonitoringSystem({
           environment: this.options.environment,
           alertingEnabled: false, // Disable alerts during testing
@@ -202,8 +225,19 @@ class DeploymentReadinessOrchestrator {
       }
       
       console.log('Generating comprehensive user documentation...');
+
+      const userDocumentationGeneratorPath = path.join(this.repoRoot, 'documentation', 'user-documentation-generator.js');
+      if (!fs.existsSync(userDocumentationGeneratorPath)) {
+        console.log('⚠️  User documentation generator not found, skipping this optional phase');
+        this.results.phases.documentation = {
+          status: 'SKIPPED',
+          reason: 'documentation/user-documentation-generator.js not found',
+          timestamp: new Date().toISOString()
+        };
+        return;
+      }
       
-      const UserDocumentationGenerator = require('./documentation/user-documentation-generator');
+      const UserDocumentationGenerator = require(userDocumentationGeneratorPath);
       const docGenerator = new UserDocumentationGenerator({
         outputDir: 'documentation/generated',
         includeScreenshots: false,
@@ -245,32 +279,41 @@ class DeploymentReadinessOrchestrator {
     try {
       console.log('Executing comprehensive launch readiness validation...');
       
-      const LaunchReadinessValidator = require('./launch-readiness/launch-readiness-validator');
+      const launchValidatorPath = path.join(this.repoRoot, 'scripts', 'maintenance', 'launch-readiness-final-validator.js');
+      if (!fs.existsSync(launchValidatorPath)) {
+        throw new Error('Launch readiness validator not found');
+      }
+
+      const LaunchReadinessValidator = require(launchValidatorPath);
       const validator = new LaunchReadinessValidator({
         environment: this.options.environment,
         skipValidation: this.options.skipValidation,
-        skipDocumentation: this.options.skipDocumentation,
-        requireStakeholderSignoff: true,
-        generateReport: true
+        skipDocumentation: this.options.skipDocumentation
       });
-      
-      const validationResults = await validator.validateLaunchReadiness();
+
+      const validationResults = typeof validator.validateLaunchReadiness === 'function'
+        ? await validator.validateLaunchReadiness()
+        : await validator.runFinalValidation();
+
+      const launchRecommendation = validationResults?.launchReadiness?.recommendation || 'PENDING';
+      const launchApproval = launchRecommendation === 'GO' || launchRecommendation === 'CONDITIONAL-GO';
       
       this.results.phases.launchReadiness = {
-        status: validationResults.overallStatus,
-        launchApproval: validationResults.launchApproval,
-        validationPhases: Object.keys(validationResults.validationPhases).length,
-        stakeholderSignoffs: Object.keys(validationResults.stakeholderSignoffs).length,
-        criticalIssues: validationResults.criticalIssues.length,
-        recommendations: validationResults.recommendations.length,
+        status: validationResults.overallStatus || 'UNKNOWN',
+        launchApproval,
+        launchRecommendation,
+        validationPhases: Object.keys(validationResults.validationPhases || validationResults.systemValidation || {}).length,
+        stakeholderSignoffs: Object.keys(validationResults.stakeholderSignoffs || {}).length,
+        criticalIssues: (validationResults.criticalIssues || []).length,
+        recommendations: (validationResults.recommendations || []).length,
         timestamp: new Date().toISOString()
       };
       
-      if (validationResults.launchApproval) {
+      if (launchApproval) {
         console.log('🚀 Launch readiness validation PASSED - System approved for production');
       } else {
         console.log('❌ Launch readiness validation FAILED - Critical issues must be resolved');
-        console.log(`🔧 Critical issues: ${validationResults.criticalIssues.length}`);
+        console.log(`🔧 Critical issues: ${(validationResults.criticalIssues || []).length}`);
       }
       
       console.log('✅ Phase 4 completed: Launch readiness validation executed');
@@ -349,7 +392,7 @@ class DeploymentReadinessOrchestrator {
       },
       {
         name: 'Launch Readiness Validation',
-        path: 'launch-readiness/launch-readiness-validator.js',
+        path: 'scripts/maintenance/launch-readiness-final-validator.js',
         description: 'Final validation and stakeholder sign-off process',
         status: this.results.phases.launchReadiness?.status || 'PENDING'
       }
@@ -494,8 +537,8 @@ ${summary.nextSteps.map(step => `- ${step}`).join('\n')}
 ### New Files Created
 - \`deployment/production-deployment-scripts.js\` - Production deployment automation
 - \`monitoring/production-monitoring-system.js\` - Production monitoring and alerting
-- \`documentation/user-documentation-generator.js\` - User documentation generator
-- \`launch-readiness/launch-readiness-validator.js\` - Launch readiness validation
+- \`documentation/user-documentation-generator.js\` - User documentation generator (optional)
+- \`scripts/maintenance/launch-readiness-final-validator.js\` - Launch readiness validation
 - \`task-19-3-deployment-readiness-orchestrator.js\` - Task orchestration script
 - \`documentation/generated/\` - Complete user documentation suite
 
@@ -589,6 +632,7 @@ if (require.main === module) {
     skipValidation: args.includes('--skip-validation'),
     skipDocumentation: args.includes('--skip-docs'),
     skipMonitoring: args.includes('--skip-monitoring'),
+    includeDeferredAws: args.includes('--include-deferred-aws'),
     dryRun: args.includes('--dry-run'),
     verbose: args.includes('--verbose') || args.includes('-v')
   };

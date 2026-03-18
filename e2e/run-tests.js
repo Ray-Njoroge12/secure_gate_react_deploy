@@ -8,6 +8,11 @@
 import { execSync, spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, '..');
 
 // Test configuration
 const TEST_CONFIG = {
@@ -159,6 +164,13 @@ async function setupEnvironment(options) {
  */
 async function ensureLocalServers() {
   console.log('🌐 Checking local servers...');
+
+  const serverPath = path.join(repoRoot, 'secure-gate-access', 'server');
+  const clientPath = path.join(repoRoot, 'secure-gate-access', 'client');
+  const serverStartScript = await resolveNpmScript(
+    path.join(serverPath, 'package.json'),
+    ['test:server', 'dev', 'start']
+  );
   
   const servers = [
     { name: 'API Server', url: 'http://localhost:3001/health', port: 3001 },
@@ -178,15 +190,19 @@ async function ensureLocalServers() {
       
       if (server.port === 3001) {
         console.log('Starting API server...');
-        spawn('npm', ['run', 'test:server'], {
-          cwd: './secure-gate-access/server',
+        if (!serverStartScript) {
+          throw new Error('No runnable API server script found (expected one of: test:server, dev, start)');
+        }
+
+        spawn('npm', ['run', serverStartScript], {
+          cwd: serverPath,
           detached: true,
           stdio: 'ignore'
         });
       } else if (server.port === 3000) {
         console.log('Starting frontend server...');
         spawn('npm', ['start'], {
-          cwd: './secure-gate-access/client',
+          cwd: clientPath,
           detached: true,
           stdio: 'ignore'
         });
@@ -195,6 +211,16 @@ async function ensureLocalServers() {
       // Wait for server to start
       await waitForServer(server.url, 60000);
     }
+  }
+}
+
+async function resolveNpmScript(packageJsonPath, candidates) {
+  try {
+    const pkg = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+    const scripts = pkg.scripts || {};
+    return candidates.find(script => Boolean(scripts[script])) || null;
+  } catch {
+    return null;
   }
 }
 

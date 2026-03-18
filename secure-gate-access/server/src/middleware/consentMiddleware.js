@@ -76,7 +76,7 @@ export function createConsentMiddleware(requiredConsents = []) {
         response.error.details = {
           requiredConsents: requiredConsents,
           missingConsents: consentStatus.missingConsents,
-          consentUrl: '/api/consent/required'
+          consentUrl: '/api/privacy/consent/required'
         };
         return res.status(403).json(response);
       }
@@ -101,6 +101,7 @@ function isPublicEndpoint(path) {
     '/api/health',
     '/api/auth/login',
     '/api/auth/register',
+    '/api/privacy/consent',
     '/api/consent',
     '/api-docs'
   ];

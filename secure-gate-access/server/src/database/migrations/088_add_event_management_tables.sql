@@ -183,6 +183,8 @@ COMMENT ON COLUMN event_reminders.reminder_type IS 'Type: invitation, confirmati
 -- EVENT ANALYTICS VIEW
 -- ============================================================================
 
+DROP VIEW IF EXISTS event_analytics CASCADE;
+
 CREATE OR REPLACE VIEW event_analytics AS
 SELECT
   e.id,
@@ -236,6 +238,8 @@ COMMENT ON VIEW event_analytics IS 'Event analytics and statistics';
 -- UPCOMING EVENTS VIEW
 -- ============================================================================
 
+DROP VIEW IF EXISTS upcoming_events CASCADE;
+
 CREATE OR REPLACE VIEW upcoming_events AS
 SELECT
   e.*,
@@ -257,6 +261,8 @@ COMMENT ON VIEW upcoming_events IS 'Upcoming events with attendee counts';
 -- ============================================================================
 -- EVENT CHECK-IN QUEUE VIEW
 -- ============================================================================
+
+DROP VIEW IF EXISTS event_checkin_queue CASCADE;
 
 CREATE OR REPLACE VIEW event_checkin_queue AS
 SELECT

@@ -52,13 +52,13 @@ const defaultAuth = { user: { id: '1', role: 'admin', estate_id: '1' } };
 beforeEach(() => {
   jest.clearAllMocks();
   server.use(
-    rest.get('*/api/admin/webhooks', (req, res, ctx) =>
+    rest.get('*/api/integrations/webhooks', (req, res, ctx) =>
       res(ctx.status(200), ctx.json({ data: [] }))
     ),
-    rest.get('*/api/admin/automations', (req, res, ctx) =>
+    rest.get('*/api/integrations/automations', (req, res, ctx) =>
       res(ctx.status(200), ctx.json({ data: [] }))
     ),
-    rest.get('*/api/admin/api-keys', (req, res, ctx) =>
+    rest.get('*/api/integrations/api-keys', (req, res, ctx) =>
       res(ctx.status(200), ctx.json({ data: [] }))
     )
   );
@@ -79,7 +79,7 @@ describe('IntegrationsHub', () => {
   test('uses logger.error instead of console.error on failure', async () => {
     const loggerMod = require('../../utils/logger').default;
     server.use(
-      rest.get('*/api/admin/webhooks', (req, res) =>
+      rest.get('*/api/integrations/webhooks', (req, res) =>
         res.networkError('Failed to connect')
       )
     );
@@ -90,7 +90,10 @@ describe('IntegrationsHub', () => {
       expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     });
     // Our code should use logger, not console.error
-    expect(loggerMod.error).toHaveBeenCalledWith('IntegrationsHub:', expect.any(Error));
+    expect(loggerMod.error).toHaveBeenCalledWith(
+      'IntegrationsHub:',
+      expect.objectContaining({ message: expect.any(String) })
+    );
     consoleSpy.mockRestore();
   });
 

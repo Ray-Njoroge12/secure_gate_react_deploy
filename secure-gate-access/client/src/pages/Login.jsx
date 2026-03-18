@@ -6,8 +6,6 @@ import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
 import api from "../utils/apiClient";
 
-// API base URL for cross-site deployment (Netlify frontend + Render backend)
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 const AUTH_INLINE_ERROR_PATTERN = /invalid credentials|incorrect|locked|too many/i;
 const INLINE_ERROR_ALERT_CLASS = 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300';
 
@@ -220,7 +218,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await api.post('/api/auth/forgot-password', { email: resetEmail });
+      await api.post('/api/auth/forgot-password', { email: resetEmail });
 
       handleSuccess("Password reset link sent to your email.", {
         context: 'Password Reset',

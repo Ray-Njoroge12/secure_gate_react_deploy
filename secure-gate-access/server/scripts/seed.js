@@ -487,23 +487,47 @@ async function run() {
       testVisitor = existingTestVisitorRes.rows[0];
     }
 
+    if (testVisitor?.id) {
+      const refreshedTestVisitorRes = await dbManager.query(
+        `UPDATE visitors
+         SET date_of_visit = NOW(),
+             status = 'otp_sent',
+             host_id = $2,
+             updated_at = NOW()
+         WHERE id = $1
+         RETURNING id, name, estate_id, date_of_visit, created_by`,
+        [testVisitor.id, testHost.id]
+      );
+      testVisitor = refreshedTestVisitorRes.rows[0] || testVisitor;
+    }
+
     // Generate valid QR and OTP using the service
     try {
-      const qrServiceModule = await import('../src/services/qrCodeService.js');
-      const qrCodeService = qrServiceModule.default;
+      if (!testVisitor?.id || !testVisitor?.estate_id) {
+        console.warn('[db:seed] Skipping test visitor credential generation: visitor record missing required fields');
+      } else {
+        const qrServiceModule = await import('../src/services/qrCodeService.js');
+        const qrCodeService = qrServiceModule.default;
 
-      const qrResult = await qrCodeService.generateVisitorQR(
-        { ...testVisitor, createdBy: testHost.id },
-        { generateOtp: true }
-      );
+        const qrResult = await qrCodeService.generateVisitorQR(
+          { ...testVisitor, createdBy: testHost.id },
+          { generateOtp: true }
+        );
 
-      console.log('\n=============================================');
-      console.log('✅ TEST VISITOR CREDENTIALS GENERATED');
-      console.log(`👤 Name: ${testVisitorName}`);
-      console.log(`🔐 OTP: ${qrResult.data.otp} (Use this for manual check-in)`);
-      console.log(`📱 QR Token: ${qrResult.data.token}`);
-      console.log('=============================================\n');
-
+        if (qrResult?.success && qrResult?.data) {
+          console.log('\n=============================================');
+          console.log('✅ TEST VISITOR CREDENTIALS GENERATED');
+          console.log(`👤 Name: ${testVisitorName}`);
+          console.log(`🔐 OTP: ${qrResult.data.otp ?? 'N/A'} (Use this for manual check-in)`);
+          console.log(`📱 QR Token: ${qrResult.data.token ?? 'N/A'}`);
+          console.log('=============================================\n');
+        } else {
+          console.warn('[db:seed] Failed to generate test visitor QR/OTP', {
+            error: qrResult?.error || 'Unknown QR generation failure',
+            code: qrResult?.code || 'N/A'
+          });
+        }
+      }
     } catch (e) {
       console.error('Failed to generate test visitor QR/OTP:', e);
     }
