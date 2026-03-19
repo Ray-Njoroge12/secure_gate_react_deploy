@@ -166,10 +166,11 @@ export const qrCheckIn = async (req, res) => {
 export const regenerateQR = async (req, res) => {
     try {
         const { id } = req.params;
+        const userEstateId = req.user?.estate_id;
 
         // Get visitor details
         const visitorResult = await dbManager.query(
-            `SELECT id, name, phone, email, purpose, date_of_visit, estate_id, status, visitor_token
+            `SELECT id, name, phone, email, purpose, date_of_visit, estate_id, status, host_id, resident_id, created_by
        FROM visitors WHERE id = $1`,
             [id]
         );
@@ -179,6 +180,19 @@ export const regenerateQR = async (req, res) => {
         }
 
         const visitor = visitorResult.rows[0];
+
+        if (visitor.estate_id !== userEstateId) {
+            return respondError(res, 403, 'You do not have access to this visitor');
+        }
+
+        if (req.user.role === 'resident') {
+            const ownsVisitor = visitor.host_id === req.user.id ||
+                visitor.resident_id === req.user.id ||
+                visitor.created_by === req.user.email;
+            if (!ownsVisitor) {
+                return respondError(res, 403, 'You can only regenerate QR codes for your own visitors');
+            }
+        }
 
         // Only allow regeneration if status indicates QR issue
         if (!['qr_pending', 'otp_verified', 'pending'].includes(visitor.status)) {
@@ -206,8 +220,7 @@ export const regenerateQR = async (req, res) => {
             respond(res, {
                 message: 'QR code regenerated successfully',
                 data: {
-                    qr_code: qrResult.data.qrCodeDataUrl,
-                    visitor_token: visitor.visitor_token
+                    qr_code: qrResult.data.qrCodeDataUrl
                 }
             });
         } else {
