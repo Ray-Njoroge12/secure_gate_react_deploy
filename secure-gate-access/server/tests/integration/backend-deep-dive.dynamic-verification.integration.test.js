@@ -13,6 +13,30 @@ const mockGenerateVisitorQR = jest.fn();
 const mockGetQRCodeAnalytics = jest.fn();
 const mockCleanupExpiredQRCodes = jest.fn();
 
+const createAuthToken = async ({ id, email, role, estate_id }) => {
+  const jwt = await import('jsonwebtoken');
+  const crypto = await import('crypto');
+  const secret = process.env.JWT_SECRET || 'test-jwt-secret-key-for-integration-tests';
+
+  return jwt.default.sign(
+    {
+      id,
+      sub: String(id),
+      email,
+      role,
+      estate_id,
+      type: 'access',
+      jti: crypto.randomBytes(16).toString('hex')
+    },
+    secret,
+    {
+      expiresIn: '2h',
+      issuer: 'secure-gate-api',
+      audience: 'secure-gate-client'
+    }
+  );
+};
+
 jest.unstable_mockModule('../../src/services/qrCodeService.js', () => ({
   default: {
     generateVisitorQR: mockGenerateVisitorQR,
@@ -117,6 +141,54 @@ describe('Backend deep-dive dynamic verification', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.data.visitorToken).toBeUndefined();
       expect(response.body.data.data.visitor_token).toBeUndefined();
+      expect(mockGenerateVisitorQR).toHaveBeenCalled();
+    });
+
+    it('requires explicit estate context for super admin regenerate requests', async () => {
+      const visitor = await createTestVisitor(users.resident.id, {
+        name: 'Super Admin Missing Context Visitor',
+        status: 'pending'
+      });
+
+      await dbManager.query('UPDATE users SET estate_id = NULL WHERE id = $1', [users.superAdmin.id]);
+      const superAdminNoEstateToken = await createAuthToken({
+        id: users.superAdmin.id,
+        email: users.superAdmin.email,
+        role: 'super_admin',
+        estate_id: null
+      });
+
+      const response = await request(app)
+        .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .set('Authorization', `Bearer ${superAdminNoEstateToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Estate context required');
+      expect(response.body.error.code).toBe('VALIDATION_ERROR');
+      expect(mockGenerateVisitorQR).not.toHaveBeenCalled();
+    });
+
+    it('treats resident created_by ownership check as case-insensitive and null-safe', async () => {
+      const visitor = await createTestVisitor(users.admin.id, {
+        name: 'Resident Email Owner Visitor',
+        status: 'pending',
+        host_id: users.admin.id,
+        resident_id: users.admin.id
+      });
+
+      await dbManager.query(
+        'UPDATE visitors SET created_by = $1 WHERE id = $2',
+        [users.resident.email.toUpperCase(), visitor.id]
+      );
+
+      const response = await request(app)
+        .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
       expect(mockGenerateVisitorQR).toHaveBeenCalled();
     });
   });
