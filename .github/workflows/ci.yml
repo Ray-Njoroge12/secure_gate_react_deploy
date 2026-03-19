@@ -112,6 +112,10 @@ jobs:
         working-directory: secure-gate-access/server
         run: npm run migrations:apply:ci
 
+      - name: Run security regression gate
+        working-directory: secure-gate-access/server
+        run: npm run test:security:regression
+
       - name: Run critical flow tests
         working-directory: secure-gate-access/server
         run: npm run test:critical

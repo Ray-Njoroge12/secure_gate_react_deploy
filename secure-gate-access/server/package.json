@@ -37,6 +37,7 @@
     "test:smoke": "NODE_ENV=test NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/smoke",
     "test:regression": "NODE_ENV=test NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/regression",
     "test:security": "node tests/security/run-security-audit.js",
+    "test:security:regression": "NODE_ENV=test NODE_NO_WARNINGS=1 JWT_SECRET=test-jwt-secret-for-unit-tests-min-32-chars JWT_REFRESH_SECRET=test-jwt-refresh-secret-for-unit-tests-min-32-chars node --experimental-vm-modules node_modules/.bin/jest --runInBand --runTestsByPath tests/unit/setupRoutes.security.dynamic.test.js tests/unit/adminBulkEstateScope.dynamic.test.js tests/unit/mfaRoutes.test.js tests/unit/tokenService.test.js tests/unit/qrCodeController.regenerate.dynamic.test.js --config='{\"testEnvironment\":\"node\",\"transform\":{},\"moduleFileExtensions\":[\"js\",\"mjs\",\"json\"],\"clearMocks\":true,\"resetMocks\":true,\"testTimeout\":30000}' --forceExit",
     "test:security:audit": "node tests/security/security-audit.js",
     "test:security:vulnerability": "node tests/security/vulnerability-tests.js",
     "test:security:npm": "npm audit",
