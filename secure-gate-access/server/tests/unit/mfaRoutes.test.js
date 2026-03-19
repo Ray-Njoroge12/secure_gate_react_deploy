@@ -99,7 +99,7 @@ describe('mfaRoutes', () => {
   });
 
   describe('POST /disable', () => {
-    it('should call verifyPassword with password and stored hash (current behavior verification)', async () => {
+    it('should call verifyPassword with userId and password', async () => {
       const handler = getLastPostHandler('/disable');
 
       mockReq = {
@@ -110,10 +110,6 @@ describe('mfaRoutes', () => {
         }
       };
 
-      mockGetUserById.mockResolvedValue({
-        id: 1,
-        password: '$argon2id$storedhash'
-      });
       mockVerifyPassword.mockResolvedValue(true);
       mockVerifyTOTPToken.mockResolvedValue(true);
       mockVerifyBackupCode.mockResolvedValue(false);
@@ -125,10 +121,8 @@ describe('mfaRoutes', () => {
 
       expect(next).not.toHaveBeenCalled();
 
-      // This assertion verifies the current argument order used by the route handler.
-      expect(mockVerifyPassword).toHaveBeenCalledWith('ValidPass123!', '$argon2id$storedhash');
-      // This shows the route does not call verifyPassword(userId, password).
-      expect(mockVerifyPassword).not.toHaveBeenCalledWith(1, 'ValidPass123!');
+      expect(mockVerifyPassword).toHaveBeenCalledWith(1, 'ValidPass123!');
+      expect(mockGetUserById).not.toHaveBeenCalled();
     });
   });
 });

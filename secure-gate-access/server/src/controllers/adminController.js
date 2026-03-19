@@ -400,19 +400,22 @@ export const triggerBackup = async (req, res) => {
  */
 export const bulkApproveUsers = async (req, res) => {
   try {
-    const { userIds, estateId } = req.body;
+    const { userIds } = req.body;
+    const estateId = req.estateId ?? req.user?.estate_id;
     if (!Array.isArray(userIds) || userIds.length === 0)
       return res.status(400).json({ success: false, message: 'userIds must be a non-empty array' });
     if (userIds.length > 50)
       return res.status(400).json({ success: false, message: 'Cannot approve more than 50 users at once' });
     if (!userIds.every(id => Number.isInteger(id) && id > 0))
       return res.status(400).json({ success: false, message: 'All user IDs must be positive integers' });
+    if (!estateId)
+      return res.status(403).json({ success: false, message: 'Estate context required' });
 
     let query = `UPDATE users SET account_status = 'active', updated_at = NOW()
       WHERE id = ANY($1) AND account_status = 'pending'`;
     const params = [userIds];
-    if (req.user.estate_id) { query += ` AND estate_id = $2`; params.push(req.user.estate_id); }
-    else if (estateId) { query += ` AND estate_id = $2`; params.push(estateId); }
+    query += ` AND estate_id = $2`;
+    params.push(estateId);
     query += ` RETURNING id, username, email, role`;
 
     const result = await dbManager.query(query, params);
@@ -424,7 +427,7 @@ export const bulkApproveUsers = async (req, res) => {
       data: { approved: result.rows, count: result.rows.length, requested: userIds.length }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to approve users', error: error.message });
+    _respondError(res, 500, 'Failed to approve users');
   }
 };
 
@@ -434,15 +437,19 @@ export const bulkApproveUsers = async (req, res) => {
 export const bulkRejectUsers = async (req, res) => {
   try {
     const { userIds, reason } = req.body;
+    const estateId = req.estateId ?? req.user?.estate_id;
     if (!Array.isArray(userIds) || userIds.length === 0)
       return res.status(400).json({ success: false, message: 'userIds must be a non-empty array' });
     if (userIds.length > 50)
       return res.status(400).json({ success: false, message: 'Cannot reject more than 50 users at once' });
+    if (!estateId)
+      return res.status(403).json({ success: false, message: 'Estate context required' });
 
     let query = `UPDATE users SET account_status = 'rejected', rejection_reason = $2, updated_at = NOW()
       WHERE id = ANY($1) AND account_status = 'pending'`;
     const params = [userIds, reason || 'Rejected by admin'];
-    if (req.user.estate_id) { query += ` AND estate_id = $3`; params.push(req.user.estate_id); }
+    query += ` AND estate_id = $3`;
+    params.push(estateId);
     query += ` RETURNING id, username, email, role`;
 
     const result = await dbManager.query(query, params);
@@ -451,7 +458,7 @@ export const bulkRejectUsers = async (req, res) => {
       data: { rejected: result.rows, count: result.rows.length }
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to reject users', error: error.message });
+    _respondError(res, 500, 'Failed to reject users');
   }
 };
 
@@ -608,4 +615,3 @@ export const getAccessLogs = async (req, res) => {
     _respondError(res, 500, 'Failed to fetch access logs', error);
   }
 };
-

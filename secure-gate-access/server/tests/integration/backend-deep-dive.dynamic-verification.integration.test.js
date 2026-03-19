@@ -13,6 +13,30 @@ const mockGenerateVisitorQR = jest.fn();
 const mockGetQRCodeAnalytics = jest.fn();
 const mockCleanupExpiredQRCodes = jest.fn();
 
+const createAuthToken = async ({ id, email, role, estate_id }) => {
+  const jwt = await import('jsonwebtoken');
+  const crypto = await import('crypto');
+  const secret = process.env.JWT_SECRET || 'test-jwt-secret-key-for-integration-tests';
+
+  return jwt.default.sign(
+    {
+      id,
+      sub: String(id),
+      email,
+      role,
+      estate_id,
+      type: 'access',
+      jti: crypto.randomBytes(16).toString('hex')
+    },
+    secret,
+    {
+      expiresIn: '2h',
+      issuer: 'secure-gate-api',
+      audience: 'secure-gate-client'
+    }
+  );
+};
+
 jest.unstable_mockModule('../../src/services/qrCodeService.js', () => ({
   default: {
     generateVisitorQR: mockGenerateVisitorQR,
@@ -63,32 +87,43 @@ describe('Backend deep-dive dynamic verification', () => {
     mockCleanupExpiredQRCodes.mockResolvedValue(3);
   });
 
-  describe('Setup route exposure verification', () => {
-    it('allows unauthenticated callers to reach /api/setup/migrate secret gate', async () => {
+  describe('Setup route hardening verification', () => {
+    it('blocks unauthenticated callers from setup migrate surface by default', async () => {
       const response = await request(app)
         .post('/api/setup/migrate')
         .send({ secret: 'not-the-secret' });
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('FORBIDDEN');
+      expect([403, 404]).toContain(response.status);
     });
 
-    it('allows unauthenticated callers to reach /api/setup/seed secret gate', async () => {
+    it('blocks unauthenticated callers from setup seed surface by default', async () => {
       const response = await request(app)
         .post('/api/setup/seed')
         .send({ secret: 'not-the-secret' });
 
-      expect(response.status).toBe(403);
-      expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe('FORBIDDEN');
+      expect([403, 404]).toContain(response.status);
     });
   });
 
   describe('Public QR regeneration exposure verification', () => {
-    it('permits unauthenticated regenerate-qr invocation and returns visitor token material', async () => {
+    it('blocks unauthenticated regenerate-qr invocation', async () => {
       const visitor = await createTestVisitor(users.resident.id, {
         name: 'Public Regenerate Route Visitor',
+        status: 'pending'
+      });
+
+      const response = await request(app)
+        .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .send({});
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+      expect(mockGenerateVisitorQR).not.toHaveBeenCalled();
+    });
+
+    it('does not return visitor token material in regenerate response payload', async () => {
+      const visitor = await createTestVisitor(users.resident.id, {
+        name: 'Token Material Redaction Visitor',
         status: 'pending'
       });
 
@@ -99,37 +134,83 @@ describe('Backend deep-dive dynamic verification', () => {
 
       const response = await request(app)
         .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .set('Authorization', `Bearer ${residentToken}`)
         .send({});
 
       expect(response.status).toBe(200);
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.data.visitorToken).toBe('vst_dynamic_exposure_token');
+      expect(response.body.data.data.visitorToken).toBeUndefined();
+      expect(response.body.data.data.visitor_token).toBeUndefined();
+      expect(mockGenerateVisitorQR).toHaveBeenCalled();
+    });
+
+    it('requires explicit estate context for super admin regenerate requests', async () => {
+      const visitor = await createTestVisitor(users.resident.id, {
+        name: 'Super Admin Missing Context Visitor',
+        status: 'pending'
+      });
+
+      await dbManager.query('UPDATE users SET estate_id = NULL WHERE id = $1', [users.superAdmin.id]);
+      const superAdminNoEstateToken = await createAuthToken({
+        id: users.superAdmin.id,
+        email: users.superAdmin.email,
+        role: 'super_admin',
+        estate_id: null
+      });
+
+      const response = await request(app)
+        .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .set('Authorization', `Bearer ${superAdminNoEstateToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Estate context required');
+      expect(response.body.error.code).toBe('VALIDATION_ERROR');
+      expect(mockGenerateVisitorQR).not.toHaveBeenCalled();
+    });
+
+    it('treats resident created_by ownership check as case-insensitive and null-safe', async () => {
+      const visitor = await createTestVisitor(users.admin.id, {
+        name: 'Resident Email Owner Visitor',
+        status: 'pending',
+        host_id: users.admin.id,
+        resident_id: users.admin.id
+      });
+
+      await dbManager.query(
+        'UPDATE visitors SET created_by = $1 WHERE id = $2',
+        [users.resident.email.toUpperCase(), visitor.id]
+      );
+
+      const response = await request(app)
+        .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .set('Authorization', `Bearer ${residentToken}`)
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
       expect(mockGenerateVisitorQR).toHaveBeenCalled();
     });
   });
 
   describe('QR analytics and cleanup scope verification', () => {
-    it('allows resident role to call analytics endpoint', async () => {
+    it('blocks resident role from analytics endpoint', async () => {
       const response = await request(app)
         .get('/api/qr/analytics')
         .set('Authorization', `Bearer ${residentToken}`);
 
-      expect(response.status).toBe(200);
-      expect(response.status).not.toBe(403);
-      expect(mockGetQRCodeAnalytics).toHaveBeenCalled();
+      expect(response.status).toBe(403);
+      expect(mockGetQRCodeAnalytics).not.toHaveBeenCalled();
     });
 
-    it('allows resident role to call cleanup endpoint', async () => {
+    it('blocks resident role from cleanup endpoint', async () => {
       const response = await request(app)
         .post('/api/qr/cleanup')
         .set('Authorization', `Bearer ${residentToken}`)
         .send({});
 
-      expect(response.status).toBe(200);
-      expect(response.status).not.toBe(403);
-      expect(mockCleanupExpiredQRCodes).toHaveBeenCalled();
+      expect(response.status).toBe(403);
+      expect(mockCleanupExpiredQRCodes).not.toHaveBeenCalled();
     });
   });
 });
