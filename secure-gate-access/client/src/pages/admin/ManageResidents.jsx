@@ -502,6 +502,7 @@ export default function ManageResidents({ estateId }) {
     } catch (err) {
       const msg = handleApiError(err);
       setError(msg);
+      toast?.error?.(msg || 'Failed to deactivate resident');
     }
   };
 

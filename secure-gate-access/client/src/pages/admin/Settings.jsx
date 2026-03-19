@@ -20,6 +20,7 @@ export default function Settings() {
   const [mfaStatus, setMfaStatus] = useState({ mfaEnabled: false, mfaRequired: false, loading: true, error: null });
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
+  const [disableToken, setDisableToken] = useState('');
   const [disableLoading, setDisableLoading] = useState(false);
   const [disableError, setDisableError] = useState('');
   const [showRegenModal, setShowRegenModal] = useState(false);
@@ -61,17 +62,29 @@ export default function Settings() {
       setDisableError('Password is required');
       return;
     }
+    if (!disableToken) {
+      setDisableError('Authenticator code is required');
+      return;
+    }
     setDisableLoading(true);
     setDisableError('');
     try {
-      const response = await api.post('/api/mfa/disable', { password: disablePassword });
+      const response = await api.post('/api/mfa/disable', { password: disablePassword, token: disableToken });
       if (response.data?.success) {
         setShowDisableModal(false);
         setDisablePassword('');
+        setDisableToken('');
         await fetchMfaStatus();
       }
     } catch (err) {
-      setDisableError(err.response?.data?.message || 'Failed to disable MFA');
+      const errorCode = err.response?.data?.code;
+      if (errorCode === 'INVALID_PASSWORD') {
+        setDisableError('Incorrect password. Please try again.');
+      } else if (errorCode === 'INVALID_TOTP') {
+        setDisableError('Invalid authenticator code or backup code. Please try again.');
+      } else {
+        setDisableError(err.response?.data?.message || 'Failed to disable MFA');
+      }
     } finally {
       setDisableLoading(false);
     }
@@ -510,7 +523,7 @@ export default function Settings() {
                             </Button>
                             <Button
                               variant="danger"
-                              onClick={() => { setShowDisableModal(true); setDisablePassword(''); setDisableError(''); }}
+                              onClick={() => { setShowDisableModal(true); setDisablePassword(''); setDisableToken(''); setDisableError(''); }}
                             >
                               <Icon name="ShieldOff" className="w-4 h-4 mr-1.5" />
                               Disable MFA
@@ -541,11 +554,26 @@ export default function Settings() {
                           id="disable-mfa-password"
                           type="password"
                           value={disablePassword}
-                          onChange={(e) => setDisablePassword(e.target.value)}
+                          onChange={(e) => { setDisablePassword(e.target.value); setDisableError(''); }}
                           className={inputClass}
                           placeholder="Your account password"
                           autoFocus
                         />
+                      </div>
+                      <div>
+                        <label htmlFor="disable-mfa-token" className={labelClass}>Enter your current authenticator code to confirm</label>
+                        <input
+                          id="disable-mfa-token"
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={8}
+                          value={disableToken}
+                          onChange={(e) => { setDisableToken(e.target.value.replace(/[^a-zA-Z0-9]/g, '')); setDisableError(''); }}
+                          className={`${inputClass} max-w-[240px] tracking-widest text-center text-lg`}
+                          placeholder="000000"
+                          autoComplete="one-time-code"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">You can also use a backup code</p>
                       </div>
                       {disableError && (
                         <p className="text-sm text-red-600 dark:text-red-400" role="alert">{disableError}</p>
@@ -554,7 +582,7 @@ export default function Settings() {
                         <Button variant="secondary" onClick={() => setShowDisableModal(false)} disabled={disableLoading}>
                           Cancel
                         </Button>
-                        <Button variant="danger" onClick={handleDisableMFA} disabled={disableLoading || !disablePassword} aria-busy={disableLoading}>
+                        <Button variant="danger" onClick={handleDisableMFA} disabled={disableLoading || !disablePassword || !disableToken} aria-busy={disableLoading}>
                           {disableLoading ? 'Disabling...' : 'Disable MFA'}
                         </Button>
                       </div>

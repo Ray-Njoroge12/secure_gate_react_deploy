@@ -18,6 +18,7 @@ import {
 } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
 import { useConfirmation } from "../../components/common/ConfirmationDialog";
+import { useToast } from "../../contexts/ToastContext";
 import logger from '../../utils/logger';
 import Icon from "../../components/ui/Icon";
 import Button from "../../components/ui/Button";
@@ -63,11 +64,14 @@ const getDefaultShiftDates = () => {
 };
 
 export default function ManageGuards({ estateId }) {
+  const { toast } = useToast();
   const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const [guards, setGuards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   // Tabs
   const [activeTab, setActiveTab] = useState('team');
@@ -145,6 +149,24 @@ export default function ManageGuards({ estateId }) {
     label: `${guard.username || 'Guard'} (${guard.email || guard.phone || 'ID ' + guard.id})`
   })), [guards]);
 
+  // Search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredGuards = useMemo(() => {
+    if (!debouncedSearch.trim()) return guards;
+    const q = debouncedSearch.toLowerCase();
+    return guards.filter(g =>
+      (g.username || '').toLowerCase().includes(q) ||
+      (g.email || '').toLowerCase().includes(q) ||
+      (g.phone || '').toLowerCase().includes(q) ||
+      (g.first_name || '').toLowerCase().includes(q) ||
+      (g.last_name || '').toLowerCase().includes(q)
+    );
+  }, [guards, debouncedSearch]);
+
   const loadGuards = useCallback(async () => {
     try {
       const params = estateId ? { siteId: estateId } : {};
@@ -154,6 +176,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to load guards');
       logger.error('Failed to load guards:', e);
     } finally {
       setLoading(false);
@@ -206,7 +229,7 @@ export default function ManageGuards({ estateId }) {
         ...shiftForm,
         guard_id: Number(shiftForm.guard_id)
       });
-      setNotice('Shift created successfully.');
+      toast.success('Shift created successfully.');
       setShiftForm({
         guard_id: '',
         shift_type: 'morning',
@@ -219,6 +242,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to create shift');
       logger.error('Failed to create shift:', e);
     }
   };
@@ -244,12 +268,13 @@ export default function ManageGuards({ estateId }) {
         notes: editingShift.notes,
         status: editingShift.status
       });
-      setNotice('Shift updated successfully.');
+      toast.success('Shift updated successfully.');
       setEditingShift(null);
       await loadShifts();
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to update shift');
       logger.error('Failed to update shift:', e);
     }
   };
@@ -263,6 +288,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to load handover notes');
       logger.error('Failed to load handover notes:', e);
     }
   };
@@ -279,7 +305,7 @@ export default function ManageGuards({ estateId }) {
         shift_id: performanceForm.shift_id ? Number(performanceForm.shift_id) : null,
         rating: Number(performanceForm.rating)
       });
-      setNotice('Performance metric recorded.');
+      toast.success('Performance metric recorded.');
       setPerformanceForm({
         guard_id: '',
         shift_id: '',
@@ -290,6 +316,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to record performance');
       logger.error('Failed to record performance:', e);
     }
   };
@@ -306,6 +333,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to fetch performance data');
       logger.error('Failed to fetch performance:', e);
     }
   };
@@ -321,7 +349,7 @@ export default function ManageGuards({ estateId }) {
         guard_id: Number(equipmentForm.guard_id),
         shift_id: equipmentForm.shift_id ? Number(equipmentForm.shift_id) : null
       });
-      setNotice('Equipment checked out successfully.');
+      toast.success('Equipment checked out successfully.');
       setEquipmentForm({
         guard_id: '',
         shift_id: '',
@@ -333,6 +361,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to checkout equipment');
       logger.error('Failed to checkout equipment:', e);
     }
   };
@@ -346,11 +375,12 @@ export default function ManageGuards({ estateId }) {
         guard_id: checkout.guard_id,
         condition: 'good'
       });
-      setNotice('Equipment returned successfully.');
+      toast.success('Equipment returned successfully.');
       await loadEquipment();
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to return equipment');
       logger.error('Failed to return equipment:', e);
     }
   };
@@ -369,7 +399,7 @@ export default function ManageGuards({ estateId }) {
         certificate_number: trainingForm.certificate_number || null,
         notes: trainingForm.notes || null
       });
-      setNotice('Training record added.');
+      toast.success('Training record added.');
       setTrainingForm({
         guard_id: '',
         training_type: 'security_basics',
@@ -385,6 +415,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to add training record');
       logger.error('Failed to add training record:', e);
     }
   };
@@ -398,6 +429,7 @@ export default function ManageGuards({ estateId }) {
     } catch (e) {
       const errorMsg = handleApiError(e);
       setError(errorMsg);
+      toast.error(errorMsg || 'Failed to load training records');
       logger.error('Failed to load training records:', e);
     }
   };
@@ -417,7 +449,7 @@ export default function ManageGuards({ estateId }) {
           account_status: guardForm.status
         };
         await updateGuard(editingGuard.id, payload);
-        setNotice('Guard updated successfully.');
+        toast.success('Guard updated successfully.');
       } else {
         // Create new guard
         await addGuard({
@@ -425,7 +457,7 @@ export default function ManageGuards({ estateId }) {
           first_name: guardForm.first_name,
           last_name: guardForm.last_name
         });
-        setNotice('Guard created successfully.');
+        toast.success('Guard created successfully.');
       }
 
       setShowGuardModal(false);
@@ -445,6 +477,7 @@ export default function ManageGuards({ estateId }) {
     } catch (err) {
       const msg = handleApiError(err);
       setError(msg);
+      toast.error(msg || 'Failed to save guard');
     } finally {
       setLoading(false);
     }
@@ -477,11 +510,12 @@ export default function ManageGuards({ estateId }) {
     setLoading(true);
     try {
       await deleteGuard(guardId);
-      setNotice('Guard removed successfully.');
+      toast.success('Guard removed successfully.');
       await loadGuards();
     } catch (err) {
       const msg = handleApiError(err);
       setError(msg);
+      toast.error(msg || 'Failed to remove guard');
     } finally {
       setLoading(false);
     }
@@ -560,6 +594,23 @@ export default function ManageGuards({ estateId }) {
                   Add Guard
                 </Button>
               </div>
+
+              {/* Search */}
+              <div className="relative">
+                <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  placeholder="Search guards by name, email, or phone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                />
+              </div>
+              {debouncedSearch && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Showing {filteredGuards.length} of {guards.length} guards
+                </p>
+              )}
 
               <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
                 <div className="overflow-x-auto">

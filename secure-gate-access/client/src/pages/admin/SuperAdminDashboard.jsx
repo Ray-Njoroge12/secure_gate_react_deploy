@@ -213,11 +213,46 @@ export default function SuperAdminDashboard() {
     };
 
     const handleStatusChange = async (estateId, newStatus) => {
+        const estate = estates.find(e => e.id === estateId);
+        const estateName = estate?.name || 'this estate';
+
+        let confirmMessage;
+        let confirmTitle;
+        let confirmVariant = 'warning';
+        let confirmButtonText = 'Confirm';
+
+        if (newStatus === 'suspended') {
+            // Fetch estate stats for impact summary
+            let impactInfo = '';
+            try {
+                const statsRes = await api.get(`${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/stats`);
+                const estateStats = statsRes.data?.data || statsRes.data;
+                const userCount = estateStats?.totalUsers || estateStats?.activeUsers || 'unknown number of';
+                const pendingInvites = estateStats?.pendingInvites || estateStats?.activeInvites || 0;
+                impactInfo = `\n\n• ${userCount} active users will lose access immediately\n• ${pendingInvites} pending visitor invites will be invalidated\n• All active sessions will be terminated`;
+            } catch {
+                impactInfo = '';
+            }
+
+            confirmTitle = `Suspend "${estateName}"`;
+            confirmMessage = `All users in this estate will lose access immediately. Active sessions will be terminated.${impactInfo}\n\nAre you sure you want to suspend this estate?`;
+            confirmVariant = 'danger';
+            confirmButtonText = 'Suspend Estate';
+        } else if (newStatus === 'active') {
+            confirmTitle = `Activate "${estateName}"`;
+            confirmMessage = `This will restore access for all users in "${estateName}". Are you sure?`;
+            confirmButtonText = 'Activate';
+        } else {
+            confirmTitle = 'Change Estate Status';
+            confirmMessage = `Are you sure you want to change "${estateName}" to ${newStatus}?`;
+            confirmButtonText = 'Confirm';
+        }
+
         const confirmed = await confirm({
-            variant: 'warning',
-            title: 'Change Estate Status',
-            message: `Are you sure you want to ${newStatus} this estate?`,
-            confirmText: 'Confirm'
+            variant: confirmVariant,
+            title: confirmTitle,
+            message: confirmMessage,
+            confirmText: confirmButtonText
         });
         if (!confirmed) return;
 
@@ -227,6 +262,7 @@ export default function SuperAdminDashboard() {
 
             await api.patch(`${API_BASE_URL}/api/admin/super-admin/estates/${estateId}/status`, { status: newStatus });
 
+            notificationService.success('Status Updated', `Estate "${estateName}" is now ${newStatus}.`);
             // Refresh real data to confirm
             fetchDashboardData();
         } catch (err) {

@@ -538,62 +538,76 @@ const VisitorInvitePage = () => {
                 </p>
               </div>
 
-              {/* Expiry Countdown */}
-              {expiryCountdown && (
-                <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${expiryCountdown.expired
-                  ? 'bg-red-100 text-red-700 border border-red-200'
-                  : expiryCountdown.color === 'red'
-                    ? 'bg-red-50 text-red-600 border border-red-200'
-                    : expiryCountdown.color === 'orange'
-                      ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                      : 'bg-brand-50 text-brand-600 border border-brand-200'
-                  }`}>
-                  {expiryCountdown.expired ? (
-                    <>⚠️ This pass has expired</>
-                  ) : (
-                    <>⏱️ Pass valid: <strong>{expiryCountdown.text}</strong></>
-                  )}
+              {/* Expiry Countdown / Expired Screen */}
+              {expiryCountdown?.expired ? (
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-8 text-center border border-red-200 dark:border-red-800">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-red-800 dark:text-red-200 mb-2">This invitation has expired</h3>
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-1">
+                    This pass was valid until {formatDate(visitor.tokenExpiresAt || visitor.expiresAt || visitor.expires_at)}.
+                  </p>
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    Please ask your host to send a new invitation.
+                  </p>
                 </div>
+              ) : (
+                <>
+                  {/* Near-expiry warning */}
+                  {expiryCountdown && (
+                    <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
+                      expiryCountdown.color === 'red'
+                        ? 'bg-red-50 text-red-600 border border-red-200'
+                        : expiryCountdown.color === 'orange'
+                          ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                          : 'bg-brand-50 text-brand-600 border border-brand-200'
+                    }`}>
+                      <span aria-hidden="true">⏱️</span> Pass valid: <strong>{expiryCountdown.text}</strong>
+                    </div>
+                  )}
+
+                  <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-900/10 rounded-xl p-6" data-tour="visitor-qr">
+                    <div className="qr-code-container">
+                      {qrImageSrc ? (
+                        <img
+                          src={qrImageSrc}
+                          alt="Visitor QR Code"
+                          className="qr-code mx-auto"
+                          style={{ width: 200, height: 200 }}
+                        />
+                      ) : (
+                        <QRCodeSVG
+                          value={qrFallbackValue}
+                          size={200}
+                          level="H"
+                          includeMargin={true}
+                          className="qr-code"
+                        />
+                      )}
+                    </div>
+                    <p className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
+                      <span aria-hidden="true">📱</span> {t('visitor.presentQR')}
+                    </p>
+                    <p className="qr-code-text">
+                      Visit Code: <strong>{visitCode}</strong>
+                    </p>
+
+                    {/* Phase 1.2: Save Pass Button */}
+                    <Button
+                      onClick={() => setShowSavePassModal(true)}
+                      className="w-full mt-4 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-300 transition-colors shadow-sm"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      {t('visitor.savePassToDevice')}
+                    </Button>
+                  </div>
+                </>
               )}
-
-              <div className="bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/20 dark:to-brand-900/10 rounded-xl p-6" data-tour="visitor-qr">
-                <div className="qr-code-container">
-                  {/* Use pre-generated QR code from server if available, otherwise generate client-side */}
-                  {qrImageSrc ? (
-                    <img
-                      src={qrImageSrc}
-                      alt="Visitor QR Code"
-                      className="qr-code mx-auto"
-                      style={{ width: 200, height: 200 }}
-                    />
-                  ) : (
-                    <QRCodeSVG
-                      value={qrFallbackValue}
-                      size={200}
-                      level="H"
-                      includeMargin={true}
-                      className="qr-code"
-                    />
-                  )}
-                </div>
-                <p className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
-                  📱 {t('visitor.presentQR')}
-                </p>
-                <p className="qr-code-text">
-                  Visit Code: <strong>{visitCode}</strong>
-                </p>
-
-                {/* Phase 1.2: Save Pass Button */}
-                <Button
-                  onClick={() => setShowSavePassModal(true)}
-                  className="w-full mt-4 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-green-700 font-medium py-3 px-4 rounded-xl border-2 border-green-200 hover:border-green-300 transition-colors shadow-sm"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  {t('visitor.savePassToDevice')}
-                </Button>
-              </div>
               <div className="details-section">
                 <h2>{t('visitor.visitDetails')}</h2>
                 <div className="detail-item">

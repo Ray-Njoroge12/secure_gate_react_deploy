@@ -25,7 +25,6 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     switch (user?.role) {
       case "resident":
         return <Navigate to="/dashboard/resident" replace />;
-      case "security":
       case "guard":
         return <Navigate to="/dashboard/guard" replace />;
       case "admin":

@@ -62,6 +62,8 @@ const IntegrationsHub = () => {
   });
 
   const [newApiKey, setNewApiKey] = useState(null);
+  const [testResults, setTestResults] = useState({}); // keyed by webhook ID
+  const [testingWebhookId, setTestingWebhookId] = useState(null);
 
   useEffect(() => {
     if (activeTab === 'webhooks') {
@@ -206,12 +208,56 @@ const IntegrationsHub = () => {
     }
   };
 
+  const getTestResultColor = (status) => {
+    if (!status) return 'gray';
+    if (status >= 200 && status < 300) return 'green';
+    if (status >= 300 && status < 500) return 'yellow';
+    return 'red'; // 5xx or timeout/error
+  };
+
   const testWebhook = async (id) => {
+    setTestingWebhookId(id);
+    const startTime = Date.now();
     try {
-      await api.post(`/api/integrations/webhooks/${id}/test`);
+      const response = await api.post(`/api/integrations/webhooks/${id}/test`);
+      const elapsed = Date.now() - startTime;
+      const result = response.data?.data || {};
+      const httpStatus = result.status_code || result.statusCode || response.status || 200;
+      const body = typeof result.response_body === 'string'
+        ? result.response_body
+        : JSON.stringify(result.response_body || result.body || response.data?.message || 'OK');
+
+      setTestResults(prev => ({
+        ...prev,
+        [id]: {
+          status: httpStatus,
+          responseTime: result.response_time_ms || elapsed,
+          body: body.length > 500 ? body.slice(0, 500) + '...' : body,
+          timestamp: new Date().toISOString(),
+          error: false
+        }
+      }));
       toast.success('Webhook test successful!');
     } catch (err) {
-      toast.error('Test failed: ' + err.message);
+      const elapsed = Date.now() - startTime;
+      const errStatus = err.response?.status || 0;
+      const errBody = err.response?.data?.message || err.message || 'Request failed';
+
+      setTestResults(prev => ({
+        ...prev,
+        [id]: {
+          status: errStatus,
+          responseTime: elapsed,
+          body: typeof errBody === 'string'
+            ? (errBody.length > 500 ? errBody.slice(0, 500) + '...' : errBody)
+            : JSON.stringify(errBody).slice(0, 500),
+          timestamp: new Date().toISOString(),
+          error: true
+        }
+      }));
+      toast.error('Test failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setTestingWebhookId(null);
     }
   };
 
@@ -335,29 +381,69 @@ const IntegrationsHub = () => {
           </div>
 
           <div className="items-grid">
-            {webhooks.map(webhook => (
-              <div key={webhook.id} className="item-card">
-                <div className="card-header">
-                  <h3>{webhook.name}</h3>
-                  <span className={`status-badge ${webhook.enabled ? 'active' : 'inactive'}`}>
-                    {webhook.enabled ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                <div className="card-body">
-                  <p className="item-url">{webhook.url}</p>
-                  <p className="item-event">Event: {webhook.event_type}</p>
-                  <div className="item-stats">
-                    <span>✓ {webhook.success_count || 0}</span>
-                    <span>✗ {webhook.failure_count || 0}</span>
+            {webhooks.map(webhook => {
+              const lastTest = testResults[webhook.id];
+              const testColor = lastTest ? getTestResultColor(lastTest.status) : null;
+              return (
+                <div key={webhook.id} className="item-card">
+                  <div className="card-header">
+                    <h3>
+                      {webhook.name}
+                      {lastTest && (
+                        <span
+                          className={`test-badge test-badge--${testColor}`}
+                          title={`Last test: ${lastTest.status || 'ERR'} at ${new Date(lastTest.timestamp).toLocaleTimeString()}`}
+                        >
+                          {lastTest.status || 'ERR'}
+                        </span>
+                      )}
+                    </h3>
+                    <span className={`status-badge ${webhook.enabled ? 'active' : 'inactive'}`}>
+                      {webhook.enabled ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
+                  <div className="card-body">
+                    <p className="item-url">{webhook.url}</p>
+                    <p className="item-event">Event: {webhook.event_type}</p>
+                    <div className="item-stats">
+                      <span>✓ {webhook.success_count || 0}</span>
+                      <span>✗ {webhook.failure_count || 0}</span>
+                    </div>
+                  </div>
+                  <div className="card-actions">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="btn-sm btn-test"
+                      onClick={() => testWebhook(webhook.id)}
+                      disabled={testingWebhookId === webhook.id}
+                    >
+                      {testingWebhookId === webhook.id ? 'Testing...' : 'Test'}
+                    </Button>
+                    <Button variant="outlined" size="sm" className="btn-sm btn-edit" onClick={() => openModal('webhook', webhook)}>Edit</Button>
+                    <Button variant="danger" size="sm" className="btn-sm btn-delete" onClick={() => deleteWebhook(webhook.id)}>Delete</Button>
+                  </div>
+                  {lastTest && (
+                    <div className={`webhook-test-result webhook-test-result--${testColor}`}>
+                      <div className="test-result-header">
+                        <span className="test-result-status">
+                          Status: {lastTest.status || 'ERR'}
+                        </span>
+                        <span className="test-result-time">
+                          {lastTest.responseTime}ms
+                        </span>
+                        <span className="test-result-timestamp">
+                          {new Date(lastTest.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      {lastTest.body && (
+                        <pre className="test-result-body">{lastTest.body}</pre>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="card-actions">
-                  <Button variant="secondary" size="sm" className="btn-sm btn-test" onClick={() => testWebhook(webhook.id)}>Test</Button>
-                  <Button variant="outlined" size="sm" className="btn-sm btn-edit" onClick={() => openModal('webhook', webhook)}>Edit</Button>
-                  <Button variant="danger" size="sm" className="btn-sm btn-delete" onClick={() => deleteWebhook(webhook.id)}>Delete</Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

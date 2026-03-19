@@ -237,10 +237,14 @@ router.post('/verify', strictRateLimit(), asyncHandler(async (req, res) => {
  */
 router.post('/disable', authenticateToken, asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { password } = req.body;
+  const { password, token } = req.body;
 
   if (!password) {
     throw new AppError('Password is required to disable MFA', 400, 'VALIDATION_ERROR');
+  }
+
+  if (!token) {
+    throw new AppError('Authenticator code or backup code is required to disable MFA', 400, 'TOTP_REQUIRED');
   }
 
   // Verify password
@@ -248,7 +252,15 @@ router.post('/disable', authenticateToken, asyncHandler(async (req, res) => {
   const isPasswordValid = await userService.verifyPassword(password, user.password);
 
   if (!isPasswordValid) {
-    throw new AppError('Invalid password', 401, 'INVALID_CREDENTIALS');
+    throw new AppError('Invalid password', 401, 'INVALID_PASSWORD');
+  }
+
+  // Verify TOTP token or backup code
+  const isTokenValid = await mfaService.verifyTOTPToken(userId, token);
+  const isBackupCode = !isTokenValid && await mfaService.verifyBackupCode(userId, token);
+
+  if (!isTokenValid && !isBackupCode) {
+    throw new AppError('Invalid authenticator code or backup code', 401, 'INVALID_TOTP');
   }
 
   // Disable MFA
