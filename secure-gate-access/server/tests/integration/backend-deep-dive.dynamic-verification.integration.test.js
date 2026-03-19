@@ -82,9 +82,24 @@ describe('Backend deep-dive dynamic verification', () => {
   });
 
   describe('Public QR regeneration exposure verification', () => {
-    it('permits unauthenticated regenerate-qr invocation and returns visitor token material', async () => {
+    it('blocks unauthenticated regenerate-qr invocation', async () => {
       const visitor = await createTestVisitor(users.resident.id, {
         name: 'Public Regenerate Route Visitor',
+        status: 'pending'
+      });
+
+      const response = await request(app)
+        .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .send({});
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+      expect(mockGenerateVisitorQR).not.toHaveBeenCalled();
+    });
+
+    it('does not return visitor token material in regenerate response payload', async () => {
+      const visitor = await createTestVisitor(users.resident.id, {
+        name: 'Token Material Redaction Visitor',
         status: 'pending'
       });
 
@@ -95,37 +110,35 @@ describe('Backend deep-dive dynamic verification', () => {
 
       const response = await request(app)
         .post(`/api/visitors/${visitor.id}/regenerate-qr`)
+        .set('Authorization', `Bearer ${residentToken}`)
         .send({});
 
       expect(response.status).toBe(200);
-      expect(response.status).not.toBe(401);
-      expect(response.status).not.toBe(403);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.data.visitorToken).toBe('vst_dynamic_exposure_token');
+      expect(response.body.data.data.visitorToken).toBeUndefined();
+      expect(response.body.data.data.visitor_token).toBeUndefined();
       expect(mockGenerateVisitorQR).toHaveBeenCalled();
     });
   });
 
   describe('QR analytics and cleanup scope verification', () => {
-    it('allows resident role to call analytics endpoint', async () => {
+    it('blocks resident role from analytics endpoint', async () => {
       const response = await request(app)
         .get('/api/qr/analytics')
         .set('Authorization', `Bearer ${residentToken}`);
 
-      expect(response.status).toBe(200);
-      expect(response.status).not.toBe(403);
-      expect(mockGetQRCodeAnalytics).toHaveBeenCalled();
+      expect(response.status).toBe(403);
+      expect(mockGetQRCodeAnalytics).not.toHaveBeenCalled();
     });
 
-    it('allows resident role to call cleanup endpoint', async () => {
+    it('blocks resident role from cleanup endpoint', async () => {
       const response = await request(app)
         .post('/api/qr/cleanup')
         .set('Authorization', `Bearer ${residentToken}`)
         .send({});
 
-      expect(response.status).toBe(200);
-      expect(response.status).not.toBe(403);
-      expect(mockCleanupExpiredQRCodes).toHaveBeenCalled();
+      expect(response.status).toBe(403);
+      expect(mockCleanupExpiredQRCodes).not.toHaveBeenCalled();
     });
   });
 });
