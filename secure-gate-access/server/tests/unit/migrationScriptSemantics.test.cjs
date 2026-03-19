@@ -35,7 +35,7 @@ test('extractUpSql ignores marker text embedded inside another comment line', as
   assert.match(upSql, /INSERT INTO test_b VALUES \(1\)/i);
 });
 
-test('format checker flags destructive SQL when no down marker exists', async () => {
+test('format checker does not flag destructive SQL when no rollback marker exists', async () => {
   const { findExecutableSqlAfterDownMarker } = await loadModule('../../scripts/migration-format-check.js');
   const sql = `
     CREATE TABLE test_c(id INT);
@@ -43,9 +43,7 @@ test('format checker flags destructive SQL when no down marker exists', async ()
   `;
 
   const violations = findExecutableSqlAfterDownMarker(sql);
-  assert.equal(violations.length, 1);
-  assert.equal(violations[0].content, 'DROP TABLE test_c;');
-  assert.match(violations[0].reason, /without "-- down migration" marker/i);
+  assert.equal(violations.length, 0);
 });
 
 test('format checker ignores rollback SQL after down marker', async () => {
@@ -58,6 +56,20 @@ test('format checker ignores rollback SQL after down marker', async () => {
 
   const violations = findExecutableSqlAfterDownMarker(sql);
   assert.equal(violations.length, 0);
+});
+
+test('format checker flags destructive SQL after non-canonical rollback marker', async () => {
+  const { findExecutableSqlAfterDownMarker } = await loadModule('../../scripts/migration-format-check.js');
+  const sql = `
+    CREATE TABLE test_e(id INT);
+    -- rollback migration
+    DROP TABLE test_e;
+  `;
+
+  const violations = findExecutableSqlAfterDownMarker(sql);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].content, 'DROP TABLE test_e;');
+  assert.match(violations[0].reason, /non-canonical rollback marker/i);
 });
 
 test('format checker allows comments and blank lines after down marker', async () => {
