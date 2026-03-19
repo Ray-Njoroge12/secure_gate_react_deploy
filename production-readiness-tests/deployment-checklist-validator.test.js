@@ -6,6 +6,9 @@
  */
 
 import { jest } from '@jest/globals';
+import fs from 'fs/promises';
+import os from 'os';
+import path from 'path';
 import ProductionDeploymentChecklistValidator from './deployment-checklist-validator.js';
 
 describe('ProductionDeploymentChecklistValidator', () => {
@@ -111,6 +114,18 @@ describe('ProductionDeploymentChecklistValidator', () => {
       expect(priorities).toContain('critical');
       expect(priorities).toContain('high');
       expect(priorities).toContain('medium');
+    });
+
+    test('should include remediation evidence gate in deployment checklist', () => {
+      const deployment = validator.checklistItems.deployment;
+      expect(deployment.remediationEvidenceGate).toBeDefined();
+      expect(deployment.remediationEvidenceGate.priority).toBe('critical');
+      expect(deployment.remediationEvidenceGate.checks).toEqual([
+        'p0_p1_regression_evidence_present',
+        'p2_migration_semantics_evidence_present',
+        'p3_001_security_regression_ci_gate_present',
+        'p3_002_contract_evidence_present'
+      ]);
     });
   });
 
@@ -329,6 +344,118 @@ describe('ProductionDeploymentChecklistValidator', () => {
       
       expect(result.status).toMatch(/^(passed|failed)$/);
       expect(result.message).toContain('unknown check');
+    });
+
+    test('should pass remediation evidence checks against repository evidence', async () => {
+      const p0p1 = await validator.performCheck('deployment', 'remediationEvidenceGate', 'p0_p1_regression_evidence_present');
+      const p2 = await validator.performCheck('deployment', 'remediationEvidenceGate', 'p2_migration_semantics_evidence_present');
+      const p3001 = await validator.performCheck('deployment', 'remediationEvidenceGate', 'p3_001_security_regression_ci_gate_present');
+      const p3002 = await validator.performCheck('deployment', 'remediationEvidenceGate', 'p3_002_contract_evidence_present');
+
+      expect(p0p1.status).toBe('passed');
+      expect(p2.status).toBe('passed');
+      expect(p3001.status).toBe('passed');
+      expect(p3002.status).toBe('passed');
+    });
+
+    test('should fail remediation evidence checks when evidence is missing', async () => {
+      const tempRepoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'readiness-missing-evidence-'));
+      try {
+        const minimalServerDir = path.join(tempRepoRoot, 'secure-gate-access', 'server');
+        const workflowsDir = path.join(tempRepoRoot, '.github', 'workflows');
+
+        await fs.mkdir(minimalServerDir, { recursive: true });
+        await fs.mkdir(workflowsDir, { recursive: true });
+
+        const minimalPackage = {
+          name: 'test-server',
+          scripts: {}
+        };
+        await fs.writeFile(
+          path.join(minimalServerDir, 'package.json'),
+          JSON.stringify(minimalPackage, null, 2),
+          'utf8'
+        );
+        await fs.writeFile(path.join(workflowsDir, 'ci.yml'), 'name: CI\njobs: {}\n', 'utf8');
+
+        const missingEvidenceValidator = new ProductionDeploymentChecklistValidator({
+          environment: 'test',
+          repoRoot: tempRepoRoot
+        });
+
+        const p0p1 = await missingEvidenceValidator.performCheck('deployment', 'remediationEvidenceGate', 'p0_p1_regression_evidence_present');
+        const p2 = await missingEvidenceValidator.performCheck('deployment', 'remediationEvidenceGate', 'p2_migration_semantics_evidence_present');
+        const p3001 = await missingEvidenceValidator.performCheck('deployment', 'remediationEvidenceGate', 'p3_001_security_regression_ci_gate_present');
+        const p3002 = await missingEvidenceValidator.performCheck('deployment', 'remediationEvidenceGate', 'p3_002_contract_evidence_present');
+
+        expect(p0p1.status).toBe('failed');
+        expect(p0p1.severity).toBe('critical');
+        expect(p0p1.recommendation).toBeDefined();
+
+        expect(p2.status).toBe('failed');
+        expect(p2.severity).toBe('critical');
+        expect(p2.recommendation).toBeDefined();
+
+        expect(p3001.status).toBe('failed');
+        expect(p3001.severity).toBe('critical');
+        expect(p3001.recommendation).toBeDefined();
+
+        expect(p3002.status).toBe('failed');
+        expect(p3002.severity).toBe('critical');
+        expect(p3002.recommendation).toBeDefined();
+      } finally {
+        await fs.rm(tempRepoRoot, { recursive: true, force: true });
+      }
+    });
+
+    test('should propagate missing remediation evidence into checklist scoring and action items', async () => {
+      const tempRepoRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'readiness-evidence-gate-fail-'));
+      try {
+        const minimalServerDir = path.join(tempRepoRoot, 'secure-gate-access', 'server');
+        const workflowsDir = path.join(tempRepoRoot, '.github', 'workflows');
+
+        await fs.mkdir(minimalServerDir, { recursive: true });
+        await fs.mkdir(workflowsDir, { recursive: true });
+        await fs.writeFile(
+          path.join(minimalServerDir, 'package.json'),
+          JSON.stringify({ name: 'test-server', scripts: {} }, null, 2),
+          'utf8'
+        );
+        await fs.writeFile(path.join(workflowsDir, 'ci.yml'), 'name: CI\njobs: {}\n', 'utf8');
+
+        const missingEvidenceValidator = new ProductionDeploymentChecklistValidator({
+          environment: 'test',
+          repoRoot: tempRepoRoot
+        });
+
+        const itemResult = await missingEvidenceValidator.validateChecklistItem(
+          'deployment',
+          'remediationEvidenceGate',
+          missingEvidenceValidator.checklistItems.deployment.remediationEvidenceGate
+        );
+
+        expect(itemResult.status).toBe('failed');
+        expect(itemResult.score).toBe(0);
+        expect(itemResult.issues.length).toBeGreaterThan(0);
+        expect(itemResult.issues.every((issue) => issue.severity === 'critical')).toBe(true);
+        expect(itemResult.recommendations.length).toBeGreaterThan(0);
+
+        const actionItems = missingEvidenceValidator.generateActionItems({
+          categories: {
+            deployment: {
+              items: {
+                remediationEvidenceGate: itemResult
+              }
+            }
+          }
+        });
+
+        expect(actionItems.length).toBeGreaterThan(0);
+        expect(actionItems[0].category).toBe('deployment');
+        expect(actionItems[0].item).toBe('remediationEvidenceGate');
+      } finally {
+        await fs.rm(tempRepoRoot, { recursive: true, force: true });
+      }
     });
   });
 

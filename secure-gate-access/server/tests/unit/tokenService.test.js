@@ -385,15 +385,17 @@ describe('TokenService', () => {
       await expect(tokenService.revokeToken('invalid-token')).resolves.not.toThrow();
     });
 
-    test('should surface catch-path scope defect when Redis blacklist fails', async () => {
+    test('should persist revocation without throwing when Redis blacklist fails', async () => {
       const payload = { id: 1, email: 'test@example.com', role: 'resident' };
       const token = tokenService.generateAccessToken(payload);
+      const revokeDbSpy = jest.spyOn(tokenService, 'revokeTokenInDatabase').mockResolvedValue();
 
       tokenService.redisInitialized = true;
       mockRedisService.blacklistToken.mockRejectedValueOnce(new Error('redis unavailable'));
 
-      // Current behavior: catch block references decoded outside scope and throws.
-      await expect(tokenService.revokeToken(token)).rejects.toThrow(/decoded is not defined/);
+      await expect(tokenService.revokeToken(token)).resolves.not.toThrow();
+      expect(revokeDbSpy).toHaveBeenCalled();
+      expect(mockRedisService.blacklistToken).toHaveBeenCalled();
     });
 
     test('should cleanup when revoked tokens exceed limit', async () => {
