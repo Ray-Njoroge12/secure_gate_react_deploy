@@ -104,15 +104,13 @@ jobs:
         working-directory: secure-gate-access/server
         run: npm run migrations:check-sequence
 
+      - name: Check migration file format
+        working-directory: secure-gate-access/server
+        run: npm run migrations:check-format
+
       - name: Apply SQL migrations
         working-directory: secure-gate-access/server
-        run: |
-          set -e
-          shopt -s nullglob
-          for f in src/database/migrations/*.sql; do
-            echo "Applying migration: $f"
-            psql -v ON_ERROR_STOP=1 -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f "$f"
-          done
+        run: npm run migrations:apply:ci
 
       - name: Run critical flow tests
         working-directory: secure-gate-access/server
