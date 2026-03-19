@@ -250,7 +250,116 @@ export class JoiSchemaGenerator {
 // Contract Definitions
 // ============================================================================
 
+const StandardErrorContract = Joi.object({
+  success: Joi.boolean().valid(false).required(),
+  message: Joi.string().required(),
+  error: Joi.object({
+    code: Joi.string().required(),
+    details: Joi.object().optional(),
+    requestId: Joi.string().optional(),
+  }).required(),
+  timestamp: Joi.string().isoDate().required(),
+});
+
 export const Contracts = {
+  Security: {
+    StandardError: StandardErrorContract,
+    AdminBulkApproveEstateScope: {
+      request: Joi.object({
+        userIds: Joi.array().items(Joi.number().integer().positive()).min(1).max(50).required(),
+        estateId: Joi.number().integer().positive().optional(),
+      }),
+      response: {
+        200: Joi.object({
+          success: Joi.boolean().valid(true).required(),
+          message: Joi.string().required(),
+          data: Joi.object({
+            approved: Joi.array().items(Joi.object()).required(),
+            count: Joi.number().integer().required(),
+            requested: Joi.number().integer().required(),
+          }).required(),
+        }),
+        403: Joi.object({
+          success: Joi.boolean().valid(false).required(),
+          message: Joi.string().valid('Estate context required').required(),
+        }),
+      },
+    },
+    AdminBulkRejectEstateScope: {
+      request: Joi.object({
+        userIds: Joi.array().items(Joi.number().integer().positive()).min(1).max(50).required(),
+        reason: Joi.string().optional(),
+      }),
+      response: {
+        200: Joi.object({
+          success: Joi.boolean().valid(true).required(),
+          message: Joi.string().required(),
+          data: Joi.object({
+            rejected: Joi.array().items(Joi.object()).required(),
+            count: Joi.number().integer().required(),
+          }).required(),
+        }),
+        403: Joi.object({
+          success: Joi.boolean().valid(false).required(),
+          message: Joi.string().valid('Estate context required').required(),
+        }),
+      },
+    },
+    QRRegenerate: {
+      request: Joi.object({
+        visitorId: Joi.number().integer().positive().required(),
+      }),
+      response: {
+        200: Joi.object({
+          success: Joi.boolean().valid(true).required(),
+          data: Joi.object({
+            message: Joi.string().valid('QR code regenerated successfully').required(),
+            data: Joi.object({
+              qrCode: Joi.string().required(),
+            }).required(),
+          }).required(),
+        }),
+        400: StandardErrorContract,
+        401: StandardErrorContract,
+        403: StandardErrorContract,
+        404: StandardErrorContract,
+      },
+    },
+    SetupBootstrapMigrate: {
+      request: Joi.object({
+        secret: Joi.string().required(),
+      }),
+      response: {
+        200: Joi.object({
+          success: Joi.boolean().valid(true).required(),
+          message: Joi.string().valid('Database migrations completed').required(),
+          stats: Joi.object({
+            total: Joi.number().integer().required(),
+            applied: Joi.number().integer().required(),
+            skipped: Joi.number().integer().required(),
+          }).required(),
+          logs: Joi.array().items(Joi.string()).required(),
+        }),
+        403: StandardErrorContract,
+        500: StandardErrorContract,
+      },
+    },
+    MFADisable: {
+      request: Joi.object({
+        password: Joi.string().required(),
+        token: Joi.string().required(),
+      }),
+      response: {
+        200: Joi.object({
+          success: Joi.boolean().valid(true).required(),
+          message: Joi.string().valid('MFA disabled successfully').required(),
+        }),
+        400: StandardErrorContract,
+        401: StandardErrorContract,
+      },
+    },
+  },
+
   // Authentication Contracts
   Authentication: {
     Register: {
