@@ -4,7 +4,7 @@
  * Phase A3: Policy Engine & Watchlists
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useModalAccessibility from '../../hooks/useModalAccessibility';
 import Button from '../../components/ui/Button';
 import api from '../../utils/apiClient';
@@ -38,6 +38,27 @@ const WatchlistManagement = () => {
     notes: '',
     active: true
   });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const filteredEntries = useMemo(() => {
+    if (!debouncedSearch.trim()) return entries;
+    const q = debouncedSearch.toLowerCase();
+    return entries.filter(e =>
+      (e.name || '').toLowerCase().includes(q) ||
+      (e.phone || '').toLowerCase().includes(q) ||
+      (e.vehicle_plate || '').toLowerCase().includes(q) ||
+      (e.company_name || '').toLowerCase().includes(q) ||
+      (e.reason || '').toLowerCase().includes(q) ||
+      (e.email || '').toLowerCase().includes(q)
+    );
+  }, [entries, debouncedSearch]);
 
   useEffect(() => {
     fetchWatchlist();
@@ -222,15 +243,38 @@ const WatchlistManagement = () => {
         </Button>
       </div>
 
+      {/* Search */}
+      {activeTab === 'entries' && (
+        <div className="mb-4">
+          <input
+            type="search"
+            placeholder="Search by name, phone, vehicle plate, company..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+          />
+          {debouncedSearch && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Showing {filteredEntries.length} of {entries.length} entries
+              {filteredEntries.length === 0 && (
+                <button onClick={() => setSearchTerm('')} className="ml-2 text-brand-600 hover:underline">Clear search</button>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Entries Tab */}
       {activeTab === 'entries' && (
         <div className="watchlist-content">
-          {entries.length === 0 ? (
+          {filteredEntries.length === 0 ? (
             <div className="empty-state">
-              <p>No watchlist entries yet.</p>
-              <Button className="btn-primary" onClick={() => setShowModal(true)}>
-                Add First Entry
-              </Button>
+              <p>{debouncedSearch ? 'No entries match your search.' : 'No watchlist entries yet.'}</p>
+              {debouncedSearch ? (
+                <Button className="btn-primary" onClick={() => setSearchTerm('')}>Clear Search</Button>
+              ) : (
+                <Button className="btn-primary" onClick={() => setShowModal(true)}>Add First Entry</Button>
+              )}
             </div>
           ) : (
             <div className="entries-table-container">
@@ -247,7 +291,7 @@ const WatchlistManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map(entry => (
+                  {filteredEntries.map(entry => (
                     <tr key={entry.id} className={!entry.active ? 'inactive' : ''}>
                       <td>
                         <span className="entry-type-badge">
