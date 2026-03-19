@@ -23,6 +23,7 @@ export default function Settings() {
   const [mfaStatus, setMfaStatus] = useState({ mfaEnabled: false, mfaRequired: false, loading: true, error: null });
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
+  const [disableToken, setDisableToken] = useState('');
   const [disableLoading, setDisableLoading] = useState(false);
   const [disableError, setDisableError] = useState('');
 
@@ -45,18 +46,27 @@ export default function Settings() {
 
   const handleDisableMFA = async () => {
     if (!disablePassword) { setDisableError('Password is required'); return; }
+    if (!disableToken) { setDisableError('Authenticator code is required'); return; }
     setDisableLoading(true);
     setDisableError('');
     try {
-      const response = await api.post('/api/mfa/disable', { password: disablePassword });
+      const response = await api.post('/api/mfa/disable', { password: disablePassword, token: disableToken });
       if (response.data?.success) {
         setShowDisableModal(false);
         setDisablePassword('');
+        setDisableToken('');
         await fetchMfaStatus();
         notificationService.success('MFA Disabled', 'Two-Factor Authentication has been disabled.');
       }
     } catch (err) {
-      setDisableError(err.response?.data?.message || 'Failed to disable MFA');
+      const errorCode = err.response?.data?.code;
+      if (errorCode === 'INVALID_PASSWORD') {
+        setDisableError('Incorrect password. Please try again.');
+      } else if (errorCode === 'INVALID_TOTP') {
+        setDisableError('Invalid authenticator code or backup code. Please try again.');
+      } else {
+        setDisableError(err.response?.data?.message || 'Failed to disable MFA');
+      }
     } finally {
       setDisableLoading(false);
     }
@@ -288,7 +298,7 @@ export default function Settings() {
                           <Button
                             variant="danger"
                             size="sm"
-                            onClick={() => { setShowDisableModal(true); setDisablePassword(''); setDisableError(''); }}
+                            onClick={() => { setShowDisableModal(true); setDisablePassword(''); setDisableToken(''); setDisableError(''); }}
                           >
                             Disable MFA
                           </Button>
@@ -318,16 +328,33 @@ export default function Settings() {
                             id="guard-disable-mfa-password"
                             type="password"
                             value={disablePassword}
-                            onChange={(e) => setDisablePassword(e.target.value)}
+                            onChange={(e) => { setDisablePassword(e.target.value); setDisableError(''); }}
                             className="w-full h-11 px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors"
                             placeholder="Your account password"
                             autoFocus
                           />
                         </div>
+                        <div>
+                          <label htmlFor="guard-disable-mfa-token" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                            Enter your current authenticator code to confirm
+                          </label>
+                          <input
+                            id="guard-disable-mfa-token"
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={8}
+                            value={disableToken}
+                            onChange={(e) => { setDisableToken(e.target.value.replace(/[^a-zA-Z0-9]/g, '')); setDisableError(''); }}
+                            className="w-full h-11 px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors max-w-[240px] tracking-widest text-center text-lg"
+                            placeholder="000000"
+                            autoComplete="one-time-code"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">You can also use a backup code</p>
+                        </div>
                         {disableError && <p className="text-sm text-red-600 dark:text-red-400" role="alert">{disableError}</p>}
                         <div className="flex gap-3 justify-end">
                           <Button variant="secondary" onClick={() => setShowDisableModal(false)} disabled={disableLoading}>Cancel</Button>
-                          <Button variant="danger" onClick={handleDisableMFA} disabled={disableLoading || !disablePassword} aria-busy={disableLoading}>
+                          <Button variant="danger" onClick={handleDisableMFA} disabled={disableLoading || !disablePassword || !disableToken} aria-busy={disableLoading}>
                             {disableLoading ? 'Disabling...' : 'Disable MFA'}
                           </Button>
                         </div>

@@ -71,6 +71,8 @@ export default function ShiftHandover() {
   });
   const [showSuccess, setShowSuccess] = useState(false);
   const [fetchError, setFetchError] = useState(null);
+  const [scheduledShift, setScheduledShift] = useState(null);
+  const [shiftStartError, setShiftStartError] = useState(null);
   const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
   const { isOnline, wasOffline } = useOnlineStatus();
 
@@ -91,6 +93,16 @@ export default function ShiftHandover() {
           s => s.guard_id === user.id && s.status === 'in_progress'
         );
         setCurrentShift(myShift || null);
+
+        // If no active shift, check for a scheduled shift the guard can start
+        if (!myShift) {
+          const myScheduled = shiftsJson.data.find(
+            s => s.guard_id === user.id && s.status === 'scheduled'
+          );
+          setScheduledShift(myScheduled || null);
+        } else {
+          setScheduledShift(null);
+        }
 
         // Get handover notes for the previous shift
         if (myShift) {
@@ -227,6 +239,27 @@ export default function ShiftHandover() {
       handleApiError(error, 'End Shift');
     } finally {
       setLoading('endShift', false);
+    }
+  };
+
+  // Start a scheduled shift
+  const handleStartShift = async () => {
+    if (!scheduledShift) return;
+
+    try {
+      setLoading('startShift', true);
+      setShiftStartError(null);
+
+      await api.post(`/api/guards/shifts/${scheduledShift.id}/start`);
+
+      notificationService.success('Shift Started', 'Shift started successfully.');
+      await fetchShiftData();
+
+    } catch (error) {
+      setShiftStartError(error.response?.data?.message || error.message || 'Failed to start shift. Please try again.');
+      handleApiError(error, 'Start Shift');
+    } finally {
+      setLoading('startShift', false);
     }
   };
 
@@ -369,15 +402,38 @@ export default function ShiftHandover() {
               <EmptyState
                 icon="clipboard"
                 title="No Active Shift"
-                message="You need to have an active shift to create or view handover notes. Please start a shift first."
+                message={scheduledShift
+                  ? `You have a scheduled ${scheduledShift.shift_type || ''} shift today. Start it to begin handover.`
+                  : 'You need to have an active shift to create or view handover notes.'
+                }
                 actions={[
+                  ...(scheduledShift ? [{
+                    label: isLoading('startShift') ? 'Starting...' : 'Start Shift',
+                    onClick: handleStartShift,
+                    variant: 'primary',
+                    disabled: isLoading('startShift')
+                  }] : []),
                   {
                     label: 'Go to Dashboard',
                     onClick: () => navigate('/dashboard/guard'),
-                    variant: 'primary'
+                    variant: scheduledShift ? 'outline' : 'primary'
                   }
                 ]}
               />
+              {shiftStartError && (
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center">
+                  <p className="text-sm text-red-700 dark:text-red-300">{shiftStartError}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleStartShift}
+                    className="mt-2"
+                    disabled={isLoading('startShift')}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Card>

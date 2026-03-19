@@ -20,12 +20,12 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
   const [error, setError] = useState(null);
 
   const categories = [
-    { value: 'suspicious', label: '🚨 Suspicious Behavior', description: 'Unusual or concerning visitor behavior' },
-    { value: 'document_issue', label: '📄 Document Issue', description: 'ID verification or document problems' },
-    { value: 'vehicle', label: '🚗 Vehicle Concern', description: 'Vehicle-related incidents' },
-    { value: 'behavior', label: '⚠️ Inappropriate Behavior', description: 'Conduct violations' },
-    { value: 'system_error', label: '💻 System Error', description: 'Technical or system issues' },
-    { value: 'other', label: '📝 Other', description: 'Other incidents not covered above' }
+    { value: 'suspicious', label: 'Suspicious Behavior', icon: 'ShieldAlert', description: 'Unusual or concerning visitor behavior' },
+    { value: 'document_issue', label: 'Document Issue', icon: 'FileWarning', description: 'ID verification or document problems' },
+    { value: 'vehicle', label: 'Vehicle Concern', icon: 'Car', description: 'Vehicle-related incidents' },
+    { value: 'behavior', label: 'Inappropriate Behavior', icon: 'AlertTriangle', description: 'Conduct violations' },
+    { value: 'system_error', label: 'System Error', icon: 'Monitor', description: 'Technical or system issues' },
+    { value: 'other', label: 'Other', icon: 'FileText', description: 'Other incidents not covered above' }
   ];
 
   const severityLevels = [
@@ -100,7 +100,7 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
             <Icon name="AlertCircle" className="w-5 h-5 text-red-600" />
             Report Incident
           </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close incident report dialog">
             <Icon name="X" className="w-5 h-5" />
           </Button>
         </div>
@@ -137,9 +137,12 @@ const IncidentModal = ({ isOpen, onClose, visitor }) => {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="mt-1 mr-3"
                   />
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-white">{cat.label}</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-200 mt-0.5">{cat.description}</div>
+                  <div className="flex items-start gap-2">
+                    <Icon name={cat.icon} className="w-5 h-5 mt-0.5 flex-shrink-0 text-gray-600 dark:text-gray-300" aria-hidden="true" />
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-white">{cat.label}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-200 mt-0.5">{cat.description}</div>
+                    </div>
                   </div>
                 </label>
               ))}

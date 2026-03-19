@@ -1,6 +1,6 @@
 // client/src/components/Sidebar.jsx
 import React, { useEffect, useRef, memo, useMemo, useCallback } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 import { createRovingTabindex } from "../utils/focusManagement";
 
@@ -488,6 +488,16 @@ const navigationConfig = {
 };
 
 const Sidebar = memo(({ role, onLogout, error, isOpen, onClose }) => {
+  const location = useLocation();
+
+  // Auto-close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 768) {
+      onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   // Memoize navigation items to prevent unnecessary re-renders
   const navigation = useMemo(() => navigationConfig[role] || [], [role]);
 
