@@ -41,11 +41,26 @@ export function findExecutableSqlAfterDownMarker(content) {
   const lines = content.split(/\r?\n/);
   const downLineIndex = findDownMigrationMarkerIndex(lines);
 
+  // Canonical marker exists -> CI up-only parser will safely ignore everything below marker.
+  if (downLineIndex !== -1) {
+    return [];
+  }
+
+  // Guard against non-canonical rollback markers that runtime parser would not recognize.
+  // This catches accidental marker drift such as "-- down:" or "-- rollback migration".
+  const looseRollbackMarker = /^--\s*(down|rollback)\b/i;
   const violations = [];
   const rollbackSqlPattern = /^(drop\b|truncate\b|delete\s+from\b|alter\s+table\b.*\bdrop\b)/i;
   let inBlockComment = false;
+  let rollbackHintLine = -1;
 
   for (let i = 0; i < lines.length; i++) {
+    const rawTrimmed = lines[i].trim();
+    if (rollbackHintLine === -1 && looseRollbackMarker.test(rawTrimmed)) {
+      rollbackHintLine = i;
+      continue;
+    }
+
     const { text, inBlockComment: nextState } = stripComments(lines[i], inBlockComment);
     inBlockComment = nextState;
     const normalized = text.trim().toLowerCase();
@@ -53,15 +68,11 @@ export function findExecutableSqlAfterDownMarker(content) {
       continue;
     }
 
-    if (downLineIndex !== -1 && i > downLineIndex) {
-      continue;
-    }
-
-    if (downLineIndex === -1 && rollbackSqlPattern.test(normalized)) {
+    if (rollbackHintLine !== -1 && i > rollbackHintLine && rollbackSqlPattern.test(normalized)) {
       violations.push({
         line: i + 1,
         content: lines[i].trim(),
-        reason: 'destructive SQL found without "-- down migration" marker',
+        reason: 'destructive SQL found after non-canonical rollback marker; use "-- down migration"',
       });
     }
   }
