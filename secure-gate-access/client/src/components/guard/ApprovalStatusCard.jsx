@@ -10,13 +10,52 @@ import io from 'socket.io-client';
 
 const normalizeApprovalStatus = (status) => String(status || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
 
-const ApprovalStatusCard = ({ visitor, onRequestApproval }) => {
+const RENOTIFY_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes
+
+const ApprovalStatusCard = ({ visitor, onRequestApproval, requestedAt }) => {
   const [approvalStatus, setApprovalStatus] = useState(() => normalizeApprovalStatus(visitor?.status) || 'UNKNOWN');
+  const [elapsedText, setElapsedText] = useState('');
+  const [lastRenotifyAt, setLastRenotifyAt] = useState(null);
+  const [renotifyCooldown, setRenotifyCooldown] = useState(0);
 
   const isApproved = approvalStatus === 'APPROVED';
   const isRejected = approvalStatus === 'REJECTED' || approvalStatus === 'DENIED';
   const isPending = approvalStatus === 'PENDING_APPROVAL' || approvalStatus === 'PENDING' || approvalStatus === 'OTP_SENT';
   const isUnknown = approvalStatus === 'UNKNOWN';
+
+  // Elapsed time counter
+  useEffect(() => {
+    const startTime = requestedAt ? new Date(requestedAt).getTime() : null;
+    if (!startTime || !isPending) return;
+
+    const updateElapsed = () => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      setElapsedText(`${mins}:${secs.toString().padStart(2, '0')}`);
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [requestedAt, isPending]);
+
+  // Re-notify cooldown timer
+  useEffect(() => {
+    if (!lastRenotifyAt) return;
+    const updateCooldown = () => {
+      const remaining = RENOTIFY_COOLDOWN_MS - (Date.now() - lastRenotifyAt);
+      setRenotifyCooldown(remaining > 0 ? remaining : 0);
+    };
+    updateCooldown();
+    const interval = setInterval(updateCooldown, 1000);
+    return () => clearInterval(interval);
+  }, [lastRenotifyAt]);
+
+  const handleRenotify = () => {
+    setLastRenotifyAt(Date.now());
+    onRequestApproval?.(visitor, { forceResend: true });
+  };
 
   // Initialize WebSocket for real-time approval responses
   useEffect(() => {
@@ -81,22 +120,31 @@ const ApprovalStatusCard = ({ visitor, onRequestApproval }) => {
         {isUnknown && 'Status Unknown'}
       </h3>
 
-      <p className="text-sm text-gray-500 dark:text-slate-400 mb-4">
+      <p className="text-sm text-gray-500 dark:text-slate-400 mb-2">
         {isApproved && 'Resident has approved this visit.'}
         {isRejected && 'Resident has denied this visit.'}
         {isPending && 'Request sent to resident device.'}
         {isUnknown && 'No active approval request found.'}
       </p>
 
+      {isPending && elapsedText && (
+        <p className="text-lg font-mono text-amber-600 dark:text-amber-400 mb-3">
+          Waiting: {elapsedText}
+        </p>
+      )}
+
       {isPending && (
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
-          className="w-full text-red-600 hover:bg-red-50 border-red-200"
-          onClick={() => onRequestApproval?.(visitor, { forceResend: true })}
+          className="w-full text-amber-700 hover:bg-amber-50 border-amber-300 disabled:opacity-50"
+          onClick={handleRenotify}
+          disabled={renotifyCooldown > 0}
         >
-          <Icon name="AlertCircle" className="w-4 h-4 mr-2" />
-          Resend Request
+          <Icon name="Bell" className="w-4 h-4 mr-2" />
+          {renotifyCooldown > 0
+            ? `Re-notify (${Math.ceil(renotifyCooldown / 1000)}s)`
+            : 'Re-notify Resident'}
         </Button>
       )}
 
