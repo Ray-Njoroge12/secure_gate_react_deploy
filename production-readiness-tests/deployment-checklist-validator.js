@@ -16,12 +16,21 @@ const __dirname = path.dirname(__filename);
 
 export class ProductionDeploymentChecklistValidator {
   constructor(options = {}) {
+    const repoRoot = options.repoRoot || path.resolve(__dirname, '..');
+
     this.options = {
       environment: 'production',
       strictMode: true,
       timeoutMs: 30000,
       retryAttempts: 3,
       ...options
+    };
+
+    this.paths = {
+      repoRoot,
+      serverPackageJson: path.join(repoRoot, 'secure-gate-access', 'server', 'package.json'),
+      serverRoot: path.join(repoRoot, 'secure-gate-access', 'server'),
+      ciWorkflow: path.join(repoRoot, '.github', 'workflows', 'ci.yml')
     };
     
     this.validationResults = {
@@ -376,6 +385,16 @@ export class ProductionDeploymentChecklistValidator {
             'asset_versioning_configured',
             'cache_busting_enabled'
           ]
+        },
+        remediationEvidenceGate: {
+          priority: 'critical',
+          description: 'Roadmap remediation evidence gate (P0-P3)',
+          checks: [
+            'p0_p1_regression_evidence_present',
+            'p2_migration_semantics_evidence_present',
+            'p3_001_security_regression_ci_gate_present',
+            'p3_002_contract_evidence_present'
+          ]
         }
       },
       
@@ -657,6 +676,12 @@ export class ProductionDeploymentChecklistValidator {
       liveness_probes_setup: () => this.checkLivenessProbes(),
       readiness_probes_setup: () => this.checkReadinessProbes(),
       dependency_health_checks: () => this.checkDependencyHealth(),
+
+      // Remediation evidence gate checks
+      p0_p1_regression_evidence_present: () => this.checkP0P1RegressionEvidence(),
+      p2_migration_semantics_evidence_present: () => this.checkP2MigrationSemanticsEvidence(),
+      p3_001_security_regression_ci_gate_present: () => this.checkP3001SecurityRegressionCIGate(),
+      p3_002_contract_evidence_present: () => this.checkP3002ContractEvidence(),
       
       // Default check for unimplemented items
       default: () => this.performDefaultCheck(checkName)
@@ -1204,6 +1229,204 @@ export class ProductionDeploymentChecklistValidator {
       status: 'passed',
       message: 'Dependency health checks are active',
       details: { dependencies: ['database', 'redis', 'external-apis'] }
+    };
+  }
+
+  async checkFileExists(filePath) {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async readJsonFile(filePath) {
+    const content = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(content);
+  }
+
+  async readTextFile(filePath) {
+    return fs.readFile(filePath, 'utf8');
+  }
+
+  async checkP0P1RegressionEvidence() {
+    const requiredTests = [
+      'tests/unit/setupRoutes.security.dynamic.test.js',
+      'tests/unit/adminBulkEstateScope.dynamic.test.js',
+      'tests/unit/mfaRoutes.test.js',
+      'tests/unit/tokenService.test.js',
+      'tests/unit/qrCodeController.regenerate.dynamic.test.js'
+    ];
+    const requiredScript = 'test:security:regression';
+
+    const packageJson = await this.readJsonFile(this.paths.serverPackageJson);
+    const scripts = packageJson.scripts || {};
+    const hasScript = typeof scripts[requiredScript] === 'string' && scripts[requiredScript].trim().length > 0;
+
+    const missingTests = [];
+    for (const relativePath of requiredTests) {
+      const absolutePath = path.join(this.paths.serverRoot, relativePath);
+      const exists = await this.checkFileExists(absolutePath);
+      if (!exists) {
+        missingTests.push(`secure-gate-access/server/${relativePath}`);
+      }
+    }
+
+    if (hasScript && missingTests.length === 0) {
+      return {
+        status: 'passed',
+        message: 'P0/P1 regression remediation evidence is present',
+        details: { requiredScript, requiredTests: requiredTests.length }
+      };
+    }
+
+    const missingEvidence = [];
+    if (!hasScript) {
+      missingEvidence.push(`server package script "${requiredScript}"`);
+    }
+    if (missingTests.length > 0) {
+      missingEvidence.push(`test files: ${missingTests.join(', ')}`);
+    }
+
+    return {
+      status: 'failed',
+      message: `Missing P0/P1 regression evidence: ${missingEvidence.join('; ')}`,
+      severity: 'critical',
+      recommendation: 'Restore P0/P1 regression suite script and required unit test evidence files'
+    };
+  }
+
+  async checkP2MigrationSemanticsEvidence() {
+    const requiredScripts = [
+      'migrations:check-format',
+      'migrations:apply:ci',
+      'migrations:test-semantics'
+    ];
+    const requiredFiles = [
+      'scripts/check-migration-format.js',
+      'scripts/apply-migrations-ci.js',
+      'tests/unit/migrationScriptSemantics.test.cjs'
+    ];
+
+    const packageJson = await this.readJsonFile(this.paths.serverPackageJson);
+    const scripts = packageJson.scripts || {};
+    const missingScripts = requiredScripts.filter((scriptName) => {
+      const value = scripts[scriptName];
+      return typeof value !== 'string' || value.trim().length === 0;
+    });
+
+    const missingFiles = [];
+    for (const relativePath of requiredFiles) {
+      const absolutePath = path.join(this.paths.serverRoot, relativePath);
+      const exists = await this.checkFileExists(absolutePath);
+      if (!exists) {
+        missingFiles.push(`secure-gate-access/server/${relativePath}`);
+      }
+    }
+
+    if (missingScripts.length === 0 && missingFiles.length === 0) {
+      return {
+        status: 'passed',
+        message: 'P2 migration semantics remediation evidence is present',
+        details: { requiredScripts: requiredScripts.length, requiredFiles: requiredFiles.length }
+      };
+    }
+
+    const missingEvidence = [];
+    if (missingScripts.length > 0) {
+      missingEvidence.push(`server package scripts: ${missingScripts.join(', ')}`);
+    }
+    if (missingFiles.length > 0) {
+      missingEvidence.push(`evidence files: ${missingFiles.join(', ')}`);
+    }
+
+    return {
+      status: 'failed',
+      message: `Missing P2 migration semantics evidence: ${missingEvidence.join('; ')}`,
+      severity: 'critical',
+      recommendation: 'Restore migration semantics scripts and evidence files used in CI validation'
+    };
+  }
+
+  async checkP3001SecurityRegressionCIGate() {
+    const workflowPath = this.paths.ciWorkflow;
+    const exists = await this.checkFileExists(workflowPath);
+
+    if (!exists) {
+      return {
+        status: 'failed',
+        message: 'Missing CI workflow evidence: .github/workflows/ci.yml not found',
+        severity: 'critical',
+        recommendation: 'Restore CI workflow with explicit P3-001 security regression gate step'
+      };
+    }
+
+    const content = await this.readTextFile(workflowPath);
+    const hasGateName = content.includes('Run security regression gate');
+    const hasGateCommand = content.includes('npm run test:security:regression');
+
+    if (hasGateName && hasGateCommand) {
+      return {
+        status: 'passed',
+        message: 'P3-001 security regression gate is present in CI workflow',
+        details: { workflow: '.github/workflows/ci.yml' }
+      };
+    }
+
+    const missingEvidence = [];
+    if (!hasGateName) missingEvidence.push('step name "Run security regression gate"');
+    if (!hasGateCommand) missingEvidence.push('step command "npm run test:security:regression"');
+
+    return {
+      status: 'failed',
+      message: `Missing P3-001 CI gate evidence: ${missingEvidence.join(', ')}`,
+      severity: 'critical',
+      recommendation: 'Add the P3-001 security regression step to .github/workflows/ci.yml'
+    };
+  }
+
+  async checkP3002ContractEvidence() {
+    const requiredContractFiles = [
+      'tests/contracts/auth.contract.test.js',
+      'tests/contracts/security-invariants.contract.test.js'
+    ];
+    const requiredScript = 'test:contracts';
+
+    const packageJson = await this.readJsonFile(this.paths.serverPackageJson);
+    const scripts = packageJson.scripts || {};
+    const hasScript = typeof scripts[requiredScript] === 'string' && scripts[requiredScript].trim().length > 0;
+
+    const missingFiles = [];
+    for (const relativePath of requiredContractFiles) {
+      const absolutePath = path.join(this.paths.serverRoot, relativePath);
+      const exists = await this.checkFileExists(absolutePath);
+      if (!exists) {
+        missingFiles.push(`secure-gate-access/server/${relativePath}`);
+      }
+    }
+
+    if (hasScript && missingFiles.length === 0) {
+      return {
+        status: 'passed',
+        message: 'P3-002 contract remediation evidence is present',
+        details: { requiredScript, requiredContracts: requiredContractFiles.length }
+      };
+    }
+
+    const missingEvidence = [];
+    if (!hasScript) {
+      missingEvidence.push(`server package script "${requiredScript}"`);
+    }
+    if (missingFiles.length > 0) {
+      missingEvidence.push(`contract files: ${missingFiles.join(', ')}`);
+    }
+
+    return {
+      status: 'failed',
+      message: `Missing P3-002 contract evidence: ${missingEvidence.join('; ')}`,
+      severity: 'critical',
+      recommendation: 'Restore contract test script and required contract test files'
     };
   }
 }

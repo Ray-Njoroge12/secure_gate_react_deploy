@@ -69,7 +69,8 @@
     "test:contracts": "NODE_ENV=test NODE_NO_WARNINGS=1 node --experimental-vm-modules node_modules/.bin/jest --runInBand --testPathPattern=tests/contracts",
     "mfa:migrate": "node src/scripts/run-mfa-migration.js",
     "mfa:restore": "node src/scripts/restore-mfa-access.js",
-    "mfa:verify": "node src/scripts/verify-mfa-implementation.js"
+    "mfa:verify": "node src/scripts/verify-mfa-implementation.js",
+    "test:abuse:regression": "NODE_ENV=test NODE_NO_WARNINGS=1 JWT_SECRET=test-jwt-secret-for-unit-tests-min-32-chars JWT_REFRESH_SECRET=test-jwt-refresh-secret-for-unit-tests-min-32-chars SETUP_SECRET=this-is-a-very-strong-setup-secret-12345 node --experimental-vm-modules node_modules/.bin/jest --runInBand --runTestsByPath tests/unit/visitorRoutes.abuse.dynamic.test.js tests/unit/visitorOtpController.abuse.dynamic.test.js tests/unit/setupRoutes.abuse.dynamic.test.js --config='{\"testEnvironment\":\"node\",\"transform\":{},\"moduleFileExtensions\":[\"js\",\"mjs\",\"json\"],\"clearMocks\":true,\"resetMocks\":true,\"testTimeout\":30000}' --forceExit"
   },
   "engines": {
     "node": ">=20.11.0"
