@@ -270,13 +270,13 @@ class UserService {
    */
   async authenticateUser(username, password, estateId = null) {
     if (!username || !password) {
-      throw new Error('Username and password required');
+       throw new AppError('Username and password required', 400, 'INVALID_INPUT');
     }
 
     // Check if account is locked
     const lockoutInfo = accountSecurity.getLockoutInfo(username);
     if (lockoutInfo && lockoutInfo.isLocked) {
-      throw new Error(`Account is locked until ${lockoutInfo.lockedUntil}`);
+       throw new AppError(`Account is locked until ${lockoutInfo.lockedUntil}`, 403, 'ACCOUNT_LOCKED');
     }
 
     try {
@@ -336,7 +336,7 @@ class UserService {
       if (error.message?.includes('Invalid credentials')) {
         throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
-      throw new Error(`Authentication failed: ${error.message}`);
+       throw new AppError(`Authentication failed: ${error.message}`, 500, 'AUTH_FAILED');
     }
   }
 

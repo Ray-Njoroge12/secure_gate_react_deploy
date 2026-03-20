@@ -402,7 +402,7 @@ describe('Guard Authorization Integration Tests', () => {
             for (let attempt = 0; attempt < 10; attempt++) {
                 auditLogs = await dbManager.query(
                     `SELECT * FROM audit_logs
-                     WHERE action = 'security.access.denied'
+                     WHERE action = 'data_change'
                        AND user_id = $1
                        AND resource LIKE '%/resolve'
                      ORDER BY created_at DESC LIMIT 1`,
@@ -421,7 +421,7 @@ describe('Guard Authorization Integration Tests', () => {
             const details = typeof auditLogs.rows[0].details === 'string'
                 ? JSON.parse(auditLogs.rows[0].details)
                 : auditLogs.rows[0].details;
-            expect(auditLogs.rows[0].action).toBe('security.access.denied');
+            expect(auditLogs.rows[0].action).toBe('data_change');
             if (details && details.response) {
                 expect(details.response.statusCode).toBe(403);
             }

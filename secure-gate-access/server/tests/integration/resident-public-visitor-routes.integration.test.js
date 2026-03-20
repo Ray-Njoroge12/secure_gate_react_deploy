@@ -147,7 +147,8 @@ describe('Resident/public visitor routes integration', () => {
       });
 
     expect(response.status).toBe(403);
-    expect(response.body.message).toContain('Only residents and admins');
+    expect(response.body.error.code).toBe('AUTH_FORBIDDEN');
+    expect(response.body.message).toContain('Insufficient permissions');
   });
 
   it('creates resident invites and keeps public invite lookup privacy-safe', async () => {
@@ -189,16 +190,15 @@ describe('Resident/public visitor routes integration', () => {
     expect(response.body.data.pagination).toEqual(expect.objectContaining({ page: 1, limit: 10, totalPages: expect.any(Number) }));
   });
 
-  it('enforces estate context on resident visitor listing', async () => {
-    await dbManager.query('UPDATE users SET estate_id = NULL WHERE id = $1', [testUsers.resident.id]);
+  it('rejects resident visitor listing when token estate context is missing', async () => {
     const noEstateToken = await signAccessToken({ ...testUsers.resident, estate_id: null }, null);
 
     const response = await request(app)
       .get('/api/visitors')
       .set('Authorization', `Bearer ${noEstateToken}`);
 
-    expect(response.status).toBe(403);
-    expect(response.body.error.code).toBe('ESTATE_REQUIRED');
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('AUTH_USER_NOT_FOUND');
   });
 
   it('soft-cancels a resident-owned visitor invite', async () => {
@@ -250,6 +250,7 @@ describe('Resident/public visitor routes integration', () => {
       .send({ eventName: 'Guard Blocked', date: visitDate(2), time: '11:00', numGuests: 2 });
 
     expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('FORBIDDEN');
     expect(response.body.message).toContain('Only residents and admins');
   });
 

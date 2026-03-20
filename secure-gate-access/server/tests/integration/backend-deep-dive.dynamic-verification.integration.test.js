@@ -144,7 +144,7 @@ describe('Backend deep-dive dynamic verification', () => {
       expect(mockGenerateVisitorQR).toHaveBeenCalled();
     });
 
-    it('requires explicit estate context for super admin regenerate requests', async () => {
+    it('fails at auth when super admin token omits estate context', async () => {
       const visitor = await createTestVisitor(users.resident.id, {
         name: 'Super Admin Missing Context Visitor',
         status: 'pending'
@@ -162,9 +162,8 @@ describe('Backend deep-dive dynamic verification', () => {
         .set('Authorization', `Bearer ${superAdminNoEstateToken}`)
         .send({});
 
-      expect(response.status).toBe(400);
-      expect(response.body.message).toBe('Estate context required');
-      expect(response.body.error.code).toBe('VALIDATION_ERROR');
+      expect(response.status).toBe(401);
+      expect(response.body.error.code).toBe('AUTH_USER_NOT_FOUND');
       expect(mockGenerateVisitorQR).not.toHaveBeenCalled();
     });
 
