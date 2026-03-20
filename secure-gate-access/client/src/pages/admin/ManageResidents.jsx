@@ -469,16 +469,6 @@ export default function ManageResidents({ estateId }) {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + F to focus search
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault();
-        document.querySelector('input[type="search"], input[placeholder*="Search"]')?.focus();
-      }
-      // Ctrl/Cmd + R to refresh
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        loadResidents();
-      }
       // Ctrl/Cmd + N to add new
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();

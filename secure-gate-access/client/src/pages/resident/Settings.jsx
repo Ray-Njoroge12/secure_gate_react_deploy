@@ -85,13 +85,6 @@ export default function Settings() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + S to save
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        // Only trigger save for tabs that this component manages directly
-        if (activeTab === 'profile') handleUpdate('Profile', e);
-        if (activeTab === 'password') handleUpdate('Password', e);
-      }
       // Escape to clear messages
       if (e.key === 'Escape') {
         setError("");
@@ -101,7 +94,7 @@ export default function Settings() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab]); // Add activeTab dependency
+  }, []);
 
   const handleUpdate = async (type, e) => {
     e.preventDefault();

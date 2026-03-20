@@ -7,6 +7,7 @@
  */
 
 import { createDriver, residentTourSteps, guardTourSteps, adminTourSteps, visitorTourSteps } from '../tours';
+import logger from '../utils/logger';
 
 const TOUR_KEY_PREFIX = 'securegate-tour-completed-';
 const TOUR_SKIPPED_KEY_PREFIX = 'securegate-tour-skipped-';
@@ -36,7 +37,7 @@ let activeDriver = null;
 export function startTour(role, options = {}) {
   const steps = tourStepsMap[role];
   if (!steps || steps.length === 0) {
-    console.warn(`[tourService] No tour steps defined for role: ${role}`);
+    logger.warn(`[tourService] No tour steps defined for role: ${role}`);
     return null;
   }
 
@@ -82,7 +83,7 @@ export function completeTour(role) {
     localStorage.setItem(`${TOUR_KEY_PREFIX}${role}`, 'completed');
     localStorage.removeItem(`${TOUR_SKIPPED_KEY_PREFIX}${role}`);
   } catch (e) {
-    console.warn('[tourService] Could not write to localStorage:', e);
+    logger.warn('[tourService] Could not write to localStorage:', e);
   }
 }
 
@@ -112,7 +113,7 @@ export function markTourSkipped(role) {
       localStorage.setItem(key, 'pending');
     }
   } catch (e) {
-    console.warn('[tourService] Could not write skip state to localStorage:', e);
+    logger.warn('[tourService] Could not write skip state to localStorage:', e);
   }
 }
 
@@ -166,7 +167,7 @@ export function resetTour(role) {
     localStorage.removeItem(`${TOUR_KEY_PREFIX}${role}`);
     localStorage.removeItem(`${TOUR_SKIPPED_KEY_PREFIX}${role}`);
   } catch (e) {
-    console.warn('[tourService] Could not clear localStorage:', e);
+    logger.warn('[tourService] Could not clear localStorage:', e);
   }
 }
 

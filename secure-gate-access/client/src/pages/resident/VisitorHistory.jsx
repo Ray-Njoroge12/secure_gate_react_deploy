@@ -121,21 +121,6 @@ export default function VisitorHistory() {
     showNotifications: false
   });
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ctrl/Cmd + R to refresh
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        if (!loading) {
-          fetchMine();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [loading]);
 
   async function fetchMine() {
     try {

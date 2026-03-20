@@ -117,28 +117,16 @@ export default function GuardDashboard() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + S to scan QR
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        navigate('/dashboard/guard/scan-qr');
-      }
       // Ctrl/Cmd + M to manual check
       if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
         e.preventDefault();
         navigate('/dashboard/guard/manual-check');
       }
-      // Ctrl/Cmd + R to refresh
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        if (!isLoading('guardDashboard')) {
-          fetchActive();
-        }
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [fetchActive, isLoading, navigate]);
+  }, [navigate]);
 
   useEffect(() => { fetchActive(); }, [fetchActive]);
 

@@ -6,6 +6,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import logger from '../utils/logger';
 
 class ExportService {
   constructor() {
@@ -297,7 +298,7 @@ class ExportService {
    */
   notifyExportComplete(exportId, filename) {
     // This could integrate with the notification system
-    console.log(`Export completed: ${filename} (ID: ${exportId})`);
+    logger.info(`Export completed: ${filename} (ID: ${exportId})`);
   }
 
   /**

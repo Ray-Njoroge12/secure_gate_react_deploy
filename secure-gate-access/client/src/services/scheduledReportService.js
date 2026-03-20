@@ -4,6 +4,7 @@
  */
 
 import exportService from './exportService';
+import logger from '../utils/logger';
 
 class ScheduledReportService {
   constructor() {
@@ -160,7 +161,7 @@ class ScheduledReportService {
           const result = await this.executeReport(report);
           results.push(result);
         } catch (error) {
-          console.error(`Failed to execute report ${report.id}:`, error);
+          logger.error(`Failed to execute report ${report.id}:`, error);
           results.push({
             reportId: report.id,
             status: 'failed',
