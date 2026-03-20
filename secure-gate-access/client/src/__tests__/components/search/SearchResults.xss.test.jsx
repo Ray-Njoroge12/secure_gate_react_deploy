@@ -33,7 +33,7 @@ describe('SearchResults XSS sanitization', () => {
     expect(sanitized).toContain('<em>');
   });
 
-  it('SearchResults.jsx source uses DOMPurify.sanitize for highlight text rendering', () => {
+  it('SearchResults.jsx source uses sanitizeHighlight for highlight text rendering', () => {
     const fs = require('fs');
     const path = require('path');
     const filePath = path.join(
@@ -41,7 +41,8 @@ describe('SearchResults XSS sanitization', () => {
       '../../../components/search/SearchResults.jsx'
     );
     const content = fs.readFileSync(filePath, 'utf8');
-    expect(content).toContain("DOMPurify.sanitize(highlight.text)");
-    expect(content).toContain("import DOMPurify from 'dompurify'");
+    expect(content).toContain("sanitizeHighlight(highlight.text)");
+    expect(content).toContain("import { sanitizeHighlight } from '../../utils/sanitize'");
+    expect(content).not.toContain("DOMPurify");
   });
 });

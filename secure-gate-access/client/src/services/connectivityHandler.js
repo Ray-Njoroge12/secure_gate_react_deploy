@@ -56,6 +56,8 @@ class ConnectivityHandler {
       jitter: 0
     };
     
+    this._intervals = [];
+
     this.config = {
       healthCheckUrl: '/api/health',
       healthCheckInterval: 30000, // 30 seconds
@@ -259,7 +261,7 @@ class ConnectivityHandler {
     performHealthCheck();
 
     // Set up periodic checks
-    setInterval(performHealthCheck, this.config.healthCheckInterval);
+    this._intervals.push(setInterval(performHealthCheck, this.config.healthCheckInterval));
   }
 
   /**
@@ -364,7 +366,7 @@ class ConnectivityHandler {
     };
 
     // Run performance test periodically
-    setInterval(performPerformanceTest, this.config.performanceTestInterval);
+    this._intervals.push(setInterval(performPerformanceTest, this.config.performanceTestInterval));
   }
 
   /**
@@ -937,16 +939,19 @@ class ConnectivityHandler {
    * Cleanup resources
    */
   destroy() {
+    (this._intervals || []).forEach(id => clearInterval(id));
+    this._intervals = [];
+
     window.removeEventListener('online', this.handleOnlineEvent);
     window.removeEventListener('offline', this.handleOfflineEvent);
-    
+
     if ('connection' in navigator) {
       navigator.connection.removeEventListener('change', this.handleConnectionChange);
     }
-    
+
     this.connectivityCallbacks.clear();
     this.activeConnectivityIssues.clear();
-    
+
     logger.debug('[CONNECTIVITY] Connectivity handler destroyed');
   }
 }

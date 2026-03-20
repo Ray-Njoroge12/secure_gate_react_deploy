@@ -136,6 +136,7 @@ export const browserDetection = {
           const arrow = () => {};
           return typeof arrow === 'function';
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -145,6 +146,7 @@ export const browserDetection = {
           const test = `template`;
           return typeof test === 'string' && test === 'template';
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -155,6 +157,7 @@ export const browserDetection = {
           const {a} = obj;
           return a === 1;
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -165,6 +168,7 @@ export const browserDetection = {
           const spread = [...arr];
           return Array.isArray(spread) && spread.length === 2;
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
@@ -174,10 +178,11 @@ export const browserDetection = {
           const asyncFn = async () => {};
           return typeof asyncFn === 'function' && asyncFn.constructor.name === 'AsyncFunction';
         } catch(e) {
+          // Expected: feature detection — return false when API unavailable
           return false;
         }
       })(),
-      
+
       // Web APIs
       fetch: typeof fetch !== 'undefined',
       promises: typeof Promise !== 'undefined',
@@ -207,6 +212,7 @@ export const browserDetection = {
           const canvas = document.createElement('canvas');
           return !!(canvas && canvas.getContext);
         } catch (e) {
+          // Expected: feature detection — return false when canvas API unavailable
           return false;
         }
       })(),
@@ -217,6 +223,7 @@ export const browserDetection = {
           const context = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
           return !!context;
         } catch (e) {
+          // Expected: feature detection — return false when WebGL unavailable
           return false;
         }
       })(),
@@ -227,10 +234,11 @@ export const browserDetection = {
           const context = canvas.getContext('webgl2');
           return !!context;
         } catch (e) {
+          // Expected: feature detection — return false when WebGL2 unavailable
           return false;
         }
       })(),
-      
+
       // Touch and Input
       touch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
       pointerEvents: 'onpointerdown' in window,
@@ -245,7 +253,9 @@ export const browserDetection = {
           });
           window.addEventListener('testPassive', null, opts);
           window.removeEventListener('testPassive', null, opts);
-        } catch (e) {}
+        } catch (e) {
+          // Expected: browser does not support passive event listeners — graceful degradation
+        }
         return supportsPassive;
       })(),
       

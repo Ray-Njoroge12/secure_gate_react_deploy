@@ -41,7 +41,7 @@ describe('TutorialSystem XSS sanitization', () => {
     expect(sanitized).toContain('<mark>');
   });
 
-  it('TutorialSystem.jsx source uses DOMPurify.sanitize for step content rendering', () => {
+  it('TutorialSystem.jsx source uses sanitizeContent for step content rendering', () => {
     const fs = require('fs');
     const path = require('path');
     const filePath = path.join(
@@ -49,7 +49,8 @@ describe('TutorialSystem XSS sanitization', () => {
       '../../../components/onboarding/TutorialSystem.jsx'
     );
     const content = fs.readFileSync(filePath, 'utf8');
-    expect(content).toContain("DOMPurify.sanitize(currentStepData.content)");
-    expect(content).toContain("import DOMPurify from 'dompurify'");
+    expect(content).toContain("sanitizeContent(currentStepData.content");
+    expect(content).not.toContain("DOMPurify");
+    expect(content).toContain("import { sanitizeContent } from '../../utils/sanitize'");
   });
 });

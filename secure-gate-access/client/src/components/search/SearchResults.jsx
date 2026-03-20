@@ -237,7 +237,7 @@ const SearchResults = ({
                       {result.highlights.map((highlight, idx) => (
                         <div key={idx} className="result-highlight-item">
                           <strong>{highlight.field}:</strong> 
-                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlight.text) }} />
+                          <span dangerouslySetInnerHTML={{ __html: sanitizeHighlight(highlight.text) }} />
                         </div>
                       ))}
                     </div>
