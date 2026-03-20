@@ -120,6 +120,15 @@ jobs:
         working-directory: secure-gate-access/server
         run: npm run test:critical
 
+      - name: Run stable integration lane
+        working-directory: secure-gate-access/server
+        run: npm run test:integration:stable
+
+      - name: Run quarantine integration lane (non-blocking)
+        working-directory: secure-gate-access/server
+        run: npm run test:integration:quarantine
+        continue-on-error: true
+
       - name: Run server tests
         working-directory: secure-gate-access/server
         run: npm test

@@ -13,13 +13,13 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
 // Mock dependencies before imports
-const mockJwtVerify = jest.fn();
+const mockVerifyAccessToken = jest.fn();
 const mockLoggerInfo = jest.fn();
 const mockLoggerWarn = jest.fn();
 
-jest.unstable_mockModule('jsonwebtoken', () => ({
-  default: {
-    verify: mockJwtVerify
+jest.unstable_mockModule('../../src/services/tokenService.js', () => ({
+  tokenService: {
+    verifyAccessToken: mockVerifyAccessToken
   }
 }));
 
@@ -74,7 +74,7 @@ describe('WebSocket Authentication Middleware', () => {
     mockNext = jest.fn();
 
     // Default mock implementations
-    mockJwtVerify.mockReturnValue(testDecodedToken);
+    mockVerifyAccessToken.mockResolvedValue(testDecodedToken);
   });
 
   afterEach(() => {
@@ -86,35 +86,35 @@ describe('WebSocket Authentication Middleware', () => {
   // =========================================
   describe('authenticateSocket', () => {
     describe('Token Extraction', () => {
-      it('should extract token from socket.handshake.auth.token', () => {
+      it('should extract token from socket.handshake.auth.token', async () => {
         mockSocket.handshake.auth.token = validToken;
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
-        expect(mockJwtVerify).toHaveBeenCalledWith(validToken, process.env.JWT_SECRET);
+        expect(mockVerifyAccessToken).toHaveBeenCalledWith(validToken);
         expect(mockNext).toHaveBeenCalledWith();
       });
 
-      it('should extract token from Authorization header', () => {
+      it('should extract token from Authorization header', async () => {
         mockSocket.handshake.headers.authorization = `Bearer ${validToken}`;
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
-        expect(mockJwtVerify).toHaveBeenCalledWith(validToken, process.env.JWT_SECRET);
+        expect(mockVerifyAccessToken).toHaveBeenCalledWith(validToken);
         expect(mockNext).toHaveBeenCalledWith();
       });
 
-      it('should prefer auth.token over Authorization header', () => {
+      it('should prefer auth.token over Authorization header', async () => {
         mockSocket.handshake.auth.token = 'auth-token';
         mockSocket.handshake.headers.authorization = 'Bearer header-token';
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
-        expect(mockJwtVerify).toHaveBeenCalledWith('auth-token', process.env.JWT_SECRET);
+        expect(mockVerifyAccessToken).toHaveBeenCalledWith('auth-token');
       });
 
-      it('should reject connection without token', () => {
-        authenticateSocket(mockSocket, mockNext);
+      it('should reject connection without token', async () => {
+        await authenticateSocket(mockSocket, mockNext);
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         expect(mockNext.mock.calls[0][0].message).toBe('Authentication required');
@@ -129,10 +129,10 @@ describe('WebSocket Authentication Middleware', () => {
     });
 
     describe('Token Verification', () => {
-      it('should attach user info to socket on successful authentication', () => {
+      it('should attach user info to socket on successful authentication', async () => {
         mockSocket.handshake.auth.token = validToken;
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
         expect(mockSocket.userId).toBe('user-123');
         expect(mockSocket.userRole).toBe('user');
@@ -140,10 +140,10 @@ describe('WebSocket Authentication Middleware', () => {
         expect(mockNext).toHaveBeenCalledWith();
       });
 
-      it('should log successful authentication', () => {
+      it('should log successful authentication', async () => {
         mockSocket.handshake.auth.token = validToken;
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
         expect(mockLoggerInfo).toHaveBeenCalledWith(
           'WebSocket connection authenticated',
@@ -156,53 +156,41 @@ describe('WebSocket Authentication Middleware', () => {
         );
       });
 
-      it('should handle expired token error', () => {
+      it('should handle expired token error', async () => {
         mockSocket.handshake.auth.token = validToken;
-        mockJwtVerify.mockImplementation(() => {
-          const error = new Error('Token expired');
-          error.name = 'TokenExpiredError';
-          throw error;
-        });
+        mockVerifyAccessToken.mockRejectedValue(new Error('Token expired'));
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         expect(mockNext.mock.calls[0][0].message).toBe('Token expired');
       });
 
-      it('should handle invalid token error', () => {
+      it('should handle invalid token error', async () => {
         mockSocket.handshake.auth.token = validToken;
-        mockJwtVerify.mockImplementation(() => {
-          const error = new Error('Invalid token');
-          error.name = 'JsonWebTokenError';
-          throw error;
-        });
+        mockVerifyAccessToken.mockRejectedValue(new Error('Invalid token signature'));
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         expect(mockNext.mock.calls[0][0].message).toBe('Invalid token');
       });
 
-      it('should handle generic authentication error', () => {
+      it('should handle generic authentication error', async () => {
         mockSocket.handshake.auth.token = validToken;
-        mockJwtVerify.mockImplementation(() => {
-          throw new Error('Some other error');
-        });
+        mockVerifyAccessToken.mockRejectedValue(new Error('Some other error'));
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         expect(mockNext.mock.calls[0][0].message).toBe('Authentication failed');
       });
 
-      it('should log failed authentication attempts', () => {
+      it('should log failed authentication attempts', async () => {
         mockSocket.handshake.auth.token = validToken;
-        mockJwtVerify.mockImplementation(() => {
-          throw new Error('Verification failed');
-        });
+        mockVerifyAccessToken.mockRejectedValue(new Error('Verification failed'));
 
-        authenticateSocket(mockSocket, mockNext);
+        await authenticateSocket(mockSocket, mockNext);
 
         expect(mockLoggerWarn).toHaveBeenCalledWith(
           'WebSocket authentication failed',
@@ -601,7 +589,7 @@ describe('WebSocket Authentication Middleware', () => {
           socketId: 'socket-abc123',
           userId: 'user-123',
           userRole: 'resident',
-          userEmail: 'test@example.com',
+          userEmail: 't***@example.com',
           ip: '192.168.1.100',
           userAgent: 'Mozilla/5.0'
         })
@@ -647,10 +635,10 @@ describe('WebSocket Authentication Middleware', () => {
   // Integration Scenarios
   // =========================================
   describe('Integration Scenarios', () => {
-    it('should handle full authentication and room authorization flow', () => {
+    it('should handle full authentication and room authorization flow', async () => {
       // Step 1: Authenticate
       mockSocket.handshake.auth.token = validToken;
-      authenticateSocket(mockSocket, mockNext);
+      await authenticateSocket(mockSocket, mockNext);
 
       expect(mockSocket.userId).toBe('user-123');
       expect(mockSocket.userRole).toBe('user');
@@ -660,16 +648,16 @@ describe('WebSocket Authentication Middleware', () => {
       expect(authorizeRoom(mockSocket, 'admin')).toBe(false);
     });
 
-    it('should handle admin with full access flow', () => {
+    it('should handle admin with full access flow', async () => {
       const adminToken = {
         userId: 'admin-123',
         role: 'admin',
         email: 'admin@example.com'
       };
-      mockJwtVerify.mockReturnValue(adminToken);
+      mockVerifyAccessToken.mockResolvedValue(adminToken);
 
       mockSocket.handshake.auth.token = validToken;
-      authenticateSocket(mockSocket, mockNext);
+      await authenticateSocket(mockSocket, mockNext);
 
       expect(mockSocket.userRole).toBe('admin');
 
@@ -681,16 +669,16 @@ describe('WebSocket Authentication Middleware', () => {
       expect(authorizeRoom(mockSocket, 'system')).toBe(true);
     });
 
-    it('should handle guard with partial access flow', () => {
+    it('should handle guard with partial access flow', async () => {
       const guardToken = {
         userId: 'guard-123',
         role: 'guard',
         email: 'guard@example.com'
       };
-      mockJwtVerify.mockReturnValue(guardToken);
+      mockVerifyAccessToken.mockResolvedValue(guardToken);
 
       mockSocket.handshake.auth.token = validToken;
-      authenticateSocket(mockSocket, mockNext);
+      await authenticateSocket(mockSocket, mockNext);
 
       expect(mockSocket.userRole).toBe('guard');
 

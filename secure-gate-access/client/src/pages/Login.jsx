@@ -5,6 +5,8 @@ import { FloatingLabelInput, GradientButton, GradientCard, Checkbox, Icon, Butto
 import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
 import api from "../utils/apiClient";
+import { encodeSession } from '../utils/sessionCrypto';
+import { getRoleBasedRedirect } from '../utils/navigationFlow';
 
 const AUTH_INLINE_ERROR_PATTERN = /invalid credentials|incorrect|locked|too many/i;
 const INLINE_ERROR_ALERT_CLASS = 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300';
@@ -110,7 +112,7 @@ export default function LoginPage() {
       // MFA-008 FIX: Check if MFA is required
       if (result?.requiresMFA || result?.mfaRequired) {
         // Store MFA session info for verification
-        sessionStorage.setItem('mfa_session', JSON.stringify({
+        sessionStorage.setItem('mfa_session', encodeSession({
           mfaSessionId: result.mfaSessionId,
           userId: result.userId,
           expiresIn: result.expiresIn || 300,
@@ -150,9 +152,7 @@ export default function LoginPage() {
             state: { 
               required: true, 
               message: `Multi-Factor Authentication is required for ${result.user.role === 'super_admin' ? 'Super Admin' : result.user.role.charAt(0).toUpperCase() + result.user.role.slice(1)} accounts.`,
-              redirectTo: from || (result.user.role === "super_admin" ? "/dashboard/super-admin" : 
-                                   result.user.role === "admin" ? "/dashboard/admin" :
-                                   result.user.role === "guard" ? "/dashboard/guard" : "/")
+              redirectTo: from || getRoleBasedRedirect(result.user.role)
             }
           });
           return;
@@ -162,11 +162,7 @@ export default function LoginPage() {
           navigate(from, { replace: true });
         } else {
           // Default redirects based on role
-          if (result.user.role === "super_admin") navigate("/dashboard/super-admin");
-          else if (result.user.role === "admin") navigate("/dashboard/admin");
-          else if (result.user.role === "guard") navigate("/dashboard/guard");
-          else if (result.user.role === "resident") navigate("/dashboard/resident");
-          else navigate("/");
+          navigate(getRoleBasedRedirect(result.user.role));
         }
       }, 100);
     } catch (err) {
@@ -241,9 +237,7 @@ export default function LoginPage() {
           state: { 
             required: true, 
             message: `Multi-Factor Authentication is required for ${user.role === 'super_admin' ? 'Super Admin' : user.role.charAt(0).toUpperCase() + user.role.slice(1)} accounts.`,
-            redirectTo: from || (user.role === "super_admin" ? "/dashboard/super-admin" : 
-                                user.role === "admin" ? "/dashboard/admin" :
-                                user.role === "guard" ? "/dashboard/guard" : "/")
+            redirectTo: from || getRoleBasedRedirect(user.role)
           }
         });
         return;
@@ -253,11 +247,7 @@ export default function LoginPage() {
         navigate(from, { replace: true });
       } else {
         // Default redirects based on role
-        if (user.role === "super_admin") navigate("/dashboard/super-admin");
-        else if (user.role === "admin") navigate("/dashboard/admin");
-        else if (user.role === "guard") navigate("/dashboard/guard");
-        else if (user.role === "resident") navigate("/dashboard/resident");
-        else navigate("/");
+        navigate(getRoleBasedRedirect(user.role));
       }
     }
   }, [isAuthenticated, user, navigate, location]);

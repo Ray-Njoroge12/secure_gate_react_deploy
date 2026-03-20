@@ -295,7 +295,7 @@ class UserService {
       if (result.rows.length === 0) {
         // Record failed attempt even for non-existent users (security)
         accountSecurity.recordFailedAttempt(username, 'unknown');
-        throw new Error('Invalid credentials');
+        throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
 
       const user = result.rows[0];
@@ -306,7 +306,7 @@ class UserService {
       if (!isValid) {
         // Record failed attempt
         accountSecurity.recordFailedAttempt(username, 'unknown');
-        throw new Error('Invalid credentials');
+        throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
 
       // Check if email is verified (skip in development if EMAIL_VERIFICATION_REQUIRED=false)
@@ -330,8 +330,11 @@ class UserService {
 
       return user;
     } catch (error) {
-      if (error.message.includes('Invalid credentials')) {
-        throw error; // Re-throw authentication errors
+      if (error instanceof AppError) {
+        throw error;
+      }
+      if (error.message?.includes('Invalid credentials')) {
+        throw new AppError('Invalid credentials', 401, 'AUTH_INVALID_CREDENTIALS');
       }
       throw new Error(`Authentication failed: ${error.message}`);
     }

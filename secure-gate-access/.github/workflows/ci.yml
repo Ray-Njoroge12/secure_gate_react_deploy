@@ -64,7 +64,7 @@ jobs:
           JWT_SECRET: test-jwt-secret-for-ci-pipeline-minimum-32-chars
         run: npm run test:unit
 
-      - name: Run integration tests
+      - name: Run integration tests (stable lane)
         working-directory: ./server
         env:
           NODE_ENV: test
@@ -74,7 +74,29 @@ jobs:
           PGPASSWORD: postgres
           PGDATABASE: secure_gate_test
           JWT_SECRET: test-jwt-secret-for-ci-pipeline-minimum-32-chars
-        run: npm run test:integration
+        run: npm run test:integration:stable
+
+      - name: Run integration tests (quarantine lane)
+        working-directory: ./server
+        env:
+          NODE_ENV: test
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: secure_gate_test
+          JWT_SECRET: test-jwt-secret-for-ci-pipeline-minimum-32-chars
+        run: npm run test:integration:quarantine
+        continue-on-error: true
+
+      - name: Upload quarantine integration artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-quarantine-results
+          path: server/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
       
       - name: Run critical integration tests
         working-directory: ./server

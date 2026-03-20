@@ -64,7 +64,7 @@ export const register = async (req, res) => {
         username, first_name, last_name, email, password, phone,
         role: 'resident',
         account_status: 'pending',
-        estate_id: estate_id || null
+        estate_id
     });
 
     loggingService.info('User created successfully - pending approval', {
