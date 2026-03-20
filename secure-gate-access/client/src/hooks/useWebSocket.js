@@ -31,6 +31,15 @@ const socketPool = new Map();
 
 const buildSocketPoolKey = (socketUrl, authToken) => `${socketUrl}::${authToken || 'cookie-auth'}`;
 
+export function disconnectAllSockets() {
+  socketPool.forEach((entry) => {
+    if (entry.socket) {
+      entry.socket.disconnect();
+    }
+  });
+  socketPool.clear();
+}
+
 const EVENT_TYPE_MAP = {
   VISITOR_CHECK_IN: 'visitor.check_in',
   VISITOR_CHECK_OUT: 'visitor.check_out',
