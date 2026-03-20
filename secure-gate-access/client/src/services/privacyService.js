@@ -4,6 +4,7 @@
  */
 
 import apiClient from '../utils/apiClient.js';
+import logger from '../utils/logger';
 
 class PrivacyService {
   constructor() {
@@ -16,7 +17,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/settings`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch privacy settings:', error);
+      logger.error('Failed to fetch privacy settings:', error);
       throw new Error('Unable to load privacy settings. Please try again.');
     }
   }
@@ -26,7 +27,7 @@ class PrivacyService {
       const response = await apiClient.put(`${this.baseUrl}/settings`, settings);
       return response.data;
     } catch (error) {
-      console.error('Failed to update privacy settings:', error);
+      logger.error('Failed to update privacy settings:', error);
       throw new Error('Unable to update privacy settings. Please try again.');
     }
   }
@@ -42,7 +43,7 @@ class PrivacyService {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to request data export:', error);
+      logger.error('Failed to request data export:', error);
       throw new Error('Unable to request data export. Please try again.');
     }
   }
@@ -52,7 +53,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/data-export/${exportId}/status`);
       return response.data;
     } catch (error) {
-      console.error('Failed to get export status:', error);
+      logger.error('Failed to get export status:', error);
       throw new Error('Unable to check export status. Please try again.');
     }
   }
@@ -75,7 +76,7 @@ class PrivacyService {
 
       return { success: true };
     } catch (error) {
-      console.error('Failed to download data export:', error);
+      logger.error('Failed to download data export:', error);
       throw new Error('Unable to download data export. Please try again.');
     }
   }
@@ -91,7 +92,7 @@ class PrivacyService {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to request data deletion:', error);
+      logger.error('Failed to request data deletion:', error);
       throw new Error('Unable to request data deletion. Please try again.');
     }
   }
@@ -101,7 +102,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/data-deletion/${deletionId}/status`);
       return response.data;
     } catch (error) {
-      console.error('Failed to get deletion status:', error);
+      logger.error('Failed to get deletion status:', error);
       throw new Error('Unable to check deletion status. Please try again.');
     }
   }
@@ -112,7 +113,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/consent/history`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch consent history:', error);
+      logger.error('Failed to fetch consent history:', error);
       throw new Error('Unable to load consent history. Please try again.');
     }
   }
@@ -127,7 +128,7 @@ class PrivacyService {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to update consent:', error);
+      logger.error('Failed to update consent:', error);
       throw new Error('Unable to update consent. Please try again.');
     }
   }
@@ -137,7 +138,7 @@ class PrivacyService {
       const response = await apiClient.delete(`${this.baseUrl}/consent/${consentType}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to withdraw consent:', error);
+      logger.error('Failed to withdraw consent:', error);
       throw new Error('Unable to withdraw consent. Please try again.');
     }
   }
@@ -148,7 +149,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/processing-activities`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch processing activities:', error);
+      logger.error('Failed to fetch processing activities:', error);
       throw new Error('Unable to load processing activities. Please try again.');
     }
   }
@@ -158,7 +159,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/data-categories`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch data categories:', error);
+      logger.error('Failed to fetch data categories:', error);
       throw new Error('Unable to load data categories. Please try again.');
     }
   }
@@ -176,7 +177,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/audit-log?${params}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch privacy audit log:', error);
+      logger.error('Failed to fetch privacy audit log:', error);
       throw new Error('Unable to load privacy audit log. Please try again.');
     }
   }
@@ -191,7 +192,7 @@ class PrivacyService {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to generate compliance report:', error);
+      logger.error('Failed to generate compliance report:', error);
       throw new Error('Unable to generate compliance report. Please try again.');
     }
   }
@@ -202,7 +203,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/retention-policies`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch retention policies:', error);
+      logger.error('Failed to fetch retention policies:', error);
       throw new Error('Unable to load retention policies. Please try again.');
     }
   }
@@ -212,7 +213,7 @@ class PrivacyService {
       const response = await apiClient.put(`${this.baseUrl}/retention-policies/${policyId}`, policy);
       return response.data;
     } catch (error) {
-      console.error('Failed to update retention policy:', error);
+      logger.error('Failed to update retention policy:', error);
       throw new Error('Unable to update retention policy. Please try again.');
     }
   }
@@ -222,7 +223,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/retention-status`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch retention status:', error);
+      logger.error('Failed to fetch retention status:', error);
       throw new Error('Unable to load retention status. Please try again.');
     }
   }
@@ -233,7 +234,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/privacy-impact-assessment`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch privacy impact assessment:', error);
+      logger.error('Failed to fetch privacy impact assessment:', error);
       throw new Error('Unable to load privacy impact assessment. Please try again.');
     }
   }
@@ -251,7 +252,7 @@ class PrivacyService {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to report data breach:', error);
+      logger.error('Failed to report data breach:', error);
       throw new Error('Unable to report data breach. Please try again.');
     }
   }
@@ -267,7 +268,7 @@ class PrivacyService {
       const response = await apiClient.get(`${this.baseUrl}/data-breaches?${params}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch data breaches:', error);
+      logger.error('Failed to fetch data breaches:', error);
       throw new Error('Unable to load data breaches. Please try again.');
     }
   }

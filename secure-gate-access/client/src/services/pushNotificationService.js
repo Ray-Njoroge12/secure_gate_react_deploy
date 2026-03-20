@@ -1,4 +1,6 @@
 // Push Notification Service for PWA
+import logger from '../utils/logger';
+
 class PushNotificationService {
   constructor() {
     this.registration = null;
@@ -12,7 +14,7 @@ class PushNotificationService {
 
   async init() {
     if (!this.isSupported) {
-      console.warn('Push notifications not supported');
+      logger.warn('Push notifications not supported');
       return;
     }
 
@@ -21,7 +23,7 @@ class PushNotificationService {
       await this.checkExistingSubscription();
       this.setupMessageListener();
     } catch (error) {
-      console.error('Failed to initialize push notifications:', error);
+      logger.error('Failed to initialize push notifications:', error);
     }
   }
 
@@ -66,12 +68,12 @@ class PushNotificationService {
       // Send subscription to server
       await this.sendSubscriptionToServer(this.subscription);
       
-      console.log('Push subscription successful');
+      logger.info('Push subscription successful');
       this.notifyListeners('subscribed', this.subscription);
       
       return this.subscription;
     } catch (error) {
-      console.error('Failed to subscribe to push notifications:', error);
+      logger.error('Failed to subscribe to push notifications:', error);
       throw error;
     }
   }
@@ -84,10 +86,10 @@ class PushNotificationService {
       await this.removeSubscriptionFromServer();
       
       this.subscription = null;
-      console.log('Push unsubscription successful');
+      logger.info('Push unsubscription successful');
       this.notifyListeners('unsubscribed');
     } catch (error) {
-      console.error('Failed to unsubscribe from push notifications:', error);
+      logger.error('Failed to unsubscribe from push notifications:', error);
       throw error;
     }
   }
@@ -108,7 +110,7 @@ class PushNotificationService {
         }
       }
     } catch (error) {
-      console.error('Error checking existing subscription:', error);
+      logger.error('Error checking existing subscription:', error);
     }
   }
 
@@ -127,7 +129,7 @@ class PushNotificationService {
       const data = await response.json();
       return data.publicKey;
     } catch (error) {
-      console.error('Error getting VAPID key:', error);
+      logger.error('Error getting VAPID key:', error);
       // Fallback to environment variable or default
       return process.env.REACT_APP_VAPID_PUBLIC_KEY || '';
     }
@@ -169,7 +171,7 @@ class PushNotificationService {
         })
       });
     } catch (error) {
-      console.error('Error removing subscription from server:', error);
+      logger.error('Error removing subscription from server:', error);
     }
   }
 
@@ -188,7 +190,7 @@ class PushNotificationService {
 
       return response.ok;
     } catch (error) {
-      console.error('Error verifying subscription:', error);
+      logger.error('Error verifying subscription:', error);
       return false;
     }
   }
@@ -213,7 +215,7 @@ class PushNotificationService {
       this.notifyListeners('preferences_updated', preferences);
       return response.json();
     } catch (error) {
-      console.error('Error updating notification preferences:', error);
+      logger.error('Error updating notification preferences:', error);
       throw error;
     }
   }
@@ -230,7 +232,7 @@ class PushNotificationService {
 
       return response.json();
     } catch (error) {
-      console.error('Error getting notification preferences:', error);
+      logger.error('Error getting notification preferences:', error);
       return this.getDefaultPreferences();
     }
   }
@@ -255,7 +257,7 @@ class PushNotificationService {
 
   async showLocalNotification(title, options = {}) {
     if (!this.isPermissionGranted) {
-      console.warn('Permission not granted for notifications');
+      logger.warn('Permission not granted for notifications');
       return;
     }
 
@@ -279,7 +281,7 @@ class PushNotificationService {
         new Notification(title, notificationOptions);
       }
     } catch (error) {
-      console.error('Error showing local notification:', error);
+      logger.error('Error showing local notification:', error);
     }
   }
 
@@ -334,7 +336,7 @@ class PushNotificationService {
         this.navigateToUrl(payload.url);
         break;
       default:
-        console.log('Unknown notification action:', action);
+        logger.info('Unknown notification action:', action);
     }
     
     this.notifyListeners('notification_action', { action, type, payload });
@@ -366,7 +368,7 @@ class PushNotificationService {
         throw new Error('Action failed');
       }
     } catch (error) {
-      console.error('Error handling visitor action:', error);
+      logger.error('Error handling visitor action:', error);
       await this.showLocalNotification('Action Failed', {
         body: 'Please try again from the app',
         tag: 'action-error'
@@ -384,7 +386,7 @@ class PushNotificationService {
         credentials: 'include'
       });
     } catch (error) {
-      console.error('Error acknowledging alert:', error);
+      logger.error('Error acknowledging alert:', error);
     }
   }
 
@@ -419,7 +421,7 @@ class PushNotificationService {
       });
     } catch (error) {
       // Silent fail for analytics
-      console.debug('Failed to track notification interaction');
+      logger.debug('Failed to track notification interaction');
     }
   }
 
@@ -435,7 +437,7 @@ class PushNotificationService {
       try {
         callback(event, data);
       } catch (error) {
-        console.error('Error in push notification listener:', error);
+        logger.error('Error in push notification listener:', error);
       }
     });
   }

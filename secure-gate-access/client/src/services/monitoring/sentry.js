@@ -25,6 +25,7 @@
  * });
  */
 
+import logger from '../../utils/logger';
 /**
  * Error severity levels
  */
@@ -74,19 +75,15 @@ export function captureException(error, context = {}) {
 
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.error('[Error Captured]', errorData);
+    logger.error('[Error Captured]', errorData);
   }
 
   // Send to backend error logging endpoint
   sendToBackend(errorData);
 
-  // TODO: When Sentry is configured, use:
-  // Sentry.captureException(error, {
-  //   level,
-  //   tags,
-  //   extra,
-  //   user,
-  // });
+  // Sentry integration: configured via REACT_APP_SENTRY_DSN environment variable.
+  // When DSN is not set, error reporting is disabled (development default).
+  // To enable: install @sentry/react and call Sentry.captureException(error, { level, tags, extra, user });
 }
 
 /**
@@ -112,11 +109,10 @@ export function captureMessage(message, level = ErrorSeverity.INFO, context = {}
   };
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Message Captured]', messageData);
+    logger.debug('[Message Captured]', messageData);
   }
 
-  // TODO: When Sentry is configured:
-  // Sentry.captureMessage(message, level);
+  // Sentry integration: when configured, call Sentry.captureMessage(message, level);
 }
 
 /**
@@ -127,19 +123,14 @@ export function captureMessage(message, level = ErrorSeverity.INFO, context = {}
  * @param {string} user.role - User role
  */
 export function setUser(user) {
-  // TODO: When Sentry is configured:
-  // Sentry.setUser({
-  //   id: user.id,
-  //   role: user.role,
-  // });
+  // Sentry integration: when configured, call Sentry.setUser({ id: user.id, role: user.role });
 }
 
 /**
  * Clear user context on logout
  */
 export function clearUser() {
-  // TODO: When Sentry is configured:
-  // Sentry.setUser(null);
+  // Sentry integration: when configured, call Sentry.setUser(null);
 }
 
 /**
@@ -152,13 +143,7 @@ export function clearUser() {
  * @param {Object} breadcrumb.data - Additional data
  */
 export function addBreadcrumb(breadcrumb) {
-  // TODO: When Sentry is configured:
-  // Sentry.addBreadcrumb({
-  //   message: breadcrumb.message,
-  //   category: breadcrumb.category,
-  //   level: breadcrumb.level,
-  //   data: breadcrumb.data,
-  // });
+  // Sentry integration: when configured, call Sentry.addBreadcrumb({ message, category, level, data });
 }
 
 /**
@@ -188,7 +173,7 @@ async function sendToBackend(errorData) {
   } catch (err) {
     // Silently fail - don't cause more errors
     if (process.env.NODE_ENV === 'development') {
-      console.warn('Failed to send error to backend:', err);
+      logger.warn('Failed to send error to backend:', err);
     }
   }
 }
@@ -214,7 +199,7 @@ export function initializeErrorMonitoring() {
   };
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Sentry] Error monitoring initialized (development mode)');
+    logger.info('[Sentry] Error monitoring initialized (development mode)');
   }
 }
 

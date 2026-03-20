@@ -84,13 +84,6 @@ const DashboardHome = () => {
         e.preventDefault();
         navigateTo('/resident/visitor-history');
       }
-      // Ctrl/Cmd + R to refresh
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        if (!loading) {
-          fetchDashboardData();
-        }
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);

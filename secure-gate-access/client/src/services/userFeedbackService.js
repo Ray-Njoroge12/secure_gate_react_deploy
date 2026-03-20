@@ -4,6 +4,7 @@
  */
 
 import apiClient from '../utils/apiClient.js';
+import logger from '../utils/logger';
 
 class UserFeedbackService {
   constructor() {
@@ -18,7 +19,7 @@ class UserFeedbackService {
       const response = await apiClient.post(`${this.baseUrl}/submit`, feedbackData);
       return response.data;
     } catch (error) {
-      console.error('Failed to submit feedback:', error);
+      logger.error('Failed to submit feedback:', error);
       throw new Error(`Failed to submit feedback: ${error.message}`);
     }
   }
@@ -31,7 +32,7 @@ class UserFeedbackService {
       const response = await apiClient.post(`${this.baseUrl}/satisfaction`, satisfactionData);
       return response.data;
     } catch (error) {
-      console.error('Failed to submit satisfaction rating:', error);
+      logger.error('Failed to submit satisfaction rating:', error);
       throw new Error(`Failed to submit satisfaction rating: ${error.message}`);
     }
   }
@@ -44,7 +45,7 @@ class UserFeedbackService {
       const response = await apiClient.get(`${this.baseUrl}`, { params: filters });
       return response.data;
     } catch (error) {
-      console.error('Failed to get feedback:', error);
+      logger.error('Failed to get feedback:', error);
       throw new Error(`Failed to get feedback: ${error.message}`);
     }
   }
@@ -57,7 +58,7 @@ class UserFeedbackService {
       const response = await apiClient.get(`${this.baseUrl}/analytics`, { params: filters });
       return response.data;
     } catch (error) {
-      console.error('Failed to get feedback analytics:', error);
+      logger.error('Failed to get feedback analytics:', error);
       throw new Error(`Failed to get feedback analytics: ${error.message}`);
     }
   }
@@ -73,7 +74,7 @@ class UserFeedbackService {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to update feedback status:', error);
+      logger.error('Failed to update feedback status:', error);
       throw new Error(`Failed to update feedback status: ${error.message}`);
     }
   }
@@ -86,7 +87,7 @@ class UserFeedbackService {
       const response = await apiClient.get(`${this.baseUrl}/satisfaction/score/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to get satisfaction score:', error);
+      logger.error('Failed to get satisfaction score:', error);
       throw new Error(`Failed to get satisfaction score: ${error.message}`);
     }
   }
@@ -110,7 +111,7 @@ class UserFeedbackService {
 
       return await this.submitSatisfactionRating(satisfactionData);
     } catch (error) {
-      console.error('Failed to track page satisfaction:', error);
+      logger.error('Failed to track page satisfaction:', error);
       throw error;
     }
   }
@@ -134,7 +135,7 @@ class UserFeedbackService {
 
       return await this.submitSatisfactionRating(satisfactionData);
     } catch (error) {
-      console.error('Failed to track feature satisfaction:', error);
+      logger.error('Failed to track feature satisfaction:', error);
       throw error;
     }
   }

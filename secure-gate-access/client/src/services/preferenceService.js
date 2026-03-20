@@ -2,6 +2,7 @@
 // Frontend service for comprehensive preference management with real-time updates
 
 import apiClient from '../utils/apiClient.js';
+import logger from '../utils/logger';
 
 /**
  * Default preference structure matching backend
@@ -114,7 +115,7 @@ class PreferenceService {
       
       throw new Error('Failed to retrieve preferences');
     } catch (error) {
-      console.error('Error getting user preferences:', error);
+      logger.error('Error getting user preferences:', error);
       
       // Return defaults if API fails
       return {
@@ -161,7 +162,7 @@ class PreferenceService {
       
       throw new Error('Failed to update preferences');
     } catch (error) {
-      console.error('Error updating user preferences:', error);
+      logger.error('Error updating user preferences:', error);
       
       // Revert optimistic update by fetching current state
       await this.getUserPreferences();
@@ -183,7 +184,7 @@ class PreferenceService {
       
       throw new Error('Failed to retrieve all preferences');
     } catch (error) {
-      console.error('Error getting all user preferences:', error);
+      logger.error('Error getting all user preferences:', error);
       throw error;
     }
   }
@@ -203,7 +204,7 @@ class PreferenceService {
       
       throw new Error('Failed to create backup');
     } catch (error) {
-      console.error('Error creating preference backup:', error);
+      logger.error('Error creating preference backup:', error);
       throw error;
     }
   }
@@ -230,7 +231,7 @@ class PreferenceService {
       
       throw new Error('Failed to restore backup');
     } catch (error) {
-      console.error('Error restoring preference backup:', error);
+      logger.error('Error restoring preference backup:', error);
       throw error;
     }
   }
@@ -248,7 +249,7 @@ class PreferenceService {
       
       throw new Error('Failed to list backups');
     } catch (error) {
-      console.error('Error listing preference backups:', error);
+      logger.error('Error listing preference backups:', error);
       throw error;
     }
   }
@@ -275,7 +276,7 @@ class PreferenceService {
       
       throw new Error('Failed to reset preferences');
     } catch (error) {
-      console.error('Error resetting preferences:', error);
+      logger.error('Error resetting preferences:', error);
       throw error;
     }
   }
@@ -301,7 +302,7 @@ class PreferenceService {
       
       return await this.updateUserPreferences(updatedPreferences, current.version);
     } catch (error) {
-      console.error(`Error updating ${category} preferences:`, error);
+      logger.error(`Error updating ${category} preferences:`, error);
       throw error;
     }
   }
@@ -334,7 +335,7 @@ class PreferenceService {
       try {
         listener(data);
       } catch (error) {
-        console.error('Error in preference listener:', error);
+        logger.error('Error in preference listener:', error);
       }
     });
   }
@@ -355,7 +356,7 @@ class PreferenceService {
           this.cache.set('current', data);
           this.notifyListeners(data);
         } catch (error) {
-          console.error('Error syncing preferences across tabs:', error);
+          logger.error('Error syncing preferences across tabs:', error);
         }
       }
     });
@@ -370,7 +371,7 @@ class PreferenceService {
         // Remove the item immediately to trigger storage event
         localStorage.removeItem('preferences-sync');
       } catch (error) {
-        console.error('Error broadcasting preferences to other tabs:', error);
+        logger.error('Error broadcasting preferences to other tabs:', error);
       }
     };
   }

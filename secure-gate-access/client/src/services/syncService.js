@@ -11,6 +11,7 @@
  */
 
 import http from './http';
+import logger from '../utils/logger';
 
 const DB_NAME = 'securegate_offline';
 const DB_VERSION = 1;
@@ -65,7 +66,7 @@ class SyncService {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
       
       request.onerror = () => {
-        console.error('Failed to open offline database');
+        logger.error('Failed to open offline database');
         reject(request.error);
       };
       
@@ -133,7 +134,7 @@ class SyncService {
       const timeoutMs = INACTIVITY_TIMEOUT_MINUTES * 60 * 1000;
       
       if (inactiveTime > timeoutMs) {
-        console.log('Inactivity timeout - purging offline cache for privacy');
+        logger.info('Inactivity timeout - purging offline cache for privacy');
         this.securityPurge();
       }
     }, 60 * 1000);
@@ -185,7 +186,7 @@ class SyncService {
       
       throw new Error('Invalid response from sync download');
     } catch (error) {
-      console.error('Error downloading offline package:', error);
+      logger.error('Error downloading offline package:', error);
       throw error;
     }
   }
@@ -360,7 +361,7 @@ class SyncService {
       
       throw new Error(response.error || 'Sync failed');
     } catch (error) {
-      console.error('Error syncing pending changes:', error);
+      logger.error('Error syncing pending changes:', error);
       this.notifyListeners({ type: 'syncError', error: error.message });
       return { success: false, error: error.message };
     }
@@ -451,7 +452,7 @@ class SyncService {
     
     if (pkg && new Date(pkg.expiresAt) <= new Date()) {
       await this.purgeOfflinePackage();
-      console.log('Expired offline package purged for privacy');
+      logger.info('Expired offline package purged for privacy');
     }
   }
 
@@ -477,9 +478,9 @@ class SyncService {
       }
       
       this.notifyListeners({ type: 'securityPurge' });
-      console.log('Security purge completed - all offline data cleared');
+      logger.info('Security purge completed - all offline data cleared');
     } catch (error) {
-      console.error('Error during security purge:', error);
+      logger.error('Error during security purge:', error);
       // Try to delete the entire database as fallback
       indexedDB.deleteDatabase(DB_NAME);
     }

@@ -295,7 +295,7 @@ class ErrorManagementService {
         return () => this.redirectToLogin();
       
       default:
-        return () => console.log('Action not implemented:', actionType);
+        return () => logger.debug('Action not implemented:', actionType);
     }
   }
 

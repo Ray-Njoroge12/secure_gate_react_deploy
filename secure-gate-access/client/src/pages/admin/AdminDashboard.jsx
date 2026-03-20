@@ -87,16 +87,6 @@ export default function AdminDashboard({ initialTab = 'overview' }) {
         e.preventDefault();
         navigate(appendSiteId('/dashboard/admin/approvals'));
       }
-      // Ctrl/Cmd + S to settings
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        navigate(appendSiteId('/dashboard/admin/settings'));
-      }
-      // Ctrl/Cmd + R to refresh - reload page
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        window.location.reload();
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);

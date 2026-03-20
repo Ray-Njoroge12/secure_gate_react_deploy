@@ -11,6 +11,7 @@
  */
 
 import http from './http';
+import logger from '../utils/logger';
 
 class AnnouncementsService {
   /**
@@ -21,7 +22,7 @@ class AnnouncementsService {
       const response = await http.get('/api/announcements');
       return response.data || [];
     } catch (error) {
-      console.error('Error fetching announcements:', error);
+      logger.error('Error fetching announcements:', error);
       throw error;
     }
   }
@@ -37,7 +38,7 @@ class AnnouncementsService {
         count: response.count || 0
       };
     } catch (error) {
-      console.error('Error fetching unread announcements:', error);
+      logger.error('Error fetching unread announcements:', error);
       throw error;
     }
   }
@@ -50,7 +51,7 @@ class AnnouncementsService {
       const response = await http.get(`/api/announcements/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching announcement:', error);
+      logger.error('Error fetching announcement:', error);
       throw error;
     }
   }
@@ -64,7 +65,7 @@ class AnnouncementsService {
       await http.post(`/api/announcements/${announcementId}/read`);
       return true;
     } catch (error) {
-      console.error('Error marking announcement as read:', error);
+      logger.error('Error marking announcement as read:', error);
       // Non-critical, don't throw
       return false;
     }
@@ -83,7 +84,7 @@ class AnnouncementsService {
         smsEnabled: false
       };
     } catch (error) {
-      console.error('Error fetching announcement preferences:', error);
+      logger.error('Error fetching announcement preferences:', error);
       throw error;
     }
   }
@@ -96,7 +97,7 @@ class AnnouncementsService {
       const response = await http.put('/api/announcements/preferences', preferences);
       return response.data;
     } catch (error) {
-      console.error('Error updating announcement preferences:', error);
+      logger.error('Error updating announcement preferences:', error);
       throw error;
     }
   }
@@ -117,7 +118,7 @@ class AnnouncementsService {
         pagination: response.pagination
       };
     } catch (error) {
-      console.error('Error fetching announcement history:', error);
+      logger.error('Error fetching announcement history:', error);
       throw error;
     }
   }
@@ -132,7 +133,7 @@ class AnnouncementsService {
       const response = await http.post('/api/announcements', announcementData);
       return response.data;
     } catch (error) {
-      console.error('Error creating announcement:', error);
+      logger.error('Error creating announcement:', error);
       throw error;
     }
   }
@@ -145,7 +146,7 @@ class AnnouncementsService {
       const response = await http.put(`/api/announcements/${id}`, updates);
       return response.data;
     } catch (error) {
-      console.error('Error updating announcement:', error);
+      logger.error('Error updating announcement:', error);
       throw error;
     }
   }
@@ -158,7 +159,7 @@ class AnnouncementsService {
       await http.delete(`/api/announcements/${id}`);
       return true;
     } catch (error) {
-      console.error('Error deleting announcement:', error);
+      logger.error('Error deleting announcement:', error);
       throw error;
     }
   }
@@ -172,7 +173,7 @@ class AnnouncementsService {
       const response = await http.get(`/api/announcements/${announcementId}/analytics`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching announcement analytics:', error);
+      logger.error('Error fetching announcement analytics:', error);
       throw error;
     }
   }
@@ -194,7 +195,7 @@ class AnnouncementsService {
         pagination: response.pagination
       };
     } catch (error) {
-      console.error('Error fetching all announcements:', error);
+      logger.error('Error fetching all announcements:', error);
       throw error;
     }
   }

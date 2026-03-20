@@ -88,13 +88,6 @@ const ScanQR = () => {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl/Cmd + S to start scanning
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (!isScanning) {
-          setIsScanning(true);
-        }
-      }
       // Escape to stop scanning
       if (e.key === 'Escape' && isScanning) {
         handleClose();

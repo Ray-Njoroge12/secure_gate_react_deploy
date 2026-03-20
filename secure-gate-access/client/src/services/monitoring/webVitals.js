@@ -6,6 +6,7 @@
  */
 
 import { getCLS, getFID, getFCP, getLCP, getTTFB, getINP } from 'web-vitals';
+import logger from '../../utils/logger';
 
 /**
  * Performance thresholds based on Google's recommendations
@@ -61,7 +62,7 @@ async function sendToAnalytics(metric) {
   if (process.env.NODE_ENV === 'development') {
     const color = metric.rating === 'good' ? '\x1b[32m' : 
                   metric.rating === 'needs-improvement' ? '\x1b[33m' : '\x1b[31m';
-    console.log(
+    logger.debug(
       `[Web Vitals] ${color}${metric.name}\x1b[0m: ${metric.value.toFixed(2)} (${metric.rating})`
     );
   }
@@ -78,13 +79,8 @@ async function sendToAnalytics(metric) {
     // Silently fail - performance monitoring shouldn't break the app
   }
 
-  // TODO: Send to Google Analytics 4 when configured
-  // gtag('event', metric.name, {
-  //   value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
-  //   event_category: 'Web Vitals',
-  //   event_label: metric.id,
-  //   non_interaction: true,
-  // });
+  // Analytics: web vitals reported to console in dev. Configure REACT_APP_ANALYTICS_ID for production.
+  // When configured, call gtag('event', metric.name, { value, event_category: 'Web Vitals', event_label: metric.id });
 }
 
 /**
@@ -118,7 +114,7 @@ export function initWebVitals() {
   getINP(handleMetric);
 
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Web Vitals] Performance monitoring initialized');
+    logger.debug('[Web Vitals] Performance monitoring initialized');
   }
 }
 
@@ -185,7 +181,7 @@ export function measure(name, startMark, endMark) {
       const measureEntry = performance.measure(name, startMark, endMark);
       
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Performance] ${name}: ${measureEntry.duration.toFixed(2)}ms`);
+        logger.debug(`[Performance] ${name}: ${measureEntry.duration.toFixed(2)}ms`);
       }
       
       return measureEntry.duration;

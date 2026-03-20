@@ -1,4 +1,5 @@
 import apiClient from './api';
+import logger from '../utils/logger';
 
 /**
  * Collaboration Service
@@ -231,7 +232,7 @@ class CollaborationService {
         pendingApprovals: workflowsResponse.workflows?.length || 0
       };
     } catch (error) {
-      console.error('Failed to get collaboration stats:', error);
+      logger.error('Failed to get collaboration stats:', error);
       return {
         unreadMessages: 0,
         pendingHandoffs: 0,
@@ -298,7 +299,7 @@ class CollaborationService {
         const stats = await this.getCollaborationStats();
         callback({ type: 'stats_update', data: stats });
       } catch (error) {
-        console.error('Failed to poll collaboration updates:', error);
+        logger.error('Failed to poll collaboration updates:', error);
       }
     }, 30000); // Poll every 30 seconds
     this._intervals.push(pollInterval);
