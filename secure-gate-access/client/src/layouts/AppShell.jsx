@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { navigateToLogin } from '../utils/authNavigation';
 
 import { LogoutConfirmation } from '../components/common/ConfirmationDialog';
+import RouteAnnouncer from '../components/accessibility/RouteAnnouncer';
 
 export default function AppShell({
   role,
@@ -99,6 +100,7 @@ export default function AppShell({
         >
           Skip to main content
         </a>
+        <RouteAnnouncer />
 
         <Sidebar
           role={role}

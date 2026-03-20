@@ -92,7 +92,7 @@ const EstateSelection = () => {
             </p>
 
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-300 rounded-lg px-3 py-2">
+              <div className="text-sm text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-300 rounded-lg px-3 py-2">
                 {error}
               </div>
             )}
