@@ -7,6 +7,7 @@ class BackgroundSyncService {
     this.registration = null;
     this.syncTags = new Set();
     this.listeners = new Set();
+    this._intervals = [];
     
     this.init();
   }
@@ -358,11 +359,11 @@ class BackgroundSyncService {
 
   async schedulePeriodicSync() {
     // Check for pending syncs every 5 minutes when app is active
-    setInterval(() => {
+    this._intervals.push(setInterval(() => {
       if (!document.hidden && navigator.onLine) {
         this.checkPendingSyncs();
       }
-    }, 5 * 60 * 1000);
+    }, 5 * 60 * 1000));
   }
 
   async checkPendingSyncs() {
@@ -425,6 +426,11 @@ class BackgroundSyncService {
         console.error('Error in background sync listener:', error);
       }
     });
+  }
+
+  destroy() {
+    (this._intervals || []).forEach(id => clearInterval(id));
+    this._intervals = [];
   }
 }
 

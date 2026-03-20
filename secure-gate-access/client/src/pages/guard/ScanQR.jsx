@@ -26,20 +26,29 @@ const ScanQR = () => {
 
   // Check camera permission on mount
   useEffect(() => {
+    let permResult = null;
+    const handleChange = () => {
+      if (permResult) setCameraPermission(permResult.state);
+    };
+
     const checkCameraPermission = async () => {
       try {
         if (navigator.permissions && navigator.permissions.query) {
-          const result = await navigator.permissions.query({ name: 'camera' });
-          setCameraPermission(result.state); // 'granted', 'denied', or 'prompt'
-          result.addEventListener('change', () => {
-            setCameraPermission(result.state);
-          });
+          permResult = await navigator.permissions.query({ name: 'camera' });
+          setCameraPermission(permResult.state);
+          permResult.addEventListener('change', handleChange);
         }
       } catch {
         // permissions API not supported, rely on getUserMedia error
       }
     };
     checkCameraPermission();
+
+    return () => {
+      if (permResult) {
+        permResult.removeEventListener('change', handleChange);
+      }
+    };
   }, []);
 
   // Track online/offline status

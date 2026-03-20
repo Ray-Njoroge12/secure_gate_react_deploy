@@ -7,6 +7,7 @@ import apiClient from './api';
 class CollaborationService {
   constructor() {
     this.baseURL = '/api/collaboration';
+    this._intervals = [];
   }
 
   // ==================== MESSAGING METHODS ====================
@@ -300,8 +301,12 @@ class CollaborationService {
         console.error('Failed to poll collaboration updates:', error);
       }
     }, 30000); // Poll every 30 seconds
+    this._intervals.push(pollInterval);
 
-    return () => clearInterval(pollInterval);
+    return () => {
+      clearInterval(pollInterval);
+      this._intervals = this._intervals.filter(id => id !== pollInterval);
+    };
   }
 
   // ==================== VALIDATION HELPERS ====================
@@ -445,6 +450,11 @@ class CollaborationService {
       isValid: Object.keys(errors).length === 0,
       errors
     };
+  }
+
+  destroy() {
+    (this._intervals || []).forEach(id => clearInterval(id));
+    this._intervals = [];
   }
 }
 

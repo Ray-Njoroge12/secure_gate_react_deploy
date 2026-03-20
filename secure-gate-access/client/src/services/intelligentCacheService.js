@@ -12,6 +12,7 @@ class IntelligentCacheService {
   constructor() {
     this.cache = new Map();
     this.preloadQueue = new Set();
+    this._intervals = [];
     this.accessPatterns = new Map();
     this.cacheStats = {
       hits: 0,
@@ -85,7 +86,7 @@ class IntelligentCacheService {
 
     // Use both popstate and a periodic check for SPA navigation
     window.addEventListener('popstate', trackNavigation);
-    setInterval(trackNavigation, 1000);
+    this._intervals.push(setInterval(trackNavigation, 1000));
   }
 
   /**
@@ -309,9 +310,9 @@ class IntelligentCacheService {
    */
   setupCacheCleanup() {
     // Clean up expired entries every minute
-    setInterval(() => {
+    this._intervals.push(setInterval(() => {
       this.cleanupExpiredEntries();
-    }, 60000);
+    }, 60000));
   }
 
   /**
@@ -473,6 +474,11 @@ class IntelligentCacheService {
       patterns: this.getAccessPatterns(),
       preloadQueue: Array.from(this.preloadQueue)
     };
+  }
+
+  destroy() {
+    (this._intervals || []).forEach(id => clearInterval(id));
+    this._intervals = [];
   }
 }
 

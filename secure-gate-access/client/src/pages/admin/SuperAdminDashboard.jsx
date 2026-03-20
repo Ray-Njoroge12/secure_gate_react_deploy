@@ -68,8 +68,9 @@ export default function SuperAdminDashboard() {
                         required: response.data.data.mfaRequired
                     });
                 }
-            } catch {
-                // Silently fail — badge is non-critical
+            } catch (err) {
+                logger.warn('MFA badge fetch failed', err);
+                setMfaBadge({ enabled: null, required: false });
             }
         };
         fetchMfaBadge();
