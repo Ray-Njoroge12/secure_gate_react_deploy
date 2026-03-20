@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext } from "react";
+import { createContext, useState, useEffect, useContext, useMemo } from "react";
 import logger from 'utils/logger';
 import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
 import api from '../utils/apiClient.js';
@@ -190,7 +190,8 @@ export const AuthProvider = ({ children }) => {
     return roles.includes(user?.role);
   };
 
-  const value = {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({
     user,
     loading,
     isAuthenticated: !!user,
@@ -202,7 +203,8 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     hasAnyRole,
     authState
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [user, loading, authState]);
 
   return (
     <AuthContext.Provider value={value}>

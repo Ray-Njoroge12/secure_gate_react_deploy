@@ -28,6 +28,7 @@ const WS_URL = process.env.REACT_APP_WS_URL
   || window.location.origin;
 
 const socketPool = new Map();
+const MAX_POOL_SIZE = 10;
 
 const buildSocketPoolKey = (socketUrl, authToken) => `${socketUrl}::${authToken || 'cookie-auth'}`;
 
@@ -298,6 +299,17 @@ export function useWebSocket(options = {}) {
         reconnectionDelayMax: 5000,
         timeout: 10000
       });
+
+      if (socketPool.size >= MAX_POOL_SIZE) {
+        // Evict first entry with refCount === 0
+        for (const [key, entry] of socketPool) {
+          if (entry.refCount === 0) {
+            if (entry.socket) entry.socket.disconnect();
+            socketPool.delete(key);
+            break;
+          }
+        }
+      }
 
       socketPool.set(poolKey, {
         socket,
