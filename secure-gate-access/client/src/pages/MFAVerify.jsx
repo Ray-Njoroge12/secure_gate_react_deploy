@@ -143,7 +143,7 @@ const MFAVerify = () => {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-red-700 dark:text-red-300 font-medium">{error}</p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                    <p className="text-xs text-red-700 dark:text-red-400 mt-1">
                       Attempts remaining: {attemptsLeft}
                     </p>
                   </div>

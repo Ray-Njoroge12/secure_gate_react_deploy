@@ -367,8 +367,8 @@ const DashboardHome = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">{t('dashboard.resident.upcomingInvites')}</h2>
                 {upcomingInvites.length > 0 && (
-                  <span className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm font-medium">
-                    🟢 {upcomingInvites.length} active
+                  <span className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    <Icon name="CheckCircle" className="w-4 h-4 text-green-600 inline-block" aria-hidden="true" /> {upcomingInvites.length} active
                   </span>
                 )}
               </div>
@@ -384,8 +384,8 @@ const DashboardHome = () => {
                   {upcomingInvites.map(invite => (
                     <div key={invite.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 border-l-4 border-brand-500 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">👤 {invite.name}</div>
-                        <div className="text-sm text-gray-600 dark:text-gray-200">📅 {invite.time}</div>
+                        <div className="font-medium text-gray-900 dark:text-white"><Icon name="User" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{invite.name}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-200"><Icon name="Calendar" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{invite.time}</div>
                       </div>
                       <div className="flex gap-2">
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${invite.status === 'Confirmed'
@@ -431,10 +431,10 @@ const DashboardHome = () => {
                   {recentVisitors.map(visitor => (
                     <div key={visitor.id} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-900 rounded-lg border-l-4 border-gray-300 dark:border-slate-600 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
                       <div>
-                        <div className="font-medium text-gray-900 dark:text-white">👤 {visitor.name}</div>
-                        <div className="text-sm text-green-600">✅ Checked in</div>
+                        <div className="font-medium text-gray-900 dark:text-white"><Icon name="User" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{visitor.name}</div>
+                        <div className="text-sm text-green-600"><Icon name="Check" className="w-4 h-4 text-green-600 inline-block mr-1" aria-hidden="true" />Checked in</div>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-200">🕐 {visitor.checkedInAt}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-200"><Icon name="Clock" className="w-4 h-4 inline-block mr-1" aria-hidden="true" />{visitor.checkedInAt}</div>
                     </div>
                   ))}
                 </div>

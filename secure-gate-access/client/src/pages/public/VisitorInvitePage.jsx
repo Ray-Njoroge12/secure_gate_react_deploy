@@ -355,7 +355,7 @@ const VisitorInvitePage = () => {
                     </label>
                   </div>
                   {confirmError && (
-                    <p className="text-red-600 dark:text-red-400 text-sm mt-2">{confirmError}</p>
+                    <p className="text-red-700 dark:text-red-400 text-sm mt-2">{confirmError}</p>
                   )}
                 </div>
 
@@ -486,7 +486,7 @@ const VisitorInvitePage = () => {
                   </label>
                 </div>
                 {confirmError && (
-                  <p className="text-red-600 dark:text-red-400 text-sm mt-2">{confirmError}</p>
+                  <p className="text-red-700 dark:text-red-400 text-sm mt-2">{confirmError}</p>
                 )}
               </div>
 
@@ -550,7 +550,7 @@ const VisitorInvitePage = () => {
                   <p className="text-sm text-red-700 dark:text-red-300 mb-1">
                     This pass was valid until {formatDate(visitor.tokenExpiresAt || visitor.expiresAt || visitor.expires_at)}.
                   </p>
-                  <p className="text-sm text-red-600 dark:text-red-400">
+                  <p className="text-sm text-red-700 dark:text-red-400">
                     Please ask your host to send a new invitation.
                   </p>
                 </div>
