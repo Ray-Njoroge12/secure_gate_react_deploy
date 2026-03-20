@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
 import { useAuth } from '../contexts/AuthContext';
 import logger from '../utils/logger';
+import { getRoleBasedRedirect } from '../utils/navigationFlow';
+import { decodeSession } from '../utils/sessionCrypto';
 import Button from '../components/ui/Button';
 
 /**
@@ -27,15 +29,8 @@ const MFAVerify = () => {
     // Try session storage
     const stored = sessionStorage.getItem('mfa_session');
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Check timestamp expiry (5 mins)
-        if (Date.now() - parsed.timestamp < (parsed.expiresIn || 300) * 1000) {
-          return parsed;
-        }
-      } catch (e) {
-        logger.error('Failed to parse stored MFA session');
-      }
+      const parsed = decodeSession(stored);
+      if (parsed) return parsed;
     }
     return {};
   };
@@ -78,10 +73,7 @@ const MFAVerify = () => {
         if (user) {
           completeMfa(user);
           // Redirect based on role
-          if (user.role === 'admin') navigate('/dashboard/admin');
-          else if (user.role === 'guard') navigate('/dashboard/guard');
-          else if (user.role === 'resident') navigate('/dashboard/resident');
-          else navigate('/dashboard');
+          navigate(getRoleBasedRedirect(user.role));
         } else {
           navigate('/dashboard');
         }

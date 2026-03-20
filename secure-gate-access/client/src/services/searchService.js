@@ -4,6 +4,9 @@
  * advanced filtering, and performance optimization
  */
 
+import api from '../utils/apiClient';
+import logger from '../utils/logger';
+
 class SearchService {
   constructor() {
     this.searchCache = new Map();
@@ -35,7 +38,7 @@ class SearchService {
     this.abortController = new AbortController();
 
     const searchKey = this.generateSearchKey(query, options);
-    
+
     // Check cache first
     if (this.searchCache.has(searchKey)) {
       return this.searchCache.get(searchKey);
@@ -43,31 +46,19 @@ class SearchService {
 
     try {
       const startTime = performance.now();
-      
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({
-          query: query.trim(),
-          dataTypes,
-          filters,
-          sortBy,
-          sortOrder,
-          page,
-          limit,
-          includeHighlights
-        }),
-        signal: this.abortController.signal
-      });
 
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.statusText}`);
-      }
+      const response = await api.post('/api/search', {
+        query: query.trim(),
+        dataTypes,
+        filters,
+        sortBy,
+        sortOrder,
+        page,
+        limit,
+        includeHighlights
+      }, { signal: this.abortController.signal });
 
-      const result = await response.json();
+      const result = response.data;
       const responseTime = performance.now() - startTime;
 
       // Process search results
@@ -89,7 +80,7 @@ class SearchService {
       return processedResult;
 
     } catch (error) {
-      if (error.name === 'AbortError') {
+      if (error.name === 'AbortError' || error.name === 'CanceledError') {
         return null; // Search was cancelled
       }
       throw error;
@@ -101,13 +92,13 @@ class SearchService {
    */
   async getSuggestions(query, options = {}) {
     const { maxSuggestions = 10, dataTypes = ['visitors', 'users'] } = options;
-    
+
     if (!query || query.length < 2) {
       return this.getRecentSearches(maxSuggestions);
     }
 
     const suggestionKey = `${query.toLowerCase()}_${dataTypes.join('_')}`;
-    
+
     // Check cache first
     if (this.suggestionCache.has(suggestionKey)) {
       return this.suggestionCache.get(suggestionKey);
@@ -121,24 +112,13 @@ class SearchService {
 
       this.debounceTimeout = setTimeout(async () => {
         try {
-          const response = await fetch('/api/search/suggestions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-            },
-            body: JSON.stringify({
-              query: query.trim(),
-              dataTypes,
-              maxSuggestions
-            })
+          const response = await api.post('/api/search/suggestions', {
+            query: query.trim(),
+            dataTypes,
+            maxSuggestions
           });
 
-          if (!response.ok) {
-            throw new Error(`Suggestions failed: ${response.statusText}`);
-          }
-
-          const result = await response.json();
+          const result = response.data;
           const suggestions = result.data.suggestions || [];
 
           // Cache suggestions for 2 minutes
@@ -148,7 +128,7 @@ class SearchService {
           resolve(suggestions);
 
         } catch (error) {
-          console.error('Failed to get suggestions:', error);
+          logger.error('Failed to get suggestions:', error);
           resolve([]);
         }
       }, 300); // 300ms debounce
@@ -167,27 +147,16 @@ class SearchService {
    */
   async saveFilterSet(name, filters, description = '') {
     try {
-      const response = await fetch('/api/search/filter-sets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify({
-          name,
-          filters,
-          description
-        })
+      const response = await api.post('/api/search/filter-sets', {
+        name,
+        filters,
+        description
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to save filter set: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return response.data;
 
     } catch (error) {
-      console.error('Failed to save filter set:', error);
+      logger.error('Failed to save filter set:', error);
       throw error;
     }
   }
@@ -197,21 +166,12 @@ class SearchService {
    */
   async getFilterSets() {
     try {
-      const response = await fetch('/api/search/filter-sets', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load filter sets: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const response = await api.get('/api/search/filter-sets');
+      const result = response.data;
       return result.data.filterSets || [];
 
     } catch (error) {
-      console.error('Failed to load filter sets:', error);
+      logger.error('Failed to load filter sets:', error);
       return [];
     }
   }
@@ -221,21 +181,12 @@ class SearchService {
    */
   async getSearchAnalytics(timeRange = '7d') {
     try {
-      const response = await fetch(`/api/search/analytics?timeRange=${timeRange}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get analytics: ${response.statusText}`);
-      }
-
-      const result = await response.json();
+      const response = await api.get(`/api/search/analytics?timeRange=${timeRange}`);
+      const result = response.data;
       return result.data;
 
     } catch (error) {
-      console.error('Failed to get search analytics:', error);
+      logger.error('Failed to get search analytics:', error);
       return null;
     }
   }
@@ -265,7 +216,7 @@ class SearchService {
 
     // Remove if already exists
     this.searchHistory = this.searchHistory.filter(item => item.query !== trimmedQuery);
-    
+
     // Add to beginning
     this.searchHistory.unshift({
       query: trimmedQuery,
@@ -274,7 +225,7 @@ class SearchService {
 
     // Keep only last 50 searches
     this.searchHistory = this.searchHistory.slice(0, 50);
-    
+
     // Save to localStorage
     localStorage.setItem('searchHistory', JSON.stringify(this.searchHistory));
   }
@@ -325,7 +276,7 @@ class SearchService {
       const stored = localStorage.getItem('searchHistory');
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
-      console.error('Failed to load search history:', error);
+      logger.error('Failed to load search history:', error);
       return [];
     }
   }
@@ -431,7 +382,7 @@ class FilterBuilder {
    */
   validate() {
     const errors = [];
-    
+
     if (this.conditions.length === 0) {
       errors.push('At least one condition is required');
     }

@@ -588,6 +588,9 @@ export const getVisitorLogs = async (req, res) => {
  */
 export const getAccessLogs = async (req, res) => {
   try {
+    if (!req.user || !req.user.email) return respondError(res, 401, 'Unauthorized');
+    if (!['admin', 'super_admin'].includes(req.user.role)) return respondError(res, 403, 'Forbidden');
+
     const { type, search, page = 1, limit = 50 } = req.query;
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
@@ -606,7 +609,7 @@ export const getAccessLogs = async (req, res) => {
     if (req.user.estate_id) { query += ` AND u.estate_id = $${paramIndex++}`; params.push(req.user.estate_id); }
     if (type) { query += ` AND a.action = $${paramIndex++}`; params.push(type); }
     if (search) { query += ` AND (u.username ILIKE $${paramIndex} OR a.action ILIKE $${paramIndex})`; params.push(`%${search}%`); paramIndex++; }
-    query += ` ORDER BY a.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
+    query += ` ORDER BY a.log_time DESC NULLS LAST, a.id DESC LIMIT $${paramIndex++} OFFSET $${paramIndex}`;
     params.push(limitNum, offset);
 
     const result = await dbManager.query(query, params);

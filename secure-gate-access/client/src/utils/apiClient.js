@@ -197,7 +197,9 @@ apiClient.interceptors.response.use(
       if (errorCode === 'MFA_SETUP_REQUIRED') {
         logger.warn('🔐 MFA setup required');
         const returnUrl = window.location.pathname;
-        window.location.href = `/mfa/setup?returnUrl=${encodeURIComponent(returnUrl)}`;
+        // Only allow relative paths (no protocol/host) to prevent open redirect
+        const safeReturn = returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/dashboard';
+        window.location.href = `/mfa/setup?returnUrl=${encodeURIComponent(safeReturn)}`;
         return Promise.reject({
           message: error.response.data?.message || 'Multi-Factor Authentication setup required.',
           code: 'MFA_SETUP_REQUIRED'

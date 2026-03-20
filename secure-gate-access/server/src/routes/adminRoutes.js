@@ -389,7 +389,7 @@ router.post('/compliance/review', authenticateToken, requireRolePolicy('adminOnl
  */
 // Audit logs endpoint
 router.get('/audit-logs', authenticateToken, adminQueryLimit(), attachRequestAudit, getAuditLogs);
-router.get('/access-logs', authenticateToken, adminQueryLimit(), attachRequestAudit, getAccessLogs);
+router.get('/access-logs', authenticateToken, requireRole(['admin', 'super_admin']), adminQueryLimit(), attachRequestAudit, getAccessLogs);
 
 // Site management routes
 router.get('/sites', authenticateToken, requireRole(['admin', 'super_admin']), adminQueryLimit(), attachRequestAudit, getSites);

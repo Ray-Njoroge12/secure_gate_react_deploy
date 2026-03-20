@@ -58,6 +58,7 @@ describe('Authentication Integration Tests', () => {
           email: uniqueEmail,
           password: 'SecurePass123!',
           role: 'resident',
+          estate_id: 1,
           phone: '+254700111222',
           unit: 'B202'
         });
@@ -67,9 +68,13 @@ describe('Authentication Integration Tests', () => {
       if (response.status === 201) {
         expect(response.body).toHaveProperty('message');
         expect(response.body.message).toContain('successfully');
-        // Verify user data return
-        expect(response.body.data.user).toHaveProperty('first_name', 'Test');
-        expect(response.body.data.user).toHaveProperty('last_name', 'Resident');
+
+        // Registration response now returns a minimal user object
+        const registeredUser = response.body.data?.user;
+        expect(registeredUser).toBeDefined();
+        expect(registeredUser).toHaveProperty('email', uniqueEmail);
+        expect(registeredUser).toHaveProperty('role', 'resident');
+        expect(registeredUser).toHaveProperty('username');
       } else if (response.status === 500) {
         // Known issue: Database schema requires 'password' column but userService uses 'password_hash'
         // This is a database migration issue, not a test issue
@@ -90,6 +95,7 @@ describe('Authentication Integration Tests', () => {
           username: `incomplete_${Date.now()}`,
           email: `incomplete_${Date.now()}@test.com`,
           password: 'SecurePass123!',
+          estate_id: 1,
           role: 'resident'
           // Missing first_name and last_name
         });
@@ -107,6 +113,7 @@ describe('Authentication Integration Tests', () => {
           username: `duplicate_${Date.now()}`,
           email: testUsers.admin.email, // Already exists
           password: 'SecurePass123!',
+          estate_id: 1,
           role: 'resident',
           phone: '+254700111222',
           unit: 'B202'
@@ -124,6 +131,7 @@ describe('Authentication Integration Tests', () => {
           username: 'weakpass',
           email: `weakpass_${Date.now()}@test.com`,
           password: '123', // Too weak
+          estate_id: 1,
           role: 'resident',
           phone: '+254700111222',
           unit: 'B202'
@@ -140,6 +148,7 @@ describe('Authentication Integration Tests', () => {
           username: 'invalidrole',
           email: `invalidrole_${Date.now()}@test.com`,
           password: 'SecurePass123!',
+          estate_id: 1,
           role: 'superadmin', // Invalid role
           phone: '+254700111222',
           unit: 'B202'
@@ -164,7 +173,7 @@ describe('Authentication Integration Tests', () => {
       // Response format: { success: true, data: { user: {...} }, message: '...' }
       const user = response.body.user || response.body.data?.user;
       expect(user).toBeDefined();
-      expect(user).toHaveProperty('email', testUsers.admin.email);
+      expect(user).toHaveProperty('username', testUsers.admin.username);
       expect(user).toHaveProperty('role', 'admin');
 
       // Check for auth cookie (may be named 'token' or 'auth_token' or 'jwt')

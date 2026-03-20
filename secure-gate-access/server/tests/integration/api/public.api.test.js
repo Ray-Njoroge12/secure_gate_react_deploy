@@ -247,7 +247,7 @@ describe('Public API Integration Tests', () => {
       const visitor = visitorResult.rows[0];
 
       const response = await request(app)
-        .get(`/api/directions/visitor/${visitor.id}/share`);
+        .get(`/api/directions/visitor/${visitor.id}/share?token=${inviteCode}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

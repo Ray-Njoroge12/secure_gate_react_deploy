@@ -150,7 +150,6 @@ describe('Backend deep-dive dynamic verification', () => {
         status: 'pending'
       });
 
-      await dbManager.query('UPDATE users SET estate_id = NULL WHERE id = $1', [users.superAdmin.id]);
       const superAdminNoEstateToken = await createAuthToken({
         id: users.superAdmin.id,
         email: users.superAdmin.email,

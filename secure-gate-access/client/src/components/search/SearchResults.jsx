@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import DOMPurify from 'dompurify';
+import { sanitizeHighlight } from '../../utils/sanitize';
 import './SearchResults.css';
 import Button from '../ui/Button';
 

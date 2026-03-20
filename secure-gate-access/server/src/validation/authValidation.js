@@ -92,9 +92,9 @@ export const registerSchema = Joi.object({
   estate_id: Joi.number()
     .integer()
     .min(1)
-    .optional()
-    .allow(null)
+    .required()
     .messages({
+      'any.required': 'Estate selection is required',
       'number.base': 'Estate ID must be a number',
       'number.min': 'Estate ID must be a positive number'
     })
