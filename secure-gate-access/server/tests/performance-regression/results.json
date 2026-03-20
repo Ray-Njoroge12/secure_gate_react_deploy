@@ -1,0 +1,230 @@
+{
+  "runId": "run_1773982874810",
+  "timestamp": "2026-03-20T05:01:14.810Z",
+  "nodeVersion": "v22.17.0",
+  "platform": "darwin",
+  "results": [
+    {
+      "name": "Simple SELECT",
+      "iterations": 20,
+      "failedIterations": 0,
+      "stats": {
+        "mean": 0.004,
+        "median": 0.002,
+        "min": 0.002,
+        "max": 0.017,
+        "stdDev": 0.003,
+        "p95": 0.01,
+        "p99": 0.017
+      },
+      "memoryStats": {
+        "heapUsed": {
+          "mean": 1474,
+          "median": 1376,
+          "min": 1376,
+          "max": 3176,
+          "stdDev": 391.198,
+          "p95": 1456,
+          "p99": 3176
+        },
+        "heapTotal": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "stdDev": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "rawResults": [
+        0.016542,
+        0.009917,
+        0.003333,
+        0.002167,
+        0.002292,
+        0.002167,
+        0.002292,
+        0.003,
+        0.002708,
+        0.002208,
+        0.002292,
+        0.004417,
+        0.002334,
+        0.002209,
+        0.002291,
+        0.006125,
+        0.002416,
+        0.002416,
+        0.002167,
+        0.002167
+      ],
+      "baseline": {
+        "hasBaseline": true,
+        "regression": true,
+        "regressions": [
+          {
+            "metric": "mean",
+            "baseline": 0.002,
+            "current": 0.004,
+            "percentChange": 100,
+            "severity": "critical"
+          },
+          {
+            "metric": "p95",
+            "baseline": 0.004,
+            "current": 0.01,
+            "percentChange": 150,
+            "severity": "critical"
+          },
+          {
+            "metric": "p99",
+            "baseline": 0.004,
+            "current": 0.017,
+            "percentChange": 325,
+            "severity": "critical"
+          }
+        ],
+        "message": "Performance regression detected in 3 metric(s)"
+      },
+      "timestamp": "2026-03-20T05:01:14.806Z"
+    },
+    {
+      "name": "Complex JOIN",
+      "iterations": 20,
+      "failedIterations": 0,
+      "stats": {
+        "mean": 0.011,
+        "median": 0.003,
+        "min": 0.002,
+        "max": 0.104,
+        "stdDev": 0.024,
+        "p95": 0.044,
+        "p99": 0.104
+      },
+      "memoryStats": {
+        "heapUsed": {
+          "mean": 1468.4,
+          "median": 1296,
+          "min": 1296,
+          "max": 4656,
+          "stdDev": 731.536,
+          "p95": 1384,
+          "p99": 4656
+        },
+        "heapTotal": {
+          "mean": 0,
+          "median": 0,
+          "min": 0,
+          "max": 0,
+          "stdDev": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "rawResults": [
+        0.044041,
+        0.006083,
+        0.003042,
+        0.003333,
+        0.002334,
+        0.002291,
+        0.104125,
+        0.0065,
+        0.00275,
+        0.025708,
+        0.00225,
+        0.003125,
+        0.00275,
+        0.002125,
+        0.002083,
+        0.002166,
+        0.005041,
+        0.002875,
+        0.002208,
+        0.002125
+      ],
+      "baseline": {
+        "hasBaseline": true,
+        "regression": true,
+        "regressions": [
+          {
+            "metric": "mean",
+            "baseline": 0.001,
+            "current": 0.011,
+            "percentChange": 1000,
+            "severity": "critical"
+          },
+          {
+            "metric": "p95",
+            "baseline": 0.003,
+            "current": 0.044,
+            "percentChange": 1366.67,
+            "severity": "critical"
+          },
+          {
+            "metric": "p99",
+            "baseline": 0.003,
+            "current": 0.104,
+            "percentChange": 3366.67,
+            "severity": "critical"
+          }
+        ],
+        "message": "Performance regression detected in 3 metric(s)"
+      },
+      "timestamp": "2026-03-20T05:01:14.807Z"
+    },
+    {
+      "name": "Transaction",
+      "iterations": 0,
+      "failedIterations": 20,
+      "stats": {
+        "mean": 0,
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "stdDev": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "memoryStats": {
+        "heapUsed": {
+          "mean": 0
+        },
+        "heapTotal": {
+          "mean": 0
+        }
+      },
+      "rawResults": [],
+      "baseline": {
+        "hasBaseline": true,
+        "regression": false,
+        "regressions": [],
+        "message": "No performance regression detected"
+      },
+      "timestamp": "2026-03-20T05:01:14.809Z"
+    }
+  ],
+  "history": [
+    {
+      "runId": "run_1773982874810",
+      "timestamp": "2026-03-20T05:01:14.810Z",
+      "summary": {
+        "total": 3,
+        "passed": 1,
+        "regressions": 2,
+        "passRate": 33.33
+      }
+    },
+    {
+      "runId": "run_1773982800410",
+      "timestamp": "2026-03-20T05:00:00.410Z",
+      "summary": {
+        "total": 3,
+        "passed": 3,
+        "regressions": 0,
+        "passRate": 100
+      }
+    }
+  ]
+}

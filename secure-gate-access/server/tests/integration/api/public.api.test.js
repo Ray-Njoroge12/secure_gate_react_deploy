@@ -217,6 +217,12 @@ describe('Public API Integration Tests', () => {
   describe('GET /api/directions/visitor/:visitorId/share', () => {
     it('should generate shareable link using visitor estate_id', async () => {
       const inviteCode = `INVITE_${Date.now()}_SHARE`;
+      await dbManager.query(
+        'UPDATE users SET estate_id = $1 WHERE id = $2',
+        [estate.id, testUsers.resident.id]
+      );
+      testUsers.resident.estate_id = estate.id;
+
       const visitorResult = await dbManager.query(
         `INSERT INTO visitors (
           name,

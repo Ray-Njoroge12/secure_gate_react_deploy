@@ -89,8 +89,8 @@ describe('Resident self-service mounted routes', () => {
     expect(response.body.error.code).toBe('AUTH_FORBIDDEN');
   });
 
-  it('returns 403 ESTATE_NOT_ASSIGNED for super admins without estate context and ignores x-estate-id', async () => {
-    // The token should carry estate_id=null; DB rows keep non-null estate_id due schema constraints.
+  it('returns 401 AUTH_USER_NOT_FOUND for super admin tokens without estate context', async () => {
+    // Auth middleware now binds token estate_id to user lookup before estate-context middleware.
     const noEstateToken = await signAccessToken(testUsers.superAdmin, null);
 
     const response = await request(app)
@@ -98,9 +98,9 @@ describe('Resident self-service mounted routes', () => {
       .set('Authorization', `Bearer ${noEstateToken}`)
       .set('x-estate-id', '1');
 
-    expect(response.status).toBe(403);
-    expect(response.body.error.code).toBe('ESTATE_NOT_ASSIGNED');
-    expect(response.body.message).toContain('not associated with any estate');
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('AUTH_USER_NOT_FOUND');
+    expect(response.body.message).toContain('User not found');
   });
 
   it.each([
@@ -135,14 +135,14 @@ describe('Resident self-service mounted routes', () => {
       .send({ phone: '+254799999999', area: 'North Gate', unit_number: 'B202' });
 
     const updatedUser = await dbManager.query('SELECT phone, area, house FROM users WHERE id = $1', [testUsers.resident.id]);
-    const auditRow = await waitForAudit('data.update', '/profile');
+    const auditRow = await waitForAudit('data_change', '/api/resident/profile');
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
     expect(response.body.message).toBe('Profile updated successfully');
     expect(response.body.data).toEqual(expect.objectContaining({ phone: '+254799999999', area: 'North Gate', unit_number: 'B202' }));
     expect(updatedUser.rows[0]).toEqual({ phone: '+254799999999', area: 'North Gate', house: 'B202' });
-    expect(auditRow).toEqual(expect.objectContaining({ action: 'data.update', resource: '/profile' }));
+    expect(auditRow).toEqual(expect.objectContaining({ action: 'data_change', resource: '/api/resident/profile' }));
   });
 
   it('validates favorites creation when no visitor id or contact path is usable', async () => {

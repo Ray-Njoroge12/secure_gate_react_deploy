@@ -175,7 +175,7 @@ export const getResidentStats = async (req, res) => {
             [userEmail, req.user.estate_id]
         ),
         dbManager.query(
-            "SELECT COUNT(*) as count FROM visitors WHERE created_by = $1 AND status = 'pending' AND estate_id = $2",
+            "SELECT COUNT(*) as count FROM visitors WHERE created_by = $1 AND LOWER(status) = 'pending' AND estate_id = $2",
             [userEmail, req.user.estate_id]
         ),
         dbManager.query(
