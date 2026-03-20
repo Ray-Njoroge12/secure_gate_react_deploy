@@ -8,7 +8,7 @@ export const NAVIGATION_FLOWS = {
     entry: '/dashboard/resident',
     flows: {
       'invite-creation': [
-        '/resident/generate-pass',
+        '/resident/quick-invite',
         '/resident/visitor-history'
       ],
       'bulk-invite': [
@@ -329,7 +329,6 @@ function formatBreadcrumbLabel(segment) {
     'bulk-checkout': 'Bulk Checkout',
 
     // Resident routes
-    'generate-pass': 'Generate Pass',
     'quick-invite': 'Quick Invite',
     'visitor-history': 'Visitor History',
     'bulk-invite': 'Bulk Invite',

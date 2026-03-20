@@ -53,8 +53,8 @@ const FAB = ({
       },
       { 
         iconName: 'qr-code',
-        label: 'Generate Pass', 
-        onClick: () => navigate('/resident/generate-pass'),
+        label: 'Quick Invite', 
+        onClick: () => navigate('/resident/quick-invite'),
         color: 'primary'
       }
     ],

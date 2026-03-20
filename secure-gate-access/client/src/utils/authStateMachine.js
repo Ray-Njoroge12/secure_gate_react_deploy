@@ -3,6 +3,7 @@ export const AUTH_STATES = Object.freeze({
   AUTHENTICATED: 'authenticated',
   UNAUTHENTICATED: 'unauthenticated',
   REFRESHING: 'refreshing',
+  MFA_PENDING: 'mfa_pending',
   ESTATE_REQUIRED: 'estate_required'
 });
 
@@ -58,6 +59,13 @@ export const authStateMachine = {
         currentState = {
           status: AUTH_STATES.UNAUTHENTICATED,
           reason: payload.reason || 'refresh_failed',
+          updatedAt: Date.now()
+        };
+        break;
+      case 'MFA_REQUIRED':
+        currentState = {
+          status: AUTH_STATES.MFA_PENDING,
+          reason: payload.reason || null,
           updatedAt: Date.now()
         };
         break;
