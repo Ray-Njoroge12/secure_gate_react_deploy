@@ -78,15 +78,6 @@ export default function LoginPage() {
           }
         }
       }
-      // Escape to clear errors
-      if (e.key === 'Escape') {
-        clearAllErrors();
-        setEmailError("");
-        setPasswordError("");
-        setAuthError("");
-        setForgotPasswordError("");
-        setRateLimitSeconds(0);
-      }
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -308,7 +299,7 @@ export default function LoginPage() {
           autoComplete="current-password"
         />
         {authError && (
-          <div role="alert" className={INLINE_ERROR_ALERT_CLASS}>
+          <div id="auth-error" role="alert" className={INLINE_ERROR_ALERT_CLASS}>
             <p>{authError}</p>
             {rateLimitSeconds > 0 && (
               <p className="mt-1 text-xs font-medium">Try again in {rateLimitSeconds}s.</p>

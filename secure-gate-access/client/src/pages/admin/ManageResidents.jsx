@@ -416,6 +416,56 @@ export default function ManageResidents({ estateId }) {
     [estateId]
   );
 
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const toggleSelectResident = (id) => {
+    setSelectedUsers(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllResidents = () => {
+    if (selectedUsers.length === filteredUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(filteredUsers.map(r => r.id));
+    }
+  };
+
+  const handleBulkResidentAction = async (action) => {
+    const count = selectedUsers.length;
+    const actionLabel = action === 'delete' ? 'remove' : action;
+    const confirmed = window.confirm(`${actionLabel.charAt(0).toUpperCase() + actionLabel.slice(1)} ${count} resident${count > 1 ? 's' : ''}?`);
+    if (!confirmed) return;
+
+    setBulkLoading(true);
+    let successes = 0;
+    let failures = 0;
+
+    for (const id of selectedUsers) {
+      try {
+        if (action === 'delete') {
+          await deleteResident(id);
+        } else {
+          await updateResident(id, { status: action === 'activate' ? 'active' : 'inactive' });
+        }
+        successes++;
+      } catch {
+        failures++;
+      }
+    }
+
+    setBulkLoading(false);
+    setSelectedUsers([]);
+
+    if (failures === 0) {
+      toast?.success(`${successes} resident${successes > 1 ? 's' : ''} ${actionLabel}d successfully.`);
+    } else {
+      toast?.error(`${successes} succeeded, ${failures} failed.`);
+    }
+    loadResidents();
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -717,6 +767,18 @@ export default function ManageResidents({ estateId }) {
         </Card>
       )}
 
+      {/* Bulk Action Bar */}
+      {selectedUsers.length > 0 && (
+        <div className="flex items-center gap-3 p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-700 rounded-lg">
+          <span className="text-sm font-medium text-brand-700 dark:text-brand-300">{selectedUsers.length} selected</span>
+          <Button variant="ghost" size="sm" onClick={() => handleBulkResidentAction('activate')} disabled={bulkLoading}>Activate</Button>
+          <Button variant="ghost" size="sm" onClick={() => handleBulkResidentAction('deactivate')} disabled={bulkLoading}>Deactivate</Button>
+          <Button variant="danger" size="sm" onClick={() => handleBulkResidentAction('delete')} disabled={bulkLoading}>Delete</Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedUsers([])}>Clear</Button>
+          {bulkLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-600" />}
+        </div>
+      )}
+
       {/* Desktop Table */}
       {!loading && !error && filteredUsers.length > 0 && (
         <>
@@ -726,6 +788,15 @@ export default function ManageResidents({ estateId }) {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
                     <tr>
+                      <th className="px-3 py-3 w-10">
+                        <input
+                          type="checkbox"
+                          checked={filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length}
+                          onChange={toggleSelectAllResidents}
+                          className="rounded border-gray-300 dark:border-slate-500"
+                          aria-label="Select all residents"
+                        />
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         Resident
                       </th>
@@ -745,7 +816,16 @@ export default function ManageResidents({ estateId }) {
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                     {filteredUsers.map((resident) => (
-                      <tr key={resident.id} className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                      <tr key={resident.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${selectedUsers.includes(resident.id) ? 'bg-brand-50 dark:bg-brand-900/10' : ''}`}>
+                        <td className="px-3 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.includes(resident.id)}
+                            onChange={() => toggleSelectResident(resident.id)}
+                            className="rounded border-gray-300 dark:border-slate-500"
+                            aria-label={`Select ${resident.username || 'resident'}`}
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center">

@@ -26,6 +26,21 @@ const ResidentApprovalsPanel = () => {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [, setTick] = useState(0); // Force re-render for relative time updates
+
+  // Re-render every 15 seconds to keep relative timestamps fresh
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const URGENT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+  const isUrgent = (timestamp) => {
+    if (!timestamp) return false;
+    return (Date.now() - new Date(timestamp).getTime()) > URGENT_THRESHOLD_MS;
+  };
+
   const { addEventListener } = useWebSocket({
     enabled: !!user,
     autoConnect: true,
@@ -152,16 +167,18 @@ const ResidentApprovalsPanel = () => {
     }
   };
 
-  // Format time ago
+  // Format time ago with descriptive text
   const timeAgo = (timestamp) => {
     const now = new Date();
     const time = new Date(timestamp);
     const diff = Math.floor((now - time) / 1000); // seconds
 
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
+    if (diff < 60) return 'Just now';
+    if (diff < 120) return '1 minute ago';
+    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+    if (diff < 7200) return '1 hour ago';
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    return `${Math.floor(diff / 86400)} days ago`;
   };
 
   if (loading) {
@@ -210,24 +227,35 @@ const ResidentApprovalsPanel = () => {
         <div className="space-y-4">
           {pendingApprovals.map((approval) => {
             const isProcessing = processingIds.has(approval.id);
-            
+            const urgent = isUrgent(approval.approval_requested_at);
+
             return (
               <Card
                 key={approval.id}
-                className="border-2 border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/50 transition-all"
+                className={`border-2 transition-all ${
+                  urgent
+                    ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/10 hover:border-amber-600 shadow-amber-100'
+                    : 'border-yellow-500/30 bg-yellow-500/5 hover:border-yellow-500/50'
+                }`}
               >
                 <Card.Content className="p-6">
                   <div className="flex items-start justify-between gap-4">
                     {/* Visitor Info */}
                     <div className="flex-1 space-y-3">
-                      {/* Name & Time */}
-                      <div className="flex items-center gap-3">
+                      {/* Name & Time & Urgency */}
+                      <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="text-xl font-bold text-gray-900 dark:text-slate-200">
                           {approval.name || 'Unknown Visitor'}
                         </h3>
+                        {urgent && (
+                          <Badge variant="danger" className="flex items-center gap-1 animate-pulse">
+                            <Icon name="AlertTriangle" className="w-3 h-3" />
+                            Urgent
+                          </Badge>
+                        )}
                         <Badge variant="warning" className="flex items-center gap-1">
                           <Icon name="Clock" className="w-3 h-3" />
-                          {timeAgo(approval.approval_requested_at)}
+                          Requested {timeAgo(approval.approval_requested_at)}
                         </Badge>
                       </div>
 

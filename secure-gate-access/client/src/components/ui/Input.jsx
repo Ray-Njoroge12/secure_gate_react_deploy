@@ -92,7 +92,7 @@ const Input = memo(({
       </div>
       
       {error && (
-        <p id={`${id}-error`} className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p id={`${id}-error`} className="text-sm text-red-700 dark:text-red-400" role="alert">
           {error}
         </p>
       )}

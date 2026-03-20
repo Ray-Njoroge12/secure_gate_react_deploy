@@ -600,7 +600,7 @@ Redirecting to login in 10 seconds...`, {
                 >{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}</Button>
               </div>
               {otpError && (
-                <div id="otp-error" className="text-red-600 text-sm mt-2" aria-live="polite">
+                <div id="otp-error" className="text-red-700 text-sm mt-2" aria-live="polite">
                   {otpError}
                 </div>
               )}
@@ -626,7 +626,7 @@ Redirecting to login in 10 seconds...`, {
                   disabled={loading}
                   required
                 />
-                {errors.name && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.name}</p>}
               </div>
 
               <div>
@@ -641,7 +641,7 @@ Redirecting to login in 10 seconds...`, {
                   disabled={loading}
                   required
                 />
-                {errors.visitorPhone && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.visitorPhone}</p>}
+                {errors.visitorPhone && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.visitorPhone}</p>}
               </div>
             </div>
 
@@ -657,7 +657,7 @@ Redirecting to login in 10 seconds...`, {
                 disabled={loading}
                 required
               />
-              {errors.visitorEmail && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.visitorEmail}</p>}
+              {errors.visitorEmail && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.visitorEmail}</p>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -705,7 +705,7 @@ Redirecting to login in 10 seconds...`, {
                 <option value="Maintenance">Maintenance</option>
                 <option value="Other">Other</option>
               </select>
-              {errors.purpose && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.purpose}</p>}
+              {errors.purpose && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.purpose}</p>}
             </div>
 
             {/* Privacy Policy and Terms Agreement */}
@@ -777,7 +777,7 @@ Redirecting to login in 10 seconds...`, {
             className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
-          {errors.username && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.username}</p>}
+          {errors.username && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.username}</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -794,7 +794,7 @@ Redirecting to login in 10 seconds...`, {
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
-            {errors.first_name && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.first_name}</p>}
+            {errors.first_name && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.first_name}</p>}
           </div>
 
           <div>
@@ -810,7 +810,7 @@ Redirecting to login in 10 seconds...`, {
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
-            {errors.last_name && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.last_name}</p>}
+            {errors.last_name && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.last_name}</p>}
           </div>
         </div>
 
@@ -827,7 +827,7 @@ Redirecting to login in 10 seconds...`, {
             className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
-          {errors.email && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.email}</p>}
+          {errors.email && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.email}</p>}
         </div>
 
         {/* Role selection removed for public registration - defaults to Resident */
@@ -870,7 +870,7 @@ Redirecting to login in 10 seconds...`, {
             ))}
           </select>
           {errors.estateId && (
-            <p id="estate-error" className="text-red-600 dark:text-red-400 text-sm mt-1 flex items-center" role="alert">
+            <p id="estate-error" className="text-red-700 dark:text-red-400 text-sm mt-1 flex items-center" role="alert">
               <svg className="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -912,7 +912,7 @@ Redirecting to login in 10 seconds...`, {
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               required
             />
-            {errors.houseNumber && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.houseNumber}</p>}
+            {errors.houseNumber && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.houseNumber}</p>}
           </div>
         )}
 
@@ -929,7 +929,7 @@ Redirecting to login in 10 seconds...`, {
             className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md shadow-sm placeholder-gray-400 text-gray-900 dark:text-gray-100 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
             required
           />
-          {errors.phone && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.phone}</p>}
+          {errors.phone && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.phone}</p>}
         </div>
 
         <div>
@@ -967,7 +967,7 @@ Redirecting to login in 10 seconds...`, {
             </Button>
           </div>
           <PasswordRequirements password={formData.password} />
-          {errors.password && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.password}</p>}
+          {errors.password && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.password}</p>}
         </div>
 
         <div>
@@ -1025,7 +1025,7 @@ Redirecting to login in 10 seconds...`, {
             </div>
           </div>
           {formData.confirmPassword && formData.password && formData.confirmPassword !== formData.password && (
-            <p className="text-red-600 dark:text-red-400 text-sm mt-1 flex items-center">
+            <p className="text-red-700 dark:text-red-400 text-sm mt-1 flex items-center">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -1040,7 +1040,7 @@ Redirecting to login in 10 seconds...`, {
               Passwords match
             </p>
           )}
-          {errors.confirmPassword && <p className="text-red-600 dark:text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
+          {errors.confirmPassword && <p className="text-red-700 dark:text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
         </div>
 
         {/* Privacy Policy and Terms Agreement */}

@@ -132,7 +132,7 @@ const PreferencePanel = () => {
         </h2>
         {error && (
           <div className="flex items-center space-x-2">
-            <span className="text-red-600 text-sm">{error}</span>
+            <span className="text-red-700 text-sm">{error}</span>
             <Button
               onClick={clearError}
               className="text-red-600 hover:text-red-800"

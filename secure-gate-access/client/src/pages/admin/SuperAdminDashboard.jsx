@@ -54,10 +54,6 @@ export default function SuperAdminDashboard() {
     // MFA Status Badge
     const [mfaBadge, setMfaBadge] = useState({ enabled: null, required: false });
 
-    // Error messaging
-    const [mfaGateMessage, setMfaGateMessage] = useState(null);
-    const [errorMessage, setErrorMessage] = useState(null);
-
     const showApiErrorToast = useCallback((title, message) => {
         notificationService.error(title, message);
     }, []);
