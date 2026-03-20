@@ -257,13 +257,29 @@ const PWAManager = ({ children }) => {
       // Show update available banner
       const updateBanner = document.createElement('div');
       updateBanner.className = 'pwa-update-banner';
-      updateBanner.innerHTML = `
-        <div class="pwa-banner-content">
-          <span>New version available!</span>
-          <button type="button" class="pwa-btn pwa-btn-primary" onclick="window.location.reload()">Update</button>
-          <button type="button" class="pwa-btn pwa-btn-secondary" onclick="this.parentElement.parentElement.remove()">×</button>
-        </div>
-      `;
+
+      const content = document.createElement('div');
+      content.className = 'pwa-banner-content';
+
+      const message = document.createElement('span');
+      message.textContent = 'New version available!';
+
+      const updateBtn = document.createElement('button');
+      updateBtn.type = 'button';
+      updateBtn.className = 'pwa-btn pwa-btn-primary';
+      updateBtn.textContent = 'Update';
+      updateBtn.addEventListener('click', () => window.location.reload());
+
+      const dismissBtn = document.createElement('button');
+      dismissBtn.type = 'button';
+      dismissBtn.className = 'pwa-btn pwa-btn-secondary';
+      dismissBtn.textContent = '×';
+      dismissBtn.addEventListener('click', () => updateBanner.remove());
+
+      content.appendChild(message);
+      content.appendChild(updateBtn);
+      content.appendChild(dismissBtn);
+      updateBanner.appendChild(content);
       document.body.appendChild(updateBanner);
     }
   };

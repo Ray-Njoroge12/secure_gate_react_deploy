@@ -20,6 +20,8 @@ const apiClient = axios.create({
 });
 
 let refreshPromise = null;
+let refreshFailureCount = 0;
+const MAX_REFRESH_FAILURES = 3;
 
 const waitForOnline = () => {
   if (navigator.onLine !== false) {
@@ -143,7 +145,7 @@ apiClient.interceptors.response.use(
     // Handle 401 - Unauthorized
     if (error.response.status === 401) {
       const isAuthEndpoint = originalRequest?.url?.includes('/api/auth/');
-      if (!isAuthEndpoint && !originalRequest._retry) {
+      if (!isAuthEndpoint && !originalRequest._retry && refreshFailureCount < MAX_REFRESH_FAILURES) {
         originalRequest._retry = true;
         try {
           if (!refreshPromise) {
@@ -152,10 +154,12 @@ apiClient.interceptors.response.use(
           }
           await refreshPromise;
           refreshPromise = null;
+          refreshFailureCount = 0;
           authStateMachine.transition('REFRESH_SUCCESS');
           return apiClient(originalRequest);
         } catch (refreshError) {
           refreshPromise = null;
+          refreshFailureCount++;
           logger.warn('🔒 Token refresh failed', refreshError);
           authStateMachine.transition('REFRESH_FAILURE', { reason: 'refresh_failed' });
         }
@@ -165,20 +169,18 @@ apiClient.interceptors.response.use(
       // No need to clear localStorage tokens
       // Don't redirect if already on login page OR if this was an auth check (e.g. /api/auth/me)
       if (!isAuthEndpoint && !window.location.pathname.includes('/login')) {
-        // Dispatch event so React tree can show toast before redirect
+        authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
         window.dispatchEvent(new CustomEvent('session-expired', {
-          detail: { message: 'Your session has expired. Please log in again.' }
+          detail: {
+            status: 401,
+            code: 'UNAUTHORIZED',
+            message: 'Your session has expired. Please log in again.'
+          }
         }));
         navigateToLogin();
+      } else {
+        authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
       }
-      authStateMachine.transition('UNAUTHENTICATED', { reason: 'unauthorized' });
-      window.dispatchEvent(new CustomEvent('session-expired', {
-        detail: {
-          status: 401,
-          code: 'UNAUTHORIZED',
-          message: 'Your session has expired. Please log in again.'
-        }
-      }));
 
       return Promise.reject({
         message: 'Your session has expired. Please log in again.',

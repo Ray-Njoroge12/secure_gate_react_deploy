@@ -2,6 +2,7 @@ import { createContext, useState, useEffect, useContext } from "react";
 import logger from 'utils/logger';
 import { authStateMachine, AUTH_STATES } from '../utils/authStateMachine';
 import api from '../utils/apiClient.js';
+import { disconnectAllSockets } from '../hooks/useWebSocket';
 
 export const AuthContext = createContext();
 
@@ -104,6 +105,8 @@ export const AuthProvider = ({ children }) => {
     // Optimistic update: Clear state immediately for instant UI feedback
     setUser(null);
     authStateMachine.transition('UNAUTHENTICATED', { reason: 'logout' });
+    sessionStorage.removeItem('mfa_session');
+    disconnectAllSockets();
 
     try {
       // Call logout endpoint to clear httpOnly cookies and server session in background
