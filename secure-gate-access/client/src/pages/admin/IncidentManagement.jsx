@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   getIncidents,
   getIncidentStats,
@@ -30,6 +30,27 @@ export default function IncidentManagement({ estateId }) {
   const [assignDropdownOpen, setAssignDropdownOpen] = useState(null); // incident id or null
   const [assignSearch, setAssignSearch] = useState('');
   const assignDropdownRef = useRef(null);
+
+  // Search
+  const [incidentSearch, setIncidentSearch] = useState('');
+  const [debouncedIncidentSearch, setDebouncedIncidentSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedIncidentSearch(incidentSearch), 300);
+    return () => clearTimeout(timer);
+  }, [incidentSearch]);
+
+  const filteredIncidents = useMemo(() => {
+    if (!debouncedIncidentSearch.trim()) return incidents;
+    const q = debouncedIncidentSearch.toLowerCase();
+    return incidents.filter(inc =>
+      (inc.type || '').toLowerCase().includes(q) ||
+      (inc.reported_by_name || '').toLowerCase().includes(q) ||
+      (inc.description || '').toLowerCase().includes(q) ||
+      (inc.notes || '').toLowerCase().includes(q) ||
+      (inc.location || '').toLowerCase().includes(q)
+    );
+  }, [incidents, debouncedIncidentSearch]);
 
   // Confirmation Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -285,11 +306,31 @@ export default function IncidentManagement({ estateId }) {
         ))}
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <input
+          type="search"
+          placeholder="Search incidents by type, reporter, description..."
+          value={incidentSearch}
+          onChange={(e) => setIncidentSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+        />
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      </div>
+      {debouncedIncidentSearch && (
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Showing {filteredIncidents.length} of {incidents.length} incidents
+          {filteredIncidents.length === 0 && (
+            <button onClick={() => setIncidentSearch('')} className="ml-2 text-brand-600 hover:underline">Clear search</button>
+          )}
+        </p>
+      )}
+
       {/* Table */}
       <Card className="overflow-hidden">
         <Table
           headers={headers}
-          rows={incidents.map(i => ({
+          rows={filteredIncidents.map(i => ({
             ...i,
             status: getStatusBadge(i.status),
             priority: getPriorityBadge(i.priority),

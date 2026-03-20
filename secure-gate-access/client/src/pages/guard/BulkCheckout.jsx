@@ -327,7 +327,7 @@ export default function BulkCheckout() {
               </Button>
             </div>
             {checkoutResults.errors.length > 0 && (
-              <div className="mt-3 text-sm text-red-600 dark:text-red-400">
+              <div className="mt-3 text-sm text-red-700 dark:text-red-400">
                 <p className="font-medium">Errors:</p>
                 <ul className="list-disc list-inside">
                   {checkoutResults.errors.slice(0, 3).map((err, i) => (

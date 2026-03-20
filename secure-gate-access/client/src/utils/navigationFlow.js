@@ -8,7 +8,7 @@ export const NAVIGATION_FLOWS = {
     entry: '/dashboard/resident',
     flows: {
       'invite-creation': [
-        '/resident/generate-pass',
+        '/resident/quick-invite',
         '/resident/visitor-history'
       ],
       'bulk-invite': [
@@ -285,17 +285,20 @@ export function generateBreadcrumbs(currentPath, userRole) {
   // Start with role-based home
   const roleEntry = NAVIGATION_FLOWS[userRole]?.entry || '/dashboard';
   breadcrumbs.push({
-    label: 'Home',
+    label: 'Dashboard',
     path: roleEntry,
     isCurrent: currentPath === roleEntry
   });
 
-  // Build breadcrumb path
+  // Skip intermediate segments that are part of the role prefix
+  // e.g., /dashboard/guard/shift-handover → skip "dashboard" and "guard"
+  const skipSegments = new Set(['dashboard', 'guard', 'admin', 'resident', 'super_admin', 'super-admin']);
+
   let currentPathBuild = '';
   pathSegments.forEach((segment, index) => {
     currentPathBuild += `/${segment}`;
 
-    if (currentPathBuild !== roleEntry) {
+    if (currentPathBuild !== roleEntry && !skipSegments.has(segment)) {
       const label = formatBreadcrumbLabel(segment);
       breadcrumbs.push({
         label,
@@ -316,15 +319,45 @@ function formatBreadcrumbLabel(segment) {
     'guard': 'Guard',
     'admin': 'Admin',
 
-    'generate-pass': 'Generate Pass',
-    'visitor-history': 'History',
-    'bulk-invite': 'Bulk Invite',
+    // Guard routes
+    'shift-handover': 'Shift Handover',
+    'walk-in': 'Walk-In Registration',
+    'incidents': 'Incidents',
     'scan-qr': 'Scan QR',
     'manual-check': 'Manual Check',
+    'active-visitors': 'Active Visitors',
+    'bulk-checkout': 'Bulk Checkout',
+
+    // Resident routes
+    'quick-invite': 'Quick Invite',
+    'visitor-history': 'Visitor History',
+    'bulk-invite': 'Bulk Invite',
+    'bulk-invite-wizard': 'Bulk Invite',
+    'favorite-visitors': 'Favorite Visitors',
+    'recurring-passes': 'Recurring Passes',
+    'deliveries': 'Deliveries',
+
+    // Admin routes
+    'manage-guards': 'Manage Guards',
+    'manage-residents': 'Manage Residents',
+    'incident-management': 'Incident Management',
+    'audit-logs': 'Audit Logs',
+    'watchlist': 'Watchlist',
+    'policies': 'Policies',
+    'integrations': 'Integrations Hub',
+    'access-control': 'Access Control',
+    'roles': 'Roles',
+    'sites': 'Sites',
+    'operations': 'Operations',
+    'activity-log': 'Activity Log',
+    'pending-approvals': 'Pending Approvals',
+
+    // Shared routes
     'settings': 'Settings',
     'reports': 'Reports',
     'users': 'Users',
-    'pages': 'Pages'
+    'pages': 'Pages',
+    'help': 'Help'
   };
 
   return labelMap[segment] || segment.split('-').map(word =>

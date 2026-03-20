@@ -70,7 +70,7 @@ export function isValidCSRFToken(token) {
   
   // Basic validation - token should be alphanumeric and certain length
   // Adjust regex based on your backend token format
-  const tokenRegex = /^[a-zA-Z0-9\-_]{20,}$/;
+  const tokenRegex = /^[a-zA-Z0-9\-_]{20,128}$/;
   return tokenRegex.test(token);
 }
 

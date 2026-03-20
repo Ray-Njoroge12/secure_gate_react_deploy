@@ -104,8 +104,11 @@
         "lines": 70
       }
     },
+    "moduleNameMapper": {
+      "^dompurify$": "<rootDir>/node_modules/dompurify/dist/purify.cjs.js"
+    },
     "transformIgnorePatterns": [
-      "node_modules/(?!(axios|fast-check|uuid)/)"
+      "node_modules/(?!(axios|fast-check|uuid|libphonenumber-js)/)"
     ]
   },
   "devDependencies": {

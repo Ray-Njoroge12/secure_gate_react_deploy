@@ -20,7 +20,7 @@ export default function AuditLogs() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', action: 'all' });
+  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', action: 'all', userEmail: '' });
   const perPage = 20;
 
   const fetchLogs = useCallback(async () => {
@@ -30,6 +30,7 @@ export default function AuditLogs() {
       if (filters.dateFrom) params.date_from = filters.dateFrom;
       if (filters.dateTo) params.date_to = filters.dateTo;
       if (filters.action !== 'all') params.action = filters.action;
+      if (filters.userEmail) params.user_email = filters.userEmail;
       const res = await getAuditLogs(params);
       const data = res?.data || res || {};
       setLogs(Array.isArray(data.logs) ? data.logs : []);
@@ -102,6 +103,17 @@ export default function AuditLogs() {
             >
               {ACTION_TYPES.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
+          </div>
+          <div>
+            <label htmlFor="email-filter" className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">User Email</label>
+            <input
+              id="email-filter"
+              type="text"
+              placeholder="Filter by email..."
+              value={filters.userEmail}
+              onChange={e => { setFilters(f => ({ ...f, userEmail: e.target.value })); setPage(1); }}
+              className="border rounded px-2 py-1 dark:bg-slate-800 dark:border-slate-600"
+            />
           </div>
         </div>
 
