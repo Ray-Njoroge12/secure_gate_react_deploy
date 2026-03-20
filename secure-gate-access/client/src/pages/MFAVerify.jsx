@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/apiClient';
+import { useAuth } from '../contexts/AuthContext';
 import logger from '../utils/logger';
 import Button from '../components/ui/Button';
 
@@ -11,6 +12,7 @@ import Button from '../components/ui/Button';
 const MFAVerify = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { completeMfa } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
@@ -74,6 +76,7 @@ const MFAVerify = () => {
         // Get user info from response
         const user = response.data.data?.user;
         if (user) {
+          completeMfa(user);
           // Redirect based on role
           if (user.role === 'admin') navigate('/dashboard/admin');
           else if (user.role === 'guard') navigate('/dashboard/guard');

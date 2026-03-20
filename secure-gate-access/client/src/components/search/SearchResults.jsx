@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import DOMPurify from 'dompurify';
 import './SearchResults.css';
 import Button from '../ui/Button';
 
@@ -236,7 +237,7 @@ const SearchResults = ({
                       {result.highlights.map((highlight, idx) => (
                         <div key={idx} className="result-highlight-item">
                           <strong>{highlight.field}:</strong> 
-                          <span dangerouslySetInnerHTML={{ __html: highlight.text }} />
+                          <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(highlight.text) }} />
                         </div>
                       ))}
                     </div>
