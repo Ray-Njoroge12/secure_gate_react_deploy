@@ -1,14 +1,30 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { jest } from '@jest/globals';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ApprovalWorkflows from '../../../components/collaboration/ApprovalWorkflows';
 import * as collaborationService from '../../../services/collaborationService';
 
-// Mock the collaboration service
-jest.mock('../../../services/collaborationService');
+// Mock the collaboration service — expose methods both as direct exports (for test access via * as)
+// and on the collaborationService named export (for component access via { collaborationService })
+jest.mock('../../../services/collaborationService', () => {
+  const mockMethods = {
+    getApprovalWorkflows: jest.fn(),
+    createApprovalWorkflow: jest.fn(),
+    approveWorkflowStep: jest.fn(),
+    rejectWorkflowStep: jest.fn(),
+    processApprovalStep: jest.fn(),
+    getUsers: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    ...mockMethods,
+    collaborationService: mockMethods,
+    default: mockMethods,
+  };
+});
 
-// Mock user context
+// Mock auth context
 const mockUser = {
   id: 1,
   role: 'admin',
@@ -16,9 +32,23 @@ const mockUser = {
   username: 'admin_user'
 };
 
-jest.mock('../../../contexts/UserContext', () => ({
-  useUser: () => ({ user: mockUser })
+jest.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: mockUser })
 }));
+
+jest.mock('../../../contexts/NotificationContext', () => ({
+  useNotification: () => ({ showNotification: jest.fn() })
+}));
+
+// Wrapper providing react-query context for components using useQuery/useMutation
+const renderWithProviders = (ui) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  );
+};
 
 describe('ApprovalWorkflows', () => {
   const mockWorkflows = [
@@ -123,7 +153,7 @@ describe('ApprovalWorkflows', () => {
 
   describe('Component Rendering', () => {
     test('should render approval workflows with pending and completed sections', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       // Check for main sections
       expect(screen.getByText('Approval Workflows')).toBeInTheDocument();
@@ -137,7 +167,7 @@ describe('ApprovalWorkflows', () => {
     });
 
     test('should display workflow list with correct information', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         // Check workflow names
@@ -155,7 +185,7 @@ describe('ApprovalWorkflows', () => {
     });
 
     test('should show approval steps with progress indicators', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         // Check step names
@@ -171,7 +201,7 @@ describe('ApprovalWorkflows', () => {
     test('should allow creating a new approval workflow', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       // Wait for component to load
       await waitFor(() => {
@@ -211,7 +241,7 @@ describe('ApprovalWorkflows', () => {
     test('should validate required fields before creating workflow', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByText('Create Workflow')).toBeInTheDocument();
@@ -236,7 +266,7 @@ describe('ApprovalWorkflows', () => {
     test('should allow configuring approval steps', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByText('Add Approval Step')).toBeInTheDocument();
@@ -267,7 +297,7 @@ describe('ApprovalWorkflows', () => {
     test('should allow approving a workflow step', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByTestId('approve-step-1-0')).toBeInTheDocument();
@@ -303,7 +333,7 @@ describe('ApprovalWorkflows', () => {
     test('should allow rejecting a workflow step', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByTestId('reject-step-1-0')).toBeInTheDocument();
@@ -339,7 +369,7 @@ describe('ApprovalWorkflows', () => {
     test('should show workflow details in expandable view', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByTestId('expand-workflow-1')).toBeInTheDocument();
@@ -360,7 +390,7 @@ describe('ApprovalWorkflows', () => {
 
   describe('Status Tracking', () => {
     test('should display workflow progress correctly', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         // Check progress indicators
@@ -385,7 +415,7 @@ describe('ApprovalWorkflows', () => {
         data: { workflows: [expiringWorkflow], pagination: { total: 1, page: 1, pages: 1 } }
       });
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByText('Expires Soon')).toBeInTheDocument();
@@ -405,7 +435,7 @@ describe('ApprovalWorkflows', () => {
         data: { workflows: [expiredWorkflow], pagination: { total: 1, page: 1, pages: 1 } }
       });
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByText('Expired')).toBeInTheDocument();
@@ -417,7 +447,7 @@ describe('ApprovalWorkflows', () => {
     test('should filter workflows by status', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByLabelText('Filter by Status')).toBeInTheDocument();
@@ -440,7 +470,7 @@ describe('ApprovalWorkflows', () => {
     test('should filter workflows by type', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByLabelText('Filter by Type')).toBeInTheDocument();
@@ -463,7 +493,7 @@ describe('ApprovalWorkflows', () => {
     test('should search workflows by name or description', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Search workflows...')).toBeInTheDocument();
@@ -486,7 +516,7 @@ describe('ApprovalWorkflows', () => {
 
   describe('Role-Based Access', () => {
     test('should show appropriate actions based on user role and step requirements', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         // Admin should see create workflow form
@@ -499,7 +529,7 @@ describe('ApprovalWorkflows', () => {
     });
 
     test('should disable actions for steps not assigned to current user role', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         // Guard step should be disabled for admin user (if not cross-role approval)
@@ -513,7 +543,7 @@ describe('ApprovalWorkflows', () => {
     test('should handle workflow loading errors gracefully', async () => {
       collaborationService.getApprovalWorkflows.mockRejectedValue(new Error('Network error'));
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByText('Failed to load workflows. Please try again.')).toBeInTheDocument();
@@ -524,7 +554,7 @@ describe('ApprovalWorkflows', () => {
       collaborationService.createApprovalWorkflow.mockRejectedValue(new Error('Creation failed'));
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByText('Create Workflow')).toBeInTheDocument();
@@ -553,7 +583,7 @@ describe('ApprovalWorkflows', () => {
       collaborationService.approveWorkflowStep.mockRejectedValue(new Error('Approval failed'));
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByTestId('approve-step-1-1')).toBeInTheDocument();
@@ -563,10 +593,8 @@ describe('ApprovalWorkflows', () => {
       const approveButton = screen.getByTestId('approve-step-1-1');
       await user.click(approveButton);
 
-      await waitFor(() => {
-        const confirmButton = screen.getByText('Confirm Approval');
-        await user.click(confirmButton);
-      });
+      const confirmButton = await screen.findByText('Confirm Approval');
+      await user.click(confirmButton);
 
       // Should show error message
       await waitFor(() => {
@@ -577,7 +605,7 @@ describe('ApprovalWorkflows', () => {
 
   describe('Accessibility', () => {
     test('should have proper ARIA labels and roles', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         // Check for proper ARIA labels
@@ -594,7 +622,7 @@ describe('ApprovalWorkflows', () => {
     test('should support keyboard navigation', async () => {
       const user = userEvent.setup();
       
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         expect(screen.getByLabelText('Workflow Name')).toBeInTheDocument();
@@ -616,7 +644,7 @@ describe('ApprovalWorkflows', () => {
     });
 
     test('should announce workflow status changes to screen readers', async () => {
-      render(<ApprovalWorkflows />);
+      renderWithProviders(<ApprovalWorkflows />);
 
       await waitFor(() => {
         // Check for ARIA live regions for status updates

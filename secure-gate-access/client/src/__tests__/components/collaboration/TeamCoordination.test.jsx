@@ -1,14 +1,34 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { jest } from '@jest/globals';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TeamCoordination from '../../../components/collaboration/TeamCoordination';
 import * as collaborationService from '../../../services/collaborationService';
 
-// Mock the collaboration service
-jest.mock('../../../services/collaborationService');
+// Mock the collaboration service — expose methods both as direct exports (for test access via * as)
+// and on the collaborationService named export (for component access via { collaborationService })
+jest.mock('../../../services/collaborationService', () => {
+  const mockMethods = {
+    getSharedCalendars: jest.fn(),
+    createSharedCalendar: jest.fn(),
+    getCalendarEvents: jest.fn(),
+    createCalendarEvent: jest.fn(),
+    updateCalendarEvent: jest.fn(),
+    deleteCalendarEvent: jest.fn(),
+    updateEventStatus: jest.fn(),
+    getTeamAvailability: jest.fn(),
+    findOptimalMeetingTimes: jest.fn(),
+    getUsers: jest.fn(),
+  };
+  return {
+    __esModule: true,
+    ...mockMethods,
+    collaborationService: mockMethods,
+    default: mockMethods,
+  };
+});
 
-// Mock user context
+// Mock auth context
 const mockUser = {
   id: 1,
   role: 'admin',
@@ -16,9 +36,23 @@ const mockUser = {
   username: 'admin_user'
 };
 
-jest.mock('../../../contexts/UserContext', () => ({
-  useUser: () => ({ user: mockUser })
+jest.mock('../../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: mockUser })
 }));
+
+jest.mock('../../../contexts/NotificationContext', () => ({
+  useNotification: () => ({ showNotification: jest.fn() })
+}));
+
+// Wrapper providing react-query context for components using useQuery/useMutation
+const renderWithProviders = (ui) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } }
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+  );
+};
 
 describe('TeamCoordination', () => {
   const mockCalendars = [
@@ -128,7 +162,7 @@ describe('TeamCoordination', () => {
 
   describe('Component Rendering', () => {
     test('should render team coordination with calendar and event sections', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       // Check for main sections
       expect(screen.getByText('Team Coordination')).toBeInTheDocument();
@@ -143,7 +177,7 @@ describe('TeamCoordination', () => {
     });
 
     test('should display calendar list with correct information', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         // Check calendar names
@@ -160,7 +194,7 @@ describe('TeamCoordination', () => {
     });
 
     test('should show shared roles and permissions', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         // Check shared roles
@@ -177,7 +211,7 @@ describe('TeamCoordination', () => {
     test('should allow creating a new shared calendar', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       // Wait for component to load
       await waitFor(() => {
@@ -213,7 +247,7 @@ describe('TeamCoordination', () => {
     test('should validate required fields before creating calendar', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Create Calendar')).toBeInTheDocument();
@@ -235,7 +269,7 @@ describe('TeamCoordination', () => {
     test('should support configuring sharing settings', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByLabelText('Share with Roles')).toBeInTheDocument();
@@ -271,7 +305,7 @@ describe('TeamCoordination', () => {
 
   describe('Event Management', () => {
     test('should display calendar events with correct information', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         // Check event titles
@@ -294,7 +328,7 @@ describe('TeamCoordination', () => {
     test('should allow creating a new calendar event', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Add Event')).toBeInTheDocument();
@@ -347,7 +381,7 @@ describe('TeamCoordination', () => {
     test('should support adding attendees to events', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Add Event')).toBeInTheDocument();
@@ -391,7 +425,7 @@ describe('TeamCoordination', () => {
     test('should allow updating event attendance status', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByTestId('update-attendance-1')).toBeInTheDocument();
@@ -429,7 +463,7 @@ describe('TeamCoordination', () => {
     test('should support different calendar view modes', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Month View')).toBeInTheDocument();
@@ -450,7 +484,7 @@ describe('TeamCoordination', () => {
     test('should allow navigating between time periods', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByTestId('calendar-prev')).toBeInTheDocument();
@@ -475,7 +509,7 @@ describe('TeamCoordination', () => {
     test('should filter events by calendar', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByLabelText('Filter by Calendar')).toBeInTheDocument();
@@ -512,7 +546,7 @@ describe('TeamCoordination', () => {
         data: { events: upcomingEvents, pagination: { total: 1, page: 1, pages: 1 } }
       });
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Upcoming Events')).toBeInTheDocument();
@@ -523,7 +557,7 @@ describe('TeamCoordination', () => {
     test('should allow configuring event reminders', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Add Event')).toBeInTheDocument();
@@ -574,7 +608,7 @@ describe('TeamCoordination', () => {
 
   describe('Role-Based Access', () => {
     test('should show appropriate actions based on user permissions', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         // Admin should see create calendar and event options
@@ -584,7 +618,7 @@ describe('TeamCoordination', () => {
     });
 
     test('should filter calendars based on sharing permissions', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(collaborationService.getSharedCalendars).toHaveBeenCalledWith(
@@ -597,7 +631,7 @@ describe('TeamCoordination', () => {
     });
 
     test('should show different permissions for calendar owners vs shared users', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         // Should show owner controls for owned calendars
@@ -611,7 +645,7 @@ describe('TeamCoordination', () => {
     test('should handle calendar loading errors gracefully', async () => {
       collaborationService.getSharedCalendars.mockRejectedValue(new Error('Network error'));
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Failed to load calendars. Please try again.')).toBeInTheDocument();
@@ -622,7 +656,7 @@ describe('TeamCoordination', () => {
       collaborationService.createCalendarEvent.mockRejectedValue(new Error('Creation failed'));
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('Add Event')).toBeInTheDocument();
@@ -632,19 +666,17 @@ describe('TeamCoordination', () => {
       const addEventButton = screen.getByText('Add Event');
       await user.click(addEventButton);
 
-      await waitFor(() => {
-        const titleInput = screen.getByLabelText('Event Title');
-        const startTimeInput = screen.getByLabelText('Start Time');
-        const endTimeInput = screen.getByLabelText('End Time');
-        const calendarSelect = screen.getByLabelText('Calendar');
-        const createEventButton = screen.getByText('Create Event');
+      const titleInput = await screen.findByLabelText('Event Title');
+      const startTimeInput = screen.getByLabelText('Start Time');
+      const endTimeInput = screen.getByLabelText('End Time');
+      const calendarSelect = screen.getByLabelText('Calendar');
+      const createEventButton = screen.getByText('Create Event');
 
-        await user.type(titleInput, 'Test Event');
-        await user.type(startTimeInput, '2025-02-01T10:00');
-        await user.type(endTimeInput, '2025-02-01T11:00');
-        await user.selectOptions(calendarSelect, '1');
-        await user.click(createEventButton);
-      });
+      await user.type(titleInput, 'Test Event');
+      await user.type(startTimeInput, '2025-02-01T10:00');
+      await user.type(endTimeInput, '2025-02-01T11:00');
+      await user.selectOptions(calendarSelect, '1');
+      await user.click(createEventButton);
 
       // Should show error message
       await waitFor(() => {
@@ -663,7 +695,7 @@ describe('TeamCoordination', () => {
         data: { events: [], pagination: { total: 0, page: 1, pages: 0 } }
       });
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByText('No calendars found')).toBeInTheDocument();
@@ -674,7 +706,7 @@ describe('TeamCoordination', () => {
 
   describe('Accessibility', () => {
     test('should have proper ARIA labels and roles', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         // Check for proper ARIA labels
@@ -691,7 +723,7 @@ describe('TeamCoordination', () => {
     test('should support keyboard navigation', async () => {
       const user = userEvent.setup();
       
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         expect(screen.getByLabelText('Calendar Name')).toBeInTheDocument();
@@ -713,7 +745,7 @@ describe('TeamCoordination', () => {
     });
 
     test('should provide calendar navigation for screen readers', async () => {
-      render(<TeamCoordination />);
+      renderWithProviders(<TeamCoordination />);
 
       await waitFor(() => {
         // Check for calendar navigation ARIA labels

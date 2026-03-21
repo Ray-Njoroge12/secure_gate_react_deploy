@@ -94,11 +94,11 @@ export const getVisitorLogs = (params = {}) => {
   return http.get(`${API_BASE}/visitors${queryString ? `?${queryString}` : ''}`);
 };
 export const getVisitorDetails = (id) => http.get(`${API_BASE}/visitors/${id}/details`);
+const VISITOR_BASE = '/api/visitors';
 export const getVisitorReports = (params = {}) => {
   const queryString = new URLSearchParams(params).toString();
   return http.get(`${VISITOR_BASE}/reports${queryString ? `?${queryString}` : ''}`);
 };
-const VISITOR_BASE = '/api/visitors';
 
 export const checkInVisitor = (id) => http.post(`${VISITOR_BASE}/${id}/check-in`);
 export const checkOutVisitor = (id) => http.post(`${VISITOR_BASE}/${id}/check-out`);

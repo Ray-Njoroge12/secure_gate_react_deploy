@@ -290,7 +290,7 @@ class IntelligentNotificationService {
    * @param {string} notificationType - Notification type
    * @returns {Promise<Object>} - Relevance data
    */
-  async getRelevanceScore(notificationType) {
+  async fetchRelevanceScore(notificationType) {
     try {
       const response = await apiClient.get(`/intelligent-notifications/relevance/${notificationType}`);
       
