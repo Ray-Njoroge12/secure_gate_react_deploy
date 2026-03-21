@@ -5,29 +5,29 @@
  * @version 1.0.0
  */
 
-import { jest } from '@jest/globals';
 import { PerformanceService } from '../../services/performanceService.js';
 
-// Mock dependencies
-const mockPerformanceMonitor = {
-  recordComponentRender: jest.fn()
-};
-
-const mockLogger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn()
-};
-
-// Mock modules
+// Mock modules — factories must not reference outer variables (jest.mock is hoisted)
 jest.mock('../../utils/performanceMonitor.js', () => ({
-  default: mockPerformanceMonitor
+  __esModule: true,
+  default: { recordComponentRender: jest.fn() }
 }));
 
 jest.mock('../../utils/logger.js', () => ({
-  default: mockLogger
+  __esModule: true,
+  default: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  }
 }));
+
+// Get references to mocked instances after jest.mock hoisting
+import performanceMonitorMod from '../../utils/performanceMonitor.js';
+import loggerMod from '../../utils/logger.js';
+const mockPerformanceMonitor = performanceMonitorMod;
+const mockLogger = loggerMod;
 
 // Mock global objects
 const mockConnection = {
