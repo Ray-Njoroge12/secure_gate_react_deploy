@@ -118,11 +118,9 @@ export default function Settings() {
           unit_number: profile.house
         });
         const data = res.data;
-        console.log('Profile update response:', data);
-        console.log('Returned data object:', data.data);
+        logger.debug('Profile update response', data);
         if (data.success) {
           setSuccess('Profile updated successfully!');
-          console.log('Success state set:', success);
         }
         else throw new Error(data.message || 'Failed to update profile');
       } else if (type === 'Password') {
