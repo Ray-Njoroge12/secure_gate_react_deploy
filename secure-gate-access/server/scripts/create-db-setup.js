@@ -2,12 +2,17 @@ import pkg from 'pg';
 const { Client } = pkg;
 
 const config = {
-  user: 'postgres',
-  password: 'admin',
-  host: 'localhost',
-  port: 5432,
-  database: 'postgres', // Connect to default DB first
+  user: process.env.PGUSER || 'postgres',
+  password: process.env.PGPASSWORD,
+  host: process.env.PGHOST || 'localhost',
+  port: Number(process.env.PGPORT || 5432),
+  database: process.env.PGDATABASE || 'postgres', // Connect to default DB first
 };
+
+if (!config.password) {
+  console.error('Missing PGPASSWORD. Export PGUSER/PGPASSWORD (and optional PGHOST/PGPORT/PGDATABASE) before running this script.');
+  process.exit(1);
+}
 
 async function createDb() {
   const client = new Client(config);
