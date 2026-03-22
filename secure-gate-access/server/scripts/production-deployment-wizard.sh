@@ -19,6 +19,7 @@ BOLD='\033[1m'
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_DIR="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$(cd "$SERVER_DIR/../.." && pwd)"
 ENV_FILE="$SERVER_DIR/.env.production"
 KEYS_FILE=$(find "$SERVER_DIR" -name "production-keys-*.txt" 2>/dev/null | head -n 1)
 
@@ -523,6 +524,8 @@ build_and_deploy() {
     echo ""
     
     cd "$SERVER_DIR"
+
+    DEPLOY_MANAGER_SCRIPT="$REPO_ROOT/scripts/deployment/production-deployment-scripts.js"
     
     # Check if there's a build script
     if grep -q "\"build\"" package.json 2>/dev/null; then
@@ -538,6 +541,26 @@ build_and_deploy() {
         fi
     else
         print_info "No build script found - skipping build step"
+    fi
+
+    echo ""
+    print_info "Preferred deployment path: centralized deployment manager"
+    if [ -f "$DEPLOY_MANAGER_SCRIPT" ]; then
+        print_info "Manager script found: $DEPLOY_MANAGER_SCRIPT"
+        if ask_confirmation "Run automated deployment manager now?"; then
+            print_info "Running deployment manager (tests skipped because wizard tests already ran)..."
+            if node "$DEPLOY_MANAGER_SCRIPT" --env=production --skip-tests 2>&1 | tee -a "$LOG_FILE"; then
+                print_success "Automated deployment manager completed successfully"
+            else
+                print_error "Automated deployment manager failed"
+                exit 1
+            fi
+            wait_for_continue
+            return
+        fi
+    else
+        print_warning "Deployment manager script not found: $DEPLOY_MANAGER_SCRIPT"
+        print_info "Continuing with manual deployment guidance"
     fi
     
     echo ""
