@@ -2,7 +2,7 @@ import fc from 'fast-check';
 import { jest } from '@jest/globals';
 
 // Test configuration and utilities
-import { TEST_CONFIG, NETWORK_CONDITIONS, ESSENTIAL_CAPABILITIES, ERROR_SCENARIOS } from './constants/offline-test-config.js';
+import { TEST_CONFIG, NETWORK_CONDITIONS, ESSENTIAL_CAPABILITIES, ERROR_SCENARIOS } from './constants/index.js';
 import { 
   OfflineServiceMockFactory, 
   TestScenarioBuilder, 
