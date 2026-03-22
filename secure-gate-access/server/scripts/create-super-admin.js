@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import argon2 from 'argon2';
+import crypto from 'crypto';
 import { dbManager } from '../src/database/db.enhanced.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -10,6 +11,17 @@ const __dirname = dirname(__filename);
 // Load env files
 dotenv.config({ path: join(__dirname, '..', '.env.local') });
 dotenv.config({ path: join(__dirname, '..', '.env') });
+
+function resolveSuperAdminPassword() {
+    const cliPassword = process.argv[2]?.trim();
+    const envPassword = process.env.SUPER_ADMIN_PASSWORD?.trim();
+
+    if (cliPassword) return cliPassword;
+    if (envPassword) return envPassword;
+
+    // Generate a strong one-time password for ad-hoc provisioning.
+    return `${crypto.randomBytes(18).toString('base64url')}A1!`;
+}
 
 async function upsertUser(user) {
     const passwordHash = await argon2.hash(user.password);
@@ -65,11 +77,12 @@ async function run() {
     await dbManager.initializeAsync();
 
     console.log('Creating Super Admin...');
+    const resolvedPassword = resolveSuperAdminPassword();
 
     const superAdmin = await upsertUser({
         username: 'superadmin',
         email: 'superadmin@securegate.com',
-        password: 'SuperPass123!',
+        password: resolvedPassword,
         role: 'super_admin',
         verified: true,
         phone: '+254799999999',
@@ -80,6 +93,8 @@ async function run() {
     });
 
     console.log('Super Admin created:', superAdmin);
+    console.log(`Provisioned password: ${resolvedPassword}`);
+    console.log('Password source: CLI arg, SUPER_ADMIN_PASSWORD env var, or generated secure fallback');
     
     if (!superAdmin.mfa_enabled) {
         console.log('\n⚠️  IMPORTANT: MFA Setup Required');

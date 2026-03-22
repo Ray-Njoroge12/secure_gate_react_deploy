@@ -1,6 +1,18 @@
 
 import { db } from '../src/database/db.enhanced.js';
 import argon2 from 'argon2';
+import crypto from 'crypto';
+
+function resolveSuperAdminPassword() {
+    const cliPassword = process.argv[2]?.trim();
+    const envPassword = process.env.SUPER_ADMIN_PASSWORD?.trim();
+
+    if (cliPassword) return cliPassword;
+    if (envPassword) return envPassword;
+
+    // Generate a strong one-time password when no explicit password is provided.
+    return `${crypto.randomBytes(18).toString('base64url')}A1!`;
+}
 
 async function setupSuperAdmin() {
     try {
@@ -18,20 +30,21 @@ async function setupSuperAdmin() {
             console.log('✅ Test Super Admin account already exists:');
             console.log(`   Email: ${admin.email}`);
             console.log(`   MFA Enabled: ${admin.mfa_enabled || false}`);
-            // Force reset password for E2E consistency
-            const password = 'SuperAdmin123!';
+            const password = resolveSuperAdminPassword();
             const hash = await argon2.hash(password);
             await db.query(
                 "UPDATE users SET password_hash = $1, mfa_enabled = COALESCE(mfa_enabled, $2) WHERE id = $3", 
                 [hash, false, admin.id]
             );
-            console.log('   Password has been reset to ensure E2E test access: SuperAdmin123!');
+            console.log('   Password has been reset successfully.');
+            console.log(`   Password: ${password}`);
+            console.log('   Source: CLI arg, SUPER_ADMIN_PASSWORD env var, or generated secure fallback');
             if (!admin.mfa_enabled) {
                 console.log('   ⚠️  MFA setup required on first login');
             }
         } else {
-            console.log('⚠️ No Super Admin found. Creating default super admin...');
-            const password = 'SuperAdmin123!';
+            console.log('⚠️ No Super Admin found. Creating secure super admin...');
+            const password = resolveSuperAdminPassword();
             const hash = await argon2.hash(password);
 
             const newAdmin = await db.query(`
@@ -44,6 +57,7 @@ async function setupSuperAdmin() {
             console.log(`   Email: ${newAdmin.rows[0].email}`);
             console.log(`   Password: ${password}`);
             console.log(`   MFA Enabled: ${newAdmin.rows[0].mfa_enabled}`);
+            console.log('   Source: CLI arg, SUPER_ADMIN_PASSWORD env var, or generated secure fallback');
             console.log('\n⚠️  IMPORTANT: MFA must be set up on first login!');
         }
 
