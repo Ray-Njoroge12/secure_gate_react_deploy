@@ -17,9 +17,9 @@ INSTRUCTIONS:
 SECTION 1: GENERATED SECRETS (Use these exact values)
 ================================================================================
 
-JWT_SECRET=65fa4f63725d298b5735500dde6c7375dc53760be1fe7bb980f9ca5cd627a029
-JWT_REFRESH_SECRET=36c0be719e0152341a0c676399530a84a47cb5b538ee4dcab64879548964ec34
-SESSION_SECRET=039c2c569dd570553c141f307034ae07d671ccb28376dd9735570417841c41ac
+JWT_SECRET=<generate-with-openssl-rand-hex-32>
+JWT_REFRESH_SECRET=<generate-with-openssl-rand-hex-32>
+SESSION_SECRET=<generate-with-openssl-rand-hex-32>
 
 ================================================================================
 SECTION 2: SERVER CONFIGURATION
@@ -107,9 +107,9 @@ ENABLE_EMAIL_NOTIFICATIONS=true
 MAILGUN_DOMAIN=sandboxcd6106b9f4d54da78846462008c1678b.mailgun.org
 MAILGUN_BASE_URL=https://api.mailgun.net
 MAILGUN_FROM_NAME=Secure Gate
-JWT_SECRET=65fa4f63725d298b5735500dde6c7375dc53760be1fe7bb980f9ca5cd627a029
-JWT_REFRESH_SECRET=36c0be719e0152341a0c676399530a84a47cb5b538ee4dcab64879548964ec34
-SESSION_SECRET=039c2c569dd570553c141f307034ae07d671ccb28376dd9735570417841c41ac
+JWT_SECRET=<generate-with-openssl-rand-hex-32>
+JWT_REFRESH_SECRET=<generate-with-openssl-rand-hex-32>
+SESSION_SECRET=<generate-with-openssl-rand-hex-32>
 
 ================================================================================
 SECRETS TO ADD MANUALLY (Replace with your actual values)
