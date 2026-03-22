@@ -3,7 +3,8 @@
  * Optimized for production-ready testing across multiple environments
  */
 
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
+import shared from '../playwright.shared.cjs';
 
 export default defineConfig({
   // Test directory (relative to this config file — i.e. the e2e/ folder itself)
@@ -43,18 +44,12 @@ export default defineConfig({
   globalTeardown: './utils/global-teardown.js',
   
   // Shared settings for all tests
-  use: {
+  use: shared.makeUseDefaults({
     // Base URL for tests
     baseURL: process.env.TEST_BASE_URL || 'http://localhost:3000',
     
-    // Collect trace when retrying the failed test
-    trace: 'on-first-retry',
-    
     // Record video on failure
     video: 'retain-on-failure',
-    
-    // Take screenshot on failure
-    screenshot: 'only-on-failure',
     
     // Browser context options
     viewport: { width: 1280, height: 720 },
@@ -68,43 +63,26 @@ export default defineConfig({
     extraHTTPHeaders: {
       'Accept-Language': 'en-US,en;q=0.9'
     }
-  },
+  }),
 
   // Configure projects for major browsers
   projects: [
     // Desktop browsers
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+    ...shared.projectSets.desktop.map((project) => ({
+      ...project,
       testMatch: ['**/*.spec.js', '!**/mobile/**']
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-      testMatch: ['**/*.spec.js', '!**/mobile/**']
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-      testMatch: ['**/*.spec.js', '!**/mobile/**']
-    },
+    })),
 
     // Mobile browsers
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+    ...shared.projectSets.mobile.map((project) => ({
+      ...project,
       testMatch: ['**/mobile/**/*.spec.js', '**/responsive/**/*.spec.js']
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-      testMatch: ['**/mobile/**/*.spec.js', '**/responsive/**/*.spec.js']
-    },
+    })),
 
     // Tablet browsers
     {
       name: 'Tablet Chrome',
-      use: { ...devices['iPad Pro'] },
+      use: { ...shared.browserPresets.tabletChrome },
       testMatch: ['**/tablet/**/*.spec.js', '**/responsive/**/*.spec.js']
     },
 
@@ -112,7 +90,7 @@ export default defineConfig({
     {
       name: 'accessibility',
       use: { 
-        ...devices['Desktop Chrome'],
+        ...shared.browserPresets.desktopChrome,
         // Enable accessibility features
         launchOptions: {
           args: ['--force-prefers-reduced-motion', '--enable-features=VaapiVideoDecoder']
@@ -125,7 +103,7 @@ export default defineConfig({
     {
       name: 'performance',
       use: { 
-        ...devices['Desktop Chrome'],
+        ...shared.browserPresets.desktopChrome,
         // Performance testing specific settings
         launchOptions: {
           args: ['--no-sandbox', '--disable-dev-shm-usage']
@@ -138,7 +116,7 @@ export default defineConfig({
     {
       name: 'high-contrast',
       use: {
-        ...devices['Desktop Chrome'],
+        ...shared.browserPresets.desktopChrome,
         colorScheme: 'dark',
         extraHTTPHeaders: {
           'Sec-CH-Prefers-Color-Scheme': 'dark'

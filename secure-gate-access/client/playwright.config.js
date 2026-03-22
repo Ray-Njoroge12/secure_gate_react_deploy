@@ -1,5 +1,6 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
+const shared = require('../playwright.shared.cjs');
 
 module.exports = defineConfig({
   testDir: './e2e',
@@ -18,35 +19,20 @@ module.exports = defineConfig({
     ['list']
   ],
   globalSetup: require.resolve('./e2e/global-setup.js'),
-  use: {
+  use: shared.makeUseDefaults({
     baseURL: 'http://127.0.0.1:3000',
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    actionTimeout: 15_000
-  },
+    actionTimeout: 15_000,
+  }),
   projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    ...shared.projectNames.desktop.map((project) => ({
+      name: project.name,
+      use: { ...devices[project.device] },
+    })),
     // Mobile testing
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+    ...shared.projectNames.mobile.map((project) => ({
+      name: project.name,
+      use: { ...devices[project.device] },
+    })),
   ],
   webServer: {
     command: 'npm start',
