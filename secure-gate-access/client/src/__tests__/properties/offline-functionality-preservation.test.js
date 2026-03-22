@@ -4,7 +4,7 @@ import { jest } from '@jest/globals';
 // Test configuration and utilities
 import { 
   TEST_CONFIG
-} from './constants/offline-test-config.js';
+} from './constants/index.js';
 
 // Create a simple mock factory inline for now
 const createSyncMock = (actions, options = {}) => {

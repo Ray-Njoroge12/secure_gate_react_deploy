@@ -54,6 +54,7 @@ import {
 
 import { 
   ERROR_CONFIG,
+  ERROR_SCENARIOS,
   createError,
   getRecoveryStrategy,
   simulateErrorCondition,
@@ -153,6 +154,15 @@ export const ConfigUtils = deepFreeze({
   checkImmutability: ConfigValidator.checkImmutability,
   validateEnvironmentOverrides: ConfigValidator.validateEnvironmentOverrides
 });
+
+// Backward-compatible offline capability list used by legacy property tests.
+export const ESSENTIAL_CAPABILITIES = [
+  'View cached visitor data',
+  'Queue visitor actions for sync',
+  'Access basic navigation',
+  'View user preferences',
+  'Emergency contact information'
+];
 
 /**
  * Gets configuration for a specific test category with environment overrides
@@ -372,6 +382,7 @@ export {
   
   // Error scenarios
   ERROR_CONFIG,
+  ERROR_SCENARIOS,
   
   // Utilities
   ConfigValidator
