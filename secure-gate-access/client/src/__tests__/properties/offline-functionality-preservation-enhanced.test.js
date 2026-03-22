@@ -368,9 +368,7 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
           
           // Simulate storage quota exceeded
           mocks.localStorageMock.setItem.mockImplementation(() => {
-            const quotaError = typeof DOMException !== 'undefined'
-              ? new DOMException('QuotaExceededError', 'QuotaExceededError')
-              : new Error('QuotaExceededError');
+            const quotaError = new Error('QuotaExceededError');
             quotaError.name = 'QuotaExceededError';
             throw quotaError;
           });
@@ -450,7 +448,7 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
           minLength: BULK_ARRAY_SIZES.min,
           maxLength: BULK_ARRAY_SIZES.max
         }),
-        fc.float({ min: 0, max: 1 }), // Failure rate (0-100%)
+        fc.float({ min: 0, max: 1, noNaN: true, noDefaultInfinity: true }), // Failure rate (0-100%)
         (actions, failureRate) => {
           const startTime = Date.now();
           const totalActions = actions.length;
