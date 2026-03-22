@@ -127,8 +127,14 @@ echo "Current database state:"
 
 # Check database if psql is available
 if command -v psql &> /dev/null; then
-    USER_COUNT=$(PGPASSWORD=secure_gate_password psql -U secure_gate_user -d secure_gate_db -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tr -d ' ')
-    VISITOR_COUNT=$(PGPASSWORD=secure_gate_password psql -U secure_gate_user -d secure_gate_db -t -c "SELECT COUNT(*) FROM visitors;" 2>/dev/null | tr -d ' ')
+    if [ -z "$PGPASSWORD" ]; then
+        echo "  PGPASSWORD not set - skipping DB stats query"
+        USER_COUNT=""
+        VISITOR_COUNT=""
+    else
+        USER_COUNT=$(PGPASSWORD="$PGPASSWORD" psql -U secure_gate_user -d secure_gate_db -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tr -d ' ')
+        VISITOR_COUNT=$(PGPASSWORD="$PGPASSWORD" psql -U secure_gate_user -d secure_gate_db -t -c "SELECT COUNT(*) FROM visitors;" 2>/dev/null | tr -d ' ')
+    fi
     
     if [ ! -z "$USER_COUNT" ]; then
         echo "  Users: $USER_COUNT"
