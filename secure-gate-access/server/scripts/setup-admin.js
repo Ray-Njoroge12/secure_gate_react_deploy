@@ -1,6 +1,18 @@
 
 import { db } from '../src/database/db.enhanced.js';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+
+function resolveAdminPassword() {
+  const cliPassword = process.argv[2]?.trim();
+  const envPassword = process.env.ADMIN_PASSWORD?.trim();
+
+  if (cliPassword) return cliPassword;
+  if (envPassword) return envPassword;
+
+  // Generate a strong one-time password if none is provided.
+  return `${crypto.randomBytes(18).toString('base64url')}A1!`;
+}
 
 async function setupAdmin() {
   try {
@@ -17,8 +29,8 @@ async function setupAdmin() {
       console.log(`   Username: ${admin.username}`);
       console.log('   (If you do not know the password, we can reset it)');
     } else {
-      console.log('⚠️ No admin found. Creating default admin...');
-      const password = 'admin123';
+      console.log('⚠️ No admin found. Creating admin with secure password...');
+      const password = resolveAdminPassword();
       const salt = await bcrypt.genSalt(10);
       const hash = await bcrypt.hash(password, salt);
 
@@ -31,6 +43,7 @@ async function setupAdmin() {
       console.log('✅ Admin account created:');
       console.log(`   Email: ${newAdmin.rows[0].email}`);
       console.log(`   Password: ${password}`);
+      console.log('   Source: CLI arg, ADMIN_PASSWORD env var, or generated secure fallback');
     }
 
     process.exit(0);
