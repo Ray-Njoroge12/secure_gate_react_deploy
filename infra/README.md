@@ -2,6 +2,8 @@
 
 This folder captures the production-ready AWS baseline for Secure Gate using Terraform.
 
+Repository-level index: [README.md](../README.md)
+
 ## Architecture Summary
 
 - **Network:** VPC with two public and two private subnets across two AZs, IGW, NAT, and separate route tables.

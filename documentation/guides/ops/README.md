@@ -1,14 +1,15 @@
 # Secure Gate Operational Runbooks
 
-This directory contains operational runbooks for managing and responding to incidents in the Secure Gate Access Control System. These runbooks provide step-by-step procedures for handling various operational scenarios, maintenance windows, and system failures.
+Runbooks for scheduled maintenance and incident response.
+
+Repository-level index: [README.md](../../../README.md)
 
 ## Quick Reference
 
 | Runbook | Use Case | Priority |
 |---------|----------|----------|
 | [Maintenance Window Planning](./maintenance-window-planning.md) | Plan scheduled maintenance windows | Scheduled |
-| [Maintenance Failover](./maintenance-failover.md) | Execute staged maintenance with DB failover drill | Scheduled |
-| [Failover Acceptance Criteria](./failover-acceptance-criteria.md) | Validate successful failover execution | Scheduled/Incident |
+| [Maintenance Failover](./maintenance-failover.md) | Execute staged maintenance with DB failover drill & validation | Scheduled |
 | [DB Slow/Unavailable](./db-slow-unavailable.md) | Database performance degradation or outage | Incident |
 | [SMS Provider Down](./sms-provider-down.md) | SMS notification service failure | Incident |
 | [Guard Device Offline](./guard-device-offline.md) | Guard station device connectivity issues | Incident |
@@ -48,23 +49,8 @@ These runbooks guide planned maintenance activities:
 - Maintenance window execution checklist
 - Staged DB failover trigger and monitoring
 - Recovery verification and metrics capture
+- Acceptance criteria validation (RTO, error rates, stability)
 - Rollback procedures if needed
-
-#### 3. Failover Acceptance Criteria
-**File:** [failover-acceptance-criteria.md](./failover-acceptance-criteria.md)
-
-**Purpose:** Define measurable success criteria for failover events to support go/no-go decisions.
-
-**When to use:**
-- During planned failover drills
-- After unplanned failover events
-- When validating system resilience
-
-**Key metrics:**
-- Recovery Time Objective (RTO): < 5 minutes
-- Error rate thresholds during and after failover
-- Stability window requirements (20 minutes)
-- Go/no-go decision criteria
 
 ### Incident Response
 
@@ -152,13 +138,11 @@ For planned maintenance activities:
    └─> Use: maintenance-window-planning.md
        └─> Analyze traffic, schedule window, prepare rollback
 
-2. Execution Phase  
+2. Execution & Validation Phase  
    └─> Use: maintenance-failover.md
        └─> Execute changes, trigger failover, monitor recovery
-
-3. Validation Phase
-   └─> Use: failover-acceptance-criteria.md
-       └─> Validate metrics, make go/no-go decision
+       └─> Validate acceptance criteria (RTO, error rates, stability)
+       └─> Make go/no-go decision
 ```
 
 ### Incident Response Workflow
@@ -208,8 +192,8 @@ Runbooks reference the following monitoring tools:
 
 - [Infrastructure Setup](/infra/README.md) - Terraform configuration and deployment
 - [AWS Security Baseline](/secure-gate-access/infrastructure/aws/README.md) - Security configurations
-- [Deployment Guide](/DEPLOYMENT_GUIDE.md) - Application deployment procedures
-- [Staging Deployment](/STAGING-DEPLOYMENT-GUIDE.md) - Staging environment setup
+- [Deployment Guide](/documentation/guides/DEPLOYMENT_GUIDE.md) - Application deployment procedures
+- [Canonical Guides Index](/documentation/guides/README.md) - Active guide set and compatibility pointers
 
 ## Runbook Maintenance
 
