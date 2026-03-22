@@ -4,6 +4,7 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
+import shared from '../../../playwright.shared.cjs';
 
 export default defineConfig({
   testDir: './specs',
@@ -17,35 +18,24 @@ export default defineConfig({
     ['list']
   ],
   
-  use: {
+  use: shared.makeUseDefaults({
     baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
     actionTimeout: 15000,
     navigationTimeout: 30000
-  },
+  }),
 
   projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    ...shared.projectNames.desktop.map((project) => ({
+      name: project.name,
+      use: { ...devices[project.device] },
+    })),
     {
       name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'] },
+      use: { ...devices[shared.deviceNames.mobileChrome] },
     },
     {
       name: 'mobile-safari',
-      use: { ...devices['iPhone 12'] },
+      use: { ...devices[shared.deviceNames.mobileSafari] },
     },
   ],
 
