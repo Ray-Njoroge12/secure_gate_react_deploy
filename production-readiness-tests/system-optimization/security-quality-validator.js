@@ -14,11 +14,14 @@ const fs = require('fs').promises;
 const path = require('path');
 const { execSync } = require('child_process');
 const crypto = require('crypto');
+const OptimizationBase = require('./optimization-base');
 
-class SecurityQualityValidator {
+class SecurityQualityValidator extends OptimizationBase {
   constructor(config = {}) {
+    super(config);
     this.config = {
-      projectRoot: config.projectRoot || process.cwd(),
+      ...this.config,
+      excludePatterns: config.excludePatterns || ['node_modules', '.git', 'dist', 'build', 'coverage'],
       securityThresholds: {
         vulnerabilityScore: 7.0, // CVSS score threshold
         dependencyAge: 365, // days
@@ -955,22 +958,6 @@ class SecurityQualityValidator {
 
   // Helper methods
 
-  async getAllFiles(dir, files = []) {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      
-      if (entry.isDirectory() && !this.isExcluded(entry.name)) {
-        await this.getAllFiles(fullPath, files);
-      } else if (entry.isFile()) {
-        files.push(fullPath);
-      }
-    }
-    
-    return files;
-  }
-
   async getCodeFiles() {
     const files = await this.getAllFiles(this.config.projectRoot);
     return files.filter(file => /\.(js|jsx|ts|tsx)$/.test(file) && !this.isTestFile(file));
@@ -995,20 +982,6 @@ class SecurityQualityValidator {
       /\.(js|ts)$/.test(file) && 
       (file.includes('server') || file.includes('app') || file.includes('index'))
     );
-  }
-
-  async findPackageFiles() {
-    const files = await this.getAllFiles(this.config.projectRoot);
-    return files.filter(file => path.basename(file) === 'package.json');
-  }
-
-  isExcluded(name) {
-    const excludePatterns = ['node_modules', '.git', 'dist', 'build', 'coverage'];
-    return excludePatterns.some(pattern => name.includes(pattern));
-  }
-
-  isTestFile(file) {
-    return /\.(test|spec)\.(js|jsx|ts|tsx)$/.test(file) || file.includes('__tests__');
   }
 
   getLineNumber(content, searchString) {

@@ -15,11 +15,13 @@ const fs = require('fs').promises;
 const path = require('path');
 const crypto = require('crypto');
 const { execSync } = require('child_process');
+const OptimizationBase = require('./optimization-base');
 
-class CodebaseAnalyzer {
+class CodebaseAnalyzer extends OptimizationBase {
   constructor(config = {}) {
+    super(config);
     this.config = {
-      projectRoot: config.projectRoot || process.cwd(),
+      ...this.config,
       excludePatterns: config.excludePatterns || [
         'node_modules',
         '.git',
@@ -293,29 +295,6 @@ class CodebaseAnalyzer {
   }
 
   /**
-   * Get all files in the project
-   */
-  async getAllFiles(dir, files = []) {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      
-      if (entry.isDirectory()) {
-        if (!this.isExcluded(entry.name)) {
-          await this.getAllFiles(fullPath, files);
-        }
-      } else {
-        if (this.config.includeExtensions.includes(path.extname(entry.name))) {
-          files.push(fullPath);
-        }
-      }
-    }
-    
-    return files;
-  }
-
-  /**
    * Detect unused files
    */
   async detectUnusedFiles() {
@@ -395,22 +374,6 @@ class CodebaseAnalyzer {
         // Skip files that can't be read
       }
     }
-  }
-
-  /**
-   * Find package.json files
-   */
-  async findPackageFiles() {
-    const packageFiles = [];
-    const files = await this.getAllFiles(this.config.projectRoot);
-    
-    for (const file of files) {
-      if (path.basename(file) === 'package.json') {
-        packageFiles.push(file);
-      }
-    }
-    
-    return packageFiles;
   }
 
   /**
@@ -679,18 +642,9 @@ class CodebaseAnalyzer {
 
   // Helper methods
 
-  isExcluded(name) {
-    return this.config.excludePatterns.some(pattern => name.includes(pattern));
-  }
-
   isCodeFile(file) {
     const codeExtensions = ['.js', '.jsx', '.ts', '.tsx', '.vue'];
     return codeExtensions.includes(path.extname(file));
-  }
-
-  isTestFile(file) {
-    const testPatterns = ['.test.', '.spec.', '__tests__', '/tests/'];
-    return testPatterns.some(pattern => file.includes(pattern));
   }
 
   isConfigFile(file) {
