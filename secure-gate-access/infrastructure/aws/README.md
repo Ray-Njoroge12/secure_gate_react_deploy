@@ -2,6 +2,8 @@
 
 This directory contains security-focused templates and policies for Secure Gate AWS deployments.
 
+Repository-level index: [README.md](../../../README.md)
+
 ## IAM policy audits
 
 The following IAM policies are scoped to explicit AWS actions and resources. Replace placeholder values with exact ARNs to keep least-privilege guarantees:

@@ -8,7 +8,7 @@ This runbook applies to the staging environment with Multi-AZ RDS configuration:
 - **RDS Instance:** `secure-gate-postgres` (defined in `/infra/main.tf`)
 - **Multi-AZ:** Enabled by default (`var.db_multi_az = true` in `/infra/variables.tf`)
 - **Failover Type:** Automatic failover between primary and standby instances across AZs
-- **Expected RTO:** < 5 minutes (see [Failover Acceptance Criteria](./failover-acceptance-criteria.md))
+- **Expected RTO:** < 5 minutes
 
 ## Preconditions
 - Approved change ticket and maintenance window start/end times.
@@ -84,6 +84,45 @@ This runbook applies to the staging environment with Multi-AZ RDS configuration:
 - First successful health check timestamp.
 - Recovery checkpoint timestamp (normal traffic restored).
 - Total recovery time (failover start → recovery checkpoint).
+
+## Acceptance Criteria & Success Validation
+
+### Recovery Time Objective (RTO)
+- **Target RTO:** < 5 minutes end-to-end from failover initiation to all critical health checks reporting `healthy`.
+- **Clock starts:** when failover command/runbook step is executed.
+- **Clock stops:** when primary API and database health checks return `healthy` for two consecutive checks.
+
+### Error Rate Thresholds
+- **During failover:** HTTP 5xx rate may spike but must remain **< 10% for any rolling 1-minute window**.
+- **After stabilization:** HTTP 5xx rate must be **< 1% for 15 minutes**.
+- **Database errors:** connection/timeout errors must be **< 0.5%** after stabilization.
+
+### Stability Window
+- **Observation period:** 20 minutes after failover is declared complete.
+- **Success condition:** steady p95 latency, error rates within thresholds, and replication status green for the full window.
+
+### Verification (Dashboards & Queries)
+- **APM dashboard:**
+  - Service latency (p50/p95/p99), request rate, and 5xx error rate by endpoint.
+  - Filter on the primary API service and the database connection pool.
+- **Infrastructure dashboard:**
+  - Database CPU, connections, replication lag, and storage I/O.
+- **Log queries (examples):**
+  - `status >= 500 AND service:api` (HTTP 5xx)
+  - `message:"Database health check failed" OR error:"connection error"`
+  - `message:"replication lag" AND value > 0`
+- **Health checks:**
+  - `/api/health/detailed`
+  - `/api/system/database/health`
+
+### Go/No-go and Rollback Criteria
+- **Go:** All thresholds met for the full stability window, and health checks remain `healthy`.
+- **No-go / Rollback:** Trigger rollback if any of the following occur:
+  - RTO exceeds 5 minutes.
+  - HTTP 5xx > 1% for 5 consecutive minutes after stabilization.
+  - Database error rate > 0.5% for 5 consecutive minutes.
+  - Replication lag continues to grow for 10 minutes post-failover.
+  - Critical user flows fail (login, create invite, guard check-in).
 
 ## Manual Interventions & Rollback
 - **Manual interventions**
