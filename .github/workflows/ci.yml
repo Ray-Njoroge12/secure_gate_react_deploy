@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop, temp-*, feature/* ]
+    branches: [ main, master, develop, staging, temp-*, feature/* ]
   pull_request:
     branches: [ "**" ]
 
@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.11'
           cache: 'npm'
           cache-dependency-path: |
             secure-gate-access/server/package-lock.json
@@ -63,9 +63,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-
-      - name: Install root dependencies
-        run: npm ci
 
       - name: Install server dependencies
         working-directory: secure-gate-access/server
@@ -129,6 +126,6 @@ jobs:
         run: npm run test:integration:quarantine
         continue-on-error: true
 
-      - name: Run server tests
+      - name: Run server unit tests
         working-directory: secure-gate-access/server
-        run: npm test
+        run: npm run test:unit
