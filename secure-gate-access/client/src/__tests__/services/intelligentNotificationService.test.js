@@ -5,15 +5,15 @@
 
 import { jest } from '@jest/globals';
 
+import intelligentNotificationService from '../../services/intelligentNotificationService';
+import apiClient from '../../utils/apiClient';
+import logger from '../../utils/logger';
+
 // Mock apiClient before importing the service
 jest.mock('../../utils/apiClient');
 
 // Mock logger
 jest.mock('../../utils/logger');
-
-import intelligentNotificationService from '../../services/intelligentNotificationService';
-import apiClient from '../../utils/apiClient';
-import logger from '../../utils/logger';
 
 // Cast to jest mocks
 const mockApiClient = apiClient;

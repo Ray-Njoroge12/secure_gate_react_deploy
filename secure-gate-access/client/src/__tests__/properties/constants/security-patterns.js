@@ -329,7 +329,7 @@ export const BUSINESS_LOGIC_PATTERNS = deepFreeze({
  * @param {Array} patterns - Array of patterns to check against
  * @returns {Object} Detection result with threat information
  */
-export function detectSecurityThreats(input, patterns = []) {
+export function detectSecurityThreats(input, _patterns = []) {
   const threats = [];
   
   if (typeof input !== 'string') {

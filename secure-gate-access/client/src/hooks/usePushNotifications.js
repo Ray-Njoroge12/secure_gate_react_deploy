@@ -5,7 +5,8 @@
  * @version 1.0.0
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
 import pushNotificationService from '../services/pushNotificationService';
 
 /**
@@ -27,8 +28,6 @@ export function usePushNotifications(options = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  const managerRef = useRef(null);
-
   // Initialize on mount
   useEffect(() => {
     const init = async () => {

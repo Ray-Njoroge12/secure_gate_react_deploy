@@ -6,6 +6,7 @@
  */
 
 import React, { useId } from 'react';
+
 import Icon from './Icon.jsx';
 
 /**
@@ -59,21 +60,10 @@ export const Checkbox = React.forwardRef(
     const generatedId = useId();
     const id = customId || generatedId;
     const inputId = id; // Define inputId for label association
-    const descriptionId = description ? `${id}-description` : undefined;
-    const errorId = error ? `${id}-error` : undefined;
 
     const handleChange = (e) => {
       if (!disabled && onCheckedChange) {
         onCheckedChange(e.target.checked);
-      }
-    };
-
-    const handleKeyDown = (e) => {
-      // Space is handled natively by input[type="checkbox"]
-      // Enter key support for better UX
-      if (e.key === 'Enter' && !disabled) {
-        e.preventDefault();
-        onCheckedChange?.(!checked);
       }
     };
 

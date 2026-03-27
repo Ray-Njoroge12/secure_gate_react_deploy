@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+
+import ConfirmationDialog from '../../components/common/ConfirmationDialog';
+import { ResponsiveTable as Table, Button, Input } from '../../components/ui';
+import { useError } from '../../contexts/ErrorContext';
 import {
   getVisitorLogs,
   checkInVisitor,
   checkOutVisitor
 } from '../../services/adminService';
-import { ResponsiveTable as Table, Button, Input } from '../../components/ui';
-import ConfirmationDialog from '../../components/common/ConfirmationDialog';
-import { useError } from '../../contexts/ErrorContext';
 
 const VisitorLog = ({ estateId }) => {
   const [logs, setLogs] = useState([]);
@@ -145,6 +146,11 @@ const VisitorLog = ({ estateId }) => {
     }
   ];
 
+  const dialogActionLabel = actionDialog.type ? actionDialog.type.replace('-', ' ') : 'check in';
+  const dialogTitle = actionDialog.type === 'check-in' ? 'Check In Visitor' : 'Check Out Visitor';
+  const dialogConfirmText = actionDialog.type === 'check-in' ? 'Check In' : 'Check Out';
+  const dialogVariant = actionDialog.type === 'check-in' ? 'success' : 'warning';
+
   return (
     <div className="space-y-4" data-tour="visitor-log">
       {/* Filters */}
@@ -201,10 +207,10 @@ const VisitorLog = ({ estateId }) => {
         isOpen={actionDialog.isOpen}
         onClose={() => setActionDialog({ isOpen: false, type: null, visitor: null })}
         onConfirm={confirmAction}
-        title={actionDialog.type === 'check-in' ? 'Check In Visitor' : 'Check Out Visitor'}
-        message={`Are you sure you want to ${actionDialog.type.replace('-', ' ')} ${actionDialog.visitor?.name}?`}
-        confirmText={actionDialog.type === 'check-in' ? 'Check In' : 'Check Out'}
-        variant={actionDialog.type === 'check-in' ? 'success' : 'warning'}
+        title={dialogTitle}
+        message={`Are you sure you want to ${dialogActionLabel} ${actionDialog.visitor?.name || 'this visitor'}?`}
+        confirmText={dialogConfirmText}
+        variant={dialogVariant}
         isLoading={!!processingId}
       />
     </div>

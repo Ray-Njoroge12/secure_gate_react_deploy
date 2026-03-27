@@ -462,7 +462,7 @@ async function evaluateDeviceSyncCapabilities(device) {
   };
 }
 
-async function simulateCapabilityAwareSync(device, userId) {
+async function simulateCapabilityAwareSync(device, _userId) {
   const capabilities = await evaluateDeviceSyncCapabilities(device);
   
   let method = 'basic';

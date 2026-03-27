@@ -6,10 +6,10 @@
 
 import React, { useState, useEffect } from 'react';
 
-import { Icon } from '../ui';
-import Button from '../ui/Button';
 import { fetchDashboardKPIs } from '../../services/guardService';
 import logger from '../../utils/logger';
+import { Icon } from '../ui';
+import Button from '../ui/Button';
 
 const DashboardKPIs = ({ onFilterClick }) => {
   const [kpis, setKpis] = useState({

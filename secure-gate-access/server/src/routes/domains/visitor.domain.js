@@ -19,6 +19,7 @@ import deliveryRoutes from '../deliveryRoutes.js';
 
 export default [
     { prefix: '/api/visitors', router: visitorRoutes, options: { description: 'Visitor invitations & management' } },
+    { prefix: '/api/admin/visitors', router: visitorRoutes, options: { description: 'Admin compatibility alias for visitor routes' } },
     { prefix: '/api/public/visitors', router: visitorPublicRoutes, options: { description: 'Visitor public routes (no auth)' } },
     { prefix: '/api/public', router: visitorPublicRoutes, options: { description: 'Legacy public alias' } },
     { prefix: '/api/check-in', router: checkInRoutes, options: { description: 'Visitor check-in' } },

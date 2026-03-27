@@ -3,6 +3,7 @@
  */
 
 import { renderHook, act, waitFor } from '@testing-library/react';
+
 import { useAccessibility, useFocusManagement, useKeyboardShortcuts } from '../../hooks/useAccessibility.js';
 
 // Mock accessibility audit functions

@@ -27,26 +27,6 @@ export const useVisitorInvite = (token) => {
         hasErrorRef.current = Boolean(error);
     }, [error]);
 
-    // Monitor online/offline status
-    useEffect(() => {
-        const handleOnline = () => {
-            setIsOffline(false);
-            // Retry fetching when coming back online
-            if (hasErrorRef.current && token) {
-                fetchVisitorDetails();
-            }
-        };
-        const handleOffline = () => setIsOffline(true);
-        
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-        
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
-    }, [token]);
-
     // Fetch with retry logic
     const fetchWithRetry = useCallback(async (url, options = {}, maxRetries = 3) => {
         let lastError;
@@ -207,6 +187,26 @@ export const useVisitorInvite = (token) => {
             setLoading(false);
         }
     }, [token, fetchWithRetry, fetchEstateInfo]);
+
+    // Monitor online/offline status
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOffline(false);
+            // Retry fetching when coming back online
+            if (hasErrorRef.current && token) {
+                fetchVisitorDetails();
+            }
+        };
+        const handleOffline = () => setIsOffline(true);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [token, fetchVisitorDetails]);
 
     // Poll for status updates
     const pollStatus = useCallback(async () => {

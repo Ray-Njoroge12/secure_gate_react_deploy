@@ -16,6 +16,22 @@ import { fileURLToPath } from 'url';
 
 import { existsSync } from 'fs';
 
+const parseEnvBoolean = (value, defaultValue = false) => {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+
+  return defaultValue;
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -49,6 +65,19 @@ class EnvironmentValidator {
     this.isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
     this.isTest = process.env.NODE_ENV === 'test';
     this.isStaging = process.env.NODE_ENV === 'staging';
+  }
+
+  shouldSuppressWeakSecretWarning() {
+    return parseEnvBoolean(process.env.DEV_SUPPRESS_WEAK_SECRET_WARNINGS, false) && (this.isDevelopment || this.isTest);
+  }
+
+  isLocalSmtpNoAuthConfig(smtpHost, smtpPort) {
+    const host = String(smtpHost || '').trim().toLowerCase();
+    const port = Number.parseInt(smtpPort, 10);
+    const localHost = ['localhost', '127.0.0.1', '::1'].includes(host);
+    const mailhogPort = Number.isNaN(port) ? true : port === 1025;
+    const smtpRequireAuth = parseEnvBoolean(process.env.SMTP_REQUIRE_AUTH, false);
+    return (this.isDevelopment || this.isTest) && localHost && mailhogPort && !smtpRequireAuth;
   }
 
   /**
@@ -176,7 +205,7 @@ class EnvironmentValidator {
       if (this.isWeakSecret(jwtSecret)) {
         if (this.isProduction || this.isStaging) {
           this.errors.push('JWT_SECRET is too weak for production/staging (min 32 chars, high entropy)');
-        } else {
+        } else if (!this.shouldSuppressWeakSecretWarning()) {
           this.warnings.push('JWT_SECRET appears weak - consider using stronger secret');
         }
       }
@@ -188,7 +217,7 @@ class EnvironmentValidator {
       if (this.isWeakSecret(jwtRefreshSecret)) {
         if (this.isProduction || this.isStaging) {
           this.errors.push('JWT_REFRESH_SECRET is too weak for production/staging');
-        } else {
+        } else if (!this.shouldSuppressWeakSecretWarning()) {
           this.warnings.push('JWT_REFRESH_SECRET appears weak');
         }
       }
@@ -222,13 +251,14 @@ class EnvironmentValidator {
     if (smtpHost) {
       const smtpUser = process.env.SMTP_USER;
       const smtpPass = process.env.SMTP_PASS;
+      const smtpPort = Number.parseInt(process.env.SMTP_PORT, 10);
+      const localNoAuthSmtp = this.isLocalSmtpNoAuthConfig(smtpHost, process.env.SMTP_PORT);
 
-      if (!smtpUser || !smtpPass) {
+      if ((!smtpUser || !smtpPass) && !localNoAuthSmtp) {
         this.warnings.push('SMTP configured but missing SMTP_USER or SMTP_PASS');
       }
 
       // Validate SMTP port
-      const smtpPort = parseInt(process.env.SMTP_PORT);
       if (process.env.SMTP_PORT && (isNaN(smtpPort) || smtpPort < 1 || smtpPort > 65535)) {
         this.errors.push(`Invalid SMTP port: ${process.env.SMTP_PORT}`);
       }
@@ -245,22 +275,28 @@ class EnvironmentValidator {
    * Validate production/staging requirements
    */
   validateProduction() {
+    const enforceHttps = parseEnvBoolean(process.env.ENFORCE_HTTPS, false);
+    const allowHttpInProduction = parseEnvBoolean(process.env.ALLOW_HTTP_IN_PRODUCTION, false);
+    const secureCookies = parseEnvBoolean(process.env.SECURE_COOKIES, false);
+    const otpDebugEchoEnabled = parseEnvBoolean(process.env.OTP_DEBUG_ECHO, false);
+    const debugRoutesEnabled = parseEnvBoolean(process.env.ENABLE_DEBUG_ROUTES, false);
+
     // HTTPS enforcement
-    if (process.env.ENFORCE_HTTPS !== 'true' && !process.env.ALLOW_HTTP_IN_PRODUCTION && this.isProduction) {
+    if (!enforceHttps && !allowHttpInProduction && this.isProduction) {
       this.errors.push('ENFORCE_HTTPS must be "true" in production');
     }
 
     // Secure cookies
-    if (process.env.SECURE_COOKIES !== 'true') {
+    if (!secureCookies) {
       this.errors.push('SECURE_COOKIES must be "true" in production/staging');
     }
 
     // Debug features disabled
-    if (process.env.OTP_DEBUG_ECHO === 'true') {
+    if (otpDebugEchoEnabled) {
       this.errors.push('OTP_DEBUG_ECHO must be disabled in production/staging');
     }
 
-    if (process.env.ENABLE_DEBUG_ROUTES === 'true') {
+    if (debugRoutesEnabled) {
       this.errors.push('ENABLE_DEBUG_ROUTES must be disabled in production/staging');
     }
   }
@@ -269,11 +305,11 @@ class EnvironmentValidator {
    * Validate staging-specific requirements
    */
   validateStaging() {
-    if (process.env.ENABLE_CSRF === 'false') {
+    if (!parseEnvBoolean(process.env.ENABLE_CSRF, true)) {
       this.warnings.push('ENABLE_CSRF is disabled in staging - ensure this is intentional');
     }
 
-    if (process.env.ENABLE_RATE_LIMIT === 'false') {
+    if (!parseEnvBoolean(process.env.ENABLE_RATE_LIMIT, true)) {
       this.warnings.push('ENABLE_RATE_LIMIT is disabled in staging');
     }
 

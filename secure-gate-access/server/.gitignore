@@ -1,5 +1,7 @@
 # Environment files (secrets)
 .env
+.env.test
+.env.staging
 .env.production
 .env.production.template
 .env.local
@@ -7,3 +9,23 @@
 
 # Keep the template/example file (no secrets)
 !.env.example
+
+# Runtime and generated artifacts
+logs/
+backups/
+compliance_audits/
+test_compliance_audits/
+data/local_messages.json
+data/secure-gate.db
+coverage/
+.nyc_output/
+.analysis/
+node_modules/
+*.log
+*.pid
+.DS_Store
+scripts/mfa_credentials*.json
+scripts/mfa_status_output*.json
+
+# Generated performance regression output (baselines.json remains tracked)
+tests/performance-regression/results.json

@@ -6,10 +6,11 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useError } from '../../contexts/ErrorContext';
+
 import errorQueueService from '../../services/errorQueueService';
-import Icon from './Icon.jsx';
+
 import Button from './Button.jsx';
+import Icon from './Icon.jsx';
 
 /**
  * ErrorQueue component for displaying global errors and notifications
@@ -31,7 +32,6 @@ const ErrorQueue = ({
   position = 'top-right',
   className = ''
 }) => {
-  const { clearError, clearAllErrors } = useError();
   const [errors, setErrors] = useState([]);
 
   // Subscribe to error queue changes
@@ -91,20 +91,6 @@ const ErrorQueue = ({
       case 'info': return 'info';
       case 'system': return 'refresh-cw';
       default: return 'alert-circle';
-    }
-  };
-
-  const getColorsForType = (type) => {
-    switch (type) {
-      case 'success':
-        return 'border-green-500 text-green-800 bg-green-50';
-      case 'warning':
-        return 'border-yellow-500 text-yellow-800 bg-yellow-50';
-      case 'info':
-        return 'border-blue-500 text-blue-800 bg-blue-50';
-      case 'error':
-      default:
-        return 'border-red-500 text-red-800 bg-red-50';
     }
   };
 

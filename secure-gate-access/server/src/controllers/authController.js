@@ -107,7 +107,12 @@ export const login = async (req, res) => {
 
     const user = await userService.authenticateUser(identifier, password, estate_id);
 
-    if (user.mfa_enabled) {
+    const isLocalSuperAdminMfaBypass =
+        process.env.NODE_ENV === 'development' &&
+        user.email === 'superadmin@securegate.com' &&
+        user.role === 'super_admin';
+
+    if (user.mfa_enabled && !isLocalSuperAdminMfaBypass) {
         loggingService.info('MFA required for user', {
             event: 'auth.login.mfa_required',
             user_id: user.id,
@@ -122,6 +127,14 @@ export const login = async (req, res) => {
         );
 
         return successResponse(res, { requiresMFA: true, mfaSessionId, userId: user.id, expiresIn: 300 }, 'MFA verification required');
+    }
+
+    if (isLocalSuperAdminMfaBypass) {
+        loggingService.warn('Development-only local super admin MFA bypass applied', {
+            event: 'auth.login.local_mfa_bypass',
+            user_id: user.id,
+            request_id: req.requestId
+        });
     }
 
     const platform = getClientPlatform(req);

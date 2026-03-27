@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import autoApprovalService from '../../services/autoApprovalService';
 import Button from '../ui/Button';
 

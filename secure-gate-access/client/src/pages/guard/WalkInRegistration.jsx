@@ -186,7 +186,8 @@ const WalkInRegistration = () => {
         return;
       }
       // Network error - fall back to offline registration
-      if (err.message?.includes('fetch') || err.message?.includes('network')) {
+      const errorMessage = String(err.message || '').toLowerCase();
+      if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
         console.warn('Online registration failed, falling back to offline:', err);
         await registerOffline(walkInData);
       } else {

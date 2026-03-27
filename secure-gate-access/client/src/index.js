@@ -1,12 +1,10 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+
 import App from "./App.js";
-import "./index.css";
-
-// Phase 4.3: Sentry Error Monitoring
-import { initializeSentry } from "./config/sentry.js";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
-
+import { initializeSentry } from "./config/sentry.js";
+import "./index.css";
 // PWA Service Worker Registration - Added for Task 4.4
 import { register as registerSW, unregister as unregisterSW } from "./serviceWorkerRegistration.js";
 

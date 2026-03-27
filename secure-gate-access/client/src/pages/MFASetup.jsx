@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../utils/apiClient';
+
 import Button from '../components/ui/Button';
+import api from '../utils/apiClient';
 
 /**
  * MFA Setup Component
@@ -30,7 +31,7 @@ const MFASetup = () => {
   const [verificationToken, setVerificationToken] = useState('');
 
   // Step 1: Initialize MFA Setup
-  const initializeMFA = async () => {
+  const initializeMFA = useCallback(async () => {
     setLoading(true);
     setError('');
     
@@ -51,7 +52,7 @@ const MFASetup = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Step 2: Verify and Enable MFA
   const verifyAndEnable = async (e) => {
@@ -104,7 +105,7 @@ const MFASetup = () => {
     if (step === 1) {
       initializeMFA();
     }
-  }, []);
+  }, [step, initializeMFA]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12 px-4 sm:px-6 lg:px-8">

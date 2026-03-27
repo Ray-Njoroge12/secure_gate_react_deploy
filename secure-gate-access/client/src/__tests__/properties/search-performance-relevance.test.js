@@ -8,6 +8,7 @@
  */
 
 import fc from 'fast-check';
+
 import { searchService } from '../../services/searchService';
 
 // Mock the search service for testing
@@ -220,7 +221,7 @@ describe('Property 11: Search Performance and Relevance', () => {
         }
 
         // Property 1: All searches should complete within performance threshold
-        performanceResults.forEach(({ responseTime, query }) => {
+        performanceResults.forEach(({ responseTime }) => {
           expect(responseTime).toBeLessThan(1000);
         });
 

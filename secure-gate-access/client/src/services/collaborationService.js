@@ -1,5 +1,6 @@
-import apiClient from './api';
 import logger from '../utils/logger';
+
+import apiClient from './api';
 
 /**
  * Collaboration Service

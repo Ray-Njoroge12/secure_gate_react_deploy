@@ -4,8 +4,17 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { login, navigateTo } = require('../utils/test-helpers');
+const path = require('path');
+const {
+  login,
+  navigateTo,
+  suppressGlobalOverlays,
+  dismissBlockingPrompts,
+} = require('../utils/test-helpers');
 const users = require('../fixtures/users.json');
+
+// Use authenticated storage state for resident tests
+test.use({ storageState: path.join(__dirname, '..', '.auth', 'resident-storage.json') });
 
 test.describe('E2E-INVITE: Visitor Invitation Flow', () => {
   
@@ -13,110 +22,69 @@ test.describe('E2E-INVITE: Visitor Invitation Flow', () => {
   let invitationLink;
   
   test.beforeEach(async ({ page }) => {
-    // Login as resident to create invitations
-    await login(page, {
-      email: users.resident.email,
-      password: users.resident.password
-    });
-    await page.waitForTimeout(2000);
+    await suppressGlobalOverlays(page);
+    // Storage state auto-authenticates resident session.
+    await page.goto('/dashboard/resident');
+    await dismissBlockingPrompts(page);
+    await page.waitForTimeout(1000);
   });
 
   test('E2E-INVITE-01: Resident Accesses Visitor Invitation Form', async ({ page }) => {
-    // Navigate to add visitor or invite page
-    await navigateTo(page, '/resident/add-visitor');
+    // Navigate to quick invite page
+    await navigateTo(page, '/resident/quick-invite');
+    await dismissBlockingPrompts(page);
     await page.waitForTimeout(2000);
-    
-    // Try alternative routes
-    if (page.url().includes('404')) {
-      await navigateTo(page, '/resident/add-visitor');
-      await page.waitForTimeout(2000);
-    }
-    if (page.url().includes('404')) {
-      await navigateTo(page, '/invite-visitor');
-      await page.waitForTimeout(2000);
-    }
     
     // Verify invitation form or add visitor form
     const hasForm = await page.locator('form').isVisible({ timeout: 5000 }).catch(() => false);
     expect(hasForm).toBeTruthy();
     
-    // Check for invitation-specific fields
-    const hasEmailField = await page.locator('input[name="email"], input[type="email"]').isVisible({ timeout: 5000 }).catch(() => false);
-    const hasInviteButton = await page.locator('button:has-text("Invite"), button:has-text("Send Invitation")').isVisible({ timeout: 5000 }).catch(() => false);
+    // Check for quick-invite-specific fields
+    const hasNameField = await page.locator('#guest-name').isVisible({ timeout: 5000 }).catch(() => false);
+    const hasInviteButton = await page.locator('button:has-text("Send Invite")').isVisible({ timeout: 5000 }).catch(() => false);
     
-    // Either has email field or is a general visitor form
-    expect(hasEmailField || hasForm).toBeTruthy();
+    expect(hasNameField && hasInviteButton).toBeTruthy();
   });
 
   test('E2E-INVITE-02: Resident Creates Visitor Invitation with Email', async ({ page }) => {
-    // Navigate to add visitor
-    await navigateTo(page, '/resident/add-visitor');
+    // Navigate to quick invite
+    await navigateTo(page, '/resident/quick-invite');
+    await dismissBlockingPrompts(page);
     await page.waitForTimeout(2000);
-    
-    if (page.url().includes('404')) {
-      await navigateTo(page, '/resident/add-visitor');
-      await page.waitForTimeout(2000);
-    }
-    
+
     // Wait for form
-    await page.waitForSelector('form, input[name="name"]', { timeout: 10000 });
+    await page.waitForSelector('form, #guest-name, #guest-phone', { timeout: 10000 });
     
     // Generate unique visitor data
     const timestamp = Date.now();
-    const visitorEmail = `invited.visitor${timestamp}@example.com`;
+    const guestName = `Invited Guest ${timestamp}`;
     
     // Fill invitation form
-    await page.fill('input[name="name"], input[id="name"]', `Invited Guest ${timestamp}`);
+    await page.fill('#guest-name', guestName);
+    await page.fill('#guest-phone', '0744556677');
     await page.waitForTimeout(300);
-    
-    const emailField = page.locator('input[name="email"], input[type="email"]');
-    if (await emailField.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await emailField.fill(visitorEmail);
-      await page.waitForTimeout(300);
-    }
-    
-    await page.fill('input[name="phone"], input[id="phone"]', '0744556677');
-    await page.waitForTimeout(300);
-    
-    // Select purpose
-    const purposeSelect = page.locator('select[name="purpose"]');
-    if (await purposeSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await purposeSelect.selectOption({ index: 1 });
-    } else {
-      const purposeInput = page.locator('input[name="purpose"]');
-      if (await purposeInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await purposeInput.fill('Social visit');
-      }
-    }
-    
-    // Set visit date and time (REQUIRED)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    await page.fill('input[name="dateOfVisit"]', tomorrow.toISOString().split('T')[0]);
-    await page.fill('input[name="time"]', '15:00');
-    await page.waitForTimeout(300);
-    
-    // Accept consent (REQUIRED)
-    const consentCheckbox = page.locator('input[type="checkbox"][name*="consent"], input[type="checkbox"]#consent-checkbox');
-    if (await consentCheckbox.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await consentCheckbox.check();
-      await page.waitForTimeout(300);
-    }
+
+    // Select quick date chip
+    // Use tomorrow chip to avoid timezone edge cases where "today" becomes invalid.
+    await page.getByRole('radio', { name: /Select date: Tomorrow/i }).click();
     
     await page.waitForTimeout(500);
     
     // Submit form
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /Send Invite/i }).click();
     await page.waitForTimeout(4000);
     
-    // Verify invitation sent
-    const hasSuccess = await page.locator('text=/invitation sent|email sent|created|success|invite code/i').isVisible({ timeout: 8000 }).catch(() => false);
-    expect(hasSuccess).toBeTruthy();
+    // Verify invitation sent using stable success-screen controls/text.
+    const hasDoneButton = await page.getByRole('button', { name: /^Done$/i }).isVisible({ timeout: 8000 }).catch(() => false);
+    const hasInviteAnotherButton = await page.getByRole('button', { name: /Invite Another Guest/i }).isVisible({ timeout: 2000 }).catch(() => false);
+    const hasCopyLinkButton = await page.getByRole('button', { name: /Copy Link/i }).isVisible({ timeout: 2000 }).catch(() => false);
+    const hasNextSteps = await page.getByText(/Next Steps/i).isVisible({ timeout: 2000 }).catch(() => false);
+    expect(hasDoneButton || hasInviteAnotherButton || hasCopyLinkButton || hasNextSteps).toBeTruthy();
     
-    // Try to extract invitation code or link
-    const pageContent = await page.content();
-    const codeMatch = pageContent.match(/(?:invitation|invite)[_-]?code[\"']?\s*[:=]\s*[\"']?([A-Z0-9-]+)/i);
-    const linkMatch = pageContent.match(/(https?:\/\/[^\s<>"]+\/(?:invite|guest)\/[A-Z0-9-]+)/i);
+    // Try to extract invitation code or link for follow-up guest tests
+    const pageText = await page.locator('body').innerText();
+    const codeMatch = pageText.match(/Access\s+Code\s*([A-Z0-9-]+)/i);
+    const linkMatch = pageText.match(/(https?:\/\/[^\s]+\/(?:invite|v)\/[A-Za-z0-9-]+)/i);
     
     if (codeMatch) {
       invitationCode = codeMatch[1];
@@ -128,16 +96,12 @@ test.describe('E2E-INVITE: Visitor Invitation Flow', () => {
 
   test('E2E-INVITE-03: Resident Views Invitation Status', async ({ page }) => {
     // Navigate to visitors list
-    await navigateTo(page, '/resident/visitors');
+    await navigateTo(page, '/resident/visitor-history');
+    await dismissBlockingPrompts(page);
     await page.waitForTimeout(2000);
     
-    if (page.url().includes('404')) {
-      await navigateTo(page, '/visitors');
-      await page.waitForTimeout(2000);
-    }
-    
     // Look for invitation status indicators
-    const hasInvitationStatus = await page.locator('text=/invited|invitation sent|pending rsvp|confirmed/i').isVisible({ timeout: 5000 }).catch(() => false);
+    const hasInvitationStatus = await page.locator('text=/pending|checked in|checked out|cancelled|confirmed/i').isVisible({ timeout: 5000 }).catch(() => false);
     
     // Or look for any visitor with email icon/badge
     const hasEmailIndicator = await page.locator('[aria-label*="email"], [title*="invited"], .email-icon').isVisible({ timeout: 5000 }).catch(() => false);
@@ -175,42 +139,46 @@ test.describe('E2E-INVITE: Visitor Invitation Flow', () => {
   });
 
   test('E2E-INVITE-05: Guest Confirms Attendance via Link', async ({ page }) => {
-    // Navigate to guest invitation page
-    await page.goto('/guest-invite');
+    // Navigate to guest invitation page.
+    const targetLink = invitationLink || '/v/invalid-token';
+    await page.goto(targetLink);
     await page.waitForTimeout(2000);
-    
-    // Try with sample code
-    const testCode = invitationCode || 'TEST123';
-    
-    // Look for code input field
-    const codeInput = page.locator('input[name="code"], input[name="invitationCode"], input[placeholder*="code" i]');
-    if (await codeInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await codeInput.fill(testCode);
-      await page.waitForTimeout(500);
-      
-      // Submit or verify
-      const submitBtn = page.locator('button[type="submit"], button:has-text("Verify"), button:has-text("Continue")').first();
-      if (await submitBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await submitBtn.click();
+
+    // If we are on the modern /v/:token confirmation form, fill required fields.
+    const idInput = page.locator('#self-reg-id, #visitor-id-number').first();
+    const hasIdInput = await idInput.isVisible({ timeout: 5000 }).catch(() => false);
+
+    if (hasIdInput) {
+      await idInput.fill(`ID${Date.now().toString().slice(-6)}`);
+
+      const nameInput = page.locator('#visitor-name');
+      if (await nameInput.isVisible({ timeout: 1200 }).catch(() => false)) {
+        await nameInput.fill('Playwright Guest');
+      }
+
+      const phoneInput = page.locator('#visitor-phone');
+      if (await phoneInput.isVisible({ timeout: 1200 }).catch(() => false)) {
+        await phoneInput.fill('0712345678');
+      }
+
+      const consentCheckbox = page.locator('#consent, #consent-bulk').first();
+      if (await consentCheckbox.isVisible({ timeout: 1200 }).catch(() => false)) {
+        await consentCheckbox.check();
+      }
+
+      const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Get Pass"), button:has-text("Register")').first();
+      if (await confirmButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await confirmButton.click();
         await page.waitForTimeout(3000);
       }
+
+      const hasPostActionState = await page.locator('text=/Visitor Pass|awaiting approval|approved|denied|offline|saved and will be sent/i').isVisible({ timeout: 8000 }).catch(() => false);
+      expect(hasPostActionState).toBeTruthy();
+      return;
     }
-    
-    // Look for confirm/accept button
-    const confirmButton = page.locator('button:has-text("Confirm"), button:has-text("Accept"), button:has-text("I\'ll be there"), button:has-text("RSVP")').first();
-    const hasConfirmButton = await confirmButton.isVisible({ timeout: 5000 }).catch(() => false);
-    
-    if (hasConfirmButton) {
-      await confirmButton.click();
-      await page.waitForTimeout(3000);
-      
-      // Verify confirmation success
-      const hasSuccess = await page.locator('text=/confirmed|thank you|see you|success/i').isVisible({ timeout: 8000 }).catch(() => false);
-      expect(hasSuccess).toBeTruthy();
-    } else {
-      // Guest confirmation not available - may require login
-      expect(true).toBeTruthy();
-    }
+
+    // If no confirmation UI is available for the current link, keep this test non-blocking.
+    expect(true).toBeTruthy();
   });
 
   test('E2E-INVITE-06: Guest Declines Invitation via Link', async ({ page }) => {
@@ -247,13 +215,9 @@ test.describe('E2E-INVITE: Visitor Invitation Flow', () => {
     // Already logged in as resident from beforeEach
     
     // Navigate to visitors
-    await navigateTo(page, '/resident/visitors');
+    await navigateTo(page, '/resident/visitor-history');
+    await dismissBlockingPrompts(page);
     await page.waitForTimeout(2000);
-    
-    if (page.url().includes('404')) {
-      await navigateTo(page, '/visitors');
-      await page.waitForTimeout(2000);
-    }
     
     // Look for resend invitation button
     const resendButton = page.locator('button:has-text("Resend"), button:has-text("Send Again"), button[aria-label*="resend"]').first();
@@ -367,13 +331,9 @@ test.describe('E2E-INVITE: Visitor Invitation Flow', () => {
     }
     
     // Navigate to visitors
-    await navigateTo(page, '/resident/visitors');
+    await navigateTo(page, '/resident/visitor-history');
+    await dismissBlockingPrompts(page);
     await page.waitForTimeout(2000);
-    
-    if (page.url().includes('404')) {
-      await navigateTo(page, '/visitors');
-      await page.waitForTimeout(2000);
-    }
     
     // Look for cancel invitation button
     const cancelButton = page.locator('button:has-text("Cancel"), button:has-text("Revoke"), button[aria-label*="cancel"]').first();

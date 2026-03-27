@@ -5,16 +5,16 @@
  */
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Card, Button, Badge, Input, PageHeader, Skeleton, Modal } from "../../components/ui";
-import { SearchFilter, Pagination } from "../../components/ui";
+import logger from 'utils/logger';
+
+import { useConfirmation } from "../../components/common/ConfirmationDialog";
+import { Card, Button, PageHeader, Skeleton, Modal } from "../../components/ui";
+import { Pagination } from "../../components/ui";
+import Icon from "../../components/ui/Icon";
+import { useToast } from "../../contexts/ToastContext";
+import { useSearchData } from "../../hooks/useSearch";
 import { getAllResidents, updateResident, deleteResident, createResident } from "../../services/adminService";
 import { handleApiError } from "../../utils/errorMapper";
-import { useSearchData } from "../../hooks/useSearch";
-import { useToast } from "../../contexts/ToastContext";
-import { useConfirmation } from "../../components/common/ConfirmationDialog";
-import { useCurrentRole } from "../../hooks/useCurrentRole";
-import logger from 'utils/logger';
-import Icon from "../../components/ui/Icon";
 
 // Status badge component
 const StatusBadge = ({ status }) => {
@@ -93,7 +93,7 @@ const ResidentCard = ({ resident, onEdit, onToggle, onDelete, onEmail }) => (
             size="sm"
             onClick={() => onEmail(resident)}
             className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            aria-label={`Email ${resident.username}`}
+            aria-label={`Email ${resident.name || resident.username || resident.email || 'resident'}`}
           >
             <Icon name="mail" className="w-4 h-4" />
           </Button>
@@ -375,7 +375,6 @@ const EditResidentModal = ({ resident, isOpen, onClose, onSave }) => {
 };
 
 export default function ManageResidents({ estateId }) {
-  const role = useCurrentRole();
   const toast = useToast();
   const { confirm, dialogProps, Dialog: ConfirmDialog } = useConfirmation();
 
@@ -403,9 +402,7 @@ export default function ManageResidents({ estateId }) {
     setFilters,
     clearFilters,
     setPage,
-    isSearching,
     hasFilters,
-    hasResults
   } = useSearchData(users, searchFields, filterFields, {
     enablePagination: true,
     pageSize: 10
@@ -859,7 +856,7 @@ export default function ManageResidents({ estateId }) {
                               size="sm"
                               onClick={() => handleEmail(resident)}
                               className="p-2 text-gray-500 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              aria-label={`Email ${resident.name}`}
+                              aria-label={`Email ${resident.name || resident.username || resident.email || 'resident'}`}
                             >
                               <Icon name="mail" className="w-4 h-4" />
                             </Button>

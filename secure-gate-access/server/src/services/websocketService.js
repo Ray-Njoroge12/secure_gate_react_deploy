@@ -101,7 +101,7 @@ class WebSocketService {
         ]);
 
         adapter = createAdapter(pubClient, subClient);
-        console.log('✅ Redis Adapter configured for WebSocket');
+        logger.info('Redis Adapter configured for WebSocket');
       } catch (err) {
         logger.warn('Failed to connect Redis for WebSocket adapter', { error: err.message });
         // Fallback to in-memory adapter
@@ -134,7 +134,7 @@ class WebSocketService {
     this.dashboardEvents = new DashboardEvents(this);
 
     logger.info('WebSocket service initialized');
-    console.log('🔌 WebSocket service initialized with real-time capabilities');
+    logger.info('WebSocket service initialized with real-time capabilities');
   }
 
   /**

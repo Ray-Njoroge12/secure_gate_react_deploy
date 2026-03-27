@@ -4,9 +4,10 @@
  */
 
 import axios from 'axios';
-import logger from './logger';
+
 import { navigateToEstateRequired, navigateToLogin } from './authNavigation';
 import { authStateMachine } from './authStateMachine';
+import logger from './logger';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -284,11 +285,17 @@ function generateRequestId() {
 // Helper function to refresh CSRF token
 async function refreshCSRFToken() {
   try {
+    const baseURL = apiClient.defaults.baseURL;
     const response = await axios.get('/api/auth/csrf-token', {
+      baseURL,
       withCredentials: true
     });
 
-    const csrfToken = response.data.csrfToken || response.headers['x-csrf-token'];
+    const csrfToken =
+      response?.data?.csrfToken ||
+      response?.data?.data?.csrfToken ||
+      response?.headers?.['x-csrf-token'] ||
+      response?.headers?.['X-CSRF-Token'];
 
     if (csrfToken) {
       // Update meta tag
@@ -302,6 +309,8 @@ async function refreshCSRFToken() {
 
       return csrfToken;
     }
+
+    throw new Error('Missing CSRF token in response');
   } catch (error) {
     throw error;
   }

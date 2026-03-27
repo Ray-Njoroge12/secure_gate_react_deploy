@@ -19,6 +19,7 @@
 
 import { jest } from '@jest/globals';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
+
 import { ANALYTICS_EVENTS } from './constants/tutorial-test-config.js';
 import { createUserWithRole } from './factories/tutorial-test-factories.js';
 import { renderWelcomeFlow } from './utils/tutorial-test-utils.js';
@@ -56,7 +57,7 @@ describe('Property 16: Onboarding Tutorial Relevance - Integration Tests', () =>
 
   test('should complete full tutorial flow for resident role', async () => {
     const user = createUserWithRole('resident');
-    const { container, mockOnComplete, mockAnalytics } = renderWelcomeFlow(user);
+    const { container, mockAnalytics } = renderWelcomeFlow(user);
 
     // Verify initial state
     expect(screen.getAllByText(/Welcome to Your Secure Community/).length).toBeGreaterThan(0);

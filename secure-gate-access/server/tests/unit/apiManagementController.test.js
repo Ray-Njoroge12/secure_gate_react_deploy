@@ -6,8 +6,6 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import { apiManagementController } from '../../src/controllers/apiManagementController.js';
-import { apiEnhancementMiddleware } from '../../src/middleware/apiEnhancementMiddleware.js';
 
 // Mock dependencies
 const mockApiKeyService = {
@@ -37,21 +35,48 @@ const mockDb = {
   query: jest.fn()
 };
 
-jest.mock('../../src/services/apiKeyService.js', () => ({
+jest.unstable_mockModule('../../src/services/apiKeyService.js', () => ({
   apiKeyService: mockApiKeyService
 }));
 
-jest.mock('../../src/services/rateLimitService.js', () => ({
+jest.unstable_mockModule('../../src/services/rateLimitService.js', () => ({
   rateLimitService: mockRateLimiter
 }));
 
-jest.mock('../../src/services/analyticsService.js', () => ({
+jest.unstable_mockModule('../../src/services/analyticsService.js', () => ({
   analyticsService: mockAnalyticsService
 }));
 
-jest.mock('../../src/database/db.enhanced.js', () => ({
+jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
   dbManager: mockDb
 }));
+
+const mockAuthenticateApiKey = jest.fn(async (req, res, next) => next());
+const mockRecordApiUsage = jest.fn(async (req, res, next) => next());
+const mockValidatePermissions = jest.fn(async (req, res, next) => next());
+const mockGetAllApiClients = jest.fn(async () => []);
+
+jest.unstable_mockModule('../../src/middleware/apiEnhancementMiddleware.js', () => ({
+  authenticateApiKey: mockAuthenticateApiKey,
+  recordApiUsage: mockRecordApiUsage,
+  validatePermissions: mockValidatePermissions,
+  apiEnhancementMiddleware: {
+    authenticateApiKey: mockAuthenticateApiKey,
+    recordApiUsage: mockRecordApiUsage,
+    validatePermissions: mockValidatePermissions,
+    getAllApiClients: mockGetAllApiClients
+  },
+  default: {
+    authenticateApiKey: mockAuthenticateApiKey,
+    recordApiUsage: mockRecordApiUsage,
+    validatePermissions: mockValidatePermissions,
+    getAllApiClients: mockGetAllApiClients
+  }
+}));
+
+// Dynamic imports after mocks
+const { apiManagementController } = await import('../../src/controllers/apiManagementController.js');
+const { apiEnhancementMiddleware } = await import('../../src/middleware/apiEnhancementMiddleware.js');
 
 describe('API Management Controller', () => {
   let app;

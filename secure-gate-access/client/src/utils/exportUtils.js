@@ -58,7 +58,6 @@ export const exportToPDF = ({
   // Colors matching the brand
   const primaryColor = [16, 185, 129]; // #10b981 green
   const textColor = [31, 41, 55]; // gray-800
-  const lightGray = [243, 244, 246]; // gray-100
 
   let yPos = 20;
 
@@ -389,7 +388,7 @@ export const exportToCSV = ({
  * Export current view/chart as image (future enhancement)
  * This can be used to embed charts in reports
  */
-export const exportChartAsImage = async (chartElement) => {
+export const exportChartAsImage = async (_chartElement) => {
   // Future: Use html2canvas or similar to capture chart
   console.warn('Chart image export not yet implemented');
   return null;

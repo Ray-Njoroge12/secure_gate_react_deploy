@@ -1,11 +1,10 @@
-import fc from 'fast-check';
 import { jest } from '@jest/globals';
+import fc from 'fast-check';
 
 // Test configuration and utilities
-import { TEST_CONFIG, NETWORK_CONDITIONS, ESSENTIAL_CAPABILITIES, ERROR_SCENARIOS } from './constants/index.js';
+import { TEST_CONFIG } from './constants/index.js';
 import { 
   OfflineServiceMockFactory, 
-  TestScenarioBuilder, 
   OfflineTestAssertions,
   visitorGenerator,
   actionGenerator,
@@ -133,7 +132,6 @@ const setupMocks = () => {
 
 describe('Enhanced Offline Functionality Preservation Properties', () => {
   let mocks;
-  let testScenarioBuilder;
   let performanceTracker;
   let originalOnlineDescriptor;
   let originalOnlineValue;
@@ -141,7 +139,6 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
   beforeEach(() => {
     // Setup enhanced mocks with proper cleanup
     mocks = setupMocks();
-    testScenarioBuilder = new TestScenarioBuilder();
     
     // Performance tracking
     performanceTracker = {
@@ -195,9 +192,9 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
         }),
         (visitors) => {
           const startTime = Date.now();
-          
+
           // Create mock using factory
-          const mockOfflineService = OfflineServiceMockFactory.createVisitorMock(visitors, {
+          OfflineServiceMockFactory.createVisitorMock(visitors, {
             cacheTime: Date.now()
           });
           
@@ -242,7 +239,6 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
           }
           
           // Performance validation
-          const executionTime = Date.now() - startTime;
           OfflineTestAssertions.validatePerformanceMetrics(startTime, Date.now(), {
             maxExecutionTime: PERFORMANCE_LIMITS.maxStorageTime
           });
@@ -258,9 +254,9 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
         }),
         (actions) => {
           const startTime = Date.now();
-          
+
           // Create mock using factory
-          const mockOfflineService = OfflineServiceMockFactory.createActionQueueMock(actions, {
+          OfflineServiceMockFactory.createActionQueueMock(actions, {
             queueTime: new Date().toISOString(),
             status: 'queued'
           });
@@ -359,9 +355,9 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
         fc.array(visitorGenerator, { minLength: 10, maxLength: 20 }),
         (largeVisitorSet) => {
           const startTime = Date.now();
-          
+
           // Create error mock using factory
-          const mockOfflineService = OfflineServiceMockFactory.createErrorMock(
+          OfflineServiceMockFactory.createErrorMock(
             'STORAGE_QUOTA_EXCEEDED',
             'Storage quota exceeded'
           );
@@ -454,9 +450,9 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
           const totalActions = actions.length;
           const failedCount = Math.floor(totalActions * failureRate);
           const successCount = totalActions - failedCount;
-          
+
           // Create sync mock with partial failures
-          const mockOfflineService = OfflineServiceMockFactory.createSyncMock(actions, {
+          OfflineServiceMockFactory.createSyncMock(actions, {
             shouldFail: failureRate > 0.5,
             failureMessage: 'Network timeout',
             retryCount: failedCount
@@ -551,9 +547,9 @@ describe('Enhanced Offline Functionality Preservation Properties', () => {
         preferencesGenerator,
         (preferences) => {
           const startTime = Date.now();
-          
+
           // Create preferences mock using factory
-          const mockOfflineService = OfflineServiceMockFactory.createPreferencesMock(preferences, {
+          OfflineServiceMockFactory.createPreferencesMock(preferences, {
             cacheTime: Date.now()
           });
           

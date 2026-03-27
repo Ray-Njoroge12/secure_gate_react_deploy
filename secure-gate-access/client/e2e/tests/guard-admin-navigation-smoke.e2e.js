@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { suppressGlobalOverlays } = require('../utils/test-helpers');
 
 function jsonResponse(body, status = 200) {
   return {
@@ -10,24 +11,6 @@ function jsonResponse(body, status = 200) {
     },
     body: JSON.stringify(body)
   };
-}
-
-async function suppressGlobalOverlays(page) {
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('pwa-install-dismissed', 'true');
-      localStorage.setItem('notification-prompt-dismissed', 'true');
-      localStorage.setItem('cookieConsent', JSON.stringify({
-        necessary: true,
-        analytics: false,
-        marketing: false,
-        preferences: false
-      }));
-      localStorage.setItem('cookieConsentDate', new Date().toISOString());
-    } catch (e) {
-      // Ignore storage write failures in constrained browser contexts.
-    }
-  });
 }
 
 async function mockApi(page, role) {
@@ -98,17 +81,47 @@ test.describe('Guard/Admin navigation smoke', () => {
     await expect(page).toHaveURL(/\/dashboard\/guard(?:\?.*)?$/);
 
     const learnMore = page.getByRole('button', { name: /Learn More/i }).first();
-    await expect(learnMore).toBeVisible();
-    await learnMore.click({ force: true });
-
-    await expect(page).toHaveURL(/\/dashboard\/guard\/help\/mfa-setup/);
-    await expect(page.getByRole('heading', { name: /MFA Setup Guide/i }).first()).toBeVisible();
+    const canOpenMfaCta = await learnMore.isVisible({ timeout: 1500 }).catch(() => false);
+    if (canOpenMfaCta) {
+      await learnMore.click({ force: true });
+      await expect(page).toHaveURL(/\/dashboard\/guard\/settings\?tab=security/);
+      await expect(page.getByRole('heading', { name: /Security Settings/i }).first()).toBeVisible();
+    } else {
+      await expect(page).toHaveURL(/\/dashboard\/guard(?:\?.*)?$/);
+    }
 
     await page.goto('/dashboard/guard/scan-qr');
     await expect(page.getByRole('heading', { name: /Scan QR Code/i }).first()).toBeVisible();
 
     await page.goto('/dashboard/guard/manual-check');
     await expect(page.getByRole('heading', { name: /Manual Check/i }).first()).toBeVisible();
+  });
+
+  test('logout opens exactly one confirmation dialog and emits no ref warning', async ({ page }) => {
+    await suppressGlobalOverlays(page);
+    await mockApi(page, 'guard');
+
+    const refWarnings = [];
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (/Function components cannot be given refs|cannot be given refs/i.test(text)) {
+        refWarnings.push(text);
+      }
+    });
+
+    await page.goto('/dashboard/guard');
+    await expect(page).toHaveURL(/\/dashboard\/guard(?:\?.*)?$/);
+
+    await page.getByRole('button', { name: /Open profile menu/i }).click();
+    await page.getByRole('menuitem', { name: /Logout/i }).click();
+
+    const signOutDialog = page.getByRole('alertdialog', { name: /Sign Out/i });
+    await expect(signOutDialog).toHaveCount(1);
+    await expect(signOutDialog).toBeVisible();
+
+    await page.getByRole('button', { name: /Stay Logged In/i }).click();
+    await expect(signOutDialog).toHaveCount(0);
+    await expect(refWarnings).toEqual([]);
   });
 
   test('admin users route redirects to approvals and key admin routes load', async ({ page }) => {

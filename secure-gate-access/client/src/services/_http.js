@@ -1,8 +1,68 @@
 // client/src/services/_http.js
 // Centralized HTTP utilities for all services
 
-import { validateResponse, mapErrorMessage, mapStatusToMessage } from '../utils/errorMapper.js';
-import { API_ENDPOINTS } from '../constants/endpoints.js';
+import { mapStatusToMessage } from '../utils/errorMapper.js';
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+function readCsrfTokenFromMeta() {
+  if (typeof document === 'undefined') return null;
+  return document.querySelector('meta[name="csrf-token"]')?.content || null;
+}
+
+function writeCsrfTokenToMeta(token) {
+  if (!token || typeof document === 'undefined') return;
+
+  let metaTag = document.querySelector('meta[name="csrf-token"]');
+  if (!metaTag) {
+    metaTag = document.createElement('meta');
+    metaTag.name = 'csrf-token';
+    document.head.appendChild(metaTag);
+  }
+  metaTag.content = token;
+}
+
+function extractCsrfToken(payload, response) {
+  const fromHeader = response?.headers?.get?.('x-csrf-token');
+  if (fromHeader) return fromHeader;
+  return payload?.data?.csrfToken || payload?.csrfToken || null;
+}
+
+function isCsrfFailure(status, payload) {
+  if (status !== 403) return false;
+  const code = payload?.error?.code || payload?.code;
+  return code === 'CSRF_TOKEN_MISSING' || code === 'CSRF_VALIDATION_FAILED';
+}
+
+async function refreshCsrfToken() {
+  const response = await fetch('/api/auth/csrf-token', {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      ...buildHeaders(),
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (e) {
+    payload = null;
+  }
+
+  if (!response.ok || payload?.success === false) {
+    throw new Error(payload?.message || 'Failed to refresh CSRF token');
+  }
+
+  const token = extractCsrfToken(payload, response);
+  if (!token) {
+    throw new Error('CSRF token missing from refresh response');
+  }
+
+  writeCsrfTokenToMeta(token);
+  return token;
+}
 
 /**
  * Build standard headers for API requests
@@ -48,10 +108,10 @@ export async function parseApiResponse(res) {
  * @returns {Object} Response data or throws structured error
  */
 export async function apiCall(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
   const opts = {
-    method: 'GET',
+    method,
     credentials: 'include', // ✅ SECURITY FIX: Send httpOnly cookies
-    headers: buildHeaders(),
     ...options,
     headers: {
       ...buildHeaders(),
@@ -59,12 +119,29 @@ export async function apiCall(url, options = {}) {
     }
   };
 
+  if (!SAFE_METHODS.has(method)) {
+    const csrfToken = readCsrfTokenFromMeta();
+    if (csrfToken) {
+      opts.headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
+
   if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
     opts.body = JSON.stringify(opts.body);
   }
 
   const res = await fetch(url, opts);
   const result = await parseApiResponse(res);
+
+  const responseCsrfToken = extractCsrfToken(result.payload, res);
+  if (responseCsrfToken) {
+    writeCsrfTokenToMeta(responseCsrfToken);
+  }
+
+  if (isCsrfFailure(res.status, result.payload) && !options._csrfRetry) {
+    await refreshCsrfToken();
+    return apiCall(url, { ...options, _csrfRetry: true });
+  }
 
   if (!res.ok || result.payload?.success === false) {
     const error = new Error(result.error || mapStatusToMessage(res.status, result.payload));

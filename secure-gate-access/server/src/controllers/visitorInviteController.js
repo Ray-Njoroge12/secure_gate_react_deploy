@@ -85,6 +85,21 @@ function generateVisitorToken() {
   return `vst_${generateSecureToken(24)}`;
 }
 
+const RESIDENT_CANCEL_ELIGIBLE_STATUSES = new Set([
+  PASS_STATUS.PENDING,
+  PASS_STATUS.PENDING_CONFIRMATION,
+  PASS_STATUS.OTP_SENT,
+  PASS_STATUS.VERIFIED,
+  PASS_STATUS.APPROVED,
+  PASS_STATUS.CONFIRMED,
+  PASS_STATUS.ACTIVE,
+  PASS_STATUS.QR_PENDING
+]);
+
+function isResidentCancelEligible(status) {
+  return RESIDENT_CANCEL_ELIGIBLE_STATUSES.has(String(status || '').toLowerCase());
+}
+
 /**
  * Get timezone grace period in hours from environment
  * Default: 2 hours to accommodate timezone differences
@@ -1482,6 +1497,10 @@ export const cancelVisitor = async (req, res) => {
       // Check both host_id and resident_id for backward compatibility
       if (visitor.host_id !== residentId && visitor.resident_id !== residentId) {
         return respondError(res, 403, 'You can only cancel your own visitors');
+      }
+
+      if (!isResidentCancelEligible(visitor.status)) {
+        return respondError(res, 409, 'Only pending or unadmitted visitor invites can be deleted');
       }
     } else if (role !== 'admin' && role !== 'super_admin') {
       return respondError(res, 403, 'Forbidden');

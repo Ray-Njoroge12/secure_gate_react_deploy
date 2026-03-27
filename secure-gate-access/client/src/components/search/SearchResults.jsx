@@ -268,7 +268,6 @@ const SearchResults = ({
             className="btn btn-outline load-more-btn"
             onClick={() => {
               // Handle load more - this would be passed from parent
-              console.log('Load more results');
             }}
           >
             Load More Results

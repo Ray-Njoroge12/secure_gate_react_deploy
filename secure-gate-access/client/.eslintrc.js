@@ -1,9 +1,6 @@
 module.exports = {
   extends: ['react-app', 'react-app/jest'],
   rules: {
-    // Prevent console statements in production code
-    'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
-    
     // Allow console in test files
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     

@@ -47,7 +47,7 @@ repo root/
 │   │   └── e2e/         # Client-level Playwright tests
 │   ├── server/          # Express backend (port 5000 prod, 3001 dev)
 │   │   ├── src/
-│   │   │   ├── routes/       # API route definitions (61 route files)
+│   │   │   ├── routes/       # API route definitions (64 route files)
 │   │   │   ├── controllers/  # Request handlers
 │   │   │   ├── middleware/   # Auth, validation, error handling
 │   │   │   ├── services/     # Business logic layer
@@ -99,6 +99,9 @@ cd secure-gate-access/server && npm run dev  # Development with nodemon
 # Root-level E2E tests (Playwright, uses ./playwright.config.js)
 npx playwright test          # Run root e2e/ tests
 npx playwright test --ui     # Playwright UI mode
+
+# Canonical Playwright surface map (root/client/server)
+# See secure-gate-access/PLAYWRIGHT_TESTING_MATRIX.md
 ```
 
 ### Client Commands
@@ -169,7 +172,7 @@ npm run retention:run        # Run GDPR data retention
 
 Located in: `server/src/database/migrations/`
 
-**Key migrations (001–032+):**
+**Key migrations (001–092):**
 
 - `001_initial_schema.sql` - Core tables (users, visitors, estates)
 - `002_compliance_tables.sql` - GDPR/KDPA compliance
@@ -177,6 +180,16 @@ Located in: `server/src/database/migrations/`
 - `007_refresh_tokens_user_enhancements.sql` - JWT refresh tokens
 - `010_dpa_compliance_enhancements.sql` - DPA/privacy enhancements
 - `020_phase2_delivery_directions_autoapproval.sql` - Phase 2 features
+- `068_create_user_sessions.sql` - User sessions table
+- `079_collaboration_system.sql` - Collaboration features
+- `080_enhanced_security_system.sql` - Enhanced security
+- `081_privacy_compliance_system.sql` - Privacy compliance
+- `082_create_incidents_tables.sql` - Incidents tracking
+- `087_add_guard_management_tables.sql` - Guard management
+- `088_add_event_management_tables.sql` - Event management
+- `089_create_watchlist_tables.sql` - Watchlist
+- `090_create_admin_policies_table.sql` - Admin policies
+- `092_refresh_event_analytics_with_estate_location.sql` - Latest migration (estate-scoped analytics)
 
 **Running migrations:**
 
@@ -257,8 +270,9 @@ requireEstate           // Ensures user has estate_id
 
 - **Root-level:** `e2e/` — System-wide Playwright tests (admin, auth, guard, resident, visitor, accessibility, performance)
 - **Client:** `client/e2e/` — Client-specific Playwright tests
-- **Server:** `server/tests/e2e/` — Server Jest-based E2E tests
-- Run: `npx playwright test` (root), `npm run test:playwright` (client/server), `npm run test:e2e` (server)
+- **Server:** `server/tests/e2e/` — Mixed surface: Playwright specs plus Jest-based E2E tests
+- Run: `npx playwright test` (root), `npm run test:playwright` (client), `npm run test:e2e` (server Jest E2E), `npx playwright test --config=secure-gate-access/server/tests/e2e/playwright.config.js` (server Playwright specs)
+- Canonical matrix: `secure-gate-access/PLAYWRIGHT_TESTING_MATRIX.md`
 
 ### Additional Test Types (Server)
 
@@ -290,7 +304,7 @@ const visitors = await dbManager.query('SELECT * FROM visitors');
 
 - Server: `server/src/services/websocketService.js`
 - Client: `client/src/hooks/useWebSocket.js`
-- Namespaces: `/guards`, `/residents`, `/admin`
+- Uses estate-scoped rooms (not Socket.io namespaces): `dashboard`, `guards`; all roles connect to one server and join rooms based on role + estate
 - Events: visitor updates, emergency alerts, notifications
 - Requires authentication via socket.io middleware
 
@@ -404,32 +418,28 @@ npm run test:e2e               # Full system E2E tests
 ### GitHub Actions (`.github/workflows/`)
 
 - `ci.yml` — Continuous integration (lint, test, build)
-- `deploy.yml` — Deployment pipeline
 - `security-scan.yml` — Security scanning
 
 ### Infrastructure (`infra/`)
 
 - Terraform: `main.tf`, `variables.tf` — AWS infrastructure provisioning
-- CloudFormation: `aws/cloudformation-template.yaml` — Alternative IaC
-- Deploy scripts: `aws/deploy.sh`, `aws/deploy-simple.sh`
+- Security baseline assets: `secure-gate-access/infrastructure/aws/` — supplemental CloudFormation and IAM templates consumed/documented alongside Terraform
+- AWS deployment strategy scripts are intentionally deferred while deployment approach is finalized
 
 ## Documentation
 
-- Ops procedures: `secure-gate-access/docs/ops/procedures/`
-- Ops setup: `secure-gate-access/docs/ops/setup/`
-- Deployment: `documentation/guides/DEPLOYMENT_GUIDE.md` (Primary AWS Guide)
-- AWS Guide: `documentation/guides/AWS_DEPLOYMENT_GUIDE.md`
+- Canonical guides index: `documentation/guides/README.md`
+- Deployment: `documentation/guides/DEPLOYMENT_GUIDE.md`
 - Security: `documentation/guides/SECURITY_IMPLEMENTATION_GUIDE.md`
 - Database: `documentation/guides/DATABASE_OPTIMIZATION_GUIDE.md`
-- Testing guides: `secure-gate-access/docs/testing/`
 
 ## Gotchas
 
 - **Node engine mismatch:** Root `package.json` says `node >= 18`, server requires `>= 20.11.0`. Always use Node 20.11.0+ to avoid issues.
 - **Audit middleware rename:** `auditLogger.js` is **archived** in `server/src/archive/zombie-services/`. The live middleware is `server/src/middleware/auditLogging.js`. All route imports must use `import { attachRequestAudit } from '../middleware/auditLogging.js'`. Using the old path crashes the server with `ERR_MODULE_NOT_FOUND`.
 - **Archived/dead code:** `server/src/archive/` contains deprecated services removed from active paths. Do not import from there.
-- **Duplicate migration numbers:** Migration `021` appears three times (`021_add_estate_settings.sql`, `021_add_invite_directions_privacy_fields.sql`, `021_data_retention_policy_updates.sql`). Be careful when adding new migrations — check the latest number.
-- **Migration numbering gaps:** Migrations skip 003–004 and 027–029 (historical gaps, low risk). Only `033_00` and a `033_02_add_estates_and_tenant_scoping.sql.disabled` file exist at that range — `033_01` is missing and the `.disabled` file is not an active migration.
+- **Migration 021:** Only one file exists: `021_add_estate_settings.sql`. Historical duplicates were resolved. When adding a new migration, check the actual directory — latest is `092`.
+- **Migration numbering gaps:** Migrations skip 003–004 and 027–029 (historical gaps). At range 033, only `033_00_add_estates_table.sql` exists (`033_01` is missing). The only `.disabled` file in the migrations directory is `add-performance-indexes.sql.disabled` (no sequential prefix).
 - **Three E2E test locations:** Root `e2e/` (system-wide Playwright), `client/e2e/` (client Playwright), and `server/tests/e2e/` (server Jest E2E). Each has its own config.
 - **Jest requires ES module flag:** All server Jest commands need `--experimental-vm-modules` (already configured in package.json scripts).
 - **Client proxy:** Dev server proxies API requests to `localhost:3001` (configured in `client/package.json` `"proxy"` field and `setupProxy.js`).

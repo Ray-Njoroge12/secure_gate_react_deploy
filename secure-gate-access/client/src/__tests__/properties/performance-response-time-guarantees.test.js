@@ -8,10 +8,11 @@
  * **Validates: Requirements 6.1**
  */
 
-import fc from 'fast-check';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { jest } from '@jest/globals';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import fc from 'fast-check';
 import React from 'react';
+
 import performanceService from '../../services/performanceService.js';
 
 jest.setTimeout(30000);
@@ -67,7 +68,7 @@ const TestUIComponent = ({ onInteraction, responseDelay = 0 }) => {
     }
   };
 
-  const handleInput = (event) => {
+  const handleInput = (_event) => {
     const startTime = performance.now();
     if (onInteraction) {
       onInteraction('input', startTime);

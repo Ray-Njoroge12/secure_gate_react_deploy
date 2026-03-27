@@ -1,8 +1,9 @@
 // client/src/utils/errorHandler.js
 import { useState, useCallback } from 'react';
-import logger from './logger';
-import { navigateToLogin } from './authNavigation';
+
 import { navigateTo } from './appNavigation';
+import { navigateToLogin } from './authNavigation';
+import logger from './logger';
 
 /**
  * Enhanced error handling utilities for the Secure Gate Access System
@@ -125,6 +126,8 @@ export function getUserFriendlyMessage(error, context = '') {
           errorInfo.message = 'This invitation may have expired or is invalid.';
         }
         break;
+      default:
+        break;
     }
   }
   
@@ -157,7 +160,6 @@ export function getErrorSeverity(errorType, context = '') {
  */
 export function handleError(error, context = '', options = {}) {
   const {
-    showToUser = true,
     logToConsole = true,
     reportToService = false
   } = options;
@@ -208,7 +210,7 @@ export function handleError(error, context = '', options = {}) {
 /**
  * Get suggested recovery actions based on error type
  */
-export function getRecoveryActions(errorType, context = '') {
+export function getRecoveryActions(errorType) {
   const actions = {
     [ERROR_TYPES.NETWORK]: [
       { label: 'Check Connection', action: () => window.location.reload() },
@@ -266,7 +268,7 @@ export function withErrorBoundary(Component, errorBoundaryProps = {}) {
 /**
  * Hook for handling async operations with error handling
  */
-export function useAsyncOperation(operation, dependencies = []) {
+export function useAsyncOperation(operation) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
@@ -285,7 +287,7 @@ export function useAsyncOperation(operation, dependencies = []) {
     } finally {
       setLoading(false);
     }
-  }, dependencies);
+  }, [operation]);
   
   const reset = useCallback(() => {
     setLoading(false);
@@ -296,7 +298,7 @@ export function useAsyncOperation(operation, dependencies = []) {
   return { loading, error, data, execute, reset };
 }
 
-export default {
+const errorHandlerUtils = {
   handleError,
   getUserFriendlyMessage,
   getRecoveryActions,
@@ -307,3 +309,5 @@ export default {
   ERROR_TYPES,
   ERROR_SEVERITY
 };
+
+export default errorHandlerUtils;

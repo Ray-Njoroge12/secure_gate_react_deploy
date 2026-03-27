@@ -4,8 +4,10 @@
  */
 
 import React from 'react';
-import Icon from './Icon.jsx';
+
 import { useTheme } from '../../contexts/ThemeContext';
+
+import Icon from './Icon.jsx';
 
 const ThemeToggle = ({ showLabel = false, variant = 'icon', className = '' }) => {
   const { theme, setTheme, isDark, THEMES } = useTheme();

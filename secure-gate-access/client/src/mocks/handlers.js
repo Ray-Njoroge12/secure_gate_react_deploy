@@ -22,7 +22,6 @@ export const handlers = [
 
     // GET /api/auth/me - Check auth status
     rest.get('*/api/auth/me', (req, res, ctx) => {
-        const isAuthenticated = req.cookies && req.cookies.token;
         return res(
             ctx.status(401),
             ctx.json({ success: false, message: 'Not authenticated' })

@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+
 // FIX: Substituted direct Lucide icons with Icon component usage in render method
 // import { 
 //   RefreshCw, 
@@ -31,15 +32,12 @@ import React, { useState, useCallback } from 'react';
 //   UserPlus, 
 //   Calendar 
 // } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext.js';
-import { useTheme } from '../../contexts/ThemeContext.jsx';
-import { LayoutItem } from '../ui/LayoutManager.jsx';
-import Loading from '../ui/Loading.jsx';
-import ErrorDisplay from '../ui/ErrorDisplay.jsx';
-import IconButton from '../ui/IconButton.jsx';
-import Dropdown from '../ui/Dropdown.jsx';
-import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button';
+import Dropdown from '../ui/Dropdown.jsx';
+import ErrorDisplay from '../ui/ErrorDisplay.jsx';
+import Icon from '../ui/Icon.jsx';
+import IconButton from '../ui/IconButton.jsx';
+import Loading from '../ui/Loading.jsx';
 
 /**
  * Icon mapping for dashboard widgets
@@ -71,7 +69,7 @@ const ICON_MAP = {
  * DashboardWidget Component
  */
 export const DashboardWidget = ({
-  id,
+  id: _id,
   title,
   type,
   icon,
@@ -79,7 +77,7 @@ export const DashboardWidget = ({
   onRemove,
   onRefresh,
   onSettings,
-  isDraggable = true,
+  isDraggable: _isDraggable = true,
   isLoading = false,
   error = null,
   headerActions = [],
@@ -88,7 +86,6 @@ export const DashboardWidget = ({
   ...props
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const { theme } = useTheme();
 
   // Get icon component
   // FIX: Using Icon component directly instead of looking up in ICON_MAP
@@ -308,7 +305,7 @@ export const ChartWidget = ({
   title,
   chartType = 'line',
   data = [],
-  options = {},
+  options: _options = {},
   ...props
 }) => {
   return (

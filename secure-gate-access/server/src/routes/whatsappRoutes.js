@@ -12,6 +12,7 @@ import { authenticateToken, authorize } from '../middleware/authMiddleware.js';
 import * as whatsappService from '../services/whatsappService.js';
 import notificationMetricsService from '../services/notificationMetricsService.js';
 import { dbManager as db } from '../database/db.enhanced.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 
@@ -31,13 +32,13 @@ router.get('/webhook', (req, res) => {
   if (mode && token) {
     // Check if mode is 'subscribe' and token matches
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('[WhatsApp] Webhook verified successfully');
+      logger.info('[WhatsApp] Webhook verified successfully');
       return res.status(200).send(challenge);
     }
   }
   
   // Verification failed
-  console.warn('[WhatsApp] Webhook verification failed');
+  logger.warn('[WhatsApp] Webhook verification failed');
   return errorResponse(res, 'Webhook verification failed', 'FORBIDDEN', 403, null, req);
 });
 
@@ -58,7 +59,7 @@ router.post('/webhook', asyncHandler(async (req, res) => {
         .digest('hex');
       
       if (signature !== expectedSignature) {
-        console.warn('[WhatsApp] Invalid signature');
+        logger.warn('[WhatsApp] Invalid signature');
         notificationMetricsService.recordWebhookSignatureFailure('whatsapp', 'invalid_signature', {
           headerSignature: signature
         });
@@ -261,7 +262,7 @@ async function handleIncomingMessage(message, contacts) {
       ? normalizedText.split(/\s+/)[0]
       : null;
 
-    console.log(`[WhatsApp] Received ${type} message from ${from}:`, message);
+    logger.debug(`[WhatsApp] Received ${type} message from ${from}:`, message);
 
     await db.query(
       `INSERT INTO notifications (
@@ -339,7 +340,7 @@ async function handleIncomingMessage(message, contacts) {
     }
     
   } catch (error) {
-    console.error('[WhatsApp] Error handling incoming message:', error);
+    logger.error('[WhatsApp] Error handling incoming message:', error);
   }
 }
 
@@ -352,7 +353,7 @@ async function handleMessageStatus(status) {
     const recipientId = status.recipient_id;
     const statusType = status.status; // sent, delivered, read, failed
     
-    console.log(`[WhatsApp] Message ${messageId} status: ${statusType}`);
+    logger.debug(`[WhatsApp] Message ${messageId} status: ${statusType}`);
     notificationMetricsService.recordDeliveryEvent({
       provider: 'whatsapp',
       status: statusType,
@@ -399,7 +400,7 @@ async function handleMessageStatus(status) {
     );
     
   } catch (error) {
-    console.error('[WhatsApp] Error handling status update:', error);
+    logger.error('[WhatsApp] Error handling status update:', error);
   }
 }
 
@@ -462,7 +463,7 @@ async function recordOutboundNotification({
       }
     });
   } catch (error) {
-    console.warn('[WhatsApp] Failed to record outbound notification:', error.message);
+    logger.warn('[WhatsApp] Failed to record outbound notification:', error.message);
   }
 }
 
@@ -526,7 +527,7 @@ async function recordNotificationLog({
       ]
     );
   } catch (error) {
-    console.warn('[WhatsApp] Failed to write notification_log:', error.message);
+    logger.warn('[WhatsApp] Failed to write notification_log:', error.message);
   }
 }
 

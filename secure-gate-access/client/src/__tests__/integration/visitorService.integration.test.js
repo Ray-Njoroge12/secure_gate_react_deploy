@@ -4,10 +4,9 @@
  */
 
 import { rest } from 'msw';
+
 import { server } from '../../mocks/server';
 import * as visitorService from '../../services/visitorService';
-
-const API_TAG = 'Visitor Integration';
 
 describe('Visitor Service Integration', () => {
 
@@ -70,7 +69,7 @@ describe('Visitor Service Integration', () => {
 
         it('should handle network errors gracefully', async () => {
             server.use(
-                rest.get('*/api/visitors', (req, res, ctx) => {
+                rest.get('*/api/visitors', (req, res, _ctx) => {
                     return res.networkError('Failed to connect');
                 })
             );

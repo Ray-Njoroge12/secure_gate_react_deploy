@@ -2,9 +2,10 @@
 // UI component for comprehensive user preference management
 
 import React, { useState } from 'react';
-import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+
 import { usePreferences } from '../../contexts/PreferenceContext.jsx';
-import { THEME_OPTIONS, DENSITY_OPTIONS, FREQUENCY_OPTIONS } from '../../services/preferenceService.js';
+import { useUserPreferences } from '../../hooks/useUserPreferences.js';
+import { THEME_OPTIONS, DENSITY_OPTIONS } from '../../services/preferenceService.js';
 import Button from '../ui/Button';
 
 const PreferencePanel = () => {

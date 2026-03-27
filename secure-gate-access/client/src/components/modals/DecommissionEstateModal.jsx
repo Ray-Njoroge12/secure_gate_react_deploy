@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Modal from '../ui/Modal';
-import GradientButton from '../ui/GradientButton';
-import Icon from '../ui/Icon';
-import Button from '../ui/Button';
+
 import api from '../../utils/apiClient';
+import Button from '../ui/Button';
+import Icon from '../ui/Icon';
+import Modal from '../ui/Modal';
 
 /**
  * DecommissionEstateModal

@@ -9,10 +9,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as crypto from 'crypto';
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import dotenv from 'dotenv';
 import os from 'os';
 import { pipeline } from 'stream/promises';
+import logger from '../config/logger.js';
 
 dotenv.config();
 
@@ -32,11 +33,13 @@ class BackupService {
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     };
 
-    this.dockerHost = process.env.BACKUP_DOCKER_HOST
-      || (process.platform === 'darwin' ? 'host.docker.internal' : this.dbConfig.host);
-    this.dockerImage = process.env.BACKUP_DOCKER_IMAGE
-      || process.env.POSTGRES_DOCKER_IMAGE
-      || 'postgres:14';
+    this.nativeTools = {
+      pgDump: process.env.PG_DUMP_PATH || 'pg_dump',
+      pgBasebackup: process.env.PG_BASEBACKUP_PATH || 'pg_basebackup',
+      psql: process.env.PSQL_PATH || 'psql',
+      pgRestore: process.env.PG_RESTORE_PATH || 'pg_restore',
+      tar: process.env.TAR_PATH || 'tar'
+    };
     
     this.pool = new Pool(this.dbConfig);
     this.backupDir = path.join(__dirname, '../../backups');
@@ -48,10 +51,10 @@ class BackupService {
     };
 
     if (this.backupEncryption.enabled && !this.backupEncryption.key) {
-      console.warn('⚠️  Backup encryption enabled but BACKUP_ENCRYPTION_KEY is not set; continuing without encryption.');
+      logger.warn('Backup encryption enabled but BACKUP_ENCRYPTION_KEY is not set; continuing without encryption.');
       this.backupEncryption.enabled = false;
     }
-    
+
     // Ensure backup directory exists
     this.ensureBackupDirectory();
   }
@@ -62,14 +65,14 @@ class BackupService {
   ensureBackupDirectory() {
     if (!fs.existsSync(this.backupDir)) {
       fs.mkdirSync(this.backupDir, { recursive: true });
-      console.log(`📁 Created backup directory: ${this.backupDir}`);
+      logger.info(`Created backup directory: ${this.backupDir}`);
     }
   }
 
   async createPgPassFile() {
     const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'secure-gate-pgpass-'));
     const filePath = path.join(dir, 'pgpass');
-    const entry = `${this.dockerHost}:${this.dbConfig.port}:${this.dbConfig.database}:${this.dbConfig.user}:${this.dbConfig.password}\n`;
+    const entry = `${this.dbConfig.host}:${this.dbConfig.port}:${this.dbConfig.database}:${this.dbConfig.user}:${this.dbConfig.password}\n`;
     await fs.promises.writeFile(filePath, entry, { mode: 0o600 });
 
     return {
@@ -186,7 +189,7 @@ class BackupService {
     const fileName = `full_backup_${timestamp}_${backupId}.sql`;
     const filePath = path.join(this.backupDir, fileName);
     
-    console.log(`🔄 Creating full backup: ${fileName}`);
+    logger.info(`Creating full backup: ${fileName}`);
     
     try {
       // Log backup start
@@ -194,7 +197,7 @@ class BackupService {
       
       // Create pg_dump command
       const pgDumpArgs = [
-        '--host', this.dockerHost,
+        '--host', this.dbConfig.host,
         '--port', this.dbConfig.port,
         '--username', this.dbConfig.user,
         '--dbname', this.dbConfig.database,
@@ -232,7 +235,7 @@ class BackupService {
       // Log backup completion
       await this.logBackupCompletion(backupId, 'completed', fileSize, duration, null, finalPath);
       
-      console.log(`✅ Full backup completed: ${finalName} (${this.formatFileSize(fileSize)}, ${duration}ms)`);
+      logger.info(`Full backup completed: ${finalName} (${this.formatFileSize(fileSize)}, ${duration}ms)`);
       
       return {
         backupId,
@@ -245,7 +248,7 @@ class BackupService {
       };
       
     } catch (error) {
-      console.error(`❌ Full backup failed: ${error.message}`);
+      logger.error(`Full backup failed: ${error.message}`);
       await this.logBackupCompletion(backupId, 'failed', 0, 0, error.message);
       throw error;
     }
@@ -260,7 +263,7 @@ class BackupService {
     const fileName = `incremental_backup_${timestamp}_${backupId}.tar`;
     const filePath = path.join(this.backupDir, fileName);
     
-    console.log(`🔄 Creating incremental backup: ${fileName}`);
+    logger.info(`Creating incremental backup: ${fileName}`);
     
     try {
       // Log backup start
@@ -278,7 +281,7 @@ class BackupService {
       // Log backup completion
       await this.logBackupCompletion(backupId, 'completed', fileSize, duration, null, finalPath);
       
-      console.log(`✅ Incremental backup completed: ${finalName} (${this.formatFileSize(fileSize)}, ${duration}ms)`);
+      logger.info(`Incremental backup completed: ${finalName} (${this.formatFileSize(fileSize)}, ${duration}ms)`);
       
       return {
         backupId,
@@ -291,7 +294,7 @@ class BackupService {
       };
       
     } catch (error) {
-      console.error(`❌ Incremental backup failed: ${error.message}`);
+      logger.error(`Incremental backup failed: ${error.message}`);
       await this.logBackupCompletion(backupId, 'failed', 0, 0, error.message);
       throw error;
     }
@@ -306,7 +309,7 @@ class BackupService {
     const fileName = `data_backup_${timestamp}_${backupId}.sql`;
     const filePath = path.join(this.backupDir, fileName);
     
-    console.log(`🔄 Creating data backup: ${fileName}`);
+    logger.info(`Creating data backup: ${fileName}`);
     
     try {
       // Log backup start
@@ -316,7 +319,7 @@ class BackupService {
       
       // Create data-only backup
       const pgDumpArgs = [
-        '--host', this.dockerHost,
+        '--host', this.dbConfig.host,
         '--port', this.dbConfig.port,
         '--username', this.dbConfig.user,
         '--dbname', this.dbConfig.database,
@@ -334,7 +337,7 @@ class BackupService {
       // Log backup completion
       await this.logBackupCompletion(backupId, 'completed', fileSize, duration, null, finalPath);
       
-      console.log(`✅ Data backup completed: ${finalName} (${this.formatFileSize(fileSize)}, ${duration}ms)`);
+      logger.info(`Data backup completed: ${finalName} (${this.formatFileSize(fileSize)}, ${duration}ms)`);
       
       return {
         backupId,
@@ -347,7 +350,7 @@ class BackupService {
       };
       
     } catch (error) {
-      console.error(`❌ Data backup failed: ${error.message}`);
+      logger.error(`Data backup failed: ${error.message}`);
       await this.logBackupCompletion(backupId, 'failed', 0, 0, error.message);
       throw error;
     }
@@ -357,7 +360,7 @@ class BackupService {
    * Restore database from backup
    */
   async restoreFromBackup(backupPath, options = {}) {
-    console.log(`🔄 Restoring database from: ${backupPath}`);
+    logger.info(`Restoring database from: ${backupPath}`);
     
     if (!fs.existsSync(backupPath)) {
       throw new Error(`Backup file not found: ${backupPath}`);
@@ -390,7 +393,7 @@ class BackupService {
       // Log restore completion
       await this.logRestoreCompletion(restoreId, 'completed', duration);
       
-      console.log(`✅ Database restored successfully (${duration}ms)`);
+      logger.info(`Database restored successfully (${duration}ms)`);
       
       return {
         restoreId,
@@ -400,7 +403,7 @@ class BackupService {
       };
       
     } catch (error) {
-      console.error(`❌ Database restore failed: ${error.message}`);
+      logger.error(`Database restore failed: ${error.message}`);
       if (restoreId) {
         await this.logRestoreCompletion(restoreId, 'failed', 0, error.message);
       }
@@ -462,7 +465,7 @@ class BackupService {
       return result.rows;
       
     } catch (error) {
-      console.error(`❌ Failed to list backups: ${error.message}`);
+      logger.error(`Failed to list backups: ${error.message}`);
       throw error;
     }
   }
@@ -471,7 +474,7 @@ class BackupService {
    * Clean up old backups
    */
   async cleanupOldBackups() {
-    console.log(`🧹 Cleaning up backups older than ${this.retentionDays} days`);
+    logger.info(`Cleaning up backups older than ${this.retentionDays} days`);
     
     try {
       const client = await this.pool.connect();
@@ -501,13 +504,13 @@ class BackupService {
           deletedCount++;
           
         } catch (fileError) {
-          console.warn(`⚠️  Failed to delete backup file: ${backup.file_path} - ${fileError.message}`);
+          logger.warn(`Failed to delete backup file: ${backup.file_path} - ${fileError.message}`);
         }
       }
       
       client.release();
       
-      console.log(`✅ Cleanup completed: ${deletedCount} backups deleted, ${this.formatFileSize(totalSize)} freed`);
+      logger.info(`Cleanup completed: ${deletedCount} backups deleted, ${this.formatFileSize(totalSize)} freed`);
       
       return {
         deletedCount,
@@ -516,7 +519,7 @@ class BackupService {
       };
       
     } catch (error) {
-      console.error(`❌ Cleanup failed: ${error.message}`);
+      logger.error(`Cleanup failed: ${error.message}`);
       throw error;
     }
   }
@@ -559,40 +562,50 @@ class BackupService {
       };
       
     } catch (error) {
-      console.error(`❌ Failed to get backup statistics: ${error.message}`);
+      logger.error(`Failed to get backup statistics: ${error.message}`);
       throw error;
     }
   }
 
+  assertNativeBinaryAvailable(command, displayName) {
+    const result = spawnSync(command, ['--version'], { encoding: 'utf8' });
+
+    if (result.error) {
+      if (result.error.code === 'ENOENT') {
+        throw new Error(`Required native binary "${command}" (${displayName}) is not installed or not on PATH. Strict backup mode requires native PostgreSQL client tools.`);
+      }
+      throw new Error(`Failed to execute native binary "${command}" (${displayName}): ${result.error.message}`);
+    }
+
+    if (result.status !== 0) {
+      const details = (result.stderr || result.stdout || `exit code ${result.status}`).toString().trim();
+      throw new Error(`Native binary "${command}" (${displayName}) failed availability check: ${details}`);
+    }
+  }
+
   /**
-   * Execute pg_dump command using Docker
+   * Execute pg_dump command using native binary
    */
   async executePgDump(args, outputPath) {
+    this.assertNativeBinaryAvailable(this.nativeTools.pgDump, 'pg_dump');
     const pgPass = await this.createPgPassFile();
 
     return new Promise((resolve, reject) => {
-      // Use Docker to run pg_dump
-      const dockerArgs = [
-        'run', '--rm',
-        '--network', 'host',
-        '-v', `${pgPass.filePath}:/tmp/pgpass:ro`,
-        '-e', 'PGPASSFILE=/tmp/pgpass',
-        this.dockerImage,
-        'pg_dump',
-        ...args
-      ];
+      const pgDump = spawn(this.nativeTools.pgDump, args, {
+        env: {
+          ...process.env,
+          PGPASSFILE: pgPass.filePath
+        }
+      });
       
-      const docker = spawn('docker', dockerArgs);
-      
-      let stdout = '';
       let stderr = '';
       
       // Write output to file (using fs imported at module level)
       const writeStream = fs.createWriteStream(outputPath);
       
-      docker.stdout.pipe(writeStream);
+      pgDump.stdout.pipe(writeStream);
       
-      docker.stderr.on('data', (data) => {
+      pgDump.stderr.on('data', (data) => {
         stderr += data.toString();
       });
       
@@ -600,18 +613,18 @@ class BackupService {
         pgPass.cleanup().catch(() => {}).finally(handler);
       };
 
-      docker.on('close', (code) => {
+      pgDump.on('close', (code) => {
         writeStream.end();
         finalize(() => {
           if (code === 0) {
-            resolve(stdout);
+            resolve();
           } else {
             reject(new Error(`pg_dump failed with code ${code}: ${stderr}`));
           }
         });
       });
       
-      docker.on('error', (error) => {
+      pgDump.on('error', (error) => {
         writeStream.end();
         finalize(() => {
           reject(new Error(`pg_dump error: ${error.message}`));
@@ -621,17 +634,18 @@ class BackupService {
   }
 
   /**
-   * Execute pg_basebackup command using Docker
+   * Execute pg_basebackup command using native binary
    */
   async executePgBasebackup(outputPath, options = {}) {
+    this.assertNativeBinaryAvailable(this.nativeTools.pgBasebackup, 'pg_basebackup');
     const pgPass = await this.createPgPassFile();
 
     return new Promise((resolve, reject) => {
       const args = [
-        '--host', this.dockerHost,
+        '--host', this.dbConfig.host,
         '--port', this.dbConfig.port,
         '--username', this.dbConfig.user,
-        '--pgdata', '/tmp/backup',
+        '--pgdata', '-',
         '--format', 'tar',
         '--verbose'
       ];
@@ -640,28 +654,19 @@ class BackupService {
         args.push('--gzip');
       }
       
-      // Use Docker to run pg_basebackup
-      const dockerArgs = [
-        'run', '--rm',
-        '--network', 'host',
-        '-v', `${pgPass.filePath}:/tmp/pgpass:ro`,
-        '-e', 'PGPASSFILE=/tmp/pgpass',
-        '-v', `${path.dirname(outputPath)}:/backup`,
-        this.dockerImage,
-        'pg_basebackup',
-        ...args
-      ];
-      
-      const docker = spawn('docker', dockerArgs);
-      
-      let stdout = '';
-      let stderr = '';
-      
-      docker.stdout.on('data', (data) => {
-        stdout += data.toString();
+      const pgBasebackup = spawn(this.nativeTools.pgBasebackup, args, {
+        env: {
+          ...process.env,
+          PGPASSFILE: pgPass.filePath
+        }
       });
       
-      docker.stderr.on('data', (data) => {
+      let stderr = '';
+      
+      const writeStream = fs.createWriteStream(outputPath);
+      pgBasebackup.stdout.pipe(writeStream);
+      
+      pgBasebackup.stderr.on('data', (data) => {
         stderr += data.toString();
       });
 
@@ -669,22 +674,19 @@ class BackupService {
         pgPass.cleanup().catch(() => {}).finally(handler);
       };
       
-      docker.on('close', (code) => {
+      pgBasebackup.on('close', (code) => {
+        writeStream.end();
         finalize(() => {
           if (code === 0) {
-            // Move the backup file to the correct location (using fs imported at module level)
-            const sourcePath = path.join(path.dirname(outputPath), 'backup.tar');
-            if (fs.existsSync(sourcePath)) {
-              fs.renameSync(sourcePath, outputPath);
-            }
-            resolve(stdout);
+            resolve();
           } else {
             reject(new Error(`pg_basebackup failed with code ${code}: ${stderr}`));
           }
         });
       });
       
-      docker.on('error', (error) => {
+      pgBasebackup.on('error', (error) => {
+        writeStream.end();
         finalize(() => {
           reject(new Error(`pg_basebackup error: ${error.message}`));
         });
@@ -693,43 +695,36 @@ class BackupService {
   }
 
   /**
-   * Restore from SQL backup using Docker
+   * Restore from SQL backup using native binary
    */
   async restoreFromSql(backupPath, options = {}) {
+    this.assertNativeBinaryAvailable(this.nativeTools.psql, 'psql');
     const pgPass = await this.createPgPassFile();
 
     return new Promise((resolve, reject) => {
-      const restoreFileName = path.basename(backupPath);
       const args = [
-        '--host', this.dockerHost,
+        '--host', this.dbConfig.host,
         '--port', this.dbConfig.port,
         '--username', this.dbConfig.user,
         '--dbname', this.dbConfig.database,
-        '--file', `/backup/${restoreFileName}`
+        '--file', backupPath
       ];
-      
-      // Use Docker to run psql
-      const dockerArgs = [
-        'run', '--rm',
-        '--network', 'host',
-        '-v', `${pgPass.filePath}:/tmp/pgpass:ro`,
-        '-e', 'PGPASSFILE=/tmp/pgpass',
-        '-v', `${path.dirname(backupPath)}:/backup`,
-        this.dockerImage,
-        'psql',
-        ...args
-      ];
-      
-      const docker = spawn('docker', dockerArgs);
+
+      const psql = spawn(this.nativeTools.psql, args, {
+        env: {
+          ...process.env,
+          PGPASSFILE: pgPass.filePath
+        }
+      });
       
       let stdout = '';
       let stderr = '';
       
-      docker.stdout.on('data', (data) => {
+      psql.stdout.on('data', (data) => {
         stdout += data.toString();
       });
       
-      docker.stderr.on('data', (data) => {
+      psql.stderr.on('data', (data) => {
         stderr += data.toString();
       });
 
@@ -737,7 +732,7 @@ class BackupService {
         pgPass.cleanup().catch(() => {}).finally(handler);
       };
       
-      docker.on('close', (code) => {
+      psql.on('close', (code) => {
         finalize(() => {
           if (code === 0) {
             resolve(stdout);
@@ -747,7 +742,7 @@ class BackupService {
         });
       });
       
-      docker.on('error', (error) => {
+      psql.on('error', (error) => {
         finalize(() => {
           reject(new Error(`psql restore error: ${error.message}`));
         });
@@ -786,8 +781,10 @@ class BackupService {
   }
 
   async extractTarArchive(backupPath, destinationDir) {
+    this.assertNativeBinaryAvailable(this.nativeTools.tar, 'tar');
+
     return new Promise((resolve, reject) => {
-      const tarProcess = spawn('tar', ['-xf', backupPath, '-C', destinationDir]);
+      const tarProcess = spawn(this.nativeTools.tar, ['-xf', backupPath, '-C', destinationDir]);
 
       let stderr = '';
 
@@ -810,11 +807,12 @@ class BackupService {
   }
 
   async restoreFromCustomTar(extractedDir) {
+    this.assertNativeBinaryAvailable(this.nativeTools.pgRestore, 'pg_restore');
     const pgPass = await this.createPgPassFile();
 
     return new Promise((resolve, reject) => {
       const args = [
-        '--host', this.dockerHost,
+        '--host', this.dbConfig.host,
         '--port', this.dbConfig.port,
         '--username', this.dbConfig.user,
         '--dbname', this.dbConfig.database,
@@ -823,25 +821,19 @@ class BackupService {
         '--if-exists',
         '--no-owner',
         '--format', 'directory',
-        '/backup'
+        extractedDir
       ];
 
-      const dockerArgs = [
-        'run', '--rm',
-        '--network', 'host',
-        '-v', `${pgPass.filePath}:/tmp/pgpass:ro`,
-        '-e', 'PGPASSFILE=/tmp/pgpass',
-        '-v', `${extractedDir}:/backup`,
-        this.dockerImage,
-        'pg_restore',
-        ...args
-      ];
-
-      const docker = spawn('docker', dockerArgs);
+      const pgRestore = spawn(this.nativeTools.pgRestore, args, {
+        env: {
+          ...process.env,
+          PGPASSFILE: pgPass.filePath
+        }
+      });
 
       let stderr = '';
 
-      docker.stderr.on('data', (data) => {
+      pgRestore.stderr.on('data', (data) => {
         stderr += data.toString();
       });
 
@@ -849,7 +841,7 @@ class BackupService {
         pgPass.cleanup().catch(() => {}).finally(handler);
       };
 
-      docker.on('close', (code) => {
+      pgRestore.on('close', (code) => {
         finalize(() => {
           if (code === 0) {
             resolve();
@@ -859,7 +851,7 @@ class BackupService {
         });
       });
 
-      docker.on('error', (error) => {
+      pgRestore.on('error', (error) => {
         finalize(() => {
           reject(new Error(`pg_restore error: ${error.message}`));
         });
@@ -890,7 +882,7 @@ class BackupService {
       `, [backupId, backupType, filePath]);
       client.release();
     } catch (error) {
-      console.warn(`⚠️  Failed to log backup start: ${error.message}`);
+      logger.warn(`Failed to log backup start: ${error.message}`);
     }
   }
 
@@ -908,7 +900,7 @@ class BackupService {
       `, [status, fileSize, duration, errorMessage, filePath, backupId]);
       client.release();
     } catch (error) {
-      console.warn(`⚠️  Failed to log backup completion: ${error.message}`);
+      logger.warn(`Failed to log backup completion: ${error.message}`);
     }
   }
 
@@ -929,7 +921,7 @@ class BackupService {
       ]);
       client.release();
     } catch (error) {
-      console.warn(`⚠️  Failed to log restore start: ${error.message}`);
+      logger.warn(`Failed to log restore start: ${error.message}`);
     }
   }
 
@@ -950,7 +942,7 @@ class BackupService {
       `, [status, JSON.stringify(resultPayload), restoreId]);
       client.release();
     } catch (error) {
-      console.warn(`⚠️  Failed to log restore completion: ${error.message}`);
+      logger.warn(`Failed to log restore completion: ${error.message}`);
     }
   }
 

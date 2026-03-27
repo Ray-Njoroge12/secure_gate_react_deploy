@@ -6,10 +6,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
+
 import { keyboardShortcuts } from '../../utils/focusManagement';
-import Modal from './Modal';
+
 import Button from './Button';
 import Icon from './Icon';
+import Modal from './Modal';
 
 /**
  * Keyboard shortcuts help component

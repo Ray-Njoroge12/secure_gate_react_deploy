@@ -6,10 +6,11 @@
  * Validates: Requirements 1.2, 1.3, 1.5, 1.6
  */
 
-import { renderHook, act } from '@testing-library/react';
 import { jest } from '@jest/globals';
-import useTutorial from '../../hooks/useTutorial';
+import { renderHook, act } from '@testing-library/react';
+
 import { AuthContext } from '../../contexts/AuthContext';
+import useTutorial from '../../hooks/useTutorial';
 
 // Mock dependencies
 const mockAnalytics = {

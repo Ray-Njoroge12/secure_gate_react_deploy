@@ -2,34 +2,33 @@
 
 ## Overview
 
-This directory contains all SQL database migrations for the Secure Gate Access Control System.
-Migrations are numbered sequentially and run in order by the migration runner.
+This directory contains SQL migrations for the Secure Gate Access Control System.
+Migrations are ordered by numeric filename prefix and applied in deterministic sequence.
 
-## Known Numbering Gaps
+Canonical policy and historical exceptions are tracked in `MIGRATION_INTENT_LEDGER.md`.
 
-The following migration numbers were intentionally skipped or removed during development.
-These are **historical gaps** and do not affect the migration runner, which processes files
-in filename-sorted order regardless of numbering continuity.
+## Current Inventory Snapshot
 
-| Gap | Range | Reason |
-|-----|-------|--------|
-| `003`, `004` | Between `002` and `005` | Early development — migrations removed before production |
-| `027`, `028`, `029` | Between `026` and `030` | Consolidated into other migrations during schema stabilization |
-| `033_01` | Between `033_00` and `033_02` | Sub-migration was merged into `033_00` before release |
+1. Highest active migration prefix: `092`
+2. Historical numeric gaps: `003`, `004`, `027`, `028`, `029`
+3. Active `033` family file: `033_00_add_estates_table.sql`
 
 ## Disabled Migrations
 
 Files with the `.disabled` suffix are **not executed** by the migration runner. They are
 retained for historical reference only:
 
-- `033_02_add_estates_and_tenant_scoping.sql.disabled` — Superseded by `033_00_add_estates_table.sql`
-  and subsequent estate-scoping migrations (072, 075, 076). Removed from the repository as part of cleanup.
+- `add-performance-indexes.sql.disabled`
 
 ## Adding New Migrations
 
 When adding a new migration:
 
-1. Use the next available number after the highest existing migration (currently `090`).
+1. Use the next available number after the highest existing migration.
 2. Follow the naming convention: `NNN_description.sql` (e.g., `091_add_new_feature.sql`).
 3. Do **not** attempt to fill historical gaps — this preserves the audit trail.
-4. Test migrations locally with `npm run db:migrate` before committing.
+4. Run migration hygiene checks:
+  - `npm run migrations:check-sequence`
+  - `npm run migrations:check-format`
+  - `npm run migrations:test-semantics`
+5. Test migrations locally with `npm run db:migrate` before committing.

@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+
 import { breakpoints } from '../design-system/tokens.js';
 
 /**

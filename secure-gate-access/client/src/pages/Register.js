@@ -1,16 +1,17 @@
 // Enhanced registration page supporting normal user registration and event (bulk invite) visitor self-registration
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
-import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } from "../services/passService.js";
+
+import PasswordRequirements from '../components/PasswordRequirements';
+import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
+import Button from '../components/ui/Button';
 import { useError } from "../contexts/ErrorContext.jsx";
 import AuthLayout from "../layouts/AuthLayout.jsx";
-import QRCodeDisplay from '../components/QRCodeDisplay.jsx';
-import phoneValidator from '../utils/phoneValidator.js';
-import passwordValidator from '../utils/passwordValidator.js';
-import logger from '../utils/logger';
+import { completeInvite, getBulkInvite, visitorVerifyOtp, resendVisitorOtp } from "../services/passService.js";
 import api from '../utils/apiClient';
-import PasswordRequirements from '../components/PasswordRequirements';
-import Button from '../components/ui/Button';
+import logger from '../utils/logger';
+import passwordValidator from '../utils/passwordValidator.js';
+import phoneValidator from '../utils/phoneValidator.js';
 
 const DEFAULT_ESTATE_ID = Number.parseInt(process.env.REACT_APP_DEFAULT_ESTATE_ID || '1', 10);
 const DEFAULT_ESTATE_NAME = process.env.REACT_APP_DEFAULT_ESTATE_NAME || 'Default Estate';

@@ -6,8 +6,9 @@
  */
 
 import React, { useEffect } from 'react';
-import { Button, Input, Icon } from '../ui';
+
 import { getStatusChipClass, getStatusIcon } from '../../utils/statusColors';
+import { Button, Input, Icon } from '../ui';
 
 /**
  * VisitorDetailsModal - Full-screen modal with visitor information

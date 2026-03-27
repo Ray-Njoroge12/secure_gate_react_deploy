@@ -14,9 +14,10 @@
  * - Apple Wallet / Google Pay (future enhancement)
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { QRCodeSVG } from 'qrcode.react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+
 import Button from '../ui/Button';
 
 const SavePassModal = ({ 
@@ -211,15 +212,19 @@ const SavePassModal = ({
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="save-pass-title"
     >
+      <button
+        type="button"
+        aria-label="Close save pass modal"
+        className="absolute inset-0 h-full w-full cursor-default bg-transparent"
+        onClick={onClose}
+      />
       <div 
         ref={modalRef}
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         role="document"
         tabIndex={-1}
       >

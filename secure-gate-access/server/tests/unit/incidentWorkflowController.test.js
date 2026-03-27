@@ -38,7 +38,9 @@ jest.unstable_mockModule('../../src/services/automationService.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/webhookService.js', () => ({
-  triggerWebhooks: mockTriggerWebhooks
+  default: {
+    sendWebhook: mockTriggerWebhooks
+  }
 }));
 
 // Import after mocks

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import logger from 'utils/logger';
+
 import { searchUtils } from '../utils/searchUtils';
 
 const SearchContext = createContext(null);
@@ -8,8 +9,7 @@ export const SearchProvider = ({ children, options = {} }) => {
   const {
     enableUrlState = true,
     enableLocalStorage = true,
-    storageKey = 'searchState',
-    debounceDelay = 300
+    storageKey = 'searchState'
   } = options;
 
   const [searchState, setSearchState] = useState({
@@ -179,7 +179,7 @@ export const SearchProvider = ({ children, options = {} }) => {
   }, [searchState.searchTerm]);
 
   // Search data with current state
-  const searchData = useCallback((data, searchFields, filterFields) => {
+  const searchData = useCallback((data, searchFields, _filterFields) => {
     // Ensure data is an array to prevent "data is not iterable" error
     if (!Array.isArray(data)) {
       return [];

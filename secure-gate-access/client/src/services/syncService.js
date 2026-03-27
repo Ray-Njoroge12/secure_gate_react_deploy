@@ -10,12 +10,12 @@
  * - Secure sync with conflict resolution
  */
 
-import http from './http';
 import logger from '../utils/logger';
+
+import http from './http';
 
 const DB_NAME = 'securegate_offline';
 const DB_VERSION = 1;
-const CACHE_EXPIRY_HOURS = 8;
 const INACTIVITY_TIMEOUT_MINUTES = 30;
 
 class SyncService {

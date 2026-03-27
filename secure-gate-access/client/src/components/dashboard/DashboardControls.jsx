@@ -10,6 +10,7 @@
  */
 
 import React, { useRef } from 'react';
+
 // FIX: Substituted direct Lucide icons with Icon component usage in render method
 // import { 
 //   Plus, 
@@ -19,9 +20,8 @@ import React, { useRef } from 'react';
 //   Upload,
 //   Clock 
 // } from 'lucide-react';
-import { useAccessibility } from '../../hooks/useAccessibility.js';
-import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button';
+import Icon from '../ui/Icon.jsx';
 
 /**
  * DashboardControls Component
@@ -30,13 +30,10 @@ export const DashboardControls = ({
   onAddWidget,
   onResetLayout,
   onExportDashboard,
-  onImportDashboard,
   lastSaved,
-  role,
   simplified = false,
   className = ''
 }) => {
-  const { announce } = useAccessibility();
   const fileInputRef = useRef(null);
 
   const handleImportClick = () => {

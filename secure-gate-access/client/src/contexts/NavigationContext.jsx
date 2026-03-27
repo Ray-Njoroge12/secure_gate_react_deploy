@@ -11,6 +11,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import { generateBreadcrumbs } from '../utils/navigationFlow';
 
 // Navigation state types
@@ -286,7 +287,7 @@ export function NavigationProvider({ children, userRole = null }) {
   }, [userRole]);
 
   // Check if user can access a route
-  const canAccessRoute = useCallback((path) => {
+  const canAccessRoute = useCallback((_path) => {
     // This would integrate with your auth system
     // For now, just return true
     return true;

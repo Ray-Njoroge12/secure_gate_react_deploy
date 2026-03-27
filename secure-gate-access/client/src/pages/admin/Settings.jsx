@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
-import { useTheme } from "../../contexts/ThemeContext";
-import { useAuth } from "../../contexts/AuthContext";
-import api from "../../utils/apiClient";
-import { useToast } from "../../contexts/ToastContext";
+
 import NotificationSettings from "../../components/settings/NotificationSettings";
+import { PageHeader, ThemeRadioGroup, Icon, Button } from "../../components/ui";
+import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useToast } from "../../contexts/ToastContext";
+import api from "../../utils/apiClient";
 import "../../styles.css";
 
 export default function Settings() {

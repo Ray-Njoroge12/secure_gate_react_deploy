@@ -6,10 +6,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge } from '../ui';
+
 import { useTheme } from '../../contexts/ThemeContext';
 import usePushNotifications from '../../hooks/usePushNotifications';
 import api from '../../utils/apiClient';
+import { Card, Button, Badge } from '../ui';
 import Icon from '../ui/Icon';
 
 /**
@@ -72,7 +73,6 @@ const NotificationSettings = ({ className = '' }) => {
     isSubscribed,
     isLoading,
     error,
-    canSubscribe,
     needsPermission,
     requestPermission,
     subscribe,

@@ -43,12 +43,14 @@ export const FORM_CONFIG = {
   AUTO_SAVE_INTERVAL: 30000 // 30 seconds
 };
 
-export default {
+const validationConstants = {
   VALIDATION_TIMING,
   VALIDATION_MESSAGES,
   VALIDATION_RULES,
   FORM_CONFIG
 };
+
+export default validationConstants;
 
 
 

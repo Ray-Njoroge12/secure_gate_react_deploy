@@ -7,7 +7,6 @@ import {
   escalateIncident,
   getUsers
 } from '../../services/adminService';
-import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import Table from '../../components/Table';
 import Button from '../../components/ui/Button';
@@ -15,9 +14,9 @@ import Badge from '../../components/ui/Badge';
 import Card from '../../components/ui/Card';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog';
 import { format } from 'date-fns';
+import { formatIncidentDateTime } from '../../utils/incidentDisplay';
 
 export default function IncidentManagement({ estateId }) {
-  const { user } = useAuth();
   const { showError, showSuccess } = useError();
   const [activeTab, setActiveTab] = useState('open'); // open, assigned, resolved, all
   const [incidents, setIncidents] = useState([]);
@@ -187,7 +186,20 @@ export default function IncidentManagement({ estateId }) {
     { key: 'priority', label: 'Priority' },
     { key: 'reported_by', label: 'Reported By' },
     { key: 'assigned_to', label: 'Assigned To' },
-    { key: 'created_at', label: 'Date', render: (row) => format(new Date(row.created_at), 'MMM d, HH:mm') },
+    {
+      key: 'created_at',
+      label: 'Date',
+      render: (row) => {
+        const value = formatIncidentDateTime(row.created_at, '');
+        if (!value) return 'N/A';
+
+        try {
+          return format(new Date(row.created_at), 'MMM d, HH:mm');
+        } catch {
+          return value;
+        }
+      }
+    },
     {
       key: 'actions',
       label: 'Actions',

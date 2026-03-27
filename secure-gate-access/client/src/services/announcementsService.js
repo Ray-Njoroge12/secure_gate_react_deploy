@@ -10,8 +10,9 @@
  * - Admin CRUD operations
  */
 
-import http from './http';
 import logger from '../utils/logger';
+
+import http from './http';
 
 class AnnouncementsService {
   /**

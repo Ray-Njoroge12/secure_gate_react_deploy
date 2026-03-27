@@ -1,8 +1,10 @@
 // Page Header component with breadcrumbs and page title
 import React from 'react';
+
 import { useNavigation } from '../contexts/NavigationContext';
-import Breadcrumbs from './ui/Breadcrumbs';
+
 import { Button, Icon } from './ui';
+import Breadcrumbs from './ui/Breadcrumbs';
 
 const PageHeader = ({ 
   title = null,

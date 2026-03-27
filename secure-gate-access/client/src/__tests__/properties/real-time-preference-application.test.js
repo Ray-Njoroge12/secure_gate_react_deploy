@@ -9,12 +9,8 @@
  * or manual synchronization.
  */
 
-import React, { useState, useEffect } from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import * as fc from 'fast-check';
-import { PreferenceProvider, usePreferences } from '../../contexts/PreferenceContext';
-import { useUserPreferences } from '../../hooks/useUserPreferences';
-import { ThemeEngineProvider } from '../../contexts/ThemeEngine';
+
 import { DEFAULT_PREFERENCES } from '../../services/preferenceService';
 
 // Mock the API service
@@ -102,16 +98,6 @@ const createMockThemeContext = () => ({
   setTheme: jest.fn(),
   density: 'comfortable',
   setDensity: jest.fn()
-});
-
-const createMockThemeEngine = () => ({
-  theme: 'light',
-  setTheme: jest.fn(),
-  density: 'comfortable', 
-  setDensity: jest.fn(),
-  generateThemeClasses: jest.fn(() => 'theme-light density-comfortable'),
-  applyTheme: jest.fn(),
-  getThemeVariables: jest.fn(() => ({}))
 });
 
 // Fast-check generators for preference data with guaranteed differences
@@ -279,49 +265,6 @@ const performancePreferencePairGenerator = fc.tuple(
     dataPageSize: fc.constantFrom(50, 10, 100)
   })
 );
-
-const performancePreferencesGenerator = fc.record({
-  animationsEnabled: fc.boolean(),
-  autoRefresh: fc.boolean(),
-  refreshInterval: fc.constantFrom(5000, 15000, 30000, 60000, 300000),
-  dataPageSize: fc.integer({ min: 10, max: 100 })
-});
-
-// Test component that demonstrates real-time preference application
-const PreferenceTestComponent = ({ testId, onPreferenceChange }) => {
-  const { preferences, updatePreferences } = usePreferences();
-  const { dashboardPreferences, accessibilityPreferences } = useUserPreferences();
-  const [renderCount, setRenderCount] = useState(0);
-
-  useEffect(() => {
-    setRenderCount(prev => prev + 1);
-  }, [preferences]);
-
-  const handleUpdatePreferences = async (newPrefs) => {
-    await updatePreferences(newPrefs);
-    if (onPreferenceChange) {
-      onPreferenceChange(newPrefs);
-    }
-  };
-
-  return (
-    <div data-testid={testId}>
-      <div data-testid="theme-display">{dashboardPreferences.theme}</div>
-      <div data-testid="density-display">{dashboardPreferences.density}</div>
-      <div data-testid="high-contrast-display">{accessibilityPreferences.highContrast.toString()}</div>
-      <div data-testid="render-count">{renderCount}</div>
-      <button 
-        data-testid="update-button"
-        onClick={() => handleUpdatePreferences({
-          ...preferences,
-          dashboardLayout: { ...preferences.dashboardLayout, theme: 'dark' }
-        })}
-      >
-        Update Theme
-      </button>
-    </div>
-  );
-};
 
 describe('Property 2: Real-Time Preference Application', () => {
   let mockApi;

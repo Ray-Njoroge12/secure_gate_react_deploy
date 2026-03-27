@@ -13,7 +13,22 @@
  */
 
 import * as crypto from 'crypto';
-import secretsManagerService from '../services/secretsManagerService.js';
+
+const parseEnvBoolean = (value, defaultValue = false) => {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+
+  return defaultValue;
+};
 
 class EnvironmentConfig {
   constructor() {
@@ -23,15 +38,14 @@ class EnvironmentConfig {
     this.isTest = process.env.NODE_ENV === 'test';
 
     // Determine if AWS Secrets Manager should be used (explicit opt-in)
-    this.useAwsSecrets = process.env.USE_AWS_SECRETS === 'true';
+    this.useAwsSecrets = parseEnvBoolean(process.env.USE_AWS_SECRETS, false);
+    this.shouldUseAwsSecrets = (this.isProduction || this.isStaging) && !this.isTest && this.useAwsSecrets;
 
-    // Initialize secrets manager for production/staging when explicitly enabled
-    this.secretsManager = (this.isProduction || this.isStaging) && !this.isTest && this.useAwsSecrets
-      ? secretsManagerService
-      : null;
+    // Initialize lazily to avoid module-init import cycles during startup.
+    this.secretsManager = null;
 
     // Set dynamic prefix based on environment
-    if (this.secretsManager) {
+    if (this.shouldUseAwsSecrets) {
       process.env.SECRETS_PREFIX = process.env.SECRETS_PREFIX || `secure-gate/${process.env.NODE_ENV}`;
     }
 
@@ -65,14 +79,32 @@ class EnvironmentConfig {
       });
   }
 
+  shouldSuppressWeakSecretWarning() {
+    return parseEnvBoolean(process.env.DEV_SUPPRESS_WEAK_SECRET_WARNINGS, false) && (this.isDevelopment || this.isTest);
+  }
+
+  isLocalSmtpNoAuthConfig(smtpHost, smtpPort) {
+    const host = String(smtpHost || '').trim().toLowerCase();
+    const port = Number.parseInt(smtpPort, 10);
+    const localHost = ['localhost', '127.0.0.1', '::1'].includes(host);
+    const mailhogPort = Number.isNaN(port) ? true : port === 1025;
+    const smtpRequireAuth = parseEnvBoolean(process.env.SMTP_REQUIRE_AUTH, false);
+    return (this.isDevelopment || this.isTest) && localHost && mailhogPort && !smtpRequireAuth;
+  }
+
   /**
    * Load secrets from AWS Secrets Manager in production
    * @returns {Promise<void>}
    */
   async loadSecrets() {
-    if (!this.secretsManager || this.secretsLoaded) {
+    if (!this.shouldUseAwsSecrets || this.secretsLoaded) {
       this.secretsLoaded = true;
       return;
+    }
+
+    if (!this.secretsManager) {
+      const secretsModule = await import('../services/secretsManagerService.js');
+      this.secretsManager = secretsModule.default;
     }
 
     try {
@@ -216,7 +248,7 @@ class EnvironmentConfig {
     } else if (this.isWeakSecret(jwtSecret)) {
       if (this.isProduction) {
         this.validationErrors.push('JWT_SECRET is too weak for production (min 32 chars, high entropy)');
-      } else {
+      } else if (!this.shouldSuppressWeakSecretWarning()) {
         this.warnings.push('JWT_SECRET appears weak - consider using stronger secret');
       }
     }
@@ -232,7 +264,7 @@ class EnvironmentConfig {
     } else if (this.isWeakSecret(jwtRefreshSecret)) {
       if (this.isProduction) {
         this.validationErrors.push('JWT_REFRESH_SECRET is too weak for production');
-      } else {
+      } else if (!this.shouldSuppressWeakSecretWarning()) {
         this.warnings.push('JWT_REFRESH_SECRET appears weak');
       }
     }
@@ -253,7 +285,9 @@ class EnvironmentConfig {
     if (smtpHost) {
       const smtpUser = process.env.SMTP_USER;
       const smtpPass = process.env.SMTP_PASS;
-      if (!smtpUser || !smtpPass) {
+      const localNoAuthSmtp = this.isLocalSmtpNoAuthConfig(smtpHost, process.env.SMTP_PORT);
+
+      if ((!smtpUser || !smtpPass) && !localNoAuthSmtp) {
         this.warnings.push('SMTP configured but missing SMTP_USER or SMTP_PASS');
       }
     }
@@ -282,13 +316,18 @@ class EnvironmentConfig {
    * Production-specific configuration validation
    */
   validateProductionConfig() {
+    const enforceHttps = parseEnvBoolean(process.env.ENFORCE_HTTPS, false);
+    const allowHttpInProduction = parseEnvBoolean(process.env.ALLOW_HTTP_IN_PRODUCTION, false);
+    const secureCookies = parseEnvBoolean(process.env.SECURE_COOKIES, false);
+    const otpDebugEchoEnabled = parseEnvBoolean(process.env.OTP_DEBUG_ECHO, false);
+
     // Enforce HTTPS in production (allow override for local development)
-    if (process.env.ENFORCE_HTTPS !== 'true' && process.env.NODE_ENV === 'production' && !process.env.ALLOW_HTTP_IN_PRODUCTION) {
+    if (!enforceHttps && process.env.NODE_ENV === 'production' && !allowHttpInProduction) {
       this.validationErrors.push('ENFORCE_HTTPS must be "true" in production');
     }
 
     // Secure cookies in production
-    if (!process.env.SECURE_COOKIES || process.env.SECURE_COOKIES !== 'true') {
+    if (!secureCookies) {
       this.validationErrors.push('SECURE_COOKIES must be "true" in production');
     }
 
@@ -298,7 +337,7 @@ class EnvironmentConfig {
     }
 
     // Disable debug features
-    if (process.env.OTP_DEBUG_ECHO === 'true') {
+    if (otpDebugEchoEnabled) {
       this.validationErrors.push('OTP_DEBUG_ECHO must be disabled in production');
     }
 
@@ -427,9 +466,9 @@ class EnvironmentConfig {
       jwtSecret: process.env.JWT_SECRET,
       jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
       sessionSecret: process.env.SESSION_SECRET || this.generateSecureSecret(32), // Only generate for development
-      enforceHttps: process.env.ENFORCE_HTTPS === 'true',
-      secureCookies: process.env.SECURE_COOKIES === 'true' || this.isProduction || this.isStaging,
-      trustProxy: process.env.TRUST_PROXY === 'true' || this.isProduction || this.isStaging,
+      enforceHttps: parseEnvBoolean(process.env.ENFORCE_HTTPS, false),
+      secureCookies: parseEnvBoolean(process.env.SECURE_COOKIES, this.isProduction || this.isStaging),
+      trustProxy: parseEnvBoolean(process.env.TRUST_PROXY, this.isProduction || this.isStaging),
       corsOrigins: this.getCorsOrigins(),
       rateLimiting: this.getRateLimitConfig()
     };

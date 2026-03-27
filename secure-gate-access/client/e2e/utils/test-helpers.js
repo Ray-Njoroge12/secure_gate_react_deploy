@@ -4,9 +4,8 @@
  */
 
 /**
- * Login helper - NO LONGER NEEDED with storage state approach
- * Storage state is loaded automatically via test fixtures
- * This function is kept for backward compatibility but does nothing
+ * Login helper used by legacy E2E flows that still perform interactive sign-in.
+ * Newer tests should prefer storage state fixtures configured in Playwright.
  * 
  * @deprecated Use storage state fixtures instead (see playwright.config.js)
  * @param {import('@playwright/test').Page} page 
@@ -28,7 +27,7 @@ export async function login(page, credentials) {
   
   await page.goto(dashboardPath);
   await page.waitForTimeout(1000);
-  return hasRole;
+  return true;
 }
 
 /**
@@ -105,66 +104,6 @@ export async function navigateTo(page, path) {
 }
 
 /**
- * Fill form fields
- * @param {import('@playwright/test').Page} page 
- * @param {Object} fields - Key-value pairs of field names and values
- */
-export async function fillForm(page, fields) {
-  for (const [name, value] of Object.entries(fields)) {
-    const selector = `input[name="${name}"], textarea[name="${name}"], select[name="${name}"]`;
-    await page.fill(selector, value.toString());
-  }
-}
-
-/**
- * Wait for element to be visible
- * @param {import('@playwright/test').Page} page 
- * @param {string} selector 
- * @param {number} timeout 
- */
-export async function waitForElement(page, selector, timeout = 10000) {
-  await page.waitForSelector(selector, { state: 'visible', timeout });
-}
-
-/**
- * Check if element exists
- * @param {import('@playwright/test').Page} page 
- * @param {string} selector 
- */
-export async function elementExists(page, selector) {
-  try {
-    await page.waitForSelector(selector, { timeout: 2000 });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Take a screenshot with a meaningful name
- * @param {import('@playwright/test').Page} page 
- * @param {string} name 
- */
-export async function takeScreenshot(page, name) {
-  await page.screenshot({ 
-    path: `e2e/screenshots/${name}-${Date.now()}.png`,
-    fullPage: true 
-  });
-}
-
-/**
- * Wait for API response
- * @param {import('@playwright/test').Page} page 
- * @param {string} urlPattern 
- */
-export async function waitForApiResponse(page, urlPattern) {
-  return await page.waitForResponse(
-    response => response.url().includes(urlPattern) && response.status() < 400,
-    { timeout: 10000 }
-  );
-}
-
-/**
  * Clear browser storage
  * @param {import('@playwright/test').Page} page 
  */
@@ -185,28 +124,6 @@ export async function clearStorage(page) {
   } catch (e) {
     // Ignore errors during cleanup
   }
-}
-
-/**
- * Get localStorage item
- * @param {import('@playwright/test').Page} page 
- * @param {string} key 
- */
-export async function getLocalStorage(page, key) {
-  return await page.evaluate((k) => localStorage.getItem(k), key);
-}
-
-/**
- * Set localStorage item
- * @param {import('@playwright/test').Page} page 
- * @param {string} key 
- * @param {string} value 
- */
-export async function setLocalStorage(page, key, value) {
-  await page.evaluate(
-    ({ k, v }) => localStorage.setItem(k, v),
-    { k: key, v: value }
-  );
 }
 
 /**
@@ -256,4 +173,58 @@ export function randomEmail() {
  */
 export function randomPhone() {
   return `+254700${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
+/**
+ * Verify no global error shells are displayed
+ * Used by smoke tests to ensure no access/application errors appear
+ * @param {import('@playwright/test').Page} page
+ */
+export async function expectNoGlobalErrorShell(page) {
+  const { expect } = require('@playwright/test');
+  await expect(page.locator('text=Access Restricted')).toHaveCount(0);
+  await expect(page.locator('text=Application Error')).toHaveCount(0);
+}
+
+/**
+ * Suppress global overlays before navigation
+ * Prevents PWA install prompts, notification prompts, and cookie consents from blocking tests
+ * @param {import('@playwright/test').Page} page
+ */
+export async function suppressGlobalOverlays(page) {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('pwa-install-dismissed', 'true');
+      localStorage.setItem('notification-prompt-dismissed', 'true');
+      localStorage.setItem('cookieConsent', JSON.stringify({
+        necessary: true,
+        analytics: false,
+        marketing: false,
+        preferences: false
+      }));
+      localStorage.setItem('cookieConsentDate', new Date().toISOString());
+    } catch (e) {
+      // Ignore storage write failures in constrained browser contexts.
+    }
+  });
+}
+
+/**
+ * Dismiss blocking prompts that appear after page load
+ * Handles cookie rejection and PWA "Not now" buttons
+ * @param {import('@playwright/test').Page} page
+ */
+export async function dismissBlockingPrompts(page) {
+  const rejectCookies = page.getByRole('button', { name: /Reject All/i });
+  if (await rejectCookies.isVisible({ timeout: 1200 }).catch(() => false)) {
+    await rejectCookies.click({ force: true });
+  }
+
+  const pwaNotNow = page.getByRole('button', { name: /Not now/i });
+  if (await pwaNotNow.isVisible({ timeout: 1200 }).catch(() => false)) {
+    await pwaNotNow.click({ force: true });
+  }
+
+  // Fallback in case other transient overlays remain focused
+  await page.keyboard.press('Escape').catch(() => {});
 }

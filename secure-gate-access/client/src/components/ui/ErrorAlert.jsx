@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import Icon from './Icon.jsx';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+
 import Button from './Button.jsx';
+import Icon from './Icon.jsx';
 
 /**
  * Unified Error Alert Component
@@ -22,7 +23,27 @@ const ErrorAlert = ({
 }) => {
   const alertRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (persistent) return;
+
+    setTimeout(() => {
+      setIsVisible(false);
+      onClose?.();
+    }, 300);
+  }, [onClose, persistent]);
+
+  const handleRetry = useCallback(() => {
+    onRetry?.();
+    handleClose();
+  }, [handleClose, onRetry]);
+
+  const handleHelp = useCallback(() => {
+    if (onHelp) onHelp();
+  }, [onHelp]);
+
+  const canRetry = Boolean(onRetry);
+  const canHelp = Boolean(onHelp);
 
   // Auto-close functionality
   useEffect(() => {
@@ -33,13 +54,12 @@ const ErrorAlert = ({
 
       return () => clearTimeout(timer);
     }
-  }, [error, autoClose, autoCloseDelay, persistent]);
+  }, [error, autoClose, autoCloseDelay, persistent, handleClose]);
 
   // Show animation
   useEffect(() => {
     if (error) {
       setIsVisible(true);
-      setIsClosing(false);
     }
   }, [error]);
 
@@ -59,12 +79,12 @@ const ErrorAlert = ({
         handleClose();
       }
       // Ctrl/Cmd + R to retry
-      if ((e.ctrlKey || e.metaKey) && e.key === 'r' && onRetry) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r' && canRetry) {
         e.preventDefault();
         handleRetry();
       }
       // Ctrl/Cmd + H to get help
-      if ((e.ctrlKey || e.metaKey) && e.key === 'h' && onHelp) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h' && canHelp) {
         e.preventDefault();
         handleHelp();
       }
@@ -75,26 +95,7 @@ const ErrorAlert = ({
       alertElement.addEventListener('keydown', handleKeyDown);
       return () => alertElement.removeEventListener('keydown', handleKeyDown);
     }
-  }, [error, onRetry, onHelp]);
-
-  const handleClose = () => {
-    if (persistent) return;
-    
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsVisible(false);
-      onClose?.();
-    }, 300);
-  };
-
-  const handleRetry = () => {
-    onRetry?.();
-    handleClose();
-  };
-
-  const handleHelp = () => {
-    if (onHelp) onHelp();
-  };
+  }, [error, canHelp, canRetry, handleClose, handleHelp, handleRetry]);
   
   const getColors = () => {
     switch (type) {
@@ -122,7 +123,7 @@ const ErrorAlert = ({
   };
   
   const renderActions = () => {
-    if (!onRetry && !onHelp) return null;
+    if (!showRecoveryActions || (!onRetry && !onHelp)) return null;
     
     return (
       <div className="mt-3 flex gap-3">
@@ -200,7 +201,7 @@ const ErrorAlert = ({
   );
 };
 
-const ActionButton = ({ icon, label, onClick, variant = 'info' }) => (
+const ActionButton = ({ icon, label, onClick }) => (
   <Button
     onClick={onClick}
     variant="ghost"

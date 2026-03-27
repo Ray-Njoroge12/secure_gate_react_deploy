@@ -3,8 +3,9 @@
  * Supports multiple formats (PDF, Excel, CSV) with customizable field selection
  */
 
-import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
+
 import 'jspdf-autotable';
 import logger from '../utils/logger';
 

@@ -7,6 +7,7 @@
 
 import { pool } from '../database/connection.js';
 import * as crypto from 'crypto';
+import logger from '../config/logger.js';
 
 const ANPR_ENABLED = process.env.ENABLE_ANPR_INTEGRATION === 'true';
 const ANPR_API_KEY = process.env.ANPR_API_KEY;
@@ -164,7 +165,7 @@ export async function lookupPlate(plate) {
     };
 
   } catch (error) {
-    console.error('ANPR plate lookup error:', error);
+    logger.error('ANPR plate lookup error:', error);
     return {
       authorized: false,
       reason: 'Lookup failed',
@@ -189,7 +190,7 @@ export async function logAnprEvent(eventType, plate, result, metadata = {}) {
       ]
     );
   } catch (error) {
-    console.error('Failed to log ANPR event:', error);
+    logger.error('Failed to log ANPR event:', error);
   }
 }
 
@@ -232,7 +233,7 @@ export async function requestBarrierOpen(barrierConfig) {
       }
 
       const result = await response.json();
-      console.log('[ANPR] Barrier open signal sent successfully:', result);
+      logger.info('[ANPR] Barrier open signal sent successfully:', result);
 
       return {
         success: true,
@@ -241,7 +242,7 @@ export async function requestBarrierOpen(barrierConfig) {
         externalId: result.id
       };
     } catch (error) {
-      console.error('[ANPR] Failed to communicate with Barrier API:', error);
+      logger.error('[ANPR] Failed to communicate with Barrier API:', error);
       return {
         success: false,
         error: 'Hardware communication failed',
@@ -259,7 +260,7 @@ export async function requestBarrierOpen(barrierConfig) {
   }
 
   // Fallback / Simulation Log
-  console.log('[ANPR] Barrier open requested (Simulation):', barrierConfig);
+  logger.debug('[ANPR] Barrier open requested (Simulation):', barrierConfig);
 
   return {
     success: true,

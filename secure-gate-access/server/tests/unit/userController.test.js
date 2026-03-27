@@ -91,17 +91,14 @@ jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/services/auditService.js', () => ({
-  auditLog: mockAuditLog
+  auditLog: jest.fn().mockResolvedValue(undefined),
+  default: { auditLog: jest.fn().mockResolvedValue(undefined) }
 }));
 
 jest.unstable_mockModule('../../src/services/tokenService.js', () => ({
   tokenService: mockTokenService,
   passwordService: mockPasswordService,
   accountSecurity: mockAccountSecurity
-}));
-
-jest.unstable_mockModule('../../src/services/auditLogger.js', () => ({
-  default: mockAuditLogger
 }));
 
 jest.unstable_mockModule('../../src/middleware/standardizedErrorHandler.js', () => ({

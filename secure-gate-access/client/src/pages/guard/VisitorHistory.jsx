@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
+
+import OfflineBanner from "../../components/common/OfflineBanner";
 import Table from "../../components/Table";
 import { Card, Button, Pagination, Skeleton, PageHeader, Icon } from "../../components/ui";
 import { ErrorState, SearchEmpty, HistoryEmpty } from "../../components/ui/EmptyState";
-import { getVisitorHistory } from "../../services/guardService";
-import { handleApiError } from "../../utils/errorMapper";
-import { getStatusChipClass } from "../../utils/statusColors";
 import useOnlineStatus from "../../hooks/useOnlineStatus";
 import usePullToRefresh from "../../hooks/usePullToRefresh";
-import OfflineBanner from "../../components/common/OfflineBanner";
+import { getVisitorHistory } from "../../services/guardService";
+import { handleApiError } from "../../utils/errorMapper";
 import logger from "../../utils/logger";
+import { getStatusChipClass } from "../../utils/statusColors";
 
 export default function VisitorHistory() {
   const [visitors, setVisitors] = useState([]);

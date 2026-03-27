@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { io } from 'socket.io-client';
 
 import { useAuth } from '../contexts/AuthContext';
+import logger from 'utils/logger';
 
 const stripApiSuffix = (url) => {
   if (!url || typeof url !== 'string') {
@@ -257,7 +258,7 @@ export function useWebSocket(options = {}) {
         try {
           callback(data);
         } catch (err) {
-          console.error(`Error in WebSocket listener for ${event}:`, err);
+          logger.error(`Error in WebSocket listener for ${event}:`, err);
         }
       });
     }
@@ -268,7 +269,7 @@ export function useWebSocket(options = {}) {
    */
   const connect = useCallback(() => {
     if (socketRef.current?.connected || socketRef.current?.active) {
-      console.log('WebSocket already connected');
+      logger.debug('WebSocket already connected');
       return;
     }
 
@@ -421,7 +422,7 @@ export function useWebSocket(options = {}) {
 
     // Connection established
     on(WS_EVENTS.CONNECT, () => {
-      console.log('🟢 WebSocket connected');
+      logger.info('WebSocket connected');
       setConnectionState(CONNECTION_STATE.CONNECTED);
       reconnectAttemptsRef.current = 0;
       isDisconnectedRef.current = false;
@@ -440,7 +441,7 @@ export function useWebSocket(options = {}) {
 
     // Connection established with server info
     on(WS_EVENTS.CONNECTION_ESTABLISHED, (data) => {
-      console.log('WebSocket connection established:', data);
+      logger.info('WebSocket connection established:', data);
       setLastMessage(data);
 
       if (subscribeDashboard) {
@@ -456,7 +457,7 @@ export function useWebSocket(options = {}) {
 
     // Disconnect
     on(WS_EVENTS.DISCONNECT, (reason) => {
-      console.log('🔴 WebSocket disconnected:', reason);
+      logger.info('WebSocket disconnected:', reason);
       isDisconnectedRef.current = true;
       setConnectionState(CONNECTION_STATE.DISCONNECTED);
       lifecycleCallbacksRef.current.onDisconnect?.(reason);
@@ -466,7 +467,7 @@ export function useWebSocket(options = {}) {
 
     // Connection error
     on(WS_EVENTS.CONNECT_ERROR, (err) => {
-      console.error('WebSocket connection error:', err);
+      logger.error('WebSocket connection error:', err);
       setConnectionState(CONNECTION_STATE.ERROR);
       setError(err.message);
       reconnectAttemptsRef.current++;
@@ -572,7 +573,7 @@ export function useWebSocket(options = {}) {
 
     // Error events
     on(WS_EVENTS.ERROR, (data) => {
-      console.error('WebSocket error event:', data);
+      logger.error('WebSocket error event:', data);
       setError(data.message);
       emitToListeners(WS_EVENTS.ERROR, data);
     });
@@ -621,7 +622,7 @@ export function useWebSocket(options = {}) {
     if (socketRef.current?.connected) {
       socketRef.current.emit(event, data);
     } else {
-      console.warn('Cannot emit event: WebSocket not connected');
+      logger.warn('Cannot emit event: WebSocket not connected');
     }
   }, []);
 

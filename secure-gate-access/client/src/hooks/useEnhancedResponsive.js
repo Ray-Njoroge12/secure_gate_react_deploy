@@ -9,8 +9,10 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useResponsive } from './useResponsive.js';
+
 import { tokens } from '../design-system/tokens.js';
+
+import { useResponsive } from './useResponsive.js';
 
 /**
  * Container query observer for element-based responsive behavior
@@ -219,12 +221,11 @@ export const useEnhancedResponsive = (options = {}) => {
       if (typeof values !== 'object' || values === null) {
         return { [property]: values };
       }
-      
-      const breakpoint = containerBreakpoint || baseResponsive.breakpoint;
+
       const value = getResponsiveValue(values);
       
       return value !== undefined ? { [property]: value } : {};
-    }, [containerBreakpoint, baseResponsive.breakpoint, getResponsiveValue]),
+    }, [getResponsiveValue]),
   };
 
   // Enhanced responsive state

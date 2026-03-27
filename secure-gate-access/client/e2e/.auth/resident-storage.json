@@ -1,4 +1,53 @@
 {
-  "cookies": [],
-  "origins": []
+  "cookies": [
+    {
+      "name": "refreshToken",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNjUiLCJpYXQiOjE3NzQ1OTE2NDMsImp0aSI6ImVjYzQyY2IwLTkzNmUtNDdmZS04Yjk4LWNmYWFjNjdlNDkwZCIsImVtYWlsIjoicmVzaWRlbnQxQHNlY3VyZWdhdGUuY29tIiwiZXN0YXRlX2lkIjo0NiwiYWNjZXNzSnRpIjoiYjllNzQ3NzktYTg2Ny00YTA5LWFiZmMtZWQxYTlkMTI5OWVlIiwidHlwZSI6InJlZnJlc2giLCJleHAiOjE3NzUxOTY0NDMsImF1ZCI6InNlY3VyZS1nYXRlLWNsaWVudCIsImlzcyI6InNlY3VyZS1nYXRlLWFwaSJ9.t6MafuzPg19Cs3mibQ3ChJtsyevSLF6H19qM_qTFUIM",
+      "domain": "127.0.0.1",
+      "path": "/api/auth/refresh",
+      "expires": 1775196443,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "secure.sid",
+      "value": "s%3AEuMaKuwV6vbddiRWWWUBc4iMsCuayCJ4.7SEeElJV5gZEF82N5fFPrP136Sav4D8DXXepF%2BZzHsE",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1774678043,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "accessToken",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNjUiLCJpYXQiOjE3NzQ1OTE2NDMsImp0aSI6ImI5ZTc0Nzc5LWE4NjctNGEwOS1hYmZjLWVkMWE5ZDEyOTllZSIsImlkIjoxNjUsImVtYWlsIjoicmVzaWRlbnQxQHNlY3VyZWdhdGUuY29tIiwicm9sZSI6InJlc2lkZW50IiwidXNlcm5hbWUiOiJyZXNpZGVudDEiLCJlc3RhdGVfaWQiOjQ2LCJ2ZXJpZmllZCI6dHJ1ZSwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc3NDU5MjU0MywiYXVkIjoic2VjdXJlLWdhdGUtY2xpZW50IiwiaXNzIjoic2VjdXJlLWdhdGUtYXBpIn0.RP_vS3z_9t6FfNxjT2tK5QI54n5ySY49RBY6JF25-tk",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1774592543,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:3000",
+      "localStorage": [
+        {
+          "name": "app_language",
+          "value": "en"
+        },
+        {
+          "name": "accessibility-settings",
+          "value": "{\"highContrast\":false,\"reducedMotion\":false,\"textScaling\":100,\"keyboardNavigation\":true,\"skipLinks\":true,\"focusIndicators\":true,\"screenReaderSupport\":true,\"announcements\":true,\"liveRegions\":true,\"extendedTimeouts\":false,\"alternativeInputs\":false,\"voiceCommands\":false,\"dwellClickingEnabled\":false,\"dwellClickingTime\":1000,\"switchInputEnabled\":false,\"switchScanningSpeed\":1500,\"headTrackingEnabled\":false,\"timeoutExtensionLevel\":\"moderate\",\"simplifiedUI\":false,\"descriptiveText\":true,\"errorDescriptions\":true}"
+        },
+        {
+          "name": "searchState",
+          "value": "{\"searchTerm\":\"\",\"filters\":{},\"sortField\":\"\",\"sortDirection\":\"asc\",\"currentPage\":1,\"pageSize\":10,\"search\":\"\",\"sort\":\"\",\"page\":1}"
+        }
+      ]
+    }
+  ]
 }

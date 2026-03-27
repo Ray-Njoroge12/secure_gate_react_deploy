@@ -8,29 +8,30 @@
 
 import React, { Suspense, lazy, useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import AppShell from "./layouts/AppShell"; // Import AppShell for route wrapping
+
 import "./polyfills/index.js"; // Added for Task 3.4
 import "./design-system/styles.css"; // Design system CSS variables
 import "./styles/accessibility.css"; // WCAG 2.1 AA compliance styles
 import "./styles.css"; // Additional app styles
 import AppErrorBoundary from "./components/AppErrorBoundary.jsx";
-import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import BrowserCompatibilityWarning from "./components/BrowserCompatibilityWarning.jsx"; // Added for Task 3.4
+import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
+import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
+import SessionExpiryToast from "./components/common/SessionExpiryToast.jsx";
+import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
+import SyncConflictListener from "./components/common/SyncConflictListener.jsx";
 import CookieConsentBanner from "./components/CookieConsentBanner.jsx"; // Privacy: Cookie consent for KDPA compliance
+import AuthErrorBoundary from "./components/ErrorBoundary/AuthErrorBoundary.jsx";
 import ErrorBoundary from "./components/ErrorBoundary/ErrorBoundary.jsx";
 import NetworkErrorBoundary from "./components/ErrorBoundary/NetworkErrorBoundary.jsx";
 import ErrorQueue from "./components/ErrorQueue.jsx";
 import GlobalKeyboardShortcuts from "./components/GlobalKeyboardShortcuts.jsx"; // BUG-002 FIX
-import OfflineRetryBanner from "./components/common/OfflineRetryBanner.jsx";
-import RateLimitIndicator from "./components/common/RateLimitIndicator.jsx"; // Rate limit feedback
-import SessionExpiryToast from "./components/common/SessionExpiryToast.jsx";
-import SyncConflictListener from "./components/common/SyncConflictListener.jsx";
-import SessionTimeoutWarning from "./components/common/SessionTimeoutWarning.jsx";
-import GlobalStyles, { SkipLink } from "./components/ui/GlobalStyles.jsx";
-import Loading from "./components/ui/Loading.jsx";
-import ToastContainer from "./components/ToastContainer.jsx";
-import RootProvider from "./contexts/RootProvider.jsx";
 import PWAManager from "./components/pwa/PWAManager.jsx"; // Added for Task 4.4
+import ToastContainer from "./components/ToastContainer.jsx";
+import GlobalStyles from "./components/ui/GlobalStyles.jsx";
+import Loading from "./components/ui/Loading.jsx";
+import RootProvider from "./contexts/RootProvider.jsx";
+import AppShell from "./layouts/AppShell"; // Import AppShell for route wrapping
 import { refreshCSRFToken } from "./utils/apiClient.js";
 import { initializeAllKeyboardFeatures } from "./utils/focusManagement.js"; // Added for Task 1.5
 
@@ -63,6 +64,7 @@ const ResidentDashboard = lazy(() => import("./pages/resident/ResidentDashboard.
 
 // GeneratePass removed - using QuickInvite instead
 const VisitorHistory = lazy(() => import("./pages/resident/VisitorHistory.jsx"));
+const VisitorPass = lazy(() => import("./pages/resident/VisitorPass.jsx"));
 const FavoriteVisitors = lazy(() => import("./pages/resident/FavoriteVisitors.jsx")); // Added for Task 2.3
 const DeliveryList = lazy(() => import("./components/resident/DeliveryList.jsx"));
 const ResidentApprovalsPanel = lazy(() => import("./pages/resident/ResidentApprovalsPanel.jsx")); // Phase 3: Walk-in approvals
@@ -85,12 +87,6 @@ const BulkCheckout = lazy(() => import("./pages/guard/BulkCheckout.jsx")); // Ph
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
 // MessageViewer removed - file missing // Dev Tool
 const SuperAdminDashboard = lazy(() => import("./pages/admin/SuperAdminDashboard.jsx"));
-const Reports = lazy(() => import("./pages/admin/Reports.jsx"));
-const AdminSettings = lazy(() => import("./pages/admin/Settings.jsx"));
-const ManageResidents = lazy(() => import("./pages/admin/ManageResidents.jsx"));
-const ManageGuards = lazy(() => import("./pages/admin/ManageGuards.jsx"));
-const VisitorLog = lazy(() => import("./pages/admin/VisitorLog.jsx"));
-const IntegrationsHub = lazy(() => import("./pages/admin/IntegrationsHub.jsx"));
 const WatchlistManagement = lazy(() => import("./pages/admin/WatchlistManagement.jsx"));
 const RoleManagement = lazy(() => import("./pages/admin/RoleManagement.jsx"));
 const AccessControl = lazy(() => import("./pages/admin/AccessControl.jsx"));
@@ -103,7 +99,6 @@ const AuditLogs = lazy(() => import("./pages/admin/AuditLogs.jsx"));
 // Public visitor pages - Accessible via token URL
 const VisitorInvitePage = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
 // SelfCheckInKiosk removed - file missing
-const VisitorConfirmation = lazy(() => import("./pages/public/VisitorInvitePage.jsx"));
 
 // Resident additional pages
 const QuickInvite = lazy(() => import("./pages/resident/QuickInvite.jsx"));
@@ -259,6 +254,16 @@ function App() {
                           <ProtectedRoute allowedRoles={["resident"]}>
                             <AppShell role="resident" title="Visitor History">
                               <VisitorHistory />
+                            </AppShell>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/resident/visitor-pass/:visitorId"
+                        element={
+                          <ProtectedRoute allowedRoles={["resident"]}>
+                            <AppShell role="resident" title="Visitor Pass">
+                              <VisitorPass />
                             </AppShell>
                           </ProtectedRoute>
                         }

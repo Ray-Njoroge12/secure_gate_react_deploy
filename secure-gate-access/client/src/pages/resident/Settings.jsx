@@ -1,32 +1,33 @@
 // client/src/pages/resident/Settings.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { PageHeader, ThemeRadioGroup, ErrorDisplay, SuccessDisplay, Button } from "../../components/ui";
-import { useTheme } from "../../contexts/ThemeContext";
-import NotificationSettings from "../../components/settings/NotificationSettings";
+
 import AccessibilitySettings from "../../components/accessibility/AccessibilitySettings";
-import { Icon } from "../../components/ui/Icon";
 import { useOnboardingTour } from "../../components/common/OnboardingTour";
+import NotificationSettings from "../../components/settings/NotificationSettings";
+import { PageHeader, ThemeRadioGroup, ErrorDisplay, Button } from "../../components/ui";
+import { Icon } from "../../components/ui/Icon";
+import { useTheme } from "../../contexts/ThemeContext";
 import api from "../../utils/apiClient";
 import logger from '../../utils/logger';
 import "../../styles.css";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { theme, resolvedTheme, isDark } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const { restartTour } = useOnboardingTour('resident');
   // const role = useCurrentRole();
 
   // UI State
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   // Data State
   const [activeTab, setActiveTab] = useState("profile");
   const [profile, setProfile] = useState({ name: "", phone: "", email: "", area: "", house: "" });
   const [passwords, setPasswords] = useState({ old: "", new: "" });
-  const [notifications, setNotifications] = useState({ notify_email: true, notify_sms: false });
+  const [, setNotifications] = useState({ notify_email: true, notify_sms: false });
 
   // Load profile from resident endpoint
   useEffect(() => {
@@ -193,7 +194,6 @@ export default function Settings() {
 
   // Consistent input styling for all fields
   const inputClass = "w-full h-11 px-4 py-2 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 dark:text-white dark:placeholder-gray-400 transition-colors";
-  const btnClass = "btn btn-primary w-full md:w-auto"; // Enhanced button class
 
   return (
     // <AppShell role={role}>

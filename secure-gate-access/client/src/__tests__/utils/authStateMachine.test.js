@@ -4,8 +4,6 @@ describe('authStateMachine', () => {
     // Helpers to reset state if needed, although state is module-scoped singleton
     // so we should rely on transitions to verify behavior.
 
-    const initialState = { ...authStateMachine.getState() };
-
     it('should have correct initial state', () => {
         // Note: State might have changed due to other tests if running in parallel execution environments
         // but in unit tests, it should be isolated or at least deterministic.

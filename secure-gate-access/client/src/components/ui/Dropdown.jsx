@@ -6,7 +6,9 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { createRovingTabindex, focusManager } from '../../utils/focusManagement';
+
+import { createRovingTabindex } from '../../utils/focusManagement';
+
 import Icon from './Icon.jsx';
 
 /**
@@ -159,6 +161,9 @@ const Dropdown = ({
           setFocusedIndex(-1);
         }
         break;
+
+      default:
+        break;
     }
   }, [disabled, isOpen, focusedIndex, options, handleSelect]);
 
@@ -256,6 +261,7 @@ const Dropdown = ({
           role="listbox"
           aria-labelledby={buttonId}
           aria-activedescendant={focusedIndex >= 0 ? `option-${focusedIndex}` : undefined}
+          tabIndex={-1}
         >
           {options.map((option, index) => {
             const isSelected = value === option.value;
@@ -274,6 +280,12 @@ const Dropdown = ({
                 aria-selected={isSelected}
                 aria-disabled={option.disabled}
                 onClick={() => handleSelect(option)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleSelect(option);
+                  }
+                }}
                 onMouseEnter={() => setFocusedIndex(index)}
               >
                 <div className="flex items-center">

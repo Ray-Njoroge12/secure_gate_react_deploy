@@ -5,20 +5,36 @@
   "scripts": {
     "start": "cd secure-gate-access/server && npm start",
     "postinstall": "cd secure-gate-access/server && npm install && cd ../client && npm install --legacy-peer-deps",
-    "build": "echo 'No build step needed for backend'"
+    "prepare": "bash scripts/setup-git-hooks.sh",
+    "build": "echo 'No build step needed for backend'",
+    "test:playwright": "npm run test:playwright:client && npm run test:playwright:server",
+    "test:playwright:root": "node -e \"console.error('Root Playwright surface is retired (no active root e2e suite). Use: npm run test:playwright (client+server), npm run test:playwright:client, or npm run test:playwright:server.'); process.exit(1);\"",
+    "test:playwright:root:headed": "npm run test:playwright:root",
+    "test:playwright:root:ui": "npm run test:playwright:root",
+    "test:playwright:root:debug": "npm run test:playwright:root",
+    "test:playwright:client": "npm --prefix secure-gate-access/client run test:playwright --",
+    "test:playwright:client:resident-smoke": "npm --prefix secure-gate-access/client run test:playwright:resident-smoke --",
+    "test:playwright:client:headed": "npm --prefix secure-gate-access/client run test:playwright:headed --",
+    "test:playwright:client:ui": "npm --prefix secure-gate-access/client run test:playwright:ui --",
+    "test:playwright:client:debug": "npm --prefix secure-gate-access/client run test:playwright:debug --",
+    "test:playwright:server": "npm --prefix secure-gate-access/server run test:playwright --",
+    "test:playwright:server:headed": "npm --prefix secure-gate-access/server run test:playwright:headed --",
+    "test:playwright:server:ui": "npm --prefix secure-gate-access/server run test:playwright:ui --",
+    "test:playwright:server:debug": "npm --prefix secure-gate-access/server run test:playwright:debug --"
   },
   "engines": {
     "node": ">=20.11.0"
   },
-  "dependencies": {
-    "@byterover/cipher": "^0.3.0",
-    "axios": "^1.13.2"
-  },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
-    "axe-core": "^4.11.1",
-    "fast-check": "^4.5.3",
-    "serve": "^14.2.5",
-    "uuid": "^13.0.0"
+    "@playwright/test": "^1.57.0"
+  },
+  "overrides": {
+    "socket": {
+      "io-parser": "^4.2.6"
+    },
+    "minimatch": "^3.1.4",
+    "express-slow-down": {
+      "express-rate-limit": "^8.3.1"
+    }
   }
 }

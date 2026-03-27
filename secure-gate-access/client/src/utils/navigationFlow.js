@@ -129,7 +129,6 @@ export function hasRouteAccess(userRole, routePath, routeRoles = []) {
 // Navigation flow helper hook
 export function useNavigationFlow(userRole) {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const goToNextInFlow = (currentFlow, currentPath) => {
     const flowConfig = NAVIGATION_FLOWS[userRole]?.flows[currentFlow];

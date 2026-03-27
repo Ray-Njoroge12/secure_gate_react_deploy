@@ -8,6 +8,8 @@
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 // Import configuration modules
+import { ConfigValidator } from '../config-validator.js';
+import { ERROR_CONFIG } from '../error-scenarios.js';
 import { 
   TEST_CONFIG, 
   ConfigUtils, 
@@ -16,14 +18,11 @@ import {
   createConfigBuilder,
   getScenarioConfig
 } from '../index.js';
-
-import { ConfigValidator } from '../config-validator.js';
-import { TEST_EXECUTION_CONFIG, getEnvironment, isCI } from '../test-execution.js';
 import { NETWORK_CONDITIONS } from '../network-conditions.js';
-import { VALIDATION_RULES } from '../validation-rules.js';
-import { SECURITY_PATTERNS } from '../security-patterns.js';
 import { PERFORMANCE_CONFIG } from '../performance-benchmarks.js';
-import { ERROR_CONFIG } from '../error-scenarios.js';
+import { SECURITY_PATTERNS } from '../security-patterns.js';
+import { TEST_EXECUTION_CONFIG, getEnvironment, isCI } from '../test-execution.js';
+import { VALIDATION_RULES } from '../validation-rules.js';
 
 describe('Configuration System Validation', () => {
   let originalEnv;

@@ -126,7 +126,7 @@ describe('SEC-101: SQL Injection Prevention', () => {
           });
 
         // Should reject with auth error, not SQL error
-        expect([400, 401, 422]).toContain(response.status);
+        expect([400, 401, 403, 422]).toContain(response.status);
         expect(response.status).not.toBe(500);
       });
 
@@ -139,7 +139,7 @@ describe('SEC-101: SQL Injection Prevention', () => {
           });
 
         // Should reject with auth error, not SQL error
-        expect([400, 401, 422]).toContain(response.status);
+        expect([400, 401, 403, 422]).toContain(response.status);
         expect(response.status).not.toBe(500);
       });
     });

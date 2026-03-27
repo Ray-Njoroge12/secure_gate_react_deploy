@@ -17,8 +17,6 @@
  */
 
 import fc from 'fast-check';
-import { AdvancedFilters } from '../../components/search/AdvancedFilters';
-import { searchService } from '../../services/searchService';
 
 // Test configuration
 const TEST_CONFIG = {

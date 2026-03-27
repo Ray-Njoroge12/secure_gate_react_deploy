@@ -6,6 +6,38 @@
  */
 
 // Import individual configuration modules
+import { ConfigValidator } from './config-validator.js';
+import { 
+  ERROR_CONFIG,
+  ERROR_SCENARIOS,
+  createError,
+  getRecoveryStrategy,
+  simulateErrorCondition,
+  validateErrorHandling
+} from './error-scenarios.js';
+import { deepFreeze } from './immutable-utils.js';
+import { 
+  NETWORK_CONDITIONS, 
+  NETWORK_TRANSITIONS, 
+  NETWORK_QUALITY_THRESHOLDS,
+  CONNECTION_CAPABILITIES,
+  categorizeNetworkQuality,
+  getConnectionCapabilities,
+  simulateNetworkTransition,
+  createCustomNetworkCondition
+} from './network-conditions.js';
+import { 
+  PERFORMANCE_CONFIG,
+  evaluatePerformance,
+  generatePerformanceTestScenarios,
+  calculateBudgetCompliance
+} from './performance-benchmarks.js';
+import { 
+  SECURITY_PATTERNS,
+  detectSecurityThreats,
+  generateSecurityTestCases,
+  validateSecurityConfig
+} from './security-patterns.js';
 import { 
   TEST_EXECUTION_CONFIG, 
   PROPERTY_RUNS, 
@@ -17,18 +49,6 @@ import {
   getEnvironment,
   isCI
 } from './test-execution.js';
-
-import { 
-  NETWORK_CONDITIONS, 
-  NETWORK_TRANSITIONS, 
-  NETWORK_QUALITY_THRESHOLDS,
-  CONNECTION_CAPABILITIES,
-  categorizeNetworkQuality,
-  getConnectionCapabilities,
-  simulateNetworkTransition,
-  createCustomNetworkCondition
-} from './network-conditions.js';
-
 import { 
   VALIDATION_RULES, 
   BUSINESS_RULES, 
@@ -37,32 +57,6 @@ import {
   sanitizeData,
   validateBusinessRules
 } from './validation-rules.js';
-
-import { 
-  SECURITY_PATTERNS,
-  detectSecurityThreats,
-  generateSecurityTestCases,
-  validateSecurityConfig
-} from './security-patterns.js';
-
-import { 
-  PERFORMANCE_CONFIG,
-  evaluatePerformance,
-  generatePerformanceTestScenarios,
-  calculateBudgetCompliance
-} from './performance-benchmarks.js';
-
-import { 
-  ERROR_CONFIG,
-  ERROR_SCENARIOS,
-  createError,
-  getRecoveryStrategy,
-  simulateErrorCondition,
-  validateErrorHandling
-} from './error-scenarios.js';
-
-import { ConfigValidator } from './config-validator.js';
-import { deepFreeze } from './immutable-utils.js';
 
 // Environment detection and configuration
 const CURRENT_ENVIRONMENT = getEnvironment();

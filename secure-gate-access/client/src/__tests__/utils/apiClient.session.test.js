@@ -1,8 +1,8 @@
 /**
  * @jest-environment jsdom
  */
-import React, { useState, useEffect } from 'react';
 import { render, waitFor } from '@testing-library/react';
+import React, { useEffect } from 'react';
 
 // Mock useToast to track toast calls
 const mockToastError = jest.fn();

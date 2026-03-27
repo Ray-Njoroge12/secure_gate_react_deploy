@@ -5,8 +5,8 @@ import { FloatingLabelInput, GradientButton, GradientCard, Checkbox, Icon, Butto
 import { useAuth } from "../contexts/AuthContext.js";
 import { useError } from "../contexts/ErrorContext.jsx";
 import api from "../utils/apiClient";
-import { encodeSession } from '../utils/sessionCrypto';
 import { getRoleBasedRedirect } from '../utils/navigationFlow';
+import { encodeSession } from '../utils/sessionCrypto';
 
 const AUTH_INLINE_ERROR_PATTERN = /invalid credentials|incorrect|locked|too many/i;
 const INLINE_ERROR_ALERT_CLASS = 'rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300';
@@ -111,11 +111,17 @@ export default function LoginPage() {
 
       // MFA-008 FIX: Check if MFA is required
       if (result?.requiresMFA || result?.mfaRequired) {
+        const fromPath = location.state?.from?.pathname;
+        const returnUrl = fromPath && fromPath !== '/login' && fromPath !== '/forgot-password'
+          ? fromPath
+          : '/dashboard';
+
         // Store MFA session info for verification
         sessionStorage.setItem('mfa_session', encodeSession({
           mfaSessionId: result.mfaSessionId,
           userId: result.userId,
           expiresIn: result.expiresIn || 300,
+          returnUrl,
           timestamp: Date.now()
         }));
 
@@ -124,7 +130,8 @@ export default function LoginPage() {
           state: {
             mfaSessionId: result.mfaSessionId,
             userId: result.userId,
-            expiresIn: result.expiresIn || 300
+            expiresIn: result.expiresIn || 300,
+            returnUrl
           }
         });
         return;

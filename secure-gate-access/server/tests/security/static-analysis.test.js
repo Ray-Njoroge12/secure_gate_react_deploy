@@ -116,7 +116,7 @@ describe('Security Audit - Current System Verification', () => {
       console.log('\n📋 CLAIM 3: ID numbers stored in plaintext');
       console.log('Checking database schema...\n');
       
-      const { dbManager } = await import('../src/database/db.enhanced.js');
+      const { dbManager } = await import('../../src/database/db.enhanced.js');
       
       try {
         // Check visitors table
@@ -148,7 +148,7 @@ describe('Security Audit - Current System Verification', () => {
         }
         
         // Check visitor_invites table
-        const invitesSchema = await db.query(`
+        const invitesSchema = await dbManager.query(`
           SELECT column_name, data_type 
           FROM information_schema.columns 
           WHERE table_name = 'visitor_invites'
@@ -245,7 +245,7 @@ describe('Security Audit - Current System Verification', () => {
     });
 
     test('Check database for retention policies table', async () => {
-      const { dbManager } = await import('../src/database/db.enhanced.js');
+      const { dbManager } = await import('../../src/database/db.enhanced.js');
       
       try {
         const tables = await dbManager.query(`

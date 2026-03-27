@@ -270,30 +270,6 @@ module.exports = {
     // Custom utilities for design system
     function({ addUtilities }) {
       const newUtilities = {
-        '.touch-target': {
-          'min-height': '44px',
-          'min-width': '44px',
-        },
-        '.focus-ring': {
-          'outline': '2px solid #10b981',
-          'outline-offset': '2px',
-        },
-        '.text-balance': {
-          'text-wrap': 'balance',
-        },
-        '.scrollbar-hide': {
-          '-ms-overflow-style': 'none',
-          'scrollbar-width': 'none',
-          '&::-webkit-scrollbar': {
-            display: 'none',
-          },
-        },
-        '.shadow-brand': {
-          'box-shadow': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        },
-        '.rounded-smooth': {
-          'border-radius': '8px',
-        },
         '.bg-accent': {
           'background-color': '#10b981',
         },

@@ -9,12 +9,13 @@
  * without cross-contamination.
  */
 
-import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import * as fc from 'fast-check';
+import React from 'react';
+
 import { PreferenceProvider, usePreferences } from '../../contexts/PreferenceContext';
-import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { ThemeEngineProvider } from '../../contexts/ThemeEngine';
+import { useUserPreferences } from '../../hooks/useUserPreferences';
 import { DEFAULT_PREFERENCES } from '../../services/preferenceService';
 
 jest.setTimeout(30000);
@@ -199,7 +200,7 @@ describe('Property 10: Multi-Estate Preference Isolation', () => {
       let currentEstateId = user.estates[0].id;
 
       // Mock API to return different preferences for each estate
-      mockApi.get.mockImplementation((url) => {
+      mockApi.get.mockImplementation((_url) => {
         const preferences = estatePreferenceMap.get(currentEstateId) || DEFAULT_PREFERENCES;
         
         return Promise.resolve({
@@ -375,7 +376,7 @@ describe('Property 10: Multi-Estate Preference Isolation', () => {
       });
 
       // Component that manages preferences for a specific estate
-      const EstateSpecificPreferenceManager = ({ estateId, expectedPrefs, onUpdate }) => {
+      const EstateSpecificPreferenceManager = ({ estateId, _expectedPrefs, onUpdate }) => {
         const { dashboardPreferences, notificationPreferences, updateDashboardPreferences } = useUserPreferences();
         const [hasUpdated, setHasUpdated] = React.useState(false);
 

@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+
 import { useAuth } from '../../contexts/AuthContext.js';
 import { useTheme } from '../../contexts/ThemeContext.jsx';
 import { useAccessibility } from '../../hooks/useAccessibility.js';

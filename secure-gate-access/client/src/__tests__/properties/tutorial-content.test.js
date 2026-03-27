@@ -5,18 +5,15 @@
  * and cross-role contamination prevention.
  */
 
-import fc from 'fast-check';
 import { jest } from '@jest/globals';
+import fc from 'fast-check';
+
 import { 
   TEST_CONFIG, 
-  ROLE_FEATURE_REQUIREMENTS, 
-  ROLE_ESSENTIAL_ACTIONS,
   ERROR_MESSAGES 
 } from './constants/tutorial-test-config.js';
 import { 
-  userGenerator, 
   userRoleGenerator, 
-  onboardingContextGenerator,
   getRequiredFeaturesForRole,
   getEssentialActionsForRole,
   getOtherRoleFeatures,
@@ -27,7 +24,6 @@ import {
   extractTutorialContent, 
   checkRoleRelevance,
   validateTutorialStructure,
-  validateRoleTitle,
   checkCrossRoleContamination,
   AssertionHelpers
 } from './utils/tutorial-test-utils.js';
@@ -175,7 +171,7 @@ describe('Property Tests: Tutorial Content Relevance', () => {
           }
 
           // Validate content quality for each step
-          tutorialContent.steps.forEach((step, index) => {
+          tutorialContent.steps.forEach((step, _index) => {
             expect(step.content.length).toBeGreaterThan(TEST_CONFIG.PERFORMANCE.MIN_CONTENT_LENGTH);
             expect(step.content.length).toBeLessThan(TEST_CONFIG.PERFORMANCE.MAX_CONTENT_LENGTH);
           });
@@ -233,7 +229,7 @@ describe('Property Tests: Tutorial Content Relevance', () => {
           const tutorialContent = extractTutorialContent(container);
 
           // Property: Each step should have meaningful content
-          tutorialContent.steps.forEach((step, index) => {
+          tutorialContent.steps.forEach((step, _index) => {
             expect(step.title.length).toBeGreaterThan(TEST_CONFIG.PERFORMANCE.MIN_TITLE_LENGTH);
             expect(step.content.length).toBeGreaterThan(TEST_CONFIG.PERFORMANCE.MIN_MEANINGFUL_CONTENT);
             

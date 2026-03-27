@@ -8,7 +8,7 @@ const mockAudit = jest.fn().mockResolvedValue(undefined);
 
 jest.unstable_mockModule('../../src/services/tokenService.js', () => ({ tokenService: { verifyAccessToken: mockVerifyAccessToken } }));
 jest.unstable_mockModule('../../src/database/db.enhanced.js', () => ({ dbManager: { query: mockQuery }, default: { query: mockQuery } }));
-jest.unstable_mockModule('../../src/middleware/auditLogger.js', () => ({ default: () => (req, res, next) => { req.audit = mockAudit; next(); } }));
+jest.unstable_mockModule('../../src/middleware/auditLogging.js', () => ({ default: () => (req, res, next) => { req.audit = mockAudit; next(); } }));
 jest.unstable_mockModule('../../src/config/logger.js', () => ({ default: { warn: jest.fn(), info: jest.fn(), error: jest.fn(), debug: jest.fn() } }));
 jest.unstable_mockModule('../../src/services/loggingService.js', () => ({ default: { warn: jest.fn(), info: jest.fn(), error: jest.fn(), debug: jest.fn(), logSecurity: jest.fn() } }));
 
@@ -33,7 +33,7 @@ describe('GET /api/visitors/recent', () => {
   beforeAll(async () => {
     const { authenticateToken } = await import('../../src/middleware/authMiddleware.js');
     const { requireRolePolicy } = await import('../../src/middleware/rolePolicy.js');
-    const attachRequestAudit = (await import('../../src/middleware/auditLogger.js')).default;
+    const attachRequestAudit = (await import('../../src/middleware/auditLogging.js')).default;
     const { getRecentVisitors } = await import('../../src/controllers/visitorAdminController.js');
     const { errorHandler, notFoundHandler } = await import('../../src/middleware/standardizedErrorHandler.js');
     app = express();

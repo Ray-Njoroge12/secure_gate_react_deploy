@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import Modal from '../ui/Modal';
-import GradientButton from '../ui/GradientButton';
+
+import api from '../../utils/apiClient';
 import { handleApiError } from '../../utils/errorMapper';
 import Button from '../ui/Button';
-import api from '../../utils/apiClient';
+import GradientButton from '../ui/GradientButton';
+import Modal from '../ui/Modal';
 
 export default function ChangePasswordModal({ isOpen, onClose }) {
     const [formData, setFormData] = useState({

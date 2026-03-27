@@ -6,16 +6,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../utils/apiClient';
+
+import OfflineBanner from '../../components/common/OfflineBanner';
+import ResolveIncidentModal from '../../components/guard/ResolveIncidentModal';
 import { Card, Button, Badge, PageHeader, Icon, Skeleton, EmptyState } from '../../components/ui';
+import { useAuth } from '../../contexts/AuthContext';
 import { useError } from '../../contexts/ErrorContext';
 import { useLoading } from '../../contexts/LoadingContext';
 import useOnlineStatus from '../../hooks/useOnlineStatus';
-import OfflineBanner from '../../components/common/OfflineBanner';
 import usePullToRefresh from '../../hooks/usePullToRefresh';
-
-import ResolveIncidentModal from '../../components/guard/ResolveIncidentModal';
-import { useAuth } from '../../contexts/AuthContext';
+import { formatIncidentDateTime, safeDisplayText, sanitizeIncidentForDisplay } from '../../utils/incidentDisplay';
+import api from '../../utils/apiClient';
 
 const IncidentList = () => {
   const navigate = useNavigate();
@@ -52,7 +53,8 @@ const IncidentList = () => {
 
       const response = await api.get(`/api/guard/incidents?${queryParams}`);
       const result = response.data;
-      setIncidents(result.data?.data || []);
+      const payload = Array.isArray(result.data?.data) ? result.data.data : [];
+      setIncidents(payload.map(sanitizeIncidentForDisplay));
     } catch (error) {
       setFetchError(error.message || 'Failed to load incidents. Please try again.');
       handleApiError(error, 'Incident List');
@@ -77,7 +79,7 @@ const IncidentList = () => {
   const handleResolveComplete = (updatedIncident) => {
     // Update the incident in the local list
     setIncidents(prev => prev.map(inc =>
-      inc.id === updatedIncident.id ? updatedIncident : inc
+      inc.id === updatedIncident.id ? sanitizeIncidentForDisplay(updatedIncident) : inc
     ));
     // Optional: Show success toast via notification service if available
   };
@@ -293,14 +295,14 @@ const IncidentList = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-gray-900 dark:text-white capitalize">
-                          {incident.category.replace('_', ' ')}
+                          {safeDisplayText(incident.category, 'unknown').replace('_', ' ')}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-200">
-                          {new Date(incident.created_at).toLocaleString()}
+                          {formatIncidentDateTime(incident.created_at)}
                         </div>
                         {incident.guard_name && (
                           <div className="text-xs text-gray-500 dark:text-gray-300 mt-1">
-                            Reported by: {incident.guard_name}
+                            Reported by: {safeDisplayText(incident.guard_name)}
                           </div>
                         )}
                       </div>
@@ -309,7 +311,7 @@ const IncidentList = () => {
                     {/* Badges row — wraps on mobile */}
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                       <Badge className={getSeverityColor(incident.severity)}>
-                        {incident.severity}
+                        {safeDisplayText(incident.severity, 'medium')}
                       </Badge>
                       {incident.resolved_at ? (
                         <Badge variant="success">Resolved</Badge>
@@ -331,22 +333,22 @@ const IncidentList = () => {
                     </div>
 
                     <div className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                      {incident.description}
+                      {safeDisplayText(incident.description)}
                     </div>
 
                     {incident.visitor_name && (
                       <div className="text-sm text-gray-600 dark:text-gray-200 mb-2">
-                        Related to visitor: <strong>{incident.visitor_name}</strong>
+                        Related to visitor: <strong>{safeDisplayText(incident.visitor_name)}</strong>
                       </div>
                     )}
 
                     {incident.resolution && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
                         <div className="text-xs font-medium text-green-900 mb-1">Resolution</div>
-                        <div className="text-sm text-green-800">{incident.resolution}</div>
+                        <div className="text-sm text-green-800">{safeDisplayText(incident.resolution)}</div>
                         {incident.resolved_by_name && (
                           <div className="text-xs text-green-700 mt-1">
-                            Resolved by: {incident.resolved_by_name} on {new Date(incident.resolved_at).toLocaleString()}
+                            Resolved by: {safeDisplayText(incident.resolved_by_name)} on {formatIncidentDateTime(incident.resolved_at)}
                           </div>
                         )}
                       </div>

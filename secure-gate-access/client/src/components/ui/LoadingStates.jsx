@@ -1,8 +1,9 @@
 // Enhanced loading states and progress indicators
 import React, { useEffect, useRef, useState } from 'react';
-import Skeleton from './Skeleton';
-import Icon from './Icon';
+
 import Button from './Button';
+import Icon from './Icon';
+import Skeleton from './Skeleton';
 
 // Enhanced loading component with multiple variants
 const Loading = ({ 

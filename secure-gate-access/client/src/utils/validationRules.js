@@ -211,7 +211,7 @@ export const validationFunctions = {
   },
 
   // Credit card validation
-  creditCard: (value, options = {}) => {
+  creditCard: (value) => {
     if (!value) return createValidationResult(true);
     
     // Remove spaces and dashes
@@ -538,10 +538,10 @@ export const commonRules = {
   requiredPhone: (value) => validationFunctions.phone(value),
   emailFormat: (value) => validationFunctions.email(value),
   requiredDate: (value) => validationFunctions.date(value),
-  requiredTime: (value, date) => validationFunctions.time(value),
+  requiredTime: (value) => validationFunctions.time(value),
 };
 
-export default {
+const validationRuleExports = {
   validationFunctions,
   asyncValidationFunctions,
   crossFieldValidationFunctions,
@@ -553,3 +553,5 @@ export default {
   throttle,
   createValidationResult
 };
+
+export default validationRuleExports;

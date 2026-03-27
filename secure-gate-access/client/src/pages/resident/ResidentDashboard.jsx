@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import logger from 'utils/logger';
-import { useI18n } from "../../i18n/index.js";
-import api from '../../utils/apiClient';
+
 
 import AnnouncementsBanner from "../../components/common/AnnouncementsBanner";
 import OnboardingTour from "../../components/common/OnboardingTour";
@@ -13,6 +12,8 @@ import { Card, Button, Skeleton, UpcomingVisitsEmpty, RecentVisitorsEmpty, Icon 
 // AppShell removed - handled by Layout Route
 import { useLoadingState } from "../../hooks/useLoadingState";
 import { useResidentVisitorEvents } from "../../hooks/useVisitorEvents";
+import { useI18n } from "../../i18n/index.js";
+import api from '../../utils/apiClient';
 // Unused page imports removed
 import { navigateTo } from "../../utils/appNavigation";
 

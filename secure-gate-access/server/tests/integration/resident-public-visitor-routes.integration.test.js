@@ -215,6 +215,23 @@ describe('Resident/public visitor routes integration', () => {
     expect(updated.rows[0].status).toBe('cancelled');
   });
 
+  it('rejects resident delete on non-eligible visitor status', async () => {
+    const visitor = await createTestVisitor(testUsers.resident.id, {
+      name: 'Already Checked In',
+      status: 'checked_in'
+    });
+
+    const response = await request(app)
+      .delete(`/api/visitors/${visitor.id}`)
+      .set('Authorization', `Bearer ${residentToken}`);
+
+    expect(response.status).toBe(409);
+    expect(response.body.message).toMatch(/only pending or unadmitted/i);
+
+    const unchanged = await dbManager.query('SELECT status FROM visitors WHERE id = $1', [visitor.id]);
+    expect(unchanged.rows[0].status).toBe('checked_in');
+  });
+
   it('returns a stable 400 for invalid resident cancel IDs', async () => {
     const response = await request(app)
       .delete('/api/visitors/not-a-number')

@@ -1,16 +1,16 @@
 // Custom hook for enhanced form validation with real-time feedback
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import logger from 'utils/logger';
-import { debounce } from '../utils/validationRules';
+
 import { VALIDATION_TIMING } from '../constants/validation';
+import { debounce } from '../utils/validationRules';
 
 export const useFormValidation = (initialValues = {}, options = {}) => {
   const {
     validateOnChange = VALIDATION_TIMING.VALIDATE_ON_CHANGE,
     validateOnBlur = VALIDATION_TIMING.VALIDATE_ON_BLUR,
     validateOnSubmit = VALIDATION_TIMING.VALIDATE_ON_SUBMIT,
-    debounceDelay = VALIDATION_TIMING.DEBOUNCE_DELAY,
-    showValidationOnSubmit = true
+    debounceDelay = VALIDATION_TIMING.DEBOUNCE_DELAY
   } = options;
 
   const [values, setValues] = useState(initialValues);

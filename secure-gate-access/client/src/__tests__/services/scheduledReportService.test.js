@@ -3,8 +3,8 @@
  * Tests scheduled report generation, delivery, and notification systems
  */
 
-import scheduledReportService from '../../services/scheduledReportService';
 import exportService from '../../services/exportService';
+import scheduledReportService from '../../services/scheduledReportService';
 
 // Mock dependencies
 jest.mock('../../services/exportService');

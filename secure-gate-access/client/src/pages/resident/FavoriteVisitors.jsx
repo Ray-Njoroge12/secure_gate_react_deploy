@@ -26,8 +26,8 @@ import {
 } from '../../components/ui';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
-import { navigateTo } from '../../utils/appNavigation';
 import api from '../../utils/apiClient';
+import { navigateTo } from '../../utils/appNavigation';
 import logger from '../../utils/logger';
 
 // Relationship type options
