@@ -188,9 +188,20 @@ BEGIN
 END $$;
 
 -- Add indexes to existing notification_log table for intelligent features
-CREATE INDEX IF NOT EXISTS idx_notification_log_type_recipient ON notification_log(notification_type, recipient_id);
-CREATE INDEX IF NOT EXISTS idx_notification_log_sent_at ON notification_log(sent_at DESC) WHERE sent_at IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_notification_log_read_at ON notification_log(read_at DESC) WHERE read_at IS NOT NULL;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'notification_log'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_notification_log_type_recipient ON notification_log(notification_type, recipient_id);
+        CREATE INDEX IF NOT EXISTS idx_notification_log_sent_at ON notification_log(sent_at DESC) WHERE sent_at IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_notification_log_read_at ON notification_log(read_at DESC) WHERE read_at IS NOT NULL;
+    ELSE
+        RAISE NOTICE 'notification_log table not present yet; index creation deferred to later migration';
+    END IF;
+END $$;
 
 -- Function to calculate notification relevance score
 CREATE OR REPLACE FUNCTION calculate_notification_relevance_score(
