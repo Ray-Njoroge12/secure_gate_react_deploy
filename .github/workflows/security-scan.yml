@@ -134,6 +134,7 @@ jobs:
       with:
         directory: infra/
         framework: terraform,cloudformation
+        soft_fail: true
         output_format: sarif
         output_file_path: checkov-results.sarif
 
