@@ -173,8 +173,19 @@ CREATE TRIGGER update_notification_channel_performance_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Add indexes to existing notification_interactions table for better performance
-CREATE INDEX IF NOT EXISTS idx_notification_interactions_user_action ON notification_interactions(user_id, action);
-CREATE INDEX IF NOT EXISTS idx_notification_interactions_timestamp ON notification_interactions(timestamp DESC);
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'notification_interactions'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_notification_interactions_user_action ON notification_interactions(user_id, action);
+        CREATE INDEX IF NOT EXISTS idx_notification_interactions_timestamp ON notification_interactions(timestamp DESC);
+    ELSE
+        RAISE NOTICE 'notification_interactions table not present yet; index creation deferred to later migration';
+    END IF;
+END $$;
 
 -- Add indexes to existing notification_log table for intelligent features
 CREATE INDEX IF NOT EXISTS idx_notification_log_type_recipient ON notification_log(notification_type, recipient_id);
