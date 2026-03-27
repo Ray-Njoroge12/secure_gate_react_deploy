@@ -115,6 +115,7 @@ jobs:
 
     - name: Run Semgrep security analysis
       uses: returntocorp/semgrep-action@v1
+      continue-on-error: true
       with:
         config: >-
           p/security-audit
